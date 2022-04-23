@@ -1,0 +1,66 @@
+# Godot auto generated files
+*.gen.*
+.import/
+.godot/
+/gen/
+
+# General C++ generated files
+*.a
+*.ax
+*.d
+*.lib
+*.lo
+*.o
+*.os
+*.ox
+*.Plo
+*.so
+# Binutils tmp linker output of the form "stXXXXXX" where "X" is alphanumeric
+st[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]
+
+# SCons
+.sconf_temp
+.scons_env.json
+.scons_node_count
+.sconsign*.dblite
+__pycache__/
+*.pyc
+
+# Clang
+.cache/
+.clangd/
+compile_commands.json
+
+# Visual Studio and Visual Studio Code
+.vs/
+.vscode/
+*.code-workspace
+
+# Visual C++ cache files
+*.aps
+*.cachefile
+*.ncb
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.VC.VC.opendb
+enc_temp_folder/
+ipch/
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+
+# System-specific
+$RECYCLE.BIN/
+*.autosave
+*~
+~$*
+.DS_Store
+.Trash-*
+[Tt]humbs.db
+__MACOSX
+logo.h
+logs/
