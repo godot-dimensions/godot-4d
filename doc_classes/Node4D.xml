@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Node4D" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D game object, inherited by all 4D-related nodes.
+	</brief_description>
+	<description>
+		A 4D game object, with a 4D transformation. All 4D nodes inherit from Node4D.
+		Has a transform with a [member position] [Vector4] and a [member basis] [Basis4D] (exposed as a [Projection]). The basis can be decomposed into a [member scale] [Vector4] and [member rotation] [Euler4D] (exposed as an [AABB]).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="apply_scale">
+			<return type="void" />
+			<param index="0" name="ratio" type="Vector4" />
+			<description>
+				Apply a scale to this [Node4D] in the parent-relative space. If you want to scale in object-local space, just multiply [member scale].
+			</description>
+		</method>
+		<method name="is_visible_in_tree" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the [Node4D] is visible in the scene tree (this node and all parent [Node4D]s are visible).
+			</description>
+		</method>
+		<method name="translate_local">
+			<return type="void" />
+			<param index="0" name="offset" type="Vector4" />
+			<description>
+				Translate this [Node4D] in object-local space. If you want to translate in parent-relative space, just add to [member position].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="basis" type="Projection" setter="set_basis" getter="get_basis" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)">
+			The transformation basis of this [Node4D], representing rotation and scale. This is the same as the basis part of [member transform_array].
+		</member>
+		<member name="global_basis" type="Projection" setter="set_global_basis" getter="get_global_basis">
+			The global transformation basis of this [Node4D], representing rotation and scale. This is the same as the basis part of [member global_transform_array]. This is exposed as a [Projection] for binding reasons.
+		</member>
+		<member name="global_position" type="Vector4" setter="set_global_position" getter="get_global_position">
+			The global position of this [Node4D]. This is the same as [code]global_transform.origin[/code].
+		</member>
+		<member name="global_rotation" type="AABB" setter="set_global_rotation" getter="get_global_rotation">
+			The global rotation of this [Node4D], in the form of an [Euler4D] with radians as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
+		</member>
+		<member name="global_rotation_degrees" type="AABB" setter="set_global_rotation_degrees" getter="get_global_rotation_degrees">
+			The global rotation of this [Node4D], in the form of an [Euler4D] with degrees as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
+		</member>
+		<member name="global_scale" type="Vector4" setter="set_global_scale" getter="get_global_scale">
+			The global scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).
+		</member>
+		<member name="global_transform_array" type="PackedFloat32Array" setter="set_global_transform_array" getter="get_global_transform_array">
+			The global transformation matrix of this [Node4D] as a [PackedFloat32Array] or [PackedFloat64Array]. This is a combination of [member global_basis] and [member global_position].
+		</member>
+		<member name="global_uniform_scale" type="float" setter="set_global_uniform_scale" getter="get_global_uniform_scale">
+			The global uniform scale of this [Node4D]. This will be negative in the case of a flip/reflection (when the basis determinant is negative).
+		</member>
+		<member name="position" type="Vector4" setter="set_position" getter="get_position" default="Vector4(0, 0, 0, 0)">
+			The position of this [Node4D]. This is the same as [code]transform.origin[/code].
+		</member>
+		<member name="rotation" type="AABB" setter="set_rotation" getter="get_rotation">
+			The rotation of this [Node4D], in the form of an [Euler4D] with radians as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
+		</member>
+		<member name="rotation_degrees" type="AABB" setter="set_rotation_degrees" getter="get_rotation_degrees" default="AABB(0, 0, 0, 0, 0, 0)">
+			The rotation of this [Node4D], in the form of an [Euler4D] with degrees as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
+		</member>
+		<member name="rotation_edit_mode" type="int" setter="set_rotation_edit_mode" getter="get_rotation_edit_mode" enum="Node4D.RotationEditMode" default="0">
+			Specifies how rotation is displayed in the editor. In Euler4D mode, [member rotation_degrees] is displayed as an [Euler4D] (exposed as an [AABB]), and the [member scale] is also displayed. In Basis4D mode, both of those are hidden, and instead the [member basis] is displayed as a [Basis4D] (exposed as a [Projection]).
+		</member>
+		<member name="scale" type="Vector4" setter="set_scale" getter="get_scale" default="Vector4(1, 1, 1, 1)">
+			The scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).
+		</member>
+		<member name="transform_array" type="PackedFloat32Array" setter="set_transform_array" getter="get_transform_array">
+			The transformation matrix of this [Node4D] as a [PackedFloat32Array] or [PackedFloat64Array]. This is a combination of [member basis] and [member position].
+		</member>
+		<member name="uniform_scale" type="float" setter="set_uniform_scale" getter="get_uniform_scale">
+			The uniform scale of this [Node4D]. This will be negative in the case of a flip/reflection (when the basis determinant is negative).
+		</member>
+		<member name="visible" type="bool" setter="set_visible" getter="is_visible" default="true">
+			If [code]true[/code], this [Node4D] is set as visible. Whether or not it is actually visible is determined by the [member visible] property of all of its parents (see [method is_visible_in_tree]).
+		</member>
+	</members>
+	<signals>
+		<signal name="visibility_changed">
+			<description>
+				Emitted when this [Node4D]'s visibility changes. This can happen when [member visibility] changes or when a parent node's visibility changes.
+			</description>
+		</signal>
+	</signals>
+</class>

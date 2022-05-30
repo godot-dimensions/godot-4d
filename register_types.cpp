@@ -10,6 +10,7 @@
 #include "math/euler_4d_bind.h"
 #include "math/transform_4d_bind.h"
 #include "math/vector_4d.h"
+#include "nodes/node_4d.h"
 
 inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
 #if GDEXTENSION
@@ -34,6 +35,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(godot_4d_bind::Transform4D);
 		GDREGISTER_CLASS(Vector4D);
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		GDREGISTER_CLASS(Node4D);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Euler4D", memnew(godot_4d_bind::Euler4D));
 		add_godot_singleton("Transform4D", memnew(godot_4d_bind::Transform4D));
