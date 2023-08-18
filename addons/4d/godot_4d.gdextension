@@ -19,4 +19,5 @@ linux.release.rv64 = "bin/libgodot_4d.linux.release.rv64.so"
 [icons]
 
 Basis4D = "icons/Basis4D.svg"
+Euler4D = "icons/Euler4D.svg"
 Vector4D = "icons/Vector4D.svg"

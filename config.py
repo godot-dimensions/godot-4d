@@ -10,6 +10,7 @@ def configure(env):
 def get_doc_classes():
     return [
         "Basis4D",
+        "Euler4D",
         "Vector4D",
     ]
 

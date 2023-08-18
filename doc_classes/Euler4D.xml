@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Euler4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Singleton for working with 4D Euler angles.
+	</brief_description>
+	<description>
+		Euler4D represents rotation in 4D using 6 Euler angles. Rotations are applied in the order ZX, ZW, XW, YZ, XY, WY (yaw 1, yaw 2, yaw 3, pitch, roll 1, roll 2), and are stored in memory in the order YZ, ZX, XY, XW, WY, ZW for similarity to Godot's 3D.
+		YZ, ZX, and XY are equivalent to rotating around the X, Y, and Z axes in 3D, respectively. XW, WY, and ZW are rotations perpendicular to YZ, ZX, and XY, respectively (the ones that share no letters are perpendicular). Perpencular rotations cause something called "double rotation" which is a concept unique to 4D and above (see the Wikipedia article's "Double rotations" section).
+		Here's what determines the rotation order of Euler angles. For 3D, we have Yaw, Pitch, and Roll, in that order.
+		Yaw acts as horizontal rotation (ZX plane, no Y so it's horizontal). For the 4D equivalent of Yaw, we have three angles that rotate horizontally (no Y): ZX, ZW, and XW. Therefore, these three go first.
+		Next is Pitch. Pitch is vertical rotation that changes the direction an object is pointing by moving its forward vector (-Z) up or down (Y), so pitch only exists in the YZ plane. Therefore, for the 4D equivalent of pitch, there is only one angle that does this: YZ.
+		Lastly is Roll. Roll is also vertical rotation, but it brings the sides of an object higher or lower. For the 4D equivalent of roll, we want every angle that involves Y but not Z, so that gives us two angles: XY and WY. Therefore, these two go last.
+		Outside of the broad Yaw-Pitch-Roll ordering, there is a fascinating symmetry that arises. If we order our rotations in the right way, we can make the outer-most rotations (ZX and WY) be perpendicular, the inner-most rotations (XW and YZ) be perpendicular, which makes the remaining rotations (ZW and XY) also perpendicular. Pitch (YZ) must be the 4th rotation so that implies XW is the 3rd rotation to obey the symmetry. The 1st/2nd could be swapped if the 5th/6th are swapped, so this part is arbitrary, but ZX first is consistent with 3D.
+	</description>
+	<tutorials>
+		<link title="Rotation in 4D on Wikipedia">https://en.wikipedia.org/wiki/Rotations_in_4-dimensional_Euclidean_space</link>
+	</tutorials>
+	<methods>
+		<method name="compose" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="parent" type="AABB" />
+			<param index="1" name="child" type="AABB" />
+			<description>
+				Composes two [Euler4D]s (exposed as [AABB]s) into one. The result is the same as applying [param parent] followed by [param child], and is equivalent to composing/multiplying the [Basis4D] versions of each.
+			</description>
+		</method>
+		<method name="deg_to_rad" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns the [param euler] [Euler4D] converted to radians, assuming the input is in degrees.
+			</description>
+		</method>
+		<method name="from_3d" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="from_euler_3d" type="Vector3" />
+			<description>
+				Converts a [param from_euler_3d] [Vector3] to a [Euler4D]. The XW, WY, and ZW components will be 0.
+			</description>
+		</method>
+		<method name="from_array" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="from_array" type="PackedFloat32Array" />
+			<description>
+				Converts a [param from_array] [PackedFloat32Array] or [PackedFloat64Array] to an [Euler4D] matrix as an [AABB]. The array may be of any length, but only the first 6 elements will be used.
+			</description>
+		</method>
+		<method name="from_basis" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="from_basis" type="Projection" />
+			<param index="1" name="use_special_cases" type="bool" default="true" />
+			<description>
+				Converts a [param from_basis] [Basis4D] as a [Projection] to an [Euler4D] as an [AABB].
+				If [param use_special_cases] is true, then the matrix will first be checked if it is composed of simple perpendicular rotations, and special code will be used to extract the angles in that case. Otherwise, the angles will be extracted using the general method. Having this be [code]true[/code] is consistent with what Godot does for 3D, and results in better editor UX where simple rotations are not implicitly transformed into others.
+			</description>
+		</method>
+		<method name="from_numbers" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="yz" type="float" />
+			<param index="1" name="zx" type="float" />
+			<param index="2" name="xy" type="float" />
+			<param index="3" name="xw" type="float" default="0.0" />
+			<param index="4" name="wy" type="float" default="0.0" />
+			<param index="5" name="zw" type="float" default="0.0" />
+			<description>
+				Constructs an Euler4D from 6 euler angles in the order YZ, ZX, XY, XW, WY, ZW.
+			</description>
+		</method>
+		<method name="from_vectors" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="yz_zx_xy" type="Vector3" />
+			<param index="1" name="xw_wy_zw" type="Vector3" default="Vector3(0, 0, 0)" />
+			<description>
+				Constructs an Euler4D from 6 euler angles in the order YZ, ZX, XY, and XW, WY, ZW.
+			</description>
+		</method>
+		<method name="get_wy" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns the WY component, the rotation in the WY plane, of the [param euler] [Euler4D]. WY (Roll 2) is the sixth rotation and is perpendicular to ZX (Yaw 1).
+			</description>
+		</method>
+		<method name="get_xw" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns the XW component, the rotation in the XW plane, of the [param euler] [Euler4D]. XW (Yaw 3) is the third rotation and is perpendicular to YZ (Pitch).
+			</description>
+		</method>
+		<method name="get_xy" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns the XY component, the rotation in the XY plane, of the [param euler] [Euler4D]. XY (Roll 1) is the fifth rotation and is perpendicular to ZW (Yaw 2).
+			</description>
+		</method>
+		<method name="get_yz" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns the YZ component, the rotation in the YZ plane, of the [param euler] [Euler4D]. YZ (Pitch) is the fourth rotation and is perpendicular to XW (Yaw 3).
+			</description>
+		</method>
+		<method name="get_zw" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns the ZW component, the rotation in the ZW plane, of the [param euler] [Euler4D]. ZW (Yaw 2) is the second rotation and is perpendicular to XY (Roll 1).
+			</description>
+		</method>
+		<method name="get_zx" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns the ZX component, the rotation in the ZX plane, of the [param euler] [Euler4D]. ZX (Yaw 1) is the first rotation and is perpendicular to WY (Roll 2).
+			</description>
+		</method>
+		<method name="is_equal_approx" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="a" type="AABB" />
+			<param index="1" name="b" type="AABB" />
+			<description>
+				Returns [code]true[/code] if [param a] and [param b] are approximately equal, by running [method @GlobalScope.is_equal_approx] on each component.
+			</description>
+		</method>
+		<method name="rad_to_deg" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns the [param euler] [Euler4D] converted to degrees, assuming the input is in radians.
+			</description>
+		</method>
+		<method name="rotation_to" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="from" type="AABB" />
+			<param index="1" name="to" type="AABB" />
+			<description>
+				Returns the rotation between [param from] and [param to] as an [Euler4D] (exposed as an [AABB]). The rotation will be the shortest possible, and will be in the direction of [param to] from [param from].
+			</description>
+		</method>
+		<method name="to_3d" qualifiers="static">
+			<return type="Vector3" />
+			<param index="0" name="from_euler_4d" type="AABB" />
+			<description>
+				Converts a param from_euler_4d] [Euler4D] to a [Vector3] by discarding the XW, WY, and ZW components.
+			</description>
+		</method>
+		<method name="to_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="from_euler_4d" type="AABB" />
+			<description>
+				Converts a [param from_euler_4d] [Euler4D] as an [AABB] to a [PackedFloat32Array] or [PackedFloat64Array]. The array will have 6 numbers.
+			</description>
+		</method>
+		<method name="to_basis" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from_euler_4d" type="AABB" />
+			<description>
+				Converts this [param from_euler_4d] [Euler4D] to a [Basis4D] rotation matrix.
+			</description>
+		</method>
+		<method name="with_wy" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<param index="1" name="wy" type="float" />
+			<description>
+				Returns a copy of the [param euler] [Euler4D] with the rotation on the WY plane set to [param wy]. WY (Roll 2) is the sixth rotation and is perpendicular to ZX (Yaw 1).
+			</description>
+		</method>
+		<method name="with_xw" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<param index="1" name="xw" type="float" />
+			<description>
+				Returns a copy of the [param euler] [Euler4D] with the rotation on the XW plane set to [param xw]. XW (Yaw 3) is the third rotation and is perpendicular to YZ (Pitch).
+			</description>
+		</method>
+		<method name="with_xy" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<param index="1" name="xy" type="float" />
+			<description>
+				Returns a copy of the [param euler] [Euler4D] with the rotation on the XY plane set to [param xy]. XY (Roll 1) is the fifth rotation and is perpendicular to ZW (Yaw 2).
+			</description>
+		</method>
+		<method name="with_yz" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<param index="1" name="yz" type="float" />
+			<description>
+				Returns a copy of the [param euler] [Euler4D] with the rotation on the YZ plane set to [param yz]. YZ (Pitch) is the fourth rotation and is perpendicular to XW (Yaw 3).
+			</description>
+		</method>
+		<method name="with_zw" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<param index="1" name="zw" type="float" />
+			<description>
+				Returns a copy of the [param euler] [Euler4D] with the rotation on the ZW plane set to [param zw]. ZW (Yaw 2) is the second rotation and is perpendicular to XY (Roll 1).
+			</description>
+		</method>
+		<method name="with_zx" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<param index="1" name="zx" type="float" />
+			<description>
+				Returns a copy of the [param euler] [Euler4D] with the rotation on the ZX plane set to [param zx]. ZX (Yaw 1) is the first rotation and is perpendicular to WY (Roll 2).
+			</description>
+		</method>
+		<method name="wrapped" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Returns a copy of the [param euler] [Euler4D] with all angles wrapped on the range [code]-PI[/code] to [code]PI[/code]. Note: This is not guaranteed to fully simplify the rotation, to do that, convert to [Basis4D] and back.
+			</description>
+		</method>
+	</methods>
+</class>
