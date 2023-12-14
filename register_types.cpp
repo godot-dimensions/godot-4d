@@ -6,6 +6,8 @@
 #include "core/config/engine.h"
 #endif
 
+#include "math/vector_4d.h"
+
 inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
 #if GDEXTENSION
 	Engine::get_singleton()->register_singleton(p_singleton_name, p_object);
@@ -23,7 +25,15 @@ inline void remove_godot_singleton(const StringName &p_singleton_name) {
 }
 
 void initialize_4d_module(ModuleInitializationLevel p_level) {
+	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
+		GDREGISTER_CLASS(Vector4D);
+	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		add_godot_singleton("Vector4D", memnew(Vector4D));
+	}
 }
 
 void uninitialize_4d_module(ModuleInitializationLevel p_level) {
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		remove_godot_singleton("Vector4D");
+	}
 }

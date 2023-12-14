@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Vector4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Extra math functions for Vector4.
+	</brief_description>
+	<description>
+		Vector4D provides extra math functions for [Vector4], supplementing the functions Godot provides in Vector4.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="angle_to" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="from" type="Vector4" />
+			<param index="1" name="to" type="Vector4" />
+			<description>
+				Returns the unsigned minimum angle between the given vectors, in radians.
+			</description>
+		</method>
+		<method name="bounce" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector4" />
+			<param index="1" name="normal" type="Vector4" />
+			<description>
+				Returns [param vector] "bounced off" from a hyperplane defined by the [param normal] vector.
+			</description>
+		</method>
+		<method name="cross" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="a" type="Vector4" />
+			<param index="1" name="b" type="Vector4" />
+			<description>
+				Returns the 4D analog of the cross product for this vector and [param with]. This is the unsigned area of the parallelogram formed by the two vectors.
+				[b]Note:[/b] Cross product is not defined in 4D mathematically. This method is an analog similar to [method Vector2.cross].
+			</description>
+		</method>
+		<method name="from_3d" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector3" />
+			<description>
+				Converts a [Vector3] to a [Vector4] with the W component set to 0.
+			</description>
+		</method>
+		<method name="limit_length" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector4" />
+			<param index="1" name="length" type="float" default="1.0" />
+			<description>
+				Returns [param vector] with a maximum length by limiting its length to [param length].
+			</description>
+		</method>
+		<method name="move_toward" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="from" type="Vector4" />
+			<param index="1" name="to" type="Vector4" />
+			<param index="2" name="delta" type="float" />
+			<description>
+				Returns [param from] moved toward [param to] by the fixed [param delta] amount. Will not go past the final value.
+			</description>
+		</method>
+		<method name="project" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector4" />
+			<param index="1" name="on_normal" type="Vector4" />
+			<description>
+				Returns [param vector] projected onto the vector [param on_normal].
+			</description>
+		</method>
+		<method name="reflect" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector4" />
+			<param index="1" name="normal" type="Vector4" />
+			<description>
+				Returns [param vector] reflected from a hyperplane defined by the [param normal] vector.
+			</description>
+		</method>
+		<method name="slide" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector4" />
+			<param index="1" name="normal" type="Vector4" />
+			<description>
+				Returns the component of [param vector] along a hyperplane defined by the [param normal] vector.
+			</description>
+		</method>
+		<method name="to_3d" qualifiers="static">
+			<return type="Vector3" />
+			<param index="0" name="vector" type="Vector4" />
+			<description>
+				Converts a [Vector4] to a [Vector3] by discarding the W component.
+			</description>
+		</method>
+	</methods>
+</class>

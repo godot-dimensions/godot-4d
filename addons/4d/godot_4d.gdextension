@@ -15,3 +15,7 @@ linux.debug.arm64 = "bin/libgodot_4d.linux.debug.arm64.so"
 linux.release.arm64 = "bin/libgodot_4d.linux.release.arm64.so"
 linux.debug.rv64 = "bin/libgodot_4d.linux.debug.rv64.so"
 linux.release.rv64 = "bin/libgodot_4d.linux.release.rv64.so"
+
+[icons]
+
+Vector4D = "icons/Vector4D.svg"

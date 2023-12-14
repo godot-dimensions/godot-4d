@@ -8,7 +8,9 @@ def configure(env):
 
 
 def get_doc_classes():
-    return []
+    return [
+        "Vector4D",
+    ]
 
 
 def get_doc_path():
