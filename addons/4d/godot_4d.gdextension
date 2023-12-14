@@ -1,0 +1,17 @@
+[configuration]
+
+entry_symbol = "godot_4d_library_init"
+compatibility_minimum = 4.2
+
+[libraries]
+
+macos.debug = "bin/libgodot_4d.macos.debug.framework"
+macos.release = "bin/libgodot_4d.macos.release.framework"
+windows.debug.x86_64 = "bin/libgodot_4d.windows.debug.x86_64.dll"
+windows.release.x86_64 = "bin/libgodot_4d.windows.release.x86_64.dll"
+linux.debug.x86_64 = "bin/libgodot_4d.linux.debug.x86_64.so"
+linux.release.x86_64 = "bin/libgodot_4d.linux.release.x86_64.so"
+linux.debug.arm64 = "bin/libgodot_4d.linux.debug.arm64.so"
+linux.release.arm64 = "bin/libgodot_4d.linux.release.arm64.so"
+linux.debug.rv64 = "bin/libgodot_4d.linux.debug.rv64.so"
+linux.release.rv64 = "bin/libgodot_4d.linux.release.rv64.so"
