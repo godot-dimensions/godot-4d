@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Basis4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Singleton for working with 4D basis structures.
+	</brief_description>
+	<description>
+		Basis4D is a 4×4 matrix used for 4D rotation, scale, and shearing. Almost always used as an orthogonal basis for a 4D transformation.
+		In the GDScript bindings, the [Basis4D] singleton is a wrapper for the internal Basis4D struct methods. The bindings use the [Projection] data type because both have 16 floating point values.
+		Contains 4 [Vector4] fields X, Y, Z, and W as its columns, which are typically interpreted as the local basis vectors of a transformation. For such use, it is composed of a scaling and a rotation matrix, in that order (M = R.S).
+		These vectors are usually orthogonal to each other, but may not be in the case of skew/shear (use [method orthogonalized] or [method orthonormalized] to correct this).
+		For more information, read the "Matrices and transforms" documentation article.
+	</description>
+	<tutorials>
+		<link title="Math documentation index">$DOCS_URL/tutorials/math/index.html</link>
+		<link title="Matrices and transforms">$DOCS_URL/tutorials/math/matrices_and_transforms.html</link>
+		<link title="Matrix Transform Demo">https://godotengine.org/asset-library/asset/584</link>
+	</tutorials>
+	<methods>
+		<method name="compose" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="parent" type="Projection" />
+			<param index="1" name="child" type="Projection" />
+			<description>
+				Composes two [Basis4D] matrices, [param parent] and [param child], and returns the result. This is equivalent to multiplying the matrices in the order of [code]parent * child[/code].
+			</description>
+		</method>
+		<method name="determinant" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns the determinant of the [Basis4D] matrix. If the basis is uniformly scaled, its determinant is the square of the scale.
+			</description>
+		</method>
+		<method name="from_3d" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from_3d" type="Basis" />
+			<description>
+				Constructs a [Basis4D] matrix from a [param from_3d] [Basis] 3D matrix. The XYZ 3x3 portion is set to the [param basis_3d] matrix, and all W components are set to identity.
+			</description>
+		</method>
+		<method name="from_array" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from_array" type="PackedFloat32Array" />
+			<description>
+				Converts a [param from_array] [PackedFloat32Array] or [PackedFloat64Array] to a [Basis4D] matrix as a [Projection]. The array must have at least 16 numbers.
+			</description>
+		</method>
+		<method name="from_scale" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="scale" type="Vector4" />
+			<description>
+				Constructs a pure scale [Basis4D] matrix with no rotation or shearing. The scale values are set as the diagonal of the matrix, and the other parts of the matrix are zero.
+			</description>
+		</method>
+		<method name="from_scale_uniform" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="scale" type="float" />
+			<description>
+				Constructs a pure uniformly scaled [Basis4D] matrix with no rotation or shearing. The scale value is set as the diagonal of the matrix, and the other parts of the matrix are zero.
+			</description>
+		</method>
+		<method name="from_wy" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="wy" type="float" />
+			<description>
+				Constructs a [Basis4D] matrix from a rotation in the WY plane (6th rotation, Roll 2, Yaw1-perpendicular). Positive rotations are from W to Y.
+			</description>
+		</method>
+		<method name="from_xw" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="xw" type="float" />
+			<description>
+				Constructs a [Basis4D] matrix from a rotation in the XW plane (3rd rotation, Yaw 3, Pitch-perpendicular). Positive rotations are from X to W.
+			</description>
+		</method>
+		<method name="from_xy" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="xy" type="float" />
+			<description>
+				Constructs a [Basis4D] matrix from a rotation in the XY plane (5th rotation, Roll 1, Yaw2-perpendicular). Positive rotations are from X to Y.
+			</description>
+		</method>
+		<method name="from_yz" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="yz" type="float" />
+			<description>
+				Constructs a [Basis4D] matrix from a rotation in the YZ plane (4th rotation, Pitch, Yaw3-perpendicular). Positive rotations are from Y to Z.
+			</description>
+		</method>
+		<method name="from_zw" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="zw" type="float" />
+			<description>
+				Constructs a [Basis4D] matrix from a rotation in the ZW plane (2nd rotation, Yaw 2, Roll1-perpendicular). Positive rotations are from Z to W.
+			</description>
+		</method>
+		<method name="from_zx" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="zx" type="float" />
+			<description>
+				Constructs a [Basis4D] matrix from a rotation in the ZX plane (1st rotation, Yaw 1, Roll2-perpendicular). Positive rotations are from Z to X.
+			</description>
+		</method>
+		<method name="get_column" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="index" type="int" />
+			<description>
+				Gets a column of the [param basis] [Basis4D].
+			</description>
+		</method>
+		<method name="get_main_diagonal" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Gets the main diagonal of the [param basis] [Basis4D]. For pure scale matrices, this is equivalent to the scale.
+			</description>
+		</method>
+		<method name="get_row" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="index" type="int" />
+			<description>
+				Gets a row of the [param basis] [Basis4D]. This is equivalent to taking the [code]index[/code] component of each basis vector.
+			</description>
+		</method>
+		<method name="get_scale" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Gets the scale of the [param basis] [Basis4D]. For a flipped basis, the W component will be negative.
+			</description>
+		</method>
+		<method name="get_scale_abs" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Gets the absolute value of the scale of the [param basis] [Basis4D]. This is equivalent to taking the length of each basis vector.
+			</description>
+		</method>
+		<method name="get_uniform_scale" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Gets the uniform scale of the [param basis] [Basis4D]. This is the same as the signed fourth root of the determinant.
+			</description>
+		</method>
+		<method name="inverse" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns the inverse of the matrix.
+			</description>
+		</method>
+		<method name="is_conformal" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns [code]true[/code] if the basis is conformal, meaning it preserves angles and distance ratios, and may only be composed of rotation and uniform scale. Returns [code]false[/code] if the basis has non-uniform scale or shear/skew. This can be used to validate if the basis is non-distorted, which is important for physics and other use cases.
+			</description>
+		</method>
+		<method name="is_diagonal" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns true if the basis is diagonal, so it has no skew, shear, or rotation, and can be decomposed into scale.
+			</description>
+		</method>
+		<method name="is_equal_approx" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="a" type="Projection" />
+			<param index="1" name="b" type="Projection" />
+			<description>
+				Returns [code]true[/code] if [param a] and [param b] are approximately equal, by calling [code]is_equal_approx[/code] on each component.
+			</description>
+		</method>
+		<method name="is_orthogonal" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns true if the basis vectors are orthogonal (perpendicular), so the basis has no skew or shear, and can be decomposed into rotation and scale.
+			</description>
+		</method>
+		<method name="is_orthonormal" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns true if the basis vectors are orthonormal (orthogonal and normalized), so it has no scale, skew, or shear, and can be decomposed into rotation and flip/reflection.
+			</description>
+		</method>
+		<method name="is_rotation" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns true if the basis is a pure rotation matrix, so it has no scale, skew, shear, or flip/reflection, and can be decomposed into rotation.
+			</description>
+		</method>
+		<method name="lerp" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from" type="Projection" />
+			<param index="1" name="to" type="Projection" />
+			<param index="2" name="weight" type="float" />
+			<description>
+				Performs a trivial linear interpolation between two [Basis4D] matrices. The behavior of lerp will not be ideal in all situations, such as rotation, especially compared to a slerp. The [param weight] value on a range of 0 to 1, representing the amount of interpolation.
+			</description>
+		</method>
+		<method name="orthogonalized" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns the orthogonalized version of the [param basis] [Basis4D]. This is similar to [method orthonormalized] but it preserves the scale.
+			</description>
+		</method>
+		<method name="orthonormalized" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns the orthonormalized version of the [param basis] [Basis4D]. This performs a Gram-Schmidt orthonormalization on the basis matrix.
+			</description>
+		</method>
+		<method name="scaled_global" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="scale" type="Vector4" />
+			<description>
+				Returns the [param basis] [Basis4D] scaled by the given global scale [Vector4]. This multiplies the rows of the matrix by each scale component.
+			</description>
+		</method>
+		<method name="scaled_local" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="scale" type="Vector4" />
+			<description>
+				Returns the [param basis] [Basis4D] scaled by the given local scale [Vector4]. This multiplies the columns of the matrix by each scale component.
+			</description>
+		</method>
+		<method name="scaled_uniform" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="scale" type="float" />
+			<description>
+				Returns the [param basis] [Basis4D] scaled uniformly by the given scale value. This multiplies all components of the matrix by the scale value.
+			</description>
+		</method>
+		<method name="to_3d" qualifiers="static">
+			<return type="Basis" />
+			<param index="0" name="from_4d" type="Projection" />
+			<param index="1" name="orthonormalized" type="bool" default="false" />
+			<description>
+				Converts this [param from_4d] [Basis4D] to a [Basis] 3D matrix. The XYZ 3x3 portion is extracted from the 4D matrix, and the W components are discarded.
+				If [param orthonormalized] is [code]true[/code], the resulting [Basis] will be orthonormalized.
+			</description>
+		</method>
+		<method name="to_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="from_basis" type="Projection" />
+			<description>
+				Converts the [param from_basis] [Basis4D] matrix as a [Projection] to a [PackedFloat32Array] or [PackedFloat64Array]. The array will have 16 numbers.
+			</description>
+		</method>
+		<method name="transposed" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Returns the transposed version of the matrix.
+			</description>
+		</method>
+		<method name="xform" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="vector" type="Vector4" />
+			<description>
+				Transforms the given [param vector] from the local space of the [param basis] [Basis4D] to global space.
+			</description>
+		</method>
+		<method name="xform_inv" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="vector" type="Vector4" />
+			<description>
+				Inversely transforms the given [param vector] from the global space of the [param basis] [Basis4D] to local space.
+			</description>
+		</method>
+		<method name="xform_transposed" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="vector" type="Vector4" />
+			<description>
+				Transforms the given [param vector] by the transpose of the [param basis] [Basis4D]. If the basis is orthonormal, this inversely transforms the vector like [method xform_inv].
+			</description>
+		</method>
+	</methods>
+</class>
