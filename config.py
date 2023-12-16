@@ -11,6 +11,7 @@ def get_doc_classes():
     return [
         "Basis4D",
         "Euler4D",
+        "Transform4D",
         "Vector4D",
     ]
 

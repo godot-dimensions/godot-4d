@@ -8,6 +8,7 @@
 
 #include "math/basis_4d_bind.h"
 #include "math/euler_4d_bind.h"
+#include "math/transform_4d_bind.h"
 #include "math/vector_4d.h"
 
 inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
@@ -30,10 +31,12 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
 		GDREGISTER_CLASS(godot_4d_bind::Basis4D);
 		GDREGISTER_CLASS(godot_4d_bind::Euler4D);
+		GDREGISTER_CLASS(godot_4d_bind::Transform4D);
 		GDREGISTER_CLASS(Vector4D);
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Euler4D", memnew(godot_4d_bind::Euler4D));
+		add_godot_singleton("Transform4D", memnew(godot_4d_bind::Transform4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
 	}
 }
@@ -42,6 +45,7 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		remove_godot_singleton("Basis4D");
 		remove_godot_singleton("Euler4D");
+		remove_godot_singleton("Transform4D");
 		remove_godot_singleton("Vector4D");
 	}
 }

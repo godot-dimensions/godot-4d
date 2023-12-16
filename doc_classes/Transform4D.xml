@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Transform4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Singleton for working with 4D transformations.
+	</brief_description>
+	<description>
+		Transform4D is a 4x5 matrix used for 4D transformations. It is composed of a [Basis4D] matrix that can handle rotation, scale, and shearing, and a [Vector4] representing the origin position.
+		In the GDScript bindings, the [Transform4D] singleton is a wrapper for the internal Transform4D struct methods. Since there is no Variant data type with at least 20 float values, all methods pass a Transform4D as a separate [Basis4D] and [Vector4] (with the basis passed as a [Projection]).
+		Since Godot cannot return multiple values from a function, all transform data will be returned as a [Basis4D] or a [Vector4]. For operations that need to return both, you must call multiple functions.
+		To compose [Transform4D] structures together, use [method Basis4D.compose] on the basis matrices, then run [method Basis4D.xform] on the child's origin vector and add it to the parent's origin vector.
+		For more information, read the "Matrices and transforms" documentation article.
+	</description>
+	<tutorials>
+		<link title="Math documentation index">$DOCS_URL/tutorials/math/index.html</link>
+		<link title="Matrices and transforms">$DOCS_URL/tutorials/math/matrices_and_transforms.html</link>
+		<link title="Matrix Transform Demo">https://godotengine.org/asset-library/asset/584</link>
+	</tutorials>
+	<methods>
+		<method name="compose_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="parent_array" type="PackedFloat32Array" />
+			<param index="1" name="child_array" type="PackedFloat32Array" />
+			<description>
+				Composes two [Transform4D]s represented by [param parent_array] and [param child_array] into a single [PackedFloat32Array] or [PackedFloat64Array] representing a [Transform4D]. The arrays should have 20 numbers, and must have at least 16 numbers. This is the same as multiplying the transforms.
+			</description>
+		</method>
+		<method name="compose_to_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="child_basis" type="Projection" />
+			<param index="3" name="child_origin" type="Vector4" />
+			<description>
+				Composes two [Transform4D]s defined by [param parent_basis], [param parent_origin], [param child_basis], and [param child_origin] into a single [PackedFloat32Array] or [PackedFloat64Array] representing a [Transform4D]. The arrays should have 20 numbers, and must have at least 16 numbers. This is the same as multiplying the transforms.
+			</description>
+		</method>
+		<method name="from_3d_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="from_3d" type="Transform3D" />
+			<description>
+				Converts a [Transform3D] to a [PackedFloat32Array] or [PackedFloat64Array] representing a [Transform4D]. The array will have 20 numbers.
+			</description>
+		</method>
+		<method name="from_3d_basis" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from_3d" type="Transform3D" />
+			<description>
+				Constructs the basis [Basis4D] part of a [Transform4D] from a [param from_3d] [Basis] 3D matrix. The XYZ 3x3 portion is set to the [param basis_3d] matrix, and all W components are set to identity.
+			</description>
+		</method>
+		<method name="from_3d_origin" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="from_3d" type="Transform3D" />
+			<description>
+				Constructs the origin [Vector4] part of a [Transform4D] from a [param from_3d] [Transform3D] matrix. The W component of the origin is set to 0.
+			</description>
+		</method>
+		<method name="from_array_basis" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from_array" type="PackedFloat32Array" />
+			<description>
+				Constructs the basis [Basis4D] part of a [Transform4D] from a [param from_array] [PackedFloat32Array] or [PackedFloat64Array] representing a [Transform4D]. The array should have 20 numbers, and must have at least 16 numbers.
+			</description>
+		</method>
+		<method name="from_array_origin" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="from_array" type="PackedFloat32Array" />
+			<description>
+				Constructs the origin [Vector4] part of a [Transform4D] from a [param from_array] [PackedFloat32Array] or [PackedFloat64Array] representing a [Transform4D]. The array must have 20 numbers.
+			</description>
+		</method>
+		<method name="inverse_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<description>
+				Inverts a [Transform4D] represented by [param transform] as a [PackedFloat32Array] or [PackedFloat64Array] and returns the result as a [PackedFloat32Array] or [PackedFloat64Array]. The input array should have 20 numbers, and must have at least 16 numbers. The returned array will have 20 numbers.
+			</description>
+		</method>
+		<method name="inverse_origin_with_inverse_basis" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="inverse_basis" type="Projection" />
+			<param index="1" name="origin" type="Vector4" />
+			<description>
+				Returns the origin vector of the inverse of the [Transform4D] defined by [param inverse_basis] and [param origin].
+				To invert a [Transform4D] efficiently in 2 lines of code, use [method Basis4D.inverse] to invert the [Basis4D], and then pass the inverted [Basis4D] and original [param origin] to this method to get the inverted origin.
+			</description>
+		</method>
+		<method name="inverse_origin_with_regular_basis" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="origin" type="Vector4" />
+			<description>
+				Returns the origin vector of the inverse of the [Transform4D] defined by [param basis] and [param origin]. This is simpler than [method inverse_origin_with_inverse_basis] if you don't need the [Basis4D] inverted, but slower if you need both.
+			</description>
+		</method>
+		<method name="inverse_to_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="origin" type="Vector4" />
+			<description>
+				Inverts a [Transform4D] defined by [param basis] and [param origin] and returns the result as a [PackedFloat32Array] or [PackedFloat64Array]. The returned array will have 20 numbers.
+			</description>
+		</method>
+		<method name="is_equal_approx" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="child_basis" type="Projection" />
+			<param index="3" name="child_origin" type="Vector4" />
+			<description>
+				Returns [code]true[/code] if the [Transform4D] defined by [param parent_basis] and [param parent_origin] is approximately equal to the [Transform4D] defined by [param child_basis] and [param child_origin], by running [method @GlobalScope.is_equal_approx] on each component.
+			</description>
+		</method>
+		<method name="is_equal_approx_array" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="array_a" type="PackedFloat32Array" />
+			<param index="1" name="array_b" type="PackedFloat32Array" />
+			<description>
+				Returns [code]true[/code] if the [Transform4D] defined by [param array_a] is approximately equal to the [Transform4D] defined by [param array_b], by running [method @GlobalScope.is_equal_approx] on each component.
+			</description>
+		</method>
+		<method name="to_3d" qualifiers="static">
+			<return type="Transform3D" />
+			<param index="0" name="from_basis" type="Projection" />
+			<param index="1" name="from_origin" type="Vector4" />
+			<param index="2" name="orthonormalized" type="bool" />
+			<description>
+				Converts a [Transform4D] defined by [param from_basis] and [param from_origin] to a [Transform3D] by discarding all W components. If [param orthonormalized] is [code]true[/code], the resulting [Transform3D] will have an orthonormal basis.
+			</description>
+		</method>
+		<method name="to_3d_array" qualifiers="static">
+			<return type="Transform3D" />
+			<param index="0" name="from_array" type="PackedFloat32Array" />
+			<param index="1" name="orthonormalized" type="bool" />
+			<description>
+				Converts a [PackedFloat32Array] or [PackedFloat64Array] representing a [Transform4D] to a [Transform3D] by discarding all W components. If [param orthonormalized] is [code]true[/code], the resulting [Transform3D] will have an orthonormal basis.
+			</description>
+		</method>
+		<method name="to_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="from_basis" type="Projection" />
+			<param index="1" name="from_origin" type="Vector4" />
+			<description>
+				Converts a [Transform4D] defined by [param from_basis] and [param from_origin] to a [PackedFloat32Array] or [PackedFloat64Array]. The array will have 20 numbers.
+			</description>
+		</method>
+		<method name="translated_local" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="origin" type="Vector4" />
+			<param index="2" name="translation" type="Vector4" />
+			<description>
+				Translates the [Transform4D] defined by [param basis] and [param origin] by the given [param translation] vector in local space.
+			</description>
+		</method>
+		<method name="translated_local_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="array" type="PackedFloat32Array" />
+			<param index="1" name="translation" type="Vector4" />
+			<description>
+				Translates the [Transform4D] defined by [param array] by the given [param translation] vector in local space. The input array should have 20 numbers, and must have at least 16 numbers. The returned array will have 20 numbers.
+			</description>
+		</method>
+		<method name="translated_local_to_array" qualifiers="static">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="origin" type="Vector4" />
+			<param index="2" name="translation" type="Vector4" />
+			<description>
+				Translates the [Transform4D] defined by [param basis] and [param origin] by the given [param translation] vector in local space and returns the result as a [PackedFloat32Array] or [PackedFloat64Array]. The returned array will have 20 numbers.
+			</description>
+		</method>
+		<method name="xform" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="child_vector" type="Vector4" />
+			<description>
+				Transforms the [param child_vector] [Vector4] from the local space of the [Transform4D] defined by [param parent_basis] and [param parent_origin] to global space.
+			</description>
+		</method>
+		<method name="xform_array" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="child_vector" type="Vector4" />
+			<description>
+				Transforms the [param child_vector] [Vector4] from the local space of the [Transform4D] defined by [param transform] to global space.
+			</description>
+		</method>
+		<method name="xform_basis" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="child_basis" type="Projection" />
+			<description>
+				Transforms the [param child_basis] [Basis4D] from the local space of the [Transform4D] defined by [param parent_basis] and [param parent_origin] to global space.
+			</description>
+		</method>
+		<method name="xform_basis_array" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="child_basis" type="Projection" />
+			<description>
+				Transforms the [param child_basis] [Basis4D] from the local space of the [Transform4D] defined by [param transform] to global space.
+			</description>
+		</method>
+		<method name="xform_inv" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="vector" type="Vector4" />
+			<description>
+				Inversely transforms the [param vector] [Vector4] from the global space of the [Transform4D] defined by [param parent_basis] and [param parent_origin] to local space.
+			</description>
+		</method>
+		<method name="xform_inv_array" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="vector" type="Vector4" />
+			<description>
+				Inversely transforms the [param vector] [Vector4] from the global space of the [Transform4D] defined by [param transform] to local space.
+			</description>
+		</method>
+		<method name="xform_inv_basis" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="basis" type="Projection" />
+			<description>
+				Inversely transforms the [param basis] [Basis4D] from the global space of the [Transform4D] defined by [param parent_basis] and [param parent_origin] to local space.
+			</description>
+		</method>
+		<method name="xform_inv_basis_array" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="basis" type="Projection" />
+			<description>
+				Inversely transforms the [param basis] [Basis4D] from the global space of the [Transform4D] defined by [param transform] to local space.
+			</description>
+		</method>
+		<method name="xform_transposed" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="vector" type="Vector4" />
+			<description>
+				Transforms the [param vector] [Vector4] by the transpose of the [Transform4D] defined by [param parent_basis] and [param parent_origin]. If the [param parent_basis] is orthonormal, this inversely transforms the vector like [method xform_inv].
+			</description>
+		</method>
+		<method name="xform_transposed_array" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="vector" type="Vector4" />
+			<description>
+				Transforms the [param vector] [Vector4] by the transpose of the [Transform4D] defined by [param transform]. If the [param transform] is orthonormal, this inversely transforms the vector like [method xform_inv].
+			</description>
+		</method>
+		<method name="xform_transposed_basis" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="basis" type="Projection" />
+			<description>
+				Transforms the [param basis] [Basis4D] by the transpose of the [Transform4D] defined by [param parent_basis] and [param parent_origin]. If the [param parent_basis] is orthonormal, this inversely transforms the basis like [method xform_inv_basis].
+			</description>
+		</method>
+		<method name="xform_transposed_basis_array" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="basis" type="Projection" />
+			<description>
+				Transforms the [param basis] [Basis4D] by the transpose of the [Transform4D] defined by [param transform]. If the [param transform] is orthonormal, this inversely transforms the basis like [method xform_inv_basis].
+			</description>
+		</method>
+	</methods>
+</class>
