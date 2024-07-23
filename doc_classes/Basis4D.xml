@@ -28,7 +28,7 @@
 			<return type="float" />
 			<param index="0" name="basis" type="Projection" />
 			<description>
-				Returns the determinant of the [Basis4D] matrix. If the basis is uniformly scaled, its determinant is the square of the scale.
+				Returns the determinant of the [Basis4D] matrix. If the basis is uniformly scaled, its determinant is the scale to the fourth power (ex: scale of 2, determinant of [code]2*2*2*2[/code] or 16).
 			</description>
 		</method>
 		<method name="from_3d" qualifiers="static">
