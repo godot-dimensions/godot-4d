@@ -106,8 +106,14 @@ Transform4D Transform4D::inverse() const {
 	return ret;
 }
 
-Transform4D Transform4D::inverse_basis() {
+Transform4D Transform4D::inverse_basis() const {
 	return Transform4D(basis.inverse());
+}
+
+Transform4D Transform4D::inverse_transposed() const {
+	Transform4D ret = Transform4D(basis.transposed());
+	ret.origin = ret.basis.xform(-origin);
+	return ret;
 }
 
 // Rotation methods.

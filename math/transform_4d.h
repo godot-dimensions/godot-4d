@@ -35,7 +35,8 @@ struct _NO_DISCARD_ Transform4D {
 
 	// Inversion methods.
 	Transform4D inverse() const;
-	Transform4D inverse_basis();
+	Transform4D inverse_basis() const;
+	Transform4D inverse_transposed() const;
 
 	// Rotation methods.
 	void rotate_global(const Euler4D &p_euler);

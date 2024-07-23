@@ -25,4 +25,8 @@ using namespace godot;
 #include "core/string/ustring.h"
 #endif
 
+#ifndef _NO_DISCARD_
+#define _NO_DISCARD_ [[nodiscard]]
+#endif // _NO_DISCARD_
+
 #endif // GODOT_4D_DEFINES_H
