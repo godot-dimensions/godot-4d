@@ -121,7 +121,12 @@ Ref<godot_4d_bind::Euler4D> godot_4d_bind::Euler4D::copy() const {
 	EULER4D_BIND_RETURN_REF(euler);
 }
 
-String godot_4d_bind::Euler4D::to_string() {
+#if GDEXTENSION
+String godot_4d_bind::Euler4D::_to_string() const
+#elif GODOT_MODULE
+String godot_4d_bind::Euler4D::to_string()
+#endif
+{
 	return euler.operator String();
 }
 

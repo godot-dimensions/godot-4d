@@ -39,8 +39,8 @@ Vector4 Transform4D::xform(const Vector4 &p_vector) const {
 	return basis.xform(p_vector) + origin;
 }
 
-Vector<Vector4> Transform4D::xform_many(const Vector<Vector4> &p_vectors) const {
-	Vector<Vector4> array;
+PackedVector4Array Transform4D::xform_many(const PackedVector4Array &p_vectors) const {
+	PackedVector4Array array;
 	array.resize(p_vectors.size());
 
 	const Vector4 *r = p_vectors.ptr();
@@ -60,8 +60,8 @@ Vector4 Transform4D::xform_inv(const Vector4 &p_vector) const {
 	return inverse().xform(p_vector);
 }
 
-Vector<Vector4> Transform4D::xform_inv_many(const Vector<Vector4> &p_vectors) const {
-	Vector<Vector4> array;
+PackedVector4Array Transform4D::xform_inv_many(const PackedVector4Array &p_vectors) const {
+	PackedVector4Array array;
 	array.resize(p_vectors.size());
 
 	const Vector4 *r = p_vectors.ptr();
@@ -81,8 +81,8 @@ Vector4 Transform4D::xform_transposed(const Vector4 &p_vector) const {
 	return basis.xform_transposed(p_vector - origin);
 }
 
-Vector<Vector4> Transform4D::xform_transposed_many(const Vector<Vector4> &p_vectors) const {
-	Vector<Vector4> array;
+PackedVector4Array Transform4D::xform_transposed_many(const PackedVector4Array &p_vectors) const {
+	PackedVector4Array array;
 	array.resize(p_vectors.size());
 
 	const Vector4 *r = p_vectors.ptr();

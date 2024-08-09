@@ -71,7 +71,11 @@ public:
 	static Ref<Euler4D> from_numbers(const real_t p_yz, const real_t p_zx, const real_t p_xy, const real_t p_xw = 0.0f, const real_t p_wy = 0.0f, const real_t p_zw = 0.0f);
 	static Ref<Euler4D> from_vectors(const Vector3 &p_yz_zx_xy, const Vector3 &p_xw_wy_zw = Vector3());
 	Ref<Euler4D> copy() const;
+#if GDEXTENSION
+	String _to_string() const;
+#elif GODOT_MODULE
 	virtual String to_string() override;
+#endif
 
 	// Constructors.
 	Euler4D() {}

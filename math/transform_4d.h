@@ -22,15 +22,15 @@ struct _NO_DISCARD_ Transform4D {
 	// Transformation methods.
 	Transform4D compose(const Transform4D &p_child_transform) const;
 	Vector4 xform(const Vector4 &p_vector) const;
-	Vector<Vector4> xform_many(const Vector<Vector4> &p_vectors) const;
+	PackedVector4Array xform_many(const PackedVector4Array &p_vectors) const;
 	Basis4D xform_basis(const Basis4D &p_basis) const;
 
 	Vector4 xform_inv(const Vector4 &p_vector) const;
-	Vector<Vector4> xform_inv_many(const Vector<Vector4> &p_vectors) const;
+	PackedVector4Array xform_inv_many(const PackedVector4Array &p_vectors) const;
 	Basis4D xform_inv_basis(const Basis4D &p_basis) const;
 
 	Vector4 xform_transposed(const Vector4 &p_vector) const;
-	Vector<Vector4> xform_transposed_many(const Vector<Vector4> &p_vectors) const;
+	PackedVector4Array xform_transposed_many(const PackedVector4Array &p_vectors) const;
 	Basis4D xform_transposed_basis(const Basis4D &p_basis) const;
 
 	// Inversion methods.

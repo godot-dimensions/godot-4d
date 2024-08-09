@@ -48,7 +48,7 @@ Vector4 godot_4d_bind::Transform4D::xform(const Vector4 &p_vector) const {
 	return transform.xform(p_vector);
 }
 
-Vector<Vector4> godot_4d_bind::Transform4D::xform_many(const Vector<Vector4> &p_vectors) const {
+PackedVector4Array godot_4d_bind::Transform4D::xform_many(const PackedVector4Array &p_vectors) const {
 	return transform.xform_many(p_vectors);
 }
 
@@ -60,7 +60,7 @@ Vector4 godot_4d_bind::Transform4D::xform_inv(const Vector4 &p_vector) const {
 	return transform.xform_inv(p_vector);
 }
 
-Vector<Vector4> godot_4d_bind::Transform4D::xform_inv_many(const Vector<Vector4> &p_vectors) const {
+PackedVector4Array godot_4d_bind::Transform4D::xform_inv_many(const PackedVector4Array &p_vectors) const {
 	return transform.xform_inv_many(p_vectors);
 }
 
@@ -72,7 +72,7 @@ Vector4 godot_4d_bind::Transform4D::xform_transposed(const Vector4 &p_vector) co
 	return transform.xform_transposed(p_vector);
 }
 
-Vector<Vector4> godot_4d_bind::Transform4D::xform_transposed_many(const Vector<Vector4> &p_vectors) const {
+PackedVector4Array godot_4d_bind::Transform4D::xform_transposed_many(const PackedVector4Array &p_vectors) const {
 	return transform.xform_transposed_many(p_vectors);
 }
 
@@ -240,7 +240,12 @@ Ref<godot_4d_bind::Transform4D> godot_4d_bind::Transform4D::copy() const {
 	TRANSFORM4D_BIND_RETURN_REF(transform);
 }
 
-String godot_4d_bind::Transform4D::to_string() {
+#if GDEXTENSION
+String godot_4d_bind::Transform4D::_to_string() const
+#elif GODOT_MODULE
+String godot_4d_bind::Transform4D::to_string()
+#endif
+{
 	return transform.operator String();
 }
 

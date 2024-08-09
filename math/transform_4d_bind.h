@@ -34,15 +34,15 @@ public:
 	// Transformation methods.
 	Ref<Transform4D> compose(const Ref<Transform4D> &p_child_transform) const;
 	Vector4 xform(const Vector4 &p_vector) const;
-	Vector<Vector4> xform_many(const Vector<Vector4> &p_vectors) const;
+	PackedVector4Array xform_many(const PackedVector4Array &p_vectors) const;
 	Projection xform_basis(const Projection &p_basis) const;
 
 	Vector4 xform_inv(const Vector4 &p_vector) const;
-	Vector<Vector4> xform_inv_many(const Vector<Vector4> &p_vectors) const;
+	PackedVector4Array xform_inv_many(const PackedVector4Array &p_vectors) const;
 	Projection xform_inv_basis(const Projection &p_basis) const;
 
 	Vector4 xform_transposed(const Vector4 &p_vector) const;
-	Vector<Vector4> xform_transposed_many(const Vector<Vector4> &p_vectors) const;
+	PackedVector4Array xform_transposed_many(const PackedVector4Array &p_vectors) const;
 	Projection xform_transposed_basis(const Projection &p_basis) const;
 
 	// Inversion methods.
@@ -100,7 +100,12 @@ public:
 	static Ref<Transform4D> from_numbers(const real_t p_xx, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yx, const real_t p_yy, const real_t p_yz, const real_t p_yw, const real_t p_zx, const real_t p_zy, const real_t p_zz, const real_t p_zw, const real_t p_wx, const real_t p_wy, const real_t p_wz, const real_t p_ww, const real_t p_ox = 0.0f, const real_t p_oy = 0.0f, const real_t p_oz = 0.0f, const real_t p_ow = 0.0f);
 	static Ref<Transform4D> from_vectors(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z, const Vector4 &p_w, const Vector4 &p_origin = Vector4());
 	Ref<Transform4D> copy() const;
+
+#if GDEXTENSION
+	String _to_string() const;
+#elif GODOT_MODULE
 	virtual String to_string() override;
+#endif
 
 	// Constructors.
 	Transform4D() {}
