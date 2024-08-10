@@ -15,7 +15,9 @@
 #include "physics/collision_shape_4d.h"
 #include "physics/resources/box_shape_4d.h"
 #include "physics/resources/capsule_shape_4d.h"
+#include "physics/resources/cubinder_shape_4d.h"
 #include "physics/resources/cylinder_shape_4d.h"
+#include "physics/resources/duocylinder_shape_4d.h"
 #include "physics/resources/shape_4d.h"
 #include "physics/resources/sphere_shape_4d.h"
 
@@ -50,7 +52,9 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(BoxShape4D);
 		GDREGISTER_CLASS(CapsuleShape4D);
 		GDREGISTER_CLASS(CollisionShape4D);
+		GDREGISTER_CLASS(CubinderShape4D);
 		GDREGISTER_CLASS(CylinderShape4D);
+		GDREGISTER_CLASS(DuocylinderShape4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_CLASS(SphereShape4D);
 	}

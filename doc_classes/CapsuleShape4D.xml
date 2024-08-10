@@ -11,13 +11,13 @@
 	</tutorials>
 	<members>
 		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">
-			The full height of the capsule in meters, including the hemispheres at both ends. This is the value that is stored internally.
+			The full height of the capsule in meters in the Y direction, including the hemispheres at both ends. This is the value that is stored internally.
 		</member>
 		<member name="mid_height" type="float" setter="set_mid_height" getter="get_mid_height">
-			The mid height of the capsule in meters, excluding the hemispheres at both ends. This is a wrapper around [member height] and [member radius] for situations where you want to use the mid height instead of the full height.
+			The mid height of the capsule in meters in the Y direction, excluding the hemispheres at both ends. This is a wrapper around [member height] and [member radius] for situations where you want to use the mid height instead of the full height.
 		</member>
 		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
-			The radius of the capsule in meters. This is the value that is stored internally.
+			The radius of the capsule in meters in the XZW directions. This is the value that is stored internally.
 		</member>
 	</members>
 </class>

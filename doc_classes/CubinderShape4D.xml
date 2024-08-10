@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CubinderShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D cubinder shape.
+	</brief_description>
+	<description>
+		CubinderShape4D is a shape created by extruding a 3D cylinder into 4D space. It is defined by a radius of a circle in the XZ plane, a height in the Y direction, and a thickness in the W direction. The cubinder is centered at the origin. If you want a cubinder in a different orientation, you can rotate the [CollisionShape4D] node the cubinder is attached to.
+	</description>
+	<tutorials>
+		<link title="Miraheze Wiki Cubinder">https://polytope.miraheze.org/wiki/Cubinder</link>
+	</tutorials>
+	<members>
+		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">
+			The height of the cubinder in meters in the Y direction. This is the value that is stored internally.
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
+			The radius of the cubinder in meters in the XZ directions. This is the value that is stored internally.
+		</member>
+		<member name="size_wy" type="Vector2" setter="set_size_wy" getter="get_size_wy">
+			The size of the cubinder in meters in the W and Y directions. This is a wrapper around [member height] and [member radius].
+		</member>
+		<member name="thickness" type="float" setter="set_thickness" getter="get_thickness" default="2.0">
+			The thickness of the cubinder in meters in the W direction. This is the value that is stored internally.
+		</member>
+	</members>
+</class>

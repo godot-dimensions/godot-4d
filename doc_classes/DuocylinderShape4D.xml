@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DuocylinderShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D duocylinder shape.
+	</brief_description>
+	<description>
+		DuocylinderShape4D describes a 4D duocylinder, the cartesian product of two circles in 4D space. It is defined by the radiuses of two circles, one in the XY plane and one in the ZW plane. The duocylinder is centered at the origin. If you want a duocylinder in a different orientation, you can rotate the [CollisionShape4D] node the duocylinder is attached to.
+	</description>
+	<tutorials>
+		<link title="Wikipedia Duocylinder">https://en.wikipedia.org/wiki/Duocylinder</link>
+	</tutorials>
+	<members>
+		<member name="radius_xy" type="float" setter="set_radius_xy" getter="get_radius_xy" default="0.5">
+			The radius of the duocylinder in meters in the XY directions. This is the value that is stored internally.
+		</member>
+		<member name="radius_zw" type="float" setter="set_radius_zw" getter="get_radius_zw" default="0.5">
+			The radius of the duocylinder in meters in the ZW directions. This is the value that is stored internally.
+		</member>
+	</members>
+</class>
