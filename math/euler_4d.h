@@ -41,6 +41,38 @@ struct _NO_DISCARD_ Euler4D {
 	Euler4D deg_to_rad() const;
 	Euler4D rad_to_deg() const;
 
+	// Component with-style setters.
+	Euler4D with_yz(const real_t p_yz) const {
+		Euler4D e = *this;
+		e.yz = p_yz;
+		return e;
+	}
+	Euler4D with_zx(const real_t p_zx) const {
+		Euler4D e = *this;
+		e.zx = p_zx;
+		return e;
+	}
+	Euler4D with_xy(const real_t p_xy) const {
+		Euler4D e = *this;
+		e.xy = p_xy;
+		return e;
+	}
+	Euler4D with_xw(const real_t p_xw) const {
+		Euler4D e = *this;
+		e.xw = p_xw;
+		return e;
+	}
+	Euler4D with_wy(const real_t p_wy) const {
+		Euler4D e = *this;
+		e.wy = p_wy;
+		return e;
+	}
+	Euler4D with_zw(const real_t p_zw) const {
+		Euler4D e = *this;
+		e.zw = p_zw;
+		return e;
+	}
+
 	// Operators.
 	_FORCE_INLINE_ const real_t &operator[](int p_axis) const {
 		DEV_ASSERT((unsigned int)p_axis < 6);
@@ -83,10 +115,10 @@ struct _NO_DISCARD_ Euler4D {
 	// For binding to Variant, pick an existing Variant data type.
 	// AABB has 6 real_t fields so it will work fine.
 	operator AABB() const;
-	Euler4D(const AABB &p_from);
 
 	// Constructors.
 	Euler4D() {}
+	Euler4D(const AABB &p_from);
 	Euler4D(const Vector3 &p_yz_zx_xy, const Vector3 p_xw_wy_zw = Vector3()) {
 		yz = p_yz_zx_xy.x;
 		zx = p_yz_zx_xy.y;

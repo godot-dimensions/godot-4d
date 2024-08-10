@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../math/euler_4d.h"
-#include "../math/transform_4d.h"
+#include "../math/euler_4d_bind.h"
+#include "../math/transform_4d_bind.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/node.hpp>
@@ -53,6 +53,8 @@ public:
 	void set_transform(const Transform4D &p_transform);
 	PackedRealArray get_transform_array() const;
 	void set_transform_array(const PackedRealArray &p_transform_array);
+	Ref<godot_4d_bind::Transform4D> get_transform_bind() const;
+	void set_transform_bind(const Ref<godot_4d_bind::Transform4D> &p_transform);
 	Basis4D get_basis() const;
 	void set_basis(const Basis4D &p_basis);
 	Projection get_basis_bind() const;
@@ -64,21 +66,27 @@ public:
 #ifdef CACHE_ROTATION_AND_SCALE
 	Euler4D get_rotation();
 	AABB get_rotation_bind();
+	Ref<godot_4d_bind::Euler4D> get_rotation_euler_bind();
 	Euler4D get_rotation_degrees();
 	AABB get_rotation_degrees_bind();
+	Ref<godot_4d_bind::Euler4D> get_rotation_degrees_euler_bind();
 	Vector4 get_scale();
 #else
 	Euler4D get_rotation() const;
 	AABB get_rotation_bind() const;
+	Ref<godot_4d_bind::Euler4D> get_rotation_euler_bind() const;
 	Euler4D get_rotation_degrees() const;
 	AABB get_rotation_degrees_bind() const;
+	Ref<godot_4d_bind::Euler4D> get_rotation_degrees_euler_bind() const;
 	Vector4 get_scale() const;
 #endif // CACHE_ROTATION_AND_SCALE
 	real_t get_uniform_scale() const;
 	void set_rotation(const Euler4D &p_euler);
 	void set_rotation_bind(const AABB &p_euler);
+	void set_rotation_euler_bind(const Ref<godot_4d_bind::Euler4D> &p_euler);
 	void set_rotation_degrees(const Euler4D &p_euler);
 	void set_rotation_degrees_bind(const AABB &p_euler);
+	void set_rotation_degrees_euler_bind(const Ref<godot_4d_bind::Euler4D> &p_euler);
 	void set_scale(const Vector4 &p_scale);
 	void set_uniform_scale(const real_t p_scale);
 
@@ -87,6 +95,8 @@ public:
 	void set_global_transform(const Transform4D &p_transform);
 	PackedRealArray get_global_transform_array() const;
 	void set_global_transform_array(const PackedRealArray &p_transform_array);
+	Ref<godot_4d_bind::Transform4D> get_global_transform_bind() const;
+	void set_global_transform_bind(const Ref<godot_4d_bind::Transform4D> &p_transform);
 	Basis4D get_global_basis() const;
 	void set_global_basis(const Basis4D &p_basis);
 	Projection get_global_basis_bind() const;
@@ -99,21 +109,27 @@ public:
 #ifdef CACHE_ROTATION_AND_SCALE
 	Euler4D get_global_rotation();
 	AABB get_global_rotation_bind();
+	Ref<godot_4d_bind::Euler4D> get_global_rotation_euler_bind();
 	Euler4D get_global_rotation_degrees();
 	AABB get_global_rotation_degrees_bind();
+	Ref<godot_4d_bind::Euler4D> get_global_rotation_degrees_euler_bind();
 	Vector4 get_global_scale();
 #else
 	Euler4D get_global_rotation() const;
 	AABB get_global_rotation_bind() const;
+	Ref<godot_4d_bind::Euler4D> get_global_rotation_euler_bind() const;
 	Euler4D get_global_rotation_degrees() const;
 	AABB get_global_rotation_degrees_bind() const;
+	Ref<godot_4d_bind::Euler4D> get_global_rotation_degrees_euler_bind() const;
 	Vector4 get_global_scale() const;
 #endif // CACHE_ROTATION_AND_SCALE
 	real_t get_global_uniform_scale() const;
 	void set_global_rotation(const Euler4D &p_global_euler);
 	void set_global_rotation_bind(const AABB &p_global_euler);
+	void set_global_rotation_euler_bind(const Ref<godot_4d_bind::Euler4D> &p_global_euler);
 	void set_global_rotation_degrees(const Euler4D &p_global_euler);
 	void set_global_rotation_degrees_bind(const AABB &p_global_euler);
+	void set_global_rotation_degrees_euler_bind(const Ref<godot_4d_bind::Euler4D> &p_global_euler);
 	void set_global_scale(const Vector4 &p_global_scale);
 	void set_global_uniform_scale(const real_t p_global_scale);
 

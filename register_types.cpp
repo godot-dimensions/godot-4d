@@ -37,8 +37,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		GDREGISTER_CLASS(Node4D);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
-		add_godot_singleton("Euler4D", memnew(godot_4d_bind::Euler4D));
-		add_godot_singleton("Transform4D", memnew(godot_4d_bind::Transform4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
 	}
 }
@@ -46,8 +44,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		remove_godot_singleton("Basis4D");
-		remove_godot_singleton("Euler4D");
-		remove_godot_singleton("Transform4D");
 		remove_godot_singleton("Vector4D");
 	}
 }

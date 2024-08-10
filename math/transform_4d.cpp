@@ -6,11 +6,11 @@ real_t Transform4D::determinant() const {
 	return basis.determinant();
 }
 
-Transform4D Transform4D::lerp(const Transform4D &p_transform, real_t p_c) const {
+Transform4D Transform4D::lerp(const Transform4D &p_transform, real_t p_weight) const {
 	Transform4D interp;
 
-	interp.basis = basis.lerp(p_transform.basis, p_c);
-	interp.origin = origin.lerp(p_transform.origin, p_c);
+	interp.basis = basis.lerp(p_transform.basis, p_weight);
+	interp.origin = origin.lerp(p_transform.origin, p_weight);
 
 	return interp;
 }
@@ -332,23 +332,6 @@ PackedRealArray Transform4D::to_array() const {
 	ptr[18] = origin.z;
 	ptr[19] = origin.w;
 	return arr;
-}
-
-// Constructors.
-
-Transform4D::Transform4D(const Basis4D &p_basis, const Vector4 &p_origin) :
-		basis(p_basis),
-		origin(p_origin) {
-}
-
-Transform4D::Transform4D(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z, const Vector4 &p_w, const Vector4 &p_origin) {
-	basis = Basis4D(p_x, p_y, p_z, p_w);
-	origin = p_origin;
-}
-
-Transform4D::Transform4D(const real_t p_xx, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yx, const real_t p_yy, const real_t p_yz, const real_t p_yw, const real_t p_zx, const real_t p_zy, const real_t p_zz, const real_t p_zw, const real_t p_wx, const real_t p_wy, const real_t p_wz, const real_t p_ww, const real_t p_ox, const real_t p_oy, const real_t p_oz, const real_t p_ow) {
-	basis = Basis4D(p_xx, p_xy, p_xz, p_xw, p_yx, p_yy, p_yz, p_yw, p_zx, p_zy, p_zz, p_zw, p_wx, p_wy, p_wz, p_ww);
-	origin = Vector4(p_ox, p_oy, p_oz, p_ow);
 }
 
 static_assert(sizeof(Transform4D) == 20 * sizeof(real_t));

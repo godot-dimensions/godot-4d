@@ -14,7 +14,7 @@ struct _NO_DISCARD_ Transform4D {
 
 	// Misc methods.
 	real_t determinant() const;
-	Transform4D lerp(const Transform4D &p_transform, real_t p_c) const;
+	Transform4D lerp(const Transform4D &p_transform, real_t p_weight) const;
 	bool is_equal_approx(const Transform4D &p_transform) const;
 	void translate_local(const Vector4 &p_translation);
 	Transform4D translated_local(const Vector4 &p_translation) const;
@@ -111,7 +111,16 @@ struct _NO_DISCARD_ Transform4D {
 
 	// Constructors.
 	Transform4D() {}
-	Transform4D(const Basis4D &p_basis, const Vector4 &p_origin = Vector4());
-	Transform4D(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z, const Vector4 &p_w, const Vector4 &p_origin = Vector4());
-	Transform4D(const real_t p_xx, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yx, const real_t p_yy, const real_t p_yz, const real_t p_yw, const real_t p_zx, const real_t p_zy, const real_t p_zz, const real_t p_zw, const real_t p_wx, const real_t p_wy, const real_t p_wz, const real_t p_ww, const real_t p_ox = 0.0f, const real_t p_oy = 0.0f, const real_t p_oz = 0.0f, const real_t p_ow = 0.0f);
+	Transform4D(const Basis4D &p_basis, const Vector4 &p_origin = Vector4()) :
+			basis(p_basis), origin(p_origin) {}
+	Transform4D(const Projection &p_basis, const Vector4 &p_origin = Vector4()) :
+			basis(p_basis), origin(p_origin) {}
+	Transform4D(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z, const Vector4 &p_w, const Vector4 &p_origin = Vector4()) {
+		basis = Basis4D(p_x, p_y, p_z, p_w);
+		origin = p_origin;
+	}
+	Transform4D(const real_t p_xx, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yx, const real_t p_yy, const real_t p_yz, const real_t p_yw, const real_t p_zx, const real_t p_zy, const real_t p_zz, const real_t p_zw, const real_t p_wx, const real_t p_wy, const real_t p_wz, const real_t p_ww, const real_t p_ox = 0.0f, const real_t p_oy = 0.0f, const real_t p_oz = 0.0f, const real_t p_ow = 0.0f) {
+		basis = Basis4D(p_xx, p_xy, p_xz, p_xw, p_yx, p_yy, p_yz, p_yw, p_zx, p_zy, p_zz, p_zw, p_wx, p_wy, p_wz, p_ww);
+		origin = Vector4(p_ox, p_oy, p_oz, p_ow);
+	}
 };

@@ -17,10 +17,88 @@
 				Apply a scale to this [Node4D] in the parent-relative space. If you want to scale in object-local space, just multiply [member scale].
 			</description>
 		</method>
+		<method name="get_global_rotation_degrees_euler">
+			<return type="Euler4D" />
+			<description>
+				Gets the global rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_global_rotation_degrees_euler]. Therefore, this is not exposed as a property to prevent misuse.
+			</description>
+		</method>
+		<method name="get_global_rotation_euler">
+			<return type="Euler4D" />
+			<description>
+				Gets the global rotation of this [Node4D] in radians, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_global_rotation_euler]. Therefore, this is not exposed as a property to prevent misuse.
+			</description>
+		</method>
+		<method name="get_global_transform" qualifiers="const">
+			<return type="Transform4D" />
+			<description>
+				Gets the global transformation matrix of this [Node4D], in the form of a [Transform4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_global_transform]. Therefore, this is not exposed as a property to prevent misuse.
+			</description>
+		</method>
+		<method name="get_rotation_degrees_euler">
+			<return type="Euler4D" />
+			<description>
+				Gets the local rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_rotation_degrees_euler]. Therefore, this is not exposed as a property to prevent misuse.
+			</description>
+		</method>
+		<method name="get_rotation_euler">
+			<return type="Euler4D" />
+			<description>
+				Gets the local rotation of this [Node4D] in radians, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_rotation_euler]. Therefore, this is not exposed as a property to prevent misuse.
+			</description>
+		</method>
+		<method name="get_transform" qualifiers="const">
+			<return type="Transform4D" />
+			<description>
+				Gets the transformation matrix of this [Node4D], in the form of a [Transform4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_transform]. Therefore, this is not exposed as a property to prevent misuse.
+			</description>
+		</method>
 		<method name="is_visible_in_tree" qualifiers="const">
 			<return type="bool" />
 			<description>
 				Returns [code]true[/code] if the [Node4D] is visible in the scene tree (this node and all parent [Node4D]s are visible).
+			</description>
+		</method>
+		<method name="set_global_rotation_degrees_euler">
+			<return type="void" />
+			<param index="0" name="global_euler" type="Euler4D" />
+			<description>
+				Sets the global rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. See also [method get_global_rotation_degrees_euler].
+			</description>
+		</method>
+		<method name="set_global_rotation_euler">
+			<return type="void" />
+			<param index="0" name="global_euler" type="Euler4D" />
+			<description>
+				Sets the global rotation of this [Node4D] in radians, in the form of an [Euler4D] object. See also [method get_global_rotation_euler].
+			</description>
+		</method>
+		<method name="set_global_transform">
+			<return type="void" />
+			<param index="0" name="global_transform" type="Transform4D" />
+			<description>
+				Sets the global transformation matrix of this [Node4D], in the form of a [Transform4D] object. See also [method get_global_transform].
+			</description>
+		</method>
+		<method name="set_rotation_degrees_euler">
+			<return type="void" />
+			<param index="0" name="euler" type="Euler4D" />
+			<description>
+				Sets the local rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. See also [method get_rotation_degrees_euler].
+			</description>
+		</method>
+		<method name="set_rotation_euler">
+			<return type="void" />
+			<param index="0" name="_unnamed_arg0" type="AABB" />
+			<description>
+				Sets the local rotation of this [Node4D] in radians, in the form of an [Euler4D] object. See also [method get_rotation_euler].
+			</description>
+		</method>
+		<method name="set_transform">
+			<return type="void" />
+			<param index="0" name="transform" type="Transform4D" />
+			<description>
+				Sets the transformation matrix of this [Node4D], in the form of a [Transform4D] object. See also [method get_transform].
 			</description>
 		</method>
 		<method name="translate_local">
@@ -42,10 +120,10 @@
 			The global position of this [Node4D]. This is the same as [code]global_transform.origin[/code].
 		</member>
 		<member name="global_rotation" type="AABB" setter="set_global_rotation" getter="get_global_rotation">
-			The global rotation of this [Node4D], in the form of an [Euler4D] with radians as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
+			The global rotation of this [Node4D], in the form of an [Euler4D] stored as an [AABB] with radians as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
 		</member>
 		<member name="global_rotation_degrees" type="AABB" setter="set_global_rotation_degrees" getter="get_global_rotation_degrees">
-			The global rotation of this [Node4D], in the form of an [Euler4D] with degrees as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
+			The global rotation of this [Node4D], in the form of an [Euler4D] stored as an [AABB] with degrees as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
 		</member>
 		<member name="global_scale" type="Vector4" setter="set_global_scale" getter="get_global_scale">
 			The global scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).
