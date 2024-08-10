@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CollisionShape4D" inherits="Node4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Allows adding 4D collision shapes in the scene.
+	</brief_description>
+	<description>
+		CollisionShape4D is the 4D equivalent of [CollisionShape2D] and [CollisionShape3D]. It exists to allow placing 4D collision shapes in the scene, which are used by physics bodies.
+		Do not scale CollisionShape4D nodes, as it will cause problems with physics. Instead, change the size of the [Shape4D] resource it contains. The transformation basis of a CollisionShape4D node should always be orthonormal, meaning unscaled and unskewed.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="has_global_point" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="point" type="Vector4" />
+			<description>
+				Returns [code]true[/code] if the shape contains the given point in global space. Points exactly on the surface are considered inside.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="shape" type="Shape4D" setter="set_shape" getter="get_shape">
+			The [Shape4D] resource that defines the shape of this collision shape node.
+		</member>
+	</members>
+</class>

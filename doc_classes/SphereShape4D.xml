@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SphereShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D sphere shape.
+	</brief_description>
+	<description>
+		SphereShape4D describes a 4D sphere using a [member radius]. The sphere is centered at the origin. Spheres are symmetric in all directions, so rotation does not affect the shape.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
+			The radius of the sphere in meters. This is the value that is stored internally.
+		</member>
+	</members>
+</class>

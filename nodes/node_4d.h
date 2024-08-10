@@ -28,10 +28,10 @@ class Node4D : public Node {
 	bool _is_visible = true;
 
 	void _propagate_visibility_changed();
-	void _validate_property(PropertyInfo &p_property) const;
 
 protected:
 	static void _bind_methods();
+	void _validate_property(PropertyInfo &p_property) const;
 
 public:
 	// Rotation edit mode.

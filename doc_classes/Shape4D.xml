@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Shape4D" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for primitive 4D shapes.
+	</brief_description>
+	<description>
+		Shape4D is the base class for all 4D shape resources, such as [BoxShape4D], [SphereShape4D], [CapsuleShape4D], and [CylinderShape4D]. It can be used to provide a shape resource to a [CollisionShape4D] node.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_has_point" qualifiers="virtual const">
+			<return type="bool" />
+			<param index="0" name="point" type="Vector4" />
+			<description>
+				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method has_point].
+			</description>
+		</method>
+		<method name="has_point" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="point" type="Vector4" />
+			<description>
+				Returns [code]true[/code] if the 4D shape contains the given point. Points exactly on the surface are considered inside.
+			</description>
+		</method>
+	</methods>
+</class>

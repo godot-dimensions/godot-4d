@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CylinderShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D cylinder shape.
+	</brief_description>
+	<description>
+		CylinderShape4D describes a 4D cylinder using a [member height] and [member radius]. The cylinder is centered at the origin. The height spans vertically along the Y axis; if you want a cylinder facing a different direction, you can rotate the [CollisionShape4D] node the cylinder is attached to.
+		When a 4D cylinder is viewed directly from the top or bottom, it appears as a flat 3D sphere, and when viewed from the side, it appears to be a cuboid. This is similar to how a 3D cylinder appears as a 2D circle when viewed from the top or bottom, and as a rectangle when viewed from the side.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">
+			The full height of the cylinder in meters. This is the value that is stored internally.
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
+			The radius of the cylinder in meters. This is the value that is stored internally.
+		</member>
+	</members>
+</class>

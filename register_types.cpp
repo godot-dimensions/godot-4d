@@ -12,6 +12,13 @@
 #include "math/vector_4d.h"
 #include "nodes/node_4d.h"
 
+#include "physics/collision_shape_4d.h"
+#include "physics/resources/box_shape_4d.h"
+#include "physics/resources/capsule_shape_4d.h"
+#include "physics/resources/cylinder_shape_4d.h"
+#include "physics/resources/shape_4d.h"
+#include "physics/resources/sphere_shape_4d.h"
+
 inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
 #if GDEXTENSION
 	Engine::get_singleton()->register_singleton(p_singleton_name, p_object);
@@ -35,9 +42,17 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(godot_4d_bind::Transform4D);
 		GDREGISTER_CLASS(Vector4D);
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		// General.
 		GDREGISTER_CLASS(Node4D);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
+		// Physics.
+		GDREGISTER_CLASS(BoxShape4D);
+		GDREGISTER_CLASS(CapsuleShape4D);
+		GDREGISTER_CLASS(CollisionShape4D);
+		GDREGISTER_CLASS(CylinderShape4D);
+		GDREGISTER_VIRTUAL_CLASS(Shape4D);
+		GDREGISTER_CLASS(SphereShape4D);
 	}
 }
 

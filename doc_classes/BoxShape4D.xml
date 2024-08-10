@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BoxShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D box shape.
+	</brief_description>
+	<description>
+		BoxShape4D describes a 4D box using a [member size] as a [Vector4]. The box is centered at the origin, and is axis-aligned by default; if you want a box facing a different direction, you can rotate the [CollisionShape4D] node the box is attached to.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="half_extents" type="Vector4" setter="set_half_extents" getter="get_half_extents">
+			The half extents, also known as just "extents", of the box in meters. This is the "radius" of the box. This is a wrapper around [member size] for situations where you want to use the extents instead of size.
+		</member>
+		<member name="size" type="Vector4" setter="set_size" getter="get_size" default="Vector4(1, 1, 1, 1)">
+			The size of the box in meters. This is the "diameter" of the box. This is the value that is stored internally.
+		</member>
+	</members>
+</class>

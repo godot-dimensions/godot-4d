@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CapsuleShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D capsule shape.
+	</brief_description>
+	<description>
+		CapsuleShape4D describes a 4D capsule using a [member height] and [member radius]. The capsule is centered at the origin. The height spans vertically along the Y axis; if you want a capsule facing a different direction, you can rotate the [CollisionShape4D] node the capsule is attached to.
+		When a 4D capsule is viewed directly from the top or bottom, it appears as a 3D sphere, with the center of the sphere closer to the viewer. This is similar to how a 3D capsule appears as a 2D circle when viewed from the top or bottom, with the center of the circle closer to the viewer.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">
+			The full height of the capsule in meters, including the hemispheres at both ends. This is the value that is stored internally.
+		</member>
+		<member name="mid_height" type="float" setter="set_mid_height" getter="get_mid_height">
+			The mid height of the capsule in meters, excluding the hemispheres at both ends. This is a wrapper around [member height] and [member radius] for situations where you want to use the mid height instead of the full height.
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
+			The radius of the capsule in meters. This is the value that is stored internally.
+		</member>
+	</members>
+</class>
