@@ -21,7 +21,7 @@ struct _NO_DISCARD_ Rect4i {
 	}
 
 	// Basic math functions.
-	int64_t get_bulk() const {
+	int64_t get_hypervolume() const {
 		return size.x * (int64_t)size.y * size.z * size.w;
 	}
 
@@ -43,19 +43,19 @@ struct _NO_DISCARD_ Rect4i {
 
 	Vector4i get_longest_axis() const;
 	Vector4i get_longest_axis_direction() const;
-	int get_longest_axis_index() const;
+	Vector4i::Axis get_longest_axis_index() const;
 	int32_t get_longest_axis_size() const;
 
 	Vector4i get_shortest_axis() const;
 	Vector4i get_shortest_axis_direction() const;
-	int get_shortest_axis_index() const;
+	Vector4i::Axis get_shortest_axis_index() const;
 	int32_t get_shortest_axis_size() const;
 
 	// Point functions.
-	Vector4i closest_point(const Vector4i &p_point) const;
+	Vector4i get_nearest_point(const Vector4i &p_point) const;
 	Rect4i expand_to_point(const Vector4i &p_vector) const;
 	bool has_point(const Vector4i &p_point) const;
-	Vector4i support_point(const Vector4i &p_direction) const;
+	Vector4i get_support_point(const Vector4i &p_direction) const;
 
 	// Rect math functions.
 	Rect4i grow(const int p_by) const;

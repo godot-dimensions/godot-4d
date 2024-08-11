@@ -18,5 +18,9 @@ public:
 	real_t get_radius_zw() const;
 	void set_radius_zw(const real_t p_radius_zw);
 
+	virtual real_t get_hypervolume() const override;
+	virtual Vector4 get_nearest_point(const Vector4 &p_point) const override;
+	virtual Vector4 get_support_point(const Vector4 &p_direction) const override;
+	virtual real_t get_surface_volume() const override;
 	virtual bool has_point(const Vector4 &p_point) const override;
 };

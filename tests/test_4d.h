@@ -5,3 +5,4 @@
 #include "math/test_transform_4d.h"
 #include "math/test_vector_4d.h"
 #include "nodes/test_node_4d.h"
+#include "physics/test_orthoplex_shape_4d.h"

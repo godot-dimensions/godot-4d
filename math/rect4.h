@@ -29,7 +29,7 @@ struct _NO_DISCARD_ Rect4 {
 	}
 
 	// Basic math functions.
-	real_t get_bulk() const {
+	real_t get_hypervolume() const {
 		return size.x * size.y * size.z * size.w;
 	}
 
@@ -51,19 +51,19 @@ struct _NO_DISCARD_ Rect4 {
 
 	Vector4 get_longest_axis() const;
 	Vector4 get_longest_axis_direction() const;
-	int get_longest_axis_index() const;
+	Vector4::Axis get_longest_axis_index() const;
 	real_t get_longest_axis_size() const;
 
 	Vector4 get_shortest_axis() const;
 	Vector4 get_shortest_axis_direction() const;
-	int get_shortest_axis_index() const;
+	Vector4::Axis get_shortest_axis_index() const;
 	real_t get_shortest_axis_size() const;
 
 	// Point functions.
-	Vector4 closest_point(const Vector4 &p_point) const;
+	Vector4 get_nearest_point(const Vector4 &p_point) const;
 	Rect4 expand_to_point(const Vector4 &p_vector) const;
 	bool has_point(const Vector4 &p_point) const;
-	Vector4 support_point(const Vector4 &p_direction) const;
+	Vector4 get_support_point(const Vector4 &p_direction) const;
 
 	// Rect math functions.
 	Rect4 grow(const real_t p_by) const;

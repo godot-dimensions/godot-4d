@@ -19,6 +19,32 @@ void BoxShape4D::set_size(const Vector4 &p_size) {
 	_size = p_size;
 }
 
+real_t BoxShape4D::get_hypervolume() const {
+	return _size.x * _size.y * _size.z * _size.w;
+}
+
+Vector4 BoxShape4D::get_nearest_point(const Vector4 &p_point) const {
+	const Vector4 half_extents = get_half_extents();
+	return Vector4(
+			CLAMP(p_point.x, -half_extents.x, half_extents.x),
+			CLAMP(p_point.y, -half_extents.y, half_extents.y),
+			CLAMP(p_point.z, -half_extents.z, half_extents.z),
+			CLAMP(p_point.w, -half_extents.w, half_extents.w));
+}
+
+Vector4 BoxShape4D::get_support_point(const Vector4 &p_direction) const {
+	const Vector4 half_extents = get_half_extents();
+	return Vector4(
+			(p_direction.x > 0.0f) ? half_extents.x : -half_extents.x,
+			(p_direction.y > 0.0f) ? half_extents.y : -half_extents.y,
+			(p_direction.z > 0.0f) ? half_extents.z : -half_extents.z,
+			(p_direction.w > 0.0f) ? half_extents.w : -half_extents.w);
+}
+
+real_t BoxShape4D::get_surface_volume() const {
+	return 2.0f * (_size.x * _size.y * _size.z + _size.x * _size.y * _size.w + _size.x * _size.z * _size.w + _size.y * _size.z * _size.w);
+}
+
 bool BoxShape4D::has_point(const Vector4 &p_point) const {
 	const Vector4 abs_point = p_point.abs();
 	const Vector4 half_extents = get_half_extents();

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="CylinderShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		A 4D cylinder shape.
+		A 4D cylinder shape (spherinder / spherical cylinder).
 	</brief_description>
 	<description>
 		CylinderShape4D describes a 4D cylinder, also known as a spherinder, using a [member height] and [member radius]. The spherinder shape is like a 4D capsule, but with the end "hemispheres" removed. The cylinder is centered at the origin. The height spans vertically along the Y axis; if you want a cylinder facing a different direction, you can rotate the [CollisionShape4D] node the cylinder is attached to.

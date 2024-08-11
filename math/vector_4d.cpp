@@ -24,6 +24,43 @@ Vector4 Vector4D::limit_length(const Vector4 &p_vector, const real_t p_len) {
 	return v;
 }
 
+void _sort_axes_max_to_min(const Vector4 &p_vector, Vector4::Axis *r_axes) {
+	std::sort(r_axes, r_axes + 4, [&p_vector](Vector4::Axis a, Vector4::Axis b) {
+		return p_vector[a] > p_vector[b];
+	});
+}
+
+Vector4 Vector4D::limit_length_taxicab(const Vector4 &p_vector, const real_t p_len) {
+	Vector4 abs_vector = p_vector.abs();
+	real_t taxicab_length = abs_vector.x + abs_vector.y + abs_vector.z + abs_vector.w;
+	if (taxicab_length <= p_len) {
+		return p_vector;
+	}
+	// Else, we need to take away length from each axis, as equally as possible.
+	// But we need to start with the shortest axis because it will be the first to reach 0.
+	Vector4::Axis axes[4] = { Vector4::Axis::AXIS_X, Vector4::Axis::AXIS_Y, Vector4::Axis::AXIS_Z, Vector4::Axis::AXIS_W };
+	_sort_axes_max_to_min(abs_vector, axes);
+	taxicab_length -= p_len;
+	Vector4 limited = p_vector;
+	for (int i = 4; i > 0; i--) {
+		const Vector4::Axis axis = axes[i - 1];
+		const real_t takeaway = taxicab_length / i;
+		if (abs_vector[axis] <= takeaway) {
+			limited[axis] = 0.0f;
+			// Since this axis reached zero, we need to take away more from the other axes.
+			taxicab_length -= abs_vector[axis];
+		} else {
+			taxicab_length -= takeaway;
+			if (limited[axis] < 0.0f) {
+				limited[axis] += takeaway;
+			} else {
+				limited[axis] -= takeaway;
+			}
+		}
+	}
+	return limited;
+}
+
 Vector4 Vector4D::move_toward(const Vector4 &p_from, const Vector4 &p_to, const real_t p_delta) {
 	const Vector4 offset = p_to - p_from;
 	const real_t len = offset.length();

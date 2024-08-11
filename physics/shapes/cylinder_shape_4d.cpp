@@ -16,6 +16,38 @@ void CylinderShape4D::set_radius(const real_t p_radius) {
 	_radius = p_radius;
 }
 
+real_t CylinderShape4D::get_hypervolume() const {
+	return (4.0f * Math_PI / 3.0f) * (_radius * _radius * _radius * _height);
+}
+
+Vector4 CylinderShape4D::get_nearest_point(const Vector4 &p_point) const {
+	const real_t half_height = _height * 0.5f;
+	Vector4 nearest = Vector4(p_point.x, 0.0f, p_point.z, p_point.w);
+	const real_t near_len_sq = nearest.length_squared();
+	if (near_len_sq > _radius * _radius) {
+		nearest *= _radius / Math::sqrt(near_len_sq);
+	}
+	if (p_point.y > half_height) {
+		nearest.y = half_height;
+	} else if (p_point.y < -half_height) {
+		nearest.y = -half_height;
+	} else {
+		nearest.y = p_point.y;
+	}
+	return nearest;
+}
+
+Vector4 CylinderShape4D::get_support_point(const Vector4 &p_direction) const {
+	const real_t half_height = _height * 0.5f;
+	Vector4 support = Vector4(p_direction.x, 0.0f, p_direction.z, p_direction.w).normalized() * _radius;
+	support.y = (p_direction.y > 0.0f) ? half_height : -half_height;
+	return support;
+}
+
+real_t CylinderShape4D::get_surface_volume() const {
+	return (8.0 * Math_PI / 3.0) * (_radius * _radius * _radius) + (4.0 * Math_PI) * (_radius * _radius * _height);
+}
+
 bool CylinderShape4D::has_point(const Vector4 &p_point) const {
 	Vector4 abs_point = p_point.abs();
 	if (abs_point.y > _height * 0.5f) {

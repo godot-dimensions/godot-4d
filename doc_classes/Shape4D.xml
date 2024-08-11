@@ -9,6 +9,32 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_get_hypervolume" qualifiers="virtual const">
+			<return type="float" />
+			<description>
+				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_hypervolume].
+			</description>
+		</method>
+		<method name="_get_nearest_point" qualifiers="virtual const">
+			<return type="Vector4" />
+			<param index="0" name="point" type="Vector4" />
+			<description>
+				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_nearest_point].
+			</description>
+		</method>
+		<method name="_get_support_point" qualifiers="virtual const">
+			<return type="Vector4" />
+			<param index="0" name="direction" type="Vector4" />
+			<description>
+				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_support_point].
+			</description>
+		</method>
+		<method name="_get_surface_volume" qualifiers="virtual const">
+			<return type="float" />
+			<description>
+				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_surface_volume].
+			</description>
+		</method>
 		<method name="_has_point" qualifiers="virtual const">
 			<return type="bool" />
 			<param index="0" name="point" type="Vector4" />
@@ -26,6 +52,32 @@
 			<return type="WireMesh4D" />
 			<description>
 				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method to_wire_mesh].
+			</description>
+		</method>
+		<method name="get_hypervolume" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the hypervolume of the 4D shape. This is the 4D equivalent of volume, also known as bulk. It is a four-dimensional quantity measuring the space enclosed by the 4D shape.
+			</description>
+		</method>
+		<method name="get_nearest_point" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="point" type="Vector4" />
+			<description>
+				Returns the nearest point to the given point on the 4D shape. If the point is inside the shape, the point itself is returned.
+			</description>
+		</method>
+		<method name="get_support_point" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="direction" type="Vector4" />
+			<description>
+				Returns the support point in the given direction on the 4D shape. This is the point on the 4D shape that is farthest in the given direction. This is commonly used in collision detection algorithms.
+			</description>
+		</method>
+		<method name="get_surface_volume" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the surface volume of the 4D shape. This is the 4D equivalent of surface area. It is a three-dimensional quantity measuring the boundary of the 4D shape.
 			</description>
 		</method>
 		<method name="has_point" qualifiers="const">

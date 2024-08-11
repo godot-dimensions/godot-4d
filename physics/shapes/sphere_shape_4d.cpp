@@ -8,6 +8,26 @@ void SphereShape4D::set_radius(const real_t p_radius) {
 	_radius = p_radius;
 }
 
+real_t SphereShape4D::get_hypervolume() const {
+	return (0.125 * Math_TAU * Math_TAU) * (_radius * _radius * _radius * _radius);
+}
+
+Vector4 SphereShape4D::get_nearest_point(const Vector4 &p_point) const {
+	const real_t length_sq = p_point.length_squared();
+	if (length_sq <= _radius * _radius) {
+		return p_point;
+	}
+	return p_point * (_radius / Math::sqrt(length_sq));
+}
+
+Vector4 SphereShape4D::get_support_point(const Vector4 &p_direction) const {
+	return p_direction.normalized() * _radius;
+}
+
+real_t SphereShape4D::get_surface_volume() const {
+	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius);
+}
+
 bool SphereShape4D::has_point(const Vector4 &p_point) const {
 	return p_point.length_squared() <= _radius * _radius;
 }

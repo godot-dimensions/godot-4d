@@ -24,6 +24,51 @@ void CapsuleShape4D::set_radius(const real_t p_radius) {
 	_radius = p_radius;
 }
 
+real_t CapsuleShape4D::get_hypervolume() const {
+	return (0.125 * Math_TAU * Math_TAU) * (_radius * _radius * _radius * _radius) + (2.0f * Math_TAU / 3.0f) * (_radius * _radius * _radius * _height);
+}
+
+Vector4 CapsuleShape4D::get_nearest_point(const Vector4 &p_point) const {
+	const real_t half_mid_height = get_mid_height() * 0.5f;
+	if (p_point.y > half_mid_height) {
+		Vector4 nearest = Vector4(p_point.x, p_point.y - half_mid_height, p_point.z, p_point.w);
+		const real_t near_len_sq = nearest.length_squared();
+		if (near_len_sq > _radius * _radius) {
+			nearest *= _radius / Math::sqrt(near_len_sq);
+		}
+		nearest.y += half_mid_height;
+		return nearest;
+	}
+	if (p_point.y < -half_mid_height) {
+		Vector4 nearest = Vector4(p_point.x, p_point.y + half_mid_height, p_point.z, p_point.w);
+		const real_t near_len_sq = nearest.length_squared();
+		if (near_len_sq > _radius * _radius) {
+			nearest *= _radius / Math::sqrt(near_len_sq);
+		}
+		nearest.y -= half_mid_height;
+		return nearest;
+	}
+	// Point's Y coordinate is within the capsule's height.
+	Vector4 nearest = Vector4(p_point.x, 0.0f, p_point.z, p_point.w);
+	const real_t near_len_sq = nearest.length_squared();
+	if (near_len_sq > _radius * _radius) {
+		nearest *= _radius / Math::sqrt(near_len_sq);
+	}
+	nearest.y = p_point.y;
+	return nearest;
+}
+
+Vector4 CapsuleShape4D::get_support_point(const Vector4 &p_direction) const {
+	const real_t half_mid_height = _height * 0.5f - _radius;
+	Vector4 nearest = p_direction.normalized() * _radius;
+	nearest.y += (p_direction.y > 0.0f) ? half_mid_height : -half_mid_height;
+	return nearest;
+}
+
+real_t CapsuleShape4D::get_surface_volume() const {
+	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius) + (2.0 * Math_TAU) * (_radius * _radius * _height);
+}
+
 bool CapsuleShape4D::has_point(const Vector4 &p_point) const {
 	Vector4 abs_point = p_point.abs();
 	const real_t half_mid_height = get_mid_height() * 0.5f;

@@ -35,19 +35,19 @@ Vector4 Rect4::get_longest_axis_direction() const {
 	return longest_axis;
 }
 
-int Rect4::get_longest_axis_index() const {
-	int longest_axis = 0;
+Vector4::Axis Rect4::get_longest_axis_index() const {
+	Vector4::Axis longest_axis = Vector4::Axis::AXIS_X;
 	real_t longest_size = size.x;
 	if (size.y > longest_size) {
 		longest_size = size.y;
-		longest_axis = 1;
+		longest_axis = Vector4::Axis::AXIS_Y;
 	}
 	if (size.z > longest_size) {
 		longest_size = size.z;
-		longest_axis = 2;
+		longest_axis = Vector4::Axis::AXIS_Z;
 	}
 	if (size.w > longest_size) {
-		longest_axis = 3;
+		longest_axis = Vector4::Axis::AXIS_W;
 	}
 	return longest_axis;
 }
@@ -100,19 +100,19 @@ Vector4 Rect4::get_shortest_axis_direction() const {
 	return shortest_axis;
 }
 
-int Rect4::get_shortest_axis_index() const {
-	int shortest_axis = 0;
+Vector4::Axis Rect4::get_shortest_axis_index() const {
+	Vector4::Axis shortest_axis = Vector4::Axis::AXIS_X;
 	real_t shortest_size = size.x;
 	if (size.y < shortest_size) {
 		shortest_size = size.y;
-		shortest_axis = 1;
+		shortest_axis = Vector4::Axis::AXIS_Y;
 	}
 	if (size.z < shortest_size) {
 		shortest_size = size.z;
-		shortest_axis = 2;
+		shortest_axis = Vector4::Axis::AXIS_Z;
 	}
 	if (size.w < shortest_size) {
-		shortest_axis = 3;
+		shortest_axis = Vector4::Axis::AXIS_W;
 	}
 	return shortest_axis;
 }
@@ -132,7 +132,7 @@ real_t Rect4::get_shortest_axis_size() const {
 }
 
 // Point functions.
-Vector4 Rect4::closest_point(const Vector4 &p_point) const {
+Vector4 Rect4::get_nearest_point(const Vector4 &p_point) const {
 #ifdef MATH_CHECKS
 	if (unlikely(size.x < 0.0f || size.y < 0.0f || size.z < 0.0f || size.w < 0.0f)) {
 		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
@@ -207,7 +207,7 @@ bool Rect4::has_point(const Vector4 &p_point) const {
 			p_point.w >= position.w && p_point.w <= position.w + size.w;
 }
 
-Vector4 Rect4::support_point(const Vector4 &p_direction) const {
+Vector4 Rect4::get_support_point(const Vector4 &p_direction) const {
 	Vector4 support = position;
 	if (p_direction.x > 0.0f) {
 		support.x += size.x;

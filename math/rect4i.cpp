@@ -35,19 +35,19 @@ Vector4i Rect4i::get_longest_axis_direction() const {
 	return longest_axis;
 }
 
-int Rect4i::get_longest_axis_index() const {
-	int longest_axis = 0;
+Vector4i::Axis Rect4i::get_longest_axis_index() const {
+	Vector4i::Axis longest_axis = Vector4i::Axis::AXIS_X;
 	int32_t longest_size = size.x;
 	if (size.y > longest_size) {
 		longest_size = size.y;
-		longest_axis = 1;
+		longest_axis = Vector4i::Axis::AXIS_Y;
 	}
 	if (size.z > longest_size) {
 		longest_size = size.z;
-		longest_axis = 2;
+		longest_axis = Vector4i::Axis::AXIS_Z;
 	}
 	if (size.w > longest_size) {
-		longest_axis = 3;
+		longest_axis = Vector4i::Axis::AXIS_W;
 	}
 	return longest_axis;
 }
@@ -100,19 +100,19 @@ Vector4i Rect4i::get_shortest_axis_direction() const {
 	return shortest_axis;
 }
 
-int Rect4i::get_shortest_axis_index() const {
-	int shortest_axis = 0;
+Vector4i::Axis Rect4i::get_shortest_axis_index() const {
+	Vector4i::Axis shortest_axis = Vector4i::Axis::AXIS_X;
 	int32_t shortest_size = size.x;
 	if (size.y < shortest_size) {
 		shortest_size = size.y;
-		shortest_axis = 1;
+		shortest_axis = Vector4i::Axis::AXIS_Y;
 	}
 	if (size.z < shortest_size) {
 		shortest_size = size.z;
-		shortest_axis = 2;
+		shortest_axis = Vector4i::Axis::AXIS_Z;
 	}
 	if (size.w < shortest_size) {
-		shortest_axis = 3;
+		shortest_axis = Vector4i::Axis::AXIS_W;
 	}
 	return shortest_axis;
 }
@@ -132,7 +132,7 @@ int32_t Rect4i::get_shortest_axis_size() const {
 }
 
 // Point functions.
-Vector4i Rect4i::closest_point(const Vector4i &p_point) const {
+Vector4i Rect4i::get_nearest_point(const Vector4i &p_point) const {
 #ifdef MATH_CHECKS
 	if (unlikely(size.x < 0.0f || size.y < 0.0f || size.z < 0.0f || size.w < 0.0f)) {
 		ERR_PRINT("Rect4i size is negative, this is not supported. Use Rect4i.abs() to get a Rect4i with a positive size.");
@@ -207,7 +207,7 @@ bool Rect4i::has_point(const Vector4i &p_point) const {
 			p_point.w >= position.w && p_point.w <= position.w + size.w;
 }
 
-Vector4i Rect4i::support_point(const Vector4i &p_direction) const {
+Vector4i Rect4i::get_support_point(const Vector4i &p_direction) const {
 	Vector4i support = position;
 	if (p_direction.x > 0) {
 		support.x += size.x;

@@ -1,5 +1,6 @@
 #include "orthoplex_shape_4d.h"
 
+#include "../../math/vector_4d.h"
 #include "../../mesh/tetra/orthoplex_tetra_mesh_4d.h"
 #include "../../mesh/wire/orthoplex_wire_mesh_4d.h"
 
@@ -17,6 +18,32 @@ Vector4 OrthoplexShape4D::get_size() const {
 
 void OrthoplexShape4D::set_size(const Vector4 &p_size) {
 	_size = p_size;
+}
+
+real_t OrthoplexShape4D::get_hypervolume() const {
+	// http://hi.gher.space/wiki/16-cell
+	// Bulk of regular orthoplex is (1/6) * edge_length ^ 4, but we have size instead of edge length.
+	// To convert we need to divide by sqrt(2) 4 times, so 1/4, so (1/6)*(1/4) becomes 1/24.
+	return (1.0 / 24.0) * _size.x * _size.y * _size.z * _size.w;
+}
+
+Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_point) const {
+	return Vector4D::limit_length_taxicab(p_point / _size, 0.5) * _size;
+}
+
+Vector4 OrthoplexShape4D::get_support_point(const Vector4 &p_direction) const {
+	const Vector4 abs_dir = p_direction.abs();
+	const Vector4::Axis longest_axis = abs_dir.max_axis_index();
+	Vector4 support = Vector4();
+	support[longest_axis] = (p_direction[longest_axis] > 0.0f) ? _size[longest_axis] * 0.5f : -_size[longest_axis] * 0.5f;
+	return support;
+}
+
+real_t OrthoplexShape4D::get_surface_volume() const {
+	// Surcell volume of regular orthoplex is (4*sqrt(2)/3) * edge_length ^ 3, but we have size instead of edge length.
+	// To convert we need to divide by sqrt(2) 3 times, so 1/(2*sqrt(2)), the sqrt(2)s cancel out, so (4/3)*(1/2) = 2/3.
+	// Then since we have each axis separate, we need to add a quarter 4 times, so (2/3)*(1/4) = 1/6.
+	return (1.0 / 6.0) * (_size.x * _size.y * _size.z + _size.x * _size.y * _size.w + _size.x * _size.z * _size.w + _size.y * _size.z * _size.w);
 }
 
 bool OrthoplexShape4D::has_point(const Vector4 &p_point) const {
