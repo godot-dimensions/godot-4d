@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://5s3n4wbi3tk7"
-path="res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"
+uid="uid://42n54ux1dgfg"
+path="res://.godot/imported/ConvexHullShape4D.svg-8ba5d43fe31399924e705c2a1a9d853c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/4d/icons/Basis4D.svg"
-dest_files=["res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"]
+source_file="res://addons/4d/icons/ConvexHullShape4D.svg"
+dest_files=["res://.godot/imported/ConvexHullShape4D.svg-8ba5d43fe31399924e705c2a1a9d853c.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://5s3n4wbi3tk7"
-path="res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"
+uid="uid://cy2pyo3nax7yd"
+path="res://.godot/imported/AudioPlayer4D.svg-e2a65f502ebc8e96976a5c474b9e36e7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/4d/icons/Basis4D.svg"
-dest_files=["res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"]
+source_file="res://addons/4d/icons/AudioPlayer4D.svg"
+dest_files=["res://.godot/imported/AudioPlayer4D.svg-e2a65f502ebc8e96976a5c474b9e36e7.ctex"]
 
 [params]
 

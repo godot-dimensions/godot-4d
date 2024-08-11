@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://5s3n4wbi3tk7"
-path="res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"
+uid="uid://l2j2sxvfueep"
+path="res://.godot/imported/CapsuleWireMesh4D.svg-c38613734973e568e69b053f899c0a9d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/4d/icons/Basis4D.svg"
-dest_files=["res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"]
+source_file="res://addons/4d/icons/CapsuleWireMesh4D.svg"
+dest_files=["res://.godot/imported/CapsuleWireMesh4D.svg-c38613734973e568e69b053f899c0a9d.ctex"]
 
 [params]
 

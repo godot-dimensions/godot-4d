@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://5s3n4wbi3tk7"
-path="res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"
+uid="uid://c5f8neuhkg60f"
+path="res://.godot/imported/CylinderWireMesh4D.svg-5cef8fa16867abf60758c1778338410f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/4d/icons/Basis4D.svg"
-dest_files=["res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"]
+source_file="res://addons/4d/icons/CylinderWireMesh4D.svg"
+dest_files=["res://.godot/imported/CylinderWireMesh4D.svg-5cef8fa16867abf60758c1778338410f.ctex"]
 
 [params]
 

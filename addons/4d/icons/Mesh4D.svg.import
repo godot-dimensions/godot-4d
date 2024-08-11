@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://5s3n4wbi3tk7"
-path="res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"
+uid="uid://dpiv83071k1o2"
+path="res://.godot/imported/Mesh4D.svg-cbefbb04eb07d56e387cf477261a14f2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/4d/icons/Basis4D.svg"
-dest_files=["res://.godot/imported/Basis4D.svg-98d21a6013330871e7b8dee49d8a10ff.ctex"]
+source_file="res://addons/4d/icons/Mesh4D.svg"
+dest_files=["res://.godot/imported/Mesh4D.svg-cbefbb04eb07d56e387cf477261a14f2.ctex"]
 
 [params]
 
