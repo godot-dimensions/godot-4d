@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TetraMesh4D" inherits="Mesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for 4D tetrahedral meshes.
+	</brief_description>
+	<description>
+		TetraMesh4D is the base class for all 4D tetrahedral meshes. Tetrahedral meshes are defined using vertices and tetrahedra, where each tetrahedron is defined by four vertices. Tetrahedral meshes are used to represent rendered 4D objects similar to how 3D objects are represented using triangles.
+		To make a TetraMesh4D, use one of the descendant classes, such as [ArrayTetraMesh4D] or [BoxTetraMesh4D]. Advanced users can create custom wireframe mesh classes by extending WireMesh4D.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_cell_indices" qualifiers="virtual">
+			<return type="PackedInt32Array" />
+			<description>
+				Callback method that should return the cell indices of a tetrahedral mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_indices] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_cell_normals" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the normals of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_normals] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_cell_positions" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the positions of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_positions] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_cell_uvw_map" qualifiers="virtual">
+			<return type="PackedVector3Array" />
+			<description>
+				Callback method that should return the UVW mapping of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_uvw_map] for details of the returned data.
+			</description>
+		</method>
+		<method name="export_uvw_map_mesh">
+			<return type="ArrayMesh" />
+			<description>
+				Exports the tetrahedral mesh's UVW mapping as an [ArrayMesh]. This can help with visualizing the 3D texture space of the mesh, allowing you to create textures that can be applied to the mesh.
+			</description>
+		</method>
+		<method name="get_cell_indices">
+			<return type="PackedInt32Array" />
+			<description>
+				Gets the cell indices of the tetrahedral mesh. Each set of 4 integers represents the indices of the vertices that make up a tetrahedron. The vertices can be obtained using [method Mesh4D.get_vertices], or using the [method get_cell_positions] method. Integers in this array should not exceed the length of the vertices array.
+			</description>
+		</method>
+		<method name="get_cell_normals">
+			<return type="PackedVector4Array" />
+			<description>
+				Gets the normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn, and how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [method get_cell_indices] array, or empty for no normals, or else the mesh is invalid.
+			</description>
+		</method>
+		<method name="get_cell_positions">
+			<return type="PackedVector4Array" />
+			<description>
+				Gets the positions of the tetrahedral cells. Each Vector4 in the array is a position in meters in 4D space. Tetrahedra are defined by four vertices, and the positions in this array are the positions of the vertices that make up the tetrahedra. This value is usually calculated from a combination of the cell indices and the vertices arrays, see [method get_cell_indices] and [method get_vertices].
+			</description>
+		</method>
+		<method name="get_cell_uvw_map">
+			<return type="PackedVector3Array" />
+			<description>
+				Gets the UVW mapping of the tetrahedral cells. Each Vector3 in this array is the texture space mapping for the vertex in the [method Mesh4D.get_vertices] array with the same index. This array should either be the same length as the [method Mesh4D.get_vertices] array, or empty for no UVW mapping, or else the mesh is invalid.
+			</description>
+		</method>
+		<method name="tetra_mesh_clear_cache">
+			<return type="void" />
+			<description>
+				TetraMesh4D caches the edge data for performance reasons. This method clears the cache, forcing the tetrahedral mesh to recalculate the edge data the next time it is needed. You should run this method if you are making your own [TetraMesh4D]-derived class and you change the vertices or cells. You do not need to run this when using the built-in classes such as [ArrayTetraMesh4D] or [BoxTetraMesh4D], they will automatically clear the cache when needed.
+			</description>
+		</method>
+	</methods>
+</class>

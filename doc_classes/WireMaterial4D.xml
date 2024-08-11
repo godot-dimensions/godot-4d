@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WireMaterial4D" inherits="Material4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Wireframe material for 4D wire meshes.
+	</brief_description>
+	<description>
+		WireMaterial4D is a material for 4D wireframe meshes. It provides a user-friendly way to color wireframes using single colors, per-vertex colors, or per-edge colors.
+		WireMaterial4D can be set on a [WireMesh4D] resource to define how the wireframe should be colored, and/or overridden on a specific [MeshInstance4D] node.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="albedo_color" type="Color" setter="set_albedo_color" getter="get_albedo_color">
+			The single albedo color of the material. When the albedo source is set to [constant WIRE_COLOR_SOURCE_SINGLE_COLOR], this is the color of the entire wireframe. If the albedo source is set to [constant WIRE_COLOR_SOURCE_PER_VERT_AND_SINGLE] or [constant WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE], this color is multiplied with the per-vertex or per-edge colors, respectively.
+		</member>
+		<member name="albedo_color_array" type="PackedColorArray" setter="set_albedo_color_array" getter="get_albedo_color_array" default="PackedColorArray()">
+			The albedo color array of the material. This may be used to color various parts of the mesh, depending on the albedo source flags. Only used when any of the per-item color flags are set, meaning the [constant WIRE_COLOR_SOURCE_PER_VERT_ONLY], [constant WIRE_COLOR_SOURCE_PER_EDGE_ONLY], [constant WIRE_COLOR_SOURCE_PER_VERT_AND_SINGLE], and
+		</member>
+		<member name="albedo_source" type="int" setter="set_albedo_source" getter="get_albedo_source" enum="WireMaterial4D.WireColorSource" default="2">
+			The albedo source of the material, an enum specific to wireframes. Can be a single color, per-vertex, per-edge, or a combination of single color and per-vertex/per-edge colors.
+		</member>
+		<member name="line_thickness" type="float" setter="set_line_thickness" getter="get_line_thickness" default="1.0">
+			The thickness of the wireframe lines in pixels.
+		</member>
+	</members>
+	<constants>
+		<constant name="WIRE_COLOR_SOURCE_SINGLE_COLOR" value="0" enum="WireColorSource">
+			Indicates the color source is a single color for the entire wireframe mesh.
+		</constant>
+		<constant name="WIRE_COLOR_SOURCE_PER_VERT_ONLY" value="1" enum="WireColorSource">
+			Indicates the color source is the color array where each item is used for a vertex.
+		</constant>
+		<constant name="WIRE_COLOR_SOURCE_PER_EDGE_ONLY" value="2" enum="WireColorSource">
+			Indicates the color source is the color array where each item is used for an edge.
+		</constant>
+		<constant name="WIRE_COLOR_SOURCE_PER_VERT_AND_SINGLE" value="3" enum="WireColorSource">
+			Indicates the color source is the color array where each item is used for a vertex, modulated by a single color.
+		</constant>
+		<constant name="WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE" value="4" enum="WireColorSource">
+			Indicates the color source is the color array where each item is used for an edge, modulated by a single color.
+		</constant>
+	</constants>
+</class>

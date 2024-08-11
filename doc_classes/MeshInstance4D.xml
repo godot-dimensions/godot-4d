@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MeshInstance4D" inherits="Node4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Instance of a 4D mesh in the scene.
+	</brief_description>
+	<description>
+		MeshInstance4D is a node that places a [Mesh4D] in the 4D scene. Meshes are used to visibly represent objects in 4D, just like how [MeshInstance3D] is used in 3D scenes.
+		The geometry of the mesh is defined by the [Mesh4D] assigned to the [member mesh] property. This may be set to any [Mesh4D] derived class. [TetraMesh4D] allows for tetrahedral meshes, which are the equivalent of triangles in 3D. [WireMesh4D] allows for wireframe meshes, which behave very similarly to wireframes in 3D.
+		Meshes may have their appearance modified by setting a [Material4D]. There are [TetraMaterial4D] and [WireMaterial4D] classes that are meant to be used with [TetraMesh4D] and [WireMesh4D] derived classes, respectively. Materials may be set on the [Mesh4D] itself, or overridden on a per-instance basis by setting the [member material_override] property on MeshInstance4D.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="material_override" type="Material4D" setter="set_material_override" getter="get_material_override">
+			The [Material4D] used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. This property overrides the per-mesh material set on the [Mesh4D] resource in the [Mesh4D.material] property.
+		</member>
+		<member name="mesh" type="Mesh4D" setter="set_mesh" getter="get_mesh">
+			The [Mesh4D] resource that defines the geometry of the mesh. This may be set to any [Mesh4D] derived class. [TetraMesh4D] allows for tetrahedral meshes, which are the equivalent of triangles in 3D. [WireMesh4D] allows for wireframe meshes, which behave very similarly to wireframes in 3D.
+		</member>
+	</members>
+</class>

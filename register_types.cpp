@@ -12,14 +12,22 @@
 #include "math/vector_4d.h"
 #include "nodes/node_4d.h"
 
+#include "mesh/mesh_instance_4d.h"
+#include "mesh/tetra/array_tetra_mesh_4d.h"
+#include "mesh/tetra/box_tetra_mesh_4d.h"
+#include "mesh/tetra/tetra_material_4d.h"
+#include "mesh/wire/array_wire_mesh_4d.h"
+#include "mesh/wire/box_wire_mesh_4d.h"
+#include "mesh/wire/wire_material_4d.h"
+
 #include "physics/collision_shape_4d.h"
-#include "physics/resources/box_shape_4d.h"
-#include "physics/resources/capsule_shape_4d.h"
-#include "physics/resources/cubinder_shape_4d.h"
-#include "physics/resources/cylinder_shape_4d.h"
-#include "physics/resources/duocylinder_shape_4d.h"
-#include "physics/resources/shape_4d.h"
-#include "physics/resources/sphere_shape_4d.h"
+#include "physics/shapes/box_shape_4d.h"
+#include "physics/shapes/capsule_shape_4d.h"
+#include "physics/shapes/cubinder_shape_4d.h"
+#include "physics/shapes/cylinder_shape_4d.h"
+#include "physics/shapes/duocylinder_shape_4d.h"
+#include "physics/shapes/shape_4d.h"
+#include "physics/shapes/sphere_shape_4d.h"
 
 inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
 #if GDEXTENSION
@@ -48,6 +56,18 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(Node4D);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
+		// Mesh.
+		GDREGISTER_CLASS(ArrayTetraMesh4D);
+		GDREGISTER_CLASS(ArrayWireMesh4D);
+		GDREGISTER_CLASS(BoxTetraMesh4D);
+		GDREGISTER_CLASS(BoxWireMesh4D);
+		GDREGISTER_CLASS(MeshInstance4D);
+		GDREGISTER_CLASS(TetraMaterial4D);
+		GDREGISTER_CLASS(WireMaterial4D);
+		GDREGISTER_VIRTUAL_CLASS(Material4D);
+		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
+		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
+		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
 		// Physics.
 		GDREGISTER_CLASS(BoxShape4D);
 		GDREGISTER_CLASS(CapsuleShape4D);
@@ -55,8 +75,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(CubinderShape4D);
 		GDREGISTER_CLASS(CylinderShape4D);
 		GDREGISTER_CLASS(DuocylinderShape4D);
-		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_CLASS(SphereShape4D);
+		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 	}
 }
 

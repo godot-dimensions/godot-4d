@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ArrayWireMesh4D" inherits="WireMesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Custom 4D wireframe mesh class.
+	</brief_description>
+	<description>
+		ArrayWireMesh4D is a class for specifying wireframe meshes with arrays of data, including the vertices and edges. Unlike the specialized [WireMesh4D] classes such as [BoxWireMesh4D], ArrayWireMesh4D can store any wireframe mesh, allowing users to create custom meshes with arbitrary data.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="edge_indices" type="PackedInt32Array" setter="set_edge_indices" getter="get_edge_indices" default="PackedInt32Array()">
+			The indices of the edges. Every 2 integers defines an edge. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
+		</member>
+		<member name="vertices" type="PackedVector4Array" setter="set_vertices" getter="get_vertices" default="PackedVector4Array()">
+			The vertices of the wireframe mesh. Each Vector4 in this array is a vertex defined as a position in meters in 4D space. The items in this array are referenced by the [member edge_indices] array.
+		</member>
+	</members>
+</class>

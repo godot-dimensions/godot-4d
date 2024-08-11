@@ -46,6 +46,12 @@ documentation showing up in the editor.
 This repo only supports Godot 4.3 and later. There are no plans to
 support Godot 3.x, as it is missing critical Variant data types.
 
+## Folder Structure
+
+* `mesh/`: All mesh-related classes including nodes and resources.
+* `physics/`: All physics-related classes including nodes and resources.
+* `nodes/`: Any nodes that do not fit into the above categories.
+
 ## License
 
 This repo is free and open source software licensed under The Unlicense.

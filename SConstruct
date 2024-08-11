@@ -5,8 +5,8 @@
 env = SConscript("addons/4d/src/godot-cpp/SConstruct")
 
 # Add source files.
-env.Append(CPPPATH=["./,addons/4d/src/", "math/", "nodes/", "physics/", "physics/resources/"])
-sources = Glob("*.cpp") + Glob("addons/4d/src/*.cpp") + Glob("math/*.cpp") + Glob("nodes/*.cpp") + Glob("physics/*.cpp") + Glob("physics/resources/*.cpp")
+env.Append(CPPPATH=["./,addons/4d/src/", "math/", "nodes/", "resources/", "mesh", "mesh/tetra", "mesh/wire", "physics/", "physics/resources/"])
+sources = Glob("*.cpp") + Glob("addons/4d/src/*.cpp") + Glob("math/*.cpp") + Glob("nodes/*.cpp") + Glob("resources/*.cpp") + Glob("mesh/*.cpp") + Glob("mesh/tetra/*.cpp") + Glob("mesh/wire/*.cpp") + Glob("physics/*.cpp") + Glob("physics/resources/*.cpp")
 
 env.Append(CPPDEFINES=["GDEXTENSION"])
 

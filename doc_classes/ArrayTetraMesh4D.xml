@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ArrayTetraMesh4D" inherits="TetraMesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Custom 4D tetrahedral mesh class.
+	</brief_description>
+	<description>
+		ArrayTetraMesh4D is a class for specifying tetrahedral meshes with arrays of data, including the vertices and cells. Unlike the specialized [TetraMesh4D] classes such as [BoxTetraMesh4D], ArrayTetraMesh4D can store any tetrahedral mesh, allowing users to create custom meshes with arbitrary data.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="cell_indices" type="PackedInt32Array" setter="set_cell_indices" getter="get_cell_indices" default="PackedInt32Array()">
+			The indices of the tetrahedral cells. Every 4 integers defines a tetrahedral cell. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
+		</member>
+		<member name="cell_normals" type="PackedVector4Array" setter="set_cell_normals" getter="get_cell_normals" default="PackedVector4Array()">
+			The normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn, and how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [member cell_indices] array, or empty for no normals, or else the mesh is invalid.
+		</member>
+		<member name="cell_uvw_map" type="PackedVector3Array" setter="set_cell_uvw_map" getter="get_cell_uvw_map" default="PackedVector3Array()">
+			The UVW mapping of the tetrahedral cells. Each Vector3 in this array is the texture space mapping for the vertex in the [member vertices] array with the same index. This array should either be the same length as the [member vertices] array, or empty for no UVW mapping, or else the mesh is invalid.
+		</member>
+		<member name="vertices" type="PackedVector4Array" setter="set_vertices" getter="get_vertices" default="PackedVector4Array()">
+			The vertices of the tetrahedral mesh. Each Vector4 in this array is a vertex defined as a position in meters in 4D space. The items in this array are referenced by the [member cell_indices] array.
+		</member>
+	</members>
+</class>

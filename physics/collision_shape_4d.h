@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../nodes/node_4d.h"
-#include "resources/shape_4d.h"
+#include "shapes/shape_4d.h"
 
 class CollisionShape4D : public Node4D {
 	GDCLASS(CollisionShape4D, Node4D);

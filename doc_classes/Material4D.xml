@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Material4D" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for 4D materials.
+	</brief_description>
+	<description>
+		Material4D is the base class for all 4D materials. It provides a way to color 4D meshes with help from its derived classes such as [WireMaterial4D] and [TetraMaterial4D].
+		Material4D can be set on a [Mesh4D] resource to define how the mesh should be colored, and/or overridden on a specific [MeshInstance4D] node.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_albedo_color" qualifiers="const">
+			<return type="Color" />
+			<description>
+				Gets the single albedo color of the material. Only used when the [constant COLOR_SOURCE_FLAG_SINGLE_COLOR] albedo source flag is set. If this flag is set together with any other flag, the single color acts as a modulate color.
+			</description>
+		</method>
+		<method name="get_albedo_color_array" qualifiers="const">
+			<return type="PackedColorArray" />
+			<description>
+				Gets the albedo color array of the material. This may be used to color various parts of the mesh, depending on the albedo source flags. Only used when any of the per-item color flags are set.
+			</description>
+		</method>
+		<method name="get_albedo_source_flags" qualifiers="const">
+			<return type="int" enum="Material4D.ColorSourceFlags" />
+			<description>
+				Gets low-level flags that determine how the mesh is colored. This is meant to be used by the renderer to determine the appearance of colored objects.
+				[b]Note:[/b] When making materials, use the high-level properties from the derived classes instead, such as [member WireMaterial4D.albedo_source] or [member TetraMaterial4D.albedo_source].
+			</description>
+		</method>
+		<method name="set_albedo_color">
+			<return type="void" />
+			<param index="0" name="albedo_color" type="Color" />
+			<description>
+				Sets the single albedo color of the material. Only used when the [constant COLOR_SOURCE_FLAG_SINGLE_COLOR] albedo source flag is set. If this flag is set together with any other flag, the single color acts as a modulate color.
+			</description>
+		</method>
+		<method name="set_albedo_color_array">
+			<return type="void" />
+			<param index="0" name="albedo_color_array" type="PackedColorArray" />
+			<description>
+				Sets the color array of the material. This may be used to color various parts of the mesh, depending on the albedo source flags. Only used when any of the per-item color flags are set.
+			</description>
+		</method>
+		<method name="set_albedo_source_flags">
+			<return type="void" />
+			<param index="0" name="albedo_source_flags" type="int" enum="Material4D.ColorSourceFlags" />
+			<description>
+				Sets low-level flags that determine how the mesh is colored. This method can be used to implement a custom material type.
+				[b]Note:[/b] When making materials, use the high-level properties from the derived classes instead, such as [member WireMaterial4D.albedo_source] or [member TetraMaterial4D.albedo_source].
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="COLOR_SOURCE_FLAG_SINGLE_COLOR" value="1" enum="ColorSourceFlags">
+			Flag to indicate that the color source is a single color. If this flag is set together with any other flag, the single color acts as a modulate color.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_PER_VERT" value="2" enum="ColorSourceFlags">
+			Flag to indicate that each item in the color array is used for a vertex.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_PER_EDGE" value="4" enum="ColorSourceFlags">
+			Flag to indicate that each item in the color array is used for an edge.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_PER_FACE" value="8" enum="ColorSourceFlags">
+			Flag to indicate that each item in the color array is used for a face.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_PER_CELL" value="16" enum="ColorSourceFlags">
+			Flag to indicate that each item in the color array is used for a cell.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_VERT_UVW" value="32" enum="ColorSourceFlags">
+			Flag to indicate that each vertex should be colored based on its UVW coordinates.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_EDGE_UVW" value="64" enum="ColorSourceFlags">
+			Flag to indicate that each edge should be colored based on the UVW coordinates of its two vertices.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_FACE_UVW" value="128" enum="ColorSourceFlags">
+			Flag to indicate that each face should be colored based on the UVW coordinates of its three vertices.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_CELL_UVW" value="256" enum="ColorSourceFlags">
+			Flag to indicate that each cell should be colored based on the UVW coordinates of its four vertices.
+		</constant>
+		<constant name="COLOR_SOURCE_FLAG_TEXTURE4D" value="512" enum="ColorSourceFlags">
+			Flag to indicate that the mesh color should be sampled from a 4D texture mapped to the mesh's local space.
+		</constant>
+	</constants>
+</class>

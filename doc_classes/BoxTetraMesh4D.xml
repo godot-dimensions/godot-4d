@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BoxTetraMesh4D" inherits="TetraMesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D tetrahedral mesh representing a box.
+	</brief_description>
+	<description>
+		BoxTetraMesh4D is a class for generating tetrahedral meshes representing boxes. The box is centered at the origin, and is axis-aligned by default; if you want a box facing a different direction, you can rotate the [MeshInstance4D] node the box is attached to.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from_box_wire_mesh" qualifiers="static">
+			<return type="BoxTetraMesh4D" />
+			<param index="0" name="wire_mesh" type="BoxWireMesh4D" />
+			<description>
+				Creates a box tetrahedral mesh from [BoxWireMesh4D]. The box tetrahedral mesh will have the same size and material as the wireframe mesh.
+			</description>
+		</method>
+		<method name="to_array_tetra_mesh">
+			<return type="ArrayTetraMesh4D" />
+			<description>
+				Converts this box tetrahedral mesh to an [ArrayTetraMesh4D]. The array mesh will have the same vertices, cells, and material as the tetrahedral mesh. Converting to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or cells.
+			</description>
+		</method>
+		<method name="to_array_wire_mesh">
+			<return type="ArrayWireMesh4D" />
+			<description>
+				Converts this box tetrahedral mesh to an [ArrayWireMesh4D]. The array mesh will have the same vertices and edges as the tetrahedral mesh. Converting to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or edges.
+				[b]Note:[/b] All of the tetrahedral mesh's edges are converted to the wireframe mesh, including edges between tetrahedrons inside of each side of the box. This may be undesired. Consider using [method to_box_wire_mesh] instead to only get the outer edges of the box.
+			</description>
+		</method>
+		<method name="to_box_wire_mesh" qualifiers="const">
+			<return type="BoxWireMesh4D" />
+			<description>
+				Converts this box tetrahedral mesh to a [BoxWireMesh4D]. The wireframe mesh will have the same size and material as the tetrahedral mesh.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="half_extents" type="Vector4" setter="set_half_extents" getter="get_half_extents">
+			The half-extents of the box mesh in meters, also known as just "extents". This is the "radius" of the box. This is a wrapper around [member size] for situations where you want to use the extents instead of size. Since the box is centered at the origin, one vertex is located at the half-extents, and the rest have some of the components negated.
+		</member>
+		<member name="size" type="Vector4" setter="set_size" getter="get_size" default="Vector4(1, 1, 1, 1)">
+			The size of the box mesh in meters. This is the "diameter" size of the box in 4D space, where each component is the size of the box in one of the 4 dimensions. This is the value that is stored internally.
+		</member>
+		<member name="tetra_decomp" type="int" setter="set_tetra_decomp" getter="get_tetra_decomp" enum="BoxTetraMesh4D.BoxTetraDecomp" default="0">
+			The tetrahedral decomposition of the box mesh. This determines how the box is decomposed into tetrahedra. The decomposition affects the number of tetrahedra in the mesh, and the symmetry of the mesh. See [enum BoxTetraDecomp] for possible values.
+		</member>
+	</members>
+	<constants>
+		<constant name="BOX_TETRA_DECOMP_40_CELL" value="0" enum="BoxTetraDecomp">
+			Generate box meshes with 40-cell tetrahedra, where each side of the box is a cube decomposed into 5 tetrahedra. 40-cell is the decomposition with the fewest tetrahedra possible for a box. Both the 40-cell and 48-cell have the same UVW mapping, allowing the same textures to be used for both.
+		</constant>
+		<constant name="BOX_TETRA_DECOMP_48_CELL" value="1" enum="BoxTetraDecomp">
+			Generate box meshes with 48-cell tetrahedra, where each side of the box is a cube decomposed into 6 tetrahedra. 48-cell has more symmetry than 40-cell, since each cell in the 48-cell is the same size and shape. Both the 40-cell and 48-cell have the same UVW mapping, allowing the same textures to be used for both.
+		</constant>
+	</constants>
+</class>

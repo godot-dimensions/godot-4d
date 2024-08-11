@@ -12,7 +12,9 @@ env_4d = env_modules.Clone()
 env_4d.add_source_files(env.modules_sources, "*.cpp")
 env_4d.add_source_files(env.modules_sources, "math/*.cpp")
 env_4d.add_source_files(env.modules_sources, "nodes/*.cpp")
+env_4d.add_source_files(env.modules_sources, "resources/*.cpp")
 if env.editor_build:
     env_4d.add_source_files(env.modules_sources, "editor/*.cpp")
 
+SConscript("mesh/SCsub")
 SConscript("physics/SCsub")

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Mesh4D" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for 4D meshes.
+	</brief_description>
+	<description>
+		Mesh4D is the base class for all 4D meshes. Meshes are used to represent the visuals of objects in 4D space. All 4D meshes have vertices, and either have edges or can have edges computed. For a wireframe-only mesh, use [WireMesh4D] or one of its descendants. Meshes may also have tetrahedral cells, which are the equivalent of triangles in 3D meshes. For a tetrahedral mesh, use [TetraMesh4D] or one of its descendants. Advanced users can create custom mesh classes by extending Mesh4D.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_edge_indices" qualifiers="virtual">
+			<return type="PackedInt32Array" />
+			<description>
+				Callback method that should return the edge indices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_edge_indices] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_edge_positions" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the edge positions of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_edge_positions] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_vertices" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertices] for details of the returned data.
+			</description>
+		</method>
+		<method name="deduplicate_edge_indices" qualifiers="static">
+			<return type="PackedInt32Array" />
+			<param index="0" name="items" type="PackedInt32Array" />
+			<description>
+				Static helper method for deduplicating edge indices. This method ensures that each pair of two integers in the array is unique, and that the first index is less than the second index. This is useful for optimizing wireframe meshes by removing duplicate edges and ensuring a consistent order for each edge.
+				[b]Note[/b]: This only looks at edge indices. It does not remove duplicate vertices, nor does it have access to the vertices array.
+			</description>
+		</method>
+		<method name="get_edge_indices">
+			<return type="PackedInt32Array" />
+			<description>
+				Gets the edge indices of the mesh. Every 2 integers defines an edge. Each integer is an index to the vertices array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
+			</description>
+		</method>
+		<method name="get_edge_positions">
+			<return type="PackedVector4Array" />
+			<description>
+				Gets the edge positions of the mesh. Each Vector4 in the array is a position in meters in 4D space. Edges are defined by two vertices, and the positions in this array are the positions of the vertices that make up the edges. This value is usually calculated from a combination of the edge indices and the vertices arrays, see [method get_edge_indices] and [method get_vertices].
+			</description>
+		</method>
+		<method name="get_vertices">
+			<return type="PackedVector4Array" />
+			<description>
+				Gets the vertices of the mesh. Each Vector4 in the array is a vertex defined as a position in meters in 4D space. Vertices are referenced by many other arrays in the mesh, such as the edge indices or cell indices.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="material" type="Material4D" setter="set_material" getter="get_material">
+			The [Material4D] used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. If no material is set, the mesh should render with default settings. The material may be overridden on a [MeshInstance4D] node by setting the [member MeshInstance4D.material_override] property.
+		</member>
+	</members>
+</class>
