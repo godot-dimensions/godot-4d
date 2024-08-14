@@ -22,6 +22,8 @@ protected:
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 public:
+	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_edge_count, const int p_second_edge_count) override;
+
 	WireColorSource get_albedo_source() const;
 	void set_albedo_source(const WireColorSource p_albedo_source);
 

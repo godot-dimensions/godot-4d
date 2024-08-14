@@ -485,7 +485,7 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_rotation"), &Node4D::get_rotation_bind);
 	ClassDB::bind_method(D_METHOD("set_rotation", "euler"), &Node4D::set_rotation_bind);
 	ClassDB::bind_method(D_METHOD("get_rotation_euler"), &Node4D::get_rotation_euler_bind);
-	ClassDB::bind_method(D_METHOD("set_rotation_euler"), &Node4D::set_rotation_bind);
+	ClassDB::bind_method(D_METHOD("set_rotation_euler", "euler"), &Node4D::set_rotation_bind);
 	ClassDB::bind_method(D_METHOD("get_rotation_degrees"), &Node4D::get_rotation_degrees_bind);
 	ClassDB::bind_method(D_METHOD("set_rotation_degrees", "euler"), &Node4D::set_rotation_degrees_bind);
 	ClassDB::bind_method(D_METHOD("get_rotation_degrees_euler"), &Node4D::get_rotation_degrees_euler_bind);

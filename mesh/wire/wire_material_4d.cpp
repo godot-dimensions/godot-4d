@@ -12,6 +12,20 @@ Material4D::ColorSourceFlags _wire_source_to_flags(const WireMaterial4D::WireCol
 	return Material4D::COLOR_SOURCE_FLAG_NONE;
 }
 
+void WireMaterial4D::merge_with(const Ref<Material4D> &p_material, const int p_first_item_count, const int p_second_item_count) {
+	Material4D::merge_with(p_material, p_first_item_count, p_second_item_count);
+	// Read _albedo_source_flags and set the wire material's albedo source enum.
+	if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) {
+		if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
+			set_albedo_source(WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE);
+		} else {
+			set_albedo_source(WIRE_COLOR_SOURCE_SINGLE_COLOR);
+		}
+	} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
+		set_albedo_source(WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
+	}
+}
+
 WireMaterial4D::WireColorSource WireMaterial4D::get_albedo_source() const {
 	return _albedo_source;
 }
@@ -36,7 +50,7 @@ void WireMaterial4D::_get_property_list(List<PropertyInfo> *p_list) const {
 		if (prop.name == StringName("albedo_color")) {
 			prop.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 		} else if (prop.name == StringName("albedo_color_array")) {
-			prop.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_ALBEDO_ARRAY) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+			prop.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 		}
 	}
 	Material4D::_get_property_list(p_list);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../math/transform_4d.h"
 #include "tetra_mesh_4d.h"
 
 class ArrayTetraMesh4D : public TetraMesh4D {
@@ -17,6 +18,10 @@ protected:
 	static void _bind_methods();
 
 public:
+	void calculate_normals(const bool p_keep_existing = false);
+	void merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
+	void merge_with_bind(const Ref<ArrayTetraMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
+
 	virtual PackedInt32Array get_cell_indices() override;
 	void set_cell_indices(const PackedInt32Array &p_cell_indices);
 

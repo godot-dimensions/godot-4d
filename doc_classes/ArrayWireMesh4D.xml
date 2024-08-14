@@ -8,6 +8,18 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="merge_with">
+			<return type="void" />
+			<param index="0" name="other" type="ArrayWireMesh4D" />
+			<param index="1" name="offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="2" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<description>
+				Merges this wireframe mesh with another wireframe mesh. The other mesh's vertices and edges are added to this mesh. The [param offset] and [param basis] parameters are used to transform the other mesh's vertices before adding them to this mesh. This is useful for combining meshes that are in different positions or orientations.
+				This method will also attempt to merge the materials of the two meshes, by calling [method Material4D.merge_with] on this mesh's material and passing the other mesh's material as an argument. See [method Material4D.merge_with] for more information.
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="edge_indices" type="PackedInt32Array" setter="set_edge_indices" getter="get_edge_indices" default="PackedInt32Array()">
 			The indices of the edges. Every 2 integers defines an edge. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.

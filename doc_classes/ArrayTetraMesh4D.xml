@@ -8,6 +8,28 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="calculate_normals">
+			<return type="void" />
+			<param index="0" name="keep_existing" type="bool" default="false" />
+			<description>
+				Calculates the normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn, and how lighting angles are calculated for the cell.
+				If [param keep_existing] is [code]true[/code], existing normals are preserved when present, and new normals are only calculated for cells without normals or when the normal vector is zero. If [param keep_existing] is [code]false[/code], all normals are recalculated. It is recommended to keep existing normals when adding new cells to the mesh, and to recalculate all normals when modifying vertex positions or altering the cells.
+				[b]Note:[/b] In 3D, normals are determined by the triangle vertex winding order, but in 4D, there is no direct equivalent. Instead, orientation is determined by the positions of the tetrahedra vertices. This method assumes that the normal should point away from the origin, which works well for convex objects, such as primitive shapes with the origin inside them. If you are calculating normals for an object with an interior space, you may need to flip the normals for the interior cells.
+				[b]Caution:[/b] This method may not work correctly for tetrahedra whose span contains the origin. In such cases, it is analogous to a 3D triangle lying flat in the XY plane, where a vector pointing away from the origin would also lie in the XY plane, making it impossible to determine a unique Z direction.
+			</description>
+		</method>
+		<method name="merge_with">
+			<return type="void" />
+			<param index="0" name="other" type="ArrayTetraMesh4D" />
+			<param index="1" name="offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="2" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<description>
+				Merges this tetrahedral mesh with another tetrahedral mesh. The other mesh's vertices and cells are added to this mesh. The [param offset] and [param basis] parameters are used to transform the other mesh's vertices before adding them to this mesh. This is useful for combining meshes that are in different positions or orientations.
+				This method will also attempt to merge the materials of the two meshes, by calling [method Material4D.merge_with] on this mesh's material and passing the other mesh's material as an argument. See [method Material4D.merge_with] for more information.
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="cell_indices" type="PackedInt32Array" setter="set_cell_indices" getter="get_cell_indices" default="PackedInt32Array()">
 			The indices of the tetrahedral cells. Every 4 integers defines a tetrahedral cell. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.

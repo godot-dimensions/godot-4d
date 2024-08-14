@@ -29,6 +29,17 @@
 				[b]Note:[/b] When making materials, use the high-level properties from the derived classes instead, such as [member WireMaterial4D.albedo_source] or [member TetraMaterial4D.albedo_source].
 			</description>
 		</method>
+		<method name="merge_with">
+			<return type="void" />
+			<param index="0" name="material" type="Material4D" />
+			<param index="1" name="first_item_count" type="int" />
+			<param index="2" name="second_item_count" type="int" />
+			<description>
+				Merges this material with another material. This will preserve color arrays if present, or create them as needed. For example, if merging the materials for a red single-color box and a blue single-color box, the resulting material will have a color array with reds at the start and blues at the end.
+				The [param first_item_count] and [param second_item_count] parameters are used to determine how many items from each material should end up in the color array. These parameters should be set to the number of items of the meshes that use the materials. That may be edges, cells, or something else, depending on the albedo source flags.
+				Note that even if the item count numbers are set properly, the output color array may still be empty if color arrays are not necessary to color the mesh, such as if both input materials use the same single color. For example, merging materials for a red single-color box and a red single-color sphere will result in a red single-color material with no color arrays.
+			</description>
+		</method>
 		<method name="set_albedo_color">
 			<return type="void" />
 			<param index="0" name="albedo_color" type="Color" />

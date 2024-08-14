@@ -31,7 +31,7 @@ public:
 		COLOR_SOURCE_FLAG_FACE_UVW = 1 << 7, // 2D texture mapping.
 		COLOR_SOURCE_FLAG_CELL_UVW = 1 << 8, // 3D texture mapping.
 		COLOR_SOURCE_FLAG_TEXTURE4D = 1 << 9, // 4D texture mapping.
-		COLOR_SOURCE_FLAG_USES_ALBEDO_ARRAY = COLOR_SOURCE_FLAG_PER_VERT | COLOR_SOURCE_FLAG_PER_EDGE | COLOR_SOURCE_FLAG_PER_FACE | COLOR_SOURCE_FLAG_PER_CELL,
+		COLOR_SOURCE_FLAG_USES_COLOR_ARRAY = COLOR_SOURCE_FLAG_PER_VERT | COLOR_SOURCE_FLAG_PER_EDGE | COLOR_SOURCE_FLAG_PER_FACE | COLOR_SOURCE_FLAG_PER_CELL,
 		COLOR_SOURCE_FLAG_USES_TEXTURE_MAP = COLOR_SOURCE_FLAG_VERT_UVW | COLOR_SOURCE_FLAG_EDGE_UVW | COLOR_SOURCE_FLAG_FACE_UVW | COLOR_SOURCE_FLAG_CELL_UVW | COLOR_SOURCE_FLAG_TEXTURE4D,
 	};
 
@@ -43,6 +43,8 @@ protected:
 	PackedColorArray _albedo_color_array;
 
 public:
+	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_edge_count, const int p_second_edge_count);
+
 	ColorSourceFlags get_albedo_source_flags() const;
 	void set_albedo_source_flags(const ColorSourceFlags p_albedo_source_flags);
 
