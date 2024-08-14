@@ -16,6 +16,7 @@ protected:
 
 public:
 	static PackedInt32Array deduplicate_edge_indices(const PackedInt32Array &p_items);
+	bool has_edge_indices(int p_first, int p_second);
 
 	Ref<Material4D> get_material() const;
 	void set_material(const Ref<Material4D> &p_material);

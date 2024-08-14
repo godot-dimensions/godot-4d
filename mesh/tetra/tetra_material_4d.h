@@ -19,7 +19,7 @@ public:
 	};
 
 private:
-	TetraColorSource _albedo_source = TETRA_COLOR_SOURCE_PER_CELL_ONLY;
+	TetraColorSource _albedo_source = TETRA_COLOR_SOURCE_SINGLE_COLOR;
 
 protected:
 	static void _bind_methods();

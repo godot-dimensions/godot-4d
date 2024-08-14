@@ -53,6 +53,15 @@
 				Gets the vertices of the mesh. Each Vector4 in the array is a vertex defined as a position in meters in 4D space. Vertices are referenced by many other arrays in the mesh, such as the edge indices or cell indices.
 			</description>
 		</method>
+		<method name="has_edge_indices">
+			<return type="bool" />
+			<param index="0" name="first" type="int" />
+			<param index="1" name="second" type="int" />
+			<description>
+				Returns [code]true[/code] if the mesh has an edge with the given indices. This method checks if there is an edge directly connecting the vertices with the given indices, by searching the array returned by [method get_edge_indices].
+				[b]Note:[/b] For efficiency, the input indices have their order normalized, so [code]has_edge_indices(2, 1)[/code] will be converted to [code]has_edge_indices(1, 2)[/code] before checking. You must ensure that your mesh has consistent edge ordering.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="material" type="Material4D" setter="set_material" getter="get_material">

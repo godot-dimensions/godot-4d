@@ -9,15 +9,13 @@ public:
 	// TODO: Switch to BitField in a future Godot version https://github.com/godotengine/godot/pull/89457
 	enum WireColorSource {
 		WIRE_COLOR_SOURCE_SINGLE_COLOR,
-		WIRE_COLOR_SOURCE_PER_VERT_ONLY,
 		WIRE_COLOR_SOURCE_PER_EDGE_ONLY,
-		WIRE_COLOR_SOURCE_PER_VERT_AND_SINGLE,
 		WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE,
 	};
 
 private:
-	WireColorSource _albedo_source = WIRE_COLOR_SOURCE_PER_EDGE_ONLY;
-	real_t _line_thickness = 1.0f;
+	WireColorSource _albedo_source = WIRE_COLOR_SOURCE_SINGLE_COLOR;
+	real_t _line_thickness = 0.0f;
 
 protected:
 	static void _bind_methods();

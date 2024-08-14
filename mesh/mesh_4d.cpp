@@ -22,6 +22,19 @@ PackedInt32Array Mesh4D::deduplicate_edge_indices(const PackedInt32Array &p_item
 	return deduplicated_items;
 }
 
+bool Mesh4D::has_edge_indices(int p_first, int p_second) {
+	if (p_first > p_second) {
+		SWAP(p_first, p_second);
+	}
+	PackedInt32Array edge_indices = get_edge_indices();
+	for (int i = 0; i < edge_indices.size() - 1; i += 2) {
+		if (edge_indices[i] == p_first && edge_indices[i + 1] == p_second) {
+			return true;
+		}
+	}
+	return false;
+}
+
 Ref<Material4D> Mesh4D::get_material() const {
 	return _material;
 }
@@ -50,6 +63,7 @@ PackedVector4Array Mesh4D::get_vertices() {
 
 void Mesh4D::_bind_methods() {
 	ClassDB::bind_static_method("Mesh4D", D_METHOD("deduplicate_edge_indices", "items"), &Mesh4D::deduplicate_edge_indices);
+	ClassDB::bind_method(D_METHOD("has_edge_indices", "first", "second"), &Mesh4D::has_edge_indices);
 
 	ClassDB::bind_method(D_METHOD("get_material"), &Mesh4D::get_material);
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &Mesh4D::set_material);

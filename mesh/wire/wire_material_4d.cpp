@@ -4,12 +4,8 @@ Material4D::ColorSourceFlags _wire_source_to_flags(const WireMaterial4D::WireCol
 	switch (p_wire_source) {
 		case WireMaterial4D::WIRE_COLOR_SOURCE_SINGLE_COLOR:
 			return Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR;
-		case WireMaterial4D::WIRE_COLOR_SOURCE_PER_VERT_ONLY:
-			return Material4D::COLOR_SOURCE_FLAG_PER_VERT;
 		case WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_ONLY:
 			return Material4D::COLOR_SOURCE_FLAG_PER_EDGE;
-		case WireMaterial4D::WIRE_COLOR_SOURCE_PER_VERT_AND_SINGLE:
-			return Material4D::ColorSourceFlags(Material4D::COLOR_SOURCE_FLAG_PER_VERT | Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR);
 		case WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE:
 			return Material4D::ColorSourceFlags(Material4D::COLOR_SOURCE_FLAG_PER_EDGE | Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR);
 	}
@@ -47,7 +43,7 @@ void WireMaterial4D::_get_property_list(List<PropertyInfo> *p_list) const {
 }
 
 WireMaterial4D::WireMaterial4D() {
-	set_albedo_source(WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
+	set_albedo_source(WIRE_COLOR_SOURCE_SINGLE_COLOR);
 }
 
 void WireMaterial4D::_bind_methods() {
@@ -58,14 +54,12 @@ void WireMaterial4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_albedo_source"), &WireMaterial4D::get_albedo_source);
 	ClassDB::bind_method(D_METHOD("set_albedo_source", "albedo_source"), &WireMaterial4D::set_albedo_source);
 
-	ADD_GROUP("Albedo", "albedo_");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "albedo_source", PROPERTY_HINT_ENUM, "Single Color,Per Vertex Only,Per Edge Only,Per Vertex and Single Color,Per Edge and Single Color"), "set_albedo_source", "get_albedo_source");
+	//ADD_GROUP("Albedo", "albedo_");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "albedo_source", PROPERTY_HINT_ENUM, "Single Color,Per Edge Only,Per Edge and Single Color"), "set_albedo_source", "get_albedo_source");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "albedo_color"), "set_albedo_color", "get_albedo_color");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "albedo_color_array"), "set_albedo_color_array", "get_albedo_color_array");
 
 	BIND_ENUM_CONSTANT(WIRE_COLOR_SOURCE_SINGLE_COLOR);
-	BIND_ENUM_CONSTANT(WIRE_COLOR_SOURCE_PER_VERT_ONLY);
 	BIND_ENUM_CONSTANT(WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
-	BIND_ENUM_CONSTANT(WIRE_COLOR_SOURCE_PER_VERT_AND_SINGLE);
 	BIND_ENUM_CONSTANT(WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE);
 }
