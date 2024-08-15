@@ -10,10 +10,10 @@ void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Tran
 	_edge_indices.resize(end_edge_count);
 	_vertices.resize(end_vertex_count);
 	for (int i = 0; i < other_edge_count; i++) {
-		_edge_indices.write[start_edge_count + i] = p_other->_edge_indices[i] + start_vertex_count;
+		_edge_indices.set(start_edge_count + i, p_other->_edge_indices[i] + start_vertex_count);
 	}
 	for (int i = 0; i < other_vertex_count; i++) {
-		_vertices.write[start_vertex_count + i] = p_transform * p_other->_vertices[i];
+		_vertices.set(start_vertex_count + i, p_transform * p_other->_vertices[i]);
 	}
 	Ref<Material4D> other_material = p_other->get_material();
 	if (other_material.is_valid()) {

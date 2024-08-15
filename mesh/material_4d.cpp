@@ -21,31 +21,31 @@ void Material4D::merge_with(const Ref<Material4D> &p_material, const int p_first
 		if (!(start_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY)) {
 			// Start does not use a color array, so we need to insert white. This may get multiplied by the start single color next.
 			for (int i = 0; i < p_first_item_count; i++) {
-				_albedo_color_array.write[i] = Color(1, 1, 1, 1);
+				_albedo_color_array.set(i, Color(1, 1, 1, 1));
 			}
 		}
 		if (!(_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) && (start_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR)) {
 			// Start uses a single color, but destination does not, so we need to "bake" the start color into the array.
 			for (int i = 0; i < p_first_item_count; i++) {
-				_albedo_color_array.write[i] *= start_albedo_color;
+				_albedo_color_array.set(i, _albedo_color_array[i] * start_albedo_color);
 			}
 		}
 		// Merge the other material's color array data.
 		if (p_material->_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) {
 			// Other has a color array, so copy it over.
 			for (int i = 0; i < p_second_item_count; i++) {
-				_albedo_color_array.write[p_first_item_count + i] = p_material->_albedo_color_array[i];
+				_albedo_color_array.set(p_first_item_count + i, p_material->_albedo_color_array[i]);
 			}
 		} else {
 			// Other does not use a color array, so we need to insert white. This may get multiplied by the other single color next.
 			for (int i = p_first_item_count; i < albedo_color_array_end_size; i++) {
-				_albedo_color_array.write[i] = Color(1, 1, 1, 1);
+				_albedo_color_array.set(i, Color(1, 1, 1, 1));
 			}
 		}
 		if (!(_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) && (p_material->_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR)) {
 			// Other uses a single color, but destination does not, so we need to "bake" the other color into the array.
 			for (int i = p_first_item_count; i < albedo_color_array_end_size; i++) {
-				_albedo_color_array.write[i] *= p_material->_albedo_color;
+				_albedo_color_array.set(i, _albedo_color_array[i] * p_material->_albedo_color);
 			}
 		}
 	}

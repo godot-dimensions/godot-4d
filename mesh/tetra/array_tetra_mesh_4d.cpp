@@ -20,7 +20,7 @@ void ArrayTetraMesh4D::calculate_normals(const bool p_keep_existing) {
 		const Vector4 d = _vertices[_cell_indices[i * 4 + 3]];
 		Basis4D basis = Basis4D(b - a, c - a, d - a, a + b + c + d);
 		basis.orthonormalize();
-		_cell_normals.write[i] = basis.w;
+		_cell_normals.set(i, basis.w);
 	}
 }
 
@@ -38,10 +38,10 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 	_cell_indices.resize(end_cell_index_count);
 	_vertices.resize(end_vertex_count);
 	for (int i = 0; i < other_cell_index_count; i++) {
-		_cell_indices.write[start_cell_index_count + i] = p_other->_cell_indices[i] + start_vertex_count;
+		_cell_indices.set(start_cell_index_count + i, p_other->_cell_indices[i] + start_vertex_count);
 	}
 	for (int i = 0; i < other_vertex_count; i++) {
-		_vertices.write[start_vertex_count + i] = p_transform * p_other->_vertices[i];
+		_vertices.set(start_vertex_count + i, p_transform * p_other->_vertices[i]);
 	}
 	// Can't simply add these together in case the first mesh has no normals or UVW maps.
 	if (start_cell_normal_count > 0 || other_cell_normal_count > 0) {
@@ -50,7 +50,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 		if (other_cell_normal_count > 0) {
 			const int cell_normal_write_offset = end_cell_normal_count - other_cell_normal_count;
 			for (int i = 0; i < other_cell_normal_count; i++) {
-				_cell_normals.write[cell_normal_write_offset + i] = p_transform.basis * p_other->_cell_normals[i];
+				_cell_normals.set(cell_normal_write_offset + i, p_transform.basis * p_other->_cell_normals[i]);
 			}
 		}
 	}
@@ -60,7 +60,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 		if (other_cell_uvw_map_count > 0) {
 			const int cell_uvw_map_write_offset = end_cell_uvw_map_count - other_cell_uvw_map_count;
 			for (int i = 0; i < other_cell_uvw_map_count; i++) {
-				_cell_uvw_map.write[cell_uvw_map_write_offset + i] = p_other->_cell_uvw_map[i];
+				_cell_uvw_map.set(cell_uvw_map_write_offset + i, p_other->_cell_uvw_map[i]);
 			}
 		}
 	}
