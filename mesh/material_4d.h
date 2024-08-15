@@ -53,6 +53,7 @@ public:
 
 	PackedColorArray get_albedo_color_array() const;
 	void set_albedo_color_array(const PackedColorArray &p_albedo_color_array);
+	void append_albedo_color(const Color &p_albedo_color);
 };
 
 VARIANT_ENUM_CAST(Material4D::ColorSourceFlags);

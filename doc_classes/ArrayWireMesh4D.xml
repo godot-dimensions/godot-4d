@@ -9,6 +9,39 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="append_edge_indices">
+			<return type="void" />
+			<param index="0" name="index_a" type="int" />
+			<param index="1" name="index_b" type="int" />
+			<description>
+				Append an edge to the wireframe mesh, given indices of existing vertices in the [member vertices] array. The indices should point to vertices in the [member vertices] array. The indices should not exceed the length of the vertices array, or else the mesh is invalid.
+			</description>
+		</method>
+		<method name="append_edge_points">
+			<return type="void" />
+			<param index="0" name="point_a" type="Vector4" />
+			<param index="1" name="point_b" type="Vector4" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Append an edge to the wireframe mesh, given the positions of the edge's endpoints in local space. If [param deduplicate] is [code]true[/code], the method will check if the vertices already exist in the vertices array and will use those instead. Otherwise, if [param deduplicate] is [code]false[/code], or if no existing vertices match, the method will append the points as new vertices to the [member vertices] array.
+			</description>
+		</method>
+		<method name="append_vertex">
+			<return type="int" />
+			<param index="0" name="vertex" type="Vector4" />
+			<param index="1" name="deduplicate" type="bool" default="true" />
+			<description>
+				Append a vertex to the wireframe mesh. If [param deduplicate] is [code]true[/code], the method will check if the vertex already exists in the [member vertices] array and return the index of the existing vertex. If the vertex does not exist, it will be appended to the vertices array and its index will be returned. In both cases, the returned index points to a vertex identical to the input vertex.
+			</description>
+		</method>
+		<method name="append_vertices">
+			<return type="PackedInt32Array" />
+			<param index="0" name="vertices" type="PackedVector4Array" />
+			<param index="1" name="deduplicate" type="bool" default="true" />
+			<description>
+				Append an array of vertices to the wireframe mesh, by calling [method append_vertex] for each vertex in the input array. The method will return an array of indices, where each index points to a vertex identical to the corresponding vertex in the input array.
+			</description>
+		</method>
 		<method name="merge_with">
 			<return type="void" />
 			<param index="0" name="other" type="ArrayWireMesh4D" />

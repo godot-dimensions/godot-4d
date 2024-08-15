@@ -7,6 +7,43 @@ void ArrayTetraMesh4D::_clear_cache() {
 	tetra_mesh_clear_cache();
 }
 
+void ArrayTetraMesh4D::append_tetra_cell_points(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c, const Vector4 &p_d, const bool p_deduplicate_vertices) {
+	const int index_a = append_vertex(p_a, p_deduplicate_vertices);
+	const int index_b = append_vertex(p_b, p_deduplicate_vertices);
+	const int index_c = append_vertex(p_c, p_deduplicate_vertices);
+	const int index_d = append_vertex(p_d, p_deduplicate_vertices);
+	append_tetra_cell_indices(index_a, index_b, index_c, index_d);
+}
+
+void ArrayTetraMesh4D::append_tetra_cell_indices(const int p_index_a, const int p_index_b, const int p_index_c, const int p_index_d) {
+	_cell_indices.append(p_index_a);
+	_cell_indices.append(p_index_b);
+	_cell_indices.append(p_index_c);
+	_cell_indices.append(p_index_d);
+	_clear_cache();
+}
+
+int ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
+	const int vertex_count = _vertices.size();
+	if (p_deduplicate_vertices) {
+		for (int i = 0; i < vertex_count; i++) {
+			if (_vertices[i] == p_vertex) {
+				return i;
+			}
+		}
+	}
+	_vertices.push_back(p_vertex);
+	return vertex_count;
+}
+
+PackedInt32Array ArrayTetraMesh4D::append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices) {
+	PackedInt32Array indices;
+	for (int i = 0; i < p_vertices.size(); i++) {
+		indices.append(append_vertex(p_vertices[i], p_deduplicate_vertices));
+	}
+	return indices;
+}
+
 void ArrayTetraMesh4D::calculate_normals(const bool p_keep_existing) {
 	const int cell_count = _cell_indices.size() / 4;
 	_cell_normals.resize(cell_count);
@@ -130,6 +167,11 @@ void ArrayTetraMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
 }
 
 void ArrayTetraMesh4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("append_tetra_cell_points", "point_a", "point_b", "point_c", "point_d", "deduplicate_vertices"), &ArrayTetraMesh4D::append_tetra_cell_points, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("append_tetra_cell_indices", "index_a", "index_b", "index_c", "index_d"), &ArrayTetraMesh4D::append_tetra_cell_indices);
+	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate_vertices"), &ArrayTetraMesh4D::append_vertex, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate_vertices"), &ArrayTetraMesh4D::append_vertices, DEFVAL(true));
+
 	ClassDB::bind_method(D_METHOD("calculate_normals", "keep_existing"), &ArrayTetraMesh4D::calculate_normals, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayTetraMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 

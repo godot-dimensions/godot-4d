@@ -10,6 +10,13 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="append_albedo_color">
+			<return type="void" />
+			<param index="0" name="albedo_color" type="Color" />
+			<description>
+				Appends the given albedo color to the albedo color array of the material. This may be used to color various parts of the mesh, depending on the albedo source flags. Only used when any of the per-item color flags are set.
+			</description>
+		</method>
 		<method name="get_albedo_color" qualifiers="const">
 			<return type="Color" />
 			<description>

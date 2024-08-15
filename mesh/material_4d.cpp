@@ -75,6 +75,10 @@ void Material4D::set_albedo_color_array(const PackedColorArray &p_albedo_color_a
 	_albedo_color_array = p_albedo_color_array;
 }
 
+void Material4D::append_albedo_color(const Color &p_albedo_color) {
+	_albedo_color_array.push_back(p_albedo_color);
+}
+
 void Material4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("merge_with", "material", "first_item_count", "second_item_count"), &Material4D::merge_with);
 
@@ -86,6 +90,7 @@ void Material4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_albedo_color_array"), &Material4D::get_albedo_color_array);
 	ClassDB::bind_method(D_METHOD("set_albedo_color_array", "albedo_color_array"), &Material4D::set_albedo_color_array);
+	ClassDB::bind_method(D_METHOD("append_albedo_color", "albedo_color"), &Material4D::append_albedo_color);
 
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_SINGLE_COLOR);
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_PER_VERT);
