@@ -3,13 +3,13 @@
 void ArrayWireMesh4D::append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate_vertices) {
 	int index_a = append_vertex(p_point_a, p_deduplicate_vertices);
 	int index_b = append_vertex(p_point_b, p_deduplicate_vertices);
-	if (index_a > index_b) {
-		SWAP(index_a, index_b);
-	}
 	append_edge_indices(index_a, index_b);
 }
 
-void ArrayWireMesh4D::append_edge_indices(const int p_index_a, const int p_index_b) {
+void ArrayWireMesh4D::append_edge_indices(int p_index_a, int p_index_b) {
+	if (p_index_a > p_index_b) {
+		SWAP(p_index_a, p_index_b);
+	}
 	_edge_indices.append(p_index_a);
 	_edge_indices.append(p_index_b);
 	wire_mesh_clear_cache();

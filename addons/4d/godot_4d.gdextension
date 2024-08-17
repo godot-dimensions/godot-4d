@@ -1,7 +1,7 @@
 [configuration]
 
 entry_symbol = "godot_4d_library_init"
-compatibility_minimum = 4.2
+compatibility_minimum = 4.3
 
 [libraries]
 
@@ -18,8 +18,35 @@ linux.release.rv64 = "bin/libgodot_4d.linux.release.rv64.so"
 
 [icons]
 
+ArrayTetraMesh4D = "icons/ArrayTetraMesh4D.svg"
+ArrayWireMesh4D = "icons/ArrayWireMesh4D.svg"
+AudioListener4D = "icons/AudioListener4D.svg"
+AudioPlayer4D = "icons/AudioPlayer4D.svg"
 Basis4D = "icons/Basis4D.svg"
+BoxShape4D = "icons/BoxShape4D.svg"
+BoxTetraMesh4D = "icons/BoxTetraMesh4D.svg"
+BoxWireMesh4D = "icons/BoxWireMesh4D.svg"
+Camera4D = "icons/Camera4D.svg"
+CapsuleShape4D = "icons/CapsuleShape4D.svg"
+CapsuleWireMesh4D = "icons/CapsuleWireMesh4D.svg"
+CollisionShape4D = "icons/CollisionShape4D.svg"
+ConcaveTetrameshShape4D = "icons/ConcaveTetrameshShape4D.svg"
+ConvexHullShape4D = "icons/ConvexHullShape4D.svg"
+CubinderShape4D = "icons/CubinderShape4D.svg"
+CylinderShape4D = "icons/CylinderShape4D.svg"
+CylinderWireMesh4D = "icons/CylinderWireMesh4D.svg"
+DuocylinderShape4D = "icons/DuocylinderShape4D.svg"
 Euler4D = "icons/Euler4D.svg"
+Material4D = "icons/Material4D.svg"
+Mesh4D = "icons/Mesh4D.svg"
+MeshInstance4D = "icons/MeshInstance4D.svg"
 Node4D = "icons/Node4D.svg"
+Shape4D = "icons/Shape4D.svg"
+SphereShape4D = "icons/SphereShape4D.svg"
+SphereWireMesh4D = "icons/SphereWireMesh4D.svg"
+TetraMaterial4D = "icons/TetraMaterial4D.svg"
+TetraMesh4D = "icons/TetraMesh4D.svg"
 Transform4D = "icons/Transform4D.svg"
 Vector4D = "icons/Vector4D.svg"
+WireMaterial4D = "icons/WireMaterial4D.svg"
+WireMesh4D = "icons/WireMesh4D.svg"

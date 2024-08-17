@@ -1,9 +1,11 @@
 #include "register_types.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/editor_plugin_registration.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #elif GODOT_MODULE
 #include "core/config/engine.h"
+#include "editor/plugins/editor_plugin.h"
 #endif
 
 #include "math/basis_4d_bind.h"
@@ -12,7 +14,10 @@
 #include "math/vector_4d.h"
 #include "nodes/node_4d.h"
 
+#include "editor/godot_4d_editor_plugin.h"
+
 #include "mesh/mesh_instance_4d.h"
+#include "mesh/off/off_document.h"
 #include "mesh/tetra/array_tetra_mesh_4d.h"
 #include "mesh/tetra/box_tetra_mesh_4d.h"
 #include "mesh/tetra/tetra_material_4d.h"
@@ -62,6 +67,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(BoxTetraMesh4D);
 		GDREGISTER_CLASS(BoxWireMesh4D);
 		GDREGISTER_CLASS(MeshInstance4D);
+		GDREGISTER_CLASS(OFFDocument);
 		GDREGISTER_CLASS(TetraMaterial4D);
 		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
@@ -77,6 +83,10 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(DuocylinderShape4D);
 		GDREGISTER_CLASS(SphereShape4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
+#ifdef TOOLS_ENABLED
+	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		EditorPlugins::add_by_type<Godot4DEditorPlugin>();
+#endif // TOOLS_ENABLED
 	}
 }
 
