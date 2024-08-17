@@ -10,6 +10,7 @@
 
 #include "math/basis_4d_bind.h"
 #include "math/euler_4d_bind.h"
+#include "math/geometry_4d.h"
 #include "math/transform_4d_bind.h"
 #include "math/vector_4d.h"
 #include "nodes/node_4d.h"
@@ -55,11 +56,13 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(godot_4d_bind::Basis4D);
 		GDREGISTER_CLASS(godot_4d_bind::Euler4D);
 		GDREGISTER_CLASS(godot_4d_bind::Transform4D);
+		GDREGISTER_CLASS(Geometry4D);
 		GDREGISTER_CLASS(Vector4D);
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		// General.
 		GDREGISTER_CLASS(Node4D);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
+		add_godot_singleton("Geometry4D", memnew(Geometry4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
 		// Mesh.
 		GDREGISTER_CLASS(ArrayTetraMesh4D);

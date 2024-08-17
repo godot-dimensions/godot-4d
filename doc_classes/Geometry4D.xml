@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Geometry4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Functions for working with 4D geometry.
+	</brief_description>
+	<description>
+		Geometry4D is a singleton that provides functions for working with 4D geometry. All methods are static and should be called with the class name [code]Geometry4D.[/code] as a prefix.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="closest_point_between_line_segments" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="line1_a" type="Vector4" />
+			<param index="1" name="line1_b" type="Vector4" />
+			<param index="2" name="line2_a" type="Vector4" />
+			<param index="3" name="line2_b" type="Vector4" />
+			<description>
+				Given two line segments in 4D space, return a point on the first line segment that is closest to the second line segment. The line segments are defined by two points each.
+			</description>
+		</method>
+		<method name="closest_point_between_lines" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="line1_point" type="Vector4" />
+			<param index="1" name="line1_dir" type="Vector4" />
+			<param index="2" name="line2_point" type="Vector4" />
+			<param index="3" name="line2_dir" type="Vector4" />
+			<description>
+				Given two lines in 4D space, return a point on the first line that is closest to the second line. The lines are defined by a point on the line and a direction vector. The direction vector does not need to be normalized.
+			</description>
+		</method>
+		<method name="closest_point_on_line" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="line_position" type="Vector4" />
+			<param index="1" name="line_direction" type="Vector4" />
+			<param index="2" name="point" type="Vector4" />
+			<description>
+				Returns the closest point on a line to a given point. The line is defined by a point on the line and a direction vector. The direction vector does not need to be normalized. This is the 4D version of [method Geometry3D.get_closest_point_to_segment_uncapped].
+			</description>
+		</method>
+		<method name="closest_point_on_line_segment" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="line_a" type="Vector4" />
+			<param index="1" name="line_b" type="Vector4" />
+			<param index="2" name="point" type="Vector4" />
+			<description>
+				Returns the closest point on a line segment to a given point. The line segment is defined by two points. This is the 4D version of [method Geometry3D.get_closest_point_to_segment].
+			</description>
+		</method>
+		<method name="closest_point_on_ray" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="ray_origin" type="Vector4" />
+			<param index="1" name="ray_direction" type="Vector4" />
+			<param index="2" name="point" type="Vector4" />
+			<description>
+				Returns the closest point on a ray to a given point. The ray is defined by its origin point and direction vector. The direction vector does not need to be normalized.
+			</description>
+		</method>
+		<method name="closest_points_between_line_segments" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="line1_a" type="Vector4" />
+			<param index="1" name="line1_b" type="Vector4" />
+			<param index="2" name="line2_a" type="Vector4" />
+			<param index="3" name="line2_b" type="Vector4" />
+			<description>
+				Given two line segments in 4D space, return two points, one on each line segment, that are closest to the other line segment, and closest to each other. The returned array will always contain two points. The line segments are defined by two points each. This is the 4D version of [method Geometry3D.get_closest_points_between_segments].
+			</description>
+		</method>
+		<method name="closest_points_between_lines" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="line1_point" type="Vector4" />
+			<param index="1" name="line1_dir" type="Vector4" />
+			<param index="2" name="line2_point" type="Vector4" />
+			<param index="3" name="line2_dir" type="Vector4" />
+			<description>
+				Given two lines in 4D space, return two points, one on each line, that are closest to the other line, and closest to each other. The returned array will always contain two points. The lines are defined by a point on the line and a direction vector. The direction vector does not need to be normalized.
+			</description>
+		</method>
+	</methods>
+</class>

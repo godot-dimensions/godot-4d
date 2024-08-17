@@ -12,6 +12,7 @@ def get_doc_classes():
         # General.
         "Basis4D",
         "Euler4D",
+        "Geometry4D",
         "Node4D",
         "Transform4D",
         "Vector4D",
