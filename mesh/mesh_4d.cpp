@@ -1,5 +1,7 @@
 #include "mesh_4d.h"
 
+#include "wire/array_wire_mesh_4d.h"
+
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_set.hpp>
 #endif
@@ -35,6 +37,19 @@ bool Mesh4D::has_edge_indices(int p_first, int p_second) {
 	return false;
 }
 
+Ref<ArrayWireMesh4D> Mesh4D::to_array_wire_mesh() {
+	Ref<ArrayWireMesh4D> wire_mesh;
+	wire_mesh.instantiate();
+	wire_mesh->set_vertices(get_vertices());
+	wire_mesh->set_edge_indices(get_edge_indices());
+	wire_mesh->set_material(get_material());
+	return wire_mesh;
+}
+
+Ref<WireMesh4D> Mesh4D::to_wire_mesh() {
+	return to_array_wire_mesh();
+}
+
 Ref<Material4D> Mesh4D::get_material() const {
 	return _material;
 }
@@ -64,6 +79,9 @@ PackedVector4Array Mesh4D::get_vertices() {
 void Mesh4D::_bind_methods() {
 	ClassDB::bind_static_method("Mesh4D", D_METHOD("deduplicate_edge_indices", "items"), &Mesh4D::deduplicate_edge_indices);
 	ClassDB::bind_method(D_METHOD("has_edge_indices", "first", "second"), &Mesh4D::has_edge_indices);
+
+	ClassDB::bind_method(D_METHOD("to_array_wire_mesh"), &Mesh4D::to_array_wire_mesh);
+	ClassDB::bind_method(D_METHOD("to_wire_mesh"), &Mesh4D::to_wire_mesh);
 
 	ClassDB::bind_method(D_METHOD("get_material"), &Mesh4D::get_material);
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &Mesh4D::set_material);

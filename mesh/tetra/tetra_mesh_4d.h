@@ -8,6 +8,8 @@
 class ArrayMesh;
 #endif
 
+class ArrayTetraMesh4D;
+
 class TetraMesh4D : public Mesh4D {
 	GDCLASS(TetraMesh4D, Mesh4D);
 
@@ -19,6 +21,7 @@ protected:
 public:
 	Ref<ArrayMesh> export_uvw_map_mesh();
 	void tetra_mesh_clear_cache();
+	Ref<ArrayTetraMesh4D> to_array_tetra_mesh();
 
 	virtual PackedInt32Array get_cell_indices();
 	virtual PackedVector4Array get_cell_positions();

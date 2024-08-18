@@ -70,5 +70,11 @@
 				TetraMesh4D caches the edge data for performance reasons. This method clears the cache, forcing the tetrahedral mesh to recalculate the edge data the next time it is needed. You should run this method if you are making your own [TetraMesh4D]-derived class and you change the vertices or cells. You do not need to run this when using the built-in classes such as [ArrayTetraMesh4D] or [BoxTetraMesh4D], they will automatically clear the cache when needed.
 			</description>
 		</method>
+		<method name="to_array_tetra_mesh">
+			<return type="ArrayTetraMesh4D" />
+			<description>
+				Converts this TetraMesh4D to an [ArrayTetraMesh4D]. If the mesh is already an [ArrayTetraMesh4D], this method will make a copy, but this method is intended for converting subtypes such as [BoxTetraMesh4D]. The array mesh will have the same vertices, cells, and material as this mesh. Converting a non-array mesh to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or cells.
+			</description>
+		</method>
 	</methods>
 </class>

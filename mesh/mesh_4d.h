@@ -6,6 +6,9 @@
 
 #include "material_4d.h"
 
+class ArrayWireMesh4D;
+class WireMesh4D;
+
 class Mesh4D : public Resource {
 	GDCLASS(Mesh4D, Resource);
 
@@ -17,6 +20,9 @@ protected:
 public:
 	static PackedInt32Array deduplicate_edge_indices(const PackedInt32Array &p_items);
 	bool has_edge_indices(int p_first, int p_second);
+
+	Ref<ArrayWireMesh4D> to_array_wire_mesh();
+	virtual Ref<WireMesh4D> to_wire_mesh();
 
 	Ref<Material4D> get_material() const;
 	void set_material(const Ref<Material4D> &p_material);

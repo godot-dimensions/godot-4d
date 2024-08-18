@@ -62,6 +62,19 @@
 				[b]Note:[/b] For efficiency, the input indices have their order normalized, so [code]has_edge_indices(2, 1)[/code] will be converted to [code]has_edge_indices(1, 2)[/code] before checking. You must ensure that your mesh has consistent edge ordering.
 			</description>
 		</method>
+		<method name="to_array_wire_mesh">
+			<return type="ArrayWireMesh4D" />
+			<description>
+				Converts this Mesh4D to an [ArrayWireMesh4D]. The array mesh will have the same vertices and edges as the tetrahedral mesh. Converting to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or edges.
+				[b]Note:[/b] All of the mesh's edges are converted to the wireframe mesh. If the source is a tetrahedral mesh, this includes edges between tetrahedrons inside of each side, which may be undesired. If the source mesh is a subtype such as [BoxTetraMesh4D], consider using [method to_wire_mesh] instead to only get the wireframe of the outer edges.
+			</description>
+		</method>
+		<method name="to_wire_mesh">
+			<return type="WireMesh4D" />
+			<description>
+				Converts this Mesh4D to a [WireMesh4D]. This method will use the best conversion available. For example, a [BoxTetraMesh4D] will be converted to a [BoxWireMesh4D]. If no specialized conversion is available, the method will return an [ArrayWireMesh4D]. See [method to_array_wire_mesh] for more details.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="material" type="Material4D" setter="set_material" getter="get_material">

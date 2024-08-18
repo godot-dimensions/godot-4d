@@ -1,5 +1,8 @@
 #include "box_shape_4d.h"
 
+#include "../../mesh/tetra/box_tetra_mesh_4d.h"
+#include "../../mesh/wire/box_wire_mesh_4d.h"
+
 Vector4 BoxShape4D::get_half_extents() const {
 	return _size * 0.5f;
 }
@@ -20,6 +23,20 @@ bool BoxShape4D::has_point(const Vector4 &p_point) const {
 	const Vector4 abs_point = p_point.abs();
 	const Vector4 half_extents = get_half_extents();
 	return abs_point.x <= half_extents.x && abs_point.y <= half_extents.y && abs_point.z <= half_extents.z && abs_point.w <= half_extents.w;
+}
+
+Ref<TetraMesh4D> BoxShape4D::to_tetra_mesh() const {
+	Ref<BoxTetraMesh4D> tetra_mesh;
+	tetra_mesh.instantiate();
+	tetra_mesh->set_size(_size);
+	return tetra_mesh;
+}
+
+Ref<WireMesh4D> BoxShape4D::to_wire_mesh() const {
+	Ref<BoxWireMesh4D> wire_mesh;
+	wire_mesh.instantiate();
+	wire_mesh->set_size(_size);
+	return wire_mesh;
 }
 
 void BoxShape4D::_bind_methods() {

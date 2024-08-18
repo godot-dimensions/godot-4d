@@ -16,11 +16,35 @@
 				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method has_point].
 			</description>
 		</method>
+		<method name="_to_tetra_mesh" qualifiers="virtual const">
+			<return type="TetraMesh4D" />
+			<description>
+				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method to_tetra_mesh].
+			</description>
+		</method>
+		<method name="_to_wire_mesh" qualifiers="virtual const">
+			<return type="WireMesh4D" />
+			<description>
+				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method to_wire_mesh].
+			</description>
+		</method>
 		<method name="has_point" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="point" type="Vector4" />
 			<description>
 				Returns [code]true[/code] if the 4D shape contains the given point. Points exactly on the surface are considered inside.
+			</description>
+		</method>
+		<method name="to_tetra_mesh" qualifiers="const">
+			<return type="TetraMesh4D" />
+			<description>
+				Returns a tetrahedral mesh representation of the 4D shape. May not be implemented for all shapes, and will not be exact for curved shapes.
+			</description>
+		</method>
+		<method name="to_wire_mesh" qualifiers="const">
+			<return type="WireMesh4D" />
+			<description>
+				Returns a wireframe mesh representation of the 4D shape. May not be implemented for all shapes, and will not be exact for curved shapes.
 			</description>
 		</method>
 	</methods>

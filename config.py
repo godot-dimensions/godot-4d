@@ -22,6 +22,8 @@ def get_doc_classes():
         "BoxTetraMesh4D",
         "BoxWireMesh4D",
         "OFFDocument",
+        "OrthoplexTetraMesh4D",
+        "OrthoplexWireMesh4D",
         "Material4D",
         "Mesh4D",
         "MeshInstance4D",
@@ -38,6 +40,7 @@ def get_doc_classes():
         "CubinderShape4D",
         "CylinderShape4D",
         "DuocylinderShape4D",
+        "OrthoplexShape4D",
         "Shape4D",
         "SphereShape4D",
     ]

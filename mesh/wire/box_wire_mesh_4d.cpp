@@ -2,6 +2,13 @@
 
 #include "../tetra/box_tetra_mesh_4d.h"
 
+const PackedInt32Array BOX_EDGE_INDICES = {
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, // X
+	0, 2, 1, 3, 4, 6, 5, 7, 8, 10, 9, 11, 12, 14, 13, 15, // Y
+	0, 4, 1, 5, 2, 6, 3, 7, 8, 12, 9, 13, 10, 14, 11, 15, // Z
+	0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15, // W
+};
+
 Vector4 BoxWireMesh4D::get_half_extents() const {
 	return _size * 0.5f;
 }
@@ -58,6 +65,14 @@ PackedVector4Array BoxWireMesh4D::get_vertices() {
 	return _vertices_cache;
 }
 
+Ref<BoxWireMesh4D> BoxWireMesh4D::from_tetra_mesh(const Ref<BoxTetraMesh4D> &p_tetra_mesh) {
+	Ref<BoxWireMesh4D> wire_mesh;
+	wire_mesh.instantiate();
+	wire_mesh->set_size(p_tetra_mesh->get_size());
+	wire_mesh->set_material(p_tetra_mesh->get_material());
+	return wire_mesh;
+}
+
 Ref<BoxTetraMesh4D> BoxWireMesh4D::to_tetra_mesh() const {
 	Ref<BoxTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
@@ -66,11 +81,11 @@ Ref<BoxTetraMesh4D> BoxWireMesh4D::to_tetra_mesh() const {
 	return tetra_mesh;
 }
 
-Ref<BoxWireMesh4D> BoxWireMesh4D::from_tetra_mesh(const Ref<BoxTetraMesh4D> &p_tetra_mesh) {
+Ref<WireMesh4D> BoxWireMesh4D::to_wire_mesh() {
 	Ref<BoxWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
-	wire_mesh->set_size(p_tetra_mesh->get_size());
-	wire_mesh->set_material(p_tetra_mesh->get_material());
+	wire_mesh->set_size(_size);
+	wire_mesh->set_material(get_material());
 	return wire_mesh;
 }
 
@@ -83,6 +98,6 @@ void BoxWireMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_size", "size"), &BoxWireMesh4D::set_size);
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "size", PROPERTY_HINT_NONE, "suffix:m"), "set_size", "get_size");
 
-	ClassDB::bind_method(D_METHOD("to_tetra_mesh"), &BoxWireMesh4D::to_tetra_mesh);
 	ClassDB::bind_static_method("BoxWireMesh4D", D_METHOD("from_tetra_mesh", "tetra_mesh"), &BoxWireMesh4D::from_tetra_mesh);
+	ClassDB::bind_method(D_METHOD("to_tetra_mesh"), &BoxWireMesh4D::to_tetra_mesh);
 }

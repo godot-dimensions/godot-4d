@@ -2,8 +2,8 @@
 
 #include "shape_4d.h"
 
-class BoxShape4D : public Shape4D {
-	GDCLASS(BoxShape4D, Shape4D);
+class OrthoplexShape4D : public Shape4D {
+	GDCLASS(OrthoplexShape4D, Shape4D);
 
 	Vector4 _size = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 

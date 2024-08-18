@@ -1,8 +1,6 @@
 #include "box_tetra_mesh_4d.h"
 
-#include "../wire/array_wire_mesh_4d.h"
 #include "../wire/box_wire_mesh_4d.h"
-#include "array_tetra_mesh_4d.h"
 
 #define REPEAT_FIVE_TIMES(m) m, m, m, m, m
 const PackedVector4Array BOX_40_CELL_NORMALS = {
@@ -240,24 +238,12 @@ PackedVector4Array BoxTetraMesh4D::get_vertices() {
 	return _vertices_cache;
 }
 
-Ref<ArrayTetraMesh4D> BoxTetraMesh4D::to_array_tetra_mesh() {
-	Ref<ArrayTetraMesh4D> array_mesh;
-	array_mesh.instantiate();
-	array_mesh->set_vertices(get_vertices());
-	array_mesh->set_cell_indices(get_cell_indices());
-	array_mesh->set_cell_normals(get_cell_normals());
-	array_mesh->set_cell_uvw_map(get_cell_uvw_map());
-	array_mesh->set_material(get_material());
-	return array_mesh;
-}
-
-Ref<ArrayWireMesh4D> BoxTetraMesh4D::to_array_wire_mesh() {
-	Ref<ArrayWireMesh4D> wire_mesh;
-	wire_mesh.instantiate();
-	wire_mesh->set_vertices(get_vertices());
-	wire_mesh->set_edge_indices(get_edge_indices());
-	wire_mesh->set_material(get_material());
-	return wire_mesh;
+Ref<BoxTetraMesh4D> BoxTetraMesh4D::from_box_wire_mesh(const Ref<BoxWireMesh4D> &p_wire_mesh) {
+	Ref<BoxTetraMesh4D> tetra_mesh;
+	tetra_mesh.instantiate();
+	tetra_mesh->set_size(p_wire_mesh->get_size());
+	tetra_mesh->set_material(p_wire_mesh->get_material());
+	return tetra_mesh;
 }
 
 Ref<BoxWireMesh4D> BoxTetraMesh4D::to_box_wire_mesh() const {
@@ -268,12 +254,8 @@ Ref<BoxWireMesh4D> BoxTetraMesh4D::to_box_wire_mesh() const {
 	return wire_mesh;
 }
 
-Ref<BoxTetraMesh4D> BoxTetraMesh4D::from_box_wire_mesh(const Ref<BoxWireMesh4D> &p_wire_mesh) {
-	Ref<BoxTetraMesh4D> tetra_mesh;
-	tetra_mesh.instantiate();
-	tetra_mesh->set_size(p_wire_mesh->get_size());
-	tetra_mesh->set_material(p_wire_mesh->get_material());
-	return tetra_mesh;
+Ref<WireMesh4D> BoxTetraMesh4D::to_wire_mesh() {
+	return to_box_wire_mesh();
 }
 
 void BoxTetraMesh4D::_bind_methods() {
@@ -289,10 +271,8 @@ void BoxTetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_tetra_decomp", "decomp"), &BoxTetraMesh4D::set_tetra_decomp);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "tetra_decomp", PROPERTY_HINT_ENUM, "40 Cell,48 Cell"), "set_tetra_decomp", "get_tetra_decomp");
 
-	ClassDB::bind_method(D_METHOD("to_array_tetra_mesh"), &BoxTetraMesh4D::to_array_tetra_mesh);
-	ClassDB::bind_method(D_METHOD("to_array_wire_mesh"), &BoxTetraMesh4D::to_array_wire_mesh);
-	ClassDB::bind_method(D_METHOD("to_box_wire_mesh"), &BoxTetraMesh4D::to_box_wire_mesh);
 	ClassDB::bind_static_method("BoxTetraMesh4D", D_METHOD("from_box_wire_mesh", "wire_mesh"), &BoxTetraMesh4D::from_box_wire_mesh);
+	ClassDB::bind_method(D_METHOD("to_box_wire_mesh"), &BoxTetraMesh4D::to_box_wire_mesh);
 
 	BIND_ENUM_CONSTANT(BOX_TETRA_DECOMP_40_CELL);
 	BIND_ENUM_CONSTANT(BOX_TETRA_DECOMP_48_CELL);

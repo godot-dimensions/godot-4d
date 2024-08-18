@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OrthoplexShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D shape representing an orthoplex (16-cell).
+	</brief_description>
+	<description>
+		OrthoplexShape4D describes a 4D orthoplex physics shape using a [member size] as a [Vector4]. The orthoplex is centered at the origin, and is axis-aligned by default; if you want an orthoplex facing a different direction, you can rotate the [CollisionShape4D] node the orthoplex is attached to. An orthoplex is a 4D cross-polytope with 8 vertices, plus or minus on each axis (-X, +X, -Y, +Y, -Z, +Z, -W, +W), and 16 tetrahedral cells.
+		The 3D version of an orthoplex is the octahedron, which has 6 vertices (-X, +X, -Y, +Y, -Z, +Z) and 8 triangular faces in each octant. The 2D version is a diamond (square rotated 45 degrees), which has 4 vertices (-X, +X, -Y, +Y) and 4 edges in each quadrant. Orthoplexes exist in all dimensions, and are the dual of boxes (square/cube/hypercube).
+	</description>
+	<tutorials>
+		<link title="Wikipedia 16-cell / 4D Orthoplex">https://en.wikipedia.org/wiki/16-cell</link>
+	</tutorials>
+	<members>
+		<member name="half_extents" type="Vector4" setter="set_half_extents" getter="get_half_extents">
+			The half-extents of the orthoplex in meters, also known as just "extents". This is the "radius" of the orthoplex, the distance between each vertex and the center. This is a wrapper around [member size] for situations where you want to use the extents instead of size.
+		</member>
+		<member name="size" type="Vector4" setter="set_size" getter="get_size" default="Vector4(1, 1, 1, 1)">
+			The size of the orthoplex in meters. This is the axis-aligned "diameter" size of the orthoplex in 4D space, where each component is the distance between opposite vertices. This is the value that is stored internally.
+		</member>
+	</members>
+</class>

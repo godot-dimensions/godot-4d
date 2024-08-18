@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OrthoplexWireMesh4D" inherits="WireMesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D wireframe mesh representing an orthoplex (16-cell).
+	</brief_description>
+	<description>
+		OrthoplexWireMesh4D is a class for generating wireframe meshes representing orthoplexes, also known as the 16-cell, hexadecachoron, or 4D cross-polytope. A 4D orthoplex is composed of 8 vertices, plus or minus on each axis (-X, +X, -Y, +Y, -Z, +Z, -W, +W), and 16 tetrahedral cells. For wireframes, the orthoplex is represented by 24 edges, connecting each of the 8 vertices to all others except the opposite vertex on the same axis.
+		The 3D version of an orthoplex is the octahedron, which has 6 vertices (-X, +X, -Y, +Y, -Z, +Z) and 8 triangular faces in each octant. The 2D version is a diamond (square rotated 45 degrees), which has 4 vertices (-X, +X, -Y, +Y) and 4 edges in each quadrant. Orthoplexes exist in all dimensions, and are the dual of boxes (square/cube/hypercube).
+	</description>
+	<tutorials>
+		<link title="Wikipedia 16-cell / 4D Orthoplex">https://en.wikipedia.org/wiki/16-cell</link>
+	</tutorials>
+	<methods>
+		<method name="from_tetra_mesh" qualifiers="static">
+			<return type="OrthoplexWireMesh4D" />
+			<param index="0" name="tetra_mesh" type="OrthoplexTetraMesh4D" />
+			<description>
+				Creates an orthoplex wireframe mesh from [OrthoplexTetraMesh4D]. The orthoplex wireframe mesh will have the same size and material as the tetrahedral mesh.
+			</description>
+		</method>
+		<method name="to_tetra_mesh" qualifiers="const">
+			<return type="OrthoplexTetraMesh4D" />
+			<description>
+				Converts this orthoplex wireframe mesh to a [OrthoplexTetraMesh4D]. The tetrahedral mesh will have the same size and material as the wireframe mesh.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="half_extents" type="Vector4" setter="set_half_extents" getter="get_half_extents">
+			The half-extents of the orthoplex in meters, also known as just "extents". This is the "radius" of the orthoplex, the distance between each vertex and the center. This is a wrapper around [member size] for situations where you want to use the extents instead of size.
+		</member>
+		<member name="size" type="Vector4" setter="set_size" getter="get_size" default="Vector4(1, 1, 1, 1)">
+			The size of the orthoplex in meters. This is the axis-aligned "diameter" size of the box in 4D space, where each component is the distance between opposite vertices. This is the value that is stored internally.
+		</member>
+	</members>
+</class>

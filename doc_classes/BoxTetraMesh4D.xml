@@ -16,19 +16,6 @@
 				Creates a box tetrahedral mesh from [BoxWireMesh4D]. The box tetrahedral mesh will have the same size and material as the wireframe mesh.
 			</description>
 		</method>
-		<method name="to_array_tetra_mesh">
-			<return type="ArrayTetraMesh4D" />
-			<description>
-				Converts this box tetrahedral mesh to an [ArrayTetraMesh4D]. The array mesh will have the same vertices, cells, and material as the tetrahedral mesh. Converting to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or cells.
-			</description>
-		</method>
-		<method name="to_array_wire_mesh">
-			<return type="ArrayWireMesh4D" />
-			<description>
-				Converts this box tetrahedral mesh to an [ArrayWireMesh4D]. The array mesh will have the same vertices and edges as the tetrahedral mesh. Converting to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or edges.
-				[b]Note:[/b] All of the tetrahedral mesh's edges are converted to the wireframe mesh, including edges between tetrahedrons inside of each side of the box. This may be undesired. Consider using [method to_box_wire_mesh] instead to only get the outer edges of the box.
-			</description>
-		</method>
 		<method name="to_box_wire_mesh" qualifiers="const">
 			<return type="BoxWireMesh4D" />
 			<description>

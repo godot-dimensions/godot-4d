@@ -21,9 +21,11 @@
 #include "mesh/off/off_document.h"
 #include "mesh/tetra/array_tetra_mesh_4d.h"
 #include "mesh/tetra/box_tetra_mesh_4d.h"
+#include "mesh/tetra/orthoplex_tetra_mesh_4d.h"
 #include "mesh/tetra/tetra_material_4d.h"
 #include "mesh/wire/array_wire_mesh_4d.h"
 #include "mesh/wire/box_wire_mesh_4d.h"
+#include "mesh/wire/orthoplex_wire_mesh_4d.h"
 #include "mesh/wire/wire_material_4d.h"
 
 #include "physics/collision_shape_4d.h"
@@ -32,6 +34,7 @@
 #include "physics/shapes/cubinder_shape_4d.h"
 #include "physics/shapes/cylinder_shape_4d.h"
 #include "physics/shapes/duocylinder_shape_4d.h"
+#include "physics/shapes/orthoplex_shape_4d.h"
 #include "physics/shapes/shape_4d.h"
 #include "physics/shapes/sphere_shape_4d.h"
 
@@ -71,6 +74,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(BoxWireMesh4D);
 		GDREGISTER_CLASS(MeshInstance4D);
 		GDREGISTER_CLASS(OFFDocument);
+		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
+		GDREGISTER_CLASS(OrthoplexWireMesh4D);
 		GDREGISTER_CLASS(TetraMaterial4D);
 		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
@@ -84,6 +89,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(CubinderShape4D);
 		GDREGISTER_CLASS(CylinderShape4D);
 		GDREGISTER_CLASS(DuocylinderShape4D);
+		GDREGISTER_CLASS(OrthoplexShape4D);
 		GDREGISTER_CLASS(SphereShape4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 #ifdef TOOLS_ENABLED
