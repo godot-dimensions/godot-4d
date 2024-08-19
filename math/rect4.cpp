@@ -208,12 +208,20 @@ bool Rect4::has_point(const Vector4 &p_point) const {
 }
 
 Vector4 Rect4::support_point(const Vector4 &p_normal) const {
-	const Vector4 size_support = Vector4(
-			(p_normal.x > 0.0f) ? size.x : 0.0f,
-			(p_normal.y > 0.0f) ? size.y : 0.0f,
-			(p_normal.z > 0.0f) ? size.z : 0.0f,
-			(p_normal.w > 0.0f) ? size.w : 0.0f);
-	return position + size_support;
+	Vector4 support = position;
+	if (p_normal.x > 0.0f) {
+		support.x += size.x;
+	}
+	if (p_normal.y > 0.0f) {
+		support.y += size.y;
+	}
+	if (p_normal.z > 0.0f) {
+		support.z += size.z;
+	}
+	if (p_normal.w > 0.0f) {
+		support.w += size.w;
+	}
+	return support;
 }
 
 // Rect math functions.
