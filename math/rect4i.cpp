@@ -207,18 +207,18 @@ bool Rect4i::has_point(const Vector4i &p_point) const {
 			p_point.w >= position.w && p_point.w <= position.w + size.w;
 }
 
-Vector4i Rect4i::support_point(const Vector4i &p_normal) const {
+Vector4i Rect4i::support_point(const Vector4i &p_direction) const {
 	Vector4i support = position;
-	if (p_normal.x > 0.0f) {
+	if (p_direction.x > 0) {
 		support.x += size.x;
 	}
-	if (p_normal.y > 0.0f) {
+	if (p_direction.y > 0) {
 		support.y += size.y;
 	}
-	if (p_normal.z > 0.0f) {
+	if (p_direction.z > 0) {
 		support.z += size.z;
 	}
-	if (p_normal.w > 0.0f) {
+	if (p_direction.w > 0) {
 		support.w += size.w;
 	}
 	return support;

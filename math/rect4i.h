@@ -55,7 +55,7 @@ struct _NO_DISCARD_ Rect4i {
 	Vector4i closest_point(const Vector4i &p_point) const;
 	Rect4i expand_to_point(const Vector4i &p_vector) const;
 	bool has_point(const Vector4i &p_point) const;
-	Vector4i support_point(const Vector4i &p_normal) const;
+	Vector4i support_point(const Vector4i &p_direction) const;
 
 	// Rect math functions.
 	Rect4i grow(const int p_by) const;

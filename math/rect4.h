@@ -63,7 +63,7 @@ struct _NO_DISCARD_ Rect4 {
 	Vector4 closest_point(const Vector4 &p_point) const;
 	Rect4 expand_to_point(const Vector4 &p_vector) const;
 	bool has_point(const Vector4 &p_point) const;
-	Vector4 support_point(const Vector4 &p_normal) const;
+	Vector4 support_point(const Vector4 &p_direction) const;
 
 	// Rect math functions.
 	Rect4 grow(const real_t p_by) const;
