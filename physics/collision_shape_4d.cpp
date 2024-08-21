@@ -8,9 +8,35 @@ void CollisionShape4D::set_shape(const Ref<Shape4D> &p_shape) {
 	_shape = p_shape;
 }
 
+real_t CollisionShape4D::get_hypervolume() const {
+	ERR_FAIL_COND_V(_shape.is_null(), 0.0);
+	const real_t scale = get_global_basis().get_uniform_scale();
+	return scale * _shape->get_hypervolume();
+}
+
+Vector4 CollisionShape4D::get_nearest_global_point(const Vector4 &p_point) const {
+	ERR_FAIL_COND_V(_shape.is_null(), get_global_position());
+	const Transform4D local_to_global = get_global_transform();
+	const Transform4D global_to_local = local_to_global.inverse();
+	return local_to_global * _shape->get_nearest_point(global_to_local * p_point);
+}
+
+Vector4 CollisionShape4D::get_support_global_point(const Vector4 &p_direction) const {
+	ERR_FAIL_COND_V(_shape.is_null(), get_global_position());
+	const Basis4D local_to_global = get_global_basis();
+	const Basis4D global_to_local = local_to_global.inverse();
+	return local_to_global * _shape->get_support_point(global_to_local * p_direction);
+}
+
+real_t CollisionShape4D::get_surface_volume() const {
+	ERR_FAIL_COND_V(_shape.is_null(), 0.0);
+	const real_t scale = get_global_basis().get_uniform_scale();
+	return scale * _shape->get_surface_volume();
+}
+
 bool CollisionShape4D::has_global_point(const Vector4 &p_point) const {
 	ERR_FAIL_COND_V(_shape.is_null(), false);
-	Transform4D global_to_local = get_global_transform().inverse();
+	const Transform4D global_to_local = get_global_transform().inverse();
 	return _shape->has_point(global_to_local * p_point);
 }
 
@@ -19,5 +45,9 @@ void CollisionShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_shape", "shape"), &CollisionShape4D::set_shape);
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "shape", PROPERTY_HINT_RESOURCE_TYPE, "Shape4D"), "set_shape", "get_shape");
 
+	ClassDB::bind_method(D_METHOD("get_hypervolume"), &CollisionShape4D::get_hypervolume);
+	ClassDB::bind_method(D_METHOD("get_nearest_global_point", "point"), &CollisionShape4D::get_nearest_global_point);
+	ClassDB::bind_method(D_METHOD("get_support_global_point", "direction"), &CollisionShape4D::get_support_global_point);
+	ClassDB::bind_method(D_METHOD("get_surface_volume"), &CollisionShape4D::get_surface_volume);
 	ClassDB::bind_method(D_METHOD("has_global_point", "point"), &CollisionShape4D::has_global_point);
 }

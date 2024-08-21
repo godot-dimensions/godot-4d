@@ -10,6 +10,33 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_hypervolume" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the hypervolume of the shape in quartic meters, using the shape's [method Shape4D.get_hypervolume] function.
+			</description>
+		</method>
+		<method name="get_nearest_global_point" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="point" type="Vector4" />
+			<description>
+				Returns the point in global space that is nearest to the given point in global space, using the shape's [method Shape4D.get_nearest_point] function.
+			</description>
+		</method>
+		<method name="get_support_global_point" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="direction" type="Vector4" />
+			<description>
+				Returns the point in global space that is the farthest in the given direction, known as the support point, using the shape's [method Shape4D.get_support_point] function. This is commonly used in collision detection algorithms.
+			</description>
+		</method>
+		<method name="get_surface_volume" qualifiers="const">
+			<return type="float" />
+			<description>
+				Return the surface volume of the shape in cubic meters, using the shape's [method Shape4D.get_surface_volume] function.
+				[b]Note:[/b] This method may not give the correct result if the shape node is scaled non-uniformly. It is best practice to not scale physics nodes; instead scale the shape resource attached to the physics shape node.
+			</description>
+		</method>
 		<method name="has_global_point" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="point" type="Vector4" />
