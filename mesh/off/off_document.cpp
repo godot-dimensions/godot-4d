@@ -1,8 +1,11 @@
 #include "off_document.h"
 
 #if GDEXTENSION
-#include <godot_cpp/classes/mesh_instance_3d.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/mesh_instance3d.hpp>
+#include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/surface_tool.hpp>
+#include <godot_cpp/templates/hash_set.hpp>
 #elif GODOT_MODULE
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/resources/surface_tool.h"
@@ -326,9 +329,14 @@ Ref<OFFDocument> OFFDocument::load_from_file(const String &p_path) {
 	int current_cell_index = 0;
 	int current_face_index = 0;
 	int current_vertex_index = 0;
+#if GDEXTENSION
+	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
+	ERR_FAIL_COND_V_MSG(file.is_null(), off_document, "Error: Could not open file " + p_path + ".");
+#elif GODOT_MODULE
 	Error err;
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ, &err);
 	ERR_FAIL_COND_V_MSG(err != OK, off_document, "Error: Could not open file " + p_path + ".");
+#endif
 	off_document.instantiate();
 	while (!file->eof_reached()) {
 		const String line = file->get_line();
@@ -390,7 +398,7 @@ Ref<OFFDocument> OFFDocument::load_from_file(const String &p_path) {
 						this_face_indices.append(items[i].to_int());
 					}
 				}
-				off_document->_face_vertex_indices.set(current_face_index, this_face_indices);
+				off_document->_face_vertex_indices[current_face_index] = this_face_indices;
 				if (item_count > this_face_count + 3) {
 					// The last 3 numbers are the face color on the range 0-255.
 					off_document->_face_colors.set(current_face_index, Color(items[this_face_count + 1].to_int() / 255.0f, items[this_face_count + 2].to_int() / 255.0f, items[this_face_count + 3].to_int() / 255.0f));
@@ -411,7 +419,7 @@ Ref<OFFDocument> OFFDocument::load_from_file(const String &p_path) {
 						this_cell_indices.append(items[i].to_int());
 					}
 				}
-				off_document->_cell_face_indices.set(current_cell_index, this_cell_indices);
+				off_document->_cell_face_indices[current_cell_index] = this_cell_indices;
 				if (item_count > this_cell_count + 3) {
 					// The last 3 numbers are the cell color on the range 0-255.
 					off_document->_cell_colors.set(current_cell_index, Color(items[this_cell_count + 1].to_int() / 255.0f, items[this_cell_count + 2].to_int() / 255.0f, items[this_cell_count + 3].to_int() / 255.0f));
@@ -478,9 +486,14 @@ String _cell_or_face_to_off_string(const PackedInt32Array &p_face) {
 }
 
 void OFFDocument::save_to_file_3d(const String &p_path) {
+#if GDEXTENSION
+	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
+	ERR_FAIL_COND_MSG(file.is_null(), "Error: Could not open file " + p_path + " for writing.");
+#elif GODOT_MODULE
 	Error err;
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
 	ERR_FAIL_COND_MSG(err != OK, "Error: Could not open file " + p_path + " for writing.");
+#endif
 	file->store_line("OFF");
 	file->store_line(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count));
 	file->store_line("\n# Vertices");
@@ -501,9 +514,14 @@ void OFFDocument::save_to_file_4d(const String &p_path) {
 	if (_edge_count == 0) {
 		_count_unique_edges_from_faces();
 	}
+#if GDEXTENSION
+	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
+	ERR_FAIL_COND_MSG(file.is_null(), "Error: Could not open file " + p_path + " for writing.");
+#elif GODOT_MODULE
 	Error err;
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
 	ERR_FAIL_COND_MSG(err != OK, "Error: Could not open file " + p_path + " for writing.");
+#endif
 	file->store_line("4OFF");
 	file->store_line(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count) + " " + String::num(_cell_face_indices.size()));
 	file->store_line("\n# Vertices");

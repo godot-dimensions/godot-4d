@@ -5,8 +5,8 @@
 env = SConscript("addons/4d/src/godot-cpp/SConstruct")
 
 # Add source files.
-env.Append(CPPPATH=["./,addons/4d/src/", "math/", "nodes/", "resources/", "mesh", "mesh/tetra", "mesh/wire", "physics/", "physics/resources/"])
-sources = Glob("*.cpp") + Glob("addons/4d/src/*.cpp") + Glob("math/*.cpp") + Glob("nodes/*.cpp") + Glob("resources/*.cpp") + Glob("mesh/*.cpp") + Glob("mesh/tetra/*.cpp") + Glob("mesh/wire/*.cpp") + Glob("physics/*.cpp") + Glob("physics/resources/*.cpp")
+env.Append(CPPPATH=["./,addons/4d/src/", "math/", "nodes/", "resources/", "mesh", "mesh/off", "mesh/tetra", "mesh/wire", "physics/", "physics/shapes/"])
+sources = Glob("*.cpp") + Glob("addons/4d/src/*.cpp") + Glob("math/*.cpp") + Glob("nodes/*.cpp") + Glob("resources/*.cpp") + Glob("mesh/*.cpp") + Glob("mesh/off/*.cpp") + Glob("mesh/tetra/*.cpp") + Glob("mesh/wire/*.cpp") + Glob("physics/*.cpp") + Glob("physics/shapes/*.cpp")
 
 if env["target"] == "editor":
     env.Append(CPPPATH=["editor/", "editor/off/"])
