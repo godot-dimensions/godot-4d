@@ -8,6 +8,7 @@
 #include "editor/plugins/editor_plugin.h"
 #endif
 
+// General.
 #include "math/basis_4d_bind.h"
 #include "math/euler_4d_bind.h"
 #include "math/geometry_4d.h"
@@ -15,8 +16,14 @@
 #include "math/vector_4d.h"
 #include "nodes/node_4d.h"
 
-#include "editor/godot_4d_editor_plugin.h"
+// Virtual classes.
+#include "mesh/material_4d.h"
+#include "mesh/mesh_4d.h"
+#include "mesh/tetra/tetra_mesh_4d.h"
+#include "mesh/wire/wire_mesh_4d.h"
+#include "physics/shapes/shape_4d.h"
 
+// Mesh.
 #include "mesh/mesh_instance_4d.h"
 #include "mesh/off/off_document.h"
 #include "mesh/tetra/array_tetra_mesh_4d.h"
@@ -28,6 +35,7 @@
 #include "mesh/wire/orthoplex_wire_mesh_4d.h"
 #include "mesh/wire/wire_material_4d.h"
 
+// Physics.
 #include "physics/collision_shape_4d.h"
 #include "physics/shapes/box_shape_4d.h"
 #include "physics/shapes/capsule_shape_4d.h"
@@ -35,8 +43,11 @@
 #include "physics/shapes/cylinder_shape_4d.h"
 #include "physics/shapes/duocylinder_shape_4d.h"
 #include "physics/shapes/orthoplex_shape_4d.h"
-#include "physics/shapes/shape_4d.h"
 #include "physics/shapes/sphere_shape_4d.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/godot_4d_editor_plugin.h"
+#endif // TOOLS_ENABLED
 
 inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
 #if GDEXTENSION
@@ -67,6 +78,12 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Geometry4D", memnew(Geometry4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
+		// Virtual classes.
+		GDREGISTER_VIRTUAL_CLASS(Material4D);
+		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
+		GDREGISTER_VIRTUAL_CLASS(Shape4D);
+		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
+		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
 		// Mesh.
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
 		GDREGISTER_CLASS(ArrayWireMesh4D);
@@ -78,10 +95,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
 		GDREGISTER_CLASS(TetraMaterial4D);
 		GDREGISTER_CLASS(WireMaterial4D);
-		GDREGISTER_VIRTUAL_CLASS(Material4D);
-		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
-		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
-		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
 		// Physics.
 		GDREGISTER_CLASS(BoxShape4D);
 		GDREGISTER_CLASS(CapsuleShape4D);
@@ -91,7 +104,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(DuocylinderShape4D);
 		GDREGISTER_CLASS(OrthoplexShape4D);
 		GDREGISTER_CLASS(SphereShape4D);
-		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		EditorPlugins::add_by_type<Godot4DEditorPlugin>();
@@ -102,6 +114,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		remove_godot_singleton("Basis4D");
+		remove_godot_singleton("Geometry4D");
 		remove_godot_singleton("Vector4D");
 	}
 }

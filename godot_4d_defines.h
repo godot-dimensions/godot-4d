@@ -17,8 +17,7 @@
 #if GDEXTENSION
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/string.hpp>
-// We will have no namespace collisions with Godot, and the namespace does
-// not exist when building as a module, so just use the namespace.
+// Including the namespace helps make GDExtension code more similar to module code.
 using namespace godot;
 #elif GODOT_MODULE
 #include "core/object/class_db.h"

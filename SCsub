@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# This file is for building as a Godot module.
+# This file is for building as a Godot engine module.
 
 Import("env")
 Import("env_modules")
@@ -13,8 +13,9 @@ env_4d.add_source_files(env.modules_sources, "*.cpp")
 env_4d.add_source_files(env.modules_sources, "math/*.cpp")
 env_4d.add_source_files(env.modules_sources, "nodes/*.cpp")
 env_4d.add_source_files(env.modules_sources, "resources/*.cpp")
-if env.editor_build:
-    SConscript("editor/SCsub")
 
 SConscript("mesh/SCsub")
 SConscript("physics/SCsub")
+
+if env.editor_build:
+    SConscript("editor/SCsub")

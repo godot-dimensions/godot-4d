@@ -15,6 +15,12 @@ linux.debug.arm64 = "bin/libgodot_4d.linux.debug.arm64.so"
 linux.release.arm64 = "bin/libgodot_4d.linux.release.arm64.so"
 linux.debug.rv64 = "bin/libgodot_4d.linux.debug.rv64.so"
 linux.release.rv64 = "bin/libgodot_4d.linux.release.rv64.so"
+web.debug.wasm32 = "bin/libgodot_4d.web.debug.wasm32.wasm"
+web.release.wasm32 = "bin/libgodot_4d.web.release.wasm32.wasm"
+android.debug.arm64 = "bin/libgodot_4d.android.debug.arm64.so"
+android.release.arm64 = "bin/libgodot_4d.android.release.arm64.so"
+ios.debug = "bin/libgodot_4d.ios.debug.universal.dylib"
+ios.release = "bin/libgodot_4d.ios.release.universal.dylib"
 
 [icons]
 

@@ -5,55 +5,57 @@
 constexpr real_t _1D6 = 1.0 / 6.0;
 constexpr real_t _5D6 = 5.0 / 6.0;
 
-const PackedVector4Array ORTHOPLEX_CELL_NORMALS = {
-	Vector4(-0.5f, -0.5f, -0.5f, -0.5f),
-	Vector4(+0.5f, -0.5f, -0.5f, -0.5f),
-	Vector4(+0.5f, +0.5f, -0.5f, -0.5f),
-	Vector4(-0.5f, +0.5f, -0.5f, -0.5f),
-	Vector4(-0.5f, +0.5f, +0.5f, -0.5f),
-	Vector4(+0.5f, +0.5f, +0.5f, -0.5f),
-	Vector4(+0.5f, -0.5f, +0.5f, -0.5f),
-	Vector4(-0.5f, -0.5f, +0.5f, -0.5f),
-	Vector4(-0.5f, -0.5f, +0.5f, +0.5f),
-	Vector4(+0.5f, -0.5f, +0.5f, +0.5f),
-	Vector4(+0.5f, +0.5f, +0.5f, +0.5f),
-	Vector4(-0.5f, +0.5f, +0.5f, +0.5f),
-	Vector4(-0.5f, +0.5f, -0.5f, +0.5f),
-	Vector4(+0.5f, +0.5f, -0.5f, +0.5f),
-	Vector4(+0.5f, -0.5f, -0.5f, +0.5f),
-	Vector4(-0.5f, -0.5f, -0.5f, +0.5f),
-};
-
-// This code is much harder to read without alignment, so disabling clang-format just for the next hundred lines or so.
+// We have to use #define below because static constants will crash GDExtension.
+// This code is much harder to read when clang-format messes with the manual alignment,
+// so disabling clang-format just for the next hundred lines or so.
 /* clang-format off */
-static const PackedInt32Array ORTHOPLEX_CELL_INDICES = {
-	6, 0, 2, 4, 1, 2, 4, 6, 6, 1, 3, 4, 0, 3, 4, 6, // -W and -Z
-	6, 0, 3, 5, 1, 3, 5, 6, 6, 1, 2, 5, 0, 2, 5, 6, // -W and +Z
-	7, 0, 2, 5, 1, 2, 5, 7, 7, 1, 3, 5, 0, 3, 5, 7, // +W and +Z
-	7, 0, 3, 4, 1, 3, 4, 7, 7, 1, 2, 4, 0, 2, 4, 7, // +W and -Z
-};
+#define ORTHOPLEX_CELL_NORMALS PackedVector4Array { \
+	Vector4(-0.5f, -0.5f, -0.5f, -0.5f), \
+	Vector4(+0.5f, -0.5f, -0.5f, -0.5f), \
+	Vector4(+0.5f, +0.5f, -0.5f, -0.5f), \
+	Vector4(-0.5f, +0.5f, -0.5f, -0.5f), \
+	Vector4(-0.5f, +0.5f, +0.5f, -0.5f), \
+	Vector4(+0.5f, +0.5f, +0.5f, -0.5f), \
+	Vector4(+0.5f, -0.5f, +0.5f, -0.5f), \
+	Vector4(-0.5f, -0.5f, +0.5f, -0.5f), \
+	Vector4(-0.5f, -0.5f, +0.5f, +0.5f), \
+	Vector4(+0.5f, -0.5f, +0.5f, +0.5f), \
+	Vector4(+0.5f, +0.5f, +0.5f, +0.5f), \
+	Vector4(-0.5f, +0.5f, +0.5f, +0.5f), \
+	Vector4(-0.5f, +0.5f, -0.5f, +0.5f), \
+	Vector4(+0.5f, +0.5f, -0.5f, +0.5f), \
+	Vector4(+0.5f, -0.5f, -0.5f, +0.5f), \
+	Vector4(-0.5f, -0.5f, -0.5f, +0.5f), \
+}
 
-const PackedVector3Array ORTHOPLEX_CELL_UVW_MAP = {
-	// -W and -Z
-	Vector3(_1D6, _1D6, _1D6), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f),
-	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(_5D6, _1D6, _1D6),
-	Vector3(_5D6, _5D6, _1D6), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f),
-	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(_1D6, _5D6, _1D6),
-	// -W and +Z
-	Vector3(_1D6, _5D6, _5D6), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f),
-	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(_5D6, _5D6, _5D6),
-	Vector3(_5D6, _1D6, _5D6), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f),
-	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(_1D6, _1D6, _5D6),
-	// +W and +Z
-	Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f),
-	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(0.5f, 0.5f, 0.5f),
-	Vector3(0.5f, 0.5f, 0.5f), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f),
-	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(0.5f, 0.5f, 0.5f),
-	// +W and -Z
-	Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f),
-	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(0.5f, 0.5f, 0.5f),
-	Vector3(0.5f, 0.5f, 0.5f), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f),
-	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(0.5f, 0.5f, 0.5f),
+#define ORTHOPLEX_CELL_INDICES PackedInt32Array { \
+	6, 0, 2, 4, 1, 2, 4, 6, 6, 1, 3, 4, 0, 3, 4, 6, /* -W and -Z */ \
+	6, 0, 3, 5, 1, 3, 5, 6, 6, 1, 2, 5, 0, 2, 5, 6, /* -W and +Z */ \
+	7, 0, 2, 5, 1, 2, 5, 7, 7, 1, 3, 5, 0, 3, 5, 7, /* +W and +Z */ \
+	7, 0, 3, 4, 1, 3, 4, 7, 7, 1, 2, 4, 0, 2, 4, 7, /* +W and -Z */ \
+}
+
+#define ORTHOPLEX_CELL_UVW_MAP PackedVector3Array { \
+	/* -W and -Z */ \
+	Vector3(_1D6, _1D6, _1D6), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
+	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(_5D6, _1D6, _1D6), \
+	Vector3(_5D6, _5D6, _1D6), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
+	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(_1D6, _5D6, _1D6), \
+	/* -W and +Z */ \
+	Vector3(_1D6, _5D6, _5D6), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), \
+	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(_5D6, _5D6, _5D6), \
+	Vector3(_5D6, _1D6, _5D6), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), \
+	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(_1D6, _1D6, _5D6), \
+	/* +W and +Z */ \
+	Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), \
+	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(0.5f, 0.5f, 0.5f), \
+	Vector3(0.5f, 0.5f, 0.5f), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), \
+	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(0.5f, 0.5f, 0.5f), \
+	/* +W and -Z */ \
+	Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
+	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(0.5f, 0.5f, 0.5f), \
+	Vector3(0.5f, 0.5f, 0.5f), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
+	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(0.5f, 0.5f, 0.5f), \
 };
 /* clang-format on */
 

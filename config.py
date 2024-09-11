@@ -1,3 +1,4 @@
+# This file is for building as a Godot module.
 def can_build(env, platform):
     # 4D depends on 3D to reuse things like Camera3D and AudioListener3D.
     return not env["disable_3d"]

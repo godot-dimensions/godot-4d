@@ -12,7 +12,3 @@ config_version=5
 
 config/name="Godot 4D Test Project"
 config/features=PackedStringArray("4.3")
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/4d/plugin.cfg")

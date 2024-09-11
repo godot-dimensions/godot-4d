@@ -1,1 +1,12 @@
 bin/
+*.bc
+*.dblite
+*.gen.*
+*.lib
+*.o
+*.obj
+*.os
+*.pdb
+*.pyc
+*.so
+*.tmp

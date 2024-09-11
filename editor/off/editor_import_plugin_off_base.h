@@ -10,6 +10,7 @@
 #define GDEXTMOD_GET_IMPORTER_NAME _get_importer_name
 #define GDEXTMOD_GET_PRESET_COUNT _get_preset_count
 #define GDEXTMOD_GET_PRESET_NAME _get_preset_name
+#define GDEXTMOD_GET_PRIORITY _get_priority
 #define GDEXTMOD_GET_RESOURCE_TYPE _get_resource_type
 #define GDEXTMOD_GET_SAVE_EXTENSION _get_save_extension
 #define GDEXTMOD_GET_VISIBLE_NAME _get_visible_name
@@ -20,6 +21,7 @@
 #define GDEXTMOD_GET_IMPORTER_NAME get_importer_name
 #define GDEXTMOD_GET_PRESET_COUNT get_preset_count
 #define GDEXTMOD_GET_PRESET_NAME get_preset_name
+#define GDEXTMOD_GET_PRIORITY get_priority
 #define GDEXTMOD_GET_RESOURCE_TYPE get_resource_type
 #define GDEXTMOD_GET_SAVE_EXTENSION get_save_extension
 #define GDEXTMOD_GET_VISIBLE_NAME get_visible_name
