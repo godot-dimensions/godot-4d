@@ -47,7 +47,7 @@ def get_doc_classes():
 
 
 def get_doc_path():
-    return "doc_classes"
+    return "addons/4d/doc_classes"
 
 
 def get_icons_path():
