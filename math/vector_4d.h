@@ -25,6 +25,7 @@ public:
 	static Vector4 from_3d(const Vector3 &p_vector);
 	static Vector3 to_3d(const Vector4 &p_vector);
 
+	static Vector4D *get_singleton() { return singleton; }
 	Vector4D() { singleton = this; }
 	~Vector4D() { singleton = nullptr; }
 };

@@ -10,6 +10,14 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="get_active_material" qualifiers="const">
+			<return type="Material4D" />
+			<description>
+				Returns the currently active [Material4D] for this mesh instance. If [member material_override] is set, this will return that material. Otherwise, if [member mesh] is set to a valid [Mesh4D], this will return the material set on that mesh. If neither of these are set, this will return null.
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="material_override" type="Material4D" setter="set_material_override" getter="get_material_override">
 			The [Material4D] used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. This property overrides the per-mesh material set on the [Mesh4D] resource in the [Mesh4D.material] property.

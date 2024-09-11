@@ -12,7 +12,6 @@
 
 namespace godot_4d_bind {
 class Transform4D;
-// Stateless helper class to bind methods for Euler4D.
 class Euler4D : public RefCounted {
 	GDCLASS(Euler4D, RefCounted);
 

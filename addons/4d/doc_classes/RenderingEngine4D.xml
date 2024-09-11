@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RenderingEngine4D" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Abstract base class for 4D rendering engines.
+	</brief_description>
+	<description>
+		RenderingEngine4D provides an interface for implementing 4D renderers. It is an abstract base class, so it must be extended to be used.
+		In comparison to Godot's rendering architecture, this is the 4D equivalent of RendererScene (not exposed). Godot's RendererScene is named "scene" to distinguish 3D scene rendering from 2D canvas rendering, but for 4D we do not need to distinguish from canvas rendering, and so we call this "rendering engine" for naming parity with physics engines.
+		[b]Note:[/b] All of the properties in this class will be overwritten by [RenderingServer4D] each frame. Modifying them will have no external effect.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_render_frame" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Callback method to render a frame. This method is called by [RenderingServer4D] every frame. The current camera, all meshes, and their transforms are passed in.
+			</description>
+		</method>
+		<method name="_setup_for_viewport" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Callback method to set up the rendering engine for a viewport. This method is called by [RenderingServer4D] once per viewport before calling [method _render_frame] for the first time for that viewport. In this function, only [member viewport] may be accessed. All other properties must not be accessed inside this function as they may contain stale data from other viewports or be null/empty.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="camera" type="Camera4D" setter="set_camera" getter="get_camera">
+			The [Camera4D] node currently being rendererd by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame].
+		</member>
+		<member name="mesh_instances" type="MeshInstance4D[]" setter="set_mesh_instances" getter="get_mesh_instances">
+			An array of visible [MeshInstance4D] nodes to be rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_relative_basises] and [member mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.
+		</member>
+		<member name="mesh_relative_basises" type="Projection[]" setter="set_mesh_relative_basises" getter="get_mesh_relative_basises">
+			The basis part of the mesh transform relative to the camera. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_instances] and [member mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.
+		</member>
+		<member name="mesh_relative_positions" type="PackedVector4Array" setter="set_mesh_relative_positions" getter="get_mesh_relative_positions">
+			The position part of the mesh transform relative to the camera. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_instances] and [member mesh_relative_basises] arrays, and each index of each array will correspond to the mesh at that index.
+		</member>
+		<member name="viewport" type="Viewport" setter="set_viewport" getter="get_viewport">
+			The [Viewport] that the rendering engine is rendering to. This will be set by [RenderingServer4D] before calling [method _setup_for_viewport].
+		</member>
+	</members>
+</class>

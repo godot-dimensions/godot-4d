@@ -131,18 +131,24 @@ public:
 	// Transformation methods.
 	static Vector4 proj_xform(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Vector4 &p_child_vector);
 	static Projection proj_xform_basis(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Projection &p_child_basis);
+	static PackedVector4Array proj_xform_many(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const PackedVector4Array &p_child_vectors);
 	static Vector4 array_xform(const PackedRealArray &p_transform, const Vector4 &p_child_vector);
 	static Projection array_xform_basis(const PackedRealArray &p_transform, const Projection &p_child_basis);
+	static PackedVector4Array array_xform_many(const PackedRealArray &p_transform, const PackedVector4Array &p_child_vectors);
 
 	static Vector4 proj_xform_inv(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Vector4 &p_vector);
 	static Projection proj_xform_inv_basis(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Projection &p_basis);
+	static PackedVector4Array proj_xform_inv_many(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const PackedVector4Array &p_vectors);
 	static Vector4 array_xform_inv(const PackedRealArray &p_transform, const Vector4 &p_vector);
 	static Projection array_xform_inv_basis(const PackedRealArray &p_transform, const Projection &p_basis);
+	static PackedVector4Array array_xform_inv_many(const PackedRealArray &p_transform, const PackedVector4Array &p_vectors);
 
 	static Vector4 proj_xform_transposed(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Vector4 &p_vector);
 	static Projection proj_xform_transposed_basis(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Projection &p_basis);
+	static PackedVector4Array proj_xform_transposed_many(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const PackedVector4Array &p_vectors);
 	static Vector4 array_xform_transposed(const PackedRealArray &p_transform, const Vector4 &p_vector);
 	static Projection array_xform_transposed_basis(const PackedRealArray &p_transform, const Projection &p_basis);
+	static PackedVector4Array array_xform_transposed_many(const PackedRealArray &p_transform, const PackedVector4Array &p_vectors);
 
 	// Inversion methods.
 	static PackedRealArray array_inverse(const PackedRealArray &p_transform);

@@ -11,8 +11,11 @@ class MeshInstance4D : public Node4D {
 
 protected:
 	static void _bind_methods();
+	void _notification(int p_what);
 
 public:
+	Ref<Material4D> get_active_material() const;
+
 	Ref<Material4D> get_material_override() const;
 	void set_material_override(const Ref<Material4D> &p_material_override);
 

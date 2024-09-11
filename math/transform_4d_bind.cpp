@@ -291,12 +291,20 @@ Projection godot_4d_bind::Transform4D::proj_xform_basis(const Projection &p_pare
 	return ::Transform4D(::Basis4D(p_parent_basis), p_parent_origin).xform_basis(Basis4D(p_child_basis));
 }
 
+PackedVector4Array godot_4d_bind::Transform4D::proj_xform_many(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const PackedVector4Array &p_child_vectors) {
+	return ::Transform4D(::Basis4D(p_parent_basis), p_parent_origin).xform_many(p_child_vectors);
+}
+
 Vector4 godot_4d_bind::Transform4D::array_xform(const PackedRealArray &p_transform, const Vector4 &p_child_vector) {
 	return ::Transform4D::from_array(p_transform).xform(p_child_vector);
 }
 
 Projection godot_4d_bind::Transform4D::array_xform_basis(const PackedRealArray &p_transform, const Projection &p_child_basis) {
 	return ::Transform4D::from_array(p_transform).xform_basis(Basis4D(p_child_basis));
+}
+
+PackedVector4Array godot_4d_bind::Transform4D::array_xform_many(const PackedRealArray &p_transform, const PackedVector4Array &p_child_vectors) {
+	return ::Transform4D::from_array(p_transform).xform_many(p_child_vectors);
 }
 
 Vector4 godot_4d_bind::Transform4D::proj_xform_inv(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Vector4 &p_vector) {
@@ -307,12 +315,20 @@ Projection godot_4d_bind::Transform4D::proj_xform_inv_basis(const Projection &p_
 	return ::Transform4D(::Basis4D(p_parent_basis), p_parent_origin).xform_inv_basis(Basis4D(p_basis));
 }
 
+PackedVector4Array godot_4d_bind::Transform4D::proj_xform_inv_many(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const PackedVector4Array &p_vectors) {
+	return ::Transform4D(::Basis4D(p_parent_basis), p_parent_origin).xform_inv_many(p_vectors);
+}
+
 Vector4 godot_4d_bind::Transform4D::array_xform_inv(const PackedRealArray &p_transform, const Vector4 &p_vector) {
 	return ::Transform4D::from_array(p_transform).xform_inv(p_vector);
 }
 
 Projection godot_4d_bind::Transform4D::array_xform_inv_basis(const PackedRealArray &p_transform, const Projection &p_basis) {
 	return ::Transform4D::from_array(p_transform).xform_inv_basis(Basis4D(p_basis));
+}
+
+PackedVector4Array godot_4d_bind::Transform4D::array_xform_inv_many(const PackedRealArray &p_transform, const PackedVector4Array &p_vectors) {
+	return ::Transform4D::from_array(p_transform).xform_inv_many(p_vectors);
 }
 
 Vector4 godot_4d_bind::Transform4D::proj_xform_transposed(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Vector4 &p_vector) {
@@ -323,12 +339,20 @@ Projection godot_4d_bind::Transform4D::proj_xform_transposed_basis(const Project
 	return ::Transform4D(::Basis4D(p_parent_basis), p_parent_origin).xform_transposed_basis(Basis4D(p_basis));
 }
 
+PackedVector4Array godot_4d_bind::Transform4D::proj_xform_transposed_many(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const PackedVector4Array &p_vectors) {
+	return ::Transform4D(::Basis4D(p_parent_basis), p_parent_origin).xform_transposed_many(p_vectors);
+}
+
 Vector4 godot_4d_bind::Transform4D::array_xform_transposed(const PackedRealArray &p_transform, const Vector4 &p_vector) {
 	return ::Transform4D::from_array(p_transform).xform_transposed(p_vector);
 }
 
 Projection godot_4d_bind::Transform4D::array_xform_transposed_basis(const PackedRealArray &p_transform, const Projection &p_basis) {
 	return ::Transform4D::from_array(p_transform).xform_transposed_basis(Basis4D(p_basis));
+}
+
+PackedVector4Array godot_4d_bind::Transform4D::array_xform_transposed_many(const PackedRealArray &p_transform, const PackedVector4Array &p_vectors) {
+	return ::Transform4D::from_array(p_transform).xform_transposed_many(p_vectors);
 }
 
 // Inversion methods.
@@ -466,16 +490,22 @@ void godot_4d_bind::Transform4D::_bind_methods() {
 	// Transformation methods.
 	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform", "parent_basis", "parent_origin", "child_vector"), &godot_4d_bind::Transform4D::proj_xform);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform_basis", "parent_basis", "parent_origin", "child_basis"), &godot_4d_bind::Transform4D::proj_xform_basis);
+	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform_many", "parent_basis", "parent_origin", "child_vectors"), &godot_4d_bind::Transform4D::proj_xform_many);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform", "transform", "child_vector"), &godot_4d_bind::Transform4D::array_xform);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform_basis", "transform", "child_basis"), &godot_4d_bind::Transform4D::array_xform_basis);
+	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform_many", "transform", "child_vectors"), &godot_4d_bind::Transform4D::array_xform_many);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform_inv", "parent_basis", "parent_origin", "vector"), &godot_4d_bind::Transform4D::proj_xform_inv);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform_inv_basis", "parent_basis", "parent_origin", "basis"), &godot_4d_bind::Transform4D::proj_xform_inv_basis);
+	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform_inv_many", "parent_basis", "parent_origin", "vectors"), &godot_4d_bind::Transform4D::proj_xform_inv_many);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform_inv", "transform", "vector"), &godot_4d_bind::Transform4D::array_xform_inv);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform_inv_basis", "transform", "basis"), &godot_4d_bind::Transform4D::array_xform_inv_basis);
+	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform_inv_many", "transform", "vectors"), &godot_4d_bind::Transform4D::array_xform_inv_many);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform_transposed", "parent_basis", "parent_origin", "vector"), &godot_4d_bind::Transform4D::proj_xform_transposed);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform_transposed_basis", "parent_basis", "parent_origin", "basis"), &godot_4d_bind::Transform4D::proj_xform_transposed_basis);
+	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_xform_transposed_many", "parent_basis", "parent_origin", "vectors"), &godot_4d_bind::Transform4D::proj_xform_transposed_many);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform_transposed", "transform", "vector"), &godot_4d_bind::Transform4D::array_xform_transposed);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform_transposed_basis", "transform", "basis"), &godot_4d_bind::Transform4D::array_xform_transposed_basis);
+	ClassDB::bind_static_method("Transform4D", D_METHOD("array_xform_transposed_many", "transform", "vectors"), &godot_4d_bind::Transform4D::array_xform_transposed_many);
 	// Inversion methods.
 	ClassDB::bind_static_method("Transform4D", D_METHOD("array_inverse", "transform"), &godot_4d_bind::Transform4D::array_inverse);
 	ClassDB::bind_static_method("Transform4D", D_METHOD("proj_inverse_to_array", "basis", "origin"), &godot_4d_bind::Transform4D::proj_inverse_to_array);

@@ -71,6 +71,7 @@ public:
 	static Projection from_wy(const real_t p_wy);
 	static Projection from_zw(const real_t p_zw);
 
+	static Basis4D *get_singleton() { return singleton; }
 	Basis4D() { singleton = this; }
 	~Basis4D() { singleton = nullptr; }
 };

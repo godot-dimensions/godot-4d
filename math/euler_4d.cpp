@@ -12,9 +12,6 @@ Basis4D Euler4D::to_basis() const {
 	// that adjacent axes have the upper-right sine negative (XY, YZ, ZW),
 	// axes one apart have the lower-left sine negative (ZX, WY), and axes
 	// two apart have the upper-right sine negative again (XW, not WX).
-	// This ensures that if you "take away" any one of the axes you always
-	// end up with an even number of "flips" (0 or 2) relative to 3D,
-	// therefore preserving the "handedness" of this coordinate system.
 	// If you are curious, a similar pattern could be extrapolated to 5D etc.
 	// 5D would be ZX, ZW, VZ, XW, VX, WV, YZ, XY, YV, WY.
 	Basis4D xw_basis = Basis4D::from_xw(xw);

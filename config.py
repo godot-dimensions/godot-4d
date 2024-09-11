@@ -12,9 +12,12 @@ def get_doc_classes():
     return [
         # General.
         "Basis4D",
+        "Camera4D",
         "Euler4D",
         "Geometry4D",
         "Node4D",
+        "RenderingEngine4D",
+        "RenderingServer4D",
         "Transform4D",
         "Vector4D",
         # Mesh.

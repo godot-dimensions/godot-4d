@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Camera4D" inherits="Node4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		4D camera for projecting 4D scenes onto a 2D screen.
+	</brief_description>
+	<description>
+		Camera4D is a camera designed to take 4D scenes and project them onto a 2D screen. It does this by first projecting 4D into 3D (first pass), then projecting 3D into 2D (second pass). The perspective transformation can be applied at either stage, but it is recommended to apply it at the 4D to 3D stage for better results.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear_current">
+			<return type="void" />
+			<param index="0" name="enable_next" type="bool" />
+			<description>
+				If this is the current camera, remove it from being current. If [param enable_next] is [code]true[/code], request to make the next camera current, if any. Cameras are activated in a round-robin fashion.
+			</description>
+		</method>
+		<method name="is_first_pass_perspective" qualifiers="const">
+			<return type="bool" />
+			<description>
+				The projection type's first pass is defined as the 4D to 3D projection. This function returns [code]true[/code] if the first pass is perspective, meaning [member projection_type] set to [constant PROJECTION4D_PERSPECTIVE_4D] or [constant PROJECTION4D_PERSPECTIVE_DUAL]. Returns [code]false[/code] if the first pass is orthographic, meaning [member projection_type] set to [constant PROJECTION4D_ORTHOGRAPHIC] or [constant PROJECTION4D_PERSPECTIVE_3D].
+			</description>
+		</method>
+		<method name="is_second_pass_perspective" qualifiers="const">
+			<return type="bool" />
+			<description>
+				The projection type's second pass is defined as the 3D to 2D projection. This function returns [code]true[/code] if the projection type's second pass is perspective, meaning [member projection_type] set to [constant PROJECTION4D_PERSPECTIVE_3D] or [constant PROJECTION4D_PERSPECTIVE_DUAL]. Returns [code]false[/code] if the second pass is orthographic, meaning [member projection_type] set to [constant PROJECTION4D_ORTHOGRAPHIC] or [constant PROJECTION4D_PERSPECTIVE_4D].
+			</description>
+		</method>
+		<method name="make_current">
+			<return type="void" />
+			<description>
+				Make this camera the current camera for the ancestor [Viewport]. If another camera is currently active, it will be deactivated. If this camera is already current, this function does nothing. This is the same as setting [member current] to [code]true[/code].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="current" type="bool" setter="set_current" getter="is_current" default="false">
+			If [code]true[/code], the ancestor [Viewport] is currently using this camera. Only one [Camera4D] node can be current at a time for each [Viewport].
+			If multiple cameras are a descendant of the [Viewport], the cameras will try to keep at least one of them current. For example, if two [Camera4D] nodes are present in the scene and only one is current, setting one camera's [member current] to [code]false[/code] will cause the other camera to be made current. If three or more [Camera4D] nodes are present in the scene, setting [member current] to [code]false[/code] on the active camera will result in the cameras activating in a round-robin fashion. To deactivate a camera without activating another, use [method clear_current] instead.
+		</member>
+		<member name="far" type="float" setter="set_far" getter="get_far" default="4000.0">
+			The distance to the far culling boundary for this camera relative to its local -Z axis. Higher values allow the camera to see further away, while decreasing can improve performance if it results in objects being partially or fully culled.
+		</member>
+		<member name="field_of_view_3d" type="float" setter="set_field_of_view_3d" getter="get_field_of_view_3d">
+			The field of view of the camera when projecting from 3D to 2D. This value is in radians, but is displayed as degrees in the inspector. The field of view must be between 0 and TAU / 2 radians (0 and 180 degrees), exclusive. The default field of view is TAU / 4 radians, or 90 degrees. This is only used when [member projection_type] is set to [constant PROJECTION4D_PERSPECTIVE_3D] and [member view_angle_type] is set to [constant VIEW_ANGLE4D_FIELD_OF_VIEW].
+		</member>
+		<member name="field_of_view_4d" type="float" setter="set_field_of_view_4d" getter="get_field_of_view_4d">
+			The field of view of the camera when projecting from 4D to 3D. This value is in radians, but is displayed as degrees in the inspector. The field of view must be between 0 and TAU / 2 radians (0 and 180 degrees), exclusive. The default field of view is TAU / 4 radians, or 90 degrees. This is only used when [member projection_type] is set to [constant PROJECTION4D_PERSPECTIVE_4D] and [member view_angle_type] is set to [constant VIEW_ANGLE4D_FIELD_OF_VIEW].
+		</member>
+		<member name="focal_length_3d" type="float" setter="set_focal_length_3d" getter="get_focal_length_3d">
+			The focal length of the camera when projecting from 3D to 2D. The sensor size is always 1 meter for simplicity, meaning that the default focal length of 1 meter results in a 90 degree field of view. This is only used when [member projection_type] is set to [constant PROJECTION4D_PERSPECTIVE_3D] and [member view_angle_type] is set to [constant VIEW_ANGLE4D_FOCAL_LENGTH].
+		</member>
+		<member name="focal_length_4d" type="float" setter="set_focal_length_4d" getter="get_focal_length_4d" default="1.0">
+			The focal length of the camera when projecting from 4D to 3D. The sensor size is always 1 meter for simplicity, meaning that the default focal length of 1 meter results in a 90 degree field of view. This is only used when [member projection_type] is set to [constant PROJECTION4D_PERSPECTIVE_4D] and [member view_angle_type] is set to [constant VIEW_ANGLE4D_FOCAL_LENGTH].
+		</member>
+		<member name="keep_aspect" type="int" setter="set_keep_aspect" getter="get_keep_aspect" enum="Camera4D.KeepAspect" default="1">
+			Controls whether the FOV, focal length, and/or size properties control the width or height of the camera's view. If [constant KEEP_WIDTH], these properties control the width, and if [constant KEEP_HEIGHT], they control the height. The other dimension will be adjusted to fill the window. By default, the height is kept, and the width is adjusted as the window is resized.
+		</member>
+		<member name="near" type="float" setter="set_near" getter="get_near" default="0.05">
+			The distance to the near culling boundary for this camera relative to its local -Z axis. Lower values allow the camera to see objects closer to its position, at the cost of lower precision across the [i]entire[/i] range. Values lower than the default can lead to increased Z-fighting.
+		</member>
+		<member name="orthographic_size" type="float" setter="set_orthographic_size" getter="get_orthographic_size">
+			The size in meters of the orthographic camera when projecting from 4D to 3D. This is only used when [member projection_type] is set to [constant PROJECTION4D_ORTHOGRAPHIC].
+		</member>
+		<member name="projection_type" type="int" setter="set_projection_type" getter="get_projection_type" enum="Camera4D.ProjectionType4D" default="1">
+			The type of projection to use for 4D to 2D projection. If [constant PROJECTION4D_ORTHOGRAPHIC], both 4D to 3D and 3D to 2D are projected orthographically. If [constant PROJECTION4D_PERSPECTIVE_4D], 4D to 3D is projected with perspective. If [constant PROJECTION4D_PERSPECTIVE_3D], 3D to 2D is projected with perspective.
+		</member>
+		<member name="rendering_engine" type="String" setter="set_rendering_engine" getter="get_rendering_engine" default="&quot;&quot;">
+			The rendering engine to use. Rendering engines must extend [RenderingEngine4D] and be registered with [method RenderingServer4D.register_rendering_engine] to be available as an option.
+		</member>
+		<member name="view_angle_type" type="int" setter="set_view_angle_type" getter="get_view_angle_type" enum="Camera4D.ViewAngleType" default="0">
+			Controls how the view angle or lens is defined: either focal length or field of view. Focal length is in meters, with a sensor size of 1 meter. Field of view is in radians, but is displayed as degrees in the inspector. This property is only used in the inspector, not at runtime.
+		</member>
+		<member name="w_fade_distance" type="float" setter="set_w_fade_distance" getter="get_w_fade_distance" default="5.0">
+			The distance in meters on the camera's local W axis at which objects will be fully faded out. If using transparency, this means the object will be invisible. This is only used when [member w_fade_enabled] is set.
+		</member>
+		<member name="w_fade_mode" type="int" setter="set_w_fade_mode" getter="get_w_fade_mode" enum="Camera4D.WFadeMode" default="1">
+			Controls if and how objects will fade out as they move farther away from the camera in the local W axis. When the distance exceeds [member w_fade_distance], the object will be fully faded out. If using transparency, this means the object will be invisible.
+		</member>
+	</members>
+	<constants>
+		<constant name="KEEP_WIDTH" value="0" enum="KeepAspect">
+			When resizing the 2D window, keep the view width constant. The FOV, focal length, and/or size properties will control the width of the camera's view. The height will be adjusted to fill the window.
+		</constant>
+		<constant name="KEEP_HEIGHT" value="1" enum="KeepAspect">
+			When resizing the 2D window, keep the view height constant. The FOV, focal length, and/or size properties will control the height of the camera's view. The width will be adjusted to fill the window.
+		</constant>
+		<constant name="PROJECTION4D_ORTHOGRAPHIC" value="0" enum="ProjectionType4D">
+			Use orthographic projection for both 4D to 3D and 3D to 2D.
+		</constant>
+		<constant name="PROJECTION4D_PERSPECTIVE_4D" value="1" enum="ProjectionType4D">
+			Use perspective projection when projecting 4D to 3D. This is the recommended setting.
+		</constant>
+		<constant name="PROJECTION4D_PERSPECTIVE_3D" value="2" enum="ProjectionType4D">
+			Use perspective projection when projecting 3D to 2D.
+		</constant>
+		<constant name="PROJECTION4D_PERSPECTIVE_DUAL" value="3" enum="ProjectionType4D">
+			Use perspective projection for both 4D to 3D and 3D to 2D. This setting produces strange results, and is not recommended. It is included for completeness.
+		</constant>
+		<constant name="VIEW_ANGLE_FOCAL_LENGTH" value="0" enum="ViewAngleType">
+			Use focal length to control the view angle. The sensor size is always 1 meter for simplicity. This is only used in the inspector, not at runtime.
+		</constant>
+		<constant name="VIEW_ANGLE_FIELD_OF_VIEW" value="1" enum="ViewAngleType">
+			Use field of view to control the view angle. This is only used in the inspector, not at runtime.
+		</constant>
+		<constant name="W_FADE_DISABLED" value="0" enum="WFadeMode">
+			Objects will not fade out as they move farther away from the camera in the local W axis.
+		</constant>
+		<constant name="W_FADE_TRANSPARENCY" value="1" enum="WFadeMode">
+			Objects will fade out by becoming more transparent as they move farther away from the camera in the local W axis.
+		</constant>
+		<constant name="W_FADE_HUE_SHIFT" value="2" enum="WFadeMode">
+			Objects will fade out by shifting their hue as they move farther away from the camera in the local W axis. Objects in the -W direction will shift towards red, and objects in the +W direction will shift towards blue.
+		</constant>
+		<constant name="W_FADE_TRANSPARENCY_HUE_SHIFT" value="3" enum="WFadeMode">
+			Objects will fade out according to both [constant W_FADE_TRANSPARENCY] and [constant W_FADE_HUE_SHIFT].
+		</constant>
+	</constants>
+</class>

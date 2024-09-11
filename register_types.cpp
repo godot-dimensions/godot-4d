@@ -14,6 +14,7 @@
 #include "math/geometry_4d.h"
 #include "math/transform_4d_bind.h"
 #include "math/vector_4d.h"
+#include "nodes/camera_4d.h"
 #include "nodes/node_4d.h"
 
 // Virtual classes.
@@ -45,6 +46,10 @@
 #include "physics/shapes/orthoplex_shape_4d.h"
 #include "physics/shapes/sphere_shape_4d.h"
 
+// Render.
+#include "render/rendering_engine_4d.h"
+#include "render/rendering_server_4d.h"
+
 #ifdef TOOLS_ENABLED
 #include "editor/godot_4d_editor_plugin.h"
 #endif // TOOLS_ENABLED
@@ -67,14 +72,19 @@ inline void remove_godot_singleton(const StringName &p_singleton_name) {
 
 void initialize_4d_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
+		// General.
 		GDREGISTER_CLASS(godot_4d_bind::Basis4D);
 		GDREGISTER_CLASS(godot_4d_bind::Euler4D);
 		GDREGISTER_CLASS(godot_4d_bind::Transform4D);
 		GDREGISTER_CLASS(Geometry4D);
 		GDREGISTER_CLASS(Vector4D);
+		// Render.
+		GDREGISTER_VIRTUAL_CLASS(RenderingEngine4D);
+		GDREGISTER_CLASS(RenderingServer4D);
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		// General.
 		GDREGISTER_CLASS(Node4D);
+		GDREGISTER_CLASS(Camera4D);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Geometry4D", memnew(Geometry4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
@@ -104,6 +114,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(DuocylinderShape4D);
 		GDREGISTER_CLASS(OrthoplexShape4D);
 		GDREGISTER_CLASS(SphereShape4D);
+		// Render.
+		add_godot_singleton("RenderingServer4D", memnew(RenderingServer4D));
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		EditorPlugins::add_by_type<Godot4DEditorPlugin>();

@@ -18,4 +18,8 @@ public:
 	static Vector4 closest_point_between_line_segments(const Vector4 &p_line1_a, const Vector4 &p_line1_b, const Vector4 &p_line2_a, const Vector4 &p_line2_b);
 	static PackedVector4Array closest_points_between_lines(const Vector4 &p_line1_point, const Vector4 &p_line1_dir, const Vector4 &p_line2_point, const Vector4 &p_line2_dir);
 	static PackedVector4Array closest_points_between_line_segments(const Vector4 &p_line1_a, const Vector4 &p_line1_b, const Vector4 &p_line2_a, const Vector4 &p_line2_b);
+
+	static Geometry4D *get_singleton() { return singleton; }
+	Geometry4D() { singleton = this; }
+	~Geometry4D() { singleton = nullptr; }
 };

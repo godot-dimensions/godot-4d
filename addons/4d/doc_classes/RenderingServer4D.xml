@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RenderingServer4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Manages 4D cameras and 4D rendering engines.
+	</brief_description>
+	<description>
+		RenderingServer4D is the glue that brings together objects in the scene and prepares them for rendering by a rendering engine. [Camera4D] and [MeshInstance4D] nodes will register themselves with the rendering server. Each frame, the rendering server will call the rendering engine to render the scene. The details of how the scene is rendered are up to the rendering engine.
+		In comparison to Godot's rendering architecture, this is the 4D equivalent of [RenderingServer], except that [RenderingServer] handles both 2D canvas rendering and 3D scene rendering, while RenderingServer4D only does one thing, 4D scene rendering.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_rendering_engine_names" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns a list of all [RenderingEngine4D] names that have been registered with the rendering server using [method register_rendering_engine].
+			</description>
+		</method>
+		<method name="register_rendering_engine">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="engine" type="RenderingEngine4D" />
+			<description>
+				Register a [RenderingEngine4D] with the rendering server. If registered in the editor, the rendering engine will be available as an option in the inspector of [Camera4D] nodes.
+			</description>
+		</method>
+		<method name="unregister_rendering_engine">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Unregister a [RenderingEngine4D] with the rendering server.
+			</description>
+		</method>
+	</methods>
+</class>

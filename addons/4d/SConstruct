@@ -5,8 +5,8 @@
 env = SConscript("src/godot-cpp/SConstruct")
 
 # Add source files.
-env.Append(CPPPATH=["./,src/,../../", "../../math", "../../nodes", "../../resources", "../../mesh", "../../mesh/off", "../../mesh/tetra", "../../mesh/wire", "../../physics", "../../physics/shapes"])
-sources = Glob("*.cpp") + Glob("src/*.cpp") + Glob("../../*.cpp") + Glob("../../math/*.cpp") + Glob("../../nodes/*.cpp") + Glob("../../resources/*.cpp") + Glob("../../mesh/*.cpp") + Glob("../../mesh/off/*.cpp") + Glob("../../mesh/tetra/*.cpp") + Glob("../../mesh/wire/*.cpp") + Glob("../../physics/*.cpp") + Glob("../../physics/shapes/*.cpp")
+env.Append(CPPPATH=["./,src/,../../", "../../math", "../../nodes", "../../resources", "../../mesh", "../../mesh/off", "../../mesh/tetra", "../../mesh/wire", "../../physics", "../../physics/shapes", "../../render"])
+sources = Glob("*.cpp") + Glob("src/*.cpp") + Glob("../../*.cpp") + Glob("../../math/*.cpp") + Glob("../../nodes/*.cpp") + Glob("../../resources/*.cpp") + Glob("../../mesh/*.cpp") + Glob("../../mesh/off/*.cpp") + Glob("../../mesh/tetra/*.cpp") + Glob("../../mesh/wire/*.cpp") + Glob("../../physics/*.cpp") + Glob("../../physics/shapes/*.cpp") + Glob("../../render/*.cpp")
 
 env.Append(CPPDEFINES=["GDEXTENSION"])
 

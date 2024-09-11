@@ -4,7 +4,7 @@
 		Class for working with 4D transformations.
 	</brief_description>
 	<description>
-		Transform4D is a 4x5 matrix used for 4D transformations. It is composed of a [Basis4D] matrix that can handle rotation, scale, and shearing, and a [Vector4] representing the origin position.
+		Transform4D is a 4x5 matrix used for 4D transformations (4 rows and 5 columns). It is composed of a [Basis4D] matrix that can handle rotation, scale, and shearing, and a [Vector4] representing the origin position.
 		In the GDScript bindings, the [Transform4D] class is a wrapper that provides two types of binding for the internal Transform4D struct methods. If instanced, you get a RefCounted object, which is easier to work with, but uses more memory and is pass-by-reference. Or, you can use the static methods, which are harder to work with but use less memory Since there is no Variant data type with at least 20 float values, all methods pass a Transform4D as either a PackedRealArray or a separate [Basis4D] and [Vector4] (with the basis passed as a [Projection]). The static methods are named with the prefix "array_" or "proj_" depending on their inputs to distinguish them from the instance methods.
 		Since Godot cannot return multiple values from a function, all transform data will be returned as a [Basis4D] or a [Vector4]. For operations that need to return both, you must call multiple functions.
 		To compose [Transform4D] structures together, use [method Basis4D.compose] on the basis matrices, then run [method Basis4D.xform] on the child's origin vector and add it to the parent's origin vector.
@@ -94,6 +94,22 @@
 				Inversely transforms the [param basis] [Basis4D] from the global space of the [Transform4D] defined by [param transform] to local space.
 			</description>
 		</method>
+		<method name="array_xform_inv_many" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="vectors" type="PackedVector4Array" />
+			<description>
+				Inversely transforms the [param vectors] [PackedVector4Array] from the global space of the [Transform4D] defined by [param transform] to local space.
+			</description>
+		</method>
+		<method name="array_xform_many" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="child_vectors" type="PackedVector4Array" />
+			<description>
+				Transforms the [param child_vectors] [PackedVector4Array] from the local space of the [Transform4D] defined by [param transform] to global space.
+			</description>
+		</method>
 		<method name="array_xform_transposed" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="transform" type="PackedFloat32Array" />
@@ -108,6 +124,14 @@
 			<param index="1" name="basis" type="Projection" />
 			<description>
 				Transforms the [param basis] [Basis4D] by the transpose of the [Transform4D] defined by [param transform]. If the [param transform] is orthonormal, this inversely transforms the basis like [method xform_inv_basis].
+			</description>
+		</method>
+		<method name="array_xform_transposed_many" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="transform" type="PackedFloat32Array" />
+			<param index="1" name="vectors" type="PackedVector4Array" />
+			<description>
+				Transforms the [param vectors] [PackedVector4Array] by the transpose of the [Transform4D] defined by [param transform]. If the [param transform] is orthonormal, this inversely transforms the vectors like [method xform_inv_many].
 			</description>
 		</method>
 		<method name="compose" qualifiers="const">
@@ -221,7 +245,7 @@
 		<method name="inverse" qualifiers="const">
 			<return type="Transform4D" />
 			<description>
-				Returns the inverse of this [Transform4D].
+				Returns the inverse of this [Transform4D]. This is the 4D equivalent of [method Transform3D.affine_inverse].
 			</description>
 		</method>
 		<method name="inverse_basis" qualifiers="const">
@@ -426,6 +450,24 @@
 				Inversely transforms the [param basis] [Basis4D] from the global space of the [Transform4D] defined by [param parent_basis] and [param parent_origin] to local space.
 			</description>
 		</method>
+		<method name="proj_xform_inv_many" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="vectors" type="PackedVector4Array" />
+			<description>
+				Inversely transforms the [param vectors] [PackedVector4Array] from the global space of the [Transform4D] defined by [param parent_basis] and [param parent_origin] to local space.
+			</description>
+		</method>
+		<method name="proj_xform_many" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="child_vectors" type="PackedVector4Array" />
+			<description>
+				Transforms the [param child_vectors] [PackedVector4Array] from the local space of the [Transform4D] defined by [param parent_basis] and [param parent_origin] to global space.
+			</description>
+		</method>
 		<method name="proj_xform_transposed" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="parent_basis" type="Projection" />
@@ -442,6 +484,15 @@
 			<param index="2" name="basis" type="Projection" />
 			<description>
 				Transforms the [param basis] [Basis4D] by the transpose of the [Transform4D] defined by [param parent_basis] and [param parent_origin]. If the [param parent_basis] is orthonormal, this inversely transforms the basis like [method xform_inv_basis].
+			</description>
+		</method>
+		<method name="proj_xform_transposed_many" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="parent_basis" type="Projection" />
+			<param index="1" name="parent_origin" type="Vector4" />
+			<param index="2" name="vectors" type="PackedVector4Array" />
+			<description>
+				Transforms the [param vectors] [PackedVector4Array] by the transpose of the [Transform4D] defined by [param parent_basis] and [param parent_origin]. If the [param parent_basis] is orthonormal, this inversely transforms the vectors like [method xform_inv_many].
 			</description>
 		</method>
 		<method name="rotate_global">
