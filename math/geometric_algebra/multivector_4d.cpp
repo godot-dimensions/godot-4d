@@ -277,6 +277,19 @@ Multivector4D Multivector4D::vector_product(const Vector4 &p_a, const Vector4 &p
 	return result;
 }
 
+// Like the vector product, but does not include the scalar part, only the bivector parts.
+// Consider using the Bivector4D class if you do not need a Multivector4D.
+Multivector4D Multivector4D::vector_wedge_product(const Vector4 &p_a, const Vector4 &p_b) {
+	Multivector4D result;
+	result.xy = p_a.x * p_b.y - p_a.y * p_b.x;
+	result.xz = p_a.x * p_b.z - p_a.z * p_b.x;
+	result.xw = p_a.x * p_b.w - p_a.w * p_b.x;
+	result.yz = p_a.y * p_b.z - p_a.z * p_b.y;
+	result.yw = p_a.y * p_b.w - p_a.w * p_b.y;
+	result.zw = p_a.z * p_b.w - p_a.w * p_b.z;
+	return result;
+}
+
 // Trivial getters and setters.
 
 real_t Multivector4D::get_scalar() const {

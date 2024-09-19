@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RigidBody4D" inherits="PhysicsBody4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D physics body that is moved by a dynamic physics simulation using forces and impulses.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="apply_force">
+			<return type="void" />
+			<param index="0" name="force" type="Vector4" />
+			<param index="1" name="position_offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<description>
+				Applies a force to the body at the given position offset. Both the force and position offset are in global coordinates relative to the body's origin (the tails of the vectors are at the body's origin).
+				The position offset is in meters (m), while the force is in Newtons (kg·m/s²). This function must only be called from within physics process callbacks, because it uses the physics step's delta time to calculate the force's effect on the body.
+			</description>
+		</method>
+		<method name="apply_impulse">
+			<return type="void" />
+			<param index="0" name="impulse" type="Vector4" />
+			<param index="1" name="position_offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<description>
+				Applies an impulse to the body at the given position offset. Both the impulse and position offset are in global coordinates relative to the body's origin (the tails of the vectors are at the body's origin).
+				The position offset is in meters (m), while the impulse is in Newton-seconds (kg·m/s). Since this function does not consider the physics step's delta time, it can be called from anywhere, and used for one-time impulses.
+			</description>
+		</method>
+		<method name="apply_local_force">
+			<return type="void" />
+			<param index="0" name="local_force" type="Vector4" />
+			<param index="1" name="local_position_offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<description>
+				Applies a local force to the body at the given local position offset. Both the local force and local position offset are in the body's local coordinates. This function is useful for making a body apply a force to itself, such as a thruster on a spaceship.
+				The position offset is in meters (m), while the force is in Newtons (kg·m/s²). This function must only be called from within physics process callbacks, because it uses the physics step's delta time to calculate the force's effect on the body.
+			</description>
+		</method>
+		<method name="apply_local_impulse">
+			<return type="void" />
+			<param index="0" name="local_impulse" type="Vector4" />
+			<param index="1" name="local_position_offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<description>
+				Applies a local impulse to the body at the given local position offset. Both the local impulse and local position offset are in the body's local coordinates. This function is useful for making a body apply an impulse to itself, such as recoil from firing a weapon.
+				The position offset is in meters (m), while the impulse is in Newton-seconds (kg·m/s). Since this function does not consider the physics step's delta time, it can be called from anywhere, and used for one-time impulses.
+			</description>
+		</method>
+		<method name="apply_local_torque">
+			<return type="void" />
+			<param index="0" name="torque" type="AABB" />
+			<description>
+				Applies a local torque to the body. The torque is in the body's local coordinates. This function is useful for making a body apply a torque to itself, such as a spinning wheel.
+				The torque is in Newton-meters (kg·m²/s²). This function must only be called from within physics process callbacks, because it uses the physics step's delta time to calculate the torque's effect on the body.
+				The torque is a Bivector4D exposed as an [AABB]. The X, Y, Z components correspond to the XY, XZ, and XW components of the bivector, while the width, height, and depth components correspond to the YZ, YW, and ZW components of the bivector. The length of the bivector is the magnitude of the torque, while the direction of the bivector is the shadow of the rotation in the 6 bivector rotation planes.
+			</description>
+		</method>
+		<method name="apply_local_torque_impulse">
+			<return type="void" />
+			<param index="0" name="torque_impulse" type="AABB" />
+			<description>
+				Applies a local torque impulse to the body. The torque impulse is in the body's local coordinates. This function is useful for making a body apply a torque impulse to itself, such as a spinning wheel.
+				The torque impulse is in Newton-meter-seconds (kg·m²/s). Since this function does not consider the physics step's delta time, it can be called from anywhere, and used for one-time torque impulses.
+				The torque is a Bivector4D exposed as an [AABB]. The X, Y, Z components correspond to the XY, XZ, and XW components of the bivector, while the width, height, and depth components correspond to the YZ, YW, and ZW components of the bivector. The length of the bivector is the magnitude of the torque, while the direction of the bivector is the shadow of the rotation in the 6 bivector rotation planes.
+			</description>
+		</method>
+		<method name="apply_torque">
+			<return type="void" />
+			<param index="0" name="torque" type="AABB" />
+			<description>
+				Applies a torque to the body. The torque is in global coordinates. This function is useful for making a body apply a torque to itself, such as a spinning wheel.
+				The torque is in Newton-meters (kg·m²/s²). This function must only be called from within physics process callbacks, because it uses the physics step's delta time to calculate the torque's effect on the body.
+				The torque is a Bivector4D exposed as an [AABB]. The X, Y, Z components correspond to the XY, XZ, and XW components of the bivector, while the width, height, and depth components correspond to the YZ, YW, and ZW components of the bivector. The length of the bivector is the magnitude of the torque, while the direction of the bivector is the shadow of the rotation in the 6 bivector rotation planes.
+			</description>
+		</method>
+		<method name="apply_torque_impulse">
+			<return type="void" />
+			<param index="0" name="torque_impulse" type="AABB" />
+			<description>
+				Applies a torque impulse to the body. The torque impulse is in global coordinates. This function is useful for making a body apply a torque impulse to itself, such as a spinning wheel.
+				The torque impulse is in Newton-meter-seconds (kg·m²/s). Since this function does not consider the physics step's delta time, it can be called from anywhere, and used for one-time torque impulses.
+				The torque is a Bivector4D exposed as an [AABB]. The X, Y, Z components correspond to the XY, XZ, and XW components of the bivector, while the width, height, and depth components correspond to the YZ, YW, and ZW components of the bivector. The length of the bivector is the magnitude of the torque, while the direction of the bivector is the shadow of the rotation in the 6 bivector rotation planes.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="angular_velocity" type="AABB" setter="set_angular_velocity" getter="get_angular_velocity" default="AABB(0, 0, 0, 0, 0, 0)">
+			The global angular velocity of the body as a 4D bivector. The length of the bivector corresponds to the angular speed in radians per second, while the direction of the bivector corresponds to the shadow of the rotation in the 6 bivector rotation planes. This is the same as [member angular_velocity_degrees], but in radians.
+			The position X, Y, Z components correspond to the XY, XZ, and XW components of the bivector, while the width, height, and depth components correspond to the YZ, YW, and ZW components of the bivector.
+			[b]Note:[/b] The bivector rotation planes are designed per geometric algebra rules, and are not the same as the Euler4D rotation planes, which are designed for similarity to 3D Euler angles. For example, the angular velocity bivector uses XZ, while the Euler4D rotation uses ZX like in 3D.
+		</member>
+		<member name="angular_velocity_degrees" type="AABB" setter="set_angular_velocity_degrees" getter="get_angular_velocity_degrees" default="AABB(0, 0, 0, 0, 0, 0)">
+			The global angular velocity of the body as a 4D bivector. The length of the bivector corresponds to the angular speed in degrees per second, while the direction of the bivector corresponds to the shadow of the rotation in the 6 bivector rotation planes. This is the same as [member angular_velocity], but in degrees.
+			The position X, Y, Z components correspond to the XY, XZ, and XW components of the bivector, while the width, height, and depth components correspond to the YZ, YW, and ZW components of the bivector.
+			[b]Note:[/b] The bivector rotation planes are designed per geometric algebra rules, and are not the same as the Euler4D rotation planes, which are designed for similarity to 3D Euler angles. For example, the angular velocity bivector uses XZ, while the Euler4D rotation uses ZX like in 3D.
+		</member>
+		<member name="gravity_scale" type="float" setter="set_gravity_scale" getter="get_gravity_scale" default="1.0">
+			The scale factor for gravity applied to the body. A value of 0.0 means no gravity, while a value of 1.0 means the full gravity force is applied. A negative value means the gravity force is reversed. Values other than 1.0 are not realistic, but can be used to achieve interesting artistic effects.
+		</member>
+		<member name="linear_velocity" type="Vector4" setter="set_linear_velocity" getter="get_linear_velocity" default="Vector4(0, 0, 0, 0)">
+			The global linear velocity of the body as a 4D vector. The length of the vector corresponds to the speed in meters per second.
+		</member>
+		<member name="mass" type="float" setter="set_mass" getter="get_mass" default="1.0">
+			The mass of the body in kilograms. This value must be positive.
+		</member>
+	</members>
+</class>

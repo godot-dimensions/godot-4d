@@ -37,8 +37,11 @@ def get_doc_classes():
         "WireMaterial4D",
         "WireMesh4D",
         # Physics.
+        "Area4D",
         "BoxShape4D",
         "CapsuleShape4D",
+        "CharacterBody4D",
+        "CollisionObject4D",
         "CollisionShape4D",
         "ConcaveTetrameshShape4D",
         "ConvexHullShape4D",
@@ -46,8 +49,13 @@ def get_doc_classes():
         "CylinderShape4D",
         "DuocylinderShape4D",
         "OrthoplexShape4D",
+        "PhysicsBody4D",
+        "PhysicsEngine4D",
+        "PhysicsServer4D",
+        "RigidBody4D",
         "Shape4D",
         "SphereShape4D",
+        "StaticBody4D",
     ]
 
 

@@ -27,6 +27,20 @@ TEST_CASE("[Basis4D] Conversion") {
 	CHECK_MESSAGE(Basis4D::from_3d(basis_3d) == basis_no_w, "Basis4D from_3d should work as expected.");
 }
 
+TEST_CASE("[Basis4D] Rotate Bivector") {
+	// Rotate by 90 degrees in the XY plane (X to Y).
+	const Basis4D basis = Basis4D::from_xy(Math_TAU / 4.0);
+	const Bivector4D bivector = Bivector4D(2, 3, 4, 5, 6, 7);
+	const Bivector4D rotated_bivector = basis.rotate_bivector(bivector);
+	// XY should not change because that's within the plane of rotation.
+	// ZW should not change because that's orthogonal to the plane of rotation.
+	// XZ and YZ are swapped because of the 90 degree rotation in the XY plane.
+	// Similarly, XW and YW are swapped because of the 90 degree rotation in the XY plane.
+	// For XY, X goes to Y when positive, so the items in the X spots (numbers 3 and 4) are just moved to the Y spots,
+	// while the items in the Y spots (numbers 5 and 6) are negated and moved to the X spots (to become -5 and -6).
+	CHECK_MESSAGE(rotated_bivector.is_equal_approx(Bivector4D(2, -5, -6, 3, 4, 7)), "Basis4D rotate_bivector should work as expected.");
+}
+
 TEST_CASE("[Basis4D] Scale") {
 	const Basis4D basis_uniform = Basis4D::from_scale_uniform(7);
 	CHECK_MESSAGE(basis_uniform.get_scale() == Vector4(7, 7, 7, 7), "Basis4D from_scale_uniform and get_scale should work as expected.");

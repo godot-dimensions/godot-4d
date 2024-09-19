@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../basis_4d.h"
+#include "../../godot_4d_defines.h"
 
 #if GDEXTENSION
 #include <godot_cpp/variant/aabb.hpp>

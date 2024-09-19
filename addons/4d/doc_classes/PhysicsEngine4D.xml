@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PhysicsEngine4D" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Abstract base class for 4D physics engines.
+	</brief_description>
+	<description>
+		PhysicsEngine4D provides an interface for implementing 4D physics engines. It is an abstract base class, so it must be extended to be used. Physics engines must be registered with [PhysicsServer4D] to be used.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_move_and_collide" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="body" type="PhysicsBody4D" />
+			<param index="1" name="motion" type="Vector4" />
+			<description>
+				Callback method to move a physics body with kinematic motion, and collide it with other physics objects in the scene. This method is called whenever [method PhysicsBody4D.move_and_collide] is called on a physics body. Physics engines should grab the list of other physics objects from the physics server and check for overlaps with the body, informing any area nodes when entering or exiting them, and resolving collisions with other physics bodies.
+			</description>
+		</method>
+		<method name="_move_area" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="area" type="Area4D" />
+			<param index="1" name="motion" type="Vector4" />
+			<description>
+				Callback method to move an area with kinematic motion. This method is called whenever [method Area4D.move] is called on an area. Physics engines should grab the list of other physics objects from the physics server and check for overlaps with the area, informing any area nodes when entering or exiting them, and informing this area when entering or exiting other areas or physics bodies.
+			</description>
+		</method>
+		<method name="_step_dynamic_rigid_body" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="body" type="RigidBody4D" />
+			<param index="1" name="delta" type="float" />
+			<description>
+				Callback method to step forward the motion of a dynamic rigid body based on its linear velocity and angular velocity. This method is called for each body once per physics frame. Physics engines should grab the list of other physics objects from the physics server and check for overlaps with the body, informing any area nodes when entering or exiting them, and resolving collisions with other physics bodies.
+			</description>
+		</method>
+	</methods>
+</class>

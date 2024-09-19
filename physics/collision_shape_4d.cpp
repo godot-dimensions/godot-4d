@@ -1,5 +1,54 @@
 #include "collision_shape_4d.h"
 
+#include "bodies/collision_object_4d.h"
+
+CollisionObject4D *CollisionShape4D::_get_ancestor_collision_object() const {
+	Node *parent = get_parent();
+	while (parent) {
+		Node4D *parent_4d = Object::cast_to<Node4D>(parent);
+		if (unlikely(!parent_4d)) {
+			return nullptr;
+		}
+		CollisionObject4D *co = Object::cast_to<CollisionObject4D>(parent);
+		if (likely(co)) {
+			return co;
+		}
+		parent = parent->get_parent();
+	}
+	return nullptr;
+}
+
+void CollisionShape4D::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE: {
+			_collision_object = _get_ancestor_collision_object();
+			if (_collision_object) {
+				_collision_object->register_collision_shape(this);
+			}
+		} break;
+		case NOTIFICATION_EXIT_TREE: {
+			if (_collision_object) {
+				_collision_object->unregister_collision_shape(this);
+			}
+			_collision_object = nullptr;
+		} break;
+	}
+}
+
+Transform4D CollisionShape4D::get_transform_to_collision_object() const {
+	Transform4D transform_to_col_obj = get_transform();
+	Node *parent = get_parent();
+	while (parent != _collision_object) {
+		Node4D *parent_4d = Object::cast_to<Node4D>(parent);
+		if (unlikely(!parent_4d)) {
+			break;
+		}
+		transform_to_col_obj = parent_4d->get_transform() * transform_to_col_obj;
+		parent = parent->get_parent();
+	}
+	return transform_to_col_obj;
+}
+
 Ref<Shape4D> CollisionShape4D::get_shape() const {
 	return _shape;
 }

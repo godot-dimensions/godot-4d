@@ -64,6 +64,7 @@ struct _NO_DISCARD_ Multivector4D {
 
 	// Static functions for doing math on non-Multivector4D types and returning a Multivector4D.
 	static Multivector4D vector_product(const Vector4 &p_a, const Vector4 &p_b);
+	static Multivector4D vector_wedge_product(const Vector4 &p_a, const Vector4 &p_b);
 	static Multivector4D rotor_vector_product(const Rotor4D &p_rotor, const Vector4 &p_vector);
 	static Multivector4D identity();
 

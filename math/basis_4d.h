@@ -2,6 +2,8 @@
 
 #include "../godot_4d_defines.h"
 
+#include "geometric_algebra/bivector_4d.h"
+
 #if GDEXTENSION
 #include <godot_cpp/variant/projection.hpp>
 #elif GODOT_MODULE
@@ -29,6 +31,7 @@ struct _NO_DISCARD_ Basis4D {
 	Vector4 xform(const Vector4 &p_vector) const;
 	Vector4 xform_inv(const Vector4 &p_vector) const;
 	Vector4 xform_transposed(const Vector4 &p_vector) const;
+	Bivector4D rotate_bivector(const Bivector4D &p_bivector) const;
 
 	// Inversion methods.
 	void transpose();

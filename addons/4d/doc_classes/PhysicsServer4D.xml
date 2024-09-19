@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PhysicsServer4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Physics server for managing 4D physics simulation and objects.
+	</brief_description>
+	<description>
+		PhysicsServer4D is the glue that brings together physics bodies and areas in the scene and prepares them for physics simulation by a physics engine. [PhysicsBody4D] and [Area4D] nodes will register themselves with the physics server. Each frame, the physics server will call the physics engine to simulate the scene. The details of how the scene is simulated are up to the physics engine.
+		[b]Note:[/b] Godot's 2D and 3D physics servers are data-driven and duplicate the relevant data from the scene nodes into the physics engine's data structures. For simplicity, PhysicsServer4D is node-driven, meaning that the data provided to physics engines is the actual scene nodes themselves. This will continue to be the case unless the additional complexity of data-driven physics is justified by benchmarks and the needs of actual projects.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_area_nodes" qualifiers="const">
+			<return type="Area4D[]" />
+			<description>
+				Gets an array of all area nodes in the scene. This is useful for physics engines to check for overlaps with areas.
+			</description>
+		</method>
+		<method name="get_physics_body_nodes" qualifiers="const">
+			<return type="PhysicsBody4D[]" />
+			<description>
+				Gets an array of all physics body nodes in the scene. This is useful for physics engines to check for overlaps with bodies.
+			</description>
+		</method>
+		<method name="get_physics_engine_names" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns a list of all [PhysicsEngine4D] names that have been registered with the physics server using [method register_physics_engine].
+			</description>
+		</method>
+		<method name="register_physics_engine">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="engine" type="PhysicsEngine4D" />
+			<description>
+				Register a physics engine extending [PhysicsEngine4D] with the physics server, making it available to be used.
+			</description>
+		</method>
+		<method name="unregister_physics_engine">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Unregister a physics engine with the physics server by name.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="active" type="bool" setter="set_active" getter="get_active" default="true">
+		</member>
+		<member name="current_physics_engine_name" type="String" setter="set_current_physics_engine_name" getter="get_current_physics_engine_name" default="&quot;GhostPhysicsEngine4D&quot;">
+			The name of the current physics engine being used. If only one physics engine is registered, this will be set to that engine's name automatically.
+		</member>
+	</members>
+</class>

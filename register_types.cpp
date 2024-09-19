@@ -38,7 +38,14 @@
 #include "mesh/wire/wire_material_4d.h"
 
 // Physics.
+#include "physics/bodies/area_4d.h"
+#include "physics/bodies/character_body_4d.h"
+#include "physics/bodies/rigid_body_4d.h"
+#include "physics/bodies/static_body_4d.h"
 #include "physics/collision_shape_4d.h"
+#include "physics/server/ghost_physics_engine_4d.h"
+#include "physics/server/physics_engine_4d.h"
+#include "physics/server/physics_server_4d.h"
 #include "physics/shapes/box_shape_4d.h"
 #include "physics/shapes/capsule_shape_4d.h"
 #include "physics/shapes/cubinder_shape_4d.h"
@@ -80,6 +87,9 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(godot_4d_bind::Transform4D);
 		GDREGISTER_CLASS(Geometry4D);
 		GDREGISTER_CLASS(Vector4D);
+		// Physics.
+		GDREGISTER_VIRTUAL_CLASS(PhysicsEngine4D);
+		GDREGISTER_CLASS(PhysicsServer4D);
 		// Render.
 		GDREGISTER_VIRTUAL_CLASS(RenderingEngine4D);
 		GDREGISTER_CLASS(RenderingServer4D);
@@ -108,14 +118,26 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(TetraMaterial4D);
 		GDREGISTER_CLASS(WireMaterial4D);
 		// Physics.
+		GDREGISTER_CLASS(Area4D);
 		GDREGISTER_CLASS(BoxShape4D);
 		GDREGISTER_CLASS(CapsuleShape4D);
+		GDREGISTER_CLASS(CharacterBody4D);
 		GDREGISTER_CLASS(CollisionShape4D);
 		GDREGISTER_CLASS(CubinderShape4D);
 		GDREGISTER_CLASS(CylinderShape4D);
 		GDREGISTER_CLASS(DuocylinderShape4D);
 		GDREGISTER_CLASS(OrthoplexShape4D);
+		GDREGISTER_CLASS(RigidBody4D);
 		GDREGISTER_CLASS(SphereShape4D);
+		GDREGISTER_CLASS(StaticBody4D);
+		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
+		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
+		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
+#ifdef TOOLS_ENABLED
+		physics_server->set_active(!Engine::get_singleton()->is_editor_hint());
+#endif // TOOLS_ENABLED
+		physics_server->register_physics_engine("GhostPhysicsEngine4D", memnew(GhostPhysicsEngine4D));
+		add_godot_singleton("PhysicsServer4D", physics_server);
 		// Render.
 		add_godot_singleton("RenderingServer4D", memnew(RenderingServer4D));
 #ifdef TOOLS_ENABLED

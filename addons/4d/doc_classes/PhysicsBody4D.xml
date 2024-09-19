@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PhysicsBody4D" inherits="CollisionObject4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Abstract base class for solid 4D physics bodies.
+	</brief_description>
+	<description>
+		PhysicsBody4D is the base class for all solid 4D physics objects. This includes static bodies used for level geometry, character bodies used for kinematic movement, and rigid bodies used for dynamic physics simulation.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="move_and_collide">
+			<return type="void" />
+			<param index="0" name="motion" type="Vector4" />
+			<description>
+				Moves the body by the given motion offset in 4D space, and collides it with other physics objects in the scene. If another solid objects is in the way, the body will stop moving.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="physics_material" type="PhysicsMaterial" setter="set_physics_material" getter="get_physics_material">
+			The [PhysicsMaterial] of the body, which determines the collision response of the surface, including friction and bounciness/restitution.
+		</member>
+	</members>
+</class>

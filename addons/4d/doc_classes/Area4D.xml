@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Area4D" inherits="CollisionObject4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A region of 4D hyperspace that detects other [CollisionObject4D]s entering or exiting it.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="move_area">
+			<return type="void" />
+			<param index="0" name="motion" type="Vector4" />
+			<description>
+				Moves the area by the given motion offset in 4D space. Area nodes will not stop moving if other physics objects are in the way, but will detect when other objects enter and exit them.
+			</description>
+		</method>
+	</methods>
+</class>

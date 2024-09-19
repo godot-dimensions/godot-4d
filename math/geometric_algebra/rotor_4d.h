@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../basis_4d.h"
 #include "bivector_4d.h"
 #include "trivector_4d.h"
 

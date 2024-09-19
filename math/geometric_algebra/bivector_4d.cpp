@@ -75,6 +75,8 @@ bool Bivector4D::is_normalized() const {
 
 // Static functions for doing math on non-Bivector4D types and returning a Bivector4D.
 
+// Like the vector product, but does not include the scalar part, only the bivector parts.
+// See Rotor4D::vector_product or Multivector4D::vector_product if you need the scalar part.
 Bivector4D Bivector4D::vector_wedge_product(const Vector4 &p_a, const Vector4 &p_b) {
 	Bivector4D result;
 	result.xy = p_a.x * p_b.y - p_a.y * p_b.x;

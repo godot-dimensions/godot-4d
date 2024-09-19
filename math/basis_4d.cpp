@@ -54,6 +54,37 @@ Vector4 Basis4D::xform_transposed(const Vector4 &p_vector) const {
 			w.dot(p_vector));
 }
 
+Bivector4D Basis4D::rotate_bivector(const Bivector4D &p_bivector) const {
+	// This commented-out code is simple, following the math, but computationally wasteful:
+	//Basis4D antisymmetric_matrix = Basis4D(
+	//		Vector4(0, -p_bivector.xy, -p_bivector.xz, -p_bivector.xw),
+	//		Vector4(p_bivector.xy, 0, -p_bivector.yz, -p_bivector.yw),
+	//		Vector4(p_bivector.xz, p_bivector.yz, 0, -p_bivector.zw),
+	//		Vector4(p_bivector.xw, p_bivector.yw, p_bivector.zw, 0));
+	//Basis4D transformed = *this * antisymmetric_matrix * transposed();
+	// Unroll the above calculation for efficiency (avoid computing half the matrix unnecessarily):
+	real_t wip_x_x = y.x * -p_bivector.xy + z.x * -p_bivector.xz + w.x * -p_bivector.xw;
+	real_t wip_x_y = x.x * +p_bivector.xy + z.x * -p_bivector.yz + w.x * -p_bivector.yw;
+	real_t wip_x_z = x.x * +p_bivector.xz + y.x * +p_bivector.yz + w.x * -p_bivector.zw;
+	real_t wip_x_w = x.x * +p_bivector.xw + y.x * +p_bivector.yw + z.x * +p_bivector.zw;
+	real_t wip_y_x = y.y * -p_bivector.xy + z.y * -p_bivector.xz + w.y * -p_bivector.xw;
+	real_t wip_y_y = x.y * +p_bivector.xy + z.y * -p_bivector.yz + w.y * -p_bivector.yw;
+	real_t wip_y_z = x.y * +p_bivector.xz + y.y * +p_bivector.yz + w.y * -p_bivector.zw;
+	real_t wip_y_w = x.y * +p_bivector.xw + y.y * +p_bivector.yw + z.y * +p_bivector.zw;
+	real_t wip_z_x = y.z * -p_bivector.xy + z.z * -p_bivector.xz + w.z * -p_bivector.xw;
+	real_t wip_z_y = x.z * +p_bivector.xy + z.z * -p_bivector.yz + w.z * -p_bivector.yw;
+	real_t wip_z_z = x.z * +p_bivector.xz + y.z * +p_bivector.yz + w.z * -p_bivector.zw;
+	real_t wip_z_w = x.z * +p_bivector.xw + y.z * +p_bivector.yw + z.z * +p_bivector.zw;
+	Bivector4D rotated;
+	rotated.xy = wip_x_x * x.y + wip_x_y * y.y + wip_x_z * z.y + wip_x_w * w.y;
+	rotated.xz = wip_x_x * x.z + wip_x_y * y.z + wip_x_z * z.z + wip_x_w * w.z;
+	rotated.xw = wip_x_x * x.w + wip_x_y * y.w + wip_x_z * z.w + wip_x_w * w.w;
+	rotated.yz = wip_y_x * x.z + wip_y_y * y.z + wip_y_z * z.z + wip_y_w * w.z;
+	rotated.yw = wip_y_x * x.w + wip_y_y * y.w + wip_y_z * z.w + wip_y_w * w.w;
+	rotated.zw = wip_z_x * x.w + wip_z_y * y.w + wip_z_z * z.w + wip_z_w * w.w;
+	return rotated;
+}
+
 // Inversion methods.
 
 Basis4D Basis4D::inverse() const {
