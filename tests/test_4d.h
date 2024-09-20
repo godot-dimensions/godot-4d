@@ -1,5 +1,7 @@
 #pragma once
 
+#include "math/geometric_algebra/test_multivector_4d.h"
+#include "math/geometric_algebra/test_rotor_4d.h"
 #include "math/test_basis_4d.h"
 #include "math/test_euler_4d.h"
 #include "math/test_geometry_4d.h"

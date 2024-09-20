@@ -43,7 +43,11 @@ compile_commands.json
 *.aps
 *.cachefile
 *.ncb
+*.arm32.obj
+*.arm64.obj
 *.o.obj
+*.x86_32.obj
+*.x86_64.obj
 *.opensdf
 *.sdf
 *.VC.db

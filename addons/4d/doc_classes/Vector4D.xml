@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Vector4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Extra math functions for Vector4.
+		Singleton with extra math functions for Vector4.
 	</brief_description>
 	<description>
 		Vector4D provides extra math functions for [Vector4], supplementing the functions Godot provides in Vector4.

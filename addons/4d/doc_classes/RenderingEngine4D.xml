@@ -4,7 +4,7 @@
 		Abstract base class for 4D rendering engines.
 	</brief_description>
 	<description>
-		RenderingEngine4D provides an interface for implementing 4D renderers. It is an abstract base class, so it must be extended to be used.
+		RenderingEngine4D provides an interface for implementing 4D renderers. It is an abstract base class, so it must be extended to be used. Rendering engines must be registered with [RenderingServer4D] to be used.
 		In comparison to Godot's rendering architecture, this is the 4D equivalent of RendererScene (not exposed). Godot's RendererScene is named "scene" to distinguish 3D scene rendering from 2D canvas rendering, but for 4D we do not need to distinguish from canvas rendering, and so we call this "rendering engine" for naming parity with physics engines.
 		[b]Note:[/b] All of the properties in this class will be overwritten by [RenderingServer4D] each frame. Modifying them will have no external effect.
 	</description>

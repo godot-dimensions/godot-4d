@@ -5,8 +5,39 @@
 env = SConscript("src/godot-cpp/SConstruct")
 
 # Add source files.
-env.Append(CPPPATH=["./,src/,../../", "../../math", "../../nodes", "../../resources", "../../mesh", "../../mesh/off", "../../mesh/tetra", "../../mesh/wire", "../../physics", "../../physics/shapes", "../../render"])
-sources = Glob("*.cpp") + Glob("src/*.cpp") + Glob("../../*.cpp") + Glob("../../math/*.cpp") + Glob("../../nodes/*.cpp") + Glob("../../resources/*.cpp") + Glob("../../mesh/*.cpp") + Glob("../../mesh/off/*.cpp") + Glob("../../mesh/tetra/*.cpp") + Glob("../../mesh/wire/*.cpp") + Glob("../../physics/*.cpp") + Glob("../../physics/shapes/*.cpp") + Glob("../../render/*.cpp")
+env.Append(
+    CPPPATH=[
+        "./,src/,../../",
+        "../../math",
+        "../../math/geometric_algebra",
+        "../../nodes",
+        "../../resources",
+        "../../mesh",
+        "../../mesh/off",
+        "../../mesh/tetra",
+        "../../mesh/wire",
+        "../../physics",
+        "../../physics/shapes",
+        "../../render",
+    ]
+)
+
+sources = (
+    Glob("*.cpp")
+    + Glob("src/*.cpp")
+    + Glob("../../*.cpp")
+    + Glob("../../math/*.cpp")
+    + Glob("../../math/geometric_algebra/*.cpp")
+    + Glob("../../nodes/*.cpp")
+    + Glob("../../resources/*.cpp")
+    + Glob("../../mesh/*.cpp")
+    + Glob("../../mesh/off/*.cpp")
+    + Glob("../../mesh/tetra/*.cpp")
+    + Glob("../../mesh/wire/*.cpp")
+    + Glob("../../physics/*.cpp")
+    + Glob("../../physics/shapes/*.cpp")
+    + Glob("../../render/*.cpp")
+)
 
 env.Append(CPPDEFINES=["GDEXTENSION"])
 
@@ -23,7 +54,9 @@ if not "arch_suffix" in env:
 
 if env["target"] in ["editor", "template_debug"]:
     try:
-        doc_data = env.GodotCPPDocData("src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml"))
+        doc_data = env.GodotCPPDocData(
+            "src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml")
+        )
         sources.append(doc_data)
     except AttributeError:
         print("Not including class reference as we're targeting a pre-4.3 baseline.")

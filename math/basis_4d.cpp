@@ -292,6 +292,10 @@ bool Basis4D::operator!=(const Basis4D &p_basis) const {
 			w != p_basis.w);
 }
 
+Basis4D Basis4D::operator-() const {
+	return Basis4D(-x, -y, -z, -w);
+}
+
 void Basis4D::operator*=(const Basis4D &p_matrix) {
 	*this = *this * p_matrix;
 }

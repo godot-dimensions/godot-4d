@@ -97,3 +97,5 @@ Plane4D::Plane4D(const Vector4 &p_point1, const Vector4 &p_point2, const Vector4
 	normal = basis.w;
 	distance = normal.dot(p_point1);
 }
+
+static_assert(sizeof(Plane4D) == 5 * sizeof(real_t));

@@ -111,6 +111,8 @@ struct _NO_DISCARD_ Basis4D {
 
 	bool operator==(const Basis4D &p_matrix) const;
 	bool operator!=(const Basis4D &p_matrix) const;
+	Basis4D operator-() const;
+
 	void operator*=(const Basis4D &p_matrix);
 	Basis4D operator*(const Basis4D &p_matrix) const;
 	Vector4 operator*(const Vector4 &p_vector) const;

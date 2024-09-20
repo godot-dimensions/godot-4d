@@ -10,3 +10,10 @@ bin/
 *.pyc
 *.so
 *.tmp
+
+# Windows
+*.arm32.obj
+*.arm64.obj
+*.o.obj
+*.x86_32.obj
+*.x86_64.obj

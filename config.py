@@ -18,6 +18,7 @@ def get_doc_classes():
         "Node4D",
         "RenderingEngine4D",
         "RenderingServer4D",
+        "Rotor4D",
         "Transform4D",
         "Vector4D",
         # Mesh.
