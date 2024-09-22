@@ -1,5 +1,7 @@
 #include "vector_4d.h"
 
+#include <algorithm>
+
 real_t Vector4D::angle_to(const Vector4 &p_from, const Vector4 &p_to) {
 	return Math::acos(p_from.dot(p_to) / (p_from.length() * p_to.length()));
 }

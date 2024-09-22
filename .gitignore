@@ -43,6 +43,7 @@ compile_commands.json
 *.aps
 *.cachefile
 *.ncb
+*.o.obj
 *.opensdf
 *.sdf
 *.VC.db
