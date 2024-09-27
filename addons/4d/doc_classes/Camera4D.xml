@@ -80,7 +80,7 @@
 			The color that objects will shift towards as they move farther away from the camera in the local +W axis, when [member w_fade_mode] is set to [constant W_FADE_HUE_SHIFT] or [constant W_FADE_TRANSPARENCY_HUE_SHIFT].
 		</member>
 		<member name="w_fade_distance" type="float" setter="set_w_fade_distance" getter="get_w_fade_distance" default="5.0">
-			The distance in meters on the camera's local W axis at which objects will be fully faded out. If using transparency, this means the object will be invisible. This is only used when [member w_fade_enabled] is set.
+			The distance in meters on the camera's local W axis at which objects will be fully faded out. If using transparency, this means the object will be invisible. This is only used when [member w_fade_mode] is not set to [constant W_FADE_DISABLED].
 		</member>
 		<member name="w_fade_mode" type="int" setter="set_w_fade_mode" getter="get_w_fade_mode" enum="Camera4D.WFadeMode" default="1">
 			Controls if and how objects will fade out as they move farther away from the camera in the local W axis. When the distance exceeds [member w_fade_distance], the object will be fully faded out. If using transparency, this means the object will be invisible.
