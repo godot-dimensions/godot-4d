@@ -112,7 +112,7 @@
 			Objects will fade out by becoming more transparent as they move farther away from the camera in the local W axis.
 		</constant>
 		<constant name="W_FADE_HUE_SHIFT" value="2" enum="WFadeMode">
-			Objects will fade out by shifting their hue as they move farther away from the camera in the local W axis. Objects in the -W direction will shift towards red, and objects in the +W direction will shift towards blue.
+			Objects will fade out by shifting their hue as they move farther away from the camera in the local W axis. Objects in the -W direction will shift towards blue, and objects in the +W direction will shift towards red.
 		</constant>
 		<constant name="W_FADE_TRANSPARENCY_HUE_SHIFT" value="3" enum="WFadeMode">
 			Objects will fade out according to both [constant W_FADE_TRANSPARENCY] and [constant W_FADE_HUE_SHIFT].
