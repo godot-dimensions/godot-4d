@@ -73,6 +73,12 @@
 		<member name="view_angle_type" type="int" setter="set_view_angle_type" getter="get_view_angle_type" enum="Camera4D.ViewAngleType" default="0">
 			Controls how the view angle or lens is defined: either focal length or field of view. Focal length is in meters, with a sensor size of 1 meter. Field of view is in radians, but is displayed as degrees in the inspector. This property is only used in the inspector, not at runtime.
 		</member>
+		<member name="w_fade_color_negative" type="Color" setter="set_w_fade_color_negative" getter="get_w_fade_color_negative">
+			The color that objects will shift towards as they move farther away from the camera in the local -W axis, when [member w_fade_mode] is set to [constant W_FADE_HUE_SHIFT] or [constant W_FADE_TRANSPARENCY_HUE_SHIFT].
+		</member>
+		<member name="w_fade_color_positive" type="Color" setter="set_w_fade_color_positive" getter="get_w_fade_color_positive">
+			The color that objects will shift towards as they move farther away from the camera in the local +W axis, when [member w_fade_mode] is set to [constant W_FADE_HUE_SHIFT] or [constant W_FADE_TRANSPARENCY_HUE_SHIFT].
+		</member>
 		<member name="w_fade_distance" type="float" setter="set_w_fade_distance" getter="get_w_fade_distance" default="5.0">
 			The distance in meters on the camera's local W axis at which objects will be fully faded out. If using transparency, this means the object will be invisible. This is only used when [member w_fade_enabled] is set.
 		</member>
@@ -112,7 +118,7 @@
 			Objects will fade out by becoming more transparent as they move farther away from the camera in the local W axis.
 		</constant>
 		<constant name="W_FADE_HUE_SHIFT" value="2" enum="WFadeMode">
-			Objects will fade out by shifting their hue as they move farther away from the camera in the local W axis. Objects in the -W direction will shift towards blue, and objects in the +W direction will shift towards red.
+			Objects will fade out by shifting their hue as they move farther away from the camera in the local W axis. Objects in the -W direction will shift towards [member w_fade_color_negative], and objects in the +W direction will shift towards [member w_fade_color_positive].
 		</constant>
 		<constant name="W_FADE_TRANSPARENCY_HUE_SHIFT" value="3" enum="WFadeMode">
 			Objects will fade out according to both [constant W_FADE_TRANSPARENCY] and [constant W_FADE_HUE_SHIFT].

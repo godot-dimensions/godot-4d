@@ -30,6 +30,14 @@ void Camera4D::_validate_property(PropertyInfo &p_property) const {
 		if (_projection_type != PROJECTION4D_ORTHOGRAPHIC) {
 			p_property.usage = PROPERTY_USAGE_NONE;
 		}
+	} else if (p_property.name == StringName("w_fade_color_negative")) {
+		if (!(_w_fade_mode & W_FADE_HUE_SHIFT)) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	} else if (p_property.name == StringName("w_fade_color_positive")) {
+		if (!(_w_fade_mode & W_FADE_HUE_SHIFT)) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
 	} else if (p_property.name == StringName("w_fade_distance")) {
 		if (_w_fade_mode == W_FADE_DISABLED) {
 			p_property.usage = PROPERTY_USAGE_NONE;
@@ -184,6 +192,22 @@ void Camera4D::set_w_fade_mode(const WFadeMode p_w_fade_mode) {
 	notify_property_list_changed();
 }
 
+Color Camera4D::get_w_fade_color_negative() const {
+	return _w_fade_color_negative;
+}
+
+void Camera4D::set_w_fade_color_negative(const Color &p_w_fade_color_negative) {
+	_w_fade_color_negative = p_w_fade_color_negative;
+}
+
+Color Camera4D::get_w_fade_color_positive() const {
+	return _w_fade_color_positive;
+}
+
+void Camera4D::set_w_fade_color_positive(const Color &p_w_fade_color_positive) {
+	_w_fade_color_positive = p_w_fade_color_positive;
+}
+
 real_t Camera4D::get_w_fade_distance() const {
 	return _w_fade_distance;
 }
@@ -249,6 +273,14 @@ void Camera4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_w_fade_mode"), &Camera4D::get_w_fade_mode);
 	ClassDB::bind_method(D_METHOD("set_w_fade_mode", "w_fade_mode"), &Camera4D::set_w_fade_mode);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "w_fade_mode", PROPERTY_HINT_ENUM, "Disabled,Transparency,Hue Shift,Transparency + Hue Shift"), "set_w_fade_mode", "get_w_fade_mode");
+
+	ClassDB::bind_method(D_METHOD("get_w_fade_color_negative"), &Camera4D::get_w_fade_color_negative);
+	ClassDB::bind_method(D_METHOD("set_w_fade_color_negative", "w_fade_color_negative"), &Camera4D::set_w_fade_color_negative);
+	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "w_fade_color_negative"), "set_w_fade_color_negative", "get_w_fade_color_negative");
+
+	ClassDB::bind_method(D_METHOD("get_w_fade_color_positive"), &Camera4D::get_w_fade_color_positive);
+	ClassDB::bind_method(D_METHOD("set_w_fade_color_positive", "w_fade_color_positive"), &Camera4D::set_w_fade_color_positive);
+	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "w_fade_color_positive"), "set_w_fade_color_positive", "get_w_fade_color_positive");
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_distance"), &Camera4D::get_w_fade_distance);
 	ClassDB::bind_method(D_METHOD("set_w_fade_distance", "w_fade_distance"), &Camera4D::set_w_fade_distance);
