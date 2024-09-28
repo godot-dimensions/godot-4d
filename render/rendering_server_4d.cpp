@@ -34,9 +34,13 @@ TypedArray<MeshInstance4D> RenderingServer4D::_get_visible_mesh_instances() cons
 void RenderingServer4D::_render_frame() {
 	for (const KeyValue<Viewport *, Vector<Camera4D *>> &E : _viewport_cameras) {
 		Viewport *viewport = E.key;
-		Camera4D *camera0 = E.value[0];
+		const Vector<Camera4D *> &cameras = E.value;
+		if (cameras.is_empty()) {
+			continue; // Viewport has no 4D cameras.
+		}
+		Camera4D *camera0 = cameras[0];
 		if (!camera0->is_current()) {
-			continue;
+			continue; // No 4D cameras are currently rendering.
 		}
 		ERR_FAIL_COND_MSG(_rendering_engines.is_empty(), "No 4D rendering engines registered. 4D rendering will not occur.");
 		const String &rendering_engine_name = camera0->get_rendering_engine();
@@ -54,6 +58,7 @@ void RenderingServer4D::_render_frame() {
 void RenderingServer4D::register_camera(Camera4D *p_camera) {
 	ERR_FAIL_NULL(p_camera);
 	Viewport *viewport = p_camera->get_viewport();
+	ERR_FAIL_NULL(viewport);
 	if (_viewport_cameras.has(viewport)) {
 		Vector<Camera4D *> &cameras = _viewport_cameras[viewport];
 		ERR_FAIL_COND_MSG(cameras.has(p_camera), "Camera4D is already registered to this Viewport.");
