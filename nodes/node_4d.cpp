@@ -177,6 +177,10 @@ real_t Node4D::get_uniform_scale() const {
 void Node4D::set_rotation(const Euler4D &p_euler) {
 #ifdef CACHE_ROTATION_AND_SCALE
 	_euler_cache = p_euler;
+	if (_scale_cache_dirty) {
+		_scale_cache = _transform.basis.get_scale();
+		_scale_cache_dirty = false;
+	}
 	_transform.basis = p_euler.to_basis().scaled_local(_scale_cache);
 #else
 	Vector4 scale = _transform.basis.get_scale();
@@ -485,7 +489,7 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_rotation"), &Node4D::get_rotation_bind);
 	ClassDB::bind_method(D_METHOD("set_rotation", "euler"), &Node4D::set_rotation_bind);
 	ClassDB::bind_method(D_METHOD("get_rotation_euler"), &Node4D::get_rotation_euler_bind);
-	ClassDB::bind_method(D_METHOD("set_rotation_euler", "euler"), &Node4D::set_rotation_bind);
+	ClassDB::bind_method(D_METHOD("set_rotation_euler", "euler"), &Node4D::set_rotation_euler_bind);
 	ClassDB::bind_method(D_METHOD("get_rotation_degrees"), &Node4D::get_rotation_degrees_bind);
 	ClassDB::bind_method(D_METHOD("set_rotation_degrees", "euler"), &Node4D::set_rotation_degrees_bind);
 	ClassDB::bind_method(D_METHOD("get_rotation_degrees_euler"), &Node4D::get_rotation_degrees_euler_bind);

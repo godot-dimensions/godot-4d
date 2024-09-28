@@ -89,7 +89,7 @@
 		</method>
 		<method name="set_rotation_euler">
 			<return type="void" />
-			<param index="0" name="euler" type="AABB" />
+			<param index="0" name="euler" type="Euler4D" />
 			<description>
 				Sets the local rotation of this [Node4D] in radians, in the form of an [Euler4D] object. See also [method get_rotation_euler].
 			</description>
