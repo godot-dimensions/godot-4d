@@ -162,7 +162,12 @@ Basis4D Basis4D::scaled_uniform(const real_t p_scale) const {
 }
 
 void Basis4D::set_scale(const Vector4 &p_scale) {
-	Vector4 delta_scale = p_scale / get_scale();
+	Vector4 new_scale = Vector4(
+			Math::is_zero_approx(p_scale.x) ? CMP_EPSILON : p_scale.x,
+			Math::is_zero_approx(p_scale.y) ? CMP_EPSILON : p_scale.y,
+			Math::is_zero_approx(p_scale.z) ? CMP_EPSILON : p_scale.z,
+			Math::is_zero_approx(p_scale.w) ? CMP_EPSILON : p_scale.w);
+	Vector4 delta_scale = new_scale / get_scale();
 	x *= delta_scale.x;
 	y *= delta_scale.y;
 	z *= delta_scale.z;
