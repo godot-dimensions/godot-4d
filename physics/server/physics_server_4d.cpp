@@ -2,8 +2,10 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/window.hpp>
 #elif GODOT_MODULE
 #include "scene/main/scene_tree.h"
+#include "scene/main/window.h"
 #endif
 
 void PhysicsServer4D::_step_dynamic_rigid_bodies() {
@@ -11,7 +13,7 @@ void PhysicsServer4D::_step_dynamic_rigid_bodies() {
 		return;
 	}
 	ERR_FAIL_COND_MSG(_current_physics_engine.is_null(), "PhysicsServer4D: No physics engine is set.");
-	const double p_delta = 0.01; // todo
+	const double p_delta = _scene_tree->get_root()->get_physics_process_delta_time();
 	for (const Variant &rigid_body_variant : _rigid_body_nodes) {
 		RigidBody4D *rigid_body = Object::cast_to<RigidBody4D>(rigid_body_variant);
 		_current_physics_engine->step_dynamic_rigid_body(rigid_body, p_delta);
@@ -33,8 +35,8 @@ void PhysicsServer4D::register_area(Area4D *p_area_node) {
 	if (likely(_is_step_dynamic_rigid_bodies_connected)) {
 		return;
 	}
-	SceneTree *scene_tree = p_area_node->get_tree();
-	scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_step_dynamic_rigid_bodies));
+	_scene_tree = p_area_node->get_tree();
+	_scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_step_dynamic_rigid_bodies));
 	_is_step_dynamic_rigid_bodies_connected = true;
 }
 
@@ -50,8 +52,8 @@ void PhysicsServer4D::register_physics_body(PhysicsBody4D *p_physics_body_node) 
 	if (likely(_is_step_dynamic_rigid_bodies_connected)) {
 		return;
 	}
-	SceneTree *scene_tree = p_physics_body_node->get_tree();
-	scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_step_dynamic_rigid_bodies));
+	_scene_tree = p_physics_body_node->get_tree();
+	_scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_step_dynamic_rigid_bodies));
 	_is_step_dynamic_rigid_bodies_connected = true;
 }
 

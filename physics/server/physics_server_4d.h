@@ -22,6 +22,7 @@ class PhysicsServer4D : public Object {
 	TypedArray<Area4D> _area_nodes;
 	TypedArray<PhysicsBody4D> _physics_body_nodes;
 	TypedArray<RigidBody4D> _rigid_body_nodes;
+	SceneTree *_scene_tree = nullptr;
 
 	Ref<PhysicsEngine4D> _get_physics_engine(const String &p_name) const;
 	bool _is_physics_active = true;
