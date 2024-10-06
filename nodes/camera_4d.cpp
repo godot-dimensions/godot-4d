@@ -42,6 +42,10 @@ void Camera4D::_validate_property(PropertyInfo &p_property) const {
 		if (_w_fade_mode == W_FADE_DISABLED) {
 			p_property.usage = PROPERTY_USAGE_NONE;
 		}
+	} else if (p_property.name == StringName("w_fade_slope")) {
+		if (_w_fade_mode == W_FADE_DISABLED) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
 	}
 }
 
@@ -216,6 +220,14 @@ void Camera4D::set_w_fade_distance(const real_t p_w_fade_distance) {
 	_w_fade_distance = p_w_fade_distance;
 }
 
+real_t Camera4D::get_w_fade_slope() const {
+	return _w_fade_slope;
+}
+
+void Camera4D::set_w_fade_slope(const real_t p_w_fade_slope) {
+	_w_fade_slope = p_w_fade_slope;
+}
+
 void Camera4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_current"), &Camera4D::is_current);
 	ClassDB::bind_method(D_METHOD("set_current", "enabled"), &Camera4D::set_current);
@@ -284,7 +296,11 @@ void Camera4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_distance"), &Camera4D::get_w_fade_distance);
 	ClassDB::bind_method(D_METHOD("set_w_fade_distance", "w_fade_distance"), &Camera4D::set_w_fade_distance);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_distance", PROPERTY_HINT_RANGE, "0.001,1000,0.001,suffix:m"), "set_w_fade_distance", "get_w_fade_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_distance", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater,or_less,suffix:m"), "set_w_fade_distance", "get_w_fade_distance");
+
+	ClassDB::bind_method(D_METHOD("get_w_fade_slope"), &Camera4D::get_w_fade_slope);
+	ClassDB::bind_method(D_METHOD("set_w_fade_slope", "w_fade_slope"), &Camera4D::set_w_fade_slope);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.001,10,0.001,or_greater,or_less"), "set_w_fade_slope", "get_w_fade_slope");
 
 	BIND_ENUM_CONSTANT(KEEP_WIDTH);
 	BIND_ENUM_CONSTANT(KEEP_HEIGHT);

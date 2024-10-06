@@ -296,6 +296,9 @@ Rotor4D Rotor4D::vector_product(const Vector4 &p_a, const Vector4 &p_b) {
 
 Rotor4D Rotor4D::rotation_bivector_magnitude(const Bivector4D &p_bivector) {
 	const real_t length_angle = p_bivector.length();
+	if (Math::is_zero_approx(length_angle)) {
+		return identity();
+	}
 	return rotation_bivector_normal_angle(p_bivector / length_angle, length_angle);
 }
 
@@ -303,6 +306,9 @@ Rotor4D Rotor4D::rotation_bivector_normal_angle(const Bivector4D &p_bivector_nor
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!p_bivector_normal.is_normalized(), Rotor4D(), "The bivector must be normalized in order to create a rotation, but was " + p_bivector_normal.operator String() + " (length " + rtos(p_bivector_normal.length()) + ").");
 #endif
+	if (Math::is_zero_approx(p_angle)) {
+		return identity();
+	}
 	const real_t half_angle = p_angle * 0.5;
 	const real_t cos_half_angle = Math::cos(half_angle);
 	const real_t sin_half_angle = Math::sin(half_angle);

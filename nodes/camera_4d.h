@@ -47,6 +47,7 @@ private:
 	real_t _near = 0.05;
 	real_t _far = 4000.0;
 	real_t _w_fade_distance = 5.0;
+	real_t _w_fade_slope = 1.0;
 	bool _is_current = false;
 
 protected:
@@ -106,6 +107,9 @@ public:
 
 	real_t get_w_fade_distance() const;
 	void set_w_fade_distance(const real_t p_w_fade_distance);
+
+	real_t get_w_fade_slope() const;
+	void set_w_fade_slope(const real_t p_w_fade_slope);
 };
 
 VARIANT_ENUM_CAST(Camera4D::KeepAspect);
