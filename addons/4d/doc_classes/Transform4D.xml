@@ -495,6 +495,20 @@
 				Transforms the [param vectors] [PackedVector4Array] by the transpose of the [Transform4D] defined by [param parent_basis] and [param parent_origin]. If the [param parent_basis] is orthonormal, this inversely transforms the vectors like [method xform_inv_many].
 			</description>
 		</method>
+		<method name="rotate_bivector_magnitude">
+			<return type="void" />
+			<param index="0" name="bivector" type="AABB" />
+			<description>
+				Rotates the [Transform4D] by the given [param bivector] Bivector4D rotation exposed as an [AABB]. The length of the bivector is the angle of rotation in radians, while the direction of the bivector is the shadow of the rotation in the 6 bivector rotation planes. This is in parent-relative space, affecting both the position and rotation.
+			</description>
+		</method>
+		<method name="rotate_bivector_magnitude_local">
+			<return type="void" />
+			<param index="0" name="bivector_local" type="AABB" />
+			<description>
+				Rotates the [Transform4D] by the given [param bivector_local] Bivector4D rotation exposed as an [AABB]. The length of the bivector is the angle of rotation in radians, while the direction of the bivector is the shadow of the rotation in the 6 bivector rotation planes. This is in local space, affecting only the rotation.
+			</description>
+		</method>
 		<method name="rotate_global">
 			<return type="void" />
 			<param index="0" name="euler" type="Euler4D" />
@@ -507,6 +521,20 @@
 			<param index="0" name="euler" type="Euler4D" />
 			<description>
 				Rotates the [Transform4D] in local space by the given [param euler] [Euler4D] rotation, affecting only the rotation.
+			</description>
+		</method>
+		<method name="rotate_rotor">
+			<return type="void" />
+			<param index="0" name="rotor" type="Rotor4D" />
+			<description>
+				Rotates the [Transform4D] by the given [param rotor] [Rotor4D] rotation in parent-relative space, affecting both the position and rotation.
+			</description>
+		</method>
+		<method name="rotate_rotor_local">
+			<return type="void" />
+			<param index="0" name="rotor_local" type="Rotor4D" />
+			<description>
+				Rotates the [Transform4D] by the given [param rotor_local] [Rotor4D] rotation in local space, affecting only the rotation.
 			</description>
 		</method>
 		<method name="rotated_global" qualifiers="const">
@@ -586,11 +614,25 @@
 				Sets the rotation of the [Basis4D] matrix inside this [Transform4D] to the given [param euler] [Euler4D] in radians.
 			</description>
 		</method>
+		<method name="set_rotation_bivector_magnitude">
+			<return type="void" />
+			<param index="0" name="bivector" type="AABB" />
+			<description>
+				Sets the rotation of the [Basis4D] matrix inside this [Transform4D] to the given [param bivector] Bivector4D rotation exposed as an [AABB]. The length of the bivector is the angle of rotation in radians, while the direction of the bivector is the shadow of the rotation in the 6 bivector rotation planes.
+			</description>
+		</method>
 		<method name="set_rotation_degrees">
 			<return type="void" />
 			<param index="0" name="euler" type="Euler4D" />
 			<description>
 				Sets the rotation of the [Basis4D] matrix inside this [Transform4D] to the given [param euler] [Euler4D] in degrees.
+			</description>
+		</method>
+		<method name="set_rotation_rotor">
+			<return type="void" />
+			<param index="0" name="rotor" type="Rotor4D" />
+			<description>
+				Sets the rotation of the [Basis4D] matrix inside this [Transform4D] to the given [param rotor] [Rotor4D] rotation.
 			</description>
 		</method>
 		<method name="set_scale">

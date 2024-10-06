@@ -2,6 +2,8 @@
 
 #include "transform_4d.h"
 
+#include "geometric_algebra/rotor_4d_bind.h"
+
 #if GDEXTENSION
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/projection.hpp>
@@ -59,6 +61,16 @@ public:
 	void set_rotation(const Ref<godot_4d_bind::Euler4D> &p_euler);
 	Ref<godot_4d_bind::Euler4D> get_rotation_degrees() const;
 	void set_rotation_degrees(const Ref<godot_4d_bind::Euler4D> &p_euler);
+
+	// Geometric algebra rotation altering methods.
+	void rotate_bivector_magnitude(const AABB &p_bivector);
+	void rotate_bivector_magnitude_local(const AABB &p_bivector_local);
+	void rotate_rotor(const Ref<godot_4d_bind::Rotor4D> &p_rotor);
+	void rotate_rotor_local(const Ref<godot_4d_bind::Rotor4D> &p_rotor_local);
+
+	// Geometric algebra rotation properties.
+	void set_rotation_bivector_magnitude(const AABB &p_bivector);
+	void set_rotation_rotor(const Ref<godot_4d_bind::Rotor4D> &p_rotor);
 
 	// Scale methods.
 	void scale_global(const Vector4 &p_scale);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../math/euler_4d_bind.h"
+#include "../math/geometric_algebra/rotor_4d_bind.h"
 #include "../math/transform_4d_bind.h"
 
 #if GDEXTENSION
@@ -48,6 +49,22 @@ public:
 	void apply_scale(const Vector4 &p_amount);
 	void translate_local(const Vector4 &p_amount);
 
+	void rotate_euler(const Euler4D &p_euler);
+	void rotate_euler_bind(const AABB &p_euler);
+	void rotate_euler_local(const Euler4D &p_euler_local);
+	void rotate_euler_local_bind(const AABB &p_euler_local);
+
+	// Geometric algebra rotation altering methods.
+	void rotate_bivector_magnitude(const Bivector4D &p_bivector);
+	void rotate_bivector_magnitude_bind(const AABB &p_bivector);
+	void rotate_bivector_magnitude_local(const Bivector4D &p_bivector_local);
+	void rotate_bivector_magnitude_local_bind(const AABB &p_bivector_local);
+
+	void rotate_rotor(const Rotor4D &p_rotor);
+	void rotate_rotor_bind(const Ref<godot_4d_bind::Rotor4D> &p_rotor);
+	void rotate_rotor_local(const Rotor4D &p_rotor_local);
+	void rotate_rotor_local_bind(const Ref<godot_4d_bind::Rotor4D> &p_rotor_local);
+
 	// Local transform and basis.
 	Transform4D get_transform() const;
 	void set_transform(const Transform4D &p_transform);
@@ -89,6 +106,12 @@ public:
 	void set_rotation_degrees_euler_bind(const Ref<godot_4d_bind::Euler4D> &p_euler);
 	void set_scale(const Vector4 &p_scale);
 	void set_uniform_scale(const real_t p_scale);
+
+	// Geometric algebra local rotation properties.
+	void set_rotation_bivector_magnitude(const Bivector4D &p_bivector);
+	void set_rotation_bivector_magnitude_bind(const AABB &p_bivector);
+	void set_rotation_rotor(const Rotor4D &p_rotor);
+	void set_rotation_rotor_bind(const Ref<godot_4d_bind::Rotor4D> &p_rotor);
 
 	// Global transform and basis.
 	Transform4D get_global_transform() const;
@@ -132,6 +155,12 @@ public:
 	void set_global_rotation_degrees_euler_bind(const Ref<godot_4d_bind::Euler4D> &p_global_euler);
 	void set_global_scale(const Vector4 &p_global_scale);
 	void set_global_uniform_scale(const real_t p_global_scale);
+
+	// Geometric algebra global rotation properties.
+	void set_global_rotation_bivector_magnitude(const Bivector4D &p_bivector);
+	void set_global_rotation_bivector_magnitude_bind(const AABB &p_bivector);
+	void set_global_rotation_rotor(const Rotor4D &p_rotor);
+	void set_global_rotation_rotor_bind(const Ref<godot_4d_bind::Rotor4D> &p_rotor);
 
 	// Visibility.
 	bool is_visible() const;

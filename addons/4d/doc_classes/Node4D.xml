@@ -38,13 +38,13 @@
 		<method name="get_rotation_degrees_euler">
 			<return type="Euler4D" />
 			<description>
-				Gets the local rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_rotation_degrees_euler]. Therefore, this is not exposed as a property to prevent misuse.
+				Gets the parent-relative rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_rotation_degrees_euler]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
 		<method name="get_rotation_euler">
 			<return type="Euler4D" />
 			<description>
-				Gets the local rotation of this [Node4D] in radians, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_rotation_euler]. Therefore, this is not exposed as a property to prevent misuse.
+				Gets the parent-relative rotation of this [Node4D] in radians, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_rotation_euler]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
 		<method name="get_transform" qualifiers="const">
@@ -57,6 +57,55 @@
 			<return type="bool" />
 			<description>
 				Returns [code]true[/code] if the [Node4D] is visible in the scene tree (this node and all parent [Node4D]s are visible).
+			</description>
+		</method>
+		<method name="rotate_bivector_magnitude">
+			<return type="void" />
+			<param index="0" name="bivector" type="AABB" />
+			<description>
+				Rotate this [Node4D] by a rotation in bivector-magnitude format (encoded as an [AABB]). The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes. This rotates in parent-relative space.
+			</description>
+		</method>
+		<method name="rotate_bivector_magnitude_local">
+			<return type="void" />
+			<param index="0" name="bivector_local" type="AABB" />
+			<description>
+				Rotate this [Node4D] by a rotation in bivector-magnitude format (encoded as an [AABB]). The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes. This rotates in object-local space.
+			</description>
+		</method>
+		<method name="rotate_euler">
+			<return type="void" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Rotate this [Node4D] by a rotation in Euler angles (encoded as an [AABB]). This rotates in parent-relative space.
+			</description>
+		</method>
+		<method name="rotate_euler_local">
+			<return type="void" />
+			<param index="0" name="euler_local" type="AABB" />
+			<description>
+				Rotate this [Node4D] by a rotation in Euler angles (encoded as an [AABB]). This rotates in object-local space.
+			</description>
+		</method>
+		<method name="rotate_rotor">
+			<return type="void" />
+			<param index="0" name="rotor" type="Rotor4D" />
+			<description>
+				Rotate this [Node4D] by a rotation as a [Rotor4D], the 4D equivalent of a quaternion. This rotates in parent-relative space.
+			</description>
+		</method>
+		<method name="rotate_rotor_local">
+			<return type="void" />
+			<param index="0" name="rotor_local" type="Rotor4D" />
+			<description>
+				Rotate this [Node4D] by a rotation as a [Rotor4D], the 4D equivalent of a quaternion. This rotates in object-local space.
+			</description>
+		</method>
+		<method name="set_global_rotation_bivector_magnitude">
+			<return type="void" />
+			<param index="0" name="global_bivector" type="AABB" />
+			<description>
+				Sets the global rotation of this [Node4D] to a rotation in bivector-magnitude format (encoded as an [AABB]). The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes.
 			</description>
 		</method>
 		<method name="set_global_rotation_degrees_euler">
@@ -73,6 +122,13 @@
 				Sets the global rotation of this [Node4D] in radians, in the form of an [Euler4D] object. See also [method get_global_rotation_euler].
 			</description>
 		</method>
+		<method name="set_global_rotation_rotor">
+			<return type="void" />
+			<param index="0" name="global_rotor" type="Rotor4D" />
+			<description>
+				Sets the global rotation of this [Node4D] to a rotation as a [Rotor4D], the 4D equivalent of a quaternion.
+			</description>
+		</method>
 		<method name="set_global_transform">
 			<return type="void" />
 			<param index="0" name="global_transform" type="Transform4D" />
@@ -80,25 +136,39 @@
 				Sets the global transformation matrix of this [Node4D], in the form of a [Transform4D] object. See also [method get_global_transform].
 			</description>
 		</method>
+		<method name="set_rotation_bivector_magnitude">
+			<return type="void" />
+			<param index="0" name="bivector" type="AABB" />
+			<description>
+				Sets the parent-relative rotation of this [Node4D] to a rotation in bivector-magnitude format (encoded as an [AABB]). The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes.
+			</description>
+		</method>
 		<method name="set_rotation_degrees_euler">
 			<return type="void" />
 			<param index="0" name="euler" type="Euler4D" />
 			<description>
-				Sets the local rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. See also [method get_rotation_degrees_euler].
+				Sets the parent-relative rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. See also [method get_rotation_degrees_euler].
 			</description>
 		</method>
 		<method name="set_rotation_euler">
 			<return type="void" />
 			<param index="0" name="euler" type="Euler4D" />
 			<description>
-				Sets the local rotation of this [Node4D] in radians, in the form of an [Euler4D] object. See also [method get_rotation_euler].
+				Sets the parent-relative rotation of this [Node4D] in radians, in the form of an [Euler4D] object. See also [method get_rotation_euler].
+			</description>
+		</method>
+		<method name="set_rotation_rotor">
+			<return type="void" />
+			<param index="0" name="rotor" type="Rotor4D" />
+			<description>
+				Sets the parent-relative rotation of this [Node4D] to a rotation as a [Rotor4D], the 4D equivalent of a quaternion.
 			</description>
 		</method>
 		<method name="set_transform">
 			<return type="void" />
 			<param index="0" name="transform" type="Transform4D" />
 			<description>
-				Sets the transformation matrix of this [Node4D], in the form of a [Transform4D] object. See also [method get_transform].
+				Sets the parent-relative transformation matrix of this [Node4D], in the form of a [Transform4D] object. See also [method get_transform].
 			</description>
 		</method>
 		<method name="translate_local">

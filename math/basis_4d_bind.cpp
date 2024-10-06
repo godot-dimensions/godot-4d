@@ -34,6 +34,10 @@ Vector4 godot_4d_bind::Basis4D::xform_transposed(const Projection &p_basis, cons
 	return ::Basis4D(p_basis).xform_transposed(p_vector);
 }
 
+AABB godot_4d_bind::Basis4D::rotate_bivector(const Projection &p_basis, const AABB &p_bivector) {
+	return ::Basis4D(p_basis).rotate_bivector(p_bivector);
+}
+
 // Inversion methods.
 
 Projection godot_4d_bind::Basis4D::inverse(const Projection &p_basis) {
@@ -180,6 +184,7 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform", "basis", "vector"), &godot_4d_bind::Basis4D::xform);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_inv", "basis", "vector"), &godot_4d_bind::Basis4D::xform_inv);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_transposed", "basis", "vector"), &godot_4d_bind::Basis4D::xform_transposed);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("rotate_bivector", "basis", "bivector"), &godot_4d_bind::Basis4D::rotate_bivector);
 	// Inversion methods.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("inverse", "basis"), &godot_4d_bind::Basis4D::inverse);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("transposed", "basis"), &godot_4d_bind::Basis4D::transposed);

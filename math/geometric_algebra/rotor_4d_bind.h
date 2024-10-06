@@ -31,6 +31,7 @@ public:
 	Ref<Rotor4D> wedge_product(const Ref<Rotor4D> &p_b) const;
 
 	// Rotation functions.
+	Projection get_rotation_basis() const;
 	real_t get_rotation_angle() const;
 	AABB get_rotation_bivector_magnitude() const;
 	AABB get_rotation_bivector_normal() const;

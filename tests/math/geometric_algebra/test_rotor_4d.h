@@ -5,6 +5,22 @@
 #include "tests/test_macros.h"
 
 namespace TestRotor4D {
+TEST_CASE("[Rotor4D] Conversion to Basis4D") {
+	Rotor4D rot_xy_rotor = Rotor4D::rotation_xy(Math_TAU / 4);
+	CHECK_MESSAGE(rot_xy_rotor.is_equal_approx(Rotor4D(Math_SQRT12, Math_SQRT12, 0, 0, 0, 0, 0, 0)), "Rotor4D XY rotation should work as expected.");
+	CHECK_MESSAGE(rot_xy_rotor.get_rotation_basis().is_equal_approx(Basis4D(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)), "Rotor4D to_basis should work as expected.");
+	Basis4D rot_xy_basis = Basis4D::from_xy(Math_TAU / 4);
+	CHECK_MESSAGE(rot_xy_rotor.get_rotation_basis().is_equal_approx(rot_xy_basis), "Rotor4D to_basis should work as expected.");
+
+	Rotor4D rot_zw_rotor = Rotor4D::rotation_zw(Math_TAU / 8);
+	Basis4D rot_zw_basis = Basis4D::from_zw(Math_TAU / 8);
+	CHECK_MESSAGE(rot_zw_rotor.get_rotation_basis().is_equal_approx(rot_zw_basis), "Rotor4D to_basis should work as expected.");
+
+	Rotor4D rot_yw_rotor = Rotor4D::rotation_yw(Math_TAU / 16);
+	Basis4D rot_wy_basis = Basis4D::from_wy(-Math_TAU / 16);
+	CHECK_MESSAGE(rot_yw_rotor.get_rotation_basis().is_equal_approx(rot_wy_basis), "Rotor4D to_basis should work as expected.");
+}
+
 TEST_CASE("[Rotor4D] Inverse") {
 	Rotor4D test = Rotor4D(2, 3, 4, 5, 6, 7, 8, 9);
 	Rotor4D inv = test.inverse();

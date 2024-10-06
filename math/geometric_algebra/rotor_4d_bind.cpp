@@ -52,6 +52,10 @@ Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::wedge_product(const Ref<godo
 
 // Rotation functions.
 
+Projection godot_4d_bind::Rotor4D::get_rotation_basis() const {
+	return rotor.get_rotation_basis();
+}
+
 real_t godot_4d_bind::Rotor4D::get_rotation_angle() const {
 	return rotor.get_rotation_angle();
 }
@@ -249,6 +253,7 @@ void godot_4d_bind::Rotor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("wedge_product", "b"), &godot_4d_bind::Rotor4D::wedge_product);
 
 	// Rotation functions.
+	ClassDB::bind_method(D_METHOD("get_rotation_basis"), &godot_4d_bind::Rotor4D::get_rotation_basis);
 	ClassDB::bind_method(D_METHOD("get_rotation_angle"), &godot_4d_bind::Rotor4D::get_rotation_angle);
 	ClassDB::bind_method(D_METHOD("get_rotation_bivector_magnitude"), &godot_4d_bind::Rotor4D::get_rotation_bivector_magnitude);
 	ClassDB::bind_method(D_METHOD("get_rotation_bivector_normal"), &godot_4d_bind::Rotor4D::get_rotation_bivector_normal);

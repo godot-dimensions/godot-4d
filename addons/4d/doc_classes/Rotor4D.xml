@@ -71,6 +71,12 @@
 				Returns the angle of the rotation represented by the rotor. This function, and [method get_rotation_bivector_normal], are the inverse of [method rotation_bivector_normal_angle].
 			</description>
 		</method>
+		<method name="get_rotation_basis" qualifiers="const">
+			<return type="Projection" />
+			<description>
+				Converts the rotor to a Basis4D pure rotation matrix. This is equivalent to rotating the identity basis by the rotor, but faster. In GDScript, the basis is bound as a [Projection] for use in Variant.
+			</description>
+		</method>
 		<method name="get_rotation_bivector_magnitude" qualifiers="const">
 			<return type="AABB" />
 			<description>

@@ -218,6 +218,14 @@
 				Returns the orthonormalized version of the [param basis] [Basis4D]. This performs a Gram-Schmidt orthonormalization on the basis matrix.
 			</description>
 		</method>
+		<method name="rotate_bivector" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="bivector" type="AABB" />
+			<description>
+				Rotates the given Bivector4D (exposed as an AABB) by the [param basis] [Basis4D] matrix. This is useful for converting things like angular velocity from local to global space.
+			</description>
+		</method>
 		<method name="scaled_global" qualifiers="static">
 			<return type="Projection" />
 			<param index="0" name="basis" type="Projection" />

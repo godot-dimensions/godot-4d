@@ -134,6 +134,34 @@ void godot_4d_bind::Transform4D::set_rotation_degrees(const Ref<godot_4d_bind::E
 	transform.set_rotation_degrees(p_euler->get_euler());
 }
 
+// Geometric algebra rotation altering methods.
+
+void godot_4d_bind::Transform4D::rotate_bivector_magnitude(const AABB &p_bivector) {
+	transform.rotate_bivector_magnitude(p_bivector);
+}
+
+void godot_4d_bind::Transform4D::rotate_bivector_magnitude_local(const AABB &p_bivector_local) {
+	transform.rotate_bivector_magnitude_local(p_bivector_local);
+}
+
+void godot_4d_bind::Transform4D::rotate_rotor(const Ref<godot_4d_bind::Rotor4D> &p_rotor) {
+	transform.rotate_rotor(p_rotor->get_rotor());
+}
+
+void godot_4d_bind::Transform4D::rotate_rotor_local(const Ref<godot_4d_bind::Rotor4D> &p_rotor_local) {
+	transform.rotate_rotor_local(p_rotor_local->get_rotor());
+}
+
+// Geometric algebra rotation properties.
+
+void godot_4d_bind::Transform4D::set_rotation_bivector_magnitude(const AABB &p_bivector) {
+	transform.set_rotation_bivector_magnitude(p_bivector);
+}
+
+void godot_4d_bind::Transform4D::set_rotation_rotor(const Ref<godot_4d_bind::Rotor4D> &p_rotor) {
+	transform.set_rotation_rotor(p_rotor->get_rotor());
+}
+
 // Scale methods.
 
 void godot_4d_bind::Transform4D::scale_global(const Vector4 &p_scale) {
@@ -442,6 +470,14 @@ void godot_4d_bind::Transform4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_rotation", "euler"), &godot_4d_bind::Transform4D::set_rotation);
 	ClassDB::bind_method(D_METHOD("get_rotation_degrees"), &godot_4d_bind::Transform4D::get_rotation_degrees);
 	ClassDB::bind_method(D_METHOD("set_rotation_degrees", "euler"), &godot_4d_bind::Transform4D::set_rotation_degrees);
+	// Geometric algebra rotation altering methods.
+	ClassDB::bind_method(D_METHOD("rotate_bivector_magnitude", "bivector"), &godot_4d_bind::Transform4D::rotate_bivector_magnitude);
+	ClassDB::bind_method(D_METHOD("rotate_bivector_magnitude_local", "bivector_local"), &godot_4d_bind::Transform4D::rotate_bivector_magnitude_local);
+	ClassDB::bind_method(D_METHOD("rotate_rotor", "rotor"), &godot_4d_bind::Transform4D::rotate_rotor);
+	ClassDB::bind_method(D_METHOD("rotate_rotor_local", "rotor_local"), &godot_4d_bind::Transform4D::rotate_rotor_local);
+	// Geometric algebra rotation properties.
+	ClassDB::bind_method(D_METHOD("set_rotation_bivector_magnitude", "bivector"), &godot_4d_bind::Transform4D::set_rotation_bivector_magnitude);
+	ClassDB::bind_method(D_METHOD("set_rotation_rotor", "rotor"), &godot_4d_bind::Transform4D::set_rotation_rotor);
 	// Scale methods.
 	ClassDB::bind_method(D_METHOD("scale_global", "scale"), &godot_4d_bind::Transform4D::scale_global);
 	ClassDB::bind_method(D_METHOD("scaled_global", "scale"), &godot_4d_bind::Transform4D::scaled_global);

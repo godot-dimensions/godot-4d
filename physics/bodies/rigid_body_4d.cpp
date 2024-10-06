@@ -163,7 +163,7 @@ void RigidBody4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_linear_velocity"), &RigidBody4D::get_linear_velocity);
 	ClassDB::bind_method(D_METHOD("set_linear_velocity", "linear_velocity"), &RigidBody4D::set_linear_velocity);
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "linear_velocity"), "set_linear_velocity", "get_linear_velocity");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "linear_velocity", PROPERTY_HINT_NONE, "suffix:m/s"), "set_linear_velocity", "get_linear_velocity");
 
 	ClassDB::bind_method(D_METHOD("get_angular_velocity"), &RigidBody4D::get_angular_velocity_bind);
 	ClassDB::bind_method(D_METHOD("set_angular_velocity", "angular_velocity"), &RigidBody4D::set_angular_velocity_bind);

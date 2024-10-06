@@ -28,6 +28,7 @@ public:
 	static Vector4 xform(const Projection &p_basis, const Vector4 &p_vector);
 	static Vector4 xform_inv(const Projection &p_basis, const Vector4 &p_vector);
 	static Vector4 xform_transposed(const Projection &p_basis, const Vector4 &p_vector);
+	static AABB rotate_bivector(const Projection &p_basis, const AABB &p_bivector);
 
 	// Inversion methods.
 	static Projection inverse(const Projection &p_basis);
