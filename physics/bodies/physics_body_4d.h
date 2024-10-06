@@ -2,7 +2,11 @@
 
 #include "collision_object_4d.h"
 
+#if GDEXTENSION
+#include <godot_cpp/classes/physics_material.hpp>
+#elif GODOT_MODULE
 #include "scene/resources/physics_material.h"
+#endif
 
 class PhysicsBody4D : public CollisionObject4D {
 	GDCLASS(PhysicsBody4D, CollisionObject4D);
