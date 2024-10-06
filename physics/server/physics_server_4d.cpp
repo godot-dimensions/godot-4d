@@ -14,7 +14,8 @@ void PhysicsServer4D::_step_dynamic_rigid_bodies() {
 	}
 	ERR_FAIL_COND_MSG(_current_physics_engine.is_null(), "PhysicsServer4D: No physics engine is set.");
 	const double p_delta = _scene_tree->get_root()->get_physics_process_delta_time();
-	for (const Variant &rigid_body_variant : _rigid_body_nodes) {
+	for (int i = 0; i < _rigid_body_nodes.size(); i++) {
+		Variant rigid_body_variant = _rigid_body_nodes[i];
 		RigidBody4D *rigid_body = Object::cast_to<RigidBody4D>(rigid_body_variant);
 		_current_physics_engine->step_dynamic_rigid_body(rigid_body, p_delta);
 	}

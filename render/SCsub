@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+Import("env")
+Import("env_modules")
+
+env_4d = env_modules.Clone()
+
+env_4d.add_source_files(env.modules_sources, "*.cpp")
+env_4d.add_source_files(env.modules_sources, "wireframe_canvas/*.cpp")

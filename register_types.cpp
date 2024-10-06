@@ -57,6 +57,15 @@
 // Render.
 #include "render/rendering_engine_4d.h"
 #include "render/rendering_server_4d.h"
+#include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
+
+#if GDEXTENSION
+// GDExtension has a nervous breakdown whenever singleton or casted classes are not registered.
+// We don't need to register these in principle, and we don't need it for a module, just for GDExtension.
+#include "physics/server/ghost_physics_engine_4d.h"
+#include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
+#include "render/wireframe_canvas/wireframe_render_canvas.h"
+#endif // GDEXTENSION
 
 #ifdef TOOLS_ENABLED
 #include "editor/godot_4d_editor_plugin.h"
@@ -79,6 +88,8 @@ inline void remove_godot_singleton(const StringName &p_singleton_name) {
 }
 
 void initialize_4d_module(ModuleInitializationLevel p_level) {
+	// Note: Classes MUST be registered in inheritance order.
+	// When the inheritance doesn't matter, alphabetical order is used.
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
 		// General.
 		GDREGISTER_CLASS(godot_4d_bind::Basis4D);
@@ -101,8 +112,10 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		add_godot_singleton("Geometry4D", memnew(Geometry4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
 		// Virtual classes.
+		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
+		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
@@ -130,8 +143,9 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(RigidBody4D);
 		GDREGISTER_CLASS(SphereShape4D);
 		GDREGISTER_CLASS(StaticBody4D);
-		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
-		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
+#if GDEXTENSION
+		GDREGISTER_CLASS(GhostPhysicsEngine4D);
+#endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
 #ifdef TOOLS_ENABLED
 		physics_server->set_active(!Engine::get_singleton()->is_editor_hint());
@@ -139,7 +153,13 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		physics_server->register_physics_engine("GhostPhysicsEngine4D", memnew(GhostPhysicsEngine4D));
 		add_godot_singleton("PhysicsServer4D", physics_server);
 		// Render.
-		add_godot_singleton("RenderingServer4D", memnew(RenderingServer4D));
+#if GDEXTENSION
+		GDREGISTER_CLASS(WireframeRenderCanvas);
+		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
+#endif // GDEXTENSION
+		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
+		rendering_server->register_rendering_engine("Wireframe Canvas", memnew(WireframeCanvasRenderingEngine4D));
+		add_godot_singleton("RenderingServer4D", rendering_server);
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		EditorPlugins::add_by_type<Godot4DEditorPlugin>();
