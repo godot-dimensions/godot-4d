@@ -30,6 +30,7 @@ void EditorCamera4D::_notification(int p_what) {
 				const real_t translation_inertia = EDITOR_GET("editors/3d/navigation_feel/translation_inertia");
 				set_position(get_position().lerp(_target_position, delta / translation_inertia));
 			}
+			_camera->set_orthographic_size(new_z);
 		} break;
 	}
 }
@@ -45,6 +46,41 @@ void EditorCamera4D::_process_freelook_movement(const real_t p_delta) {
 		local_movement *= 2.0f;
 	}
 	pan_camera(local_movement * p_delta);
+}
+
+void EditorCamera4D::_update_camera_auto_orthographicness() {
+	if (_is_explicit_orthographic || !_is_auto_orthographic) {
+		return;
+	}
+	constexpr real_t AUTO_ORTHOGRAPHIC_THRESHOLD = CMP_EPSILON;
+	const Basis4D basis = get_basis();
+	bool should_be_orthographic = false;
+	if (Math::abs(basis.x.x) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.x) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+		if (Math::abs(basis.x.y) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.y) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+			should_be_orthographic = true;
+		} else if (Math::abs(basis.x.z) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.z) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+			should_be_orthographic = true;
+		} else if (Math::abs(basis.x.w) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.w) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+			should_be_orthographic = true;
+		}
+	} else if (Math::abs(basis.x.y) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.y) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+		if (Math::abs(basis.x.z) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.z) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+			should_be_orthographic = true;
+		} else if (Math::abs(basis.x.w) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.w) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+			should_be_orthographic = true;
+		}
+	} else if (Math::abs(basis.x.z) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.z) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+		if (Math::abs(basis.x.w) < AUTO_ORTHOGRAPHIC_THRESHOLD && Math::abs(basis.y.w) < AUTO_ORTHOGRAPHIC_THRESHOLD) {
+			should_be_orthographic = true;
+		}
+	}
+	if (should_be_orthographic) {
+		_camera->set_projection_type(Camera4D::PROJECTION4D_ORTHOGRAPHIC);
+		_camera->set_near(-_camera->get_far());
+	} else {
+		_camera->set_projection_type(Camera4D::PROJECTION4D_PERSPECTIVE_4D);
+		_camera->set_near(0.05);
+	}
 }
 
 double EditorCamera4D::change_speed_and_zoom(const double p_change) {
@@ -70,6 +106,7 @@ void EditorCamera4D::freelook_rotate_ground_basis(const Basis4D &p_ground_basis)
 	set_basis(_ground_basis * Basis4D::from_yz(_pitch_angle));
 	_target_position += camera_position - _camera->get_global_position();
 	set_position(_target_position);
+	_update_camera_auto_orthographicness();
 }
 
 void EditorCamera4D::freelook_rotate_ground_basis_and_pitch(const Basis4D &p_ground_basis, const real_t p_pitch_angle) {
@@ -79,17 +116,20 @@ void EditorCamera4D::freelook_rotate_ground_basis_and_pitch(const Basis4D &p_gro
 	set_basis(_ground_basis * Basis4D::from_yz(_pitch_angle));
 	_target_position += camera_position - _camera->get_global_position();
 	set_position(_target_position);
+	_update_camera_auto_orthographicness();
 }
 
 void EditorCamera4D::orbit_rotate_ground_basis(const Basis4D &p_ground_basis) {
 	_ground_basis *= p_ground_basis;
 	set_basis(_ground_basis * Basis4D::from_yz(_pitch_angle));
+	_update_camera_auto_orthographicness();
 }
 
 void EditorCamera4D::orbit_rotate_ground_basis_and_pitch(const Basis4D &p_ground_basis, const real_t p_pitch_angle) {
 	_ground_basis *= p_ground_basis;
 	_pitch_angle = CLAMP(_pitch_angle + p_pitch_angle, -1.57, 1.57);
 	set_basis(_ground_basis * Basis4D::from_yz(_pitch_angle));
+	_update_camera_auto_orthographicness();
 }
 
 void EditorCamera4D::set_ground_view_axis(const Vector4::Axis p_axis, const real_t p_yaw_angle, const real_t p_pitch_angle) {
@@ -111,6 +151,50 @@ void EditorCamera4D::set_ground_view_axis(const Vector4::Axis p_axis, const real
 		} break;
 	}
 	set_basis(_ground_basis * Basis4D::from_yz(_pitch_angle));
+	_update_camera_auto_orthographicness();
+}
+
+void EditorCamera4D::set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up) {
+	ERR_FAIL_COND(p_right == p_up);
+	if (p_right == Vector4::AXIS_X) {
+		if (p_up == Vector4::AXIS_Y) {
+			_ground_basis = Basis4D(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1));
+		} else if (p_up == Vector4::AXIS_Z) {
+			_ground_basis = Basis4D(Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, -1, 0, 0), Vector4(0, 0, 0, 1));
+		} else if (p_up == Vector4::AXIS_W) {
+			_ground_basis = Basis4D(Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 1, 0), Vector4(0, -1, 0, 0));
+		}
+	} else if (p_right == Vector4::AXIS_Y) {
+		if (p_up == Vector4::AXIS_X) {
+			_ground_basis = Basis4D(Vector4(0, 1, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, -1, 0), Vector4(0, 0, 0, 1));
+		} else if (p_up == Vector4::AXIS_Z) {
+			_ground_basis = Basis4D(Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1));
+		} else if (p_up == Vector4::AXIS_W) {
+			_ground_basis = Basis4D(Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, -1, 0), Vector4(-1, 0, 0, 0));
+		}
+	} else if (p_right == Vector4::AXIS_Z) {
+		if (p_up == Vector4::AXIS_X) {
+			_ground_basis = Basis4D(Vector4(0, 0, 1, 0), Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1));
+		} else if (p_up == Vector4::AXIS_Y) {
+			_ground_basis = Basis4D(Vector4(0, 0, 1, 0), Vector4(0, 1, 0, 0), Vector4(-1, 0, 0, 0), Vector4(0, 0, 0, 1));
+		} else if (p_up == Vector4::AXIS_W) {
+			_ground_basis = Basis4D(Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1), Vector4(-1, 0, 0, 0), Vector4(0, -1, 0, 0));
+		}
+	} else if (p_right == Vector4::AXIS_W) {
+		if (p_up == Vector4::AXIS_X) {
+			_ground_basis = Basis4D(Vector4(0, 0, 0, 1), Vector4(1, 0, 0, 0), Vector4(0, 0, -1, 0), Vector4(0, -1, 0, 0));
+		} else if (p_up == Vector4::AXIS_Y) {
+			_ground_basis = Basis4D(Vector4(0, 0, 0, 1), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0));
+		} else if (p_up == Vector4::AXIS_Z) {
+			_ground_basis = Basis4D(Vector4(0, 0, 0, 1), Vector4(0, 0, 1, 0), Vector4(1, 0, 0, 0), Vector4(0, -1, 0, 0));
+		}
+	}
+	if (_is_auto_orthographic) {
+		_camera->set_projection_type(Camera4D::PROJECTION4D_ORTHOGRAPHIC);
+		_camera->set_near(-_camera->get_far());
+	}
+	_pitch_angle = 0.0f;
+	set_basis(_ground_basis);
 }
 
 void EditorCamera4D::set_target_position(const Vector4 &p_position) {
@@ -118,10 +202,11 @@ void EditorCamera4D::set_target_position(const Vector4 &p_position) {
 }
 
 EditorCamera4D::EditorCamera4D() {
-	orbit_rotate_ground_basis_and_pitch(Basis4D::from_zx(0.5f), -0.5f);
 	_camera = memnew(Camera4D);
 	_camera->set_position(Vector4(0.0f, 0.0f, 4.0f, 0.0f));
 	add_child(_camera);
+
+	orbit_rotate_ground_basis_and_pitch(Basis4D::from_zx(0.5f), -0.5f);
 	set_process(true);
 }
 

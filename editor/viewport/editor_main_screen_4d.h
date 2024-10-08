@@ -68,6 +68,7 @@ public:
 	void press_menu_item(const int p_option);
 	void set_ground_view_axis(const Vector4::Axis p_axis);
 	void set_information_text(const String &p_text, const double p_auto_hide_time = 1.5);
+	void set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up);
 
 	EditorMainScreen4D();
 	~EditorMainScreen4D();

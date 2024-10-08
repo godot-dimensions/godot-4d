@@ -15,8 +15,11 @@ class EditorCamera4D : public Node4D {
 
 	double _target_speed_and_zoom = 4.0;
 	int _zoom_failed_attempts_count = 0;
+	bool _is_auto_orthographic = true;
+	bool _is_explicit_orthographic = false;
 
 	void _process_freelook_movement(const real_t p_delta);
+	void _update_camera_auto_orthographicness();
 
 protected:
 	void _notification(int p_what);
@@ -30,6 +33,7 @@ public:
 	void orbit_rotate_ground_basis_and_pitch(const Basis4D &p_ground_basis, const real_t p_pitch_angle);
 	void set_ground_view_axis(const Vector4::Axis p_axis, const real_t p_yaw_angle = 0.5f, const real_t p_pitch_angle = -0.5f);
 	void set_target_position(const Vector4 &p_position);
+	void set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up);
 
 	EditorCamera4D();
 	~EditorCamera4D();

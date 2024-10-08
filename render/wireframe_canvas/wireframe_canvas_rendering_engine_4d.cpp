@@ -20,7 +20,7 @@ Vector2 WireframeCanvasRenderingEngine4D::_project_point_4d_to_2d(const Vector4 
 	if (camera->is_first_pass_perspective()) {
 		projected_point_3d = _project_point_4d_to_3d(p_vertex);
 	} else if (camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
-		projected_point_3d = Vector3(p_vertex.x, p_vertex.y, p_vertex.z) / get_camera()->get_orthographic_size();
+		projected_point_3d = Vector3(-p_vertex.x, -p_vertex.y, p_vertex.z) / get_camera()->get_orthographic_size();
 	} else {
 		projected_point_3d = Vector3(p_vertex.x, p_vertex.y, p_vertex.z);
 	}
@@ -73,6 +73,10 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 	TypedArray<MeshInstance4D> mesh_instances = get_mesh_instances();
 	TypedArray<Projection> mesh_relative_basises = get_mesh_relative_basises();
 	PackedVector4Array mesh_relative_positions = get_mesh_relative_positions();
+	const bool camera_has_perspective = camera->get_projection_type() != Camera4D::PROJECTION4D_ORTHOGRAPHIC;
+	const bool camera_has_w_fading = camera->get_w_fade_mode() != Camera4D::W_FADE_DISABLED;
+	const bool camera_has_w_fade_hue_shift = camera->get_w_fade_mode() & Camera4D::W_FADE_HUE_SHIFT;
+	const bool camera_has_w_fade_transparency = camera->get_w_fade_mode() & Camera4D::W_FADE_TRANSPARENCY;
 	for (int mesh_index = 0; mesh_index < mesh_instances.size(); mesh_index++) {
 		MeshInstance4D *mesh_inst = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
 		ERR_CONTINUE(mesh_inst == nullptr);
@@ -116,17 +120,20 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 				}
 			}
 			Color edge_color = _get_material_edge_color(material, mesh_inst->get_mesh(), edge_index);
-			if (camera->get_w_fade_mode() != Camera4D::W_FADE_DISABLED) {
-				const real_t fade_denom = camera->get_w_fade_slope() * -0.5f * (a_vert_4d.z + b_vert_4d.z) + camera->get_w_fade_distance();
+			if (camera_has_w_fading) {
+				real_t fade_denom = camera->get_w_fade_distance();
+				if (camera_has_perspective) {
+					fade_denom += camera->get_w_fade_slope() * -0.5f * (a_vert_4d.z + b_vert_4d.z);
+				}
 				const real_t fade_factor = (a_vert_4d.w + b_vert_4d.w) * (0.5f / fade_denom);
-				if (camera->get_w_fade_mode() & Camera4D::W_FADE_HUE_SHIFT) {
+				if (camera_has_w_fade_hue_shift) {
 					if (fade_factor < 0.0f) {
 						edge_color = edge_color.lerp(camera->get_w_fade_color_negative() * edge_color.get_v(), MIN(1.0f, -fade_factor));
 					} else {
 						edge_color = edge_color.lerp(camera->get_w_fade_color_positive() * edge_color.get_v(), MIN(1.0f, fade_factor));
 					}
 				}
-				if (camera->get_w_fade_mode() & Camera4D::W_FADE_TRANSPARENCY) {
+				if (camera_has_w_fade_transparency) {
 					edge_color.a = 1.0f - MIN(1.0f, ABS(fade_factor));
 				}
 			}

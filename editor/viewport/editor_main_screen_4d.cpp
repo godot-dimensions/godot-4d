@@ -184,6 +184,10 @@ void EditorMainScreen4D::set_information_text(const String &p_text, const double
 	set_process(true);
 }
 
+void EditorMainScreen4D::set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up) {
+	_editor_camera_4d->set_orthogonal_view_plane(p_right, p_up);
+}
+
 EditorMainScreen4D::EditorMainScreen4D() {
 	set_visible(false);
 	set_v_size_flags(SIZE_EXPAND_FILL);
@@ -259,7 +263,14 @@ EditorMainScreen4D::EditorMainScreen4D() {
 }
 
 EditorMainScreen4D::~EditorMainScreen4D() {
+	for (int i = 0; i < TOOLBAR_BUTTON_MAX; i++) {
+		_toolbar_buttons[i]->queue_free();
+	}
+	_editor_camera_4d->queue_free();
+	_information_label->queue_free();
+	_input_surface_4d->queue_free();
 	_toolbar_hbox->queue_free();
 	_sub_viewport_container->queue_free();
 	_sub_viewport->queue_free();
+	_viewport_rotation_4d->queue_free();
 }
