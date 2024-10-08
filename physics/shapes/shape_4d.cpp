@@ -4,9 +4,9 @@
 #include "../../mesh/wire/wire_mesh_4d.h"
 
 real_t Shape4D::get_hypervolume() const {
-	real_t bulk = 0.0;
-	GDVIRTUAL_CALL(_get_hypervolume, bulk);
-	return bulk;
+	real_t hypervolume = 0.0;
+	GDVIRTUAL_CALL(_get_hypervolume, hypervolume);
+	return hypervolume;
 }
 
 Vector4 Shape4D::get_nearest_point(const Vector4 &p_point) const {

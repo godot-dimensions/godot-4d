@@ -33,7 +33,7 @@ struct _NO_DISCARD_ Rect4 {
 		return size.x * size.y * size.z * size.w;
 	}
 
-	bool has_bulk() const {
+	bool has_hypervolume() const {
 		return size.x > 0.0f && size.y > 0.0f && size.z > 0.0f && size.w > 0.0f;
 	}
 
