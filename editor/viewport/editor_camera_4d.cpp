@@ -17,7 +17,7 @@ void EditorCamera4D::_notification(int p_what) {
 			const real_t zoom_inertia = EDITOR_GET("editors/3d/navigation_feel/zoom_inertia");
 			const real_t current_z = _camera->get_position().z;
 			const real_t target_z = _target_speed_and_zoom;
-			const real_t new_z = Math::lerp(current_z, target_z, delta / zoom_inertia);
+			const real_t new_z = Math::lerp(current_z, target_z, MIN((real_t)1.0f, delta / zoom_inertia));
 			// For speed, use the same logic as zoom, except we want to preserve the camera's global position during freelook.
 			if (Input::get_singleton()->is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)) {
 				const Vector4 camera_position = _camera->get_global_position();
