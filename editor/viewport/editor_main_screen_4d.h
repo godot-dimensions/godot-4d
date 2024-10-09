@@ -48,6 +48,8 @@ private:
 	EditorCamera4D *_editor_camera_4d = nullptr;
 	EditorInputSurface4D *_input_surface_4d = nullptr;
 	EditorViewportRotation4D *_viewport_rotation_4d = nullptr;
+
+	PackedColorArray _axis_colors;
 	double _information_label_auto_hide_time = 0.0;
 
 	Vector2 _get_warped_mouse_motion(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const;
@@ -59,6 +61,7 @@ protected:
 
 public:
 	void focus_selected_nodes();
+	PackedColorArray get_axis_colors() const;
 	Basis4D get_view_camera_basis() const;
 	void navigation_freelook(const Ref<InputEventWithModifiers> &p_event);
 	void navigation_orbit(const Ref<InputEventWithModifiers> &p_event);

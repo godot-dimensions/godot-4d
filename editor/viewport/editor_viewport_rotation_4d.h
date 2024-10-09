@@ -43,7 +43,7 @@ class EditorViewportRotation4D : public Control {
 	};
 
 	EditorMainScreen4D *_editor_main_screen = nullptr;
-	Vector<Color> _axis_colors;
+	PackedColorArray _axis_colors;
 	Axis2D _focused_axis;
 	Vector2i _orbiting_mouse_start;
 	int _orbiting_mouse_button_index = -1;

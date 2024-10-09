@@ -77,6 +77,7 @@ void EditorInputSurface4D::set_editor_main_screen(EditorMainScreen4D *p_editor_m
 }
 
 EditorInputSurface4D::EditorInputSurface4D() {
+	set_name(StringName("EditorInputSurface4D"));
 	set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
 	set_focus_mode(FOCUS_ALL);
 }

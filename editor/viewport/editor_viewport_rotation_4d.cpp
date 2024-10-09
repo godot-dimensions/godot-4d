@@ -363,12 +363,7 @@ void EditorViewportRotation4D::_update_theme() {
 	set_offset(SIDE_BOTTOM, 1.1f * scaled_size);
 	set_offset(SIDE_LEFT, -1.1f * scaled_size);
 	set_offset(SIDE_TOP, 0.1f * scaled_size);
-	// Set the colors.
-	_axis_colors.clear();
-	_axis_colors.push_back(get_theme_color(SNAME("axis_x_color"), StringName("Editor")));
-	_axis_colors.push_back(get_theme_color(SNAME("axis_y_color"), StringName("Editor")));
-	_axis_colors.push_back(get_theme_color(SNAME("axis_z_color"), StringName("Editor")));
-	_axis_colors.push_back(Color(0.9f, 0.82f, 0.1f)); // W axis color.
+	_axis_colors = _editor_main_screen->get_axis_colors();
 	queue_redraw();
 }
 
@@ -403,5 +398,6 @@ void EditorViewportRotation4D::set_editor_main_screen(EditorMainScreen4D *p_edit
 }
 
 EditorViewportRotation4D::EditorViewportRotation4D() {
+	set_name(StringName("EditorViewportRotation4D"));
 	set_anchors_and_offsets_preset(Control::PRESET_TOP_RIGHT);
 }

@@ -48,6 +48,12 @@ void EditorMainScreen4D::_update_theme() {
 	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->set_icon(get_editor_theme_icon(SNAME("ToolRotate")));
 	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_icon(get_editor_theme_icon(SNAME("ToolScale")));
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]->set_icon(get_editor_theme_icon(SNAME("Object")));
+	// Set the axis colors.
+	_axis_colors.clear();
+	_axis_colors.push_back(get_theme_color(SNAME("axis_x_color"), StringName("Editor")));
+	_axis_colors.push_back(get_theme_color(SNAME("axis_y_color"), StringName("Editor")));
+	_axis_colors.push_back(get_theme_color(SNAME("axis_z_color"), StringName("Editor")));
+	_axis_colors.push_back(Color(0.9f, 0.82f, 0.1f)); // W axis color.
 }
 
 void EditorMainScreen4D::_notification(int p_what) {
@@ -82,6 +88,10 @@ void EditorMainScreen4D::focus_selected_nodes() {
 	if (position_count > 0) {
 		_editor_camera_4d->set_target_position(position_sum / position_count);
 	}
+}
+
+PackedColorArray EditorMainScreen4D::get_axis_colors() const {
+	return _axis_colors;
 }
 
 Basis4D EditorMainScreen4D::get_view_camera_basis() const {
@@ -189,6 +199,7 @@ void EditorMainScreen4D::set_orthogonal_view_plane(const Vector4::Axis p_right, 
 }
 
 EditorMainScreen4D::EditorMainScreen4D() {
+	set_name(StringName("EditorMainScreen4D"));
 	set_visible(false);
 	set_v_size_flags(SIZE_EXPAND_FILL);
 	set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);

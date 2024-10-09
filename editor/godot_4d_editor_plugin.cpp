@@ -34,6 +34,7 @@ void Godot4DEditorPlugin::GDEXTMOD_MAKE_VISIBLE(bool p_visible) {
 }
 
 Godot4DEditorPlugin::Godot4DEditorPlugin() {
+	set_name(StringName("Godot4DEditorPlugin"));
 	_off_mesh_3d_importer.instantiate();
 	_off_scene_importer.instantiate();
 	_off_tetra_4d_importer.instantiate();
