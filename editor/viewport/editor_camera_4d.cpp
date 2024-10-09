@@ -1,13 +1,6 @@
 #include "editor_camera_4d.h"
 
-#if GDEXTENSION
-#include <godot_cpp/classes/editor_settings.hpp>
-#include <godot_cpp/classes/input.hpp>
-#elif GODOT_MODULE
-#include "editor/editor_settings.h"
-
-#define MOUSE_BUTTON_RIGHT MouseButton::RIGHT
-#endif
+#include "../../nodes/camera_4d.h"
 
 void EditorCamera4D::_notification(int p_what) {
 	switch (p_what) {
@@ -38,11 +31,11 @@ void EditorCamera4D::_notification(int p_what) {
 void EditorCamera4D::_process_freelook_movement(const real_t p_delta) {
 	Input *input = Input::get_singleton();
 	Vector4 local_movement = Vector4(
-			input->is_physical_key_pressed(Key::D) - input->is_physical_key_pressed(Key::A),
-			input->is_physical_key_pressed(Key::R) - input->is_physical_key_pressed(Key::F),
-			input->is_physical_key_pressed(Key::S) - input->is_physical_key_pressed(Key::W),
-			input->is_physical_key_pressed(Key::E) - input->is_physical_key_pressed(Key::Q));
-	if (input->is_key_pressed(Key::SHIFT)) {
+			input->is_physical_key_pressed(KEY_D) - input->is_physical_key_pressed(KEY_A),
+			input->is_physical_key_pressed(KEY_R) - input->is_physical_key_pressed(KEY_F),
+			input->is_physical_key_pressed(KEY_S) - input->is_physical_key_pressed(KEY_W),
+			input->is_physical_key_pressed(KEY_E) - input->is_physical_key_pressed(KEY_Q));
+	if (input->is_key_pressed(KEY_SHIFT)) {
 		local_movement *= 2.0f;
 	}
 	pan_camera(local_movement * p_delta);

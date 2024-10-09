@@ -1,18 +1,6 @@
 #pragma once
 
-#include "../../math/basis_4d.h"
-
-#if GDEXTENSION
-#include <godot_cpp/classes/control.hpp>
-
-#define GDEXTMOD_GUI_INPUT _gui_input
-#elif GODOT_MODULE
-#include "scene/gui/control.h"
-
-#define GDEXTMOD_GUI_INPUT gui_input
-#endif
-
-class EditorMainScreen4D;
+#include "editor_viewport_4d_defines.h"
 
 // Editor viewport rotation navigation gizmo (the thing in the top right corner).
 // Shows the current view rotation and allows the user to rotate the view.

@@ -2,18 +2,6 @@
 
 #include "editor_main_screen_4d.h"
 
-#if GDEXTENSION
-#include <godot_cpp/classes/input.hpp>
-#include <godot_cpp/classes/input_event_mouse_button.hpp>
-#include <godot_cpp/classes/input_event_mouse_motion.hpp>
-#elif GODOT_MODULE
-#define MOUSE_BUTTON_MASK_MIDDLE MouseButtonMask::MIDDLE
-#define MOUSE_BUTTON_MASK_RIGHT MouseButtonMask::RIGHT
-#define MOUSE_BUTTON_RIGHT MouseButton::RIGHT
-#define MOUSE_BUTTON_WHEEL_UP MouseButton::WHEEL_UP
-#define MOUSE_BUTTON_WHEEL_DOWN MouseButton::WHEEL_DOWN
-#endif
-
 void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 	ERR_FAIL_COND(p_event.is_null());
 	Ref<InputEventMouseButton> mouse_button = p_event;
@@ -54,17 +42,17 @@ void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 	if (key.is_valid()) {
 		if (key->is_pressed()) {
 			if (!Input::get_singleton()->is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)) {
-				if (key->get_keycode() == Key::Q) {
+				if (key->get_keycode() == KEY_Q) {
 					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_SELECT);
-				} else if (key->get_keycode() == Key::W) {
+				} else if (key->get_keycode() == KEY_W) {
 					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_MOVE);
-				} else if (key->get_keycode() == Key::E) {
+				} else if (key->get_keycode() == KEY_E) {
 					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_ROTATE);
-				} else if (key->get_keycode() == Key::R) {
+				} else if (key->get_keycode() == KEY_R) {
 					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_SCALE);
-				} else if (key->get_keycode() == Key::T) {
+				} else if (key->get_keycode() == KEY_T) {
 					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM);
-				} else if (key->get_keycode() == Key::F) {
+				} else if (key->get_keycode() == KEY_F) {
 					_editor_main_screen->focus_selected_nodes();
 				}
 			}

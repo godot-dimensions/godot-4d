@@ -1,6 +1,6 @@
 #pragma once
 
-#include "editor_camera_4d.h"
+#include "editor_viewport_4d_defines.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/button.hpp>
@@ -10,16 +10,12 @@
 #include <godot_cpp/classes/sub_viewport.hpp>
 #include <godot_cpp/classes/sub_viewport_container.hpp>
 #elif GODOT_MODULE
-#include "core/input/input_event.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/label.h"
 #include "scene/gui/subviewport_container.h"
 #include "scene/main/viewport.h"
 #endif
-
-class EditorInputSurface4D;
-class EditorViewportRotation4D;
 
 // Main class for the 4D editor viewport main screen.
 // Has a toolbar at the top and a display of the 4D scene below it.

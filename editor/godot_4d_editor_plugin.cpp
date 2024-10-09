@@ -4,6 +4,7 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_interface.hpp>
+#include <godot_cpp/classes/v_box_container.hpp>
 #elif GODOT_MODULE
 #include "editor/editor_interface.h"
 #endif

@@ -1,17 +1,16 @@
 #include "editor_main_screen_4d.h"
 
+#include "editor_camera_4d.h"
 #include "editor_input_surface_4d.h"
 #include "editor_viewport_rotation_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/editor_selection.hpp>
-#include <godot_cpp/classes/editor_settings.hpp>
 #include <godot_cpp/classes/v_separator.hpp>
 #elif GODOT_MODULE
 #include "editor/editor_data.h"
 #include "editor/editor_interface.h"
-#include "editor/editor_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/separator.h"
 #endif
@@ -43,16 +42,16 @@ void EditorMainScreen4D::_update_theme() {
 	_information_label->set_offset(SIDE_TOP, -40.0f * EDSCALE);
 	_information_label->set_offset(SIDE_BOTTOM, -6.0f * EDSCALE);
 	// Set icons.
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_icon(get_editor_theme_icon(SNAME("ToolSelect")));
-	_toolbar_buttons[TOOLBAR_BUTTON_MOVE]->set_icon(get_editor_theme_icon(SNAME("ToolMove")));
-	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->set_icon(get_editor_theme_icon(SNAME("ToolRotate")));
-	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_icon(get_editor_theme_icon(SNAME("ToolScale")));
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]->set_icon(get_editor_theme_icon(SNAME("Object")));
+	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_button_icon(get_editor_theme_icon(StringName("ToolSelect")));
+	_toolbar_buttons[TOOLBAR_BUTTON_MOVE]->set_button_icon(get_editor_theme_icon(StringName("ToolMove")));
+	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->set_button_icon(get_editor_theme_icon(StringName("ToolRotate")));
+	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_button_icon(get_editor_theme_icon(StringName("ToolScale")));
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]->set_button_icon(get_editor_theme_icon(StringName("Object")));
 	// Set the axis colors.
 	_axis_colors.clear();
-	_axis_colors.push_back(get_theme_color(SNAME("axis_x_color"), StringName("Editor")));
-	_axis_colors.push_back(get_theme_color(SNAME("axis_y_color"), StringName("Editor")));
-	_axis_colors.push_back(get_theme_color(SNAME("axis_z_color"), StringName("Editor")));
+	_axis_colors.push_back(get_theme_color(StringName("axis_x_color"), StringName("Editor")));
+	_axis_colors.push_back(get_theme_color(StringName("axis_y_color"), StringName("Editor")));
+	_axis_colors.push_back(get_theme_color(StringName("axis_z_color"), StringName("Editor")));
 	_axis_colors.push_back(Color(0.9f, 0.82f, 0.1f)); // W axis color.
 }
 

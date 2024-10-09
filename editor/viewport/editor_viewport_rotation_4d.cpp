@@ -3,8 +3,11 @@
 #include "editor_main_screen_4d.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/font.hpp>
+#include <godot_cpp/classes/input_event_screen_drag.hpp>
+#include <godot_cpp/classes/input_event_screen_touch.hpp>
 #elif GODOT_MODULE
-#include "editor/themes/editor_scale.h"
+#include "scene/resources/font.h"
 #endif
 
 // How far apart the axis circles are from the center of the gizmo.
@@ -29,8 +32,8 @@ String _get_axis_letter(int p_axis) {
 void EditorViewportRotation4D::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
-			if (!is_connected(SceneStringName(mouse_exited), callable_mp(this, &EditorViewportRotation4D::_on_mouse_exited))) {
-				connect(SceneStringName(mouse_exited), callable_mp(this, &EditorViewportRotation4D::_on_mouse_exited));
+			if (!is_connected(StringName("mouse_exited"), callable_mp(this, &EditorViewportRotation4D::_on_mouse_exited))) {
+				connect(StringName("mouse_exited"), callable_mp(this, &EditorViewportRotation4D::_on_mouse_exited));
 			}
 			_update_theme();
 		} break;
@@ -74,8 +77,8 @@ void EditorViewportRotation4D::_draw_axis_circle(const Axis2D &p_axis) {
 		draw_circle(p_axis.screen_point, axis_circle_radius, color, true, -1.0f, true);
 		// Draw the axis letter for the positive axes.
 		const String axis_letter = _get_axis_letter(p_axis.axis_number);
-		const Ref<Font> &font = get_theme_font(SNAME("rotation_control"), StringName("EditorFonts"));
-		const int font_size = get_theme_font_size(SNAME("rotation_control_size"), StringName("EditorFonts"));
+		const Ref<Font> &font = get_theme_font(StringName("rotation_control"), StringName("EditorFonts"));
+		const int font_size = get_theme_font_size(StringName("rotation_control_size"), StringName("EditorFonts"));
 		const Size2 char_size = font->get_char_size(axis_letter[0], font_size);
 		const Vector2 char_offset = Vector2(-char_size.width / 2.0f, char_size.height * 0.25f);
 		draw_char(font, p_axis.screen_point + char_offset, axis_letter, font_size, Color(0.0f, 0.0f, 0.0f, alpha * 0.6f));
@@ -118,8 +121,8 @@ void EditorViewportRotation4D::_draw_axis_plane(const Axis2D &p_axis) {
 		// If the circle is big enough, draw letters.
 		const String primary_letter = _get_axis_letter(p_axis.axis_number);
 		const String secondary_letter = _get_axis_letter(p_axis.secondary_axis_number);
-		const Ref<Font> &font = get_theme_font(SNAME("rotation_control"), StringName("EditorFonts"));
-		const int font_size = get_theme_font_size(SNAME("rotation_control_size"), StringName("EditorFonts"));
+		const Ref<Font> &font = get_theme_font(StringName("rotation_control"), StringName("EditorFonts"));
+		const int font_size = get_theme_font_size(StringName("rotation_control_size"), StringName("EditorFonts"));
 		const Vector2 primary_char_size = font->get_char_size(primary_letter[0], font_size);
 		const Vector2 secondary_char_size = font->get_char_size(secondary_letter[0], font_size);
 		const Vector2 primary_char_offset = Vector2(Math::ceil(-5.5f * _editor_scale - 0.5f * primary_char_size.width), primary_char_size.height * 0.25f);
@@ -372,7 +375,7 @@ void EditorViewportRotation4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event
 
 	// Mouse events
 	const Ref<InputEventMouseButton> mb = p_event;
-	if (mb.is_valid() && mb->get_button_index() == MouseButton::LEFT) {
+	if (mb.is_valid() && mb->get_button_index() == MOUSE_BUTTON_LEFT) {
 		_process_click(100, mb->get_position(), mb->is_pressed());
 	}
 

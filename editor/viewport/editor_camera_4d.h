@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../../nodes/camera_4d.h"
+#include "editor_viewport_4d_defines.h"
+
+class Camera4D;
 
 // Node that handles navigating around the 4D editor viewport.
 // It can pan, zoom, orbit, and freelook just like the 3D editor camera.

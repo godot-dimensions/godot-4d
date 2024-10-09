@@ -47,6 +47,18 @@ sources = (
 
 env.Append(CPPDEFINES=["GDEXTENSION"])
 
+if env["target"] == "editor":
+    env.Append(
+        CPPPATH=[
+            "../../editor",
+            "../../editor/off",
+            "../../editor/viewport",
+        ]
+    )
+    sources += Glob("../../editor/*.cpp")
+    sources += Glob("../../editor/off/*.cpp")
+    sources += Glob("../../editor/viewport/*.cpp")
+
 if env["platform"] == "windows":
     if env["OBJSUFFIX"].endswith(".obj"):
         env["OBJSUFFIX"] = env["OBJSUFFIX"][:-4] + ".o.obj"
