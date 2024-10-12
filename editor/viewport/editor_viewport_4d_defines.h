@@ -42,7 +42,7 @@
 #define KEY_W Key::W
 #define KEY_SHIFT Key::SHIFT
 
-#define MOUSE_BUTTON_LEFT MouseButton::RIGHT
+#define MOUSE_BUTTON_LEFT MouseButton::LEFT
 #define MOUSE_BUTTON_MASK_MIDDLE MouseButtonMask::MIDDLE
 #define MOUSE_BUTTON_MASK_RIGHT MouseButtonMask::RIGHT
 #define MOUSE_BUTTON_RIGHT MouseButton::RIGHT
