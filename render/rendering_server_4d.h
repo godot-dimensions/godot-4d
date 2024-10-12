@@ -31,6 +31,7 @@ public:
 	void unregister_camera(Camera4D *p_camera);
 	void make_camera_current(Camera4D *p_camera);
 	void clear_camera_current(Camera4D *p_camera);
+	Camera4D *get_current_camera(Viewport *p_viewport) const;
 
 	void register_mesh_instance(MeshInstance4D *p_mesh_instance);
 	void unregister_mesh_instance(MeshInstance4D *p_mesh_instance);

@@ -103,7 +103,7 @@ void RenderingServer4D::make_camera_current(Camera4D *p_camera) {
 	Viewport *viewport = p_camera->get_viewport();
 	Vector<Camera4D *> &cameras = _viewport_cameras[viewport];
 	ERR_FAIL_COND(!cameras.has(p_camera));
-	Camera4D *camera0 = (Camera4D *)(Object *)cameras[0];
+	Camera4D *camera0 = cameras[0];
 	if (p_camera != camera0) {
 		if (camera0->is_current()) {
 			camera0->clear_current(false);
@@ -124,9 +124,24 @@ void RenderingServer4D::clear_camera_current(Camera4D *p_camera) {
 	if (p_camera == cameras[0] && cameras.size() > 1) {
 		cameras.remove_at(0);
 		cameras.append(p_camera);
-		Camera4D *camera0 = (Camera4D *)(Object *)cameras[0];
+		Camera4D *camera0 = cameras[0];
 		camera0->make_current();
 	}
+}
+
+Camera4D *RenderingServer4D::get_current_camera(Viewport *p_viewport) const {
+	if (!_viewport_cameras.has(p_viewport)) {
+		return nullptr;
+	}
+	const Vector<Camera4D *> &cameras = _viewport_cameras[p_viewport];
+	if (cameras.is_empty()) {
+		return nullptr;
+	}
+	Camera4D *camera0 = cameras[0];
+	if (camera0->is_current()) {
+		return camera0;
+	}
+	return nullptr;
 }
 
 void RenderingServer4D::register_mesh_instance(MeshInstance4D *p_mesh_instance) {
@@ -166,6 +181,7 @@ PackedStringArray RenderingServer4D::get_rendering_engine_names() const {
 RenderingServer4D *RenderingServer4D::singleton = nullptr;
 
 void RenderingServer4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_current_camera", "viewport"), &RenderingServer4D::get_current_camera);
 	ClassDB::bind_method(D_METHOD("register_rendering_engine", "name", "engine"), &RenderingServer4D::register_rendering_engine);
 	ClassDB::bind_method(D_METHOD("unregister_rendering_engine", "name"), &RenderingServer4D::unregister_rendering_engine);
 	ClassDB::bind_method(D_METHOD("get_rendering_engine_names"), &RenderingServer4D::get_rendering_engine_names);

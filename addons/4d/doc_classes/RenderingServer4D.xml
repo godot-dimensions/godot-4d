@@ -10,6 +10,13 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_current_camera" qualifiers="const">
+			<return type="Camera4D" />
+			<param index="0" name="viewport" type="Viewport" />
+			<description>
+				Returns the current [Camera4D] for the given [Viewport]. If the viewport has no Camera4Ds, or no Camera4D is set as current, this method will return [code]null[/code].
+			</description>
+		</method>
 		<method name="get_rendering_engine_names" qualifiers="const">
 			<return type="PackedStringArray" />
 			<description>
