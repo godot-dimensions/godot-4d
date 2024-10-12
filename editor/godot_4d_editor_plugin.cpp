@@ -28,7 +28,12 @@ void Godot4DEditorPlugin::_notification(int p_what) {
 	}
 }
 
-const Ref<Texture2D> Godot4DEditorPlugin::GDEXTMOD_GET_PLUGIN_ICON() const {
+#if GDEXTENSION
+Ref<Texture2D> Godot4DEditorPlugin::GDEXTMOD_GET_PLUGIN_ICON() const
+#elif GODOT_MODULE
+const Ref<Texture2D> Godot4DEditorPlugin::GDEXTMOD_GET_PLUGIN_ICON() const
+#endif
+{
 	Window *window = Object::cast_to<Window>(get_viewport());
 	ERR_FAIL_COND_V_MSG(window == nullptr, Ref<Texture2D>(), "Window is null.");
 	return window->get_editor_theme_icon(StringName("4D"));

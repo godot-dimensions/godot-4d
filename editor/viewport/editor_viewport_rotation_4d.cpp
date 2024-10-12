@@ -1,6 +1,6 @@
 #include "editor_viewport_rotation_4d.h"
 
-#include "editor_main_screen_4d.h"
+#include "editor_main_viewport_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/font.hpp>
@@ -38,7 +38,7 @@ void EditorViewportRotation4D::_notification(int p_what) {
 			_update_theme();
 		} break;
 		case NOTIFICATION_DRAW: {
-			if (_editor_main_screen != nullptr) {
+			if (_editor_main_viewport != nullptr) {
 				_draw();
 			}
 		} break;
@@ -212,7 +212,7 @@ void EditorViewportRotation4D::_get_sorted_axis_screen_aligned(const Basis4D &p_
 void EditorViewportRotation4D::_get_sorted_axis(const Vector2 &p_center, Vector<Axis2D> &r_axis) {
 	const Vector2 center = get_size() / 2.0f;
 	const real_t radius = get_size().x / 2.0f - 10.0f * _editor_scale;
-	const Basis4D camera_basis_transposed = _editor_main_screen->get_view_camera_basis().transposed();
+	const Basis4D camera_basis_transposed = _editor_main_viewport->get_view_camera_basis().transposed();
 	// Special cases: Axes are aligned with the screen.
 	constexpr real_t SPECIAL_CASE_THRESHOLD = CMP_EPSILON;
 	if (Math::abs(camera_basis_transposed.x.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.x.y) < SPECIAL_CASE_THRESHOLD) {
@@ -303,9 +303,9 @@ void EditorViewportRotation4D::_process_click(int p_index, Vector2 p_position, b
 	} else {
 		if (_focused_axis.axis_number > -1) {
 			if (_focused_axis.secondary_axis_number > -1) {
-				_editor_main_screen->set_orthogonal_view_plane(Vector4::Axis(_focused_axis.axis_number), Vector4::Axis(_focused_axis.secondary_axis_number));
+				_editor_main_viewport->set_orthogonal_view_plane(Vector4::Axis(_focused_axis.axis_number), Vector4::Axis(_focused_axis.secondary_axis_number));
 			} else {
-				_editor_main_screen->set_ground_view_axis(Vector4::Axis(_focused_axis.axis_number % 4));
+				_editor_main_viewport->set_ground_view_axis(Vector4::Axis(_focused_axis.axis_number % 4));
 			}
 			_update_focus();
 		}
@@ -324,7 +324,7 @@ void EditorViewportRotation4D::_process_drag(Ref<InputEventWithModifiers> p_even
 			Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_CAPTURED);
 			_orbiting_mouse_start = p_position;
 		}
-		_editor_main_screen->navigation_orbit(p_event);
+		_editor_main_viewport->navigation_orbit(p_event);
 		_focused_axis.axis_number = -1;
 	} else {
 		_update_focus();
@@ -363,7 +363,7 @@ void EditorViewportRotation4D::_update_theme() {
 	set_offset(SIDE_BOTTOM, 1.1f * scaled_size);
 	set_offset(SIDE_LEFT, -1.1f * scaled_size);
 	set_offset(SIDE_TOP, 0.1f * scaled_size);
-	_axis_colors = _editor_main_screen->get_axis_colors();
+	_axis_colors = _editor_main_viewport->get_axis_colors();
 	queue_redraw();
 }
 
@@ -393,8 +393,8 @@ void EditorViewportRotation4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event
 	}
 }
 
-void EditorViewportRotation4D::set_editor_main_screen(EditorMainScreen4D *p_editor_main_screen) {
-	_editor_main_screen = p_editor_main_screen;
+void EditorViewportRotation4D::set_editor_main_viewport(EditorMainViewport4D *p_editor_main_viewport) {
+	_editor_main_viewport = p_editor_main_viewport;
 }
 
 EditorViewportRotation4D::EditorViewportRotation4D() {

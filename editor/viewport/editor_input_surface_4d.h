@@ -8,12 +8,14 @@ class EditorInputSurface4D : public Control {
 	GDCLASS(EditorInputSurface4D, Control);
 
 	EditorMainScreen4D *_editor_main_screen = nullptr;
+	EditorMainViewport4D *_editor_main_viewport = nullptr;
 
 public:
 	static void _bind_methods() {}
 	virtual void GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) override;
 
 	void set_editor_main_screen(EditorMainScreen4D *p_editor_main_screen);
+	void set_editor_main_viewport(EditorMainViewport4D *p_editor_main_viewport);
 
 	EditorInputSurface4D();
 };

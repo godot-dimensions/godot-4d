@@ -37,7 +37,11 @@ protected:
 	void _notification(int p_what);
 
 public:
+#if GDEXTENSION
+	virtual Ref<Texture2D> GDEXTMOD_GET_PLUGIN_ICON() const override;
+#elif GODOT_MODULE
 	virtual const Ref<Texture2D> GDEXTMOD_GET_PLUGIN_ICON() const override;
+#endif
 	virtual String GDEXTMOD_GET_PLUGIN_NAME() const override { return "4D"; }
 	virtual bool GDEXTMOD_HANDLES(Object *p_object) const override;
 	virtual bool GDEXTMOD_HAS_MAIN_SCREEN() const override { return true; }

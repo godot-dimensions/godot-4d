@@ -16,7 +16,7 @@
 #define EDSCALE 1.0f
 #define ERR_THREAD_GUARD
 #define TTR(m_text) m_text
-#define get_editor_theme_icon get_theme_icon
+#define get_editor_theme_icon(m_name) get_theme_icon(m_name, StringName("EditorIcons"))
 #elif GODOT_MODULE
 #include "core/input/input.h"
 #include "editor/editor_settings.h"
@@ -48,4 +48,5 @@
 class EditorCamera4D;
 class EditorInputSurface4D;
 class EditorMainScreen4D;
+class EditorMainViewport4D;
 class EditorViewportRotation4D;

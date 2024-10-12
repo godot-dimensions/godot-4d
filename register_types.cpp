@@ -66,6 +66,19 @@
 #include "physics/server/ghost_physics_engine_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
 #include "render/wireframe_canvas/wireframe_render_canvas.h"
+#ifdef TOOLS_ENABLED
+#include "editor/godot_4d_editor_plugin.h"
+#include "editor/off/editor_import_plugin_off_base.h"
+#include "editor/off/editor_import_plugin_off_mesh_3d.h"
+#include "editor/off/editor_import_plugin_off_scene.h"
+#include "editor/off/editor_import_plugin_off_tetra_4d.h"
+#include "editor/off/editor_import_plugin_off_wire_4d.h"
+#include "editor/viewport/editor_camera_4d.h"
+#include "editor/viewport/editor_input_surface_4d.h"
+#include "editor/viewport/editor_main_screen_4d.h"
+#include "editor/viewport/editor_main_viewport_4d.h"
+#include "editor/viewport/editor_viewport_rotation_4d.h"
+#endif // TOOLS_ENABLED
 #endif // GDEXTENSION
 
 #ifdef TOOLS_ENABLED
@@ -147,6 +160,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(StaticBody4D);
 #if GDEXTENSION
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
+		GDREGISTER_CLASS(WireframeRenderCanvas);
+		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
 #endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
 #ifdef TOOLS_ENABLED
@@ -155,15 +170,24 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		physics_server->register_physics_engine("GhostPhysicsEngine4D", memnew(GhostPhysicsEngine4D));
 		add_godot_singleton("PhysicsServer4D", physics_server);
 		// Render.
-#if GDEXTENSION
-		GDREGISTER_CLASS(WireframeRenderCanvas);
-		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
-#endif // GDEXTENSION
 		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
 		rendering_server->register_rendering_engine("Wireframe Canvas", memnew(WireframeCanvasRenderingEngine4D));
 		add_godot_singleton("RenderingServer4D", rendering_server);
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+#ifdef GDEXTENSION
+		GDREGISTER_CLASS(EditorCamera4D);
+		GDREGISTER_CLASS(EditorImportPluginOFFBase);
+		GDREGISTER_CLASS(EditorImportPluginOFFMesh3D);
+		GDREGISTER_CLASS(EditorImportPluginOFFScene);
+		GDREGISTER_CLASS(EditorImportPluginOFFTetra4D);
+		GDREGISTER_CLASS(EditorImportPluginOFFWire4D);
+		GDREGISTER_CLASS(EditorInputSurface4D);
+		GDREGISTER_CLASS(EditorMainScreen4D);
+		GDREGISTER_CLASS(EditorMainViewport4D);
+		GDREGISTER_CLASS(EditorViewportRotation4D);
+		GDREGISTER_CLASS(Godot4DEditorPlugin);
+#endif // GDEXTENSION
 		EditorPlugins::add_by_type<Godot4DEditorPlugin>();
 #endif // TOOLS_ENABLED
 	}
