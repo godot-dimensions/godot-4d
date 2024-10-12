@@ -3,34 +3,6 @@
 #include "../../mesh/wire/wire_material_4d.h"
 #include "wireframe_render_canvas.h"
 
-Vector2 WireframeCanvasRenderingEngine4D::_project_point_3d_to_2d(const Vector3 &p_point) const {
-	const Vector3 intersection_point = p_point * (get_camera()->get_focal_length_3d() / p_point.z);
-	return Vector2(intersection_point.x, intersection_point.y);
-}
-
-Vector3 WireframeCanvasRenderingEngine4D::_project_point_4d_to_3d(const Vector4 &p_point) const {
-	const Vector4 intersection_point = p_point * (get_camera()->get_focal_length_4d() / p_point.z);
-	return Vector3(intersection_point.x, intersection_point.y, intersection_point.w);
-}
-
-Vector2 WireframeCanvasRenderingEngine4D::_project_point_4d_to_2d(const Vector4 &p_vertex) const {
-	Camera4D *camera = get_camera();
-	// Project from 4D to 3D.
-	Vector3 projected_point_3d = Vector3();
-	if (camera->is_first_pass_perspective()) {
-		projected_point_3d = _project_point_4d_to_3d(p_vertex);
-	} else if (camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
-		projected_point_3d = Vector3(-p_vertex.x, -p_vertex.y, p_vertex.z) / get_camera()->get_orthographic_size();
-	} else {
-		projected_point_3d = Vector3(p_vertex.x, p_vertex.y, p_vertex.z);
-	}
-	// Project from 3D to 2D.
-	if (camera->is_second_pass_perspective()) {
-		return _project_point_3d_to_2d(projected_point_3d);
-	}
-	return Vector2(projected_point_3d.x, projected_point_3d.y);
-}
-
 Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index) {
 	if (p_material.is_null()) {
 		return Color(1.0f, 1.0f, 1.0f);
@@ -86,7 +58,7 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 		const PackedVector4Array camera_relative_vertices = Transform4D(mesh_relative_basis, mesh_relative_position).xform_many(mesh_inst->get_mesh()->get_vertices());
 		PackedVector2Array projected_vertices;
 		for (int vertex = 0; vertex < camera_relative_vertices.size(); vertex++) {
-			projected_vertices.push_back(_project_point_4d_to_2d(camera_relative_vertices[vertex]));
+			projected_vertices.push_back(camera->world_to_viewport_local_normal(camera_relative_vertices[vertex]));
 		}
 		PackedColorArray edge_colors;
 		PackedVector2Array edge_vertices;
@@ -104,7 +76,7 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 					// A is behind the camera, while B is in front of the camera.
 					const real_t factor = (a_vert_4d.z + camera->get_near()) / (a_vert_4d.z - b_vert_4d.z);
 					const Vector4 clipped = a_vert_4d.lerp(b_vert_4d, factor);
-					edge_vertices.push_back(_project_point_4d_to_2d(clipped));
+					edge_vertices.push_back(camera->world_to_viewport_local_normal(clipped));
 					edge_vertices.push_back(projected_vertices[b_index]);
 				}
 			} else {
@@ -113,7 +85,7 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 					// B is behind the camera, while A is in front of the camera.
 					const real_t factor = (b_vert_4d.z + camera->get_near()) / (b_vert_4d.z - a_vert_4d.z);
 					const Vector4 clipped = b_vert_4d.lerp(a_vert_4d, factor);
-					edge_vertices.push_back(_project_point_4d_to_2d(clipped));
+					edge_vertices.push_back(camera->world_to_viewport_local_normal(clipped));
 				} else {
 					// Both points are in front of the camera, so render the edge as-is.
 					edge_vertices.push_back(projected_vertices[b_index]);

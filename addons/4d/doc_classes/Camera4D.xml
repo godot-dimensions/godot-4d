@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Camera4D" inherits="Node4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		4D camera for projecting 4D scenes onto a 2D screen.
+		4D camera for projecting 4D scenes onto a 2D screen (viewport).
 	</brief_description>
 	<description>
-		Camera4D is a camera designed to take 4D scenes and project them onto a 2D screen. It does this by first projecting 4D into 3D (first pass), then projecting 3D into 2D (second pass). The perspective transformation can be applied at either stage, but it is recommended to apply it at the 4D to 3D stage for better results.
+		Camera4D is a camera designed to take 4D scenes and project them onto a 2D screen (really a [Viewport]). It does this by first projecting 4D into 3D (first pass), then projecting 3D into 2D (second pass). The perspective transformation can be applied at either stage, but it is recommended to apply it at the 4D to 3D stage for better results.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -22,6 +22,13 @@
 				The projection type's first pass is defined as the 4D to 3D projection. This function returns [code]true[/code] if the first pass is perspective, meaning [member projection_type] set to [constant PROJECTION4D_PERSPECTIVE_4D] or [constant PROJECTION4D_PERSPECTIVE_DUAL]. Returns [code]false[/code] if the first pass is orthographic, meaning [member projection_type] set to [constant PROJECTION4D_ORTHOGRAPHIC] or [constant PROJECTION4D_PERSPECTIVE_3D].
 			</description>
 		</method>
+		<method name="is_position_behind" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="global_position" type="Vector4" />
+			<description>
+				Returns [code]true[/code] if the given global position is behind the camera, taking into account the camera's near clipping plane (the blue part of the linked diagram). [url=https://raw.githubusercontent.com/godotengine/godot-docs/master/img/camera3d_position_frustum.png]See this diagram[/url] for an overview of position query methods. If [code]true[/code], the position is not visible to the camera. If [code]false[/code], the position may or may not be visible to the camera. This is the 4D equivalent of [method Camera3D.is_position_behind].
+			</description>
+		</method>
 		<method name="is_second_pass_perspective" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -32,6 +39,36 @@
 			<return type="void" />
 			<description>
 				Make this camera the current camera for the ancestor [Viewport]. If another camera is currently active, it will be deactivated. If this camera is already current, this function does nothing. This is the same as setting [member current] to [code]true[/code].
+			</description>
+		</method>
+		<method name="viewport_to_world_ray_direction" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="viewport_position" type="Vector2" />
+			<description>
+				Given a position in pixels on the viewport, return the direction of the ray cast out from that position in world space. The viewport position should be the position relative to the top-left of the viewport (see [method Viewport.get_mouse_position]), and the returned value is in global space and normalized. This is the 4D equivalent of [method Camera3D.project_ray_normal].
+			</description>
+		</method>
+		<method name="viewport_to_world_ray_origin" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="viewport_position" type="Vector2" />
+			<description>
+				Given a position in pixels on the viewport, return the origin of the ray cast out from that position in world space. The viewport position should be the position relative to the top-left of the viewport (see [method Viewport.get_mouse_position]), and the returned value is in global space. This is the 4D equivalent of [method Camera3D.project_ray_origin].
+				[b]Note:[/b] For efficiency, this function does not take into account the near clipping plane of the camera.
+			</description>
+		</method>
+		<method name="world_to_viewport" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="global_position" type="Vector4" />
+			<description>
+				Given a global position in world space, return the position in pixels on the viewport. The returned value is relative to the top-left of the viewport (see [method Viewport.get_mouse_position]). This is a wrapper for [method world_to_viewport_local_normal] that works with global world coordinates and pixel viewport coordinates. This is the 4D equivalent of [method Camera3D.unproject_position].
+			</description>
+		</method>
+		<method name="world_to_viewport_local_normal" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="local_position" type="Vector4" />
+			<description>
+				Given a local position relative to the camera, return the normalized coordinates on the viewport. This is like [method world_to_viewport], but skips converting between coordinate systems, so this method is faster if you do not need to convert.
+				The returned value is on the range of -1 to 1 for the direction that [member keep_aspect] is set to keep constant. Due to the way this is calculated (negative Z forward), the X values are positive on the left and the Y values are positive on the bottom. For example, on a 16:9 aspect ratio viewport with [constant KEEP_HEIGHT], the bottom-left corner is (1.777, 1), and the top-right corner is (-1.777, -1).
 			</description>
 		</method>
 	</methods>
@@ -87,7 +124,7 @@
 		</member>
 		<member name="w_fade_slope" type="float" setter="set_w_fade_slope" getter="get_w_fade_slope" default="1.0">
 			The slope of fading objects out as they move farther away from the camera in the local W axis. This is only used when [member w_fade_mode] is not set to [constant W_FADE_DISABLED].
-			Objects farther away from the camera in the -Z direction will be faded less, and objects farther away in the +/- W direction will be faded more. This is similar to how moving away from an object while looking at it will cause it to shrink towards the middle of the screen, like a "field of view".
+			Objects farther away from the camera in the -Z direction will be faded less, and objects farther away in the +/- W direction will be faded more. This is similar to how moving away from an object while looking at it will cause it to shrink towards the middle of the viewport, like a "field of view".
 			This property controls how strongly each direction is taken into account during fading. Lower values result in a smaller viewing angle, and objects will fade out more quickly. A zero value will mimic the perspective of a 3D being, with no sight of the W axis. Higher values result in a larger viewing angle, and objects will fade out more slowly.
 		</member>
 	</members>

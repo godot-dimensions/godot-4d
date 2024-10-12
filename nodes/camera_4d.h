@@ -61,6 +61,12 @@ public:
 	void clear_current(bool p_enable_next = true);
 	void make_current();
 
+	bool is_position_behind(const Vector4 &p_global_position) const;
+	Vector4 viewport_to_world_ray_origin(const Vector2 &p_viewport_position) const;
+	Vector4 viewport_to_world_ray_direction(const Vector2 &p_viewport_position) const;
+	Vector2 world_to_viewport_local_normal(const Vector4 &p_local_position) const;
+	Vector2 world_to_viewport(const Vector4 &p_global_position) const;
+
 	String get_rendering_engine() const;
 	void set_rendering_engine(const String &p_rendering_engine);
 
