@@ -109,6 +109,24 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 					edge_color.a = 1.0f - MIN(1.0f, ABS(fade_factor));
 				}
 			}
+			if (camera->get_depth_fade()) {
+				const real_t depth = abs((a_vert_4d.length() + b_vert_4d.length()) * 0.5);
+				real_t alpha = 1.0;
+
+				const real_t far = camera->get_far();
+				const real_t start = camera->get_depth_fade_start();
+
+				if (depth > far) {
+					alpha = 0.0;
+				} else if (depth < start) {
+					alpha = 1.0;
+				} else {
+					const real_t unit_distance = (depth - start) / (far - start); // Inverse lerp
+					alpha = 1.0 - unit_distance;
+				}
+
+				edge_color.a *= alpha;
+			}
 			edge_colors.push_back(edge_color);
 		}
 		if (edge_vertices.is_empty()) {

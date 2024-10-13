@@ -127,6 +127,12 @@
 			Objects farther away from the camera in the -Z direction will be faded less, and objects farther away in the +/- W direction will be faded more. This is similar to how moving away from an object while looking at it will cause it to shrink towards the middle of the viewport, like a "field of view".
 			This property controls how strongly each direction is taken into account during fading. Lower values result in a smaller viewing angle, and objects will fade out more quickly. A zero value will mimic the perspective of a 3D being, with no sight of the W axis. Higher values result in a larger viewing angle, and objects will fade out more slowly.
 		</member>
+		<member name="depth_fade" type="bool" setter="set_depth_fade" getter="get_depth_fade" default="false">
+			Controls if depth fading is enabled, which means that once things get further than [member depth_fade_start] on the camera's Z axis, they start to fade until they become transparent at [member far].
+		</member>
+		<member name="depth_fade_start" type="float" setter="set_depth_fade_start" getter="get_depth_fade_start" default="25.0">
+			How many units on the camera's Z axis away an edge has to be before it starts fading. Only applies if [member depth_fade] is [code]true[/code].
+		</member>
 	</members>
 	<constants>
 		<constant name="KEEP_WIDTH" value="0" enum="KeepAspect">

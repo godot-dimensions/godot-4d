@@ -37,12 +37,15 @@ private:
 	ViewAngleType _view_angle_type = VIEW_ANGLE_FOCAL_LENGTH;
 	WFadeMode _w_fade_mode = W_FADE_TRANSPARENCY;
 
+	bool _depth_fade = false;
+
 	// These have wrappers with trig functions, so let's use double to avoid precision loss.
 	double _focal_length_4d = 1.0;
 	double _focal_length_3d = 1.0;
 
 	Color _w_fade_color_negative = Color(0.0f, 0.0f, 1.0f);
 	Color _w_fade_color_positive = Color(1.0f, 0.0f, 0.0f);
+	real_t _depth_fade_start = 25.0;
 	real_t _orthographic_size = 5.0;
 	real_t _near = 0.05;
 	real_t _far = 4000.0;
@@ -116,6 +119,12 @@ public:
 
 	real_t get_w_fade_slope() const;
 	void set_w_fade_slope(const real_t p_w_fade_slope);
+
+	bool get_depth_fade() const;
+	void set_depth_fade(const bool p_depth_fade);
+
+	real_t get_depth_fade_start() const;
+	void set_depth_fade_start(const real_t p_depth_fade_start);
 };
 
 VARIANT_ENUM_CAST(Camera4D::KeepAspect);
