@@ -17,6 +17,7 @@
 #include "math/vector_4d.h"
 #include "nodes/camera_4d.h"
 #include "nodes/node_4d.h"
+#include "nodes/quad_split_container.h"
 
 // Virtual classes.
 #include "mesh/material_4d.h"
@@ -108,6 +109,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// General.
 		GDREGISTER_CLASS(Node4D);
 		GDREGISTER_CLASS(Camera4D);
+		GDREGISTER_CLASS(QuadSplitContainer);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Geometry4D", memnew(Geometry4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));

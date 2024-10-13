@@ -16,6 +16,7 @@ def get_doc_classes():
         "Euler4D",
         "Geometry4D",
         "Node4D",
+        "QuadSplitContainer",
         "RenderingEngine4D",
         "RenderingServer4D",
         "Rotor4D",

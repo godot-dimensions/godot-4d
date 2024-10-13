@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="QuadSplitContainer" inherits="Container" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Split container that can handle up to four children.
+	</brief_description>
+	<description>
+		QuadSplitContainer is a container that can handle up to four children. It is like an [HBoxContainer] and [VBoxContainer] combined. The layout can be set to have anywhere between 1 and 4 children visible. If 2 or 3 children are visible, the layout will be split depending on the dominant side. The splits are draggable by the user to change the ratio of the visible children.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="set_layout">
+			<return type="void" />
+			<param index="0" name="visible_child_count" type="int" />
+			<param index="1" name="dominant_side" type="int" enum="Side" default="1" />
+			<description>
+				Set the layout of the QuadSplitContainer. The layout can be set to have anywhere between 1 and 4 children visible. If 1 or 4 children are visible, [param dominant_side] has no effect. If 2 or 3 children are visible, the layout will be split depending on [param dominant_side].
+				With 2 children, [param dominant_side] set to [constant @GlobalScope.SIDE_TOP] or [constant @GlobalScope.SIDE_BOTTOM] will split the layout vertically, while [constant @GlobalScope.SIDE_LEFT] or [constant @GlobalScope.SIDE_RIGHT] will split the layout horizontally.
+				With 3 children, [param dominant_side] determines which side has a child taking up the most space. The other two children will be split on the opposite side. For example, [constant @GlobalScope.SIDE_RIGHT] will have the first Control taking up half the width on the right, and the other two Controls will be split vertically on the left.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="clip_contents" type="bool" setter="set_clip_contents" getter="is_clipping_contents" overrides="Control" default="true" />
+	</members>
+</class>

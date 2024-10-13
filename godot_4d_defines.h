@@ -17,11 +17,15 @@
 #if GDEXTENSION
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/string.hpp>
+#define GDEXTMOD_GUI_INPUT _gui_input
 // Including the namespace helps make GDExtension code more similar to module code.
 using namespace godot;
 #elif GODOT_MODULE
 #include "core/object/class_db.h"
 #include "core/string/ustring.h"
+#define GDEXTMOD_GUI_INPUT gui_input
+
+#define MOUSE_BUTTON_LEFT MouseButton::LEFT
 #endif
 
 #ifndef _NO_DISCARD_

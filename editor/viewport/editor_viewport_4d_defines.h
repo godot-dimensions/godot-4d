@@ -12,8 +12,6 @@
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
 #include <godot_cpp/classes/input_event_mouse_motion.hpp>
 
-#define GDEXTMOD_GUI_INPUT _gui_input
-
 #define EDITOR_GET(m_name) Variant()
 #define EDSCALE 1.0f
 #define ERR_THREAD_GUARD
@@ -24,8 +22,6 @@
 #include "editor/editor_settings.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/control.h"
-
-#define GDEXTMOD_GUI_INPUT gui_input
 
 #if GODOT_VERSION < 0x040400
 #define set_button_icon set_icon
@@ -42,7 +38,6 @@
 #define KEY_W Key::W
 #define KEY_SHIFT Key::SHIFT
 
-#define MOUSE_BUTTON_LEFT MouseButton::LEFT
 #define MOUSE_BUTTON_MASK_MIDDLE MouseButtonMask::MIDDLE
 #define MOUSE_BUTTON_MASK_RIGHT MouseButtonMask::RIGHT
 #define MOUSE_BUTTON_RIGHT MouseButton::RIGHT
