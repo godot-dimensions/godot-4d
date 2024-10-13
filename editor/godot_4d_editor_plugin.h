@@ -3,6 +3,7 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_plugin.hpp>
 
+#define GDEXTMOD_GET_PLUGIN_ICON _get_plugin_icon
 #define GDEXTMOD_GET_PLUGIN_NAME _get_plugin_name
 #define GDEXTMOD_HANDLES _handles
 #define GDEXTMOD_HAS_MAIN_SCREEN _has_main_screen
@@ -10,6 +11,7 @@
 #elif GODOT_MODULE
 #include "editor/plugins/editor_plugin.h"
 
+#define GDEXTMOD_GET_PLUGIN_ICON get_icon
 #define GDEXTMOD_GET_PLUGIN_NAME get_name
 #define GDEXTMOD_HANDLES handles
 #define GDEXTMOD_HAS_MAIN_SCREEN has_main_screen
@@ -35,6 +37,7 @@ protected:
 	void _notification(int p_what);
 
 public:
+	virtual const Ref<Texture2D> GDEXTMOD_GET_PLUGIN_ICON() const override;
 	virtual String GDEXTMOD_GET_PLUGIN_NAME() const override { return "4D"; }
 	virtual bool GDEXTMOD_HANDLES(Object *p_object) const override;
 	virtual bool GDEXTMOD_HAS_MAIN_SCREEN() const override { return true; }

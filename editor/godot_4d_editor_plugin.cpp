@@ -5,8 +5,10 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
+#include <godot_cpp/classes/window.hpp>
 #elif GODOT_MODULE
 #include "editor/editor_interface.h"
+#include "scene/main/window.h"
 #endif
 
 void Godot4DEditorPlugin::_notification(int p_what) {
@@ -24,6 +26,12 @@ void Godot4DEditorPlugin::_notification(int p_what) {
 			remove_import_plugin(_off_wire_4d_importer);
 		} break;
 	}
+}
+
+const Ref<Texture2D> Godot4DEditorPlugin::GDEXTMOD_GET_PLUGIN_ICON() const {
+	Window *window = Object::cast_to<Window>(get_viewport());
+	ERR_FAIL_COND_V_MSG(window == nullptr, Ref<Texture2D>(), "Window is null.");
+	return window->get_editor_theme_icon(StringName("4D"));
 }
 
 bool Godot4DEditorPlugin::GDEXTMOD_HANDLES(Object *p_object) const {

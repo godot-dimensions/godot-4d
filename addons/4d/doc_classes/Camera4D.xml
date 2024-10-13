@@ -77,6 +77,12 @@
 			If [code]true[/code], the ancestor [Viewport] is currently using this camera. Only one [Camera4D] node can be current at a time for each [Viewport].
 			If multiple cameras are a descendant of the [Viewport], the cameras will try to keep at least one of them current. For example, if two [Camera4D] nodes are present in the scene and only one is current, setting one camera's [member current] to [code]false[/code] will cause the other camera to be made current. If three or more [Camera4D] nodes are present in the scene, setting [member current] to [code]false[/code] on the active camera will result in the cameras activating in a round-robin fashion. To deactivate a camera without activating another, use [method clear_current] instead.
 		</member>
+		<member name="depth_fade" type="bool" setter="set_depth_fade" getter="get_depth_fade" default="false">
+			Controls if depth fading is enabled, which means that once things get further than [member depth_fade_start] on the camera's Z axis, they start to fade until they become transparent at [member far]. This is also known as fog.
+		</member>
+		<member name="depth_fade_start" type="float" setter="set_depth_fade_start" getter="get_depth_fade_start" default="25.0">
+			How many units on the camera's Z axis away an edge has to be before it starts fading. Only applies if [member depth_fade] is [code]true[/code]. This is also known as fog.
+		</member>
 		<member name="far" type="float" setter="set_far" getter="get_far" default="4000.0">
 			The distance to the far culling boundary for this camera relative to its local -Z axis. Higher values allow the camera to see further away, while decreasing can improve performance if it results in objects being partially or fully culled.
 		</member>
@@ -126,12 +132,6 @@
 			The slope of fading objects out as they move farther away from the camera in the local W axis. This is only used when [member w_fade_mode] is not set to [constant W_FADE_DISABLED].
 			Objects farther away from the camera in the -Z direction will be faded less, and objects farther away in the +/- W direction will be faded more. This is similar to how moving away from an object while looking at it will cause it to shrink towards the middle of the viewport, like a "field of view".
 			This property controls how strongly each direction is taken into account during fading. Lower values result in a smaller viewing angle, and objects will fade out more quickly. A zero value will mimic the perspective of a 3D being, with no sight of the W axis. Higher values result in a larger viewing angle, and objects will fade out more slowly.
-		</member>
-		<member name="depth_fade" type="bool" setter="set_depth_fade" getter="get_depth_fade" default="false">
-			Controls if depth fading is enabled, which means that once things get further than [member depth_fade_start] on the camera's Z axis, they start to fade until they become transparent at [member far].
-		</member>
-		<member name="depth_fade_start" type="float" setter="set_depth_fade_start" getter="get_depth_fade_start" default="25.0">
-			How many units on the camera's Z axis away an edge has to be before it starts fading. Only applies if [member depth_fade] is [code]true[/code].
 		</member>
 	</members>
 	<constants>
