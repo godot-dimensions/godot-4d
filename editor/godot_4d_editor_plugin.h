@@ -31,6 +31,7 @@ class Godot4DEditorPlugin : public EditorPlugin {
 	EditorMainScreen4D *_main_screen = nullptr;
 
 protected:
+	static void _bind_methods() {}
 	void _notification(int p_what);
 
 public:
@@ -40,5 +41,4 @@ public:
 	virtual void GDEXTMOD_MAKE_VISIBLE(bool p_visible) override;
 
 	Godot4DEditorPlugin();
-	~Godot4DEditorPlugin();
 };

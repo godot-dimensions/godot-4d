@@ -20,7 +20,7 @@ class EditorViewportRotation4D : public Control {
 		float z_index = 0.0f;
 		float angle = 0.0f; // Only used by the PLANE axis type.
 		AxisType2D axis_type = AXIS_TYPE_CIRCLE_POSITIVE;
-		int axis_number = -1; // 0 to 3 for XYZW.
+		int axis_number = -2; // 0 to 3 for XYZW, or -1 for the background circle, or -2 for none.
 		int secondary_axis_number = -1; // 0 to 3 for XYZW. Only used by the PLANE axis type.
 	};
 
@@ -51,6 +51,7 @@ class EditorViewportRotation4D : public Control {
 	void _update_theme();
 
 protected:
+	static void _bind_methods() {}
 	void _notification(int p_what);
 
 public:

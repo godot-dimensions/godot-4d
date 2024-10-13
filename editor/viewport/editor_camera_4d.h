@@ -24,6 +24,7 @@ class EditorCamera4D : public Node4D {
 	void _update_camera_auto_orthographicness();
 
 protected:
+	static void _bind_methods() {}
 	void _notification(int p_what);
 
 public:
@@ -38,5 +39,4 @@ public:
 	void set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up);
 
 	EditorCamera4D();
-	~EditorCamera4D();
 };

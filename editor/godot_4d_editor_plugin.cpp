@@ -43,7 +43,3 @@ Godot4DEditorPlugin::Godot4DEditorPlugin() {
 	_main_screen = memnew(EditorMainScreen4D);
 	EditorInterface::get_singleton()->get_editor_main_screen()->add_child(_main_screen);
 }
-
-Godot4DEditorPlugin::~Godot4DEditorPlugin() {
-	_main_screen->queue_free();
-}

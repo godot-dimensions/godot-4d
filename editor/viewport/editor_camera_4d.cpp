@@ -204,7 +204,3 @@ EditorCamera4D::EditorCamera4D() {
 	orbit_rotate_ground_basis_and_pitch(Basis4D::from_zx(0.5f), -0.5f);
 	set_process(true);
 }
-
-EditorCamera4D::~EditorCamera4D() {
-	_camera->queue_free();
-}

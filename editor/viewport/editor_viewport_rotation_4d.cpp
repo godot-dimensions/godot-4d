@@ -336,16 +336,13 @@ void EditorViewportRotation4D::_update_focus() {
 	const Vector2 center = get_size() / 2.0f;
 	const Vector2 mouse_pos = get_local_mouse_position();
 	const int original_focus = _focused_axis.axis_number;
-	_focused_axis.axis_number = -2;
-
+	_focused_axis = Axis2D();
+	_focused_axis.z_index = -10.0f;
 	if (mouse_pos.distance_to(center) < center.x) {
 		_focused_axis.axis_number = -1;
 	}
-
 	Vector<Axis2D> axes;
 	_get_sorted_axis(center, axes);
-	_focused_axis = Axis2D();
-	_focused_axis.z_index = -10.0f;
 	for (int i = 0; i < axes.size(); i++) {
 		const Axis2D &axis = axes[i];
 		if (axis.z_index > _focused_axis.z_index && mouse_pos.distance_to(axis.screen_point) < 8.0f * _editor_scale) {

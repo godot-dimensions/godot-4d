@@ -271,16 +271,3 @@ EditorMainScreen4D::EditorMainScreen4D() {
 	_viewport_rotation_4d->set_editor_main_screen(this);
 	_input_surface_4d->add_child(_viewport_rotation_4d);
 }
-
-EditorMainScreen4D::~EditorMainScreen4D() {
-	for (int i = 0; i < TOOLBAR_BUTTON_MAX; i++) {
-		_toolbar_buttons[i]->queue_free();
-	}
-	_editor_camera_4d->queue_free();
-	_information_label->queue_free();
-	_input_surface_4d->queue_free();
-	_toolbar_hbox->queue_free();
-	_sub_viewport_container->queue_free();
-	_sub_viewport->queue_free();
-	_viewport_rotation_4d->queue_free();
-}

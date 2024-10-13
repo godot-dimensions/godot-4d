@@ -70,5 +70,4 @@ public:
 	void set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up);
 
 	EditorMainScreen4D();
-	~EditorMainScreen4D();
 };

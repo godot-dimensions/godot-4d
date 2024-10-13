@@ -5,6 +5,9 @@
 class EditorImportPluginOFFWire4D : public EditorImportPluginOFFBase {
 	GDCLASS(EditorImportPluginOFFWire4D, EditorImportPluginOFFBase);
 
+protected:
+	static void _bind_methods() {}
+
 public:
 	virtual String GDEXTMOD_GET_IMPORTER_NAME() const override;
 	virtual String GDEXTMOD_GET_RESOURCE_TYPE() const override;
