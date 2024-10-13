@@ -75,7 +75,7 @@
 			The normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn, and how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [member cell_indices] array, or empty for no normals, or else the mesh is invalid.
 		</member>
 		<member name="cell_uvw_map" type="PackedVector3Array" setter="set_cell_uvw_map" getter="get_cell_uvw_map" default="PackedVector3Array()">
-			The UVW mapping of the tetrahedral cells. Each Vector3 in this array is the texture space mapping for the vertex in the [member vertices] array with the same index. This array should either be the same length as the [member vertices] array, or empty for no UVW mapping, or else the mesh is invalid.
+			The UVW mapping of the tetrahedral cells. Each Vector3 in this array is the texture space mapping for the cell vertex in the [member cell_indices] array with the same index. This array should either be the same length as the [member cell_indices] array, or empty for no UVW mapping, or else the mesh is invalid.
 		</member>
 		<member name="vertices" type="PackedVector4Array" setter="set_vertices" getter="get_vertices" default="PackedVector4Array()">
 			The vertices of the tetrahedral mesh. Each Vector4 in this array is a vertex defined as a position in meters in 4D space. The items in this array are referenced by the [member cell_indices] array.

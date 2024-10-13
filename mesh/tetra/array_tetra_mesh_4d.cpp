@@ -7,12 +7,35 @@ void ArrayTetraMesh4D::_clear_cache() {
 	tetra_mesh_clear_cache();
 }
 
+bool ArrayTetraMesh4D::validate_mesh_data() {
+	const int64_t cell_indices_count = _cell_indices.size();
+	if (cell_indices_count % 4 != 0) {
+		return false; // Must be a multiple of 4.
+	}
+	const int64_t cell_uvw_map_count = _cell_uvw_map.size();
+	if (cell_uvw_map_count > 0 && cell_uvw_map_count != cell_indices_count) {
+		return false; // Must be the same size as the cell indices.
+	}
+	const int64_t cell_normals_count = _cell_normals.size();
+	if (cell_normals_count > 0 && cell_normals_count * 4 != cell_indices_count) {
+		return false; // Must be have one normal per cell (4 indices).
+	}
+	const int64_t vertex_count = _vertices.size();
+	for (int32_t cell_index : _cell_indices) {
+		if (cell_index < 0 || cell_index >= vertex_count) {
+			return false; // Cells must reference valid vertices.
+		}
+	}
+	return true;
+}
+
 void ArrayTetraMesh4D::append_tetra_cell_points(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c, const Vector4 &p_d, const bool p_deduplicate_vertices) {
 	const int index_a = append_vertex(p_a, p_deduplicate_vertices);
 	const int index_b = append_vertex(p_b, p_deduplicate_vertices);
 	const int index_c = append_vertex(p_c, p_deduplicate_vertices);
 	const int index_d = append_vertex(p_d, p_deduplicate_vertices);
 	append_tetra_cell_indices(index_a, index_b, index_c, index_d);
+	reset_mesh_data_validation();
 }
 
 void ArrayTetraMesh4D::append_tetra_cell_indices(const int p_index_a, const int p_index_b, const int p_index_c, const int p_index_d) {
@@ -21,6 +44,7 @@ void ArrayTetraMesh4D::append_tetra_cell_indices(const int p_index_a, const int 
 	_cell_indices.append(p_index_c);
 	_cell_indices.append(p_index_d);
 	_clear_cache();
+	reset_mesh_data_validation();
 }
 
 int ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
@@ -33,6 +57,7 @@ int ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_dedupl
 		}
 	}
 	_vertices.push_back(p_vertex);
+	reset_mesh_data_validation();
 	return vertex_count;
 }
 
@@ -41,6 +66,7 @@ PackedInt32Array ArrayTetraMesh4D::append_vertices(const PackedVector4Array &p_v
 	for (int i = 0; i < p_vertices.size(); i++) {
 		indices.append(append_vertex(p_vertices[i], p_deduplicate_vertices));
 	}
+	reset_mesh_data_validation();
 	return indices;
 }
 
@@ -114,6 +140,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 			set_material(other_material);
 		}
 	}
+	reset_mesh_data_validation();
 }
 
 void ArrayTetraMesh4D::merge_with_bind(const Ref<ArrayTetraMesh4D> &p_other, const Vector4 &p_offset, const Projection &p_basis) {
@@ -127,6 +154,7 @@ PackedInt32Array ArrayTetraMesh4D::get_cell_indices() {
 void ArrayTetraMesh4D::set_cell_indices(const PackedInt32Array &p_cell_indices) {
 	_cell_indices = p_cell_indices;
 	_clear_cache();
+	reset_mesh_data_validation();
 }
 
 PackedVector4Array ArrayTetraMesh4D::get_cell_positions() {
@@ -147,6 +175,7 @@ PackedVector4Array ArrayTetraMesh4D::get_cell_normals() {
 
 void ArrayTetraMesh4D::set_cell_normals(const PackedVector4Array &p_cell_normals) {
 	_cell_normals = p_cell_normals;
+	reset_mesh_data_validation();
 }
 
 PackedVector3Array ArrayTetraMesh4D::get_cell_uvw_map() {
@@ -155,6 +184,7 @@ PackedVector3Array ArrayTetraMesh4D::get_cell_uvw_map() {
 
 void ArrayTetraMesh4D::set_cell_uvw_map(const PackedVector3Array &p_cell_uvw_map) {
 	_cell_uvw_map = p_cell_uvw_map;
+	reset_mesh_data_validation();
 }
 
 PackedVector4Array ArrayTetraMesh4D::get_vertices() {
@@ -164,6 +194,7 @@ PackedVector4Array ArrayTetraMesh4D::get_vertices() {
 void ArrayTetraMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
 	_vertices = p_vertices;
 	_clear_cache();
+	reset_mesh_data_validation();
 }
 
 void ArrayTetraMesh4D::_bind_methods() {

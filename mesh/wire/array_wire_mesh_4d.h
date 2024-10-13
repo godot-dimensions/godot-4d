@@ -11,6 +11,7 @@ class ArrayWireMesh4D : public WireMesh4D {
 
 protected:
 	static void _bind_methods();
+	virtual bool validate_mesh_data() override;
 
 public:
 	void append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate_vertices = true);

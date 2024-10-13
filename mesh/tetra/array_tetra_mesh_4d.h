@@ -16,6 +16,7 @@ class ArrayTetraMesh4D : public TetraMesh4D {
 
 protected:
 	static void _bind_methods();
+	virtual bool validate_mesh_data() override;
 
 public:
 	void append_tetra_cell_points(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c, const Vector4 &p_d, const bool p_deduplicate_vertices = true);

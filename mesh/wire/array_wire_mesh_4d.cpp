@@ -1,9 +1,20 @@
 #include "array_wire_mesh_4d.h"
 
+bool ArrayWireMesh4D::validate_mesh_data() {
+	const int64_t vertex_count = _vertices.size();
+	for (int32_t edge_index : _edge_indices) {
+		if (edge_index < 0 || edge_index >= vertex_count) {
+			return false; // Edges must reference valid vertices.
+		}
+	}
+	return true;
+}
+
 void ArrayWireMesh4D::append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate_vertices) {
 	int index_a = append_vertex(p_point_a, p_deduplicate_vertices);
 	int index_b = append_vertex(p_point_b, p_deduplicate_vertices);
 	append_edge_indices(index_a, index_b);
+	reset_mesh_data_validation();
 }
 
 void ArrayWireMesh4D::append_edge_indices(int p_index_a, int p_index_b) {
@@ -13,6 +24,7 @@ void ArrayWireMesh4D::append_edge_indices(int p_index_a, int p_index_b) {
 	_edge_indices.append(p_index_a);
 	_edge_indices.append(p_index_b);
 	wire_mesh_clear_cache();
+	reset_mesh_data_validation();
 }
 
 int ArrayWireMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
@@ -25,6 +37,7 @@ int ArrayWireMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_dedupli
 		}
 	}
 	_vertices.push_back(p_vertex);
+	reset_mesh_data_validation();
 	return vertex_count;
 }
 
@@ -33,6 +46,7 @@ PackedInt32Array ArrayWireMesh4D::append_vertices(const PackedVector4Array &p_ve
 	for (int i = 0; i < p_vertices.size(); i++) {
 		indices.append(append_vertex(p_vertices[i], p_deduplicate_vertices));
 	}
+	reset_mesh_data_validation();
 	return indices;
 }
 
@@ -64,6 +78,7 @@ void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Tran
 			set_material(other_material);
 		}
 	}
+	reset_mesh_data_validation();
 }
 
 void ArrayWireMesh4D::merge_with_bind(const Ref<ArrayWireMesh4D> &p_other, const Vector4 &p_offset, const Projection &p_basis) {
@@ -77,6 +92,7 @@ PackedInt32Array ArrayWireMesh4D::get_edge_indices() {
 void ArrayWireMesh4D::set_edge_indices(const PackedInt32Array &p_edge_indices) {
 	_edge_indices = p_edge_indices;
 	wire_mesh_clear_cache();
+	reset_mesh_data_validation();
 }
 
 PackedVector4Array ArrayWireMesh4D::get_vertices() {
@@ -86,6 +102,7 @@ PackedVector4Array ArrayWireMesh4D::get_vertices() {
 void ArrayWireMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
 	_vertices = p_vertices;
 	wire_mesh_clear_cache();
+	reset_mesh_data_validation();
 }
 
 void ArrayWireMesh4D::_bind_methods() {

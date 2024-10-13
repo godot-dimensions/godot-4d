@@ -24,8 +24,11 @@ TypedArray<MeshInstance4D> RenderingServer4D::_get_visible_mesh_instances() cons
 	TypedArray<MeshInstance4D> visible_mesh_instances;
 	for (int i = 0; i < _mesh_instances.size(); i++) {
 		MeshInstance4D *mesh_instance = (MeshInstance4D *)(Object *)_mesh_instances[i];
-		if (mesh_instance->is_visible_in_tree() && mesh_instance->get_mesh().is_valid()) {
-			visible_mesh_instances.append(mesh_instance);
+		if (mesh_instance->is_visible_in_tree()) {
+			Ref<Mesh4D> mesh = mesh_instance->get_mesh();
+			if (mesh.is_valid() && mesh->is_mesh_data_valid()) {
+				visible_mesh_instances.append(mesh_instance);
+			}
 		}
 	}
 	return visible_mesh_instances;

@@ -37,6 +37,27 @@ bool Mesh4D::has_edge_indices(int p_first, int p_second) {
 	return false;
 }
 
+bool Mesh4D::is_mesh_data_valid() {
+	if (likely(_is_mesh_data_valid)) {
+		return true;
+	}
+	_is_mesh_data_valid = validate_mesh_data();
+	if (!_is_mesh_data_valid) {
+		ERR_PRINT("Mesh4D: Mesh data is invalid on mesh '" + get_name() + "'.");
+	}
+	return _is_mesh_data_valid;
+}
+
+void Mesh4D::reset_mesh_data_validation() {
+	_is_mesh_data_valid = false;
+}
+
+bool Mesh4D::validate_mesh_data() {
+	bool ret = false;
+	GDVIRTUAL_CALL(_validate_mesh_data, ret);
+	return ret;
+}
+
 Ref<ArrayWireMesh4D> Mesh4D::to_array_wire_mesh() {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
@@ -80,6 +101,9 @@ void Mesh4D::_bind_methods() {
 	ClassDB::bind_static_method("Mesh4D", D_METHOD("deduplicate_edge_indices", "items"), &Mesh4D::deduplicate_edge_indices);
 	ClassDB::bind_method(D_METHOD("has_edge_indices", "first", "second"), &Mesh4D::has_edge_indices);
 
+	ClassDB::bind_method(D_METHOD("is_mesh_data_valid"), &Mesh4D::is_mesh_data_valid);
+	ClassDB::bind_method(D_METHOD("reset_mesh_data_validation"), &Mesh4D::reset_mesh_data_validation);
+
 	ClassDB::bind_method(D_METHOD("to_array_wire_mesh"), &Mesh4D::to_array_wire_mesh);
 	ClassDB::bind_method(D_METHOD("to_wire_mesh"), &Mesh4D::to_wire_mesh);
 
@@ -94,4 +118,5 @@ void Mesh4D::_bind_methods() {
 	GDVIRTUAL_BIND(_get_edge_indices);
 	GDVIRTUAL_BIND(_get_edge_positions);
 	GDVIRTUAL_BIND(_get_vertices);
+	GDVIRTUAL_BIND(_validate_mesh_data);
 }

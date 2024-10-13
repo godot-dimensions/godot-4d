@@ -27,6 +27,12 @@
 				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertices] for details of the returned data.
 			</description>
 		</method>
+		<method name="_validate_mesh_data" qualifiers="virtual">
+			<return type="bool" />
+			<description>
+				Callback method that should validate the mesh data. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. This method should return [code]true[/code] if the mesh data is valid, and [code]false[/code] if it is not. If the mesh data is invalid, the mesh will be skipped when rendering.
+			</description>
+		</method>
 		<method name="deduplicate_edge_indices" qualifiers="static">
 			<return type="PackedInt32Array" />
 			<param index="0" name="items" type="PackedInt32Array" />
@@ -60,6 +66,19 @@
 			<description>
 				Returns [code]true[/code] if the mesh has an edge with the given indices. This method checks if there is an edge directly connecting the vertices with the given indices, by searching the array returned by [method get_edge_indices].
 				[b]Note:[/b] For efficiency, the input indices have their order normalized, so [code]has_edge_indices(2, 1)[/code] will be converted to [code]has_edge_indices(1, 2)[/code] before checking. You must ensure that your mesh has consistent edge ordering.
+			</description>
+		</method>
+		<method name="is_mesh_data_valid">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the mesh data is valid. This method checks if the data in a mesh is valid for rendering. If the mesh data is invalid, the mesh will be skipped when rendering. This method is called internally by the rendering server, but may also be called manually.
+				If a mesh has valid data, the result of the validation will be cached until the mesh data changes, so this method may be called multiple times without performance concerns. This also means this method should be called after generating a mesh. This especially useful when generating a mesh on a thread; calling this on the thread will avoid stalling the main thread with mesh validation during rendering.
+			</description>
+		</method>
+		<method name="reset_mesh_data_validation">
+			<return type="void" />
+			<description>
+				Resets the validation state of the mesh data. This method clears the cached validation state of the mesh data, so that the next call to [method is_mesh_data_valid] will revalidate the mesh data. This is useful when the mesh data has changed and you want to ensure that the mesh is revalidated before rendering. This will be called automatically on built-in types such as [ArrayTetraMesh4D] and [ArrayWireMesh4D] when the mesh data changes.
 			</description>
 		</method>
 		<method name="to_array_wire_mesh">

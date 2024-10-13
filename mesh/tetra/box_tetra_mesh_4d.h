@@ -25,6 +25,7 @@ private:
 
 protected:
 	static void _bind_methods();
+	virtual bool validate_mesh_data() override { return true; }
 
 public:
 	Vector4 get_half_extents() const;
