@@ -147,15 +147,13 @@ Vector2 Camera4D::world_to_viewport_local_normal(const Vector4 &p_local_position
 	// Project from 4D to 3D.
 	Vector3 projected_point_3d;
 	if (bool(_projection_type & PROJECTION4D_PERSPECTIVE_4D)) {
-		const Vector4 intersection_point = p_local_position * (_focal_length_4d / p_local_position.z);
-		projected_point_3d = Vector3(intersection_point.x, intersection_point.y, intersection_point.w);
+		projected_point_3d = Vector3(p_local_position.x, p_local_position.y, p_local_position.w) * (_focal_length_4d / p_local_position.z);
 	} else {
 		projected_point_3d = Vector3(p_local_position.x, p_local_position.y, p_local_position.z);
 	}
 	// Project from 3D to 2D.
 	if (bool(_projection_type & PROJECTION4D_PERSPECTIVE_3D)) {
-		const Vector3 intersection_point = projected_point_3d * (_focal_length_3d / projected_point_3d.z);
-		return Vector2(intersection_point.x, intersection_point.y);
+		return Vector2(projected_point_3d.x, projected_point_3d.y) * (_focal_length_3d / projected_point_3d.z);
 	}
 	return Vector2(projected_point_3d.x, projected_point_3d.y);
 }
