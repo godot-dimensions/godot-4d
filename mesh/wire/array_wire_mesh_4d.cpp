@@ -1,6 +1,10 @@
 #include "array_wire_mesh_4d.h"
 
 bool ArrayWireMesh4D::validate_mesh_data() {
+	const int64_t edge_indices_count = _edge_indices.size();
+	if (edge_indices_count % 2 != 0) {
+		return false; // Must be a multiple of 2.
+	}
 	const int64_t vertex_count = _vertices.size();
 	for (int32_t edge_index : _edge_indices) {
 		if (edge_index < 0 || edge_index >= vertex_count) {

@@ -12,6 +12,7 @@ protected:
 	static void _bind_methods() {}
 
 public:
+	virtual bool prefers_wireframe_meshes() override { return true; }
 	void setup_for_viewport() override;
 	void render_frame() override;
 };

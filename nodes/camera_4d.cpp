@@ -90,11 +90,11 @@ void Camera4D::make_current() {
 }
 
 void Camera4D::set_depth_fade(const bool p_depth_fade) {
-	_depth_fade = p_depth_fade;
+	_use_depth_fade = p_depth_fade;
 }
 
 bool Camera4D::get_depth_fade() const {
-	return _depth_fade;
+	return _use_depth_fade;
 }
 
 void Camera4D::set_depth_fade_start(const real_t p_depth_fade_start) {

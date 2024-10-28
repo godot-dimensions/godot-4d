@@ -32,8 +32,12 @@ class Godot4DEditorPlugin : public EditorPlugin {
 	Ref<EditorImportPluginOFFWire4D> _off_wire_4d_importer;
 	EditorMainScreen4D *_main_screen = nullptr;
 
+	void _move_4d_main_screen_tab_button() const;
+	void _inject_4d_scene_button();
+	void _create_4d_scene();
+
 protected:
-	static void _bind_methods() {}
+	static void _bind_methods();
 	void _notification(int p_what);
 
 public:

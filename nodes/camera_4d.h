@@ -37,8 +37,6 @@ private:
 	ViewAngleType _view_angle_type = VIEW_ANGLE_FOCAL_LENGTH;
 	WFadeMode _w_fade_mode = W_FADE_TRANSPARENCY;
 
-	bool _depth_fade = false;
-
 	// These have wrappers with trig functions, so let's use double to avoid precision loss.
 	double _focal_length_4d = 1.0;
 	double _focal_length_3d = 1.0;
@@ -52,6 +50,7 @@ private:
 	real_t _w_fade_distance = 5.0;
 	real_t _w_fade_slope = 1.0;
 	bool _is_current = false;
+	bool _use_depth_fade = false;
 
 protected:
 	static void _bind_methods();

@@ -27,6 +27,8 @@ protected:
 	static void _bind_methods();
 
 public:
+	bool is_currently_preferring_wireframe_meshes(Viewport *p_viewport) const;
+
 	void register_camera(Camera4D *p_camera);
 	void unregister_camera(Camera4D *p_camera);
 	void make_camera_current(Camera4D *p_camera);

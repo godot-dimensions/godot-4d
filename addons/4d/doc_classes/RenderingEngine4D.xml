@@ -11,6 +11,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_prefers_wireframe_meshes" qualifiers="virtual">
+			<return type="bool" />
+			<description>
+				Callback method to determine if the rendering engine prefers meshes to be wireframe. Used by the editor to display wireframe meshes as gizmos when using this rendering engine.
+			</description>
+		</method>
 		<method name="_render_frame" qualifiers="virtual">
 			<return type="void" />
 			<description>

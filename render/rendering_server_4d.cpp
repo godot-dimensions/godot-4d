@@ -58,6 +58,13 @@ void RenderingServer4D::_render_frame() {
 	}
 }
 
+bool RenderingServer4D::is_currently_preferring_wireframe_meshes(Viewport *p_viewport) const {
+	ERR_FAIL_NULL_V(p_viewport, false);
+	Camera4D *camera = get_current_camera(p_viewport);
+	Ref<RenderingEngine4D> rendering_engine = _get_rendering_engine(camera->get_rendering_engine());
+	return rendering_engine->prefers_wireframe_meshes();
+}
+
 void RenderingServer4D::register_camera(Camera4D *p_camera) {
 	ERR_FAIL_NULL(p_camera);
 	Viewport *viewport = p_camera->get_viewport();
