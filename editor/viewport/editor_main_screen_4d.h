@@ -30,8 +30,9 @@ public:
 		TOOLBAR_BUTTON_MOVE, // 1
 		TOOLBAR_BUTTON_ROTATE, // 2
 		TOOLBAR_BUTTON_SCALE, // 3
-		TOOLBAR_BUTTON_MODE_MAX, // 4
-		TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM = TOOLBAR_BUTTON_MODE_MAX, // Still 4
+		TOOLBAR_BUTTON_STRETCH, // 4
+		TOOLBAR_BUTTON_MODE_MAX, // 5
+		TOOLBAR_BUTTON_USE_LOCAL_ROTATION = TOOLBAR_BUTTON_MODE_MAX, // Still 5
 		TOOLBAR_BUTTON_MAX
 	};
 
@@ -48,14 +49,18 @@ public:
 
 private:
 	Button *_toolbar_buttons[TOOLBAR_BUTTON_MAX] = { nullptr };
+	MenuButton *_transform_settings_menu = nullptr;
 	MenuButton *_view_layout_menu = nullptr;
 	QuadSplitContainer *_editor_main_viewport_holder = nullptr;
 	EditorMainViewport4D *_editor_main_viewports[_MAX_VIEWPORTS] = { nullptr };
 	HBoxContainer *_toolbar_hbox = nullptr;
+	EditorTransformGizmo4D *_transform_gizmo_4d = nullptr;
 
 	double _information_label_auto_hide_time = 0.0;
 
 	void _on_button_toggled(const bool p_toggled_on, const int p_option);
+	void _on_selection_changed();
+	void _on_transform_settings_menu_id_pressed(const int p_id);
 	void _on_view_layout_menu_id_pressed(const int p_id);
 	void _update_theme();
 
@@ -67,5 +72,6 @@ public:
 	void press_menu_item(const int p_option);
 	void set_viewport_layout(const int8_t p_viewport_count, const Side p_dominant_side = SIDE_TOP);
 
+	void setup(EditorUndoRedoManager *p_undo_redo_manager);
 	EditorMainScreen4D();
 };

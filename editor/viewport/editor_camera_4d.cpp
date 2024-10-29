@@ -76,6 +76,10 @@ void EditorCamera4D::_update_camera_auto_orthographicness() {
 	}
 }
 
+const Camera4D *EditorCamera4D::get_camera_readonly() const {
+	return _camera;
+}
+
 double EditorCamera4D::change_speed_and_zoom(const double p_change) {
 	real_t min_distance = _camera->get_near() * 4.0f;
 	real_t max_distance = _camera->get_far() * 0.25f;

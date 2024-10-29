@@ -28,6 +28,7 @@ protected:
 	void _notification(int p_what);
 
 public:
+	const Camera4D *get_camera_readonly() const;
 	double change_speed_and_zoom(const double p_change);
 	void pan_camera(const Vector4 &p_pan_amount);
 	void freelook_rotate_ground_basis(const Basis4D &p_ground_basis);

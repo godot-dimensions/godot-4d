@@ -2,7 +2,10 @@
 
 #include "editor_camera_4d.h"
 #include "editor_input_surface_4d.h"
+#include "editor_transform_gizmo_4d.h"
 #include "editor_viewport_rotation_4d.h"
+
+#include "../../nodes/camera_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_interface.hpp>
@@ -33,6 +36,7 @@ void EditorMainViewport4D::_update_theme() {
 	_axis_colors.push_back(get_theme_color(StringName("axis_y_color"), StringName("Editor")));
 	_axis_colors.push_back(get_theme_color(StringName("axis_z_color"), StringName("Editor")));
 	_axis_colors.push_back(Color(0.9f, 0.75f, 0.1f)); // W axis color.
+	_transform_gizmo_4d->theme_changed(_axis_colors);
 }
 
 void EditorMainViewport4D::_notification(int p_what) {
@@ -145,6 +149,15 @@ void EditorMainViewport4D::navigation_change_zoom(const double p_zoom_change) {
 	set_information_text("Zoom: " + _viewport_4d_format_number(speed_and_zoom) + "m");
 }
 
+void EditorMainViewport4D::viewport_mouse_input(const Ref<InputEventMouse> &p_mouse_event) {
+	const Camera4D *camera = _editor_camera_4d->get_camera_readonly();
+	const bool used_by_gizmo = _transform_gizmo_4d->gizmo_mouse_input(p_mouse_event, camera);
+	if (used_by_gizmo) {
+		return;
+	}
+	// TODO: Try to make a selection if the transform gizmo didn't use the mouse.
+}
+
 void EditorMainViewport4D::set_ground_view_axis(const Vector4::Axis p_axis) {
 	_editor_camera_4d->set_ground_view_axis(p_axis);
 	_viewport_rotation_4d->queue_redraw();
@@ -162,9 +175,10 @@ void EditorMainViewport4D::set_orthogonal_view_plane(const Vector4::Axis p_right
 	_viewport_rotation_4d->queue_redraw();
 }
 
-void EditorMainViewport4D::set_editor_main_screen(EditorMainScreen4D *p_editor_main_screen) {
+void EditorMainViewport4D::setup(EditorMainScreen4D *p_editor_main_screen, EditorTransformGizmo4D *p_transform_gizmo_4d) {
 	_editor_main_screen = p_editor_main_screen;
 	_input_surface_4d->set_editor_main_screen(_editor_main_screen);
+	_transform_gizmo_4d = p_transform_gizmo_4d;
 }
 
 EditorMainViewport4D::EditorMainViewport4D() {

@@ -131,5 +131,6 @@ Godot4DEditorPlugin::Godot4DEditorPlugin() {
 	_off_tetra_4d_importer.instantiate();
 	_off_wire_4d_importer.instantiate();
 	_main_screen = memnew(EditorMainScreen4D);
+	_main_screen->setup(get_undo_redo());
 	EditorInterface::get_singleton()->get_editor_main_screen()->add_child(_main_screen);
 }

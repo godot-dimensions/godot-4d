@@ -7,6 +7,7 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/editor_settings.hpp>
+#include <godot_cpp/classes/editor_undo_redo_manager.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
@@ -20,6 +21,7 @@
 #elif GODOT_MODULE
 #include "core/input/input.h"
 #include "editor/editor_settings.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/control.h"
 
@@ -49,4 +51,5 @@ class EditorCamera4D;
 class EditorInputSurface4D;
 class EditorMainScreen4D;
 class EditorMainViewport4D;
+class EditorTransformGizmo4D;
 class EditorViewportRotation4D;

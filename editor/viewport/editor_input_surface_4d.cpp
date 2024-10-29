@@ -19,9 +19,12 @@ void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 				_editor_main_viewport->navigation_change_zoom(1.0 / 1.15);
 			} else if (mouse_button_index == MOUSE_BUTTON_WHEEL_DOWN) {
 				_editor_main_viewport->navigation_change_zoom(1.15);
+			} else {
+				_editor_main_viewport->viewport_mouse_input(mouse_button);
 			}
 		}
 		grab_focus();
+		return;
 	}
 	Ref<InputEventMouseMotion> mouse_motion = p_event;
 	if (mouse_motion.is_valid()) {
@@ -35,9 +38,11 @@ void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 		} else if (mouse_button_mask.has_flag(MOUSE_BUTTON_MASK_RIGHT)) {
 			_editor_main_viewport->navigation_freelook(mouse_motion);
 		} else {
+			_editor_main_viewport->viewport_mouse_input(mouse_motion);
 			return;
 		}
 		grab_focus();
+		return;
 	}
 	Ref<InputEventKey> key = p_event;
 	if (key.is_valid()) {
@@ -52,12 +57,13 @@ void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 				} else if (key->get_keycode() == KEY_R) {
 					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_SCALE);
 				} else if (key->get_keycode() == KEY_T) {
-					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM);
+					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_USE_LOCAL_ROTATION);
 				} else if (key->get_keycode() == KEY_F) {
 					_editor_main_viewport->focus_selected_nodes();
 				}
 			}
 		}
+		return;
 	}
 }
 

@@ -4,18 +4,107 @@
 
 #include "editor_camera_4d.h"
 #include "editor_main_viewport_4d.h"
+#include "editor_transform_gizmo_4d.h"
 #include "editor_viewport_rotation_4d.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/editor_interface.hpp>
+#include <godot_cpp/classes/editor_selection.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
 #include <godot_cpp/classes/v_separator.hpp>
+
+#if GODOT_VERSION < 0x040400
+#define get_top_selected_nodes get_transformable_selected_nodes
+#endif // GODOT_VERSION
 #elif GODOT_MODULE
+#include "editor/editor_data.h"
+#include "editor/editor_interface.h"
 #include "scene/gui/popup_menu.h"
 #include "scene/gui/separator.h"
+
+#if GODOT_VERSION < 0x040400
+#define get_top_selected_nodes get_selected_node_list
+#else
+#define get_top_selected_nodes get_top_selected_node_list
+#endif // GODOT_VERSION
 #endif
 
 void EditorMainScreen4D::_on_button_toggled(const bool p_toggled_on, const int p_option) {
 	press_menu_item(p_option);
+}
+
+void EditorMainScreen4D::_on_selection_changed() {
+	EditorSelection *selection = EditorInterface::get_singleton()->get_selection();
+	TypedArray<Node> top_selected_nodes;
+#if GDEXTENSION
+	top_selected_nodes = selection->get_top_selected_nodes();
+#elif GODOT_MODULE
+	List<Node *> &top_selected_node_list = selection->get_top_selected_nodes();
+	for (Node *node : top_selected_node_list) {
+		top_selected_nodes.push_back(node);
+	}
+#endif
+	_transform_gizmo_4d->selected_nodes_changed(top_selected_nodes);
+}
+
+void EditorMainScreen4D::_on_transform_settings_menu_id_pressed(const int p_id) {
+	PopupMenu *transform_settings_menu_popup = _transform_settings_menu->get_popup();
+	if (p_id <= (int)EditorTransformGizmo4D::KeepMode::ORTHONORMAL) {
+		for (int i = 0; i <= (int)EditorTransformGizmo4D::KeepMode::ORTHONORMAL; i++) {
+			transform_settings_menu_popup->set_item_checked(i, i == p_id);
+		}
+		EditorTransformGizmo4D::KeepMode keep_mode = (EditorTransformGizmo4D::KeepMode)p_id;
+		if (keep_mode == EditorTransformGizmo4D::KeepMode::ORTHONORMAL) {
+			// Orthonormal can't scale, so if any of the scale buttons are selected, switch to select.
+			if (_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->is_pressed() || _toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->is_pressed()) {
+				press_menu_item(TOOLBAR_BUTTON_SELECT);
+			}
+			_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_disabled(true);
+			_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->release_focus();
+			_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_disabled(true);
+			_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->release_focus();
+		} else {
+			_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_disabled(false);
+			_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_disabled(false);
+		}
+		_transform_gizmo_4d->set_keep_mode(keep_mode);
+	}
+}
+
+void EditorMainScreen4D::_on_view_layout_menu_id_pressed(const int p_id) {
+	PopupMenu *view_layout_menu_popup = _view_layout_menu->get_popup();
+	if (p_id < VIEW_LAYOUT_ITEM_VIEWPORT_MAX) {
+		for (int i = 0; i < VIEW_LAYOUT_ITEM_VIEWPORT_MAX; i++) {
+			view_layout_menu_popup->set_item_checked(i, i == p_id);
+		}
+	}
+	switch (p_id) {
+		case VIEW_LAYOUT_ITEM_1_VIEWPORT: {
+			set_viewport_layout(1);
+		} break;
+		case VIEW_LAYOUT_ITEM_2_VIEWPORTS_TOP_BOTTOM: {
+			set_viewport_layout(2, Side::SIDE_TOP);
+		} break;
+		case VIEW_LAYOUT_ITEM_2_VIEWPORTS_LEFT_RIGHT: {
+			set_viewport_layout(2, Side::SIDE_RIGHT);
+		} break;
+		case VIEW_LAYOUT_ITEM_3_VIEWPORTS_TOP_WIDE: {
+			set_viewport_layout(3, Side::SIDE_TOP);
+		} break;
+		case VIEW_LAYOUT_ITEM_3_VIEWPORTS_RIGHT_TALL: {
+			set_viewport_layout(3, Side::SIDE_RIGHT);
+		} break;
+		case VIEW_LAYOUT_ITEM_4_VIEWPORTS: {
+			set_viewport_layout(4);
+		} break;
+		case VIEW_LAYOUT_ITEM_PRESET_GROUND_VIEW: {
+			_on_view_layout_menu_id_pressed(VIEW_LAYOUT_ITEM_4_VIEWPORTS);
+			_editor_main_viewports[0]->set_ground_view_axis(Vector4::AXIS_Y);
+			_editor_main_viewports[1]->set_orthogonal_view_plane(Vector4::AXIS_X, Vector4::AXIS_Z);
+			_editor_main_viewports[2]->set_orthogonal_view_plane(Vector4::AXIS_X, Vector4::AXIS_W);
+			_editor_main_viewports[3]->set_orthogonal_view_plane(Vector4::AXIS_Z, Vector4::AXIS_W);
+		} break;
+	}
 }
 
 void EditorMainScreen4D::_update_theme() {
@@ -30,7 +119,8 @@ void EditorMainScreen4D::_update_theme() {
 	_toolbar_buttons[TOOLBAR_BUTTON_MOVE]->set_button_icon(get_editor_theme_icon(StringName("ToolMove")));
 	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->set_button_icon(get_editor_theme_icon(StringName("ToolRotate")));
 	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_button_icon(get_editor_theme_icon(StringName("ToolScale")));
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]->set_button_icon(get_editor_theme_icon(StringName("Object")));
+	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_button_icon(get_editor_theme_icon(StringName("AnimationAutoFitBezier")));
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_button_icon(get_editor_theme_icon(StringName("Object")));
 	// Set view layout popup icons.
 	PopupMenu *view_layout_menu_popup = _view_layout_menu->get_popup();
 	view_layout_menu_popup->set_item_icon(VIEW_LAYOUT_ITEM_1_VIEWPORT, get_editor_theme_icon(StringName("Panels1")));
@@ -57,14 +147,15 @@ void EditorMainScreen4D::press_menu_item(const int p_option) {
 		case TOOLBAR_BUTTON_SELECT:
 		case TOOLBAR_BUTTON_MOVE:
 		case TOOLBAR_BUTTON_ROTATE:
-		case TOOLBAR_BUTTON_SCALE: {
+		case TOOLBAR_BUTTON_SCALE:
+		case TOOLBAR_BUTTON_STRETCH: {
 			for (int i = 0; i < TOOLBAR_BUTTON_MODE_MAX; i++) {
 				_toolbar_buttons[i]->set_pressed(i == p_option);
 			}
-			// TODO: Implement transform gizmo.
+			_transform_gizmo_4d->set_gizmo_mode(EditorTransformGizmo4D::GizmoMode(p_option));
 		} break;
-		case TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM: {
-			// TODO: Implement local coords in transform gizmo.
+		case TOOLBAR_BUTTON_USE_LOCAL_ROTATION: {
+			_transform_gizmo_4d->set_use_local_rotation(_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->is_pressed());
 		} break;
 	}
 }
@@ -75,6 +166,7 @@ void EditorMainScreen4D::set_viewport_layout(const int8_t p_viewport_count, cons
 		if (_editor_main_viewports[i] == nullptr) {
 			_editor_main_viewports[i] = memnew(EditorMainViewport4D);
 			_editor_main_viewports[i]->set_name(StringName("EditorMainViewport4D_" + itos(i)));
+			_editor_main_viewports[i]->setup(this, _transform_gizmo_4d);
 			_editor_main_viewport_holder->add_child(_editor_main_viewports[i]);
 		}
 	}
@@ -86,6 +178,10 @@ void EditorMainScreen4D::set_viewport_layout(const int8_t p_viewport_count, cons
 		}
 	}
 	_editor_main_viewport_holder->set_layout(p_viewport_count, p_dominant_side);
+}
+
+void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
+	_transform_gizmo_4d->setup(p_undo_redo_manager);
 }
 
 EditorMainScreen4D::EditorMainScreen4D() {
@@ -127,14 +223,25 @@ EditorMainScreen4D::EditorMainScreen4D() {
 	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_tooltip_text(TTR("(R) Scale selected node."));
 	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_SCALE));
 	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_SCALE]);
+
+	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH] = memnew(Button);
+	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_toggle_mode(true);
+	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_theme_type_variation("FlatButton");
+	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_tooltip_text(TTR("Stretch selected node."));
+	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_STRETCH));
+	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]);
 	_toolbar_hbox->add_child(memnew(VSeparator));
 
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM] = memnew(Button);
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]->set_toggle_mode(true);
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]->set_theme_type_variation("FlatButton");
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]->set_tooltip_text(TTR("(T) If pressed, use the object's local transform for the gizmo. Else, transform in global space."));
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]->connect("toggled", callable_mp(this, &EditorMainScreen4D::_on_button_toggled).bind(TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM));
-	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_TRANSFORM]);
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION] = memnew(Button);
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_toggle_mode(true);
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_theme_type_variation("FlatButton");
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_tooltip_text(TTR("(T) If pressed, use the object's local rotation for the gizmo. Else, transform in global space."));
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->connect("toggled", callable_mp(this, &EditorMainScreen4D::_on_button_toggled).bind(TOOLBAR_BUTTON_USE_LOCAL_ROTATION));
+	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]);
+
+	// All viewports share one gizmo.
+	_transform_gizmo_4d = memnew(EditorTransformGizmo4D);
+	add_child(_transform_gizmo_4d);
 
 	// Set up the viewports.
 	_editor_main_viewport_holder = memnew(QuadSplitContainer);
@@ -143,6 +250,22 @@ EditorMainScreen4D::EditorMainScreen4D() {
 	_editor_main_viewport_holder->set_offset(Side::SIDE_TOP, 33.0f * EDSCALE);
 	add_child(_editor_main_viewport_holder);
 	set_viewport_layout(1);
+
+	// Set up the Transform settings menu in the toolbar.
+	_transform_settings_menu = memnew(MenuButton);
+	_transform_settings_menu->set_flat(false);
+	_transform_settings_menu->set_theme_type_variation("FlatMenuButton");
+	_transform_settings_menu->set_text(TTR("Transform"));
+	_transform_settings_menu->set_tooltip_text(TTR("Change the transform gizmo settings for the 4D editor."));
+	_toolbar_hbox->add_child(_transform_settings_menu);
+
+	PopupMenu *transform_settings_menu_popup = _transform_settings_menu->get_popup();
+	transform_settings_menu_popup->add_radio_check_item(TTR("Freeform (allow skew/shear)"), (int)EditorTransformGizmo4D::KeepMode::FREEFORM);
+	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Orthogonal (fix skew/shear)"), (int)EditorTransformGizmo4D::KeepMode::ORTHOGONAL);
+	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Conformal (uniform scale)"), (int)EditorTransformGizmo4D::KeepMode::CONFORMAL);
+	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Orthonormal (no scale)"), (int)EditorTransformGizmo4D::KeepMode::ORTHONORMAL);
+	transform_settings_menu_popup->set_item_checked((int)EditorTransformGizmo4D::KeepMode::FREEFORM, true);
+	transform_settings_menu_popup->connect(StringName("id_pressed"), callable_mp(this, &EditorMainScreen4D::_on_transform_settings_menu_id_pressed));
 
 	// Set up the View layout menu in the toolbar.
 	_view_layout_menu = memnew(MenuButton);
@@ -163,40 +286,6 @@ EditorMainScreen4D::EditorMainScreen4D() {
 	view_layout_menu_popup->add_separator();
 	view_layout_menu_popup->add_item(TTR("Preset: Ground View"), VIEW_LAYOUT_ITEM_PRESET_GROUND_VIEW);
 	view_layout_menu_popup->connect(StringName("id_pressed"), callable_mp(this, &EditorMainScreen4D::_on_view_layout_menu_id_pressed));
-}
 
-void EditorMainScreen4D::_on_view_layout_menu_id_pressed(const int p_id) {
-	PopupMenu *view_layout_menu_popup = _view_layout_menu->get_popup();
-	if (p_id < VIEW_LAYOUT_ITEM_VIEWPORT_MAX) {
-		for (int i = 0; i < VIEW_LAYOUT_ITEM_VIEWPORT_MAX; i++) {
-			view_layout_menu_popup->set_item_checked(i, i == p_id);
-		}
-	}
-	switch (p_id) {
-		case VIEW_LAYOUT_ITEM_1_VIEWPORT: {
-			set_viewport_layout(1);
-		} break;
-		case VIEW_LAYOUT_ITEM_2_VIEWPORTS_TOP_BOTTOM: {
-			set_viewport_layout(2, Side::SIDE_TOP);
-		} break;
-		case VIEW_LAYOUT_ITEM_2_VIEWPORTS_LEFT_RIGHT: {
-			set_viewport_layout(2, Side::SIDE_RIGHT);
-		} break;
-		case VIEW_LAYOUT_ITEM_3_VIEWPORTS_TOP_WIDE: {
-			set_viewport_layout(3, Side::SIDE_TOP);
-		} break;
-		case VIEW_LAYOUT_ITEM_3_VIEWPORTS_RIGHT_TALL: {
-			set_viewport_layout(3, Side::SIDE_RIGHT);
-		} break;
-		case VIEW_LAYOUT_ITEM_4_VIEWPORTS: {
-			set_viewport_layout(4);
-		} break;
-		case VIEW_LAYOUT_ITEM_PRESET_GROUND_VIEW: {
-			_on_view_layout_menu_id_pressed(VIEW_LAYOUT_ITEM_4_VIEWPORTS);
-			_editor_main_viewports[0]->set_ground_view_axis(Vector4::AXIS_Y);
-			_editor_main_viewports[1]->set_orthogonal_view_plane(Vector4::AXIS_X, Vector4::AXIS_Z);
-			_editor_main_viewports[2]->set_orthogonal_view_plane(Vector4::AXIS_X, Vector4::AXIS_W);
-			_editor_main_viewports[3]->set_orthogonal_view_plane(Vector4::AXIS_Z, Vector4::AXIS_W);
-		} break;
-	}
+	EditorInterface::get_singleton()->get_selection()->connect(StringName("selection_changed"), callable_mp(this, &EditorMainScreen4D::_on_selection_changed));
 }
