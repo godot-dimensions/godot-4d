@@ -32,7 +32,7 @@ void EditorMainViewport4D::_update_theme() {
 	_axis_colors.push_back(get_theme_color(StringName("axis_x_color"), StringName("Editor")));
 	_axis_colors.push_back(get_theme_color(StringName("axis_y_color"), StringName("Editor")));
 	_axis_colors.push_back(get_theme_color(StringName("axis_z_color"), StringName("Editor")));
-	_axis_colors.push_back(Color(0.9f, 0.82f, 0.1f)); // W axis color.
+	_axis_colors.push_back(Color(0.9f, 0.75f, 0.1f)); // W axis color.
 }
 
 void EditorMainViewport4D::_notification(int p_what) {

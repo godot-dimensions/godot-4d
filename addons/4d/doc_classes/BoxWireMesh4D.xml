@@ -16,6 +16,18 @@
 				Creates a box wireframe mesh from a [BoxTetraMesh4D]. The box wireframe mesh will have the same size and material as the tetrahedral mesh.
 			</description>
 		</method>
+		<method name="subdivide" qualifiers="const">
+			<return type="ArrayWireMesh4D" />
+			<param index="0" name="subdivision_segments" type="Vector4i" />
+			<param index="1" name="fill_cells" type="bool" default="false" />
+			<param index="2" name="breakup_edges" type="bool" default="false" />
+			<description>
+				Subdivides this 4D box wireframe mesh into multiple line segments. The [param subdivision_segments] parameter specifies the number of subdivisions along each axis (X, Y, Z, W).
+				If [param fill_cells] is [code]true[/code], each 3D surface cell of the box will be densely filled with lines, effectively covering the 4D surface. When [param fill_cells] is [code]false[/code], only the boundary of each 3D cell will be filled, leaving gaps in the 4D surface, but still giving the impression of a solid surface when projected into 3D. This setting affects the visual appearance of the resulting mesh.
+				If [param breakup_edges] is [code]true[/code], the wireframe lines of the box will be broken up into multiple segments. This setting is useful if you plan to animate vertices (such as a "wavy" effect), but if vertex animation is not required, keeping [param breakup_edges] set to [code]false[/code] will give better performance with the same visual result.
+				Returns an [ArrayWireMesh4D] object representing the subdivided wireframe mesh. If the original box has a material, this will not be automatically copied.
+			</description>
+		</method>
 		<method name="to_tetra_mesh" qualifiers="const">
 			<return type="BoxTetraMesh4D" />
 			<description>
