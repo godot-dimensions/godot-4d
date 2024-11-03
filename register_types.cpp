@@ -37,6 +37,7 @@
 #include "mesh/wire/box_wire_mesh_4d.h"
 #include "mesh/wire/orthoplex_wire_mesh_4d.h"
 #include "mesh/wire/wire_material_4d.h"
+#include "mesh/wire/wire_mesh_builder_4d.h"
 
 // Physics.
 #include "physics/bodies/area_4d.h"
@@ -145,6 +146,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
 		GDREGISTER_CLASS(TetraMaterial4D);
 		GDREGISTER_CLASS(WireMaterial4D);
+		GDREGISTER_CLASS(WireMeshBuilder4D);
+		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
 		// Physics.
 		GDREGISTER_CLASS(Area4D);
 		GDREGISTER_CLASS(BoxShape4D);

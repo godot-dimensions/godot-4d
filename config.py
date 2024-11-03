@@ -37,6 +37,7 @@ def get_doc_classes():
         "TetraMesh4D",
         "WireMaterial4D",
         "WireMesh4D",
+        "WireMeshBuilder4D",
         # Physics.
         "Area4D",
         "BoxShape4D",

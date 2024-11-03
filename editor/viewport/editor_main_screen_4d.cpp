@@ -101,7 +101,7 @@ EditorMainScreen4D::EditorMainScreen4D() {
 	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_toggle_mode(true);
 	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_theme_type_variation("FlatButton");
 	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_pressed(true);
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_tooltip_text(TTR("(Q) Select nodes and manipulate their position and scale."));
+	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_tooltip_text(TTR("(Q) Select nodes and manipulate their position."));
 	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_SELECT));
 	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_SELECT]);
 	_toolbar_hbox->add_child(memnew(VSeparator));

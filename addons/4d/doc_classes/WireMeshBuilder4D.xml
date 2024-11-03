@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WireMeshBuilder4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Functions for creating 4D wireframe meshes.
+	</brief_description>
+	<description>
+		WireMeshBuilder4D is a singleton for creating 4D wireframe meshes. It contains all functions important enough to be included in the 4D module, but not important enough to have their own dedicated types. For example, creating a subdivided 4D box is handled by [BoxWireMesh4D], not by this class.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="make_3d_orthoplex_sphere" qualifiers="static">
+			<return type="ArrayWireMesh4D" />
+			<param index="0" name="radius" type="float" />
+			<param index="1" name="subdivisions" type="int" />
+			<param index="2" name="cone_tip_position" type="float" default="0.0" />
+			<description>
+				Creates a 3D orthoplex (octahedron) sphere inside of a 4D mesh. The [param radius] parameter determines the size in the X, Y, and Z axes, and it will be subdivided into [param subdivisions] segments.
+				If [param cone_tip_position] is 0, the sphere will be flat on the W axis. If non-zero, an extra point will be added at this W coordinate, turning the 3D sphere into the base of a 4D cone.
+			</description>
+		</method>
+		<method name="make_3d_subdivided_box" qualifiers="static">
+			<return type="ArrayWireMesh4D" />
+			<param index="0" name="size" type="Vector3" />
+			<param index="1" name="subdivision_segments" type="Vector3i" />
+			<param index="2" name="fill_cell" type="bool" default="false" />
+			<param index="3" name="breakup_edges" type="bool" default="false" />
+			<description>
+				Creates a 3D box inside of a 4D mesh. The [param size] parameter determines the size in the X, Y, and Z axes, and it will be subdivided into [param subdivision_segments] segments.
+				If [param fill_cell] is [code]true[/code], the 3D surface cell of the box will be densely filled with lines, effectively covering the 4D surface. When [param fill_cell] is [code]false[/code], only the boundary of the 3D cell will be filled, leaving gaps in the 4D surface, but still giving the impression of a solid surface when projected into 3D. This setting affects the visual appearance of the resulting mesh.
+				If [param breakup_edges] is [code]true[/code], the wireframe lines of the box will be broken up into multiple segments. This setting is useful if you plan to animate vertices (such as a "wavy" effect), but if vertex animation is not required, keeping [param breakup_edges] set to [code]false[/code] will give better performance with the same visual result.
+			</description>
+		</method>
+	</methods>
+</class>
