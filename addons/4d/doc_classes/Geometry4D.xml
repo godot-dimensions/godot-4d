@@ -56,6 +56,16 @@
 				Returns the closest point on a ray to a given point. The ray is defined by its origin point and direction vector. The direction vector does not need to be normalized.
 			</description>
 		</method>
+		<method name="closest_points_between_line_and_segment" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="line_point" type="Vector4" />
+			<param index="1" name="line_direction" type="Vector4" />
+			<param index="2" name="segment_a" type="Vector4" />
+			<param index="3" name="segment_b" type="Vector4" />
+			<description>
+				Given a line and a line segment in 4D space, return two points, one on each, that are closest to the other. The returned array will always contain two points, the first on the line and the second on the segment. The line is defined by a point on the line and a direction vector. The direction vector does not need to be normalized. The line segment is defined by two points.
+			</description>
+		</method>
 		<method name="closest_points_between_line_segments" qualifiers="static">
 			<return type="PackedVector4Array" />
 			<param index="0" name="line1_a" type="Vector4" />
@@ -74,6 +84,15 @@
 			<param index="3" name="line2_dir" type="Vector4" />
 			<description>
 				Given two lines in 4D space, return two points, one on each line, that are closest to the other line, and closest to each other. The returned array will always contain two points. The lines are defined by a point on the line and a direction vector. The direction vector does not need to be normalized.
+			</description>
+		</method>
+		<method name="perpendicular_to_three_vectors" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="a" type="Vector4" />
+			<param index="1" name="b" type="Vector4" />
+			<param index="2" name="c" type="Vector4" />
+			<description>
+				Given three 4D vectors, find a new 4D vector that is perpendicular to all three. The input vectors must be linearly independent, otherwise a zero vector will be returned. This is similar to the 3D cross product that finds a vector perpendicular to two input vectors. The convention followed by this method is that if it's given +X, +Y, and +Z as inputs in that oder, it will return +W, similar to the 3D cross product of +X and +Y returning +Z.
 			</description>
 		</method>
 	</methods>

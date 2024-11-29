@@ -45,4 +45,26 @@ TEST_CASE("[Geometry4D] Closest Points Between Lines") {
 		CHECK_MESSAGE(result[1].is_equal_approx(Vector4(1, 0, 1, 0)), "Geometry4D closest_points_between_lines should work as expected.");
 	}
 }
+
+TEST_CASE("[Geometry4D] Closest Points Between Line And Segment") {
+	{
+		Vector4 line_point = Vector4(1, 2, 3, 4);
+		Vector4 line_direction = Vector4(2, 0, 0, 0);
+		Vector4 segment_a = Vector4(5, 6, 7, 5);
+		Vector4 segment_b = Vector4(5, 6, 7, 9);
+		PackedVector4Array result = Geometry4D::closest_points_between_line_and_segment(line_point, line_direction, segment_a, segment_b);
+		CHECK_MESSAGE(result[0].is_equal_approx(Vector4(5, 2, 3, 4)), "Geometry4D closest_points_between_line_and_segment should work as expected.");
+		CHECK_MESSAGE(result[1].is_equal_approx(Vector4(5, 6, 7, 5)), "Geometry4D closest_points_between_line_and_segment should work as expected.");
+	}
+}
+TEST_CASE("[Geometry4D] Perpendicular To Three Vectors") {
+	const Vector4 xyz = Geometry4D::perpendicular_to_three_vectors(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0));
+	CHECK_MESSAGE(xyz == Vector4(0, 0, 0, 1), "Geometry4D perpendicular_to_three_vectors should work as expected.");
+	const Vector4 xwy = Geometry4D::perpendicular_to_three_vectors(Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 1, 0, 0));
+	CHECK_MESSAGE(xwy == Vector4(0, 0, 1, 0), "Geometry4D perpendicular_to_three_vectors should work as expected.");
+	const Vector4 xzw = Geometry4D::perpendicular_to_three_vectors(Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1));
+	CHECK_MESSAGE(xzw == Vector4(0, 1, 0, 0), "Geometry4D perpendicular_to_three_vectors should work as expected.");
+	const Vector4 ywz = Geometry4D::perpendicular_to_three_vectors(Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 1, 0));
+	CHECK_MESSAGE(ywz == Vector4(1, 0, 0, 0), "Geometry4D perpendicular_to_three_vectors should work as expected.");
+}
 } // namespace TestGeometry4D

@@ -28,4 +28,21 @@ TEST_CASE("[Plane4D] Intersect Line Segment") {
 	CHECK_MESSAGE(result.get_type() == Variant::VECTOR4, "Plane4D intersect_line_segment should return a Vector4 for valid hits.");
 	CHECK_MESSAGE(result == Vector4(1, -3, 8, 4), "Plane4D intersect_line_segment should work as expected.");
 }
+
+TEST_CASE("[Plane4D] From Coplanar Directions") {
+	const Plane4D xyz = Plane4D::from_coplanar_directions(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 0));
+	CHECK_MESSAGE(xyz.get_normal() == Vector4(0, 0, 0, 1), "Plane4D from_coplanar_directions should work as expected.");
+	const Plane4D xwy = Plane4D::from_coplanar_directions(Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 0));
+	CHECK_MESSAGE(xwy.get_normal() == Vector4(0, 0, 1, 0), "Plane4D from_coplanar_directions should work as expected.");
+	const Plane4D xzw = Plane4D::from_coplanar_directions(Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 0));
+	CHECK_MESSAGE(xzw.get_normal() == Vector4(0, 1, 0, 0), "Plane4D from_coplanar_directions should work as expected.");
+	const Plane4D ywz = Plane4D::from_coplanar_directions(Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 0));
+	CHECK_MESSAGE(ywz.get_normal() == Vector4(1, 0, 0, 0), "Plane4D from_coplanar_directions should work as expected.");
+
+	const Plane4D test = Plane4D::from_coplanar_directions(Vector4(1, 2, 3, 4), Vector4(5, 6, 7, 8), Vector4(9, 10, 11, -12), Vector4(13, 14, 15, 16));
+	CHECK_MESSAGE(test.get_normal().dot(Vector4(1, 2, 3, 4)) == doctest::Approx(0), "Plane4D from_coplanar_directions normal should be perpendicular to the input directions.");
+	CHECK_MESSAGE(test.get_normal().dot(Vector4(5, 6, 7, 8)) == doctest::Approx(0), "Plane4D from_coplanar_directions normal should be perpendicular to the input directions.");
+	CHECK_MESSAGE(test.get_normal().dot(Vector4(9, 10, 11, -12)) == doctest::Approx(0), "Plane4D from_coplanar_directions normal should be perpendicular to the input directions.");
+	CHECK_MESSAGE(test.has_point(Vector4(13, 14, 15, 16)), "Plane4D from_coplanar_directions should contain the input point.");
+}
 } // namespace TestPlane4D

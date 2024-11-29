@@ -104,6 +104,44 @@ PackedVector4Array Geometry4D::closest_points_between_line_segments(const Vector
 	return PackedVector4Array{ closest_point_on_line1, closest_point_on_line2 };
 }
 
+PackedVector4Array Geometry4D::closest_points_between_line_and_segment(const Vector4 &p_line_point, const Vector4 &p_line_direction, const Vector4 &p_segment_a, const Vector4 &p_segment_b) {
+	const Vector4 difference_between_points = p_line_point - p_segment_a;
+	const Vector4 segment_dir = p_segment_b - p_segment_a;
+	const real_t segment_len_sq = segment_dir.length_squared();
+	const real_t line_projection = p_line_direction.dot(difference_between_points);
+	const real_t segment_projection = segment_dir.dot(difference_between_points);
+	const real_t direction_dot = p_line_direction.dot(segment_dir);
+	const real_t denominator = p_line_direction.length_squared() * segment_len_sq - direction_dot * direction_dot;
+	if (Math::is_zero_approx(denominator)) {
+		// Lines are parallel, handling it as a special case.
+		return PackedVector4Array{ p_line_point, p_segment_a };
+	}
+	const real_t line_factor = (direction_dot * segment_projection - segment_len_sq * line_projection) / denominator;
+	const real_t segment_factor = (p_line_direction.length_squared() * segment_projection - direction_dot * line_projection) / denominator;
+	const Vector4 closest_point_on_line = p_line_point + p_line_direction * line_factor;
+	const Vector4 closest_point_on_segment = p_segment_a + segment_dir * CLAMP(segment_factor, (real_t)0.0, (real_t)1.0);
+	return PackedVector4Array{ closest_point_on_line, closest_point_on_segment };
+}
+
+Vector4 Geometry4D::perpendicular_to_three_vectors(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c) {
+	Vector4 perp;
+	/* clang-format off */
+	perp.x = - p_a.y * (p_b.z * p_c.w - p_b.w * p_c.z)
+	         + p_a.z * (p_b.y * p_c.w - p_b.w * p_c.y)
+	         - p_a.w * (p_b.y * p_c.z - p_b.z * p_c.y);
+	perp.y = + p_a.x * (p_b.z * p_c.w - p_b.w * p_c.z)
+	         - p_a.z * (p_b.x * p_c.w - p_b.w * p_c.x)
+	         + p_a.w * (p_b.x * p_c.z - p_b.z * p_c.x);
+	perp.z = - p_a.x * (p_b.y * p_c.w - p_b.w * p_c.y)
+	         + p_a.y * (p_b.x * p_c.w - p_b.w * p_c.x)
+	         - p_a.w * (p_b.x * p_c.y - p_b.y * p_c.x);
+	perp.w = + p_a.x * (p_b.y * p_c.z - p_b.z * p_c.y)
+	         - p_a.y * (p_b.x * p_c.z - p_b.z * p_c.x)
+	         + p_a.z * (p_b.x * p_c.y - p_b.y * p_c.x);
+	/* clang-format on */
+	return perp;
+}
+
 Geometry4D *Geometry4D::singleton = nullptr;
 
 void Geometry4D::_bind_methods() {
@@ -114,4 +152,6 @@ void Geometry4D::_bind_methods() {
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_between_line_segments", "line1_a", "line1_b", "line2_a", "line2_b"), &Geometry4D::closest_point_between_line_segments);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_points_between_lines", "line1_point", "line1_dir", "line2_point", "line2_dir"), &Geometry4D::closest_points_between_lines);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_points_between_line_segments", "line1_a", "line1_b", "line2_a", "line2_b"), &Geometry4D::closest_points_between_line_segments);
+	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_points_between_line_and_segment", "line_point", "line_direction", "segment_a", "segment_b"), &Geometry4D::closest_points_between_line_and_segment);
+	ClassDB::bind_static_method("Geometry4D", D_METHOD("perpendicular_to_three_vectors", "a", "b", "c"), &Geometry4D::perpendicular_to_three_vectors);
 }

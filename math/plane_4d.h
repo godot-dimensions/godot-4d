@@ -2,7 +2,7 @@
 
 #include "../godot_4d_defines.h"
 
-// Represents a 4D hyperplane, whose surface is 3-dimensional.
+// Represents a triplane, a 4D hyperplane, whose surface is 3-dimensional.
 struct _NO_DISCARD_ Plane4D {
 	Vector4 normal;
 	real_t distance = 0.0f;
@@ -41,4 +41,5 @@ struct _NO_DISCARD_ Plane4D {
 	Plane4D(const Vector4 &p_normal, real_t p_distance = 0.0f);
 	Plane4D(const Vector4 &p_normal, const Vector4 &p_point);
 	Plane4D(const Vector4 &p_point1, const Vector4 &p_point2, const Vector4 &p_point3, const Vector4 &p_point4);
+	static Plane4D from_coplanar_directions(const Vector4 &p_dir1, const Vector4 &p_dir2, const Vector4 &p_dir3, const Vector4 &p_point);
 };
