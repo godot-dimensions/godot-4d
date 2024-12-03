@@ -35,6 +35,10 @@ Transform4D Transform4D::compose(const Transform4D &p_child_transform) const {
 	return *this * p_child_transform;
 }
 
+Transform4D Transform4D::transform_to(const Transform4D &p_to) const {
+	return p_to * inverse();
+}
+
 Vector4 Transform4D::xform(const Vector4 &p_vector) const {
 	return basis.xform(p_vector) + origin;
 }
@@ -254,6 +258,14 @@ void Transform4D::set_uniform_scale(const real_t p_scale) {
 
 // Validation methods.
 
+void Transform4D::conformalize() {
+	basis.conformalize();
+}
+
+Transform4D Transform4D::conformalized() const {
+	return Transform4D(basis.conformalized(), origin);
+}
+
 void Transform4D::orthonormalize() {
 	basis.orthonormalize();
 }
@@ -284,6 +296,15 @@ bool Transform4D::operator!=(const Transform4D &p_transform) const {
 	return (basis != p_transform.basis || origin != p_transform.origin);
 }
 
+void Transform4D::operator+=(const Transform4D &p_transform) {
+	origin += p_transform.origin;
+	basis += p_transform.basis;
+}
+
+Transform4D Transform4D::operator+(const Transform4D &p_transform) const {
+	return Transform4D(basis + p_transform.basis, origin + p_transform.origin);
+}
+
 void Transform4D::operator*=(const Transform4D &p_transform) {
 	origin = xform(p_transform.origin);
 	basis *= p_transform.basis;
@@ -309,9 +330,16 @@ void Transform4D::operator*=(const real_t p_val) {
 }
 
 Transform4D Transform4D::operator*(const real_t p_val) const {
-	Transform4D ret(*this);
-	ret *= p_val;
-	return ret;
+	return Transform4D(basis * p_val, origin * p_val);
+}
+
+void Transform4D::operator/=(const real_t p_val) {
+	origin /= p_val;
+	basis /= p_val;
+}
+
+Transform4D Transform4D::operator/(const real_t p_val) const {
+	return Transform4D(basis / p_val, origin / p_val);
 }
 
 Transform4D::operator String() const {

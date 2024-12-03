@@ -22,6 +22,10 @@ Projection godot_4d_bind::Basis4D::compose(const Projection &p_parent, const Pro
 	return ::Basis4D(p_parent) * ::Basis4D(p_child);
 }
 
+Projection godot_4d_bind::Basis4D::transform_to(const Projection &p_from, const Projection &p_to) {
+	return ::Basis4D(p_from).transform_to(::Basis4D(p_to));
+}
+
 Vector4 godot_4d_bind::Basis4D::xform(const Projection &p_basis, const Vector4 &p_vector) {
 	return ::Basis4D(p_basis).xform(p_vector);
 }
@@ -181,6 +185,7 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	ClassDB::bind_static_method("Basis4D", D_METHOD("lerp", "from", "to", "weight"), &godot_4d_bind::Basis4D::lerp);
 	// Transformation methods.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("compose", "parent", "child"), &godot_4d_bind::Basis4D::compose);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("transform_to", "from", "to"), &godot_4d_bind::Basis4D::transform_to);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform", "basis", "vector"), &godot_4d_bind::Basis4D::xform);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_inv", "basis", "vector"), &godot_4d_bind::Basis4D::xform_inv);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_transposed", "basis", "vector"), &godot_4d_bind::Basis4D::xform_transposed);

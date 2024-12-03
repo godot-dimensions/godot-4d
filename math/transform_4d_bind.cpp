@@ -44,6 +44,10 @@ Ref<godot_4d_bind::Transform4D> godot_4d_bind::Transform4D::compose(const Ref<go
 	TRANSFORM4D_BIND_RETURN_REF(transform.compose(p_child_transform->get_transform()));
 }
 
+Ref<godot_4d_bind::Transform4D> godot_4d_bind::Transform4D::transform_to(const Ref<godot_4d_bind::Transform4D> &p_to) const {
+	TRANSFORM4D_BIND_RETURN_REF(transform.transform_to(p_to->get_transform()));
+}
+
 Vector4 godot_4d_bind::Transform4D::xform(const Vector4 &p_vector) const {
 	return transform.xform(p_vector);
 }
@@ -448,6 +452,7 @@ void godot_4d_bind::Transform4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("translated_local", "translation"), &godot_4d_bind::Transform4D::translated_local);
 	// Transformation methods.
 	ClassDB::bind_method(D_METHOD("compose", "child_transform"), &godot_4d_bind::Transform4D::compose);
+	ClassDB::bind_method(D_METHOD("transform_to", "to"), &godot_4d_bind::Transform4D::transform_to);
 	ClassDB::bind_method(D_METHOD("xform", "vector"), &godot_4d_bind::Transform4D::xform);
 	ClassDB::bind_method(D_METHOD("xform_many", "vectors"), &godot_4d_bind::Transform4D::xform_many);
 	ClassDB::bind_method(D_METHOD("xform_basis", "basis"), &godot_4d_bind::Transform4D::xform_basis);

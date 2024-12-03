@@ -25,6 +25,8 @@ public:
 
 	// Transformation methods.
 	static Projection compose(const Projection &p_parent, const Projection &p_child);
+	static Projection transform_to(const Projection &p_from, const Projection &p_to);
+
 	static Vector4 xform(const Projection &p_basis, const Vector4 &p_vector);
 	static Vector4 xform_inv(const Projection &p_basis, const Vector4 &p_vector);
 	static Vector4 xform_transposed(const Projection &p_basis, const Vector4 &p_vector);

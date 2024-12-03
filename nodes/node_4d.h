@@ -2,6 +2,7 @@
 
 #include "../math/euler_4d_bind.h"
 #include "../math/geometric_algebra/rotor_4d_bind.h"
+#include "../math/rect4.h"
 #include "../math/transform_4d_bind.h"
 
 #if GDEXTENSION

@@ -23,6 +23,8 @@ struct _NO_DISCARD_ Transform4D {
 
 	// Transformation methods.
 	Transform4D compose(const Transform4D &p_child_transform) const;
+	Transform4D transform_to(const Transform4D &p_to) const;
+
 	Vector4 xform(const Vector4 &p_vector) const;
 	PackedVector4Array xform_many(const PackedVector4Array &p_vectors) const;
 	Basis4D xform_basis(const Basis4D &p_basis) const;
@@ -76,6 +78,8 @@ struct _NO_DISCARD_ Transform4D {
 	void set_uniform_scale(const real_t p_uniform_scale);
 
 	// Validation methods.
+	void conformalize();
+	Transform4D conformalized() const;
 	void orthonormalize();
 	Transform4D orthonormalized() const;
 	void orthogonalize();
@@ -107,12 +111,16 @@ struct _NO_DISCARD_ Transform4D {
 
 	bool operator==(const Transform4D &p_transform) const;
 	bool operator!=(const Transform4D &p_transform) const;
+	void operator+=(const Transform4D &p_transform);
+	Transform4D operator+(const Transform4D &p_transform) const;
 	void operator*=(const Transform4D &p_transform);
 	Transform4D operator*(const Transform4D &p_transform) const;
 	Basis4D operator*(const Basis4D &p_basis) const;
 	Vector4 operator*(const Vector4 &p_vector) const;
 	void operator*=(const real_t p_val);
 	Transform4D operator*(const real_t p_val) const;
+	void operator/=(const real_t p_val);
+	Transform4D operator/(const real_t p_val) const;
 	operator String() const;
 
 	// Conversion.

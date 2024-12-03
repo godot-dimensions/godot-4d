@@ -662,6 +662,13 @@
 				Converts this [Transform4D] to a [PackedFloat32Array] or [PackedFloat64Array]. The array will have 20 numbers.
 			</description>
 		</method>
+		<method name="transform_to" qualifiers="const">
+			<return type="Transform4D" />
+			<param index="0" name="to" type="Transform4D" />
+			<description>
+				Returns a transform that, when applied to this from the left (ret * this), transforms this into the [param to] transform.
+			</description>
+		</method>
 		<method name="translate_local">
 			<return type="void" />
 			<param index="0" name="translation" type="Vector4" />

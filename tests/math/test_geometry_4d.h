@@ -57,6 +57,7 @@ TEST_CASE("[Geometry4D] Closest Points Between Line And Segment") {
 		CHECK_MESSAGE(result[1].is_equal_approx(Vector4(5, 6, 7, 5)), "Geometry4D closest_points_between_line_and_segment should work as expected.");
 	}
 }
+
 TEST_CASE("[Geometry4D] Perpendicular To Three Vectors") {
 	const Vector4 xyz = Geometry4D::perpendicular_to_three_vectors(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0));
 	CHECK_MESSAGE(xyz == Vector4(0, 0, 0, 1), "Geometry4D perpendicular_to_three_vectors should work as expected.");

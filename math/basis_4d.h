@@ -28,6 +28,8 @@ struct _NO_DISCARD_ Basis4D {
 
 	// Transformation methods.
 	Basis4D compose(const Basis4D &p_child) const;
+	Basis4D transform_to(const Basis4D &p_to) const;
+
 	Vector4 xform(const Vector4 &p_vector) const;
 	Vector4 xform_inv(const Vector4 &p_vector) const;
 	Vector4 xform_transposed(const Vector4 &p_vector) const;
@@ -53,6 +55,10 @@ struct _NO_DISCARD_ Basis4D {
 	void set_uniform_scale(const real_t p_uniform_scale);
 
 	// Validation methods.
+	void conformalize();
+	Basis4D conformalized() const;
+	void normalize();
+	Basis4D normalized() const;
 	void orthonormalize();
 	Basis4D orthonormalized() const;
 	void orthogonalize();

@@ -312,9 +312,9 @@ Transform4D Node4D::get_global_transform() const {
 void Node4D::set_global_transform(const Transform4D &p_transform) {
 	Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
 	if (node_4d_parent) {
-		_transform = node_4d_parent->get_global_transform().inverse() * p_transform;
+		set_transform(node_4d_parent->get_global_transform().inverse() * p_transform);
 	} else {
-		_transform = p_transform;
+		set_transform(p_transform);
 	}
 }
 
@@ -349,9 +349,9 @@ Basis4D Node4D::get_global_basis() const {
 void Node4D::set_global_basis(const Basis4D &p_basis) {
 	Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
 	if (node_4d_parent) {
-		_transform.basis = node_4d_parent->get_global_basis().inverse() * p_basis;
+		set_basis(node_4d_parent->get_global_basis().inverse() * p_basis);
 	} else {
-		_transform.basis = p_basis;
+		set_basis(p_basis);
 	}
 }
 

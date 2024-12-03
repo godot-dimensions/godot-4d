@@ -35,6 +35,8 @@ public:
 
 	// Transformation methods.
 	Ref<Transform4D> compose(const Ref<Transform4D> &p_child_transform) const;
+	Ref<Transform4D> transform_to(const Ref<Transform4D> &p_to) const;
+
 	Vector4 xform(const Vector4 &p_vector) const;
 	PackedVector4Array xform_many(const PackedVector4Array &p_vectors) const;
 	Projection xform_basis(const Projection &p_basis) const;

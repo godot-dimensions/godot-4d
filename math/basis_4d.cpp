@@ -34,6 +34,10 @@ Basis4D Basis4D::compose(const Basis4D &p_child) const {
 	return *this * p_child;
 }
 
+Basis4D Basis4D::transform_to(const Basis4D &p_to) const {
+	return p_to * inverse();
+}
+
 Vector4 Basis4D::xform(const Vector4 &p_vector) const {
 	return Vector4(
 			get_row(0).dot(p_vector),
@@ -62,7 +66,7 @@ Bivector4D Basis4D::rotate_bivector(const Bivector4D &p_bivector) const {
 	//		Vector4(p_bivector.xz, p_bivector.yz, 0, -p_bivector.zw),
 	//		Vector4(p_bivector.xw, p_bivector.yw, p_bivector.zw, 0));
 	//Basis4D transformed = *this * antisymmetric_matrix * transposed();
-	// Unroll the above calculation for efficiency (avoid computing half the matrix unnecessarily):
+	// Unrolled version of the above calculation for efficiency (avoid computing half the matrix unnecessarily):
 	real_t wip_x_x = y.x * -p_bivector.xy + z.x * -p_bivector.xz + w.x * -p_bivector.xw;
 	real_t wip_x_y = x.x * +p_bivector.xy + z.x * -p_bivector.yz + w.x * -p_bivector.yw;
 	real_t wip_x_z = x.x * +p_bivector.xz + y.x * +p_bivector.yz + w.x * -p_bivector.zw;
@@ -239,6 +243,30 @@ void Basis4D::set_uniform_scale(const real_t p_uniform_scale) {
 }
 
 // Validation methods.
+
+void Basis4D::conformalize() {
+	const real_t scale = get_uniform_scale();
+	orthonormalize();
+	*this *= scale;
+}
+
+Basis4D Basis4D::conformalized() const {
+	const real_t scale = get_uniform_scale();
+	return orthonormalized() * scale;
+}
+
+void Basis4D::normalize() {
+	x.normalize();
+	y.normalize();
+	z.normalize();
+	w.normalize();
+}
+
+Basis4D Basis4D::normalized() const {
+	Basis4D basis = *this;
+	basis.normalize();
+	return basis;
+}
 
 void Basis4D::orthonormalize() {
 	// Gram-Schmidt Process, now in 4D.

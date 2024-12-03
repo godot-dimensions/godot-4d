@@ -41,5 +41,5 @@ struct _NO_DISCARD_ Plane4D {
 	Plane4D(const Vector4 &p_normal, real_t p_distance = 0.0f);
 	Plane4D(const Vector4 &p_normal, const Vector4 &p_point);
 	Plane4D(const Vector4 &p_point1, const Vector4 &p_point2, const Vector4 &p_point3, const Vector4 &p_point4);
-	static Plane4D from_coplanar_directions(const Vector4 &p_dir1, const Vector4 &p_dir2, const Vector4 &p_dir3, const Vector4 &p_point);
+	static Plane4D from_coplanar_directions(const Vector4 &p_dir1, const Vector4 &p_dir2, const Vector4 &p_dir3, const Vector4 &p_point = Vector4());
 };

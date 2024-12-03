@@ -266,6 +266,14 @@
 				Converts the [param from_basis] [Basis4D] matrix as a [Projection] to a [PackedFloat32Array] or [PackedFloat64Array]. The array will have 16 numbers.
 			</description>
 		</method>
+		<method name="transform_to" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from" type="Projection" />
+			<param index="1" name="to" type="Projection" />
+			<description>
+				Returns a basis that, when applied to [param from] from the left (ret * [param from]), transforms [param from] into the [param to] basis.
+			</description>
+		</method>
 		<method name="transposed" qualifiers="static">
 			<return type="Projection" />
 			<param index="0" name="basis" type="Projection" />
