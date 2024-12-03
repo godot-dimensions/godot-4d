@@ -7,6 +7,7 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "scene/main/node.h"
 #endif
@@ -167,6 +168,12 @@ public:
 	bool is_visible() const;
 	bool is_visible_in_tree() const;
 	void set_visible(const bool p_visible);
+
+	virtual Rect4 get_rect_bounds(const Transform4D &p_inv_relative_to = Transform4D()) const;
+	PackedVector4Array get_rect_bounds_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
+	Rect4 get_rect_bounds_recursive(const Transform4D &p_inv_relative_to = Transform4D()) const;
+	PackedVector4Array get_rect_bounds_recursive_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
+	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds, const Projection &, const Vector4 &);
 };
 
 VARIANT_ENUM_CAST(Node4D::RotationEditMode)

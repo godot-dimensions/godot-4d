@@ -563,6 +563,37 @@ void Node4D::_propagate_visibility_changed() {
 	}
 }
 
+Rect4 Node4D::get_rect_bounds(const Transform4D &p_inv_relative_to) const {
+	PackedVector4Array result;
+	GDVIRTUAL_CALL(_get_rect_bounds, p_inv_relative_to.basis, p_inv_relative_to.origin, result);
+	if (result.size() != 2) {
+		return Rect4(p_inv_relative_to * get_global_position(), Vector4());
+	}
+	return Rect4(result[0], result[1]);
+}
+
+PackedVector4Array Node4D::get_rect_bounds_bind(const Projection &p_inv_relative_to_basis, const Vector4 &p_inv_relative_to_origin) const {
+	Rect4 bounds = get_rect_bounds(Transform4D(p_inv_relative_to_basis, p_inv_relative_to_origin));
+	return PackedVector4Array({ bounds.position, bounds.size });
+}
+
+Rect4 Node4D::get_rect_bounds_recursive(const Transform4D &p_inv_relative_to) const {
+	Rect4 bounds = get_rect_bounds(p_inv_relative_to);
+	const int child_count = get_child_count();
+	for (int i = 0; i < child_count; i++) {
+		Node4D *child_4d = Object::cast_to<Node4D>(get_child(i));
+		if (child_4d != nullptr) {
+			bounds = bounds.merge(child_4d->get_rect_bounds_recursive(p_inv_relative_to));
+		}
+	}
+	return bounds;
+}
+
+PackedVector4Array Node4D::get_rect_bounds_recursive_bind(const Projection &p_inv_relative_to_basis, const Vector4 &p_inv_relative_to_origin) const {
+	Rect4 bounds = get_rect_bounds_recursive(Transform4D(p_inv_relative_to_basis, p_inv_relative_to_origin));
+	return PackedVector4Array({ bounds.position, bounds.size });
+}
+
 // Bindings.
 
 void Node4D::_bind_methods() {
@@ -633,6 +664,9 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_visible"), &Node4D::is_visible);
 	ClassDB::bind_method(D_METHOD("is_visible_in_tree"), &Node4D::is_visible_in_tree);
 	ClassDB::bind_method(D_METHOD("set_visible", "visible"), &Node4D::set_visible);
+	ClassDB::bind_method(D_METHOD("get_rect_bounds", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
+	ClassDB::bind_method(D_METHOD("get_rect_bounds_recursive", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_recursive_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
+	GDVIRTUAL_BIND(_get_rect_bounds, "inv_relative_to_basis", "inv_relative_to_origin");
 
 #ifdef REAL_T_IS_DOUBLE
 #define PACKED_REAL_ARRAY Variant::PACKED_FLOAT64_ARRAY

@@ -77,8 +77,8 @@ Basis4D EditorMainViewport4D::get_view_camera_basis() const {
 	return _editor_camera_4d->get_basis();
 }
 
-void EditorMainViewport4D::navigation_freelook(const Ref<InputEventWithModifiers> &p_event) {
-	Vector2 relative = _get_warped_mouse_motion(p_event);
+void EditorMainViewport4D::navigation_freelook(const Ref<InputEventMouseMotion> &p_input_event) {
+	Vector2 relative = _get_warped_mouse_motion(p_input_event);
 	const real_t degrees_per_pixel = EDITOR_GET("editors/3d/freelook/freelook_sensitivity");
 	const real_t radians_per_pixel = Math::deg_to_rad(degrees_per_pixel);
 	const bool invert_y_axis = EDITOR_GET("editors/3d/navigation/invert_y_axis");
@@ -86,7 +86,7 @@ void EditorMainViewport4D::navigation_freelook(const Ref<InputEventWithModifiers
 	if (invert_y_axis) {
 		rotation_radians.y = -rotation_radians.y;
 	}
-	if (p_event->is_ctrl_pressed() || p_event->is_command_or_control_pressed()) {
+	if (p_input_event->is_ctrl_pressed() || p_input_event->is_command_or_control_pressed()) {
 		_editor_camera_4d->freelook_rotate_ground_basis(Basis4D::from_xw(-rotation_radians.x) * Basis4D::from_zw(rotation_radians.y));
 	} else {
 		_editor_camera_4d->freelook_rotate_ground_basis_and_pitch(Basis4D::from_zx(-rotation_radians.x), -rotation_radians.y);
@@ -94,8 +94,8 @@ void EditorMainViewport4D::navigation_freelook(const Ref<InputEventWithModifiers
 	_viewport_rotation_4d->queue_redraw();
 }
 
-void EditorMainViewport4D::navigation_orbit(const Ref<InputEventWithModifiers> &p_event) {
-	Vector2 relative = _get_warped_mouse_motion(p_event);
+void EditorMainViewport4D::navigation_orbit(const Ref<InputEventMouseMotion> &p_input_event) {
+	Vector2 relative = _get_warped_mouse_motion(p_input_event);
 	const real_t degrees_per_pixel = EDITOR_GET("editors/3d/navigation_feel/orbit_sensitivity");
 	const real_t radians_per_pixel = Math::deg_to_rad(degrees_per_pixel);
 	const bool invert_y_axis = EDITOR_GET("editors/3d/navigation/invert_y_axis");
@@ -107,7 +107,7 @@ void EditorMainViewport4D::navigation_orbit(const Ref<InputEventWithModifiers> &
 	if (invert_y_axis) {
 		rotation_radians.y = -rotation_radians.y;
 	}
-	if (p_event->is_ctrl_pressed() || p_event->is_command_or_control_pressed()) {
+	if (p_input_event->is_ctrl_pressed() || p_input_event->is_command_or_control_pressed()) {
 		_editor_camera_4d->orbit_rotate_ground_basis(Basis4D::from_xw(-rotation_radians.x) * Basis4D::from_zw(rotation_radians.y));
 	} else {
 		_editor_camera_4d->orbit_rotate_ground_basis_and_pitch(Basis4D::from_zx(-rotation_radians.x), -rotation_radians.y);
@@ -115,10 +115,10 @@ void EditorMainViewport4D::navigation_orbit(const Ref<InputEventWithModifiers> &
 	_viewport_rotation_4d->queue_redraw();
 }
 
-void EditorMainViewport4D::navigation_pan(const Ref<InputEventWithModifiers> &p_event) {
-	Vector2 relative = _get_warped_mouse_motion(p_event);
+void EditorMainViewport4D::navigation_pan(const Ref<InputEventMouseMotion> &p_input_event) {
+	Vector2 relative = _get_warped_mouse_motion(p_input_event);
 	Vector4 pan;
-	if (p_event->is_ctrl_pressed() || p_event->is_command_or_control_pressed()) {
+	if (p_input_event->is_ctrl_pressed() || p_input_event->is_command_or_control_pressed()) {
 		pan = Vector4(0.0f, 0.0f, relative.y, relative.x);
 	} else {
 		pan = Vector4(-relative.x, relative.y, 0.0f, 0.0f);
@@ -164,6 +164,7 @@ void EditorMainViewport4D::set_orthogonal_view_plane(const Vector4::Axis p_right
 
 void EditorMainViewport4D::set_editor_main_screen(EditorMainScreen4D *p_editor_main_screen) {
 	_editor_main_screen = p_editor_main_screen;
+	_input_surface_4d->set_editor_main_screen(_editor_main_screen);
 }
 
 EditorMainViewport4D::EditorMainViewport4D() {

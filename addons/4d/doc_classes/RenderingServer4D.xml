@@ -39,4 +39,14 @@
 			</description>
 		</method>
 	</methods>
+	<signals>
+		<signal name="pre_render">
+			<param index="0" name="camera" type="Camera4D" />
+			<param index="1" name="viewport" type="Viewport" />
+			<param index="2" name="rendering_engine" type="RenderingEngine4D" />
+			<description>
+				Emitted before rendering a frame from the [Camera4D] to the [Viewport] using the [RenderingEngine4D].
+			</description>
+		</signal>
+	</signals>
 </class>

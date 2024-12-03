@@ -1,9 +1,5 @@
 #pragma once
 
-#if GDEXTENSION
-#include <godot_cpp/core/gdvirtual.gen.inc>
-#endif
-
 #include "material_4d.h"
 
 class ArrayWireMesh4D;

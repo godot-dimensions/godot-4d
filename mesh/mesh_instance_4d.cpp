@@ -39,6 +39,20 @@ void MeshInstance4D::set_mesh(const Ref<Mesh4D> &p_mesh) {
 	_mesh = p_mesh;
 }
 
+Rect4 MeshInstance4D::get_rect_bounds(const Transform4D &p_inv_relative_to) const {
+	const Transform4D global_transform = get_global_transform();
+	Rect4 bounds = Rect4(p_inv_relative_to * get_global_position(), Vector4());
+	const Ref<Mesh4D> mesh = get_mesh();
+	if (mesh.is_null()) {
+		return bounds;
+	}
+	const PackedVector4Array vertices = mesh->get_vertices();
+	for (int vert_index = 0; vert_index < vertices.size(); vert_index++) {
+		bounds = bounds.expand_to_point(p_inv_relative_to.xform(global_transform * vertices[vert_index]));
+	}
+	return bounds;
+}
+
 void MeshInstance4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_active_material"), &MeshInstance4D::get_active_material);
 

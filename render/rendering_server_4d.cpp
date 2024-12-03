@@ -53,6 +53,7 @@ void RenderingServer4D::_render_frame() {
 		rendering_engine->set_camera(camera0);
 		TypedArray<MeshInstance4D> visible_mesh_instances = _get_visible_mesh_instances();
 		rendering_engine->set_mesh_instances(visible_mesh_instances);
+		emit_signal("pre_render", camera0, viewport, rendering_engine);
 		rendering_engine->calculate_relative_transforms();
 		rendering_engine->render_frame();
 	}
@@ -195,4 +196,6 @@ void RenderingServer4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("register_rendering_engine", "name", "engine"), &RenderingServer4D::register_rendering_engine);
 	ClassDB::bind_method(D_METHOD("unregister_rendering_engine", "name"), &RenderingServer4D::unregister_rendering_engine);
 	ClassDB::bind_method(D_METHOD("get_rendering_engine_names"), &RenderingServer4D::get_rendering_engine_names);
+
+	ADD_SIGNAL(MethodInfo("pre_render", PropertyInfo(Variant::OBJECT, "camera", PROPERTY_HINT_RESOURCE_TYPE, "Camera4D"), PropertyInfo(Variant::OBJECT, "viewport", PROPERTY_HINT_RESOURCE_TYPE, "Viewport"), PropertyInfo(Variant::OBJECT, "rendering_engine", PROPERTY_HINT_RESOURCE_TYPE, "RenderingEngine4D")));
 }

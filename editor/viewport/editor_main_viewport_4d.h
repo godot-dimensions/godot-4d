@@ -54,9 +54,9 @@ public:
 	void focus_selected_nodes();
 	PackedColorArray get_axis_colors() const;
 	Basis4D get_view_camera_basis() const;
-	void navigation_freelook(const Ref<InputEventWithModifiers> &p_event);
-	void navigation_orbit(const Ref<InputEventWithModifiers> &p_event);
-	void navigation_pan(const Ref<InputEventWithModifiers> &p_event);
+	void navigation_freelook(const Ref<InputEventMouseMotion> &p_input_event);
+	void navigation_orbit(const Ref<InputEventMouseMotion> &p_input_event);
+	void navigation_pan(const Ref<InputEventMouseMotion> &p_input_event);
 	void navigation_change_speed(const double p_speed_change);
 	void navigation_change_zoom(const double p_zoom_change);
 	void set_ground_view_axis(const Vector4::Axis p_axis);

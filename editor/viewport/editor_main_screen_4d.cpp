@@ -3,7 +3,6 @@
 #include "../../nodes/quad_split_container.h"
 
 #include "editor_camera_4d.h"
-#include "editor_input_surface_4d.h"
 #include "editor_main_viewport_4d.h"
 #include "editor_viewport_rotation_4d.h"
 
@@ -81,7 +80,9 @@ void EditorMainScreen4D::set_viewport_layout(const int8_t p_viewport_count, cons
 	}
 	for (int i = p_viewport_count; i < _MAX_VIEWPORTS; i++) {
 		if (_editor_main_viewports[i] != nullptr) {
-			_editor_main_viewports[i]->hide();
+			// Viewports are really computationally expensive, so we should delete them when not in use.
+			_editor_main_viewports[i]->queue_free();
+			_editor_main_viewports[i] = nullptr;
 		}
 	}
 	_editor_main_viewport_holder->set_layout(p_viewport_count, p_dominant_side);

@@ -1,5 +1,11 @@
 #pragma once
 
+#include "off/editor_import_plugin_off_mesh_3d.h"
+#include "off/editor_import_plugin_off_scene.h"
+#include "off/editor_import_plugin_off_tetra_4d.h"
+#include "off/editor_import_plugin_off_wire_4d.h"
+#include "viewport/editor_main_screen_4d.h"
+
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_plugin.hpp>
 
@@ -17,12 +23,6 @@
 #define GDEXTMOD_HAS_MAIN_SCREEN has_main_screen
 #define GDEXTMOD_MAKE_VISIBLE make_visible
 #endif
-
-#include "off/editor_import_plugin_off_mesh_3d.h"
-#include "off/editor_import_plugin_off_scene.h"
-#include "off/editor_import_plugin_off_tetra_4d.h"
-#include "off/editor_import_plugin_off_wire_4d.h"
-#include "viewport/editor_main_screen_4d.h"
 
 class Godot4DEditorPlugin : public EditorPlugin {
 	GDCLASS(Godot4DEditorPlugin, EditorPlugin);

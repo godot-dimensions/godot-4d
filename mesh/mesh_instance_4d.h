@@ -21,4 +21,6 @@ public:
 
 	Ref<Mesh4D> get_mesh() const;
 	void set_mesh(const Ref<Mesh4D> &p_mesh);
+
+	virtual Rect4 get_rect_bounds(const Transform4D &p_inv_relative_to = Transform4D()) const override;
 };
