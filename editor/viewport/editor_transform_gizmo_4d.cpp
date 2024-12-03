@@ -747,22 +747,21 @@ void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origi
 	for (int i = 0; i < _selected_top_nodes.size(); i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
-			Transform4D new_node_transform = transform_change * _selected_top_node_old_transforms[i];
+			node_4d->set_global_transform(transform_change * _selected_top_node_old_transforms[i]);
 			switch (_keep_mode) {
 				case KeepMode::FREEFORM: {
 					// Do nothing.
 				} break;
 				case KeepMode::ORTHOGONAL: {
-					new_node_transform.orthogonalize();
+					node_4d->set_transform(node_4d->get_transform().orthogonalized());
 				} break;
 				case KeepMode::CONFORMAL: {
-					new_node_transform.conformalize();
+					node_4d->set_transform(node_4d->get_transform().conformalized());
 				} break;
 				case KeepMode::ORTHONORMAL: {
-					new_node_transform.orthonormalize();
+					node_4d->set_transform(node_4d->get_transform().orthonormalized());
 				} break;
 			}
-			node_4d->set_global_transform(new_node_transform);
 		}
 	}
 }
@@ -940,6 +939,7 @@ bool EditorTransformGizmo4D::get_use_local_rotation() const {
 
 void EditorTransformGizmo4D::set_use_local_rotation(const bool p_use_local_transform) {
 	_is_use_local_rotation = p_use_local_transform;
+	_update_gizmo_transform();
 }
 
 void EditorTransformGizmo4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
