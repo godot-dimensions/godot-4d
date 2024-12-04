@@ -62,6 +62,7 @@ struct _NO_DISCARD_ Rect4 {
 	// Point functions.
 	Vector4 get_nearest_point(const Vector4 &p_point) const;
 	Rect4 expand_to_point(const Vector4 &p_vector) const;
+	void expand_self_to_point(const Vector4 &p_vector);
 	bool has_point(const Vector4 &p_point) const;
 	Vector4 get_support_point(const Vector4 &p_direction) const;
 

@@ -30,6 +30,7 @@ public:
 	void set_collision_mask_value(int p_layer_number, bool p_value);
 	bool get_collision_mask_value(int p_layer_number) const;
 
+	virtual Rect4 get_rect_bounds(const Transform4D &p_inv_relative_to = Transform4D()) const override;
 	Transform4D get_transform_to_collision_object() const;
 
 	Ref<Shape4D> get_shape() const;

@@ -25,15 +25,25 @@ class EditorMainScreen4D : public Control {
 	static const int _MAX_VIEWPORTS = 4;
 
 public:
+	// Ensure the MODE items are kept in sync with EditorTransformGizmo4D::GizmoMode.
 	enum ToolbarButton {
-		TOOLBAR_BUTTON_SELECT, // 0
-		TOOLBAR_BUTTON_MOVE, // 1
-		TOOLBAR_BUTTON_ROTATE, // 2
-		TOOLBAR_BUTTON_SCALE, // 3
-		TOOLBAR_BUTTON_STRETCH, // 4
+		TOOLBAR_BUTTON_MODE_SELECT, // 0
+		TOOLBAR_BUTTON_MODE_MOVE, // 1
+		TOOLBAR_BUTTON_MODE_ROTATE, // 2
+		TOOLBAR_BUTTON_MODE_SCALE, // 3
+		TOOLBAR_BUTTON_MODE_STRETCH, // 4
 		TOOLBAR_BUTTON_MODE_MAX, // 5
 		TOOLBAR_BUTTON_USE_LOCAL_ROTATION = TOOLBAR_BUTTON_MODE_MAX, // Still 5
 		TOOLBAR_BUTTON_MAX
+	};
+
+	// Ensure the KEEP items are kept in sync with EditorTransformGizmo4D::KeepMode.
+	enum TransformSettingsItem {
+		TRANSFORM_SETTING_KEEP_FREEFORM, // 0
+		TRANSFORM_SETTING_KEEP_ORTHOGONAL, // 1
+		TRANSFORM_SETTING_KEEP_CONFORMAL, // 2
+		TRANSFORM_SETTING_KEEP_ORTHONORMAL, // 3
+		TRANSFORM_SETTING_KEEP_MAX, // 4
 	};
 
 	enum ViewLayoutItem {

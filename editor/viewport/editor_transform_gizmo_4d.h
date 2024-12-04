@@ -22,6 +22,7 @@ public:
 		STRETCH,
 	};
 
+	// Keep this in sync with the transform settings items in EditorMainScreen4D.
 	enum class KeepMode {
 		FREEFORM,
 		ORTHOGONAL,

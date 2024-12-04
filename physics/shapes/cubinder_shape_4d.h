@@ -26,8 +26,9 @@ public:
 	void set_size_wy(const Vector2 &p_size_wy);
 
 	virtual real_t get_hypervolume() const override;
+	virtual real_t get_surface_volume() const override;
+
 	virtual Vector4 get_nearest_point(const Vector4 &p_point) const override;
 	virtual Vector4 get_support_point(const Vector4 &p_direction) const override;
-	virtual real_t get_surface_volume() const override;
 	virtual bool has_point(const Vector4 &p_point) const override;
 };

@@ -35,6 +35,13 @@ void CollisionShape4D::_notification(int p_what) {
 	}
 }
 
+Rect4 CollisionShape4D::get_rect_bounds(const Transform4D &p_inv_relative_to) const {
+	if (_shape.is_null()) {
+		return Rect4(p_inv_relative_to * get_global_position(), Vector4());
+	}
+	return _shape->get_rect_bounds(p_inv_relative_to * get_global_transform());
+}
+
 Transform4D CollisionShape4D::get_transform_to_collision_object() const {
 	Transform4D transform_to_col_obj = get_transform();
 	Node *parent = get_parent();

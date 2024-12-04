@@ -38,6 +38,16 @@ real_t CubinderShape4D::get_hypervolume() const {
 	return Math_PI * _radius * _radius * _height * _thickness;
 }
 
+real_t CubinderShape4D::get_surface_volume() const {
+	// Wiki describes the surcell volume as 2π*r(r*h + h^2) but that only applies when height == thickness.
+	// Distributing gives us 2π*h*r^2 + 2π*r*h^2, where:
+	// * The 2π*r*h^2 term is the surcell volume of the square prism, 2π*r long with a h*h base (square).
+	// * The 2π*h*r^2 term is the surcell volume of the cylinders, h long with an 2π*r^2 base (circle).
+	// With different height and thickness, 2π*r*h^2 becomes 2π*r*h*t, and the cylinders become π*h*r^2 + π*t*r^2 so π*r^2 * (h+t).
+	// Proof: Try substituting t with h and it should collapse to the original formulas.
+	return Math_TAU * _radius * _height * _thickness + Math_PI * _radius * _radius * (_height + _thickness);
+}
+
 Vector4 CubinderShape4D::get_nearest_point(const Vector4 &p_point) const {
 	const real_t half_height = _height * 0.5f;
 	const real_t half_thickness = _thickness * 0.5f;
@@ -58,16 +68,6 @@ Vector4 CubinderShape4D::get_support_point(const Vector4 &p_direction) const {
 	support.y = (p_direction.y > 0.0f) ? half_height : -half_height;
 	support.w = (p_direction.w > 0.0f) ? half_thickness : -half_thickness;
 	return support;
-}
-
-real_t CubinderShape4D::get_surface_volume() const {
-	// Wiki describes the surcell volume as 2π*r(r*h + h^2) but that only applies when height == thickness.
-	// Distributing gives us 2π*h*r^2 + 2π*r*h^2, where:
-	// * The 2π*r*h^2 term is the surcell volume of the square prism, 2π*r long with a h*h base (square).
-	// * The 2π*h*r^2 term is the surcell volume of the cylinders, h long with an 2π*r^2 base (circle).
-	// With different height and thickness, 2π*r*h^2 becomes 2π*r*h*t, and the cylinders become π*h*r^2 + π*t*r^2 so π*r^2 * (h+t).
-	// Proof: Try substituting t with h and it should collapse to the original formulas.
-	return Math_TAU * _radius * _height * _thickness + Math_PI * _radius * _radius * (_height + _thickness);
 }
 
 bool CubinderShape4D::has_point(const Vector4 &p_point) const {

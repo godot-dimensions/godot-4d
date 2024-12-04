@@ -27,6 +27,26 @@ real_t OrthoplexShape4D::get_hypervolume() const {
 	return (1.0 / 24.0) * _size.x * _size.y * _size.z * _size.w;
 }
 
+real_t OrthoplexShape4D::get_surface_volume() const {
+	// Surcell volume of regular orthoplex is (4*sqrt(2)/3) * edge_length ^ 3, but we have size instead of edge length.
+	// To convert we need to divide by sqrt(2) 3 times, so 1/(2*sqrt(2)), the sqrt(2)s cancel out, so (4/3)*(1/2) = 2/3.
+	// Then since we have each axis separate, we need to add a quarter 4 times, so (2/3)*(1/4) = 1/6.
+	return (1.0 / 6.0) * (_size.x * _size.y * _size.z + _size.x * _size.y * _size.w + _size.x * _size.z * _size.w + _size.y * _size.z * _size.w);
+}
+
+Rect4 OrthoplexShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
+	Rect4 bounds = Rect4(p_to_target.origin, Vector4());
+	const Vector4 half_extents = get_half_extents();
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 2; j++) {
+			Vector4 point = Vector4();
+			point[i] = j == 0 ? -half_extents[i] : half_extents[i];
+			bounds = bounds.expand_to_point(p_to_target * point);
+		}
+	}
+	return bounds;
+}
+
 Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_point) const {
 	return Vector4D::limit_length_taxicab(p_point / _size, 0.5) * _size;
 }
@@ -37,13 +57,6 @@ Vector4 OrthoplexShape4D::get_support_point(const Vector4 &p_direction) const {
 	Vector4 support = Vector4();
 	support[longest_axis] = (p_direction[longest_axis] > 0.0f) ? _size[longest_axis] * 0.5f : -_size[longest_axis] * 0.5f;
 	return support;
-}
-
-real_t OrthoplexShape4D::get_surface_volume() const {
-	// Surcell volume of regular orthoplex is (4*sqrt(2)/3) * edge_length ^ 3, but we have size instead of edge length.
-	// To convert we need to divide by sqrt(2) 3 times, so 1/(2*sqrt(2)), the sqrt(2)s cancel out, so (4/3)*(1/2) = 2/3.
-	// Then since we have each axis separate, we need to add a quarter 4 times, so (2/3)*(1/4) = 1/6.
-	return (1.0 / 6.0) * (_size.x * _size.y * _size.z + _size.x * _size.y * _size.w + _size.x * _size.z * _size.w + _size.y * _size.z * _size.w);
 }
 
 bool OrthoplexShape4D::has_point(const Vector4 &p_point) const {

@@ -18,10 +18,13 @@ public:
 	void set_size(const Vector4 &p_size);
 
 	virtual real_t get_hypervolume() const override;
+	virtual real_t get_surface_volume() const override;
+	virtual Rect4 get_rect_bounds(const Transform4D &p_to_target = Transform4D()) const override;
+
 	virtual Vector4 get_nearest_point(const Vector4 &p_point) const override;
 	virtual Vector4 get_support_point(const Vector4 &p_direction) const override;
-	virtual real_t get_surface_volume() const override;
 	virtual bool has_point(const Vector4 &p_point) const override;
+
 	virtual Ref<TetraMesh4D> to_tetra_mesh() const override;
 	virtual Ref<WireMesh4D> to_wire_mesh() const override;
 };

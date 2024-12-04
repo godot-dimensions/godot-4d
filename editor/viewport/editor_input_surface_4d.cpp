@@ -49,13 +49,13 @@ void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 		if (key->is_pressed()) {
 			if (!Input::get_singleton()->is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)) {
 				if (key->get_keycode() == KEY_Q) {
-					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_SELECT);
+					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_MODE_SELECT);
 				} else if (key->get_keycode() == KEY_W) {
-					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_MOVE);
+					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_MODE_MOVE);
 				} else if (key->get_keycode() == KEY_E) {
-					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_ROTATE);
+					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_MODE_ROTATE);
 				} else if (key->get_keycode() == KEY_R) {
-					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_SCALE);
+					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_MODE_SCALE);
 				} else if (key->get_keycode() == KEY_T) {
 					_editor_main_screen->press_menu_item(EditorMainScreen4D::TOOLBAR_BUTTON_USE_LOCAL_ROTATION);
 				} else if (key->get_keycode() == KEY_F) {

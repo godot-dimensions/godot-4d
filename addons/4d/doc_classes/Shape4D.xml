@@ -12,34 +12,43 @@
 		<method name="_get_hypervolume" qualifiers="virtual const">
 			<return type="float" />
 			<description>
-				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_hypervolume].
+				Callback method that should return the hypervolume of a 4D shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_hypervolume].
 			</description>
 		</method>
 		<method name="_get_nearest_point" qualifiers="virtual const">
 			<return type="Vector4" />
 			<param index="0" name="point" type="Vector4" />
 			<description>
-				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_nearest_point].
+				Callback method that should return the nearest point to a given point on a 4D shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_nearest_point].
+			</description>
+		</method>
+		<method name="_get_rect_bounds" qualifiers="virtual const">
+			<return type="PackedVector4Array" />
+			<param index="0" name="inv_relative_to_basis" type="Projection" />
+			<param index="1" name="inv_relative_to_origin" type="Vector4" />
+			<description>
+				Callback method that should return the rect bounds of a 4D shape. Do not call this method. Optionally override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_rect_bounds].
+				If this method is not overridden, the rect bounds will be calculated automatically based on the results of the [method _get_support_point] callback.
 			</description>
 		</method>
 		<method name="_get_support_point" qualifiers="virtual const">
 			<return type="Vector4" />
 			<param index="0" name="direction" type="Vector4" />
 			<description>
-				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_support_point].
+				Callback method that should return the support point in a given direction on a 4D shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_support_point].
 			</description>
 		</method>
 		<method name="_get_surface_volume" qualifiers="virtual const">
 			<return type="float" />
 			<description>
-				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_surface_volume].
+				Callback method that should return the surface volume of a 4D shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_surface_volume].
 			</description>
 		</method>
 		<method name="_has_point" qualifiers="virtual const">
 			<return type="bool" />
 			<param index="0" name="point" type="Vector4" />
 			<description>
-				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method has_point].
+				Callback method that should return whether a 4D shape contains a given point. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method has_point].
 			</description>
 		</method>
 		<method name="_to_tetra_mesh" qualifiers="virtual const">
@@ -65,6 +74,14 @@
 			<param index="0" name="point" type="Vector4" />
 			<description>
 				Returns the nearest point to the given point on the 4D shape. If the point is inside the shape, the point itself is returned.
+			</description>
+		</method>
+		<method name="get_rect_bounds" qualifiers="const">
+			<return type="PackedVector4Array" />
+			<param index="0" name="to_target_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<param index="1" name="to_target_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<description>
+				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are used to transform the shape's points directly from shape space to the target space.
 			</description>
 		</method>
 		<method name="get_support_point" qualifiers="const">

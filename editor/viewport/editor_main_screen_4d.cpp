@@ -49,23 +49,23 @@ void EditorMainScreen4D::_on_selection_changed() {
 
 void EditorMainScreen4D::_on_transform_settings_menu_id_pressed(const int p_id) {
 	PopupMenu *transform_settings_menu_popup = _transform_settings_menu->get_popup();
-	if (p_id <= (int)EditorTransformGizmo4D::KeepMode::ORTHONORMAL) {
-		for (int i = 0; i <= (int)EditorTransformGizmo4D::KeepMode::ORTHONORMAL; i++) {
+	if (p_id < TRANSFORM_SETTING_KEEP_MAX) {
+		for (int i = 0; i < TRANSFORM_SETTING_KEEP_MAX; i++) {
 			transform_settings_menu_popup->set_item_checked(i, i == p_id);
 		}
 		EditorTransformGizmo4D::KeepMode keep_mode = (EditorTransformGizmo4D::KeepMode)p_id;
 		if (keep_mode == EditorTransformGizmo4D::KeepMode::ORTHONORMAL) {
 			// Orthonormal can't scale, so if any of the scale buttons are selected, switch to select.
-			if (_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->is_pressed() || _toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->is_pressed()) {
-				press_menu_item(TOOLBAR_BUTTON_SELECT);
+			if (_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->is_pressed() || _toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->is_pressed()) {
+				press_menu_item(TOOLBAR_BUTTON_MODE_SELECT);
 			}
-			_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_disabled(true);
-			_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->release_focus();
-			_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_disabled(true);
-			_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->release_focus();
+			_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->set_disabled(true);
+			_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->release_focus();
+			_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->set_disabled(true);
+			_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->release_focus();
 		} else {
-			_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_disabled(false);
-			_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_disabled(false);
+			_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->set_disabled(false);
+			_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->set_disabled(false);
 		}
 		_transform_gizmo_4d->set_keep_mode(keep_mode);
 	}
@@ -115,11 +115,11 @@ void EditorMainScreen4D::_update_theme() {
 	_toolbar_hbox->set_offset(Side::SIDE_BOTTOM, 29.5f * EDSCALE);
 	_editor_main_viewport_holder->set_offset(Side::SIDE_TOP, 33.0f * EDSCALE);
 	// Set icons.
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_button_icon(get_editor_theme_icon(StringName("ToolSelect")));
-	_toolbar_buttons[TOOLBAR_BUTTON_MOVE]->set_button_icon(get_editor_theme_icon(StringName("ToolMove")));
-	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->set_button_icon(get_editor_theme_icon(StringName("ToolRotate")));
-	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_button_icon(get_editor_theme_icon(StringName("ToolScale")));
-	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_button_icon(get_editor_theme_icon(StringName("AnimationAutoFitBezier")));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SELECT]->set_button_icon(get_editor_theme_icon(StringName("ToolSelect")));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_MOVE]->set_button_icon(get_editor_theme_icon(StringName("ToolMove")));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_ROTATE]->set_button_icon(get_editor_theme_icon(StringName("ToolRotate")));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->set_button_icon(get_editor_theme_icon(StringName("ToolScale")));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->set_button_icon(get_editor_theme_icon(StringName("AnimationAutoFitBezier")));
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_button_icon(get_editor_theme_icon(StringName("Object")));
 	// Set view layout popup icons.
 	PopupMenu *view_layout_menu_popup = _view_layout_menu->get_popup();
@@ -144,11 +144,11 @@ void EditorMainScreen4D::_notification(int p_what) {
 
 void EditorMainScreen4D::press_menu_item(const int p_option) {
 	switch (p_option) {
-		case TOOLBAR_BUTTON_SELECT:
-		case TOOLBAR_BUTTON_MOVE:
-		case TOOLBAR_BUTTON_ROTATE:
-		case TOOLBAR_BUTTON_SCALE:
-		case TOOLBAR_BUTTON_STRETCH: {
+		case TOOLBAR_BUTTON_MODE_SELECT:
+		case TOOLBAR_BUTTON_MODE_MOVE:
+		case TOOLBAR_BUTTON_MODE_ROTATE:
+		case TOOLBAR_BUTTON_MODE_SCALE:
+		case TOOLBAR_BUTTON_MODE_STRETCH: {
 			for (int i = 0; i < TOOLBAR_BUTTON_MODE_MAX; i++) {
 				_toolbar_buttons[i]->set_pressed(i == p_option);
 			}
@@ -194,42 +194,42 @@ EditorMainScreen4D::EditorMainScreen4D() {
 	_toolbar_hbox->set_anchors_and_offsets_preset(Control::PRESET_TOP_WIDE);
 
 	add_child(_toolbar_hbox);
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT] = memnew(Button);
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_toggle_mode(true);
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_theme_type_variation("FlatButton");
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_pressed(true);
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->set_tooltip_text(TTR("(Q) Select nodes and manipulate their position."));
-	_toolbar_buttons[TOOLBAR_BUTTON_SELECT]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_SELECT));
-	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_SELECT]);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SELECT] = memnew(Button);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SELECT]->set_toggle_mode(true);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SELECT]->set_theme_type_variation("FlatButton");
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SELECT]->set_pressed(true);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SELECT]->set_tooltip_text(TTR("(Q) Select nodes and manipulate their position."));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SELECT]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_MODE_SELECT));
+	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_MODE_SELECT]);
 	_toolbar_hbox->add_child(memnew(VSeparator));
 
-	_toolbar_buttons[TOOLBAR_BUTTON_MOVE] = memnew(Button);
-	_toolbar_buttons[TOOLBAR_BUTTON_MOVE]->set_toggle_mode(true);
-	_toolbar_buttons[TOOLBAR_BUTTON_MOVE]->set_theme_type_variation("FlatButton");
-	_toolbar_buttons[TOOLBAR_BUTTON_MOVE]->set_tooltip_text(TTR("(W) Move selected node, changing its position."));
-	_toolbar_buttons[TOOLBAR_BUTTON_MOVE]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_MOVE));
-	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_MOVE]);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_MOVE] = memnew(Button);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_MOVE]->set_toggle_mode(true);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_MOVE]->set_theme_type_variation("FlatButton");
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_MOVE]->set_tooltip_text(TTR("(W) Move selected node, changing its position."));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_MOVE]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_MODE_MOVE));
+	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_MODE_MOVE]);
 
-	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE] = memnew(Button);
-	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->set_toggle_mode(true);
-	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->set_theme_type_variation("FlatButton");
-	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->set_tooltip_text(TTR("(E) Rotate selected node."));
-	_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_ROTATE));
-	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_ROTATE]);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_ROTATE] = memnew(Button);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_ROTATE]->set_toggle_mode(true);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_ROTATE]->set_theme_type_variation("FlatButton");
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_ROTATE]->set_tooltip_text(TTR("(E) Rotate selected node."));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_ROTATE]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_MODE_ROTATE));
+	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_MODE_ROTATE]);
 
-	_toolbar_buttons[TOOLBAR_BUTTON_SCALE] = memnew(Button);
-	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_toggle_mode(true);
-	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_theme_type_variation("FlatButton");
-	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->set_tooltip_text(TTR("(R) Scale selected node."));
-	_toolbar_buttons[TOOLBAR_BUTTON_SCALE]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_SCALE));
-	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_SCALE]);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE] = memnew(Button);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->set_toggle_mode(true);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->set_theme_type_variation("FlatButton");
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->set_tooltip_text(TTR("(R) Scale selected node."));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_MODE_SCALE));
+	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_MODE_SCALE]);
 
-	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH] = memnew(Button);
-	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_toggle_mode(true);
-	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_theme_type_variation("FlatButton");
-	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->set_tooltip_text(TTR("Stretch selected node."));
-	_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_STRETCH));
-	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_STRETCH]);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH] = memnew(Button);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->set_toggle_mode(true);
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->set_theme_type_variation("FlatButton");
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->set_tooltip_text(TTR("Stretch selected node."));
+	_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]->connect(StringName("pressed"), callable_mp(this, &EditorMainScreen4D::press_menu_item).bind(TOOLBAR_BUTTON_MODE_STRETCH));
+	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_MODE_STRETCH]);
 	_toolbar_hbox->add_child(memnew(VSeparator));
 
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION] = memnew(Button);
@@ -260,10 +260,10 @@ EditorMainScreen4D::EditorMainScreen4D() {
 	_toolbar_hbox->add_child(_transform_settings_menu);
 
 	PopupMenu *transform_settings_menu_popup = _transform_settings_menu->get_popup();
-	transform_settings_menu_popup->add_radio_check_item(TTR("Freeform (allow skew/shear)"), (int)EditorTransformGizmo4D::KeepMode::FREEFORM);
-	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Orthogonal (fix skew/shear)"), (int)EditorTransformGizmo4D::KeepMode::ORTHOGONAL);
-	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Conformal (uniform scale)"), (int)EditorTransformGizmo4D::KeepMode::CONFORMAL);
-	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Orthonormal (no scale)"), (int)EditorTransformGizmo4D::KeepMode::ORTHONORMAL);
+	transform_settings_menu_popup->add_radio_check_item(TTR("Freeform (allow skew/shear)"), TRANSFORM_SETTING_KEEP_FREEFORM);
+	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Orthogonal (fix skew/shear)"), TRANSFORM_SETTING_KEEP_ORTHOGONAL);
+	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Conformal (uniform scale)"), TRANSFORM_SETTING_KEEP_CONFORMAL);
+	transform_settings_menu_popup->add_radio_check_item(TTR("Keep Orthonormal (no scale)"), TRANSFORM_SETTING_KEEP_ORTHONORMAL);
 	transform_settings_menu_popup->set_item_checked((int)EditorTransformGizmo4D::KeepMode::FREEFORM, true);
 	transform_settings_menu_popup->connect(StringName("id_pressed"), callable_mp(this, &EditorMainScreen4D::_on_transform_settings_menu_id_pressed));
 

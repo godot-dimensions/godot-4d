@@ -168,7 +168,7 @@ Rect4 Rect4::expand_to_point(const Vector4 &p_vector) const {
 	if (unlikely(size.x < 0.0f || size.y < 0.0f || size.z < 0.0f || size.w < 0.0f)) {
 		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
 	}
-#endif
+#endif // MATH_CHECKS
 	Vector4 end = get_end();
 	Rect4 new_rect = *this;
 	if (p_vector.x < position.x) {
@@ -193,6 +193,36 @@ Rect4 Rect4::expand_to_point(const Vector4 &p_vector) const {
 	}
 	new_rect.set_end(end);
 	return new_rect;
+}
+
+void Rect4::expand_self_to_point(const Vector4 &p_vector) {
+#ifdef MATH_CHECKS
+	if (unlikely(size.x < 0.0f || size.y < 0.0f || size.z < 0.0f || size.w < 0.0f)) {
+		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
+	}
+#endif // MATH_CHECKS
+	Vector4 end = get_end();
+	if (p_vector.x < position.x) {
+		position.x = p_vector.x;
+	} else if (p_vector.x > end.x) {
+		end.x = p_vector.x;
+	}
+	if (p_vector.y < position.y) {
+		position.y = p_vector.y;
+	} else if (p_vector.y > end.y) {
+		end.y = p_vector.y;
+	}
+	if (p_vector.z < position.z) {
+		position.z = p_vector.z;
+	} else if (p_vector.z > end.z) {
+		end.z = p_vector.z;
+	}
+	if (p_vector.w < position.w) {
+		position.w = p_vector.w;
+	} else if (p_vector.w > end.w) {
+		end.w = p_vector.w;
+	}
+	set_end(end);
 }
 
 bool Rect4::has_point(const Vector4 &p_point) const {

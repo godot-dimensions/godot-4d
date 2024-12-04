@@ -23,6 +23,30 @@ real_t BoxShape4D::get_hypervolume() const {
 	return _size.x * _size.y * _size.z * _size.w;
 }
 
+real_t BoxShape4D::get_surface_volume() const {
+	return 2.0f * (_size.x * _size.y * _size.z + _size.x * _size.y * _size.w + _size.x * _size.z * _size.w + _size.y * _size.z * _size.w);
+}
+
+Rect4 BoxShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
+	Rect4 bounds = Rect4(p_to_target.origin, Vector4());
+	const Vector4 half_extents = get_half_extents();
+	for (int x = 0; x < 2; x++) {
+		for (int y = 0; y < 2; y++) {
+			for (int z = 0; z < 2; z++) {
+				for (int w = 0; w < 2; w++) {
+					const Vector4 point = Vector4(
+							x == 0 ? -half_extents.x : half_extents.x,
+							y == 0 ? -half_extents.y : half_extents.y,
+							z == 0 ? -half_extents.z : half_extents.z,
+							w == 0 ? -half_extents.w : half_extents.w);
+					bounds = bounds.expand_to_point(p_to_target * point);
+				}
+			}
+		}
+	}
+	return bounds;
+}
+
 Vector4 BoxShape4D::get_nearest_point(const Vector4 &p_point) const {
 	const Vector4 half_extents = get_half_extents();
 	return Vector4(
@@ -39,10 +63,6 @@ Vector4 BoxShape4D::get_support_point(const Vector4 &p_direction) const {
 			(p_direction.y > 0.0f) ? half_extents.y : -half_extents.y,
 			(p_direction.z > 0.0f) ? half_extents.z : -half_extents.z,
 			(p_direction.w > 0.0f) ? half_extents.w : -half_extents.w);
-}
-
-real_t BoxShape4D::get_surface_volume() const {
-	return 2.0f * (_size.x * _size.y * _size.z + _size.x * _size.y * _size.w + _size.x * _size.z * _size.w + _size.y * _size.z * _size.w);
 }
 
 bool BoxShape4D::has_point(const Vector4 &p_point) const {
