@@ -78,6 +78,7 @@
 #include "editor/viewport/editor_input_surface_4d.h"
 #include "editor/viewport/editor_main_screen_4d.h"
 #include "editor/viewport/editor_main_viewport_4d.h"
+#include "editor/viewport/editor_transform_gizmo_4d.h"
 #include "editor/viewport/editor_viewport_rotation_4d.h"
 #endif // TOOLS_ENABLED
 #endif // GDEXTENSION
@@ -188,6 +189,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorInputSurface4D);
 		GDREGISTER_CLASS(EditorMainScreen4D);
 		GDREGISTER_CLASS(EditorMainViewport4D);
+		GDREGISTER_CLASS(EditorTransformGizmo4D);
 		GDREGISTER_CLASS(EditorViewportRotation4D);
 		GDREGISTER_CLASS(Godot4DEditorPlugin);
 #endif // GDEXTENSION

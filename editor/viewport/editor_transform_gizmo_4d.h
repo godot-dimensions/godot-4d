@@ -115,6 +115,9 @@ private:
 	void _end_transformation();
 	void _process_transform(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction);
 
+protected:
+	static void _bind_methods() {}
+
 public:
 	void selected_nodes_changed(const TypedArray<Node> &p_top_nodes);
 	void theme_changed(const PackedColorArray &p_axis_colors);
