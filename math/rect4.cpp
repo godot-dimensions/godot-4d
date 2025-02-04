@@ -343,6 +343,58 @@ Rect4 Rect4::merge(const Rect4 &p_other) const {
 	return new_rect;
 }
 
+// Note: This function can return values outside of the expected range,
+// including values above 1.0, below 0.0, and even below -1.0.
+// Handling the meaning of such values is up to the caller.
+// Suggestion: For the expected use case of loops, start with `real_t ratio = 1.0f;`
+// and then use `ratio = MIN(ratio, result);` on each loop iteration.
+real_t Rect4::continuous_collision_depth(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle) const {
+#ifdef MATH_CHECKS
+	if (unlikely(size.x < 0.0f || size.y < 0.0f || size.z < 0.0f || size.w < 0.0f)) {
+		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
+	}
+#endif // MATH_CHECKS
+	const Vector4 end = get_end();
+	Vector4 low_ratios = (p_obstacle.position - end) / (p_relative_velocity);
+	Vector4 high_ratios = (p_obstacle.get_end() - position) / (p_relative_velocity);
+	for (int i = 0; i < 4; i++) {
+		if (p_relative_velocity[i] < 0.0f) {
+			SWAP(low_ratios[i], high_ratios[i]);
+		}
+	}
+	const real_t low_ratio = MAX(MAX(low_ratios.x, low_ratios.y), MAX(low_ratios.z, low_ratios.w));
+	const real_t high_ratio = MIN(MIN(high_ratios.x, high_ratios.y), MIN(high_ratios.z, high_ratios.w));
+	if (low_ratio < high_ratio) {
+		// These checks handles depenetration, choosing the quickest way out of the obstacle.
+		if (high_ratio > 0.0f && ABS(low_ratio) < high_ratio) {
+			return low_ratio;
+		}
+	}
+	return 1.0f;
+}
+
+bool Rect4::continuous_collision_overlaps(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle) const {
+#ifdef MATH_CHECKS
+	if (unlikely(size.x < 0.0f || size.y < 0.0f || size.z < 0.0f || size.w < 0.0f)) {
+		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
+	}
+#endif // MATH_CHECKS
+	const Vector4 end = get_end();
+	Vector4 low_ratios = (p_obstacle.position - end) / (p_relative_velocity);
+	Vector4 high_ratios = (p_obstacle.get_end() - position) / (p_relative_velocity);
+	for (int i = 0; i < 4; i++) {
+		if (p_relative_velocity[i] < 0.0f) {
+			SWAP(low_ratios[i], high_ratios[i]);
+		}
+	}
+	const real_t low_ratio = MAX(MAX(low_ratios.x, low_ratios.y), MAX(low_ratios.z, low_ratios.w));
+	const real_t high_ratio = MIN(MIN(high_ratios.x, high_ratios.y), MIN(high_ratios.z, high_ratios.w));
+	if (low_ratio < high_ratio) {
+		return true;
+	}
+	return false;
+}
+
 // Rect comparison functions.
 bool Rect4::encloses_exclusive(const Rect4 &p_other) const {
 	Vector4 end = get_end();

@@ -71,6 +71,10 @@ struct _NO_DISCARD_ Rect4 {
 	Rect4 intersection(const Rect4 &p_other) const;
 	Rect4 merge(const Rect4 &p_other) const;
 
+	// Rect collision functions.
+	real_t continuous_collision_depth(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle) const;
+	bool continuous_collision_overlaps(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle) const;
+
 	// Rect comparison functions.
 	bool encloses_exclusive(const Rect4 &p_other) const;
 	bool encloses_inclusive(const Rect4 &p_other) const;
