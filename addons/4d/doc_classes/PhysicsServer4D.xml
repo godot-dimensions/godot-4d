@@ -47,7 +47,7 @@
 	<members>
 		<member name="active" type="bool" setter="set_active" getter="get_active" default="true">
 		</member>
-		<member name="current_physics_engine_name" type="String" setter="set_current_physics_engine_name" getter="get_current_physics_engine_name" default="&quot;GhostPhysicsEngine4D&quot;">
+		<member name="current_physics_engine_name" type="String" setter="set_current_physics_engine_name" getter="get_current_physics_engine_name" default="&quot;AxisAlignedBoxPhysicsEngine4D&quot;">
 			The name of the current physics engine being used. If only one physics engine is registered, this will be set to that engine's name automatically.
 		</member>
 	</members>

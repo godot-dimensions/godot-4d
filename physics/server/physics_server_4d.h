@@ -10,7 +10,11 @@
 #include "core/templates/hash_map.h"
 #endif
 
-constexpr real_t PHYSICS_4D_SAFE_MARGIN = 0.00001f;
+#ifdef REAL_T_IS_DOUBLE
+constexpr real_t PHYSICS_4D_SAFE_MARGIN = 0.000000000001;
+#else
+constexpr real_t PHYSICS_4D_SAFE_MARGIN = 0.00001;
+#endif
 
 class PhysicsServer4D : public Object {
 	GDCLASS(PhysicsServer4D, Object);

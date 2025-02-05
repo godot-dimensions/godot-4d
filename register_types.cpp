@@ -46,6 +46,7 @@
 #include "physics/bodies/static_body_4d.h"
 #include "physics/collision_shape_4d.h"
 #include "physics/kinematic_collision_4d.h"
+#include "physics/server/axis_aligned_box_physics_engine_4d.h"
 #include "physics/server/ghost_physics_engine_4d.h"
 #include "physics/server/physics_engine_4d.h"
 #include "physics/server/physics_server_4d.h"
@@ -165,6 +166,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(SphereShape4D);
 		GDREGISTER_CLASS(StaticBody4D);
 #if GDEXTENSION
+		GDREGISTER_CLASS(AxisAlignedBoxPhysicsEngine4D);
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
 		GDREGISTER_CLASS(WireframeRenderCanvas);
 		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
@@ -173,6 +175,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 #ifdef TOOLS_ENABLED
 		physics_server->set_active(!Engine::get_singleton()->is_editor_hint());
 #endif // TOOLS_ENABLED
+		physics_server->register_physics_engine("AxisAlignedBoxPhysicsEngine4D", memnew(AxisAlignedBoxPhysicsEngine4D));
 		physics_server->register_physics_engine("GhostPhysicsEngine4D", memnew(GhostPhysicsEngine4D));
 		add_godot_singleton("PhysicsServer4D", physics_server);
 		// Render.
