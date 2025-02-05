@@ -17,18 +17,6 @@ void PhysicsBody4D::move_and_collide(Vector4 p_motion) {
 	PhysicsServer4D::get_singleton()->move_and_collide(this, p_motion);
 }
 
-Ref<PhysicsMaterial> PhysicsBody4D::get_physics_material() const {
-	return _physics_material;
-}
-
-void PhysicsBody4D::set_physics_material(const Ref<PhysicsMaterial> &p_physics_material) {
-	_physics_material = p_physics_material;
-}
-
 void PhysicsBody4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("move_and_collide", "motion"), &PhysicsBody4D::move_and_collide);
-
-	ClassDB::bind_method(D_METHOD("get_physics_material"), &PhysicsBody4D::get_physics_material);
-	ClassDB::bind_method(D_METHOD("set_physics_material", "physics_material"), &PhysicsBody4D::set_physics_material);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "physics_material", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsMaterial"), "set_physics_material", "get_physics_material");
 }

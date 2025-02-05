@@ -8,17 +8,13 @@
 #include "scene/main/window.h"
 #endif
 
-void PhysicsServer4D::_step_dynamic_rigid_bodies() {
+void PhysicsServer4D::_physics_process() {
 	if (!_is_physics_active) {
 		return;
 	}
 	ERR_FAIL_COND_MSG(_current_physics_engine.is_null(), "PhysicsServer4D: No physics engine is set.");
 	const double p_delta = _scene_tree->get_root()->get_physics_process_delta_time();
-	for (int i = 0; i < _rigid_body_nodes.size(); i++) {
-		Variant rigid_body_variant = _rigid_body_nodes[i];
-		RigidBody4D *rigid_body = Object::cast_to<RigidBody4D>(rigid_body_variant);
-		_current_physics_engine->step_dynamic_rigid_body(rigid_body, p_delta);
-	}
+	_current_physics_engine->physics_process(p_delta);
 }
 
 void PhysicsServer4D::move_and_collide(PhysicsBody4D *p_body_node, Vector4 p_motion) {
@@ -33,12 +29,12 @@ void PhysicsServer4D::move_area(Area4D *p_area_node, Vector4 p_motion) {
 
 void PhysicsServer4D::register_area(Area4D *p_area_node) {
 	_area_nodes.append(p_area_node);
-	if (likely(_is_step_dynamic_rigid_bodies_connected)) {
+	if (likely(_is_physics_process_connected)) {
 		return;
 	}
 	_scene_tree = p_area_node->get_tree();
-	_scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_step_dynamic_rigid_bodies));
-	_is_step_dynamic_rigid_bodies_connected = true;
+	_scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_physics_process));
+	_is_physics_process_connected = true;
 }
 
 void PhysicsServer4D::unregister_area(Area4D *p_area_node) {
@@ -47,22 +43,16 @@ void PhysicsServer4D::unregister_area(Area4D *p_area_node) {
 
 void PhysicsServer4D::register_physics_body(PhysicsBody4D *p_physics_body_node) {
 	_physics_body_nodes.append(p_physics_body_node);
-	if (Object::cast_to<RigidBody4D>(p_physics_body_node)) {
-		_rigid_body_nodes.append(Object::cast_to<RigidBody4D>(p_physics_body_node));
-	}
-	if (likely(_is_step_dynamic_rigid_bodies_connected)) {
+	if (likely(_is_physics_process_connected)) {
 		return;
 	}
 	_scene_tree = p_physics_body_node->get_tree();
-	_scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_step_dynamic_rigid_bodies));
-	_is_step_dynamic_rigid_bodies_connected = true;
+	_scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_physics_process));
+	_is_physics_process_connected = true;
 }
 
 void PhysicsServer4D::unregister_physics_body(PhysicsBody4D *p_physics_body_node) {
 	_physics_body_nodes.erase(p_physics_body_node);
-	if (Object::cast_to<RigidBody4D>(p_physics_body_node)) {
-		_rigid_body_nodes.erase(Object::cast_to<RigidBody4D>(p_physics_body_node));
-	}
 }
 
 Ref<PhysicsEngine4D> PhysicsServer4D::_get_physics_engine(const String &p_name) const {

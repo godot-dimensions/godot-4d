@@ -46,6 +46,19 @@
 		</method>
 	</methods>
 	<members>
+		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
+			The physics layers this CollisionShape4D [b]is in[/b]. Collision shapes can exist in one or more of 32 different layers. See also [member collision_mask].
+			[b]Note:[/b] Shape A can detect a contact with shape B only if shape B is in any of the layers that shape A scans. See [url=$DOCS_URL/tutorials/physics/physics_introduction.html#collision-layers-and-masks]Collision layers and masks[/url] in the documentation for more information.
+			[b]Note:[/b] To avoid duplicating project settings, the 4D layer names are the same as the 3D layer names. This is purely cosmetic.
+		</member>
+		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
+			The physics layers this CollisionShape4D [b]scans[/b]. Collision objects can scan one or more of 32 different layers. See also [member collision_layer].
+			[b]Note:[/b] Shape A can detect a contact with shape B only if shape B is in any of the layers that shape A scans. See [url=$DOCS_URL/tutorials/physics/physics_introduction.html#collision-layers-and-masks]Collision layers and masks[/url] in the documentation for more information.
+			[b]Note:[/b] To avoid duplicating project settings, the 4D layer names are the same as the 3D layer names. This is purely cosmetic.
+		</member>
+		<member name="physics_material" type="PhysicsMaterial" setter="set_physics_material" getter="get_physics_material">
+			The [PhysicsMaterial] of the body, which determines the collision response of the surface, including friction and bounciness/restitution.
+		</member>
 		<member name="shape" type="Shape4D" setter="set_shape" getter="get_shape">
 			The [Shape4D] resource that defines the shape of this collision shape node.
 		</member>

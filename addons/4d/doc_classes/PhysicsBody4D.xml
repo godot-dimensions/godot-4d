@@ -17,9 +17,4 @@
 			</description>
 		</method>
 	</methods>
-	<members>
-		<member name="physics_material" type="PhysicsMaterial" setter="set_physics_material" getter="get_physics_material">
-			The [PhysicsMaterial] of the body, which determines the collision response of the surface, including friction and bounciness/restitution.
-		</member>
-	</members>
 </class>

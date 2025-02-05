@@ -21,13 +21,12 @@ class PhysicsServer4D : public Object {
 	// We could add a "World4D" class in the future if we want to add this feature, but it's not necessary for now.
 	TypedArray<Area4D> _area_nodes;
 	TypedArray<PhysicsBody4D> _physics_body_nodes;
-	TypedArray<RigidBody4D> _rigid_body_nodes;
 	SceneTree *_scene_tree = nullptr;
 
 	Ref<PhysicsEngine4D> _get_physics_engine(const String &p_name) const;
 	bool _is_physics_active = true;
-	bool _is_step_dynamic_rigid_bodies_connected = false;
-	void _step_dynamic_rigid_bodies();
+	bool _is_physics_process_connected = false;
+	void _physics_process();
 
 protected:
 	static PhysicsServer4D *singleton;

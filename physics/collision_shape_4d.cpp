@@ -56,6 +56,14 @@ Transform4D CollisionShape4D::get_transform_to_collision_object() const {
 	return transform_to_col_obj;
 }
 
+Ref<PhysicsMaterial> CollisionShape4D::get_physics_material() const {
+	return _physics_material;
+}
+
+void CollisionShape4D::set_physics_material(const Ref<PhysicsMaterial> &p_physics_material) {
+	_physics_material = p_physics_material;
+}
+
 Ref<Shape4D> CollisionShape4D::get_shape() const {
 	return _shape;
 }
@@ -97,13 +105,26 @@ bool CollisionShape4D::has_global_point(const Vector4 &p_point) const {
 }
 
 void CollisionShape4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_shape"), &CollisionShape4D::get_shape);
-	ClassDB::bind_method(D_METHOD("set_shape", "shape"), &CollisionShape4D::set_shape);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "shape", PROPERTY_HINT_RESOURCE_TYPE, "Shape4D"), "set_shape", "get_shape");
-
 	ClassDB::bind_method(D_METHOD("get_hypervolume"), &CollisionShape4D::get_hypervolume);
 	ClassDB::bind_method(D_METHOD("get_nearest_global_point", "point"), &CollisionShape4D::get_nearest_global_point);
 	ClassDB::bind_method(D_METHOD("get_support_global_point", "direction"), &CollisionShape4D::get_support_global_point);
 	ClassDB::bind_method(D_METHOD("get_surface_volume"), &CollisionShape4D::get_surface_volume);
 	ClassDB::bind_method(D_METHOD("has_global_point", "point"), &CollisionShape4D::has_global_point);
+
+	ClassDB::bind_method(D_METHOD("get_shape"), &CollisionShape4D::get_shape);
+	ClassDB::bind_method(D_METHOD("set_shape", "shape"), &CollisionShape4D::set_shape);
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "shape", PROPERTY_HINT_RESOURCE_TYPE, "Shape4D"), "set_shape", "get_shape");
+
+	ClassDB::bind_method(D_METHOD("get_physics_material"), &CollisionShape4D::get_physics_material);
+	ClassDB::bind_method(D_METHOD("set_physics_material", "physics_material"), &CollisionShape4D::set_physics_material);
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "physics_material", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsMaterial"), "set_physics_material", "get_physics_material");
+
+	// Re-use 3D physics layer names for 4D to make use of Godot's built-in layer settings.
+	ClassDB::bind_method(D_METHOD("get_collision_layer"), &CollisionShape4D::get_collision_layer);
+	ClassDB::bind_method(D_METHOD("set_collision_layer", "layer"), &CollisionShape4D::set_collision_layer);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_layer", "get_collision_layer");
+
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &CollisionShape4D::get_collision_mask);
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &CollisionShape4D::set_collision_mask);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask", "get_collision_mask");
 }

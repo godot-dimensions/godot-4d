@@ -22,9 +22,9 @@ protected:
 public:
 	virtual void move_and_collide(PhysicsBody4D *p_body, Vector4 p_motion);
 	virtual void move_area(Area4D *p_area, Vector4 p_motion);
-	virtual void step_dynamic_rigid_body(RigidBody4D *p_body, double p_delta);
+	virtual void physics_process(double p_delta);
 
 	GDVIRTUAL2(_move_and_collide, PhysicsBody4D *, Vector4);
 	GDVIRTUAL2(_move_area, Area4D *, Vector4);
-	GDVIRTUAL2(_step_dynamic_rigid_body, RigidBody4D *, double);
+	GDVIRTUAL1(_physics_process, double);
 };
