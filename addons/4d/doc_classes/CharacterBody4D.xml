@@ -4,7 +4,50 @@
 		A 4D physics body specialized for characters moved by script.
 	</brief_description>
 	<description>
+		CharacterBody4D is a specialized class for physics bodies that are meant to be user-controlled. It provides a high-level API to move objects with wall and slope detection. This makes it useful for characters which must move in specific ways and collide with the world.
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="is_on_ceiling" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the body collided with the ceiling on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member up_direction] and [member floor_max_angle] are used to determine whether a surface is a "ceiling" or not.
+			</description>
+		</method>
+		<method name="is_on_floor" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the body collided with the floor on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member up_direction] and [member floor_max_angle] are used to determine whether a surface is a "floor" or not.
+			</description>
+		</method>
+		<method name="is_on_wall" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the body collided with a wall on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member up_direction] and [member floor_max_angle] are used to determine whether a surface is a "wall" or not.
+			</description>
+		</method>
+		<method name="move_and_slide">
+			<return type="KinematicCollision4D[]" />
+			<description>
+				Moves the body based on [member linear_velocity]. If the body collides with another, it will slide along the other body rather than stop immediately.
+				If a collision occurs, this will modify [member linear_velocity]. Regardless of a collision, this will update the states of [method is_on_floor], [method is_on_ceiling], and [method is_on_wall].
+				Returns an array of [KinematicCollision4D] objects, one for each collision that occurred in the sliding. If there was no collision, the array will be empty.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="floor_max_angle" type="float" setter="set_floor_max_angle" getter="get_floor_max_angle" default="1.5708">
+			Maximum angle (in radians) where a slope is considered a floor (or a ceiling), rather than a wall, when calling [method move_and_slide]. The default value equals 45 degrees.
+		</member>
+		<member name="linear_velocity" type="Vector4" setter="set_linear_velocity" getter="get_linear_velocity" default="Vector4(0, 0, 0, 0)">
+			The global linear velocity of the body as a 4D vector. The length of the vector corresponds to the speed in meters per second. This is used when calling [method move_and_slide], intended to be edited by the user before calling [method move_and_slide], and will be modified by [method move_and_slide] if a collision happens.
+		</member>
+		<member name="up_direction" type="Vector4" setter="set_up_direction" getter="get_up_direction" default="Vector4(0, 1, 0, 0)">
+			Vector pointing upwards, used to determine what is a wall and what is a floor (or a ceiling) when calling [method move_and_slide]. The default value is a unit vector in the +Y direction. This vector should be normalized, except that it may be zero if it is desired to treat all surfaces as walls.
+		</member>
+		<member name="use_bounce" type="bool" setter="set_use_bounce" getter="get_use_bounce" default="true">
+			If [code]true[/code], the body will take into consideration the [PhysicsMaterial]s of the [CollisionShape4D] nodes, and calculate if the body should bounce when colliding with them. By default, this is enabled, but [CollisionShape4D] nodes do not have a [PhysicsMaterial] by default, and a [PhysicsMaterial] is not bouncy by default, so this will only have an effect if [PhysicsMaterial]s are used and set to be bouncy. If [code]false[/code], the body will always slide, ignoring the [PhysicsMaterial]s.
+		</member>
+	</members>
 </class>
