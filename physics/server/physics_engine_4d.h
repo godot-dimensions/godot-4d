@@ -3,6 +3,7 @@
 #include "../bodies/area_4d.h"
 #include "../bodies/physics_body_4d.h"
 #include "../bodies/rigid_body_4d.h"
+#include "../kinematic_collision_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/ref_counted.hpp>
@@ -20,11 +21,11 @@ protected:
 	static void _bind_methods();
 
 public:
-	virtual void move_and_collide(PhysicsBody4D *p_body, Vector4 p_motion);
+	virtual Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body, Vector4 p_motion, bool p_test_only);
 	virtual void move_area(Area4D *p_area, Vector4 p_motion);
 	virtual void physics_process(double p_delta);
 
-	GDVIRTUAL2(_move_and_collide, PhysicsBody4D *, Vector4);
+	GDVIRTUAL3R(Ref<KinematicCollision4D>, _move_and_collide, PhysicsBody4D *, Vector4, bool);
 	GDVIRTUAL2(_move_area, Area4D *, Vector4);
 	GDVIRTUAL1(_physics_process, double);
 };

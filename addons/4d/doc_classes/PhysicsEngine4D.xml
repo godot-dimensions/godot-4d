@@ -10,11 +10,13 @@
 	</tutorials>
 	<methods>
 		<method name="_move_and_collide" qualifiers="virtual">
-			<return type="void" />
+			<return type="KinematicCollision4D" />
 			<param index="0" name="body" type="PhysicsBody4D" />
 			<param index="1" name="motion" type="Vector4" />
+			<param index="2" name="test_only" type="bool" />
 			<description>
 				Callback method to move a physics body with kinematic motion, and collide it with other physics objects in the scene. This method is called whenever [method PhysicsBody4D.move_and_collide] is called on a physics body. Physics engines should grab the list of other physics objects from the physics server and check for overlaps with the body, informing any area nodes when entering or exiting them, and resolving collisions with other physics bodies.
+				If [param test_only] is [code]true[/code], the body should not move but information about the collision that would have occurred should be returned.
 			</description>
 		</method>
 		<method name="_move_area" qualifiers="virtual">

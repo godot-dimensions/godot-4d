@@ -17,9 +17,9 @@ void PhysicsServer4D::_physics_process() {
 	_current_physics_engine->physics_process(p_delta);
 }
 
-void PhysicsServer4D::move_and_collide(PhysicsBody4D *p_body_node, Vector4 p_motion) {
-	ERR_FAIL_COND_MSG(_current_physics_engine.is_null(), "PhysicsServer4D: No physics engine is set.");
-	_current_physics_engine->move_and_collide(p_body_node, p_motion);
+Ref<KinematicCollision4D> PhysicsServer4D::move_and_collide(PhysicsBody4D *p_body_node, Vector4 p_motion, bool p_test_only) {
+	ERR_FAIL_COND_V_MSG(_current_physics_engine.is_null(), Ref<KinematicCollision4D>(), "PhysicsServer4D: No physics engine is set.");
+	return _current_physics_engine->move_and_collide(p_body_node, p_motion, p_test_only);
 }
 
 void PhysicsServer4D::move_area(Area4D *p_area_node, Vector4 p_motion) {

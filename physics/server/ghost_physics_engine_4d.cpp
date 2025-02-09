@@ -10,8 +10,14 @@ void GhostPhysicsEngine4D::_step_dynamic_rigid_body(RigidBody4D *p_moving_body, 
 	p_moving_body->set_global_basis(rotor.rotate_basis(p_moving_body->get_global_basis()));
 }
 
-void GhostPhysicsEngine4D::move_and_collide(PhysicsBody4D *p_body, Vector4 p_motion) {
+Ref<KinematicCollision4D> GhostPhysicsEngine4D::move_and_collide(PhysicsBody4D *p_body, Vector4 p_motion, bool p_test_only) {
+	Ref<KinematicCollision4D> ret;
+	ret.instantiate();
+	if (p_test_only) {
+		return ret;
+	}
 	p_body->set_global_position(p_body->get_global_position() + p_motion);
+	return ret;
 }
 
 void GhostPhysicsEngine4D::move_area(Area4D *p_area, Vector4 p_motion) {

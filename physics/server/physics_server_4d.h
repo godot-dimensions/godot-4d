@@ -10,6 +10,8 @@
 #include "core/templates/hash_map.h"
 #endif
 
+constexpr real_t PHYSICS_4D_SAFE_MARGIN = 0.00001f;
+
 class PhysicsServer4D : public Object {
 	GDCLASS(PhysicsServer4D, Object);
 
@@ -33,7 +35,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	void move_and_collide(PhysicsBody4D *p_body_node, Vector4 p_motion);
+	Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body_node, Vector4 p_motion, bool p_test_only = false);
 	void move_area(Area4D *p_area_node, Vector4 p_motion);
 
 	void register_area(Area4D *p_area_node);

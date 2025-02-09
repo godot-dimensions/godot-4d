@@ -45,6 +45,7 @@
 #include "physics/bodies/rigid_body_4d.h"
 #include "physics/bodies/static_body_4d.h"
 #include "physics/collision_shape_4d.h"
+#include "physics/kinematic_collision_4d.h"
 #include "physics/server/ghost_physics_engine_4d.h"
 #include "physics/server/physics_engine_4d.h"
 #include "physics/server/physics_server_4d.h"
@@ -158,6 +159,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(CubinderShape4D);
 		GDREGISTER_CLASS(CylinderShape4D);
 		GDREGISTER_CLASS(DuocylinderShape4D);
+		GDREGISTER_CLASS(KinematicCollision4D);
 		GDREGISTER_CLASS(OrthoplexShape4D);
 		GDREGISTER_CLASS(RigidBody4D);
 		GDREGISTER_CLASS(SphereShape4D);

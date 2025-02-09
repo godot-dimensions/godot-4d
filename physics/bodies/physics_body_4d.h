@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../kinematic_collision_4d.h"
 #include "collision_object_4d.h"
 
 class PhysicsBody4D : public CollisionObject4D {
@@ -10,5 +11,5 @@ protected:
 	void _notification(int p_what);
 
 public:
-	void move_and_collide(Vector4 p_motion);
+	Ref<KinematicCollision4D> move_and_collide(Vector4 p_motion, bool p_test_only = false);
 };

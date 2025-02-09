@@ -10,10 +10,11 @@
 	</tutorials>
 	<methods>
 		<method name="move_and_collide">
-			<return type="void" />
+			<return type="KinematicCollision4D" />
 			<param index="0" name="motion" type="Vector4" />
+			<param index="1" name="test_only" type="bool" default="false" />
 			<description>
-				Moves the body by the given motion offset in 4D space, and collides it with other physics objects in the scene. If another solid objects is in the way, the body will stop moving.
+				Moves the body by the given motion offset in 4D space, and collides it with other physics objects in the scene. If another solid objects is in the way, the body will stop moving. If the [param test_only] parameter is [code]true[/code], the body will not move but information about the collision that would have occurred will be returned.
 			</description>
 		</method>
 	</methods>

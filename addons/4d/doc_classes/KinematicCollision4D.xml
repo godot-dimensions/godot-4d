@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="KinematicCollision4D" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Holds collision data from the movement of a [PhysicsBody4D].
+	</brief_description>
+	<description>
+		Holds collision data from the movement of a [PhysicsBody4D], usually from [method PhysicsBody4D.move_and_collide]. When a [PhysicsBody4D] is moved, it stops if it detects a collision with another body. If a collision is detected, a KinematicCollision4D object is returned.
+		The collision data includes the colliding object, the remaining motion, and the collision position. This data can be used to determine a custom response to the collision.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_bounce_ratio" qualifiers="const">
+			<return type="float" />
+			<description>
+				Grabs the physics materials of the colliding shapes and calculates the bounce ratio. Used to determine if two objects should bounce off each other, and how much (see [method Vector4D.bounce_ratio]).
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="moving_shape_node" type="CollisionShape4D" setter="set_moving_shape_node" getter="get_moving_shape_node">
+			The [CollisionShape4D] node of the moving body that collided. To get the [PhysicsBody4D] node, search the ancestors of this node for a [PhysicsBody4D] node (usually the parent).
+		</member>
+		<member name="normal" type="Vector4" setter="set_normal" getter="get_normal" default="Vector4(0, 0, 0, 0)">
+			The perpendicular vector at the point of collision.
+		</member>
+		<member name="obstacle_shape_node" type="CollisionShape4D" setter="set_obstacle_shape_node" getter="get_obstacle_shape_node">
+			The [CollisionShape4D] node of the obstacle that the motion ran into. To get the [PhysicsBody4D] node, search the ancestors of this node for a [PhysicsBody4D] node (usually the parent).
+		</member>
+		<member name="travel_ratio" type="float" setter="set_travel_ratio" getter="get_travel_ratio" default="0.0">
+			The ratio of the motion that was completed before the collision occurred. A value of [code]1.0[/code] means the full motion occurred, while a value of [code]0.0[/code] means no motion occurred (the moving object immediately hit the obstacle).
+		</member>
+	</members>
+</class>

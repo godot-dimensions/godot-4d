@@ -50,6 +50,7 @@ def get_doc_classes():
         "CubinderShape4D",
         "CylinderShape4D",
         "DuocylinderShape4D",
+        "KinematicCollision4D",
         "OrthoplexShape4D",
         "PhysicsBody4D",
         "PhysicsEngine4D",

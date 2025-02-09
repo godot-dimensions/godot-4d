@@ -13,10 +13,10 @@ void PhysicsBody4D::_notification(int p_what) {
 	}
 }
 
-void PhysicsBody4D::move_and_collide(Vector4 p_motion) {
-	PhysicsServer4D::get_singleton()->move_and_collide(this, p_motion);
+Ref<KinematicCollision4D> PhysicsBody4D::move_and_collide(Vector4 p_motion, bool p_test_only) {
+	return PhysicsServer4D::get_singleton()->move_and_collide(this, p_motion, p_test_only);
 }
 
 void PhysicsBody4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("move_and_collide", "motion"), &PhysicsBody4D::move_and_collide);
+	ClassDB::bind_method(D_METHOD("move_and_collide", "motion", "test_only"), &PhysicsBody4D::move_and_collide, DEFVAL(false));
 }
