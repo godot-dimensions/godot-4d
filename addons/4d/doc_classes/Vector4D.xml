@@ -25,6 +25,15 @@
 				Returns [param vector] "bounced off" from a hyperplane defined by the [param normal] vector.
 			</description>
 		</method>
+		<method name="bounce_ratio" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector4" />
+			<param index="1" name="normal" type="Vector4" />
+			<param index="2" name="bounce_ratio" type="float" />
+			<description>
+				Returns [param vector] "bounced off" from a hyperplane defined by the [param normal] vector with the given [param bounce_ratio] defining the bounciness. For physical bouncing, realistic values are on a range of [code]0.0[/code] to [code]1.0[/code]. A ratio of [code]0.0[/code] is equivalent to [method slide], while a ratio of [code]1.0[/code] is equivalent to [method bounce].
+			</description>
+		</method>
 		<method name="cross" qualifiers="static">
 			<return type="float" />
 			<param index="0" name="a" type="Vector4" />

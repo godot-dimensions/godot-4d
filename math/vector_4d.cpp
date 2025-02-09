@@ -7,7 +7,11 @@ real_t Vector4D::angle_to(const Vector4 &p_from, const Vector4 &p_to) {
 }
 
 Vector4 Vector4D::bounce(const Vector4 &p_vector, const Vector4 &p_normal) {
-	return -reflect(p_vector, p_normal);
+	return p_vector + (-2.0f) * p_vector.dot(p_normal) * p_normal;
+}
+
+Vector4 Vector4D::bounce_ratio(const Vector4 &p_vector, const Vector4 &p_normal, const real_t p_bounce_ratio) {
+	return p_vector + (-1.0f - p_bounce_ratio) * p_vector.dot(p_normal) * p_normal;
 }
 
 real_t Vector4D::cross(const Vector4 &p_a, const Vector4 &p_b) {
@@ -77,7 +81,7 @@ Vector4 Vector4D::reflect(const Vector4 &p_vector, const Vector4 &p_normal) {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!p_normal.is_normalized(), Vector4(), "The normal Vector4 must be normalized.");
 #endif
-	return 2.0f * p_normal * p_vector.dot(p_normal) - p_vector;
+	return 2.0f * p_vector.dot(p_normal) * p_normal - p_vector;
 }
 
 // Slide returns the component of the vector along the given plane, specified by its normal vector.
@@ -103,6 +107,7 @@ Vector4D *Vector4D::singleton = nullptr;
 void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("angle_to", "from", "to"), &Vector4D::angle_to);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce", "vector", "normal"), &Vector4D::bounce);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce_ratio", "vector", "normal", "bounce_ratio"), &Vector4D::bounce_ratio);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("cross", "a", "b"), &Vector4D::cross);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("limit_length", "vector", "length"), &Vector4D::limit_length, DEFVAL(1.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("move_toward", "from", "to", "delta"), &Vector4D::move_toward);

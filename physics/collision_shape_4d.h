@@ -3,7 +3,11 @@
 #include "../nodes/node_4d.h"
 #include "shapes/shape_4d.h"
 
+#if GDEXTENSION
+#include <godot_cpp/classes/physics_material.hpp>
+#elif GODOT_MODULE
 #include "scene/resources/physics_material.h"
+#endif
 
 class CollisionObject4D;
 

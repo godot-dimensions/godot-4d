@@ -348,7 +348,7 @@ Rect4 Rect4::merge(const Rect4 &p_other) const {
 // Handling the meaning of such values is up to the caller.
 // Suggestion: For the expected use case of loops, start with `real_t ratio = 1.0f;`
 // and then use `ratio = MIN(ratio, result);` on each loop iteration.
-real_t Rect4::continuous_collision_depth(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle) const {
+real_t Rect4::continuous_collision_depth(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle, Vector4 *r_out_normal) const {
 #ifdef MATH_CHECKS
 	if (unlikely(size.x < 0.0f || size.y < 0.0f || size.z < 0.0f || size.w < 0.0f)) {
 		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
@@ -367,8 +367,19 @@ real_t Rect4::continuous_collision_depth(const Vector4 &p_relative_velocity, con
 	if (low_ratio < high_ratio) {
 		// These checks handles depenetration, choosing the quickest way out of the obstacle.
 		if (high_ratio > 0.0f && ABS(low_ratio) < high_ratio) {
+			// Ok, we know there is a collision and we want to return it.
+			// But first we need to set the normal if the caller requested it.
+			if (r_out_normal) {
+				Vector4 normal = Vector4();
+				Vector4::Axis axis = low_ratios.max_axis_index();
+				normal[axis] = p_relative_velocity[axis] < 0.0f ? 1.0f : -1.0f;
+				*r_out_normal = normal;
+			}
 			return low_ratio;
 		}
+	}
+	if (r_out_normal) {
+		*r_out_normal = Vector4();
 	}
 	return 1.0f;
 }
