@@ -4,10 +4,26 @@
 		Abstract base class for 4D physics objects that can detect or collide with other objects.
 	</brief_description>
 	<description>
-		Abstract base class for 4D physics objects. This includes solid bodies that derive from [PhysicsBody4D], and non-solid [Area4D] nodes that can be used as a sensor/trigger for detecting objects. All [CollisionObject4D] nodes must have [CollisionShape4D] nodes as children to give them shapes.
-		[b]Note:[/b] If the [Node4D] positions are set manually, bypassing the physics system, the the collision will not be detected. Prefer using the physics methods to move objects, such as [method Area4D.move_area], [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or applying forces to a [RigidBody4D].
+		Abstract base class for 4D physics objects. This includes solid bodies that derive from [PhysicsBody4D], and non-solid [Area4D] nodes that can be used as a sensor/trigger for detecting objects. All [CollisionObject4D] nodes must have [CollisionShape4D] nodes as children to give them shapes. All [CollisionObject4D] nodes have signals that can be used to detect when they overlap [Area4D] nodes.
+		[b]Note:[/b] If the [Node4D] positions are set manually, bypassing the physics system, the signals will not be emitted, and the collision will not be detected. Prefer using the physics methods to move objects, such as [method Area4D.move_area], [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or applying forces to a [RigidBody4D].
 		[b]Warning:[/b] When scaled, this node will likely not behave as expected. It is advised to keep this node unscaled and adjust its collision shapes instead.
 	</description>
 	<tutorials>
 	</tutorials>
+	<signals>
+		<signal name="self_entered_area">
+			<param index="0" name="area" type="Area4D" />
+			<description>
+				Emitted when this object enters an [Area4D] using a method such as [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or the movement of a [RigidBody4D].
+				For [Area4D] nodes, this is emitted when this node moves onto a [PhysicsBody4D] using the [method move_area] method. Only the moving Area4D will have this signal emitted. The static Area4D will have the [signal Area4D.area_entered_self] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
+			</description>
+		</signal>
+		<signal name="self_exited_area">
+			<param index="0" name="area" type="Area4D" />
+			<description>
+				Emitted when this object enters an [Area4D] using a method such as [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or the movement of a [RigidBody4D].
+				For [Area4D] nodes, this is emitted when this node moves off of a [PhysicsBody4D] using the [method move_area] method. Only the moving Area4D will have this signal emitted. The static Area4D will have the [signal Area4D.area_exited_self] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
+			</description>
+		</signal>
+	</signals>
 </class>

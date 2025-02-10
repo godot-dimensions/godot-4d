@@ -34,4 +34,7 @@ Ref<KinematicCollision4D> PhysicsBody4D::move_and_collide(Vector4 p_motion, bool
 void PhysicsBody4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_gravity"), &PhysicsBody4D::get_gravity);
 	ClassDB::bind_method(D_METHOD("move_and_collide", "motion", "test_only"), &PhysicsBody4D::move_and_collide, DEFVAL(false));
+
+	ADD_SIGNAL(MethodInfo("body_impacted_self", PropertyInfo(Variant::OBJECT, "body", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsBody4D"), PropertyInfo(Variant::OBJECT, "kinematic_collision", PROPERTY_HINT_RESOURCE_TYPE, "KinematicCollision4D")));
+	ADD_SIGNAL(MethodInfo("self_impacted_body", PropertyInfo(Variant::OBJECT, "body", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsBody4D"), PropertyInfo(Variant::OBJECT, "kinematic_collision", PROPERTY_HINT_RESOURCE_TYPE, "KinematicCollision4D")));
 }

@@ -24,4 +24,20 @@
 			</description>
 		</method>
 	</methods>
+	<signals>
+		<signal name="body_impacted_self">
+			<param index="0" name="body" type="PhysicsBody4D" />
+			<param index="1" name="kinematic_collision" type="KinematicCollision4D" />
+			<description>
+				Emitted when another PhysicsBody4D impacts/hits/collides with this PhysicsBody4D. Only the static PhysicsBody4D will have this signal emitted. The moving PhysicsBody4D will have the [signal self_impacted_body] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
+			</description>
+		</signal>
+		<signal name="self_impacted_body">
+			<param index="0" name="body" type="PhysicsBody4D" />
+			<param index="1" name="kinematic_collision" type="KinematicCollision4D" />
+			<description>
+				Emitted when this PhysicsBody4D impacts/hits/collides with another PhysicsBody4D. Only the moving PhysicsBody4D will have this signal emitted. The static PhysicsBody4D will have the [signal body_impacted_self] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
+			</description>
+		</signal>
+	</signals>
 </class>

@@ -17,4 +17,6 @@ TypedArray<CollisionShape4D> CollisionObject4D::get_collision_shapes() const {
 }
 
 void CollisionObject4D::_bind_methods() {
+	ADD_SIGNAL(MethodInfo("self_entered_area", PropertyInfo(Variant::OBJECT, "area", PROPERTY_HINT_RESOURCE_TYPE, "Area4D")));
+	ADD_SIGNAL(MethodInfo("self_exited_area", PropertyInfo(Variant::OBJECT, "area", PROPERTY_HINT_RESOURCE_TYPE, "Area4D")));
 }

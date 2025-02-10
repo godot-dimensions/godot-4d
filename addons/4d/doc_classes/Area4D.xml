@@ -4,6 +4,7 @@
 		A region of 4D hyperspace that detects other [CollisionObject4D]s entering or exiting it.
 	</brief_description>
 	<description>
+		Note: If the [Node4D] positions are set manually, bypassing the physics system, the signals will not be emitted, and the collision will not be detected. Prefer using the physics methods to move objects, such as [method Area4D.move_area], [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or applying forces to a [RigidBody4D].
 	</description>
 	<tutorials>
 	</tutorials>
@@ -16,4 +17,30 @@
 			</description>
 		</method>
 	</methods>
+	<signals>
+		<signal name="area_entered_self">
+			<param index="0" name="area" type="Area4D" />
+			<description>
+				Emitted when another Area4D enters this Area4D using the [method move_area] method. Only the static Area4D will have this signal emitted. The moving Area4D will have the [signal CollisionObject4D.self_entered_area] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
+			</description>
+		</signal>
+		<signal name="area_exited_self">
+			<param index="0" name="area" type="Area4D" />
+			<description>
+				Emitted when another Area4D exits this Area4D using the [method move_area] method. Only the static Area4D will have this signal emitted. The moving Area4D will have the [signal CollisionObject4D.self_exited_area] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
+			</description>
+		</signal>
+		<signal name="body_entered_area">
+			<param index="0" name="body" type="PhysicsBody4D" />
+			<description>
+				Emitted when a PhysicsBody4D enters this Area4D using a method such as [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or the movement of a [RigidBody4D]. Also emitted when this Area4D moves onto a [PhysicsBody4D] using the [method move_area] method.
+			</description>
+		</signal>
+		<signal name="body_exited_area">
+			<param index="0" name="body" type="PhysicsBody4D" />
+			<description>
+				Emitted when a PhysicsBody4D exits this Area4D using a method such as [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or the movement of a [RigidBody4D]. Also emitted when this Area4D moves off of a [PhysicsBody4D] using the [method move_area] method.
+			</description>
+		</signal>
+	</signals>
 </class>
