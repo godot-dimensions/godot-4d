@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		CharacterBody4D is a specialized class for physics bodies that are meant to be user-controlled. It provides a high-level API to move objects with wall and slope detection. This makes it useful for characters which must move in specific ways and collide with the world.
+		CharacterBody4D may be interacted with from any call site, including from the physics process callback [method Node._physics_process], and also the non-physics process callback [method Node._process].
 	</description>
 	<tutorials>
 	</tutorials>

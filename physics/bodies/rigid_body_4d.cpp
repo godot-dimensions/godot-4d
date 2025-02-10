@@ -1,23 +1,36 @@
 #include "rigid_body_4d.h"
 
+void RigidBody4D::apply_acceleration(const Vector4 &p_acceleration) {
+	// Acceleration is in m/s^2, so multiplying that by s gives m/s for velocity.
+	const Vector4 velocity_change = p_acceleration * get_physics_process_delta_time();
+	_linear_velocity += velocity_change;
+}
+
+void RigidBody4D::apply_local_acceleration(const Vector4 &p_local_acceleration) {
+	const Basis4D global_basis = get_global_basis();
+	// Acceleration is in m/s^2, so multiplying that by s gives m/s for velocity.
+	const Vector4 velocity_change = global_basis.xform(p_local_acceleration * get_physics_process_delta_time());
+	_linear_velocity += velocity_change;
+}
+
 void RigidBody4D::apply_force(const Vector4 &p_force, const Vector4 &p_position_offset) {
 	// Force is in kg*m/s^2, so multiplying that by s/kg gives m/s for velocity.
-	const Vector4 effective_force = p_force * (get_physics_process_delta_time() / _mass);
-	_linear_velocity += effective_force;
+	const Vector4 velocity_change = p_force * (get_physics_process_delta_time() / _mass);
+	_linear_velocity += velocity_change;
 	// A force at a position may also cause a torque.
 	if (p_position_offset != Vector4()) {
-		Bivector4D effective_torque = Bivector4D::vector_wedge_product(p_position_offset, effective_force);
+		Bivector4D effective_torque = Bivector4D::vector_wedge_product(p_position_offset, velocity_change);
 		_angular_velocity += effective_torque;
 	}
 }
 
 void RigidBody4D::apply_impulse(const Vector4 &p_impulse, const Vector4 &p_position_offset) {
 	// Impulse is in kg*m/s, so dividing that by kg gives m/s for velocity.
-	const Vector4 effective_impulse = p_impulse / _mass;
-	_linear_velocity += effective_impulse;
+	const Vector4 velocity_change = p_impulse / _mass;
+	_linear_velocity += velocity_change;
 	// An impulse at a position may also cause a torque.
 	if (p_position_offset != Vector4()) {
-		Bivector4D effective_torque = Bivector4D::vector_wedge_product(p_position_offset, effective_impulse);
+		Bivector4D effective_torque = Bivector4D::vector_wedge_product(p_position_offset, velocity_change);
 		_angular_velocity += effective_torque;
 	}
 }
@@ -25,12 +38,12 @@ void RigidBody4D::apply_impulse(const Vector4 &p_impulse, const Vector4 &p_posit
 void RigidBody4D::apply_local_force(const Vector4 &p_local_force, const Vector4 &p_local_position_offset) {
 	const Basis4D global_basis = get_global_basis();
 	// Force is in kg*m/s^2, so multiplying that by s/kg gives m/s for velocity.
-	const Vector4 effective_global_force = global_basis.xform(p_local_force * (get_physics_process_delta_time() / _mass));
-	_linear_velocity += effective_global_force;
+	const Vector4 velocity_change = global_basis.xform(p_local_force * (get_physics_process_delta_time() / _mass));
+	_linear_velocity += velocity_change;
 	// A force at a position may also cause a torque.
 	if (p_local_position_offset != Vector4()) {
 		const Vector4 global_position_offset = global_basis.xform(p_local_position_offset);
-		const Bivector4D effective_global_torque = Bivector4D::vector_wedge_product(global_position_offset, effective_global_force);
+		const Bivector4D effective_global_torque = Bivector4D::vector_wedge_product(global_position_offset, velocity_change);
 		_angular_velocity += effective_global_torque;
 	}
 }
@@ -38,12 +51,12 @@ void RigidBody4D::apply_local_force(const Vector4 &p_local_force, const Vector4 
 void RigidBody4D::apply_local_impulse(const Vector4 &p_local_impulse, const Vector4 &p_local_position_offset) {
 	const Basis4D global_basis = get_global_basis();
 	// Impulse is in kg*m/s, so dividing that by kg gives m/s for velocity.
-	const Vector4 effective_global_impulse = global_basis.xform(p_local_impulse / _mass);
-	_linear_velocity += effective_global_impulse;
+	const Vector4 velocity_change = global_basis.xform(p_local_impulse / _mass);
+	_linear_velocity += velocity_change;
 	// An impulse at a position may also cause a torque.
 	if (p_local_position_offset != Vector4()) {
 		const Vector4 global_position_offset = global_basis.xform(p_local_position_offset);
-		const Bivector4D effective_global_torque = Bivector4D::vector_wedge_product(global_position_offset, effective_global_impulse);
+		const Bivector4D effective_global_torque = Bivector4D::vector_wedge_product(global_position_offset, velocity_change);
 		_angular_velocity += effective_global_torque;
 	}
 }
@@ -83,6 +96,10 @@ void RigidBody4D::apply_local_torque_bind(const AABB &p_torque) {
 
 void RigidBody4D::apply_local_torque_impulse_bind(const AABB &p_torque_impulse) {
 	apply_local_torque_impulse(p_torque_impulse);
+}
+
+Vector4 RigidBody4D::get_scaled_gravity() const {
+	return get_gravity() * _gravity_scale;
 }
 
 real_t RigidBody4D::get_mass() const {
@@ -143,6 +160,9 @@ void RigidBody4D::set_angular_velocity_degrees_bind(const AABB &p_angular_veloci
 }
 
 void RigidBody4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("apply_acceleration", "acceleration"), &RigidBody4D::apply_acceleration);
+	ClassDB::bind_method(D_METHOD("apply_local_acceleration", "local_acceleration"), &RigidBody4D::apply_local_acceleration);
+
 	ClassDB::bind_method(D_METHOD("apply_force", "force", "position_offset"), &RigidBody4D::apply_force, DEFVAL(Vector4()));
 	ClassDB::bind_method(D_METHOD("apply_impulse", "impulse", "position_offset"), &RigidBody4D::apply_impulse, DEFVAL(Vector4()));
 	ClassDB::bind_method(D_METHOD("apply_local_force", "local_force", "local_position_offset"), &RigidBody4D::apply_local_force, DEFVAL(Vector4()));
@@ -152,6 +172,8 @@ void RigidBody4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("apply_torque_impulse", "torque_impulse"), &RigidBody4D::apply_torque_impulse_bind);
 	ClassDB::bind_method(D_METHOD("apply_local_torque", "torque"), &RigidBody4D::apply_local_torque_bind);
 	ClassDB::bind_method(D_METHOD("apply_local_torque_impulse", "torque_impulse"), &RigidBody4D::apply_local_torque_impulse_bind);
+
+	ClassDB::bind_method(D_METHOD("get_scaled_gravity"), &RigidBody4D::get_scaled_gravity);
 
 	ClassDB::bind_method(D_METHOD("get_mass"), &RigidBody4D::get_mass);
 	ClassDB::bind_method(D_METHOD("set_mass", "mass"), &RigidBody4D::set_mass);

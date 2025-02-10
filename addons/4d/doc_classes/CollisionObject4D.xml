@@ -4,6 +4,9 @@
 		Abstract base class for 4D physics objects that can detect or collide with other objects.
 	</brief_description>
 	<description>
+		Abstract base class for 4D physics objects. This includes solid bodies that derive from [PhysicsBody4D], and non-solid [Area4D] nodes that can be used as a sensor/trigger for detecting objects. All [CollisionObject4D] nodes must have [CollisionShape4D] nodes as children to give them shapes.
+		[b]Note:[/b] If the [Node4D] positions are set manually, bypassing the physics system, the the collision will not be detected. Prefer using the physics methods to move objects, such as [method Area4D.move_area], [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or applying forces to a [RigidBody4D].
+		[b]Warning:[/b] When scaled, this node will likely not behave as expected. It is advised to keep this node unscaled and adjust its collision shapes instead.
 	</description>
 	<tutorials>
 	</tutorials>

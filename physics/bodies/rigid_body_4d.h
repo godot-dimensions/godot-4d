@@ -16,6 +16,9 @@ protected:
 	static void _bind_methods();
 
 public:
+	void apply_acceleration(const Vector4 &p_acceleration);
+	void apply_local_acceleration(const Vector4 &p_local_acceleration);
+
 	void apply_force(const Vector4 &p_force, const Vector4 &p_position_offset = Vector4());
 	void apply_impulse(const Vector4 &p_impulse, const Vector4 &p_position_offset = Vector4());
 	void apply_local_force(const Vector4 &p_local_force, const Vector4 &p_local_position_offset = Vector4());
@@ -30,6 +33,8 @@ public:
 	void apply_torque_impulse_bind(const AABB &p_torque_impulse);
 	void apply_local_torque_bind(const AABB &p_torque);
 	void apply_local_torque_impulse_bind(const AABB &p_torque_impulse);
+
+	Vector4 get_scaled_gravity() const;
 
 	real_t get_mass() const;
 	void set_mass(const real_t p_mass);

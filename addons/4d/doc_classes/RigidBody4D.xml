@@ -4,10 +4,18 @@
 		A 4D physics body that is moved by a dynamic physics simulation using forces and impulses.
 	</brief_description>
 	<description>
+		RigidBody4D must be interacted with in sync with physics process, such as the [method Node._physics_process] callback.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="apply_acceleration">
+			<return type="void" />
+			<param index="0" name="acceleration" type="Vector4" />
+			<description>
+				Applies an acceleration to the body. The acceleration is in global coordinates, in meters per second squared (m/s²).
+			</description>
+		</method>
 		<method name="apply_force">
 			<return type="void" />
 			<param index="0" name="force" type="Vector4" />
@@ -24,6 +32,13 @@
 			<description>
 				Applies an impulse to the body at the given position offset. Both the impulse and position offset are in global coordinates relative to the body's origin (the tails of the vectors are at the body's origin).
 				The position offset is in meters (m), while the impulse is in Newton-seconds (kg·m/s). Since this function does not consider the physics step's delta time, it can be called from anywhere, and used for one-time impulses.
+			</description>
+		</method>
+		<method name="apply_local_acceleration">
+			<return type="void" />
+			<param index="0" name="local_acceleration" type="Vector4" />
+			<description>
+				Applies a local acceleration to the body. The acceleration is in the body's local coordinates, in meters per second squared (m/s²).
 			</description>
 		</method>
 		<method name="apply_local_force">
@@ -78,6 +93,12 @@
 				Applies a torque impulse to the body. The torque impulse is in global coordinates. This function is useful for making a body apply a torque impulse to itself, such as a spinning wheel.
 				The torque impulse is in Newton-meter-seconds (kg·m²/s). Since this function does not consider the physics step's delta time, it can be called from anywhere, and used for one-time torque impulses.
 				The torque is a Bivector4D exposed as an [AABB]. The X, Y, Z components correspond to the XY, XZ, and XW components of the bivector, while the width, height, and depth components correspond to the YZ, YW, and ZW components of the bivector. The length of the bivector is the magnitude of the torque, while the direction of the bivector is the shadow of the rotation in the 6 bivector rotation planes.
+			</description>
+		</method>
+		<method name="get_scaled_gravity" qualifiers="const">
+			<return type="Vector4" />
+			<description>
+				Returns the gravity vector computed from all sources that can affect the body, including the global world gravity, and including the [member RigidBody4D.gravity_scale] factor. This is the same as [method PhysicsBody4D.get_gravity] multiplied by the gravity scale.
 			</description>
 		</method>
 	</methods>

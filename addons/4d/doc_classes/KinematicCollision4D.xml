@@ -16,16 +16,31 @@
 				Grabs the physics materials of the colliding shapes and calculates the bounce ratio. Used to determine if two objects should bounce off each other, and how much (see [method Vector4D.bounce_ratio]).
 			</description>
 		</method>
+		<method name="get_moving_body_node" qualifiers="const">
+			<return type="PhysicsBody4D" />
+			<description>
+				Searches the ancestors of the [member moving_shape_node] for a [PhysicsBody4D] node (usually the parent) and returns it.
+			</description>
+		</method>
+		<method name="get_obstacle_body_node" qualifiers="const">
+			<return type="PhysicsBody4D" />
+			<description>
+				Searches the ancestors of the [member obstacle_shape_node] for a [PhysicsBody4D] node (usually the parent) and returns it.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="moving_shape_node" type="CollisionShape4D" setter="set_moving_shape_node" getter="get_moving_shape_node">
-			The [CollisionShape4D] node of the moving body that collided. To get the [PhysicsBody4D] node, search the ancestors of this node for a [PhysicsBody4D] node (usually the parent).
+			The [CollisionShape4D] node of the moving body that collided. To get the [PhysicsBody4D] node, use [method get_moving_body_node].
 		</member>
 		<member name="normal" type="Vector4" setter="set_normal" getter="get_normal" default="Vector4(0, 0, 0, 0)">
 			The perpendicular vector at the point of collision.
 		</member>
 		<member name="obstacle_shape_node" type="CollisionShape4D" setter="set_obstacle_shape_node" getter="get_obstacle_shape_node">
-			The [CollisionShape4D] node of the obstacle that the motion ran into. To get the [PhysicsBody4D] node, search the ancestors of this node for a [PhysicsBody4D] node (usually the parent).
+			The [CollisionShape4D] node of the obstacle that the motion ran into. To get the [PhysicsBody4D] node, use [method get_obstacle_body_node].
+		</member>
+		<member name="relative_velocity" type="Vector4" setter="set_relative_velocity" getter="get_relative_velocity" default="Vector4(0, 0, 0, 0)">
+			The relative velocity between the two colliding objects. Not guaranteed to be correct for [CharacterBody4D] nodes since those are allowed to be calculated out of sync with physics process, but is always correct for [RigidBody4D] nodes and static [PhysicsBody4D] nodes including [StaticBody4D] and non-moving [CharacterBody4D] nodes.
 		</member>
 		<member name="travel_ratio" type="float" setter="set_travel_ratio" getter="get_travel_ratio" default="0.0">
 			The ratio of the motion that was completed before the collision occurred. A value of [code]1.0[/code] means the full motion occurred, while a value of [code]0.0[/code] means no motion occurred (the moving object immediately hit the obstacle).
