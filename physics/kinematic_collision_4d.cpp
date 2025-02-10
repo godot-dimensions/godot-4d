@@ -54,11 +54,11 @@ void KinematicCollision4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_moving_shape_node"), &KinematicCollision4D::get_moving_shape_node);
 	ClassDB::bind_method(D_METHOD("set_moving_shape_node", "moving_shape_node"), &KinematicCollision4D::set_moving_shape_node);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "moving_shape_node"), "set_moving_shape_node", "get_moving_shape_node");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "moving_shape_node", PROPERTY_HINT_NODE_TYPE, "CollisionShape4D"), "set_moving_shape_node", "get_moving_shape_node");
 
 	ClassDB::bind_method(D_METHOD("get_obstacle_shape_node"), &KinematicCollision4D::get_obstacle_shape_node);
 	ClassDB::bind_method(D_METHOD("set_obstacle_shape_node", "obstacle_shape_node"), &KinematicCollision4D::set_obstacle_shape_node);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "obstacle_shape_node"), "set_obstacle_shape_node", "get_obstacle_shape_node");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "obstacle_shape_node", PROPERTY_HINT_NODE_TYPE, "CollisionShape4D"), "set_obstacle_shape_node", "get_obstacle_shape_node");
 
 	ClassDB::bind_method(D_METHOD("get_normal"), &KinematicCollision4D::get_normal);
 	ClassDB::bind_method(D_METHOD("set_normal", "layer"), &KinematicCollision4D::set_normal);
