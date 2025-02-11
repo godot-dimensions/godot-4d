@@ -55,7 +55,7 @@
 		<method name="get_cell_positions">
 			<return type="PackedVector4Array" />
 			<description>
-				Gets the positions of the tetrahedral cells. Each Vector4 in the array is a position in meters in 4D space. Tetrahedra are defined by four vertices, and the positions in this array are the positions of the vertices that make up the tetrahedra. This value is usually calculated from a combination of the cell indices and the vertices arrays, see [method get_cell_indices] and [method get_vertices].
+				Gets the positions of the tetrahedral cells. Each Vector4 in the array is a position in meters in 4D space. Tetrahedra are defined by four vertices, and the positions in this array are the positions of the vertices that make up the tetrahedra. This value is usually calculated from a combination of the cell indices and the vertices arrays, see [method get_cell_indices] and [method Mesh4D.get_vertices].
 			</description>
 		</method>
 		<method name="get_cell_uvw_map">

@@ -39,7 +39,7 @@
 			<param index="0" name="a" type="Vector4" />
 			<param index="1" name="b" type="Vector4" />
 			<description>
-				Returns the 4D analog of the cross product for this vector and [param with]. This is the unsigned area of the parallelogram formed by the two vectors.
+				Returns the 4D analog of the cross product for [param a] and [param b]. This is the unsigned area of the parallelogram formed by the two vectors.
 				[b]Note:[/b] Cross product is not defined in 4D mathematically. This method is an analog similar to [method Vector2.cross].
 			</description>
 		</method>

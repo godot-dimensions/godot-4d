@@ -20,7 +20,7 @@
 	</methods>
 	<members>
 		<member name="material_override" type="Material4D" setter="set_material_override" getter="get_material_override">
-			The [Material4D] used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. This property overrides the per-mesh material set on the [Mesh4D] resource in the [Mesh4D.material] property.
+			The [Material4D] used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. This property overrides the per-mesh material set on the [Mesh4D] resource in the [member Mesh4D.material] property.
 		</member>
 		<member name="mesh" type="Mesh4D" setter="set_mesh" getter="get_mesh">
 			The [Mesh4D] resource that defines the geometry of the mesh. This may be set to any [Mesh4D] derived class. [TetraMesh4D] allows for tetrahedral meshes, which are the equivalent of triangles in 3D. [WireMesh4D] allows for wireframe meshes, which behave very similarly to wireframes in 3D.

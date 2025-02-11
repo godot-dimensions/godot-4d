@@ -257,8 +257,19 @@
 	<signals>
 		<signal name="visibility_changed">
 			<description>
-				Emitted when this [Node4D]'s visibility changes. This can happen when [member visibility] changes or when a parent node's visibility changes.
+				Emitted when this [Node4D]'s visibility changes. This can happen when [member visible] changes or when a parent node's visibility changes.
 			</description>
 		</signal>
 	</signals>
+	<constants>
+		<constant name="ROTATION_EDIT_MODE_EULER4D" value="0" enum="RotationEditMode">
+			Edit rotation as 4D Euler angles. This uses 6 numbers to represent the rotation in 4D space, in the order YZ, ZX, XY, XW, WY, ZW, exposed as an AABB. Scale is edited separately as a Vector4. This is the default mode, analogous to [constant Node3D.ROTATION_EDIT_MODE_EULER].
+		</constant>
+		<constant name="ROTATION_EDIT_MODE_EULER4D_UNIFORM" value="1" enum="RotationEditMode">
+			Edit rotation as 4D Euler angles. This uses 6 numbers to represent the rotation in 4D space, in the order YZ, ZX, XY, XW, WY, ZW, exposed as an AABB. Scale is edited uniformly as a single number.
+		</constant>
+		<constant name="ROTATION_EDIT_MODE_BASIS4D" value="2" enum="RotationEditMode">
+			Edit rotation as a 4D basis. This uses 16 numbers to represent rotation, scale, and shear/skew in 4D space, exposed as a Projection. This is useful when you want control over the whole transformation matrix. This is analogous to [constant Node3D.ROTATION_EDIT_MODE_BASIS].
+		</constant>
+	</constants>
 </class>

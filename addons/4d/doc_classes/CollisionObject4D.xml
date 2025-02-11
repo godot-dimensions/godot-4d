@@ -15,14 +15,14 @@
 			<param index="0" name="area" type="Area4D" />
 			<description>
 				Emitted when this object enters an [Area4D] using a method such as [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or the movement of a [RigidBody4D].
-				For [Area4D] nodes, this is emitted when this node moves onto a [PhysicsBody4D] using the [method move_area] method. Only the moving Area4D will have this signal emitted. The static Area4D will have the [signal Area4D.area_entered_self] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
+				For [Area4D] nodes, this is emitted when this node moves onto a [PhysicsBody4D] using the [method Area4D.move_area] method. Only the moving Area4D will have this signal emitted. The static Area4D will have the [signal Area4D.area_entered_self] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
 			</description>
 		</signal>
 		<signal name="self_exited_area">
 			<param index="0" name="area" type="Area4D" />
 			<description>
 				Emitted when this object enters an [Area4D] using a method such as [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or the movement of a [RigidBody4D].
-				For [Area4D] nodes, this is emitted when this node moves off of a [PhysicsBody4D] using the [method move_area] method. Only the moving Area4D will have this signal emitted. The static Area4D will have the [signal Area4D.area_exited_self] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
+				For [Area4D] nodes, this is emitted when this node moves off of a [PhysicsBody4D] using the [method Area4D.move_area] method. Only the moving Area4D will have this signal emitted. The static Area4D will have the [signal Area4D.area_exited_self] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
 			</description>
 		</signal>
 	</signals>

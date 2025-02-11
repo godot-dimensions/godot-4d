@@ -695,6 +695,9 @@ void Node4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "visible", PROPERTY_HINT_NONE, ""), "set_visible", "is_visible");
 	ADD_SIGNAL(MethodInfo("visibility_changed"));
 #undef PACKED_REAL_ARRAY
+	BIND_ENUM_CONSTANT(ROTATION_EDIT_MODE_EULER4D);
+	BIND_ENUM_CONSTANT(ROTATION_EDIT_MODE_EULER4D_UNIFORM);
+	BIND_ENUM_CONSTANT(ROTATION_EDIT_MODE_BASIS4D);
 }
 
 void Node4D::_validate_property(PropertyInfo &p_property) const {

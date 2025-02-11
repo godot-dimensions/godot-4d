@@ -264,14 +264,14 @@
 			<return type="bool" />
 			<param index="0" name="transform" type="Transform4D" />
 			<description>
-				Returns [code]true[/code] if this [Transform4D] and [param other] are approximately equal, by running [method @GlobalScope.is_equal_approx] on each component.
+				Returns [code]true[/code] if this [Transform4D] and [param transform] are approximately equal, by running [method @GlobalScope.is_equal_approx] on each component.
 			</description>
 		</method>
 		<method name="is_equal_exact" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="transform" type="Transform4D" />
 			<description>
-				Returns [code]true[/code] if this [Transform4D] and [param other] are exactly equal, by checking each component.
+				Returns [code]true[/code] if this [Transform4D] and [param transform] are exactly equal, by checking each component.
 			</description>
 		</method>
 		<method name="lerp" qualifiers="const">
@@ -320,7 +320,7 @@
 			<return type="Projection" />
 			<param index="0" name="from_3d" type="Transform3D" />
 			<description>
-				Constructs the basis [Basis4D] part of a [Transform4D] from a [param from_3d] [Basis] 3D matrix. The XYZ 3x3 portion is set to the [param basis_3d] matrix, and all W components are set to identity.
+				Constructs the basis [Basis4D] part of a [Transform4D] from a [param from_3d] [Basis] 3D matrix. The XYZ 3x3 portion is set to the [param from_3d] matrix, and all W components are set to identity.
 			</description>
 		</method>
 		<method name="proj_from_3d_origin" qualifiers="static">
@@ -358,7 +358,7 @@
 			<param index="0" name="basis" type="Projection" />
 			<param index="1" name="origin" type="Vector4" />
 			<description>
-				Returns the origin vector of the inverse of the [Transform4D] defined by [param basis] and [param origin]. This is simpler than [method inverse_origin_with_inverse_basis] if you don't need the [Basis4D] inverted, but slower if you need both.
+				Returns the origin vector of the inverse of the [Transform4D] defined by [param basis] and [param origin]. This is simpler than [method proj_inverse_origin_with_inverse_basis] if you don't need the [Basis4D] inverted, but slower if you need both.
 			</description>
 		</method>
 		<method name="proj_inverse_to_array" qualifiers="static">

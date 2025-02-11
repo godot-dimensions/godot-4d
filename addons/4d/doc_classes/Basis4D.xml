@@ -35,7 +35,7 @@
 			<return type="Projection" />
 			<param index="0" name="from_3d" type="Basis" />
 			<description>
-				Constructs a [Basis4D] matrix from a [param from_3d] [Basis] 3D matrix. The XYZ 3x3 portion is set to the [param basis_3d] matrix, and all W components are set to identity.
+				Constructs a [Basis4D] matrix from a [param from_3d] [Basis] 3D matrix. The XYZ 3x3 portion is set to the [param from_3d] matrix, and all W components are set to identity.
 			</description>
 		</method>
 		<method name="from_array" qualifiers="static">
@@ -121,7 +121,7 @@
 			<param index="0" name="basis" type="Projection" />
 			<param index="1" name="index" type="int" />
 			<description>
-				Gets a row of the [param basis] [Basis4D]. This is equivalent to taking the [code]index[/code] component of each basis vector.
+				Gets a row of the [param basis] [Basis4D]. This is equivalent to taking the [param index] component of each basis vector.
 			</description>
 		</method>
 		<method name="get_scale" qualifiers="static">
@@ -171,7 +171,7 @@
 			<param index="0" name="a" type="Projection" />
 			<param index="1" name="b" type="Projection" />
 			<description>
-				Returns [code]true[/code] if [param a] and [param b] are approximately equal, by calling [code]is_equal_approx[/code] on each component.
+				Returns [code]true[/code] if [param a] and [param b] are approximately equal, by calling [method @GlobalScope.is_equal_approx] on each component.
 			</description>
 		</method>
 		<method name="is_orthogonal" qualifiers="static">
