@@ -92,7 +92,7 @@
 			<param index="1" name="b" type="Vector4" />
 			<param index="2" name="c" type="Vector4" />
 			<description>
-				Given three 4D vectors, find a new 4D vector that is perpendicular to all three. The input vectors must be linearly independent, otherwise a zero vector will be returned. This is similar to the 3D cross product that finds a vector perpendicular to two input vectors. The convention followed by this method is that if it's given +X, +Y, and +Z as inputs in that oder, it will return +W, similar to the 3D cross product of +X and +Y returning +Z.
+				Given three 4D vectors, find a new 4D vector that is perpendicular to all three. The input vectors must be linearly independent, otherwise a zero vector will be returned. This is similar to the 3D cross product that finds a vector perpendicular to two input vectors. The convention followed by this method is that if it's given +X, +Y, and +Z as inputs in that order, it will return +W, similar to the 3D cross product of +X and +Y returning +Z.
 			</description>
 		</method>
 	</methods>

@@ -119,7 +119,7 @@ void CollisionShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_physics_material", "physics_material"), &CollisionShape4D::set_physics_material);
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "physics_material", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsMaterial"), "set_physics_material", "get_physics_material");
 
-	// Re-use 3D physics layer names for 4D to make use of Godot's built-in layer settings.
+	// Reuse 3D physics layer names for 4D to make use of Godot's built-in layer settings.
 	ClassDB::bind_method(D_METHOD("get_collision_layer"), &CollisionShape4D::get_collision_layer);
 	ClassDB::bind_method(D_METHOD("set_collision_layer", "layer"), &CollisionShape4D::set_collision_layer);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_layer", "get_collision_layer");

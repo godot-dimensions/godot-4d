@@ -1,0 +1,5 @@
+[tool.ruff]
+line-length = 160
+
+[tool.ruff.format]
+indent-style = "tab"

@@ -32,7 +32,7 @@
 	</methods>
 	<members>
 		<member name="camera" type="Camera4D" setter="set_camera" getter="get_camera">
-			The [Camera4D] node currently being rendererd by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame].
+			The [Camera4D] node currently being rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame].
 		</member>
 		<member name="mesh_instances" type="MeshInstance4D[]" setter="set_mesh_instances" getter="get_mesh_instances">
 			An array of visible [MeshInstance4D] nodes to be rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_relative_basises] and [member mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.

@@ -2,23 +2,20 @@ name: 📊 Static Checks
 on: [push, pull_request]
 
 jobs:
-  format:
-    name: File formatting (file_format.sh)
-    runs-on: ubuntu-22.04
+  static-checks:
+    name: Code style and file formatting
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
-      - name: Install dependencies
+      - name: General setup
         run: |
-          sudo apt-get install -qq dos2unix recode clang-format-13
-          sudo update-alternatives --remove-all clang-format
-          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-13 100
+          git config diff.wsErrorHighlight all
 
-      - name: File formatting checks (file_format.sh)
-        run: |
-          bash ./.github/workflows/file_format.sh
-
-      - name: Style checks via clang-format (clang_format.sh)
-        run: |
-          bash ./.github/workflows/clang_format.sh
+      - name: Style checks via pre-commit
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
