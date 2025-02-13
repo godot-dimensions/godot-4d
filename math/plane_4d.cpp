@@ -1,7 +1,7 @@
 #include "plane_4d.h"
 
 #include "basis_4d.h"
-#include "geometry_4d.h"
+#include "vector_4d.h"
 
 real_t Plane4D::distance_to(const Vector4 &p_point) const {
 	return normal.dot(p_point) - distance;
@@ -100,7 +100,7 @@ Plane4D::Plane4D(const Vector4 &p_point1, const Vector4 &p_point2, const Vector4
 }
 
 Plane4D Plane4D::from_coplanar_directions(const Vector4 &p_dir1, const Vector4 &p_dir2, const Vector4 &p_dir3, const Vector4 &p_point) {
-	Vector4 normal = Geometry4D::perpendicular_to_three_vectors(p_dir1, p_dir2, p_dir3);
+	Vector4 normal = Vector4D::perpendicular(p_dir1, p_dir2, p_dir3);
 	normal.normalize();
 	return Plane4D(normal, p_point);
 }

@@ -19,7 +19,6 @@ public:
 	static PackedVector4Array closest_points_between_lines(const Vector4 &p_line1_point, const Vector4 &p_line1_dir, const Vector4 &p_line2_point, const Vector4 &p_line2_dir);
 	static PackedVector4Array closest_points_between_line_segments(const Vector4 &p_line1_a, const Vector4 &p_line1_b, const Vector4 &p_line2_a, const Vector4 &p_line2_b);
 	static PackedVector4Array closest_points_between_line_and_segment(const Vector4 &p_line_point, const Vector4 &p_line_direction, const Vector4 &p_segment_a, const Vector4 &p_segment_b);
-	static Vector4 perpendicular_to_three_vectors(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c);
 
 	static Geometry4D *get_singleton() { return singleton; }
 	Geometry4D() { singleton = this; }

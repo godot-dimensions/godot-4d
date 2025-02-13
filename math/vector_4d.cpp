@@ -73,6 +73,25 @@ Vector4 Vector4D::move_toward(const Vector4 &p_from, const Vector4 &p_to, const 
 	return len <= p_delta || len < (real_t)CMP_EPSILON ? p_to : p_from + offset / len * p_delta;
 }
 
+Vector4 Vector4D::perpendicular(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c) {
+	Vector4 perp;
+	/* clang-format off */
+	perp.x = - p_a.y * (p_b.z * p_c.w - p_b.w * p_c.z)
+	         + p_a.z * (p_b.y * p_c.w - p_b.w * p_c.y)
+	         - p_a.w * (p_b.y * p_c.z - p_b.z * p_c.y);
+	perp.y = + p_a.x * (p_b.z * p_c.w - p_b.w * p_c.z)
+	         - p_a.z * (p_b.x * p_c.w - p_b.w * p_c.x)
+	         + p_a.w * (p_b.x * p_c.z - p_b.z * p_c.x);
+	perp.z = - p_a.x * (p_b.y * p_c.w - p_b.w * p_c.y)
+	         + p_a.y * (p_b.x * p_c.w - p_b.w * p_c.x)
+	         - p_a.w * (p_b.x * p_c.y - p_b.y * p_c.x);
+	perp.w = + p_a.x * (p_b.y * p_c.z - p_b.z * p_c.y)
+	         - p_a.y * (p_b.x * p_c.z - p_b.z * p_c.x)
+	         + p_a.z * (p_b.x * p_c.y - p_b.y * p_c.x);
+	/* clang-format on */
+	return perp;
+}
+
 Vector4 Vector4D::project(const Vector4 &p_vector, const Vector4 &p_on_normal) {
 	return p_on_normal * (p_vector.dot(p_on_normal) / p_on_normal.length_squared());
 }
@@ -111,6 +130,7 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("cross", "a", "b"), &Vector4D::cross);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("limit_length", "vector", "length"), &Vector4D::limit_length, DEFVAL(1.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("move_toward", "from", "to", "delta"), &Vector4D::move_toward);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("perpendicular", "a", "b", "c"), &Vector4D::perpendicular);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("project", "vector", "on_normal"), &Vector4D::project);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("reflect", "vector", "normal"), &Vector4D::reflect);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("slide", "vector", "normal"), &Vector4D::slide);

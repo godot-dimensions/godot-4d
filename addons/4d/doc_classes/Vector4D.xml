@@ -40,7 +40,7 @@
 			<param index="1" name="b" type="Vector4" />
 			<description>
 				Returns the 4D analog of the cross product for [param a] and [param b]. This is the unsigned area of the parallelogram formed by the two vectors.
-				[b]Note:[/b] Cross product is not defined in 4D mathematically. This method is an analog similar to [method Vector2.cross].
+				[b]Note:[/b] The cross product is not defined in 4D mathematically. The 3D cross product has 2 properties, the result is perpendicular to the inputs, and the result has a magnitude equal to the area of the parallelogram formed by the inputs. This method provides the second property, but not the first, like [method Vector2.cross]. See also [method perpendicular] if you need a perpendicular vector like the 3D cross product (requires three input vectors).
 			</description>
 		</method>
 		<method name="from_3d" qualifiers="static">
@@ -65,6 +65,16 @@
 			<param index="2" name="delta" type="float" />
 			<description>
 				Returns [param from] moved toward [param to] by the fixed [param delta] amount. Will not go past the final value.
+			</description>
+		</method>
+		<method name="perpendicular" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="a" type="Vector4" />
+			<param index="1" name="b" type="Vector4" />
+			<param index="2" name="c" type="Vector4" />
+			<description>
+				Given three 4D vectors, find a new 4D vector that is perpendicular to all three. The input vectors must be linearly independent, otherwise a zero vector will be returned. This is similar to the 3D cross product that finds a vector perpendicular to two input vectors. The convention followed by this method is that if it's given +X, +Y, and +Z as inputs in that order, it will return +W, similar to the 3D cross product of +X and +Y returning +Z.
+				[b]Note:[/b] The 3D cross product has 2 properties, the result is perpendicular to the inputs, and the result has a magnitude equal to the area of the parallelogram formed by the inputs. This method provides the first property, but not the second, like [method Vector2.orthogonal]. See also [method cross] for the 4D analog of the cross product between two vectors which returns a scalar representing the unsigned area of the parallelogram formed by the two vectors, similar to the 2D cross product [method Vector2.cross].
 			</description>
 		</method>
 		<method name="project" qualifiers="static">

@@ -123,25 +123,6 @@ PackedVector4Array Geometry4D::closest_points_between_line_and_segment(const Vec
 	return PackedVector4Array{ closest_point_on_line, closest_point_on_segment };
 }
 
-Vector4 Geometry4D::perpendicular_to_three_vectors(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c) {
-	Vector4 perp;
-	/* clang-format off */
-	perp.x = - p_a.y * (p_b.z * p_c.w - p_b.w * p_c.z)
-	         + p_a.z * (p_b.y * p_c.w - p_b.w * p_c.y)
-	         - p_a.w * (p_b.y * p_c.z - p_b.z * p_c.y);
-	perp.y = + p_a.x * (p_b.z * p_c.w - p_b.w * p_c.z)
-	         - p_a.z * (p_b.x * p_c.w - p_b.w * p_c.x)
-	         + p_a.w * (p_b.x * p_c.z - p_b.z * p_c.x);
-	perp.z = - p_a.x * (p_b.y * p_c.w - p_b.w * p_c.y)
-	         + p_a.y * (p_b.x * p_c.w - p_b.w * p_c.x)
-	         - p_a.w * (p_b.x * p_c.y - p_b.y * p_c.x);
-	perp.w = + p_a.x * (p_b.y * p_c.z - p_b.z * p_c.y)
-	         - p_a.y * (p_b.x * p_c.z - p_b.z * p_c.x)
-	         + p_a.z * (p_b.x * p_c.y - p_b.y * p_c.x);
-	/* clang-format on */
-	return perp;
-}
-
 Geometry4D *Geometry4D::singleton = nullptr;
 
 void Geometry4D::_bind_methods() {
@@ -153,5 +134,4 @@ void Geometry4D::_bind_methods() {
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_points_between_lines", "line1_point", "line1_dir", "line2_point", "line2_dir"), &Geometry4D::closest_points_between_lines);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_points_between_line_segments", "line1_a", "line1_b", "line2_a", "line2_b"), &Geometry4D::closest_points_between_line_segments);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_points_between_line_and_segment", "line_point", "line_direction", "segment_a", "segment_b"), &Geometry4D::closest_points_between_line_and_segment);
-	ClassDB::bind_static_method("Geometry4D", D_METHOD("perpendicular_to_three_vectors", "a", "b", "c"), &Geometry4D::perpendicular_to_three_vectors);
 }

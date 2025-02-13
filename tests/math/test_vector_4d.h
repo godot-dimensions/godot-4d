@@ -73,4 +73,15 @@ TEST_CASE("[Vector4] Plane methods") {
 			Vector4D::project(vector, vector_y) == Vector4(0, 3.4, 0, 0),
 			"Vector4 projected on the X axis should only give the Y component.");
 }
+
+TEST_CASE("[Vector4D] Perpendicular To Three Vectors") {
+	const Vector4 xyz = Vector4D::perpendicular(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0));
+	CHECK_MESSAGE(xyz == Vector4(0, 0, 0, 1), "Vector4D perpendicular should work as expected.");
+	const Vector4 xwy = Vector4D::perpendicular(Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 1, 0, 0));
+	CHECK_MESSAGE(xwy == Vector4(0, 0, 1, 0), "Vector4D perpendicular should work as expected.");
+	const Vector4 xzw = Vector4D::perpendicular(Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1));
+	CHECK_MESSAGE(xzw == Vector4(0, 1, 0, 0), "Vector4D perpendicular should work as expected.");
+	const Vector4 ywz = Vector4D::perpendicular(Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 1, 0));
+	CHECK_MESSAGE(ywz == Vector4(1, 0, 0, 0), "Vector4D perpendicular should work as expected.");
+}
 } // namespace TestVector4D
