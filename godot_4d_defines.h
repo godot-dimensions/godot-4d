@@ -26,6 +26,8 @@ using namespace godot;
 #define GDEXTMOD_GUI_INPUT gui_input
 
 #define MOUSE_BUTTON_LEFT MouseButton::LEFT
+#else
+#error "Must build as Godot GDExtension or Godot module."
 #endif
 
 #ifndef _NO_DISCARD_

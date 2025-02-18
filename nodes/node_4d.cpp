@@ -563,6 +563,8 @@ void Node4D::_propagate_visibility_changed() {
 	}
 }
 
+// Rect bounds.
+
 Rect4 Node4D::get_rect_bounds(const Transform4D &p_inv_relative_to) const {
 	PackedVector4Array result;
 	GDVIRTUAL_CALL(_get_rect_bounds, p_inv_relative_to.basis, p_inv_relative_to.origin, result);
@@ -664,6 +666,7 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_visible"), &Node4D::is_visible);
 	ClassDB::bind_method(D_METHOD("is_visible_in_tree"), &Node4D::is_visible_in_tree);
 	ClassDB::bind_method(D_METHOD("set_visible", "visible"), &Node4D::set_visible);
+	// Rect bounds.
 	ClassDB::bind_method(D_METHOD("get_rect_bounds", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
 	ClassDB::bind_method(D_METHOD("get_rect_bounds_recursive", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_recursive_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
 	GDVIRTUAL_BIND(_get_rect_bounds, "inv_relative_to_basis", "inv_relative_to_origin");
@@ -692,7 +695,7 @@ void Node4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PROJECTION, "global_basis", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_basis", "get_global_basis");
 	// Visibility.
 	ADD_GROUP("Visibility", "");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "visible", PROPERTY_HINT_NONE, ""), "set_visible", "is_visible");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "visible"), "set_visible", "is_visible");
 	ADD_SIGNAL(MethodInfo("visibility_changed"));
 #undef PACKED_REAL_ARRAY
 	BIND_ENUM_CONSTANT(ROTATION_EDIT_MODE_EULER4D);

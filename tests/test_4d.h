@@ -1,5 +1,7 @@
 #pragma once
 
+#define GODOT_MODULE 1
+
 #include "math/geometric_algebra/test_multivector_4d.h"
 #include "math/geometric_algebra/test_rotor_4d.h"
 #include "math/test_basis_4d.h"

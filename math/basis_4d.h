@@ -63,10 +63,10 @@ struct _NO_DISCARD_ Basis4D {
 	Basis4D orthonormalized() const;
 	void orthogonalize();
 	Basis4D orthogonalized() const;
-	bool is_orthogonal() const;
-	bool is_orthonormal() const;
 	bool is_conformal() const;
 	bool is_diagonal() const;
+	bool is_orthogonal() const;
+	bool is_orthonormal() const;
 	bool is_rotation() const;
 
 	// Helper setters/getters.

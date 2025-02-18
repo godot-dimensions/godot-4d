@@ -19,12 +19,21 @@
 class Node4D : public Node {
 	GDCLASS(Node4D, Node);
 
+public:
+	enum RotationEditMode {
+		ROTATION_EDIT_MODE_EULER4D,
+		ROTATION_EDIT_MODE_EULER4D_UNIFORM,
+		ROTATION_EDIT_MODE_BASIS4D,
+	};
+
+private:
 	// Transform private fields.
 	Transform4D _transform;
+	RotationEditMode _rotation_edit_mode = ROTATION_EDIT_MODE_EULER4D;
 #ifdef CACHE_ROTATION_AND_SCALE
 	Euler4D _euler_cache;
-	bool _euler_cache_dirty = true;
 	Vector4 _scale_cache;
+	bool _euler_cache_dirty = true;
 	bool _scale_cache_dirty = true;
 #endif // CACHE_ROTATION_AND_SCALE
 
@@ -37,13 +46,6 @@ protected:
 	void _validate_property(PropertyInfo &p_property) const;
 
 public:
-	// Rotation edit mode.
-	enum RotationEditMode {
-		ROTATION_EDIT_MODE_EULER4D,
-		ROTATION_EDIT_MODE_EULER4D_UNIFORM,
-		ROTATION_EDIT_MODE_BASIS4D,
-	};
-	RotationEditMode _rotation_edit_mode = ROTATION_EDIT_MODE_EULER4D;
 	RotationEditMode get_rotation_edit_mode() const;
 	void set_rotation_edit_mode(const RotationEditMode p_rotation_edit_mode);
 
@@ -169,6 +171,7 @@ public:
 	bool is_visible_in_tree() const;
 	void set_visible(const bool p_visible);
 
+	// Rect bounds.
 	virtual Rect4 get_rect_bounds(const Transform4D &p_inv_relative_to = Transform4D()) const;
 	PackedVector4Array get_rect_bounds_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
 	Rect4 get_rect_bounds_recursive(const Transform4D &p_inv_relative_to = Transform4D()) const;
