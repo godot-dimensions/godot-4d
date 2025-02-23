@@ -1,6 +1,7 @@
 #include "godot_4d_editor_plugin.h"
 
 #include "../nodes/node_4d.h"
+#include "icons/editor_4d_icons.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_interface.hpp>
@@ -33,6 +34,12 @@ Button *_find_button_by_text(Node *p_start, const String &p_text) {
 	return nullptr;
 }
 
+void EditorCreate4DSceneButton::_notification(int p_what) {
+	if (p_what == NOTIFICATION_THEME_CHANGED) {
+		set_button_icon(_generate_editor_4d_icon("Node4D"));
+	}
+}
+
 void Godot4DEditorPlugin::_move_4d_main_screen_tab_button() const {
 	Control *editor = EditorInterface::get_singleton()->get_base_control();
 	ERR_FAIL_NULL(editor);
@@ -62,9 +69,9 @@ void Godot4DEditorPlugin::_inject_4d_scene_button() {
 	Button *user_interface_scene = _find_button_by_text(beginner_node_shortcuts, "User Interface");
 	ERR_FAIL_NULL(user_interface_scene);
 	// Now that we know where to insert the button, create it.
-	Button *button_4d = memnew(Button);
+	EditorCreate4DSceneButton *button_4d = memnew(EditorCreate4DSceneButton);
 	button_4d->set_text(TTR("4D Scene"));
-	button_4d->set_button_icon(beginner_node_shortcuts->get_editor_theme_icon(StringName("Node4D")));
+	button_4d->set_button_icon(_generate_editor_4d_icon("Node4D"));
 	button_4d->connect(StringName("pressed"), callable_mp(this, &Godot4DEditorPlugin::_create_4d_scene));
 	beginner_node_shortcuts->add_child(button_4d);
 	beginner_node_shortcuts->move_child(button_4d, user_interface_scene->get_index());
@@ -107,9 +114,7 @@ Ref<Texture2D> Godot4DEditorPlugin::GDEXTMOD_GET_PLUGIN_ICON() const
 const Ref<Texture2D> Godot4DEditorPlugin::GDEXTMOD_GET_PLUGIN_ICON() const
 #endif
 {
-	Window *window = Object::cast_to<Window>(get_viewport());
-	ERR_FAIL_COND_V_MSG(window == nullptr, Ref<Texture2D>(), "Window is null.");
-	return window->get_editor_theme_icon(StringName("4D"));
+	return _generate_editor_4d_icon("4D");
 }
 
 bool Godot4DEditorPlugin::GDEXTMOD_HANDLES(Object *p_object) const {

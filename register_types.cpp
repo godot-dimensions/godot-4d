@@ -6,6 +6,7 @@
 #elif GODOT_MODULE
 #include "core/config/engine.h"
 #include "editor/plugins/editor_plugin.h"
+#include "editor/themes/editor_color_map.h"
 #endif
 
 // General.
@@ -186,6 +187,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 #ifdef GDEXTENSION
 		GDREGISTER_CLASS(EditorCamera4D);
+		GDREGISTER_CLASS(EditorCreate4DSceneButton);
 		GDREGISTER_CLASS(EditorImportPluginOFFBase);
 		GDREGISTER_CLASS(EditorImportPluginOFFMesh3D);
 		GDREGISTER_CLASS(EditorImportPluginOFFScene);
@@ -197,7 +199,16 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorTransformGizmo4D);
 		GDREGISTER_CLASS(EditorViewportRotation4D);
 		GDREGISTER_CLASS(Godot4DEditorPlugin);
-#endif // GDEXTENSION
+#elif GODOT_MODULE
+		EditorColorMap::add_conversion_color_pair("fff6a2", "ccc055");
+		EditorColorMap::add_conversion_color_pair("fe5", "ba0");
+		EditorColorMap::add_conversion_color_pair("fe7", "ba2");
+		EditorColorMap::add_conversion_color_pair("fe9", "ba4");
+		EditorColorMap::add_conversion_color_pair("fd0", "a90");
+		EditorColorMap::add_conversion_color_pair("fd3", "a93");
+		EditorColorMap::add_conversion_color_pair("dc3", "870");
+		EditorColorMap::add_conversion_color_pair("ba3", "665d11");
+#endif // GDEXTENSION or GODOT_MODULE
 		EditorPlugins::add_by_type<Godot4DEditorPlugin>();
 #endif // TOOLS_ENABLED
 	}

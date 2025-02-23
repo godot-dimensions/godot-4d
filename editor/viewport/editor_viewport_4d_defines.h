@@ -6,6 +6,7 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/control.hpp>
+#include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/editor_settings.hpp>
 #include <godot_cpp/classes/editor_undo_redo_manager.hpp>
 #include <godot_cpp/classes/input.hpp>
@@ -14,7 +15,7 @@
 #include <godot_cpp/classes/input_event_mouse_motion.hpp>
 
 #define EDITOR_GET(m_name) Variant()
-#define EDSCALE 1.0f
+#define EDSCALE EditorInterface::get_singleton()->get_editor_scale()
 #define ERR_THREAD_GUARD
 #define TTR(m_text) m_text
 #define get_editor_theme_icon(m_name) get_theme_icon(m_name, StringName("EditorIcons"))

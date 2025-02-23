@@ -6,5 +6,19 @@ Import("env_modules")
 env_4d = env_modules.Clone()
 
 env_4d.add_source_files(env.modules_sources, "*.cpp")
+env_4d.add_source_files(env.modules_sources, "icons/*.cpp")
 env_4d.add_source_files(env.modules_sources, "off/*.cpp")
 env_4d.add_source_files(env.modules_sources, "viewport/*.cpp")
+
+# The rest of this file handles generating the 4D icons header file.
+import icons.editor_4d_icon_generator
+
+env["BUILDERS"]["MakeEditor4DIconsBuilder"] = Builder(
+    action=env.Run(icons.editor_4d_icon_generator.make_editor_4d_icons_action),
+    suffix=".h",
+    src_suffix=".svg",
+)
+
+target_file_path = "icons/editor_4d_icons.gen.h"
+icon_sources = Glob("../addons/4d/icons/4D.svg") + Glob("../addons/4d/icons/Node4D.svg")
+env.Alias("editor_4d_icons", [env.MakeEditor4DIconsBuilder(target_file_path, icon_sources)])

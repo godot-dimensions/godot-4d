@@ -24,6 +24,14 @@
 #define GDEXTMOD_MAKE_VISIBLE make_visible
 #endif
 
+class EditorCreate4DSceneButton : public Button {
+	GDCLASS(EditorCreate4DSceneButton, Button);
+
+protected:
+	static void _bind_methods() {}
+	void _notification(int p_what);
+};
+
 class Godot4DEditorPlugin : public EditorPlugin {
 	GDCLASS(Godot4DEditorPlugin, EditorPlugin);
 	Ref<EditorImportPluginOFFMesh3D> _off_mesh_3d_importer;
