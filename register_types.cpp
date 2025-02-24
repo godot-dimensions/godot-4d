@@ -218,6 +218,15 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		remove_godot_singleton("Basis4D");
 		remove_godot_singleton("Geometry4D");
+		remove_godot_singleton("PhysicsServer4D");
+		remove_godot_singleton("RenderingServer4D");
 		remove_godot_singleton("Vector4D");
+		remove_godot_singleton("WireMeshBuilder4D");
+		memdelete(godot_4d_bind::Basis4D::get_singleton());
+		memdelete(Geometry4D::get_singleton());
+		memdelete(PhysicsServer4D::get_singleton());
+		memdelete(RenderingServer4D::get_singleton());
+		memdelete(Vector4D::get_singleton());
+		memdelete(WireMeshBuilder4D::get_singleton());
 	}
 }
