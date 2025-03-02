@@ -11,7 +11,7 @@ void WireframeRenderCanvas::_notification(int p_what) {
 void WireframeRenderCanvas::_draw() {
 	draw_rect(Rect2(Vector2(), get_size()), _background_color);
 	const Vector2 half_size = get_size() * 0.5f;
-	const Vector2 project_scale = _camera_aspect == Camera4D::KEEP_WIDTH ? Vector2(-half_size.x, half_size.x) : Vector2(-half_size.y, half_size.y);
+	const Vector2 project_scale = _camera_aspect == Camera4D::KEEP_WIDTH ? Vector2(half_size.x, half_size.x) : Vector2(half_size.y, half_size.y);
 	for (int i = 0; i < _edge_vertices_to_draw.size(); i++) {
 		const PackedVector2Array edge_verts = _edge_vertices_to_draw[i];
 		PackedVector2Array verts;

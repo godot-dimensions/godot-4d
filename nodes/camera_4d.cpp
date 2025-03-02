@@ -142,7 +142,7 @@ Vector4 Camera4D::viewport_to_world_ray_direction(const Vector2 &p_viewport_posi
 
 Vector2 Camera4D::world_to_viewport_local_normal(const Vector4 &p_local_position) const {
 	if (_projection_type == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
-		return Vector2(-p_local_position.x, -p_local_position.y) / _orthographic_size;
+		return Vector2(p_local_position.x, -p_local_position.y) / _orthographic_size;
 	}
 	// Project from 4D to 3D.
 	Vector3 projected_point_3d;
@@ -153,17 +153,16 @@ Vector2 Camera4D::world_to_viewport_local_normal(const Vector4 &p_local_position
 	}
 	// Project from 3D to 2D.
 	if (bool(_projection_type & PROJECTION4D_PERSPECTIVE_3D)) {
-		return Vector2(projected_point_3d.x, projected_point_3d.y) * (_focal_length_3d / projected_point_3d.z);
+		return Vector2(-projected_point_3d.x, projected_point_3d.y) * (_focal_length_3d / projected_point_3d.z);
 	}
-	return Vector2(projected_point_3d.x, projected_point_3d.y);
+	return Vector2(-projected_point_3d.x, projected_point_3d.y);
 }
 
 Vector2 Camera4D::world_to_viewport(const Vector4 &p_global_position) const {
 	const Vector4 local_position = get_global_transform().xform_transposed(p_global_position);
 	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
 	const real_t pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
-	Vector2 projected = world_to_viewport_local_normal(local_position);
-	projected.x = -projected.x;
+	const Vector2 projected = world_to_viewport_local_normal(local_position);
 	return (projected * pixel_size + viewport_size) * 0.5f;
 }
 

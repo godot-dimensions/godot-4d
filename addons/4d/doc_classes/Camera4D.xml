@@ -68,7 +68,7 @@
 			<param index="0" name="local_position" type="Vector4" />
 			<description>
 				Given a local position relative to the camera, return the normalized coordinates on the viewport. This is like [method world_to_viewport], but skips converting between coordinate systems, so this method is faster if you do not need to convert.
-				The returned value is on the range of -1 to 1 for the direction that [member keep_aspect] is set to keep constant. Due to the way this is calculated (negative Z forward), the X values are positive on the left and the Y values are positive on the bottom. For example, on a 16:9 aspect ratio viewport with [constant KEEP_HEIGHT], the bottom-left corner is (1.777, 1), and the top-right corner is (-1.777, -1).
+				The returned value is on the range of -1 to 1 for the direction that [member keep_aspect] is set to keep constant. Due to the way this is calculated (negative Z forward), the X values are positive on the right and the Y values are positive on the bottom. For example, on a 16:9 aspect ratio viewport with [constant KEEP_HEIGHT], the bottom-right corner is (1.777, 1), and the top-left corner is (-1.777, -1).
 			</description>
 		</method>
 	</methods>
