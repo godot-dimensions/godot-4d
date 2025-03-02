@@ -943,14 +943,15 @@ void EditorTransformGizmo4D::set_use_local_rotation(const bool p_use_local_trans
 }
 
 void EditorTransformGizmo4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
-	undo_redo = p_undo_redo_manager;
-	p_undo_redo_manager->connect(StringName("version_changed"), callable_mp(this, &EditorTransformGizmo4D::_on_undo_redo_version_changed));
-}
-
-EditorTransformGizmo4D::EditorTransformGizmo4D() {
+	// Things that we should do in the constructor but can't in GDExtension
+	// due to how GDExtension runs the constructor for each registered class.
 	_mesh_holder = memnew(Node4D);
 	_mesh_holder->set_name(StringName("GizmoMeshHolder4D"));
 	add_child(_mesh_holder);
 	RenderingServer4D::get_singleton()->connect(StringName("pre_render"), callable_mp(this, &EditorTransformGizmo4D::_on_rendering_server_pre_render));
 	EditorInterface::get_singleton()->get_inspector()->connect(StringName("property_edited"), callable_mp(this, &EditorTransformGizmo4D::_on_editor_inspector_property_edited));
+
+	// Set up things with the arguments (not constructor things).
+	undo_redo = p_undo_redo_manager;
+	p_undo_redo_manager->connect(StringName("version_changed"), callable_mp(this, &EditorTransformGizmo4D::_on_undo_redo_version_changed));
 }

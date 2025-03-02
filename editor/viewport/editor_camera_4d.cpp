@@ -198,7 +198,7 @@ void EditorCamera4D::set_target_position(const Vector4 &p_position) {
 	_target_position = p_position;
 }
 
-EditorCamera4D::EditorCamera4D() {
+void EditorCamera4D::setup() {
 	set_name(StringName("EditorCamera4D"));
 	_camera = memnew(Camera4D);
 	_camera->set_name(StringName("Camera4D"));

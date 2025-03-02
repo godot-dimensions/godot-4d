@@ -14,7 +14,7 @@
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
 #include <godot_cpp/classes/input_event_mouse_motion.hpp>
 
-#define EDITOR_GET(m_name) Variant()
+#define EDITOR_GET(m_name) EditorInterface::get_singleton()->get_editor_settings()->get_setting(m_name)
 #define EDSCALE EditorInterface::get_singleton()->get_editor_scale()
 #define ERR_THREAD_GUARD
 #define TTR(m_text) m_text

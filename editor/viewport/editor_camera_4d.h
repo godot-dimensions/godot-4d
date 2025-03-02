@@ -39,5 +39,5 @@ public:
 	void set_target_position(const Vector4 &p_position);
 	void set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up);
 
-	EditorCamera4D();
+	void setup();
 };

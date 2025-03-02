@@ -130,5 +130,4 @@ public:
 	void set_use_local_rotation(const bool p_use_local_transform);
 
 	void setup(EditorUndoRedoManager *p_undo_redo_manager);
-	EditorTransformGizmo4D();
 };

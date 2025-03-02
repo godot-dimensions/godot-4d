@@ -68,6 +68,4 @@ public:
 	void set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up);
 
 	void setup(EditorMainScreen4D *p_editor_main_screen, EditorTransformGizmo4D *p_transform_gizmo_4d);
-
-	EditorMainViewport4D();
 };

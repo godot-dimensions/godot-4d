@@ -176,12 +176,8 @@ void EditorMainViewport4D::set_orthogonal_view_plane(const Vector4::Axis p_right
 }
 
 void EditorMainViewport4D::setup(EditorMainScreen4D *p_editor_main_screen, EditorTransformGizmo4D *p_transform_gizmo_4d) {
-	_editor_main_screen = p_editor_main_screen;
-	_input_surface_4d->set_editor_main_screen(_editor_main_screen);
-	_transform_gizmo_4d = p_transform_gizmo_4d;
-}
-
-EditorMainViewport4D::EditorMainViewport4D() {
+	// Things that we should do in the constructor but can't in GDExtension
+	// due to how GDExtension runs the constructor for each registered class.
 	set_name(StringName("EditorMainViewport4D"));
 	set_clip_children_mode(Control::CLIP_CHILDREN_AND_DRAW);
 	set_v_size_flags(SIZE_EXPAND_FILL);
@@ -202,14 +198,19 @@ EditorMainViewport4D::EditorMainViewport4D() {
 	_sub_viewport_container->add_child(_information_label);
 
 	_editor_camera_4d = memnew(EditorCamera4D);
+	_editor_camera_4d->setup();
 	_sub_viewport->add_child(_editor_camera_4d);
 
 	// Set up the input surfaces.
 	_input_surface_4d = memnew(EditorInputSurface4D);
-	_input_surface_4d->set_editor_main_viewport(this);
 	_sub_viewport_container->add_child(_input_surface_4d);
 
 	_viewport_rotation_4d = memnew(EditorViewportRotation4D);
-	_viewport_rotation_4d->set_editor_main_viewport(this);
+	_viewport_rotation_4d->setup(this);
 	_input_surface_4d->add_child(_viewport_rotation_4d);
+
+	// Set up things with the arguments (not constructor things).
+	_editor_main_screen = p_editor_main_screen;
+	_input_surface_4d->setup(_editor_main_screen, this);
+	_transform_gizmo_4d = p_transform_gizmo_4d;
 }

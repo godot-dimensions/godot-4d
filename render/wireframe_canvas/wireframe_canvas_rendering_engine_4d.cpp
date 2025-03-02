@@ -32,11 +32,7 @@ void WireframeCanvasRenderingEngine4D::setup_for_viewport() {
 }
 
 void WireframeCanvasRenderingEngine4D::render_frame() {
-#if GDEXTENSION
-	WireframeRenderCanvas4D *wire_canvas = get_viewport()->get_node<WireframeRenderCanvas4D>(NodePath("WireframeRenderCanvas4D"));
-#elif GODOT_MODULE
-	WireframeRenderCanvas4D *wire_canvas = Object::cast_to<WireframeRenderCanvas4D>(get_viewport()->get_node(NodePath("WireframeRenderCanvas4D")));
-#endif
+	WireframeRenderCanvas4D *wire_canvas = GET_NODE_TYPE(get_viewport(), WireframeRenderCanvas4D, "WireframeRenderCanvas4D");
 	ERR_FAIL_NULL_MSG(wire_canvas, "WireframeCanvasRenderingEngine4D: Canvas was null.");
 	const Camera4D *camera = get_camera();
 	Vector<PackedColorArray> edge_colors_to_draw;

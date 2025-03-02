@@ -83,5 +83,4 @@ public:
 	void set_viewport_layout(const int8_t p_viewport_count, const Side p_dominant_side = SIDE_TOP);
 
 	void setup(EditorUndoRedoManager *p_undo_redo_manager);
-	EditorMainScreen4D();
 };

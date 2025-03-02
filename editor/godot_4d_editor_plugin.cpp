@@ -47,13 +47,8 @@ void Godot4DEditorPlugin::_move_4d_main_screen_tab_button() const {
 	Node *button_asset_lib_tab = editor->find_child("AssetLib", true, false);
 	ERR_FAIL_NULL(button_asset_lib_tab);
 	Node *main_editor_button_hbox = button_asset_lib_tab->get_parent();
-#if GDEXTENSION
-	Node *button_4d_tab = main_editor_button_hbox->get_node<Node>(NodePath("4D"));
-	Node *button_script_tab = main_editor_button_hbox->get_node<Node>(NodePath("Script"));
-#elif GODOT_MODULE
-	Node *button_4d_tab = main_editor_button_hbox->get_node(NodePath("4D"));
-	Node *button_script_tab = main_editor_button_hbox->get_node(NodePath("Script"));
-#endif
+	Button *button_4d_tab = GET_NODE_TYPE(main_editor_button_hbox, Button, "4D");
+	Button *button_script_tab = GET_NODE_TYPE(main_editor_button_hbox, Button, "Script");
 	ERR_FAIL_NULL(button_4d_tab);
 	ERR_FAIL_NULL(button_script_tab);
 	main_editor_button_hbox->move_child(button_4d_tab, button_script_tab->get_index());
@@ -135,7 +130,12 @@ Godot4DEditorPlugin::Godot4DEditorPlugin() {
 	_off_scene_importer.instantiate();
 	_off_tetra_4d_importer.instantiate();
 	_off_wire_4d_importer.instantiate();
-	_main_screen = memnew(EditorMainScreen4D);
-	_main_screen->setup(get_undo_redo());
-	EditorInterface::get_singleton()->get_editor_main_screen()->add_child(_main_screen);
+	Control *godot_editor_main_screen = EditorInterface::get_singleton()->get_editor_main_screen();
+	if (godot_editor_main_screen->has_node(NodePath("EditorMainScreen4D"))) {
+		_main_screen = GET_NODE_TYPE(godot_editor_main_screen, EditorMainScreen4D, "EditorMainScreen4D");
+	} else {
+		_main_screen = memnew(EditorMainScreen4D);
+		_main_screen->setup(get_undo_redo());
+		godot_editor_main_screen->add_child(_main_screen);
+	}
 }

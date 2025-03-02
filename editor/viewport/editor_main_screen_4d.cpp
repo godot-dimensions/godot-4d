@@ -181,10 +181,8 @@ void EditorMainScreen4D::set_viewport_layout(const int8_t p_viewport_count, cons
 }
 
 void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
-	_transform_gizmo_4d->setup(p_undo_redo_manager);
-}
-
-EditorMainScreen4D::EditorMainScreen4D() {
+	// Things that we should do in the constructor but can't in GDExtension
+	// due to how GDExtension runs the constructor for each registered class.
 	set_name(StringName("EditorMainScreen4D"));
 	set_visible(false);
 	set_v_size_flags(SIZE_EXPAND_FILL);
@@ -288,4 +286,7 @@ EditorMainScreen4D::EditorMainScreen4D() {
 	view_layout_menu_popup->connect(StringName("id_pressed"), callable_mp(this, &EditorMainScreen4D::_on_view_layout_menu_id_pressed));
 
 	EditorInterface::get_singleton()->get_selection()->connect(StringName("selection_changed"), callable_mp(this, &EditorMainScreen4D::_on_selection_changed));
+
+	// Set up things with the arguments (not constructor things).
+	_transform_gizmo_4d->setup(p_undo_redo_manager);
 }

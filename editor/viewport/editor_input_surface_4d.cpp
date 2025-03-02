@@ -67,16 +67,14 @@ void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 	}
 }
 
-void EditorInputSurface4D::set_editor_main_screen(EditorMainScreen4D *p_editor_main_screen) {
-	_editor_main_screen = p_editor_main_screen;
-}
-
-void EditorInputSurface4D::set_editor_main_viewport(EditorMainViewport4D *p_editor_main_viewport) {
-	_editor_main_viewport = p_editor_main_viewport;
-}
-
-EditorInputSurface4D::EditorInputSurface4D() {
+void EditorInputSurface4D::setup(EditorMainScreen4D *p_editor_main_screen, EditorMainViewport4D *p_editor_main_viewport) {
+	// Things that we should do in the constructor but can't in GDExtension
+	// due to how GDExtension runs the constructor for each registered class.
 	set_name(StringName("EditorInputSurface4D"));
 	set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
 	set_focus_mode(FOCUS_ALL);
+
+	// Set up things with the arguments (not constructor things).
+	_editor_main_screen = p_editor_main_screen;
+	_editor_main_viewport = p_editor_main_viewport;
 }
