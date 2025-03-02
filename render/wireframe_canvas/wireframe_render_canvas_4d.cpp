@@ -1,14 +1,14 @@
-#include "wireframe_render_canvas.h"
+#include "wireframe_render_canvas_4d.h"
 
 #if GODOT_MODULE
-void WireframeRenderCanvas::_notification(int p_what) {
+void WireframeRenderCanvas4D::_notification(int p_what) {
 	if (p_what == NOTIFICATION_DRAW) {
 		_draw();
 	}
 }
 #endif // GODOT_MODULE
 
-void WireframeRenderCanvas::_draw() {
+void WireframeRenderCanvas4D::_draw() {
 	draw_rect(Rect2(Vector2(), get_size()), _background_color);
 	const Vector2 half_size = get_size() * 0.5f;
 	const Vector2 project_scale = _camera_aspect == Camera4D::KEEP_WIDTH ? Vector2(half_size.x, half_size.x) : Vector2(half_size.y, half_size.y);
@@ -23,27 +23,27 @@ void WireframeRenderCanvas::_draw() {
 	}
 }
 
-void WireframeRenderCanvas::set_background_color(const Color &p_background_color) {
+void WireframeRenderCanvas4D::set_background_color(const Color &p_background_color) {
 	_background_color = p_background_color;
 }
 
-void WireframeRenderCanvas::set_camera_aspect(const Camera4D::KeepAspect p_camera_aspect) {
+void WireframeRenderCanvas4D::set_camera_aspect(const Camera4D::KeepAspect p_camera_aspect) {
 	_camera_aspect = p_camera_aspect;
 }
 
-void WireframeRenderCanvas::set_edge_colors_to_draw(const Vector<PackedColorArray> &p_edge_colors_to_draw) {
+void WireframeRenderCanvas4D::set_edge_colors_to_draw(const Vector<PackedColorArray> &p_edge_colors_to_draw) {
 	_edge_colors_to_draw = p_edge_colors_to_draw;
 }
 
-void WireframeRenderCanvas::set_edge_thicknesses_to_draw(const PackedFloat32Array &p_edge_thicknesses_to_draw) {
+void WireframeRenderCanvas4D::set_edge_thicknesses_to_draw(const PackedFloat32Array &p_edge_thicknesses_to_draw) {
 	_edge_thicknesses_to_draw = p_edge_thicknesses_to_draw;
 }
 
-void WireframeRenderCanvas::set_edge_vertices_to_draw(const Vector<PackedVector2Array> &p_edge_vertices_to_draw) {
+void WireframeRenderCanvas4D::set_edge_vertices_to_draw(const Vector<PackedVector2Array> &p_edge_vertices_to_draw) {
 	_edge_vertices_to_draw = p_edge_vertices_to_draw;
 }
 
-WireframeRenderCanvas::WireframeRenderCanvas() {
+WireframeRenderCanvas4D::WireframeRenderCanvas4D() {
 	set_z_index(-4000);
 	set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
 }

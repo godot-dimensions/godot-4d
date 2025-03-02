@@ -8,8 +8,8 @@
 #include "scene/gui/control.h"
 #endif
 
-class WireframeRenderCanvas : public Control {
-	GDCLASS(WireframeRenderCanvas, Control);
+class WireframeRenderCanvas4D : public Control {
+	GDCLASS(WireframeRenderCanvas4D, Control);
 
 	Color _background_color = Color(0.0f, 0.0f, 0.0f);
 	Camera4D::KeepAspect _camera_aspect = Camera4D::KEEP_HEIGHT;
@@ -36,5 +36,5 @@ public:
 	void set_edge_thicknesses_to_draw(const PackedFloat32Array &p_edge_thicknesses_to_draw);
 	void set_edge_vertices_to_draw(const Vector<PackedVector2Array> &p_edge_vertices_to_draw);
 
-	WireframeRenderCanvas();
+	WireframeRenderCanvas4D();
 };

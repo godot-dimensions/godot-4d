@@ -1,7 +1,7 @@
 #include "wireframe_canvas_rendering_engine_4d.h"
 
 #include "../../mesh/wire/wire_material_4d.h"
-#include "wireframe_render_canvas.h"
+#include "wireframe_render_canvas_4d.h"
 
 Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index) {
 	if (p_material.is_null()) {
@@ -26,16 +26,16 @@ Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh
 }
 
 void WireframeCanvasRenderingEngine4D::setup_for_viewport() {
-	WireframeRenderCanvas *wire_canvas = memnew(WireframeRenderCanvas);
-	wire_canvas->set_name("WireframeRenderCanvas");
+	WireframeRenderCanvas4D *wire_canvas = memnew(WireframeRenderCanvas4D);
+	wire_canvas->set_name("WireframeRenderCanvas4D");
 	get_viewport()->add_child(wire_canvas);
 }
 
 void WireframeCanvasRenderingEngine4D::render_frame() {
 #if GDEXTENSION
-	WireframeRenderCanvas *wire_canvas = get_viewport()->get_node<WireframeRenderCanvas>(NodePath("WireframeRenderCanvas"));
+	WireframeRenderCanvas4D *wire_canvas = get_viewport()->get_node<WireframeRenderCanvas4D>(NodePath("WireframeRenderCanvas4D"));
 #elif GODOT_MODULE
-	WireframeRenderCanvas *wire_canvas = Object::cast_to<WireframeRenderCanvas>(get_viewport()->get_node(NodePath("WireframeRenderCanvas")));
+	WireframeRenderCanvas4D *wire_canvas = Object::cast_to<WireframeRenderCanvas4D>(get_viewport()->get_node(NodePath("WireframeRenderCanvas4D")));
 #endif
 	ERR_FAIL_NULL_MSG(wire_canvas, "WireframeCanvasRenderingEngine4D: Canvas was null.");
 	const Camera4D *camera = get_camera();

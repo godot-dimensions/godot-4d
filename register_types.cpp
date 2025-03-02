@@ -69,7 +69,7 @@
 // We don't need to register these in principle, and we don't need it for a module, just for GDExtension.
 #include "physics/server/ghost_physics_engine_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
-#include "render/wireframe_canvas/wireframe_render_canvas.h"
+#include "render/wireframe_canvas/wireframe_render_canvas_4d.h"
 #ifdef TOOLS_ENABLED
 #include "editor/godot_4d_editor_plugin.h"
 #include "editor/off/editor_import_plugin_off_base.h"
@@ -169,7 +169,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 #if GDEXTENSION
 		GDREGISTER_CLASS(AxisAlignedBoxPhysicsEngine4D);
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
-		GDREGISTER_CLASS(WireframeRenderCanvas);
+		GDREGISTER_CLASS(WireframeRenderCanvas4D);
 		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
 #endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
