@@ -27,6 +27,13 @@
 				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertices] for details of the returned data.
 			</description>
 		</method>
+		<method name="_validate_material_for_mesh" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="material" type="Material4D" />
+			<description>
+				Callback method that should validate a material for a mesh, ensuring that the material is suitable for rendering the mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method validate_material_for_mesh] for details of the input and output.
+			</description>
+		</method>
 		<method name="_validate_mesh_data" qualifiers="virtual">
 			<return type="bool" />
 			<description>
@@ -92,6 +99,13 @@
 			<return type="WireMesh4D" />
 			<description>
 				Converts this Mesh4D to a [WireMesh4D]. This method will use the best conversion available. For example, a [BoxTetraMesh4D] will be converted to a [BoxWireMesh4D]. If no specialized conversion is available, the method will return an [ArrayWireMesh4D]. See [method to_array_wire_mesh] for more details.
+			</description>
+		</method>
+		<method name="validate_material_for_mesh">
+			<return type="void" />
+			<param index="0" name="material" type="Material4D" />
+			<description>
+				Validates that the given material can be used for this mesh. This method may alter the material data if needed to make it compatible with the mesh. For example, if the material has per-edge colors, it will ensure that the color array is at least as big as the amount of edges in the mesh. This method is called automatically when running [method get_active_material], but may also be called manually.
 			</description>
 		</method>
 	</methods>

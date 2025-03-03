@@ -12,15 +12,22 @@ Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh
 		return p_material->get_albedo_color();
 	}
 	Color color = Color(1.0f, 1.0f, 1.0f);
-	if (flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
-		color = p_material->get_albedo_color_array()[p_edge_index];
-	} else if (flags & Material4D::COLOR_SOURCE_FLAG_PER_VERT) {
-		const PackedInt32Array edge_indices = p_mesh->get_edge_indices();
-		const PackedColorArray color_array = p_material->get_albedo_color_array();
-		color = color_array[edge_indices[p_edge_index * 2]].lerp(color_array[edge_indices[p_edge_index * 2 + 1]], 0.5f);
-	}
 	if (flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) {
-		color *= p_material->get_albedo_color();
+		color = p_material->get_albedo_color();
+	}
+	if (flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) {
+		const PackedColorArray &color_array = p_material->get_albedo_color_array();
+		if (flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
+			ERR_FAIL_INDEX_V_MSG(p_edge_index, color_array.size(), color, "Cannot get edge color of mesh because the edge index is out of bounds of the material's color array.");
+			color *= color_array[p_edge_index];
+		} else if (flags & Material4D::COLOR_SOURCE_FLAG_PER_VERT) {
+			const PackedInt32Array &edge_indices = p_mesh->get_edge_indices();
+			const int32_t first_vertex = edge_indices[p_edge_index * 2];
+			const int32_t second_vertex = edge_indices[p_edge_index * 2 + 1];
+			ERR_FAIL_INDEX_V_MSG(first_vertex, color_array.size(), color, "Cannot get vertex color of mesh because the first vertex index is out of bounds of the material's color array.");
+			ERR_FAIL_INDEX_V_MSG(second_vertex, color_array.size(), color, "Cannot get vertex color of mesh because the second vertex index is out of bounds of the material's color array.");
+			color *= color_array[first_vertex].lerp(color_array[second_vertex], 0.5f);
+		}
 	}
 	return color;
 }

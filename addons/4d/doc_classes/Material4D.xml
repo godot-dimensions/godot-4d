@@ -47,6 +47,14 @@
 				Note that even if the item count numbers are set properly, the output color array may still be empty if color arrays are not necessary to color the mesh, such as if both input materials use the same single color. For example, merging materials for a red single-color box and a red single-color sphere will result in a red single-color material with no color arrays.
 			</description>
 		</method>
+		<method name="resize_albedo_color_array">
+			<return type="void" />
+			<param index="0" name="size" type="int" />
+			<param index="1" name="fill_color" type="Color" default="Color(1, 1, 1, 1)" />
+			<description>
+				Resize the albedo color array of the material, filling any new elements with the given color, or with white if no color is provided.
+			</description>
+		</method>
 		<method name="set_albedo_color">
 			<return type="void" />
 			<param index="0" name="albedo_color" type="Color" />

@@ -49,6 +49,19 @@ void TetraMesh4D::tetra_mesh_clear_cache() {
 	_edge_indices_cache.clear();
 }
 
+void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
+	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
+	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
+		const PackedInt32Array cell_indices = get_cell_indices();
+		PackedColorArray color_array = p_material->get_albedo_color_array();
+		const int cell_count = cell_indices.size() / 4;
+		if (color_array.size() < cell_count) {
+			p_material->resize_albedo_color_array(cell_count);
+		}
+	}
+	Mesh4D::validate_material_for_mesh(p_material);
+}
+
 Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	Ref<ArrayTetraMesh4D> array_mesh;
 	array_mesh.instantiate();

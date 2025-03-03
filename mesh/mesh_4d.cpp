@@ -58,6 +58,28 @@ bool Mesh4D::validate_mesh_data() {
 	return ret;
 }
 
+void Mesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
+	GDVIRTUAL_CALL(_validate_material_for_mesh, p_material);
+	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
+	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) {
+		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_VERT) {
+			const PackedVector4Array vertices = get_vertices();
+			PackedColorArray color_array = p_material->get_albedo_color_array();
+			if (color_array.size() < vertices.size()) {
+				p_material->resize_albedo_color_array(vertices.size());
+			}
+		}
+		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
+			const PackedInt32Array edge_indices = get_edge_indices();
+			PackedColorArray color_array = p_material->get_albedo_color_array();
+			const int edge_count = edge_indices.size() / 2;
+			if (color_array.size() < edge_count) {
+				p_material->resize_albedo_color_array(edge_count);
+			}
+		}
+	}
+}
+
 Ref<ArrayWireMesh4D> Mesh4D::to_array_wire_mesh() {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
@@ -103,6 +125,7 @@ void Mesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_mesh_data_valid"), &Mesh4D::is_mesh_data_valid);
 	ClassDB::bind_method(D_METHOD("reset_mesh_data_validation"), &Mesh4D::reset_mesh_data_validation);
+	ClassDB::bind_method(D_METHOD("validate_material_for_mesh", "material"), &Mesh4D::validate_material_for_mesh);
 
 	ClassDB::bind_method(D_METHOD("to_array_wire_mesh"), &Mesh4D::to_array_wire_mesh);
 	ClassDB::bind_method(D_METHOD("to_wire_mesh"), &Mesh4D::to_wire_mesh);
@@ -118,5 +141,6 @@ void Mesh4D::_bind_methods() {
 	GDVIRTUAL_BIND(_get_edge_indices);
 	GDVIRTUAL_BIND(_get_edge_positions);
 	GDVIRTUAL_BIND(_get_vertices);
+	GDVIRTUAL_BIND(_validate_material_for_mesh, "material");
 	GDVIRTUAL_BIND(_validate_mesh_data);
 }
