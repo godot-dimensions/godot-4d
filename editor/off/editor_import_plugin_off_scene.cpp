@@ -59,7 +59,12 @@ void EditorImportPluginOFFScene::get_import_options(const String &p_path, List<I
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "per_face_vertices"), true));
 }
 
-Error EditorImportPluginOFFScene::import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata) {
+#if VERSION_HEX < 0x040400
+Error EditorImportPluginOFFScene::import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
+#else
+Error EditorImportPluginOFFScene::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
+#endif
+{
 	Ref<OFFDocument> off_doc = OFFDocument::load_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
 	Node *node = off_doc->generate_node(p_options[StringName("deduplicate_edges")], p_options[StringName("per_face_vertices")]);

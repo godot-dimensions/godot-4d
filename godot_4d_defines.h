@@ -24,6 +24,7 @@ using namespace godot;
 #elif GODOT_MODULE
 #include "core/object/class_db.h"
 #include "core/string/ustring.h"
+#include "core/version.h"
 #define GDEXTMOD_GUI_INPUT gui_input
 #define GET_NODE_TYPE(m_parent, m_type, m_path) Object::cast_to<m_type>(m_parent->get_node(NodePath(m_path)))
 

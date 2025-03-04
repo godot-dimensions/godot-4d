@@ -39,7 +39,12 @@ void EditorImportPluginOFFWire4D::get_import_options(const String &p_path, List<
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "deduplicate_edges"), true));
 }
 
-Error EditorImportPluginOFFWire4D::import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata) {
+#if VERSION_HEX < 0x040400
+Error EditorImportPluginOFFWire4D::import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
+#else
+Error EditorImportPluginOFFWire4D::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
+#endif
+{
 	Ref<OFFDocument> off_doc = OFFDocument::load_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
 	Ref<ArrayWireMesh4D> wire_mesh = off_doc->generate_wire_mesh_4d(p_options[StringName("deduplicate_edges")]);

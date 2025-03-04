@@ -26,7 +26,7 @@
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/control.h"
 
-#if GODOT_VERSION < 0x040400
+#if VERSION_HEX < 0x040400
 #define set_button_icon set_icon
 #endif
 

@@ -13,7 +13,7 @@
 #include <godot_cpp/classes/popup_menu.hpp>
 #include <godot_cpp/classes/v_separator.hpp>
 
-#if GODOT_VERSION < 0x040400
+#if GODOT_VERSION < 0x040500
 #define get_top_selected_nodes get_transformable_selected_nodes
 #endif // GODOT_VERSION
 #elif GODOT_MODULE
@@ -22,11 +22,11 @@
 #include "scene/gui/popup_menu.h"
 #include "scene/gui/separator.h"
 
-#if GODOT_VERSION < 0x040400
+#if VERSION_HEX < 0x040500
 #define get_top_selected_nodes get_selected_node_list
 #else
 #define get_top_selected_nodes get_top_selected_node_list
-#endif // GODOT_VERSION
+#endif // VERSION_HEX
 #endif
 
 void EditorMainScreen4D::_on_button_toggled(const bool p_toggled_on, const int p_option) {

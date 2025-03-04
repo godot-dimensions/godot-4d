@@ -13,7 +13,7 @@
 #include "editor/editor_interface.h"
 #include "scene/main/window.h"
 
-#if GODOT_VERSION < 0x040400
+#if VERSION_HEX < 0x040400
 #define set_button_icon set_icon
 #endif
 #endif

@@ -14,7 +14,7 @@
 // Godot's 3D uses 80, but for 4D we have more axes, so we need to space them out more.
 constexpr float GIZMO_BASE_SIZE = 100.0f;
 
-String _get_axis_letter(int p_axis) {
+String _get_axis_letter_4d(int p_axis) {
 	switch (p_axis) {
 		case 0:
 			return "X";
@@ -76,7 +76,7 @@ void EditorViewportRotation4D::_draw_axis_circle(const Axis2D &p_axis) {
 	if (p_axis.axis_type == AXIS_TYPE_CIRCLE_POSITIVE) {
 		draw_circle(p_axis.screen_point, axis_circle_radius, color, true, -1.0f, true);
 		// Draw the axis letter for the positive axes.
-		const String axis_letter = _get_axis_letter(p_axis.axis_number);
+		const String axis_letter = _get_axis_letter_4d(p_axis.axis_number);
 		const Ref<Font> &font = get_theme_font(StringName("rotation_control"), StringName("EditorFonts"));
 		const int font_size = get_theme_font_size(StringName("rotation_control_size"), StringName("EditorFonts"));
 		const Size2 char_size = font->get_char_size(axis_letter[0], font_size);
@@ -119,8 +119,8 @@ void EditorViewportRotation4D::_draw_axis_plane(const Axis2D &p_axis) {
 		_draw_filled_arc(p_axis.screen_point, inner_radius, p_axis.angle - QUARTER_TURN, p_axis.angle + QUARTER_TURN, secondary_color.darkened(0.4f));
 	} else {
 		// If the circle is big enough, draw letters.
-		const String primary_letter = _get_axis_letter(p_axis.axis_number);
-		const String secondary_letter = _get_axis_letter(p_axis.secondary_axis_number);
+		const String primary_letter = _get_axis_letter_4d(p_axis.axis_number);
+		const String secondary_letter = _get_axis_letter_4d(p_axis.secondary_axis_number);
 		const Ref<Font> &font = get_theme_font(StringName("rotation_control"), StringName("EditorFonts"));
 		const int font_size = get_theme_font_size(StringName("rotation_control_size"), StringName("EditorFonts"));
 		const Vector2 primary_char_size = font->get_char_size(primary_letter[0], font_size);
