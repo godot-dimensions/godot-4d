@@ -105,7 +105,7 @@
 			<return type="void" />
 			<param index="0" name="material" type="Material4D" />
 			<description>
-				Validates that the given material can be used for this mesh. This method may alter the material data if needed to make it compatible with the mesh. For example, if the material has per-edge colors, it will ensure that the color array is at least as big as the amount of edges in the mesh. This method is called automatically when running [method get_active_material], but may also be called manually.
+				Validates that the given material can be used for this mesh. This method may alter the material data if needed to make it compatible with the mesh. For example, if the material has per-edge colors, it will ensure that the color array is at least as big as the amount of edges in the mesh. This method is called automatically when running [method MeshInstance4D.get_active_material], but may also be called manually.
 			</description>
 		</method>
 	</methods>
