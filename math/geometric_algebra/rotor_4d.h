@@ -162,3 +162,5 @@ Rotor4D operator+(const Bivector4D p_bivector, const Rotor4D &p_rotor);
 
 Rotor4D operator*(const real_t p_scalar, const Rotor4D &p_rotor);
 Rotor4D operator*(const Bivector4D p_bivector, const Rotor4D &p_rotor);
+
+static_assert(sizeof(Rotor4D) == sizeof(real_t) * 8);

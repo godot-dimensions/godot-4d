@@ -87,3 +87,5 @@ struct _NO_DISCARD_ Bivector4D {
 
 Bivector4D operator+(const real_t p_scalar, const Bivector4D &p_bivec);
 Bivector4D operator*(const real_t p_scalar, const Bivector4D &p_bivec);
+
+static_assert(sizeof(Bivector4D) == sizeof(real_t) * 6);

@@ -170,3 +170,5 @@ struct _NO_DISCARD_ Basis4D {
 		w = Vector4(p_wx, p_wy, p_wz, p_ww);
 	}
 };
+
+static_assert(sizeof(Basis4D) == sizeof(real_t) * 16);

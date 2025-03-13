@@ -83,3 +83,5 @@ struct _NO_DISCARD_ Rect4i {
 			size(p_size_x, p_size_y, p_size_z, p_size_w) {
 	}
 };
+
+static_assert(sizeof(Rect4i) == sizeof(int32_t) * 8);

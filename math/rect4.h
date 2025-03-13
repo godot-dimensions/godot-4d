@@ -98,3 +98,5 @@ struct _NO_DISCARD_ Rect4 {
 			size(p_size_x, p_size_y, p_size_z, p_size_w) {
 	}
 };
+
+static_assert(sizeof(Rect4) == sizeof(real_t) * 8);

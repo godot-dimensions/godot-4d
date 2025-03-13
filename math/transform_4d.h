@@ -144,3 +144,5 @@ struct _NO_DISCARD_ Transform4D {
 		origin = Vector4(p_ox, p_oy, p_oz, p_ow);
 	}
 };
+
+static_assert(sizeof(Transform4D) == sizeof(real_t) * 20);

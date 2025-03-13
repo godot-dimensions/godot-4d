@@ -136,3 +136,5 @@ struct _NO_DISCARD_ Euler4D {
 		zw = p_zw;
 	}
 };
+
+static_assert(sizeof(Euler4D) == sizeof(real_t) * 6);

@@ -71,3 +71,5 @@ struct _NO_DISCARD_ Trivector4D {
 };
 
 Trivector4D operator*(const real_t p_scalar, const Trivector4D &p_trivec);
+
+static_assert(sizeof(Trivector4D) == sizeof(real_t) * 4);

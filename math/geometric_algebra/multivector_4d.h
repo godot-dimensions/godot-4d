@@ -177,3 +177,5 @@ Multivector4D operator*(const Vector4 &p_vector, const Multivector4D &p_multivec
 Multivector4D operator*(const Bivector4D &p_bivector, const Multivector4D &p_multivec);
 Multivector4D operator*(const Trivector4D &p_trivector, const Multivector4D &p_multivec);
 Multivector4D operator*(const Rotor4D &p_rotor, const Multivector4D &p_multivec);
+
+static_assert(sizeof(Multivector4D) == sizeof(real_t) * 16);

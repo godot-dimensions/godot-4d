@@ -100,3 +100,5 @@ struct _NO_DISCARD_ Motor4D {
 	Motor4D(const real_t p_scalar, const Vector4 &p_vector, const Bivector4D &p_bivector, const real_t p_pseudoscalar);
 	Motor4D(const real_t p_s, const real_t p_x, const real_t p_y, const real_t p_z, const real_t p_w, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yz, const real_t p_yw, const real_t p_zw, const real_t p_xyzw);
 };
+
+static_assert(sizeof(Motor4D) == sizeof(real_t) * 12);
