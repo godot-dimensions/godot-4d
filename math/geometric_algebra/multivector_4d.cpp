@@ -86,8 +86,8 @@ Multivector4D Multivector4D::inverse() const {
 	Multivector4D first = (*this) * rev;
 	Multivector4D negate_s = first;
 	negate_s.s = -negate_s.s;
-	real_t scalar = first.scalar_product(negate_s);
-	Multivector4D inv = rev * negate_s / scalar;
+	real_t scalar_prod = first.scalar_product(negate_s);
+	Multivector4D inv = rev * negate_s / scalar_prod;
 	return inv;
 }
 
@@ -200,10 +200,10 @@ Basis4D Multivector4D::rotate_basis(const Basis4D &p_basis) const {
 #endif
 	const Multivector4D rev = reverse();
 	return Basis4D(
-			(rev * p_basis.x * *this).vector,
-			(rev * p_basis.y * *this).vector,
-			(rev * p_basis.z * *this).vector,
-			(rev * p_basis.w * *this).vector);
+			(rev * p_basis.x * *this).parts.vector,
+			(rev * p_basis.y * *this).parts.vector,
+			(rev * p_basis.z * *this).parts.vector,
+			(rev * p_basis.w * *this).parts.vector);
 }
 
 Vector4 Multivector4D::rotate_vector(const Vector4 &p_vec) const {
@@ -216,7 +216,7 @@ Vector4 Multivector4D::rotate_vector(const Vector4 &p_vec) const {
 	// I've double-checked the constructors, products, and multiplication operator and all they seem correct.
 	// This seems really weird, since Quaternions use q * v * q^-1 to do this. - aaronfranke
 	const Multivector4D multivec = rev * p_vec * *this;
-	return multivec.vector;
+	return multivec.parts.vector;
 }
 
 // Length functions.
@@ -230,7 +230,7 @@ real_t Multivector4D::length() const {
 // However, for vanilla geometric algebra, this simplifies to the same trivial formula you'd expect for vectors and scalars.
 // Reference: https://www.youtube.com/watch?v=2AKt6adG_OI&t=940s
 real_t Multivector4D::length_squared() const {
-	return scalar * scalar + vector.length_squared() + bivector.length_squared() + trivector.length_squared() + pseudoscalar * pseudoscalar;
+	return parts.scalar * parts.scalar + parts.vector.length_squared() + parts.bivector.length_squared() + parts.trivector.length_squared() + parts.pseudoscalar * parts.pseudoscalar;
 }
 
 Multivector4D Multivector4D::normalized() const {
@@ -246,13 +246,13 @@ bool Multivector4D::is_normalized() const {
 }
 
 bool Multivector4D::is_rotor(const bool p_pure) const {
-	if (!Math::is_equal_approx(vector.length_squared(), (real_t)0.0)) {
+	if (!Math::is_equal_approx(parts.vector.length_squared(), (real_t)0.0)) {
 		return false;
 	}
-	if (!Math::is_equal_approx(trivector.length_squared(), (real_t)0.0)) {
+	if (!Math::is_equal_approx(parts.trivector.length_squared(), (real_t)0.0)) {
 		return false;
 	}
-	if (p_pure && !Math::is_equal_approx(pseudoscalar, (real_t)0.0)) {
+	if (p_pure && !Math::is_equal_approx(parts.pseudoscalar, (real_t)0.0)) {
 		return false;
 	}
 	return Math::is_equal_approx(length_squared(), (real_t)1.0);
@@ -267,7 +267,7 @@ bool Multivector4D::is_rotor(const bool p_pure) const {
 // some angle, the input vectors should have an angle between them of half the desired rotation angle.
 Multivector4D Multivector4D::vector_product(const Vector4 &p_a, const Vector4 &p_b) {
 	Multivector4D result;
-	result.scalar = p_a.dot(p_b);
+	result.s = p_a.dot(p_b);
 	result.xy = p_a.x * p_b.y - p_a.y * p_b.x;
 	result.xz = p_a.x * p_b.z - p_a.z * p_b.x;
 	result.xw = p_a.x * p_b.w - p_a.w * p_b.x;
@@ -293,107 +293,107 @@ Multivector4D Multivector4D::vector_wedge_product(const Vector4 &p_a, const Vect
 // Trivial getters and setters.
 
 real_t Multivector4D::get_scalar() const {
-	return scalar;
+	return parts.scalar;
 }
 
 void Multivector4D::set_scalar(const real_t p_scalar) {
-	scalar = p_scalar;
+	parts.scalar = p_scalar;
 }
 
 Vector4 Multivector4D::get_vector() const {
-	return vector;
+	return parts.vector;
 }
 
 void Multivector4D::set_vector(const Vector4 &p_vector) {
-	vector = p_vector;
+	parts.vector = p_vector;
 }
 
 Bivector4D Multivector4D::get_bivector() const {
-	return bivector;
+	return parts.bivector;
 }
 
 void Multivector4D::set_bivector(const Bivector4D &p_bivector) {
-	bivector = p_bivector;
+	parts.bivector = p_bivector;
 }
 
 Trivector4D Multivector4D::get_trivector() const {
-	return trivector;
+	return parts.trivector;
 }
 
 void Multivector4D::set_trivector(const Trivector4D &p_trivector) {
-	trivector = p_trivector;
+	parts.trivector = p_trivector;
 }
 
 real_t Multivector4D::get_pseudoscalar() const {
-	return pseudoscalar;
+	return parts.pseudoscalar;
 }
 
 void Multivector4D::set_pseudoscalar(const real_t p_pseudoscalar) {
-	pseudoscalar = p_pseudoscalar;
+	parts.pseudoscalar = p_pseudoscalar;
 }
 
 Rotor4D Multivector4D::get_rotor() const {
-	return Rotor4D(scalar, bivector, pseudoscalar);
+	return Rotor4D(parts.scalar, parts.bivector, parts.pseudoscalar);
 }
 
 void Multivector4D::set_rotor(const Rotor4D &p_rotor) {
-	scalar = p_rotor.scalar;
-	bivector = p_rotor.bivector;
-	pseudoscalar = p_rotor.pseudoscalar;
+	parts.scalar = p_rotor.parts.scalar;
+	parts.bivector = p_rotor.parts.bivector;
+	parts.pseudoscalar = p_rotor.parts.pseudoscalar;
 }
 
 // Operators.
 
 bool Multivector4D::is_equal_approx(const Multivector4D &p_other) const {
-	return Math::is_equal_approx(scalar, p_other.scalar) && vector.is_equal_approx(p_other.vector) && bivector.is_equal_approx(p_other.bivector) && trivector.is_equal_approx(p_other.trivector) && Math::is_equal_approx(pseudoscalar, p_other.pseudoscalar);
+	return Math::is_equal_approx(parts.scalar, p_other.parts.scalar) && parts.vector.is_equal_approx(p_other.parts.vector) && parts.bivector.is_equal_approx(p_other.parts.bivector) && parts.trivector.is_equal_approx(p_other.parts.trivector) && Math::is_equal_approx(parts.pseudoscalar, p_other.parts.pseudoscalar);
 }
 
 bool Multivector4D::operator==(const Multivector4D &p_v) const {
-	return (scalar == p_v.scalar && vector == p_v.vector && bivector == p_v.bivector && trivector == p_v.trivector && pseudoscalar == p_v.pseudoscalar);
+	return (parts.scalar == p_v.parts.scalar && parts.vector == p_v.parts.vector && parts.bivector == p_v.parts.bivector && parts.trivector == p_v.parts.trivector && parts.pseudoscalar == p_v.parts.pseudoscalar);
 }
 
 bool Multivector4D::operator!=(const Multivector4D &p_v) const {
-	return (scalar != p_v.scalar || vector != p_v.vector || bivector != p_v.bivector || trivector != p_v.trivector || pseudoscalar != p_v.pseudoscalar);
+	return (parts.scalar != p_v.parts.scalar || parts.vector != p_v.parts.vector || parts.bivector != p_v.parts.bivector || parts.trivector != p_v.parts.trivector || parts.pseudoscalar != p_v.parts.pseudoscalar);
 }
 
 Multivector4D Multivector4D::operator-() const {
-	return Multivector4D(-scalar, -vector, -bivector, -trivector, -pseudoscalar);
+	return Multivector4D(-parts.scalar, -parts.vector, -parts.bivector, -parts.trivector, -parts.pseudoscalar);
 }
 
 Multivector4D &Multivector4D::operator+=(const Multivector4D &p_v) {
-	scalar += p_v.scalar;
-	vector += p_v.vector;
-	bivector += p_v.bivector;
-	trivector += p_v.trivector;
-	pseudoscalar += p_v.pseudoscalar;
+	parts.scalar += p_v.parts.scalar;
+	parts.vector += p_v.parts.vector;
+	parts.bivector += p_v.parts.bivector;
+	parts.trivector += p_v.parts.trivector;
+	parts.pseudoscalar += p_v.parts.pseudoscalar;
 	return *this;
 }
 
 Multivector4D Multivector4D::operator+(const Multivector4D &p_v) const {
-	return Multivector4D(scalar + p_v.scalar, vector + p_v.vector, bivector + p_v.bivector, trivector + p_v.trivector, pseudoscalar + p_v.pseudoscalar);
+	return Multivector4D(parts.scalar + p_v.parts.scalar, parts.vector + p_v.parts.vector, parts.bivector + p_v.parts.bivector, parts.trivector + p_v.parts.trivector, parts.pseudoscalar + p_v.parts.pseudoscalar);
 }
 
 Multivector4D &Multivector4D::operator-=(const Multivector4D &p_v) {
-	scalar -= p_v.scalar;
-	vector -= p_v.vector;
-	bivector -= p_v.bivector;
-	trivector -= p_v.trivector;
-	pseudoscalar -= p_v.pseudoscalar;
+	parts.scalar -= p_v.parts.scalar;
+	parts.vector -= p_v.parts.vector;
+	parts.bivector -= p_v.parts.bivector;
+	parts.trivector -= p_v.parts.trivector;
+	parts.pseudoscalar -= p_v.parts.pseudoscalar;
 	return *this;
 }
 
 Multivector4D Multivector4D::operator-(const Multivector4D &p_v) const {
-	return Multivector4D(scalar - p_v.scalar, vector - p_v.vector, bivector - p_v.bivector, trivector - p_v.trivector, pseudoscalar - p_v.pseudoscalar);
+	return Multivector4D(parts.scalar - p_v.parts.scalar, parts.vector - p_v.parts.vector, parts.bivector - p_v.parts.bivector, parts.trivector - p_v.parts.trivector, parts.pseudoscalar - p_v.parts.pseudoscalar);
 }
 
 Multivector4D &Multivector4D::operator*=(const Multivector4D &p_child) {
 	// Can't do an in-place multiply because the operation requires the original values throughout the calculation.
 	Multivector4D result = *this * p_child;
-	scalar = result.scalar;
-	vector = result.vector;
-	bivector = result.bivector;
-	trivector = result.trivector;
-	pseudoscalar = result.pseudoscalar;
+	parts.scalar = result.parts.scalar;
+	parts.vector = result.parts.vector;
+	parts.bivector = result.parts.bivector;
+	parts.trivector = result.parts.trivector;
+	parts.pseudoscalar = result.parts.pseudoscalar;
 	return *this;
 }
 
@@ -421,76 +421,76 @@ Multivector4D Multivector4D::operator*(const Multivector4D &p_b) const {
 // Operators with Multivector4D on the left and other things on the right.
 
 Multivector4D &Multivector4D::operator+=(const real_t p_scalar) {
-	scalar += p_scalar;
+	parts.scalar += p_scalar;
 	return *this;
 }
 
 Multivector4D Multivector4D::operator+(const real_t p_scalar) const {
 	Multivector4D result = *this;
-	result.scalar += p_scalar;
+	result.parts.scalar += p_scalar;
 	return result;
 }
 
 Multivector4D &Multivector4D::operator-=(const real_t p_scalar) {
-	scalar -= p_scalar;
+	parts.scalar -= p_scalar;
 	return *this;
 }
 
 Multivector4D Multivector4D::operator-(const real_t p_scalar) const {
 	Multivector4D result = *this;
-	result.scalar -= p_scalar;
+	result.parts.scalar -= p_scalar;
 	return result;
 }
 
 Multivector4D &Multivector4D::operator*=(const real_t p_scalar) {
-	scalar *= p_scalar;
-	vector *= p_scalar;
-	bivector *= p_scalar;
-	trivector *= p_scalar;
-	pseudoscalar *= p_scalar;
+	parts.scalar *= p_scalar;
+	parts.vector *= p_scalar;
+	parts.bivector *= p_scalar;
+	parts.trivector *= p_scalar;
+	parts.pseudoscalar *= p_scalar;
 	return *this;
 }
 
 Multivector4D Multivector4D::operator*(const real_t p_scalar) const {
-	return Multivector4D(scalar * p_scalar, vector * p_scalar, bivector * p_scalar, trivector * p_scalar, pseudoscalar * p_scalar);
+	return Multivector4D(parts.scalar * p_scalar, parts.vector * p_scalar, parts.bivector * p_scalar, parts.trivector * p_scalar, parts.pseudoscalar * p_scalar);
 }
 
 Multivector4D &Multivector4D::operator/=(const real_t p_scalar) {
-	scalar /= p_scalar;
-	vector /= p_scalar;
-	bivector /= p_scalar;
-	trivector /= p_scalar;
-	pseudoscalar /= p_scalar;
+	parts.scalar /= p_scalar;
+	parts.vector /= p_scalar;
+	parts.bivector /= p_scalar;
+	parts.trivector /= p_scalar;
+	parts.pseudoscalar /= p_scalar;
 	return *this;
 }
 
 Multivector4D Multivector4D::operator/(const real_t p_scalar) const {
-	return Multivector4D(scalar / p_scalar, vector / p_scalar, bivector / p_scalar, trivector / p_scalar, pseudoscalar / p_scalar);
+	return Multivector4D(parts.scalar / p_scalar, parts.vector / p_scalar, parts.bivector / p_scalar, parts.trivector / p_scalar, parts.pseudoscalar / p_scalar);
 }
 
 Multivector4D Multivector4D::operator+(const Vector4 &p_vector) const {
 	Multivector4D result = *this;
-	result.vector += p_vector;
+	result.parts.vector += p_vector;
 	return result;
 }
 
 Multivector4D Multivector4D::operator+(const Bivector4D &p_b) const {
 	Multivector4D result = *this;
-	result.bivector += p_b;
+	result.parts.bivector += p_b;
 	return result;
 }
 
 Multivector4D Multivector4D::operator+(const Trivector4D &p_b) const {
 	Multivector4D result = *this;
-	result.trivector += p_b;
+	result.parts.trivector += p_b;
 	return result;
 }
 
 Multivector4D Multivector4D::operator+(const Rotor4D &p_b) const {
 	Multivector4D result = *this;
-	result.scalar += p_b.scalar;
-	result.bivector += p_b.bivector;
-	result.pseudoscalar += p_b.pseudoscalar;
+	result.parts.scalar += p_b.parts.scalar;
+	result.parts.bivector += p_b.parts.bivector;
+	result.parts.pseudoscalar += p_b.parts.pseudoscalar;
 	return result;
 }
 
@@ -620,39 +620,39 @@ Multivector4D Multivector4D::identity() {
 
 Multivector4D operator+(const real_t p_scalar, const Multivector4D &p_multivec) {
 	Multivector4D result = p_multivec;
-	result.scalar += p_scalar;
+	result.parts.scalar += p_scalar;
 	return result;
 }
 
 Multivector4D operator+(const Vector4 &p_vector, const Multivector4D &p_multivec) {
 	Multivector4D result = p_multivec;
-	result.vector += p_vector;
+	result.parts.vector += p_vector;
 	return result;
 }
 
 Multivector4D operator+(const Bivector4D &p_bivector, const Multivector4D &p_multivec) {
 	// Addition is commutative, so b += a is the same as a = a + b.
 	Multivector4D result = p_multivec;
-	result.bivector += p_bivector;
+	result.parts.bivector += p_bivector;
 	return result;
 }
 
 Multivector4D operator+(const Trivector4D &p_trivector, const Multivector4D &p_multivec) {
 	Multivector4D result = p_multivec;
-	result.trivector += p_trivector;
+	result.parts.trivector += p_trivector;
 	return result;
 }
 
 Multivector4D operator+(const Rotor4D &p_rotor, const Multivector4D &p_multivec) {
 	Multivector4D result = p_multivec;
-	result.scalar += p_rotor.scalar;
-	result.bivector += p_rotor.bivector;
-	result.pseudoscalar += p_rotor.pseudoscalar;
+	result.parts.scalar += p_rotor.parts.scalar;
+	result.parts.bivector += p_rotor.parts.bivector;
+	result.parts.pseudoscalar += p_rotor.parts.pseudoscalar;
 	return result;
 }
 
 Multivector4D operator*(const real_t p_scalar, const Multivector4D &p_multivec) {
-	return Multivector4D(p_scalar * p_multivec.scalar, p_scalar * p_multivec.vector, p_scalar * p_multivec.bivector, p_scalar * p_multivec.trivector, p_scalar * p_multivec.pseudoscalar);
+	return Multivector4D(p_scalar * p_multivec.parts.scalar, p_scalar * p_multivec.parts.vector, p_scalar * p_multivec.parts.bivector, p_scalar * p_multivec.parts.trivector, p_scalar * p_multivec.parts.pseudoscalar);
 }
 
 Multivector4D operator*(const Vector4 &p_vector, const Multivector4D &p_multivec) {
@@ -773,7 +773,7 @@ PackedRealArray Multivector4D::to_array() const {
 	PackedRealArray arr;
 	arr.resize(16);
 	real_t *ptr = arr.ptrw();
-	ptr[0] = scalar;
+	ptr[0] = s;
 	ptr[1] = x;
 	ptr[2] = y;
 	ptr[3] = z;
@@ -794,127 +794,127 @@ PackedRealArray Multivector4D::to_array() const {
 
 Multivector4D Multivector4D::from_rotor(const Rotor4D &p_rotor) {
 	Multivector4D result;
-	result.scalar = p_rotor.scalar;
-	result.bivector = p_rotor.bivector;
-	result.pseudoscalar = p_rotor.pseudoscalar;
+	result.parts.scalar = p_rotor.parts.scalar;
+	result.parts.bivector = p_rotor.parts.bivector;
+	result.parts.pseudoscalar = p_rotor.parts.pseudoscalar;
 	return result;
 }
 
 Multivector4D Multivector4D::from_rotor_vector(const Rotor4D &p_rotor, const Vector4 &p_vector) {
 	Multivector4D result;
-	result.scalar = p_rotor.scalar;
-	result.vector = p_vector;
-	result.bivector = p_rotor.bivector;
-	result.pseudoscalar = p_rotor.pseudoscalar;
+	result.parts.scalar = p_rotor.parts.scalar;
+	result.parts.vector = p_vector;
+	result.parts.bivector = p_rotor.parts.bivector;
+	result.parts.pseudoscalar = p_rotor.parts.pseudoscalar;
 	return result;
 }
 
 Multivector4D Multivector4D::from_scalar(const real_t p_scalar) {
 	Multivector4D result;
-	result.scalar = p_scalar;
+	result.parts.scalar = p_scalar;
 	return result;
 }
 
 Multivector4D Multivector4D::from_vector(const Vector4 &p_vector) {
 	Multivector4D result;
-	result.vector = p_vector;
+	result.parts.vector = p_vector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_bivector(const Bivector4D &p_bivector) {
 	Multivector4D result;
-	result.bivector = p_bivector;
+	result.parts.bivector = p_bivector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_trivector(const Trivector4D &p_trivector) {
 	Multivector4D result;
-	result.trivector = p_trivector;
+	result.parts.trivector = p_trivector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_pseudoscalar(const real_t p_pseudoscalar) {
 	Multivector4D result;
-	result.pseudoscalar = p_pseudoscalar;
+	result.parts.pseudoscalar = p_pseudoscalar;
 	return result;
 }
 
 Multivector4D Multivector4D::from_scalar_vector(const real_t p_scalar, const Vector4 &p_vector) {
 	Multivector4D result;
-	result.scalar = p_scalar;
-	result.vector = p_vector;
+	result.parts.scalar = p_scalar;
+	result.parts.vector = p_vector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_scalar_bivector(const real_t p_scalar, const Bivector4D &p_bivector) {
 	Multivector4D result;
-	result.scalar = p_scalar;
-	result.bivector = p_bivector;
+	result.parts.scalar = p_scalar;
+	result.parts.bivector = p_bivector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_scalar_trivector(const real_t p_scalar, const Trivector4D &p_trivector) {
 	Multivector4D result;
-	result.scalar = p_scalar;
-	result.trivector = p_trivector;
+	result.parts.scalar = p_scalar;
+	result.parts.trivector = p_trivector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_scalar_pseudoscalar(const real_t p_scalar, const real_t p_pseudoscalar) {
 	Multivector4D result;
-	result.scalar = p_scalar;
-	result.pseudoscalar = p_pseudoscalar;
+	result.parts.scalar = p_scalar;
+	result.parts.pseudoscalar = p_pseudoscalar;
 	return result;
 }
 
 Multivector4D Multivector4D::from_vector_bivector(const Vector4 &p_vector, const Bivector4D &p_bivector) {
 	Multivector4D result;
-	result.vector = p_vector;
-	result.bivector = p_bivector;
+	result.parts.vector = p_vector;
+	result.parts.bivector = p_bivector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_vector_trivector(const Vector4 &p_vector, const Trivector4D &p_trivector) {
 	Multivector4D result;
-	result.vector = p_vector;
-	result.trivector = p_trivector;
+	result.parts.vector = p_vector;
+	result.parts.trivector = p_trivector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_vector_pseudoscalar(const Vector4 &p_vector, const real_t p_pseudoscalar) {
 	Multivector4D result;
-	result.vector = p_vector;
-	result.pseudoscalar = p_pseudoscalar;
+	result.parts.vector = p_vector;
+	result.parts.pseudoscalar = p_pseudoscalar;
 	return result;
 }
 
 Multivector4D Multivector4D::from_bivector_trivector(const Bivector4D &p_bivector, const Trivector4D &p_trivector) {
 	Multivector4D result;
-	result.bivector = p_bivector;
-	result.trivector = p_trivector;
+	result.parts.bivector = p_bivector;
+	result.parts.trivector = p_trivector;
 	return result;
 }
 
 Multivector4D Multivector4D::from_bivector_pseudoscalar(const Bivector4D &p_bivector, const real_t p_pseudoscalar) {
 	Multivector4D result;
-	result.bivector = p_bivector;
-	result.pseudoscalar = p_pseudoscalar;
+	result.parts.bivector = p_bivector;
+	result.parts.pseudoscalar = p_pseudoscalar;
 	return result;
 }
 
 Multivector4D Multivector4D::from_trivector_pseudoscalar(const Trivector4D &p_trivector, const real_t p_pseudoscalar) {
 	Multivector4D result;
-	result.trivector = p_trivector;
-	result.pseudoscalar = p_pseudoscalar;
+	result.parts.trivector = p_trivector;
+	result.parts.pseudoscalar = p_pseudoscalar;
 	return result;
 }
 
 Multivector4D::Multivector4D(const real_t p_scalar, const Vector4 &p_vector, const Bivector4D &p_bivector, const Trivector4D &p_trivector, const real_t p_pseudoscalar) {
-	scalar = p_scalar;
-	vector = p_vector;
-	bivector = p_bivector;
-	trivector = p_trivector;
-	pseudoscalar = p_pseudoscalar;
+	parts.scalar = p_scalar;
+	parts.vector = p_vector;
+	parts.bivector = p_bivector;
+	parts.trivector = p_trivector;
+	parts.pseudoscalar = p_pseudoscalar;
 }
 
 Multivector4D::Multivector4D(const real_t p_s, const real_t p_x, const real_t p_y, const real_t p_z, const real_t p_w, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yz, const real_t p_yw, const real_t p_zw, const real_t p_xyz, const real_t p_xyw, const real_t p_xzw, const real_t p_yzw, const real_t p_xyzw) {

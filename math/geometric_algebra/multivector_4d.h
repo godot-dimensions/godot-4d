@@ -15,7 +15,7 @@ struct _NO_DISCARD_ Multivector4D {
 			Bivector4D bivector;
 			Trivector4D trivector;
 			real_t pseudoscalar; // A 4-vector in 4D is just a single number representing xyzw, we call it a pseudoscalar.
-		};
+		} parts;
 
 		struct {
 			real_t s; // 0

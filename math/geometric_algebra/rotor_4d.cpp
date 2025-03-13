@@ -60,8 +60,8 @@ Rotor4D Rotor4D::inverse() const {
 	Rotor4D first = (*this) * rev;
 	Rotor4D negate_s = first;
 	negate_s.s = -negate_s.s;
-	real_t scalar = first.scalar_product(negate_s);
-	Rotor4D inv = rev * negate_s / scalar;
+	real_t scalar_prod = first.scalar_product(negate_s);
+	Rotor4D inv = rev * negate_s / scalar_prod;
 	return inv;
 }
 
@@ -153,15 +153,15 @@ Basis4D Rotor4D::get_rotation_basis() const {
 }
 
 real_t Rotor4D::get_rotation_angle() const {
-	return 2.0f * Math::atan2(bivector.length(), s);
+	return 2.0f * Math::atan2(parts.bivector.length(), s);
 }
 
 Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
-	return bivector * get_rotation_angle();
+	return parts.bivector * get_rotation_angle();
 }
 
 Bivector4D Rotor4D::get_rotation_bivector_normal() const {
-	return bivector.normalized();
+	return parts.bivector.normalized();
 }
 
 Basis4D Rotor4D::rotate_basis(const Basis4D &p_basis) const {
@@ -240,12 +240,12 @@ Rotor4D Rotor4D::slerp_fraction(const real_t p_weight) const {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D(), "The rotor " + operator String() + " must be normalized.");
 #endif
-	double_t angle = Math::acos(scalar);
+	double_t angle = Math::acos(parts.scalar);
 	double_t sin_angle = Math::sin(angle);
 	double_t fractional_angle = p_weight * angle;
 	double_t new_s = Math::cos(fractional_angle);
 	double_t new_sin_angle = Math::sin(fractional_angle);
-	Bivector4D new_bivector = bivector * (new_sin_angle / sin_angle);
+	Bivector4D new_bivector = parts.bivector * (new_sin_angle / sin_angle);
 	return Rotor4D(new_s, new_bivector).normalized();
 }
 
@@ -256,7 +256,7 @@ real_t Rotor4D::length() const {
 }
 
 real_t Rotor4D::length_squared() const {
-	return scalar * scalar + bivector.length_squared() + pseudoscalar * pseudoscalar;
+	return parts.scalar * parts.scalar + parts.bivector.length_squared() + parts.pseudoscalar * parts.pseudoscalar;
 }
 
 Rotor4D Rotor4D::normalized() const {
@@ -284,7 +284,7 @@ bool Rotor4D::is_rotation() const {
 // some angle, the input vectors should have an angle between them of half the desired rotation angle.
 Rotor4D Rotor4D::vector_product(const Vector4 &p_a, const Vector4 &p_b) {
 	Rotor4D result;
-	result.scalar = p_a.dot(p_b);
+	result.s = p_a.dot(p_b);
 	result.xy = p_a.x * p_b.y - p_a.y * p_b.x;
 	result.xz = p_a.x * p_b.z - p_a.z * p_b.x;
 	result.xw = p_a.x * p_b.w - p_a.w * p_b.x;
@@ -436,75 +436,75 @@ Rotor4D Rotor4D::with_xyzw(const real_t p_xyzw) const {
 // Trivial getters and setters.
 
 real_t Rotor4D::get_scalar() const {
-	return scalar;
+	return parts.scalar;
 }
 
 void Rotor4D::set_scalar(const real_t p_scalar) {
-	scalar = p_scalar;
+	parts.scalar = p_scalar;
 }
 
 Bivector4D Rotor4D::get_bivector() const {
-	return bivector;
+	return parts.bivector;
 }
 
 void Rotor4D::set_bivector(const Bivector4D &p_bivector) {
-	bivector = p_bivector;
+	parts.bivector = p_bivector;
 }
 
 real_t Rotor4D::get_pseudoscalar() const {
-	return pseudoscalar;
+	return parts.pseudoscalar;
 }
 
 void Rotor4D::set_pseudoscalar(const real_t p_pseudoscalar) {
-	pseudoscalar = p_pseudoscalar;
+	parts.pseudoscalar = p_pseudoscalar;
 }
 
 // Operators.
 
 bool Rotor4D::is_equal_approx(const Rotor4D &p_other) const {
-	return Math::is_equal_approx(scalar, p_other.scalar) && bivector.is_equal_approx(p_other.bivector) && Math::is_equal_approx(pseudoscalar, p_other.pseudoscalar);
+	return Math::is_equal_approx(parts.scalar, p_other.parts.scalar) && parts.bivector.is_equal_approx(p_other.parts.bivector) && Math::is_equal_approx(parts.pseudoscalar, p_other.parts.pseudoscalar);
 }
 
 bool Rotor4D::operator==(const Rotor4D &p_v) const {
-	return (scalar == p_v.scalar && bivector == p_v.bivector && pseudoscalar == p_v.pseudoscalar);
+	return (parts.scalar == p_v.parts.scalar && parts.bivector == p_v.parts.bivector && parts.pseudoscalar == p_v.parts.pseudoscalar);
 }
 
 bool Rotor4D::operator!=(const Rotor4D &p_v) const {
-	return (scalar != p_v.scalar || bivector != p_v.bivector || pseudoscalar != p_v.pseudoscalar);
+	return (parts.scalar != p_v.parts.scalar || parts.bivector != p_v.parts.bivector || parts.pseudoscalar != p_v.parts.pseudoscalar);
 }
 
 Rotor4D Rotor4D::operator-() const {
-	return Rotor4D(-scalar, -bivector, -pseudoscalar);
+	return Rotor4D(-parts.scalar, -parts.bivector, -parts.pseudoscalar);
 }
 
 Rotor4D &Rotor4D::operator+=(const Rotor4D &p_v) {
-	scalar += p_v.scalar;
-	bivector += p_v.bivector;
-	pseudoscalar += p_v.pseudoscalar;
+	parts.scalar += p_v.parts.scalar;
+	parts.bivector += p_v.parts.bivector;
+	parts.pseudoscalar += p_v.parts.pseudoscalar;
 	return *this;
 }
 
 Rotor4D Rotor4D::operator+(const Rotor4D &p_v) const {
-	return Rotor4D(scalar + p_v.scalar, bivector + p_v.bivector, pseudoscalar + p_v.pseudoscalar);
+	return Rotor4D(parts.scalar + p_v.parts.scalar, parts.bivector + p_v.parts.bivector, parts.pseudoscalar + p_v.parts.pseudoscalar);
 }
 
 Rotor4D &Rotor4D::operator-=(const Rotor4D &p_v) {
-	scalar -= p_v.scalar;
-	bivector -= p_v.bivector;
-	pseudoscalar -= p_v.pseudoscalar;
+	parts.scalar -= p_v.parts.scalar;
+	parts.bivector -= p_v.parts.bivector;
+	parts.pseudoscalar -= p_v.parts.pseudoscalar;
 	return *this;
 }
 
 Rotor4D Rotor4D::operator-(const Rotor4D &p_v) const {
-	return Rotor4D(scalar - p_v.scalar, bivector - p_v.bivector, pseudoscalar - p_v.pseudoscalar);
+	return Rotor4D(parts.scalar - p_v.parts.scalar, parts.bivector - p_v.parts.bivector, parts.pseudoscalar - p_v.parts.pseudoscalar);
 }
 
 Rotor4D &Rotor4D::operator*=(const Rotor4D &p_child) {
 	// Can't do an in-place multiply because the operation requires the original values throughout the calculation.
 	Rotor4D result = *this * p_child;
-	scalar = result.scalar;
-	bivector = result.bivector;
-	pseudoscalar = result.pseudoscalar;
+	parts.scalar = result.parts.scalar;
+	parts.bivector = result.parts.bivector;
+	parts.pseudoscalar = result.parts.pseudoscalar;
 	return *this;
 }
 
@@ -522,47 +522,47 @@ Rotor4D Rotor4D::operator*(const Rotor4D &p_b) const {
 }
 
 Rotor4D &Rotor4D::operator+=(const real_t p_scalar) {
-	scalar += p_scalar;
+	parts.scalar += p_scalar;
 	return *this;
 }
 
 Rotor4D Rotor4D::operator+(const real_t p_scalar) const {
 	Rotor4D result = *this;
-	result.scalar += p_scalar;
+	result.parts.scalar += p_scalar;
 	return result;
 }
 
 Rotor4D &Rotor4D::operator-=(const real_t p_scalar) {
-	scalar -= p_scalar;
+	parts.scalar -= p_scalar;
 	return *this;
 }
 
 Rotor4D Rotor4D::operator-(const real_t p_scalar) const {
 	Rotor4D result = *this;
-	result.scalar -= p_scalar;
+	result.parts.scalar -= p_scalar;
 	return result;
 }
 
 Rotor4D &Rotor4D::operator*=(const real_t p_scalar) {
-	scalar *= p_scalar;
-	bivector *= p_scalar;
-	pseudoscalar *= p_scalar;
+	parts.scalar *= p_scalar;
+	parts.bivector *= p_scalar;
+	parts.pseudoscalar *= p_scalar;
 	return *this;
 }
 
 Rotor4D Rotor4D::operator*(const real_t p_scalar) const {
-	return Rotor4D(scalar * p_scalar, bivector * p_scalar, pseudoscalar * p_scalar);
+	return Rotor4D(parts.scalar * p_scalar, parts.bivector * p_scalar, parts.pseudoscalar * p_scalar);
 }
 
 Rotor4D &Rotor4D::operator/=(const real_t p_scalar) {
-	scalar /= p_scalar;
-	bivector /= p_scalar;
-	pseudoscalar /= p_scalar;
+	parts.scalar /= p_scalar;
+	parts.bivector /= p_scalar;
+	parts.pseudoscalar /= p_scalar;
 	return *this;
 }
 
 Rotor4D Rotor4D::operator/(const real_t p_scalar) const {
-	return Rotor4D(scalar / p_scalar, bivector / p_scalar, pseudoscalar / p_scalar);
+	return Rotor4D(parts.scalar / p_scalar, parts.bivector / p_scalar, parts.pseudoscalar / p_scalar);
 }
 
 void Rotor4D::multiply_vector(const Vector4 &p_in_vec, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const {
@@ -577,25 +577,25 @@ void Rotor4D::multiply_vector(const Vector4 &p_in_vec, Vector4 &r_out_vector, Tr
 }
 
 void Rotor4D::premultiply_vector(const Vector4 &p_in_vector, Vector4 &r_out_vector, Trivector4D &r_out_triv) const {
-	r_out_vector.x = p_in_vector.x * elements[0x0] - p_in_vector.y * elements[0x5] - p_in_vector.z * elements[0x6] - p_in_vector.w * elements[0x7]; // X
-	r_out_vector.y = p_in_vector.x * elements[0x5] + p_in_vector.y * elements[0x0] - p_in_vector.z * elements[0x8] - p_in_vector.w * elements[0x9]; // Y
-	r_out_vector.z = p_in_vector.x * elements[0x6] + p_in_vector.y * elements[0x8] + p_in_vector.z * elements[0x0] - p_in_vector.w * elements[0xA]; // Z
-	r_out_vector.w = p_in_vector.x * elements[0x7] + p_in_vector.y * elements[0x9] + p_in_vector.z * elements[0xA] + p_in_vector.w * elements[0x0]; // W
-	r_out_triv.xyz = p_in_vector.x * elements[0x8] - p_in_vector.y * elements[0x6] + p_in_vector.z * elements[0x5] - p_in_vector.w * elements[0xF]; // XYZ
-	r_out_triv.xyw = p_in_vector.x * elements[0x9] - p_in_vector.y * elements[0x7] + p_in_vector.z * elements[0xF] + p_in_vector.w * elements[0x5]; // XYW
-	r_out_triv.xzw = p_in_vector.x * elements[0xA] - p_in_vector.y * elements[0xF] - p_in_vector.z * elements[0x7] + p_in_vector.w * elements[0x6]; // XZW
-	r_out_triv.yzw = p_in_vector.x * elements[0xF] + p_in_vector.y * elements[0xA] - p_in_vector.z * elements[0x9] + p_in_vector.w * elements[0x8]; // YZW
+	r_out_vector.x = p_in_vector.x * s - p_in_vector.y * xy - p_in_vector.z * xz - p_in_vector.w * xw; // X
+	r_out_vector.y = p_in_vector.x * xy + p_in_vector.y * s - p_in_vector.z * yz - p_in_vector.w * yw; // Y
+	r_out_vector.z = p_in_vector.x * xz + p_in_vector.y * yz + p_in_vector.z * s - p_in_vector.w * zw; // Z
+	r_out_vector.w = p_in_vector.x * xw + p_in_vector.y * yw + p_in_vector.z * zw + p_in_vector.w * s; // W
+	r_out_triv.xyz = p_in_vector.x * yz - p_in_vector.y * xz + p_in_vector.z * xy - p_in_vector.w * xyzw; // XYZ
+	r_out_triv.xyw = p_in_vector.x * yw - p_in_vector.y * xw + p_in_vector.z * xyzw + p_in_vector.w * xy; // XYW
+	r_out_triv.xzw = p_in_vector.x * zw - p_in_vector.y * xyzw - p_in_vector.z * xw + p_in_vector.w * xz; // XZW
+	r_out_triv.yzw = p_in_vector.x * xyzw + p_in_vector.y * zw - p_in_vector.z * yw + p_in_vector.w * yz; // YZW
 }
 
 void Rotor4D::premultiply_vector_trivector(const Vector4 &p_in_vector, const Trivector4D &p_in_trivec, Vector4 &r_out_vector, Trivector4D &r_out_triv) const {
-	r_out_vector.x = p_in_vector.x * elements[0x0] - p_in_vector.y * elements[0x5] - p_in_vector.z * elements[0x6] - p_in_vector.w * elements[0x7] - p_in_trivec.xyz * elements[0x8] - p_in_trivec.xyw * elements[0x9] - p_in_trivec.xzw * elements[0xA] + p_in_trivec.yzw * elements[0xF]; // X
-	r_out_vector.y = p_in_vector.x * elements[0x5] + p_in_vector.y * elements[0x0] - p_in_vector.z * elements[0x8] - p_in_vector.w * elements[0x9] + p_in_trivec.xyz * elements[0x6] + p_in_trivec.xyw * elements[0x7] - p_in_trivec.xzw * elements[0xF] - p_in_trivec.yzw * elements[0xA]; // Y
-	r_out_vector.z = p_in_vector.x * elements[0x6] + p_in_vector.y * elements[0x8] + p_in_vector.z * elements[0x0] - p_in_vector.w * elements[0xA] - p_in_trivec.xyz * elements[0x5] + p_in_trivec.xyw * elements[0xF] + p_in_trivec.xzw * elements[0x7] + p_in_trivec.yzw * elements[0x9]; // Z
-	r_out_vector.w = p_in_vector.x * elements[0x7] + p_in_vector.y * elements[0x9] + p_in_vector.z * elements[0xA] + p_in_vector.w * elements[0x0] - p_in_trivec.xyz * elements[0xF] - p_in_trivec.xyw * elements[0x5] - p_in_trivec.xzw * elements[0x6] - p_in_trivec.yzw * elements[0x8]; // W
-	r_out_triv.xyz = p_in_vector.x * elements[0x8] - p_in_vector.y * elements[0x6] + p_in_vector.z * elements[0x5] - p_in_vector.w * elements[0xF] + p_in_trivec.xyz * elements[0x0] - p_in_trivec.xyw * elements[0xA] + p_in_trivec.xzw * elements[0x9] - p_in_trivec.yzw * elements[0x7]; // XYZ
-	r_out_triv.xyw = p_in_vector.x * elements[0x9] - p_in_vector.y * elements[0x7] + p_in_vector.z * elements[0xF] + p_in_vector.w * elements[0x5] + p_in_trivec.xyz * elements[0xA] + p_in_trivec.xyw * elements[0x0] - p_in_trivec.xzw * elements[0x8] + p_in_trivec.yzw * elements[0x6]; // XYW
-	r_out_triv.xzw = p_in_vector.x * elements[0xA] - p_in_vector.y * elements[0xF] - p_in_vector.z * elements[0x7] + p_in_vector.w * elements[0x6] - p_in_trivec.xyz * elements[0x9] + p_in_trivec.xyw * elements[0x8] + p_in_trivec.xzw * elements[0x0] - p_in_trivec.yzw * elements[0x5]; // XZW
-	r_out_triv.yzw = p_in_vector.x * elements[0xF] + p_in_vector.y * elements[0xA] - p_in_vector.z * elements[0x9] + p_in_vector.w * elements[0x8] + p_in_trivec.xyz * elements[0x7] - p_in_trivec.xyw * elements[0x6] + p_in_trivec.xzw * elements[0x5] + p_in_trivec.yzw * elements[0x0]; // YZW
+	r_out_vector.x = p_in_vector.x * s - p_in_vector.y * xy - p_in_vector.z * xz - p_in_vector.w * xw - p_in_trivec.xyz * yz - p_in_trivec.xyw * yw - p_in_trivec.xzw * zw + p_in_trivec.yzw * xyzw; // X
+	r_out_vector.y = p_in_vector.x * xy + p_in_vector.y * s - p_in_vector.z * yz - p_in_vector.w * yw + p_in_trivec.xyz * xz + p_in_trivec.xyw * xw - p_in_trivec.xzw * xyzw - p_in_trivec.yzw * zw; // Y
+	r_out_vector.z = p_in_vector.x * xz + p_in_vector.y * yz + p_in_vector.z * s - p_in_vector.w * zw - p_in_trivec.xyz * xy + p_in_trivec.xyw * xyzw + p_in_trivec.xzw * xw + p_in_trivec.yzw * yw; // Z
+	r_out_vector.w = p_in_vector.x * xw + p_in_vector.y * yw + p_in_vector.z * zw + p_in_vector.w * s - p_in_trivec.xyz * xyzw - p_in_trivec.xyw * xy - p_in_trivec.xzw * xz - p_in_trivec.yzw * yz; // W
+	r_out_triv.xyz = p_in_vector.x * yz - p_in_vector.y * xz + p_in_vector.z * xy - p_in_vector.w * xyzw + p_in_trivec.xyz * s - p_in_trivec.xyw * zw + p_in_trivec.xzw * yw - p_in_trivec.yzw * xw; // XYZ
+	r_out_triv.xyw = p_in_vector.x * yw - p_in_vector.y * xw + p_in_vector.z * xyzw + p_in_vector.w * xy + p_in_trivec.xyz * zw + p_in_trivec.xyw * s - p_in_trivec.xzw * yz + p_in_trivec.yzw * xz; // XYW
+	r_out_triv.xzw = p_in_vector.x * zw - p_in_vector.y * xyzw - p_in_vector.z * xw + p_in_vector.w * xz - p_in_trivec.xyz * yw + p_in_trivec.xyw * yz + p_in_trivec.xzw * s - p_in_trivec.yzw * xy; // XZW
+	r_out_triv.yzw = p_in_vector.x * xyzw + p_in_vector.y * zw - p_in_vector.z * yw + p_in_vector.w * yz + p_in_trivec.xyz * xw - p_in_trivec.xyw * xz + p_in_trivec.xzw * xy + p_in_trivec.yzw * s; // YZW
 }
 
 Rotor4D Rotor4D::operator*(const Bivector4D &p_b) const {
@@ -613,19 +613,19 @@ Rotor4D Rotor4D::operator*(const Bivector4D &p_b) const {
 
 Rotor4D operator+(const real_t p_scalar, const Rotor4D &p_rotor) {
 	Rotor4D result = p_rotor;
-	result.scalar += p_scalar;
+	result.parts.scalar += p_scalar;
 	return result;
 }
 
 Rotor4D operator+(const Bivector4D p_bivector, const Rotor4D &p_rotor) {
 	// Addition is commutative, so b += a is the same as a = a + b.
 	Rotor4D result = p_rotor;
-	result.bivector += p_bivector;
+	result.parts.bivector += p_bivector;
 	return result;
 }
 
 Rotor4D operator*(const real_t p_scalar, const Rotor4D &p_rotor) {
-	return Rotor4D(p_scalar * p_rotor.scalar, p_scalar * p_rotor.bivector, p_scalar * p_rotor.pseudoscalar);
+	return Rotor4D(p_scalar * p_rotor.parts.scalar, p_scalar * p_rotor.parts.bivector, p_scalar * p_rotor.parts.pseudoscalar);
 }
 
 Rotor4D operator*(const Bivector4D p_bivector, const Rotor4D &p_rotor) {
@@ -654,7 +654,7 @@ PackedRealArray Rotor4D::to_array() const {
 	PackedRealArray arr;
 	arr.resize(16);
 	real_t *ptr = arr.ptrw();
-	ptr[0] = scalar;
+	ptr[0] = s;
 	ptr[1] = xy;
 	ptr[2] = xz;
 	ptr[3] = xw;
@@ -667,47 +667,47 @@ PackedRealArray Rotor4D::to_array() const {
 
 Rotor4D Rotor4D::from_scalar(const real_t p_scalar) {
 	Rotor4D result;
-	result.scalar = p_scalar;
+	result.parts.scalar = p_scalar;
 	return result;
 }
 
 Rotor4D Rotor4D::from_bivector(const Bivector4D &p_bivector) {
 	Rotor4D result;
-	result.bivector = p_bivector;
+	result.parts.bivector = p_bivector;
 	return result;
 }
 
 Rotor4D Rotor4D::from_pseudoscalar(const real_t p_pseudoscalar) {
 	Rotor4D result;
-	result.pseudoscalar = p_pseudoscalar;
+	result.parts.pseudoscalar = p_pseudoscalar;
 	return result;
 }
 
 Rotor4D Rotor4D::from_scalar_bivector(const real_t p_scalar, const Bivector4D &p_bivector) {
 	Rotor4D result;
-	result.scalar = p_scalar;
-	result.bivector = p_bivector;
+	result.parts.scalar = p_scalar;
+	result.parts.bivector = p_bivector;
 	return result;
 }
 
 Rotor4D Rotor4D::from_scalar_pseudoscalar(const real_t p_scalar, const real_t p_pseudoscalar) {
 	Rotor4D result;
-	result.scalar = p_scalar;
-	result.pseudoscalar = p_pseudoscalar;
+	result.parts.scalar = p_scalar;
+	result.parts.pseudoscalar = p_pseudoscalar;
 	return result;
 }
 
 Rotor4D Rotor4D::from_bivector_pseudoscalar(const Bivector4D &p_bivector, const real_t p_pseudoscalar) {
 	Rotor4D result;
-	result.bivector = p_bivector;
-	result.pseudoscalar = p_pseudoscalar;
+	result.parts.bivector = p_bivector;
+	result.parts.pseudoscalar = p_pseudoscalar;
 	return result;
 }
 
 Rotor4D::Rotor4D(const real_t p_scalar, const Bivector4D &p_bivector, const real_t p_pseudoscalar) {
-	scalar = p_scalar;
-	bivector = p_bivector;
-	pseudoscalar = p_pseudoscalar;
+	parts.scalar = p_scalar;
+	parts.bivector = p_bivector;
+	parts.pseudoscalar = p_pseudoscalar;
 }
 
 Rotor4D::Rotor4D(const real_t p_s, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yz, const real_t p_yw, const real_t p_zw, const real_t p_xyzw) {

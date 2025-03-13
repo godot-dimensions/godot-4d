@@ -106,37 +106,37 @@ real_t Camera4D::get_depth_fade_start() const {
 }
 
 bool Camera4D::is_position_behind(const Vector4 &p_global_position) const {
-	const Transform4D global_transform = get_global_transform();
-	return global_transform.basis.z.dot(p_global_position - global_transform.origin) > -_near;
+	const Transform4D global_xform = get_global_transform();
+	return global_xform.basis.z.dot(p_global_position - global_xform.origin) > -_near;
 }
 
 Vector4 Camera4D::viewport_to_world_ray_origin(const Vector2 &p_viewport_position) const {
 	ERR_FAIL_COND_V_MSG(!is_inside_tree(), Vector4(), "Camera4D is not inside the scene tree.");
-	const Transform4D global_transform = get_global_transform();
+	const Transform4D global_xform = get_global_transform();
 	// Perspective cameras always have their ray origin at the camera's position.
 	if (_projection_type != PROJECTION4D_ORTHOGRAPHIC) {
-		return global_transform.origin;
+		return global_xform.origin;
 	}
 	// Orthographic cameras have ray origins offset by the orthographic size.
 	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
 	const real_t pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
 	const Vector2 scaled_position = (p_viewport_position * 2.0f - viewport_size) * (_orthographic_size / pixel_size);
-	return global_transform.origin + global_transform.basis.x * scaled_position.x + global_transform.basis.y * -scaled_position.y;
+	return global_xform.origin + global_xform.basis.x * scaled_position.x + global_xform.basis.y * -scaled_position.y;
 }
 
 Vector4 Camera4D::viewport_to_world_ray_direction(const Vector2 &p_viewport_position) const {
 	ERR_FAIL_COND_V_MSG(!is_inside_tree(), Vector4(), "Camera4D is not inside the scene tree.");
-	const Transform4D global_transform = get_global_transform();
+	const Transform4D global_xform = get_global_transform();
 	// Orthographic cameras always have their ray direction pointing straight down the negative Z-axis.
 	if (_projection_type == PROJECTION4D_ORTHOGRAPHIC) {
-		return -global_transform.basis.z;
+		return -global_xform.basis.z;
 	}
 	// Perspective cameras have ray directions pointing more to the side when near the sides of the viewport.
 	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
 	const real_t pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
 	const real_t focal_length = _projection_type == PROJECTION4D_PERSPECTIVE_4D ? _focal_length_4d : _focal_length_3d;
 	const Vector2 scaled_position = (p_viewport_position * 2.0f - viewport_size) / pixel_size;
-	const Vector4 ray_direction = global_transform.basis.x * scaled_position.x + global_transform.basis.y * -scaled_position.y + global_transform.basis.z * -focal_length;
+	const Vector4 ray_direction = global_xform.basis.x * scaled_position.x + global_xform.basis.y * -scaled_position.y + global_xform.basis.z * -focal_length;
 	return ray_direction.normalized();
 }
 

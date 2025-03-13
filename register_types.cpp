@@ -1,12 +1,16 @@
 #include "register_types.h"
 
 #if GDEXTENSION
-#include <godot_cpp/classes/editor_plugin_registration.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#ifdef TOOLS_ENABLED
+#include <godot_cpp/classes/editor_plugin_registration.hpp>
+#endif // TOOLS_ENABLED
 #elif GODOT_MODULE
 #include "core/config/engine.h"
+#ifdef TOOLS_ENABLED
 #include "editor/plugins/editor_plugin.h"
 #include "editor/themes/editor_color_map.h"
+#endif // TOOLS_ENABLED
 #endif
 
 // General.

@@ -201,11 +201,11 @@ PackedRealArray godot_4d_bind::Rotor4D::to_array() const {
 }
 
 AABB godot_4d_bind::Rotor4D::get_bivector_aabb() const {
-	return rotor.bivector;
+	return rotor.parts.bivector;
 }
 
 void godot_4d_bind::Rotor4D::set_bivector_aabb(const AABB &p_bivector_aabb) {
-	rotor.bivector = p_bivector_aabb;
+	rotor.parts.bivector = p_bivector_aabb;
 }
 
 Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::from_numbers(const real_t p_s, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yz, const real_t p_yw, const real_t p_zw, const real_t p_xyzw) {

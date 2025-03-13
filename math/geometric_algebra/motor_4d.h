@@ -7,8 +7,10 @@ struct _NO_DISCARD_ Motor4D {
 	union {
 		struct {
 			real_t scalar;
-			Vector4 vector;
-			Bivector4D bivector;
+			struct {
+				Vector4 vector;
+				Bivector4D bivector;
+			} data;
 			real_t pseudoscalar; // A 4-vector in 4D is just a single number representing xyzw, we call it a pseudoscalar.
 		};
 

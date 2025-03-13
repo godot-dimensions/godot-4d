@@ -13,7 +13,7 @@ struct _NO_DISCARD_ Rotor4D {
 			real_t scalar;
 			Bivector4D bivector;
 			real_t pseudoscalar;
-		};
+		} parts;
 
 		struct {
 			real_t s; // 0

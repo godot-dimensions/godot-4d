@@ -282,9 +282,9 @@ void EditorTransformGizmo4D::_update_gizmo_transform() {
 	for (int i = 0; i < size; i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
-			Transform4D global_transform = node_4d->get_global_transform();
-			_selected_top_node_old_transforms.set(i, global_transform);
-			sum_transform += global_transform;
+			Transform4D global_xform = node_4d->get_global_transform();
+			_selected_top_node_old_transforms.set(i, global_xform);
+			sum_transform += global_xform;
 			transform_count++;
 		}
 	}
