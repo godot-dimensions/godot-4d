@@ -909,14 +909,6 @@ Multivector4D Multivector4D::from_trivector_pseudoscalar(const Trivector4D &p_tr
 	return result;
 }
 
-Multivector4D::Multivector4D(const Multivector4D &p_multivector) {
-	scalar = p_multivector.scalar;
-	vector = p_multivector.vector;
-	bivector = p_multivector.bivector;
-	trivector = p_multivector.trivector;
-	pseudoscalar = p_multivector.pseudoscalar;
-}
-
 Multivector4D::Multivector4D(const real_t p_scalar, const Vector4 &p_vector, const Bivector4D &p_bivector, const Trivector4D &p_trivector, const real_t p_pseudoscalar) {
 	scalar = p_scalar;
 	vector = p_vector;

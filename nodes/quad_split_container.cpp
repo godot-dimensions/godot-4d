@@ -135,7 +135,7 @@ void QuadSplitContainer::_notification(int p_what) {
 									draw_texture(h_grabber, Vector2(mid_w - h_grabber->get_width() / 2, (size.height - h_grabber->get_height()) / 2));
 									set_default_cursor_shape(CURSOR_HSPLIT);
 								}
-							}
+							} break;
 							case SIDE_BOTTOM: {
 								if ((_hovering_v && _hovering_h && !_dragging_v && !_dragging_h) || (_dragging_v && _dragging_h)) {
 									// TODO: Texture for bottom-dominant 3-split grabber.
