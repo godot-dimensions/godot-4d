@@ -116,15 +116,15 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 				const real_t depth = abs((a_vert_4d.length() + b_vert_4d.length()) * 0.5);
 				real_t alpha = 1.0;
 
-				const real_t far = camera->get_far();
-				const real_t start = camera->get_depth_fade_start();
+				const real_t depth_far = camera->get_far();
+				const real_t depth_start = camera->get_depth_fade_start();
 
-				if (depth > far) {
+				if (depth > depth_far) {
 					alpha = 0.0;
-				} else if (depth < start) {
+				} else if (depth < depth_start) {
 					alpha = 1.0;
 				} else {
-					const real_t unit_distance = (depth - start) / (far - start); // Inverse lerp
+					const real_t unit_distance = (depth - depth_start) / (depth_far - depth_start); // Inverse lerp
 					alpha = 1.0 - unit_distance;
 				}
 
