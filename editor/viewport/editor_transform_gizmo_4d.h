@@ -93,7 +93,7 @@ private:
 	bool _are_generated_meshes_wireframes = false;
 
 	// Setup functions.
-	MeshInstance4D *_make_mesh_instance(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material);
+	MeshInstance4D *_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material);
 	void _generate_gizmo_meshes(const PackedColorArray &p_axis_colors);
 
 	// Misc internal functions.

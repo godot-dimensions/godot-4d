@@ -19,38 +19,38 @@
 #include "editor/editor_interface.h"
 #endif
 
-constexpr real_t LINE_THICKNESS = 3.0;
-constexpr int MOVE_ARROW_SUBDIVISIONS = 4;
-constexpr real_t MOVE_ARROW_TIP_POSITION = 0.125;
-constexpr real_t MOVE_ARROW_RADIUS = 0.0625;
-constexpr int ROTATION_RING_SEGMENTS = 64; // Should be a multiple of 8 for correct coloration.
-constexpr int SCALE_BOX_SUBDIVISIONS = 3;
-constexpr real_t SCALE_BOX_RADIUS = 0.1;
-constexpr int PLANE_EDGES = 6; // Must match the data in _make_plane_wire_mesh.
-constexpr real_t PLANE_OFFSET = 0.3;
-constexpr real_t PLANE_RADIUS = 0.08;
+constexpr real_t LINE_THICKNESS_4D = 3.0;
+constexpr int MOVE_ARROW_SUBDIVISIONS_4D = 4;
+constexpr real_t MOVE_ARROW_TIP_POSITION_4D = 0.125;
+constexpr real_t MOVE_ARROW_RADIUS_4D = 0.0625;
+constexpr int ROTATION_RING_SEGMENTS_4D = 64; // Should be a multiple of 8 for correct coloration.
+constexpr int SCALE_BOX_SUBDIVISIONS_4D = 3;
+constexpr real_t SCALE_BOX_RADIUS_4D = 0.1;
+constexpr int PLANE_EDGES_4D = 6; // Must match the data in _make_plane_wire_mesh_4d.
+constexpr real_t PLANE_OFFSET_4D = 0.3;
+constexpr real_t PLANE_RADIUS_4D = 0.08;
 
-static_assert(MOVE_ARROW_SUBDIVISIONS > 1);
-static_assert(ROTATION_RING_SEGMENTS % 8 == 0);
-static_assert(SCALE_BOX_SUBDIVISIONS > 1);
+static_assert(MOVE_ARROW_SUBDIVISIONS_4D > 1);
+static_assert(ROTATION_RING_SEGMENTS_4D % 8 == 0);
+static_assert(SCALE_BOX_SUBDIVISIONS_4D > 1);
 
-Ref<WireMaterial4D> _make_single_color_wire_material(const Color &p_color) {
+Ref<WireMaterial4D> _make_single_color_wire_material_4d(const Color &p_color) {
 	Ref<WireMaterial4D> mat;
 	mat.instantiate();
-	mat->set_line_thickness(LINE_THICKNESS);
+	mat->set_line_thickness(LINE_THICKNESS_4D);
 	mat->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_SINGLE_COLOR);
 	mat->set_albedo_color(p_color);
 	return mat;
 }
 
-Ref<WireMaterial4D> _make_plane_material(const Color &p_first_color, const Color &p_second_color) {
+Ref<WireMaterial4D> _make_plane_material_4d(const Color &p_first_color, const Color &p_second_color) {
 	Ref<WireMaterial4D> mat;
 	mat.instantiate();
-	mat->set_line_thickness(LINE_THICKNESS);
+	mat->set_line_thickness(LINE_THICKNESS_4D);
 	mat->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
 	PackedColorArray colors;
-	for (int i = 0; i < PLANE_EDGES; i++) {
-		if (i < PLANE_EDGES / 2) {
+	for (int i = 0; i < PLANE_EDGES_4D; i++) {
+		if (i < PLANE_EDGES_4D / 2) {
 			colors.push_back(p_first_color);
 		} else {
 			colors.push_back(p_second_color);
@@ -60,19 +60,19 @@ Ref<WireMaterial4D> _make_plane_material(const Color &p_first_color, const Color
 	return mat;
 }
 
-Ref<WireMaterial4D> _make_rotation_ring_material(const Color &p_first_color, const Color &p_second_color) {
+Ref<WireMaterial4D> _make_rotation_ring_material_4d(const Color &p_first_color, const Color &p_second_color) {
 	Ref<WireMaterial4D> mat;
 	mat.instantiate();
 	mat->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
 	PackedColorArray colors;
-	for (int i = 0; i < ROTATION_RING_SEGMENTS; i++) {
-		if (i < ROTATION_RING_SEGMENTS / 8) {
+	for (int i = 0; i < ROTATION_RING_SEGMENTS_4D; i++) {
+		if (i < ROTATION_RING_SEGMENTS_4D / 8) {
 			colors.push_back(p_first_color);
-		} else if (i < ROTATION_RING_SEGMENTS * 3 / 8) {
+		} else if (i < ROTATION_RING_SEGMENTS_4D * 3 / 8) {
 			colors.push_back(p_second_color);
-		} else if (i < ROTATION_RING_SEGMENTS * 5 / 8) {
+		} else if (i < ROTATION_RING_SEGMENTS_4D * 5 / 8) {
 			colors.push_back(p_first_color);
-		} else if (i < ROTATION_RING_SEGMENTS * 7 / 8) {
+		} else if (i < ROTATION_RING_SEGMENTS_4D * 7 / 8) {
 			colors.push_back(p_second_color);
 		} else {
 			colors.push_back(p_first_color);
@@ -82,10 +82,10 @@ Ref<WireMaterial4D> _make_rotation_ring_material(const Color &p_first_color, con
 	return mat;
 }
 
-Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh() {
+Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh_4d() {
 	// First, create a 3D sphere for the base of the 4D arrow.
 	// For symmetry between all axes, make a subdivided octahedron and normalize it.
-	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::make_3d_orthoplex_sphere(MOVE_ARROW_RADIUS, MOVE_ARROW_SUBDIVISIONS, MOVE_ARROW_TIP_POSITION);
+	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::make_3d_orthoplex_sphere(MOVE_ARROW_RADIUS_4D, MOVE_ARROW_SUBDIVISIONS_4D, MOVE_ARROW_TIP_POSITION_4D);
 	PackedVector4Array vertices = mesh->get_vertices();
 	PackedInt32Array edge_indices = mesh->get_edge_indices();
 	const int octahedral_cone_vertex_count = vertices.size();
@@ -97,22 +97,22 @@ Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh() {
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> _make_rotation_ring_wire_mesh() {
+Ref<ArrayWireMesh4D> _make_rotation_ring_wire_mesh_4d() {
 	PackedVector4Array vertices;
 	PackedInt32Array edge_indices;
-	vertices.resize(ROTATION_RING_SEGMENTS);
-	edge_indices.resize(ROTATION_RING_SEGMENTS * 2);
+	vertices.resize(ROTATION_RING_SEGMENTS_4D);
+	edge_indices.resize(ROTATION_RING_SEGMENTS_4D * 2);
 	vertices.set(0, Vector4(1.0, 0.0, 0.0, 0.0));
 	edge_indices.set(0, 0);
-	for (int i = 1; i < ROTATION_RING_SEGMENTS; i++) {
-		const real_t angle = Math_TAU * i / ROTATION_RING_SEGMENTS;
+	for (int i = 1; i < ROTATION_RING_SEGMENTS_4D; i++) {
+		const real_t angle = Math_TAU * i / ROTATION_RING_SEGMENTS_4D;
 		const real_t x = Math::cos(angle);
 		const real_t y = Math::sin(angle);
 		vertices.set(i, Vector4(x, y, 0.0, 0.0));
 		edge_indices.set(i * 2 - 1, i);
 		edge_indices.set(i * 2, i);
 	}
-	edge_indices.set(ROTATION_RING_SEGMENTS * 2 - 1, 0);
+	edge_indices.set(ROTATION_RING_SEGMENTS_4D * 2 - 1, 0);
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
 	mesh->set_vertices(vertices);
@@ -120,25 +120,25 @@ Ref<ArrayWireMesh4D> _make_rotation_ring_wire_mesh() {
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh() {
+Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh_4d() {
 	Ref<BoxWireMesh4D> box_mesh;
 	box_mesh.instantiate();
-	box_mesh->set_size(Vector4(SCALE_BOX_RADIUS, SCALE_BOX_RADIUS, SCALE_BOX_RADIUS, SCALE_BOX_RADIUS));
-	const Vector4i subdiv_segments = Vector4i(SCALE_BOX_SUBDIVISIONS, SCALE_BOX_SUBDIVISIONS, SCALE_BOX_SUBDIVISIONS, SCALE_BOX_SUBDIVISIONS);
+	box_mesh->set_size(Vector4(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D));
+	const Vector4i subdiv_segments = Vector4i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D);
 	Ref<ArrayWireMesh4D> mesh = box_mesh->subdivide(subdiv_segments);
 	mesh->append_edge_points(Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0));
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> _make_plane_wire_mesh() {
+Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
 	// Must match constexpr int PLANE_SEGMENTS.
 	PackedVector4Array vertices = {
-		Vector4(-PLANE_RADIUS * 0.9, -PLANE_RADIUS, 0.0, 0.0), // First triangle lower left.
-		Vector4(PLANE_RADIUS, -PLANE_RADIUS, 0.0, 0.0), // First triangle lower right.
-		Vector4(PLANE_RADIUS, PLANE_RADIUS * 0.9, 0.0, 0.0), // First triangle upper right.
-		Vector4(-PLANE_RADIUS, -PLANE_RADIUS * 0.9, 0.0, 0.0), // Second triangle lower left.
-		Vector4(PLANE_RADIUS * 0.9, PLANE_RADIUS, 0.0, 0.0), // Second triangle upper right.
-		Vector4(-PLANE_RADIUS, PLANE_RADIUS, 0.0, 0.0), // Second triangle upper left.
+		Vector4(-PLANE_RADIUS_4D * 0.9, -PLANE_RADIUS_4D, 0.0, 0.0), // First triangle lower left.
+		Vector4(PLANE_RADIUS_4D, -PLANE_RADIUS_4D, 0.0, 0.0), // First triangle lower right.
+		Vector4(PLANE_RADIUS_4D, PLANE_RADIUS_4D * 0.9, 0.0, 0.0), // First triangle upper right.
+		Vector4(-PLANE_RADIUS_4D, -PLANE_RADIUS_4D * 0.9, 0.0, 0.0), // Second triangle lower left.
+		Vector4(PLANE_RADIUS_4D * 0.9, PLANE_RADIUS_4D, 0.0, 0.0), // Second triangle upper right.
+		Vector4(-PLANE_RADIUS_4D, PLANE_RADIUS_4D, 0.0, 0.0), // Second triangle upper left.
 	};
 	PackedInt32Array edge_indices = { 0, 1, 0, 2, 1, 2, 3, 4, 3, 5, 4, 5 };
 	Ref<ArrayWireMesh4D> mesh;
@@ -148,12 +148,12 @@ Ref<ArrayWireMesh4D> _make_plane_wire_mesh() {
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> _make_stretch_triplane_wire_mesh() {
-	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::make_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS, SCALE_BOX_RADIUS, SCALE_BOX_RADIUS), Vector3i(SCALE_BOX_SUBDIVISIONS, SCALE_BOX_SUBDIVISIONS, SCALE_BOX_SUBDIVISIONS));
+Ref<ArrayWireMesh4D> _make_stretch_triplane_wire_mesh_4d() {
+	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::make_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
 	return mesh;
 }
 
-MeshInstance4D *EditorTransformGizmo4D::_make_mesh_instance(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material) {
+MeshInstance4D *EditorTransformGizmo4D::_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material) {
 	MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
 	mesh_instance->set_name(p_name);
 	mesh_instance->set_mesh(p_mesh);
@@ -166,67 +166,67 @@ MeshInstance4D *EditorTransformGizmo4D::_make_mesh_instance(const StringName &p_
 void EditorTransformGizmo4D::_generate_gizmo_meshes(const PackedColorArray &p_axis_colors) {
 	// TODO: Support tetrahedral gizmo meshes (we need a rendering engine for that first to test with).
 	_are_generated_meshes_wireframes = true;
-	Ref<WireMaterial4D> x_material = _make_single_color_wire_material(p_axis_colors[0]);
-	Ref<WireMaterial4D> y_material = _make_single_color_wire_material(p_axis_colors[1]);
-	Ref<WireMaterial4D> z_material = _make_single_color_wire_material(p_axis_colors[2]);
-	Ref<WireMaterial4D> w_material = _make_single_color_wire_material(p_axis_colors[3]);
+	Ref<WireMaterial4D> x_material = _make_single_color_wire_material_4d(p_axis_colors[0]);
+	Ref<WireMaterial4D> y_material = _make_single_color_wire_material_4d(p_axis_colors[1]);
+	Ref<WireMaterial4D> z_material = _make_single_color_wire_material_4d(p_axis_colors[2]);
+	Ref<WireMaterial4D> w_material = _make_single_color_wire_material_4d(p_axis_colors[3]);
 	// Create the move arrow meshes.
-	Ref<ArrayWireMesh4D> move_arrow_mesh = _make_move_arrow_wire_mesh();
-	_meshes[TRANSFORM_MOVE_X] = _make_mesh_instance(StringName("MoveArrowX"), move_arrow_mesh, x_material);
+	Ref<ArrayWireMesh4D> move_arrow_mesh = _make_move_arrow_wire_mesh_4d();
+	_meshes[TRANSFORM_MOVE_X] = _make_mesh_instance_4d(StringName("MoveArrowX"), move_arrow_mesh, x_material);
 	_meshes[TRANSFORM_MOVE_X]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_X]->set_position(Vector4(1.0, 0.0, 0.0, 0.0));
-	_meshes[TRANSFORM_MOVE_Y] = _make_mesh_instance(StringName("MoveArrowY"), move_arrow_mesh, y_material);
+	_meshes[TRANSFORM_MOVE_Y] = _make_mesh_instance_4d(StringName("MoveArrowY"), move_arrow_mesh, y_material);
 	_meshes[TRANSFORM_MOVE_Y]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_Y]->set_position(Vector4(0.0, 1.0, 0.0, 0.0));
-	_meshes[TRANSFORM_MOVE_Z] = _make_mesh_instance(StringName("MoveArrowZ"), move_arrow_mesh, z_material);
+	_meshes[TRANSFORM_MOVE_Z] = _make_mesh_instance_4d(StringName("MoveArrowZ"), move_arrow_mesh, z_material);
 	_meshes[TRANSFORM_MOVE_Z]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_Z]->set_position(Vector4(0.0, 0.0, 1.0, 0.0));
-	_meshes[TRANSFORM_MOVE_W] = _make_mesh_instance(StringName("MoveArrowW"), move_arrow_mesh, w_material);
+	_meshes[TRANSFORM_MOVE_W] = _make_mesh_instance_4d(StringName("MoveArrowW"), move_arrow_mesh, w_material);
 	_meshes[TRANSFORM_MOVE_W]->set_position(Vector4(0.0, 0.0, 0.0, 1.0));
 	// Create the plane meshes.
-	Ref<ArrayWireMesh4D> plane_mesh = _make_plane_wire_mesh();
-	_meshes[TRANSFORM_MOVE_XY] = _make_mesh_instance(StringName("PlaneXY"), plane_mesh, _make_plane_material(p_axis_colors[0], p_axis_colors[1]));
-	_meshes[TRANSFORM_MOVE_XY]->set_position(Vector4(PLANE_OFFSET, PLANE_OFFSET, 0.0, 0.0));
-	_meshes[TRANSFORM_MOVE_XZ] = _make_mesh_instance(StringName("PlaneXZ"), plane_mesh, _make_plane_material(p_axis_colors[0], p_axis_colors[2]));
+	Ref<ArrayWireMesh4D> plane_mesh = _make_plane_wire_mesh_4d();
+	_meshes[TRANSFORM_MOVE_XY] = _make_mesh_instance_4d(StringName("PlaneXY"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[1]));
+	_meshes[TRANSFORM_MOVE_XY]->set_position(Vector4(PLANE_OFFSET_4D, PLANE_OFFSET_4D, 0.0, 0.0));
+	_meshes[TRANSFORM_MOVE_XZ] = _make_mesh_instance_4d(StringName("PlaneXZ"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[2]));
 	_meshes[TRANSFORM_MOVE_XZ]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, -1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0)));
-	_meshes[TRANSFORM_MOVE_XZ]->set_position(Vector4(PLANE_OFFSET, 0.0, PLANE_OFFSET, 0.0));
-	_meshes[TRANSFORM_MOVE_XW] = _make_mesh_instance(StringName("PlaneXW"), plane_mesh, _make_plane_material(p_axis_colors[0], p_axis_colors[3]));
+	_meshes[TRANSFORM_MOVE_XZ]->set_position(Vector4(PLANE_OFFSET_4D, 0.0, PLANE_OFFSET_4D, 0.0));
+	_meshes[TRANSFORM_MOVE_XW] = _make_mesh_instance_4d(StringName("PlaneXW"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[3]));
 	_meshes[TRANSFORM_MOVE_XW]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, -1.0, 0.0, 0.0)));
-	_meshes[TRANSFORM_MOVE_XW]->set_position(Vector4(PLANE_OFFSET, 0.0, 0.0, PLANE_OFFSET));
-	_meshes[TRANSFORM_MOVE_YZ] = _make_mesh_instance(StringName("PlaneYZ"), plane_mesh, _make_plane_material(p_axis_colors[2], p_axis_colors[1]));
+	_meshes[TRANSFORM_MOVE_XW]->set_position(Vector4(PLANE_OFFSET_4D, 0.0, 0.0, PLANE_OFFSET_4D));
+	_meshes[TRANSFORM_MOVE_YZ] = _make_mesh_instance_4d(StringName("PlaneYZ"), plane_mesh, _make_plane_material_4d(p_axis_colors[2], p_axis_colors[1]));
 	_meshes[TRANSFORM_MOVE_YZ]->set_basis(Basis4D(Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(-1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0)));
-	_meshes[TRANSFORM_MOVE_YZ]->set_position(Vector4(0.0, PLANE_OFFSET, PLANE_OFFSET, 0.0));
-	_meshes[TRANSFORM_MOVE_YW] = _make_mesh_instance(StringName("PlaneYW"), plane_mesh, _make_plane_material(p_axis_colors[3], p_axis_colors[1]));
+	_meshes[TRANSFORM_MOVE_YZ]->set_position(Vector4(0.0, PLANE_OFFSET_4D, PLANE_OFFSET_4D, 0.0));
+	_meshes[TRANSFORM_MOVE_YW] = _make_mesh_instance_4d(StringName("PlaneYW"), plane_mesh, _make_plane_material_4d(p_axis_colors[3], p_axis_colors[1]));
 	_meshes[TRANSFORM_MOVE_YW]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(-1.0, 0.0, 0.0, 0.0)));
-	_meshes[TRANSFORM_MOVE_YW]->set_position(Vector4(0.0, PLANE_OFFSET, 0.0, PLANE_OFFSET));
-	_meshes[TRANSFORM_MOVE_ZW] = _make_mesh_instance(StringName("PlaneZW"), plane_mesh, _make_plane_material(p_axis_colors[2], p_axis_colors[3]));
+	_meshes[TRANSFORM_MOVE_YW]->set_position(Vector4(0.0, PLANE_OFFSET_4D, 0.0, PLANE_OFFSET_4D));
+	_meshes[TRANSFORM_MOVE_ZW] = _make_mesh_instance_4d(StringName("PlaneZW"), plane_mesh, _make_plane_material_4d(p_axis_colors[2], p_axis_colors[3]));
 	_meshes[TRANSFORM_MOVE_ZW]->set_basis(Basis4D(Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
-	_meshes[TRANSFORM_MOVE_ZW]->set_position(Vector4(0.0, 0.0, PLANE_OFFSET, PLANE_OFFSET));
+	_meshes[TRANSFORM_MOVE_ZW]->set_position(Vector4(0.0, 0.0, PLANE_OFFSET_4D, PLANE_OFFSET_4D));
 	// Create the rotation ring meshes.
-	Ref<ArrayWireMesh4D> rotation_ring_mesh = _make_rotation_ring_wire_mesh();
-	_meshes[TRANSFORM_ROTATE_XY] = _make_mesh_instance(StringName("RotationRingXY"), rotation_ring_mesh, _make_rotation_ring_material(p_axis_colors[1], p_axis_colors[0]));
-	_meshes[TRANSFORM_ROTATE_XZ] = _make_mesh_instance(StringName("RotationRingXZ"), rotation_ring_mesh, _make_rotation_ring_material(p_axis_colors[2], p_axis_colors[0]));
+	Ref<ArrayWireMesh4D> rotation_ring_mesh = _make_rotation_ring_wire_mesh_4d();
+	_meshes[TRANSFORM_ROTATE_XY] = _make_mesh_instance_4d(StringName("RotationRingXY"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[0]));
+	_meshes[TRANSFORM_ROTATE_XZ] = _make_mesh_instance_4d(StringName("RotationRingXZ"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[2], p_axis_colors[0]));
 	_meshes[TRANSFORM_ROTATE_XZ]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, -1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0)));
-	_meshes[TRANSFORM_ROTATE_XW] = _make_mesh_instance(StringName("RotationRingXW"), rotation_ring_mesh, _make_rotation_ring_material(p_axis_colors[3], p_axis_colors[0]));
+	_meshes[TRANSFORM_ROTATE_XW] = _make_mesh_instance_4d(StringName("RotationRingXW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[3], p_axis_colors[0]));
 	_meshes[TRANSFORM_ROTATE_XW]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, -1.0, 0.0, 0.0)));
-	_meshes[TRANSFORM_ROTATE_YZ] = _make_mesh_instance(StringName("RotationRingYZ"), rotation_ring_mesh, _make_rotation_ring_material(p_axis_colors[1], p_axis_colors[2]));
+	_meshes[TRANSFORM_ROTATE_YZ] = _make_mesh_instance_4d(StringName("RotationRingYZ"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[2]));
 	_meshes[TRANSFORM_ROTATE_YZ]->set_basis(Basis4D(Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(-1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0)));
-	_meshes[TRANSFORM_ROTATE_YW] = _make_mesh_instance(StringName("RotationRingYW"), rotation_ring_mesh, _make_rotation_ring_material(p_axis_colors[1], p_axis_colors[3]));
+	_meshes[TRANSFORM_ROTATE_YW] = _make_mesh_instance_4d(StringName("RotationRingYW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[3]));
 	_meshes[TRANSFORM_ROTATE_YW]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(-1.0, 0.0, 0.0, 0.0)));
-	_meshes[TRANSFORM_ROTATE_ZW] = _make_mesh_instance(StringName("RotationRingZW"), rotation_ring_mesh, _make_rotation_ring_material(p_axis_colors[3], p_axis_colors[2]));
+	_meshes[TRANSFORM_ROTATE_ZW] = _make_mesh_instance_4d(StringName("RotationRingZW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[3], p_axis_colors[2]));
 	_meshes[TRANSFORM_ROTATE_ZW]->set_basis(Basis4D(Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	// Create the scale box meshes.
-	Ref<ArrayWireMesh4D> scale_box_mesh = _make_scale_box_wire_mesh();
-	_meshes[TRANSFORM_SCALE_X] = _make_mesh_instance(StringName("ScaleBoxX"), scale_box_mesh, x_material);
+	Ref<ArrayWireMesh4D> scale_box_mesh = _make_scale_box_wire_mesh_4d();
+	_meshes[TRANSFORM_SCALE_X] = _make_mesh_instance_4d(StringName("ScaleBoxX"), scale_box_mesh, x_material);
 	_meshes[TRANSFORM_SCALE_X]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_SCALE_X]->set_position(Vector4(1.0, 0.0, 0.0, 0.0));
-	_meshes[TRANSFORM_SCALE_Y] = _make_mesh_instance(StringName("ScaleBoxY"), scale_box_mesh, y_material);
+	_meshes[TRANSFORM_SCALE_Y] = _make_mesh_instance_4d(StringName("ScaleBoxY"), scale_box_mesh, y_material);
 	_meshes[TRANSFORM_SCALE_Y]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_SCALE_Y]->set_position(Vector4(0.0, 1.0, 0.0, 0.0));
-	_meshes[TRANSFORM_SCALE_Z] = _make_mesh_instance(StringName("ScaleBoxZ"), scale_box_mesh, z_material);
+	_meshes[TRANSFORM_SCALE_Z] = _make_mesh_instance_4d(StringName("ScaleBoxZ"), scale_box_mesh, z_material);
 	_meshes[TRANSFORM_SCALE_Z]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0)));
 	_meshes[TRANSFORM_SCALE_Z]->set_position(Vector4(0.0, 0.0, 1.0, 0.0));
-	_meshes[TRANSFORM_SCALE_W] = _make_mesh_instance(StringName("ScaleBoxW"), scale_box_mesh, w_material);
+	_meshes[TRANSFORM_SCALE_W] = _make_mesh_instance_4d(StringName("ScaleBoxW"), scale_box_mesh, w_material);
 	_meshes[TRANSFORM_SCALE_W]->set_position(Vector4(0.0, 0.0, 0.0, 1.0));
 	// The scale plane meshes are the same as the move plane meshes.
 	_meshes[TRANSFORM_SCALE_XY] = _meshes[TRANSFORM_MOVE_XY];
@@ -236,28 +236,28 @@ void EditorTransformGizmo4D::_generate_gizmo_meshes(const PackedColorArray &p_ax
 	_meshes[TRANSFORM_SCALE_YW] = _meshes[TRANSFORM_MOVE_YW];
 	_meshes[TRANSFORM_SCALE_ZW] = _meshes[TRANSFORM_MOVE_ZW];
 	// Create the stretch triplane meshes.
-	Ref<ArrayWireMesh4D> stretch_triplane_mesh = _make_stretch_triplane_wire_mesh();
-	_meshes[TRANSFORM_STRETCH_POS_X] = _make_mesh_instance(StringName("StretchTriplanePosX"), stretch_triplane_mesh, x_material);
+	Ref<ArrayWireMesh4D> stretch_triplane_mesh = _make_stretch_triplane_wire_mesh_4d();
+	_meshes[TRANSFORM_STRETCH_POS_X] = _make_mesh_instance_4d(StringName("StretchTriplanePosX"), stretch_triplane_mesh, x_material);
 	_meshes[TRANSFORM_STRETCH_POS_X]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_POS_X]->set_position(Vector4(1.0, 0.0, 0.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_NEG_X] = _make_mesh_instance(StringName("StretchTriplaneNegX"), stretch_triplane_mesh, x_material);
+	_meshes[TRANSFORM_STRETCH_NEG_X] = _make_mesh_instance_4d(StringName("StretchTriplaneNegX"), stretch_triplane_mesh, x_material);
 	_meshes[TRANSFORM_STRETCH_NEG_X]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_NEG_X]->set_position(Vector4(-1.0, 0.0, 0.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_POS_Y] = _make_mesh_instance(StringName("StretchTriplanePosY"), stretch_triplane_mesh, y_material);
+	_meshes[TRANSFORM_STRETCH_POS_Y] = _make_mesh_instance_4d(StringName("StretchTriplanePosY"), stretch_triplane_mesh, y_material);
 	_meshes[TRANSFORM_STRETCH_POS_Y]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_POS_Y]->set_position(Vector4(0.0, 1.0, 0.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_NEG_Y] = _make_mesh_instance(StringName("StretchTriplaneNegY"), stretch_triplane_mesh, y_material);
+	_meshes[TRANSFORM_STRETCH_NEG_Y] = _make_mesh_instance_4d(StringName("StretchTriplaneNegY"), stretch_triplane_mesh, y_material);
 	_meshes[TRANSFORM_STRETCH_NEG_Y]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_NEG_Y]->set_position(Vector4(0.0, -1.0, 0.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_POS_Z] = _make_mesh_instance(StringName("StretchTriplanePosZ"), stretch_triplane_mesh, z_material);
+	_meshes[TRANSFORM_STRETCH_POS_Z] = _make_mesh_instance_4d(StringName("StretchTriplanePosZ"), stretch_triplane_mesh, z_material);
 	_meshes[TRANSFORM_STRETCH_POS_Z]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_POS_Z]->set_position(Vector4(0.0, 0.0, 1.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_NEG_Z] = _make_mesh_instance(StringName("StretchTriplaneNegZ"), stretch_triplane_mesh, z_material);
+	_meshes[TRANSFORM_STRETCH_NEG_Z] = _make_mesh_instance_4d(StringName("StretchTriplaneNegZ"), stretch_triplane_mesh, z_material);
 	_meshes[TRANSFORM_STRETCH_NEG_Z]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_NEG_Z]->set_position(Vector4(0.0, 0.0, -1.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_POS_W] = _make_mesh_instance(StringName("StretchTriplanePosW"), stretch_triplane_mesh, w_material);
+	_meshes[TRANSFORM_STRETCH_POS_W] = _make_mesh_instance_4d(StringName("StretchTriplanePosW"), stretch_triplane_mesh, w_material);
 	_meshes[TRANSFORM_STRETCH_POS_W]->set_position(Vector4(0.0, 0.0, 0.0, 1.0));
-	_meshes[TRANSFORM_STRETCH_NEG_W] = _make_mesh_instance(StringName("StretchTriplaneNegW"), stretch_triplane_mesh, w_material);
+	_meshes[TRANSFORM_STRETCH_NEG_W] = _make_mesh_instance_4d(StringName("StretchTriplaneNegW"), stretch_triplane_mesh, w_material);
 	_meshes[TRANSFORM_STRETCH_NEG_W]->set_position(Vector4(0.0, 0.0, 0.0, -1.0));
 	// Set the gizmo mode to set the visibility of these new meshes.
 	set_gizmo_mode(GizmoMode::SELECT);
@@ -396,12 +396,12 @@ EditorTransformGizmo4D::TransformPart EditorTransformGizmo4D::_check_for_best_hi
 	}
 	// Check planes.
 	if (_is_move_planar_enabled || _is_scale_planar_enabled) {
-		CHECK_POINT(Vector4(PLANE_OFFSET, PLANE_OFFSET, 0.0, 0.0), _is_move_planar_enabled ? TRANSFORM_MOVE_XY : TRANSFORM_SCALE_XY);
-		CHECK_POINT(Vector4(PLANE_OFFSET, 0.0, PLANE_OFFSET, 0.0), _is_move_planar_enabled ? TRANSFORM_MOVE_XZ : TRANSFORM_SCALE_XZ);
-		CHECK_POINT(Vector4(PLANE_OFFSET, 0.0, 0.0, PLANE_OFFSET), _is_move_planar_enabled ? TRANSFORM_MOVE_XW : TRANSFORM_SCALE_XW);
-		CHECK_POINT(Vector4(0.0, PLANE_OFFSET, PLANE_OFFSET, 0.0), _is_move_planar_enabled ? TRANSFORM_MOVE_YZ : TRANSFORM_SCALE_YZ);
-		CHECK_POINT(Vector4(0.0, PLANE_OFFSET, 0.0, PLANE_OFFSET), _is_move_planar_enabled ? TRANSFORM_MOVE_YW : TRANSFORM_SCALE_YW);
-		CHECK_POINT(Vector4(0.0, 0.0, PLANE_OFFSET, PLANE_OFFSET), _is_move_planar_enabled ? TRANSFORM_MOVE_ZW : TRANSFORM_SCALE_ZW);
+		CHECK_POINT(Vector4(PLANE_OFFSET_4D, PLANE_OFFSET_4D, 0.0, 0.0), _is_move_planar_enabled ? TRANSFORM_MOVE_XY : TRANSFORM_SCALE_XY);
+		CHECK_POINT(Vector4(PLANE_OFFSET_4D, 0.0, PLANE_OFFSET_4D, 0.0), _is_move_planar_enabled ? TRANSFORM_MOVE_XZ : TRANSFORM_SCALE_XZ);
+		CHECK_POINT(Vector4(PLANE_OFFSET_4D, 0.0, 0.0, PLANE_OFFSET_4D), _is_move_planar_enabled ? TRANSFORM_MOVE_XW : TRANSFORM_SCALE_XW);
+		CHECK_POINT(Vector4(0.0, PLANE_OFFSET_4D, PLANE_OFFSET_4D, 0.0), _is_move_planar_enabled ? TRANSFORM_MOVE_YZ : TRANSFORM_SCALE_YZ);
+		CHECK_POINT(Vector4(0.0, PLANE_OFFSET_4D, 0.0, PLANE_OFFSET_4D), _is_move_planar_enabled ? TRANSFORM_MOVE_YW : TRANSFORM_SCALE_YW);
+		CHECK_POINT(Vector4(0.0, 0.0, PLANE_OFFSET_4D, PLANE_OFFSET_4D), _is_move_planar_enabled ? TRANSFORM_MOVE_ZW : TRANSFORM_SCALE_ZW);
 	}
 	// Check stretch.
 	if (_is_stretch_enabled) {

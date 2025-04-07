@@ -12,7 +12,7 @@
 
 // How far apart the axis circles are from the center of the gizmo.
 // Godot's 3D uses 80, but for 4D we have more axes, so we need to space them out more.
-constexpr float GIZMO_BASE_SIZE = 100.0f;
+constexpr float GIZMO_4D_BASE_SIZE = 100.0f;
 
 String _get_axis_letter_4d(int p_axis) {
 	switch (p_axis) {
@@ -357,7 +357,7 @@ void EditorViewportRotation4D::_update_focus() {
 
 void EditorViewportRotation4D::_update_theme() {
 	_editor_scale = EDSCALE;
-	const real_t scaled_size = GIZMO_BASE_SIZE * _editor_scale;
+	const real_t scaled_size = GIZMO_4D_BASE_SIZE * _editor_scale;
 	set_custom_minimum_size(Vector2(scaled_size, scaled_size));
 	set_offset(SIDE_RIGHT, -0.1f * scaled_size);
 	set_offset(SIDE_BOTTOM, 1.1f * scaled_size);

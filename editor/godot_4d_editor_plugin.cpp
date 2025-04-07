@@ -18,7 +18,7 @@
 #endif
 #endif
 
-Button *_find_button_by_text(Node *p_start, const String &p_text) {
+Button *_find_button_by_text_4d(Node *p_start, const String &p_text) {
 	Button *start_button = Object::cast_to<Button>(p_start);
 	if (start_button != nullptr) {
 		if (start_button->get_text() == p_text) {
@@ -26,7 +26,7 @@ Button *_find_button_by_text(Node *p_start, const String &p_text) {
 		}
 	}
 	for (int i = 0; i < p_start->get_child_count(); i++) {
-		Button *button = _find_button_by_text(p_start->get_child(i), p_text);
+		Button *button = _find_button_by_text_4d(p_start->get_child(i), p_text);
 		if (button != nullptr) {
 			return button;
 		}
@@ -58,10 +58,10 @@ void Godot4DEditorPlugin::_inject_4d_scene_button() {
 	Control *editor = EditorInterface::get_singleton()->get_base_control();
 	ERR_FAIL_NULL(editor);
 	// Add a "4D Scene" button above the "User Interface" button, below the "3D Scene" button.
-	Button *button_other_node_scene = _find_button_by_text(editor, "Other Node");
+	Button *button_other_node_scene = _find_button_by_text_4d(editor, "Other Node");
 	ERR_FAIL_NULL(button_other_node_scene);
 	Control *beginner_node_shortcuts = Object::cast_to<Control>(button_other_node_scene->get_parent()->get_child(0));
-	Button *user_interface_scene = _find_button_by_text(beginner_node_shortcuts, "User Interface");
+	Button *user_interface_scene = _find_button_by_text_4d(beginner_node_shortcuts, "User Interface");
 	ERR_FAIL_NULL(user_interface_scene);
 	// Now that we know where to insert the button, create it.
 	EditorCreate4DSceneButton *button_4d = memnew(EditorCreate4DSceneButton);
