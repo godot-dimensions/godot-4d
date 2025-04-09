@@ -909,6 +909,27 @@ Multivector4D Multivector4D::from_trivector_pseudoscalar(const Trivector4D &p_tr
 	return result;
 }
 
+// Must be explicitly defined to fix "error: definition of implicit copy assignment operator
+// for 'Multivector4D' is deprecated because it has a user-provided copy constructor"
+Multivector4D &Multivector4D::operator=(const Multivector4D &p_other) {
+	parts.scalar = p_other.parts.scalar;
+	parts.vector = p_other.parts.vector;
+	parts.bivector = p_other.parts.bivector;
+	parts.trivector = p_other.parts.trivector;
+	parts.pseudoscalar = p_other.parts.pseudoscalar;
+	return *this;
+}
+
+// Must be explicitly defined to fix "note: copy constructor of 'Multivector4D' is implicitly
+// deleted because variant field 'parts' has a non-trivial copy constructor"
+Multivector4D::Multivector4D(const Multivector4D &p_from) {
+	parts.scalar = p_from.parts.scalar;
+	parts.vector = p_from.parts.vector;
+	parts.bivector = p_from.parts.bivector;
+	parts.trivector = p_from.parts.trivector;
+	parts.pseudoscalar = p_from.parts.pseudoscalar;
+}
+
 Multivector4D::Multivector4D(const real_t p_scalar, const Vector4 &p_vector, const Bivector4D &p_bivector, const Trivector4D &p_trivector, const real_t p_pseudoscalar) {
 	parts.scalar = p_scalar;
 	parts.vector = p_vector;

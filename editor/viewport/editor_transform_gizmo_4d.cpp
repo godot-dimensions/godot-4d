@@ -335,32 +335,20 @@ Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p
 }
 
 Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp, const bool correct_for_ring) {
-	const Plane4D plane = Plane4D::from_coplanar_directions(p_axis1, p_axis2, p_perp);
-	if (plane.normal == Vector4()) {
+	const Vector4 axis1_slid = Vector4D::slide(p_axis1, p_perp).normalized();
+	const Vector4 axis2_slid = Vector4D::slide(p_axis2, p_perp).normalized();
+	Vector4 plane_normal = Vector4D::slide(p_ray_direction, axis1_slid);
+	plane_normal = Vector4D::slide(plane_normal, axis2_slid);
+	plane_normal = Vector4D::slide(plane_normal, p_perp);
+	if (plane_normal == Vector4()) {
 		return Vector4();
 	}
+	const Plane4D plane = Plane4D(plane_normal.normalized(), 0.0);
 	const Variant intersection = plane.intersect_ray(p_ray_origin, p_ray_direction);
-	if (intersection.get_type() != Variant::VECTOR4) {
-		return Vector4();
+	if (intersection.get_type() == Variant::VECTOR4) {
+		return intersection;
 	}
-	Vector4 intersection_adjusted = intersection;
-	// I don't know why this works, but it does. It was found by trial and error.
-	if (correct_for_ring) {
-		const Vector4 biplane_axes = p_axis1 + p_axis2;
-		if (biplane_axes.x == 0.0f && !Math::is_zero_approx(p_perp.x)) {
-			intersection_adjusted.x /= p_perp.x;
-		}
-		if (biplane_axes.y == 0.0f && !Math::is_zero_approx(p_perp.y)) {
-			intersection_adjusted.y /= p_perp.y;
-		}
-		if (biplane_axes.z == 0.0f && !Math::is_zero_approx(p_perp.z)) {
-			intersection_adjusted.z /= p_perp.z;
-		}
-		if (biplane_axes.w == 0.0f && !Math::is_zero_approx(p_perp.w)) {
-			intersection_adjusted.w /= p_perp.w;
-		}
-	}
-	return intersection_adjusted;
+	return Vector4();
 }
 
 EditorTransformGizmo4D::TransformPart EditorTransformGizmo4D::_check_for_best_hit(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) const {
@@ -435,7 +423,7 @@ EditorTransformGizmo4D::TransformPart EditorTransformGizmo4D::_check_for_best_hi
 	return closest_part;
 }
 
-void EditorTransformGizmo4D::_unhiglight_mesh(TransformPart p_transformation) {
+void EditorTransformGizmo4D::_unhighlight_mesh(TransformPart p_transformation) {
 	if (p_transformation == TRANSFORM_NONE) {
 		return;
 	}
@@ -566,20 +554,20 @@ void EditorTransformGizmo4D::_end_transformation() {
 	}
 	// Create an undo/redo action for the transformation.
 	const bool is_move_only = _current_transformation >= TRANSFORM_MOVE_X && _current_transformation <= TRANSFORM_MOVE_ZW;
-	undo_redo->create_action(is_move_only ? String("Move 4D nodes with gizmo") : String("Transform 4D nodes with gizmo"));
+	_undo_redo->create_action(is_move_only ? String("Move 4D nodes with gizmo") : String("Transform 4D nodes with gizmo"));
 	const int size = _selected_top_nodes.size();
 	for (int i = 0; i < size; i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
-			undo_redo->add_do_property(node_4d, StringName("global_position"), node_4d->get_global_position());
-			undo_redo->add_undo_property(node_4d, StringName("global_position"), _selected_top_node_old_transforms[i].origin);
+			_undo_redo->add_do_property(node_4d, StringName("global_position"), node_4d->get_global_position());
+			_undo_redo->add_undo_property(node_4d, StringName("global_position"), _selected_top_node_old_transforms[i].origin);
 			if (!is_move_only) {
-				undo_redo->add_do_property(node_4d, StringName("global_basis"), (Projection)node_4d->get_global_basis());
-				undo_redo->add_undo_property(node_4d, StringName("global_basis"), (Projection)_selected_top_node_old_transforms[i].basis);
+				_undo_redo->add_do_property(node_4d, StringName("global_basis"), (Projection)node_4d->get_global_basis());
+				_undo_redo->add_undo_property(node_4d, StringName("global_basis"), (Projection)_selected_top_node_old_transforms[i].basis);
 			}
 		}
 	}
-	undo_redo->commit_action(false);
+	_undo_redo->commit_action(false);
 	// Clear out the transformation data and mark the scene as unsaved.
 	_old_transform = Transform4D();
 	_transform_reference_value = Variant();
@@ -920,7 +908,7 @@ bool EditorTransformGizmo4D::gizmo_mouse_raycast(const Ref<InputEventMouse> &p_m
 			if (hit == _highlighted_transformation) {
 				return false;
 			}
-			_unhiglight_mesh(_highlighted_transformation);
+			_unhighlight_mesh(_highlighted_transformation);
 			_highlight_mesh(hit);
 			_highlighted_transformation = hit;
 			return true;
@@ -952,6 +940,6 @@ void EditorTransformGizmo4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	EditorInterface::get_singleton()->get_inspector()->connect(StringName("property_edited"), callable_mp(this, &EditorTransformGizmo4D::_on_editor_inspector_property_edited));
 
 	// Set up things with the arguments (not constructor things).
-	undo_redo = p_undo_redo_manager;
+	_undo_redo = p_undo_redo_manager;
 	p_undo_redo_manager->connect(StringName("version_changed"), callable_mp(this, &EditorTransformGizmo4D::_on_undo_redo_version_changed));
 }

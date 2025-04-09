@@ -45,25 +45,6 @@ Vector4 Geometry4D::closest_point_between_lines(const Vector4 &p_line1_point, co
 	return closest_point_on_line1;
 }
 
-PackedVector4Array Geometry4D::closest_points_between_lines(const Vector4 &p_line1_point, const Vector4 &p_line1_dir, const Vector4 &p_line2_point, const Vector4 &p_line2_dir) {
-	const Vector4 difference_between_points = p_line1_point - p_line2_point;
-	const real_t line1_len_sq = p_line1_dir.length_squared();
-	const real_t line2_len_sq = p_line2_dir.length_squared();
-	const real_t line1_projection = p_line1_dir.dot(difference_between_points);
-	const real_t line2_projection = p_line2_dir.dot(difference_between_points);
-	const real_t direction_dot = p_line1_dir.dot(p_line2_dir);
-	const real_t denominator = line1_len_sq * line2_len_sq - direction_dot * direction_dot;
-	if (Math::is_zero_approx(denominator)) {
-		// Lines are parallel, handling it as a special case.
-		return PackedVector4Array{ p_line1_point, p_line2_point };
-	}
-	const real_t line1_factor = (direction_dot * line2_projection - line2_len_sq * line1_projection) / denominator;
-	const real_t line2_factor = (line1_len_sq * line2_projection - direction_dot * line1_projection) / denominator;
-	const Vector4 closest_point_on_line1 = p_line1_point + p_line1_dir * line1_factor;
-	const Vector4 closest_point_on_line2 = p_line2_point + p_line2_dir * line2_factor;
-	return PackedVector4Array{ closest_point_on_line1, closest_point_on_line2 };
-}
-
 Vector4 Geometry4D::closest_point_between_line_segments(const Vector4 &p_line1_a, const Vector4 &p_line1_b, const Vector4 &p_line2_a, const Vector4 &p_line2_b) {
 	const Vector4 difference_between_points = p_line1_a - p_line2_a;
 	const Vector4 line1_dir = p_line1_b - p_line1_a;
@@ -81,6 +62,25 @@ Vector4 Geometry4D::closest_point_between_line_segments(const Vector4 &p_line1_a
 	const real_t line1_factor = (direction_dot * line2_projection - line2_len_sq * line1_projection) / denominator;
 	const Vector4 closest_point_on_line1 = p_line1_a + line1_dir * CLAMP(line1_factor, (real_t)0.0, (real_t)1.0);
 	return closest_point_on_line1;
+}
+
+PackedVector4Array Geometry4D::closest_points_between_lines(const Vector4 &p_line1_point, const Vector4 &p_line1_dir, const Vector4 &p_line2_point, const Vector4 &p_line2_dir) {
+	const Vector4 difference_between_points = p_line1_point - p_line2_point;
+	const real_t line1_len_sq = p_line1_dir.length_squared();
+	const real_t line2_len_sq = p_line2_dir.length_squared();
+	const real_t line1_projection = p_line1_dir.dot(difference_between_points);
+	const real_t line2_projection = p_line2_dir.dot(difference_between_points);
+	const real_t direction_dot = p_line1_dir.dot(p_line2_dir);
+	const real_t denominator = line1_len_sq * line2_len_sq - direction_dot * direction_dot;
+	if (Math::is_zero_approx(denominator)) {
+		// Lines are parallel, handling it as a special case.
+		return PackedVector4Array{ p_line1_point, p_line2_point };
+	}
+	const real_t line1_factor = (direction_dot * line2_projection - line2_len_sq * line1_projection) / denominator;
+	const real_t line2_factor = (line1_len_sq * line2_projection - direction_dot * line1_projection) / denominator;
+	const Vector4 closest_point_on_line1 = p_line1_point + p_line1_dir * line1_factor;
+	const Vector4 closest_point_on_line2 = p_line2_point + p_line2_dir * line2_factor;
+	return PackedVector4Array{ closest_point_on_line1, closest_point_on_line2 };
 }
 
 PackedVector4Array Geometry4D::closest_points_between_line_segments(const Vector4 &p_line1_a, const Vector4 &p_line1_b, const Vector4 &p_line2_a, const Vector4 &p_line2_b) {

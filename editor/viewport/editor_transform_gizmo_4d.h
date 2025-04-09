@@ -72,7 +72,7 @@ private:
 
 	Node4D *_mesh_holder = nullptr;
 	MeshInstance4D *_meshes[TRANSFORM_MAX] = { nullptr };
-	EditorUndoRedoManager *undo_redo = nullptr;
+	EditorUndoRedoManager *_undo_redo = nullptr;
 
 	KeepMode _keep_mode = KeepMode::FREEFORM;
 	TransformPart _current_transformation = TRANSFORM_NONE;
@@ -106,7 +106,7 @@ private:
 
 	// Highlighting functions, used when not transforming.
 	TransformPart _check_for_best_hit(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) const;
-	void _unhiglight_mesh(TransformPart p_transformation);
+	void _unhighlight_mesh(TransformPart p_transformation);
 	void _highlight_mesh(TransformPart p_transformation);
 
 	// Transformation functions.

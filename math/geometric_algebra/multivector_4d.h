@@ -159,9 +159,11 @@ struct _NO_DISCARD_ Multivector4D {
 	// If you want to construct from 3, 4, or 5 components just use the constructor instead of these static functions.
 
 	operator String() const;
+	Multivector4D &operator=(const Multivector4D &p_other);
 
 	// Constructors.
 	Multivector4D() {}
+	Multivector4D(const Multivector4D &p_from);
 	Multivector4D(const real_t p_scalar, const Vector4 &p_vector, const Bivector4D &p_bivector, const Trivector4D &p_trivector, const real_t p_pseudoscalar);
 	Multivector4D(const real_t p_s, const real_t p_x, const real_t p_y, const real_t p_z, const real_t p_w, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yz, const real_t p_yw, const real_t p_zw, const real_t p_xyz, const real_t p_xyw, const real_t p_xzw, const real_t p_yzw, const real_t p_xyzw);
 };
