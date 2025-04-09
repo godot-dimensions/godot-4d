@@ -43,6 +43,21 @@
 				Creates a [Rotor4D] from a [PackedFloat32Array] or [PackedFloat64Array]. The array may be of any length, but only the first 8 elements will be used.
 			</description>
 		</method>
+		<method name="from_bivector_magnitude" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="bivector" type="AABB" />
+			<description>
+				Constructs a rotor that represents a rotation where the angle is the magnitude of the given bivector, and the planes of rotation are the normalized bivector. This is the inverse of [method get_rotation_bivector_magnitude].
+			</description>
+		</method>
+		<method name="from_bivector_normal_angle" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="bivector_normal" type="AABB" />
+			<param index="1" name="angle" type="float" />
+			<description>
+				Constructs a rotor that represents a rotation where the angle is the given angle, and the planes of rotation are the bivector. The given bivector must be normalized. This is the inverse of [method get_rotation_bivector_normal] and [method get_rotation_angle].
+			</description>
+		</method>
 		<method name="from_numbers" qualifiers="static">
 			<return type="Rotor4D" />
 			<param index="0" name="s" type="float" />
@@ -63,6 +78,62 @@
 			<param index="1" name="yz_yw_zw_xyzw" type="Vector4" />
 			<description>
 				Constructs a rotor stored in two [Vector4]s. Note that this is NOT the same as the geometric product of two vectors. The first [Vector4] stores the scalar, xy, xz, and xw components, and the second [Vector4] stores the yz, yw, zw, and xyzw components.
+			</description>
+		</method>
+		<method name="from_wy" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="angle" type="float" />
+			<description>
+				Create a rotor representing a rotation in the wy plane by the given angle. This is the negative of [method rotation_yw].
+			</description>
+		</method>
+		<method name="from_xw" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="angle" type="float" />
+			<description>
+				Create a rotor representing a rotation in the xw plane by the given angle.
+			</description>
+		</method>
+		<method name="from_xy" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="angle" type="float" />
+			<description>
+				Create a rotor representing a rotation in the xy plane by the given angle.
+			</description>
+		</method>
+		<method name="from_xz" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="angle" type="float" />
+			<description>
+				Create a rotor representing a rotation in the xz plane by the given angle. This is the negative of [method rotation_zx].
+			</description>
+		</method>
+		<method name="from_yw" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="angle" type="float" />
+			<description>
+				Create a rotor representing a rotation in the yw plane by the given angle. This is the negative of [method rotation_wy].
+			</description>
+		</method>
+		<method name="from_yz" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="angle" type="float" />
+			<description>
+				Create a rotor representing a rotation in the yz plane by the given angle.
+			</description>
+		</method>
+		<method name="from_zw" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="angle" type="float" />
+			<description>
+				Create a rotor representing a rotation in the zw plane by the given angle.
+			</description>
+		</method>
+		<method name="from_zx" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="angle" type="float" />
+			<description>
+				Create a rotor representing a rotation in the zx plane by the given angle. This is the negative of [method rotation_xz].
 			</description>
 		</method>
 		<method name="get_rotation_angle" qualifiers="const">
@@ -165,77 +236,6 @@
 				Rotates a vector by this rotor.
 			</description>
 		</method>
-		<method name="rotation_bivector_magnitude" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="bivector" type="AABB" />
-			<description>
-				Constructs a rotor that represents a rotation where the angle is the magnitude of the given bivector, and the planes of rotation are the normalized bivector. This is the inverse of [method get_rotation_bivector_magnitude].
-			</description>
-		</method>
-		<method name="rotation_bivector_normal_angle" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="bivector_normal" type="AABB" />
-			<param index="1" name="angle" type="float" />
-			<description>
-				Constructs a rotor that represents a rotation where the angle is the given angle, and the planes of rotation are the bivector. The given bivector must be normalized. This is the inverse of [method get_rotation_bivector_normal] and [method get_rotation_angle].
-			</description>
-		</method>
-		<method name="rotation_wy" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="angle" type="float" />
-			<description>
-				Create a rotor representing a rotation in the wy plane by the given angle. This is the negative of [method rotation_yw].
-			</description>
-		</method>
-		<method name="rotation_xw" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="angle" type="float" />
-			<description>
-				Create a rotor representing a rotation in the xw plane by the given angle.
-			</description>
-		</method>
-		<method name="rotation_xy" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="angle" type="float" />
-			<description>
-				Create a rotor representing a rotation in the xy plane by the given angle.
-			</description>
-		</method>
-		<method name="rotation_xz" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="angle" type="float" />
-			<description>
-				Create a rotor representing a rotation in the xz plane by the given angle. This is the negative of [method rotation_zx].
-			</description>
-		</method>
-		<method name="rotation_yw" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="angle" type="float" />
-			<description>
-				Create a rotor representing a rotation in the yw plane by the given angle. This is the negative of [method rotation_wy].
-			</description>
-		</method>
-		<method name="rotation_yz" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="angle" type="float" />
-			<description>
-				Create a rotor representing a rotation in the yz plane by the given angle.
-			</description>
-		</method>
-		<method name="rotation_zw" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="angle" type="float" />
-			<description>
-				Create a rotor representing a rotation in the zw plane by the given angle.
-			</description>
-		</method>
-		<method name="rotation_zx" qualifiers="static">
-			<return type="Rotor4D" />
-			<param index="0" name="angle" type="float" />
-			<description>
-				Create a rotor representing a rotation in the zx plane by the given angle. This is the negative of [method rotation_xz].
-			</description>
-		</method>
 		<method name="sandwich" qualifiers="const">
 			<return type="Vector4" />
 			<param index="0" name="vector" type="Vector4" />
@@ -261,7 +261,7 @@
 		</method>
 		<method name="slerp_fraction" qualifiers="const">
 			<return type="Rotor4D" />
-			<param index="0" name="weight" type="float" />
+			<param index="0" name="weight" type="float" default="0.5" />
 			<description>
 				Spherically interpolates between the identity rotor and this rotor by the given weight. The weight should be on the range of 0.0 to 1.0. A weight of 0.0 will result in the identity rotor, and a weight of 1.0 will result in this rotor.
 			</description>

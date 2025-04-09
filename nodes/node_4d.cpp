@@ -42,7 +42,7 @@ void Node4D::rotate_euler_local_bind(const AABB &p_euler_local) {
 // Geometric algebra rotation altering methods.
 
 void Node4D::rotate_bivector_magnitude(const Bivector4D &p_bivector) {
-	Rotor4D rot = Rotor4D::rotation_bivector_magnitude(p_bivector);
+	Rotor4D rot = Rotor4D::from_bivector_magnitude(p_bivector);
 	set_basis(rot.rotate_basis(get_basis()));
 }
 
@@ -51,7 +51,7 @@ void Node4D::rotate_bivector_magnitude_bind(const AABB &p_bivector) {
 }
 
 void Node4D::rotate_bivector_magnitude_local(const Bivector4D &p_bivector_local) {
-	Basis4D rot = Rotor4D::rotation_bivector_magnitude(p_bivector_local).get_rotation_basis();
+	Basis4D rot = Rotor4D::from_bivector_magnitude(p_bivector_local).get_rotation_basis();
 	set_basis(get_basis() * rot);
 }
 
@@ -281,7 +281,7 @@ void Node4D::set_uniform_scale(const real_t p_uniform_scale) {
 
 void Node4D::set_rotation_bivector_magnitude(const Bivector4D &p_bivector) {
 	const Vector4 scale = get_scale();
-	Rotor4D rot = Rotor4D::rotation_bivector_magnitude(p_bivector);
+	Rotor4D rot = Rotor4D::from_bivector_magnitude(p_bivector);
 	set_basis(rot.get_rotation_basis().scaled_local(scale));
 }
 
@@ -513,7 +513,7 @@ void Node4D::set_global_uniform_scale(const real_t p_global_uniform_scale) {
 
 void Node4D::set_global_rotation_bivector_magnitude(const Bivector4D &p_bivector) {
 	const Vector4 global_scale = get_global_scale();
-	Rotor4D rot = Rotor4D::rotation_bivector_magnitude(p_bivector);
+	Rotor4D rot = Rotor4D::from_bivector_magnitude(p_bivector);
 	set_global_basis(rot.get_rotation_basis().scaled_local(global_scale));
 }
 

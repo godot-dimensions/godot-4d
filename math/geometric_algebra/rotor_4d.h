@@ -50,7 +50,7 @@ struct _NO_DISCARD_ Rotor4D {
 	Vector4 rotate_vector(const Vector4 &p_vec) const;
 	Vector4 sandwich(const Vector4 &p_vec, const Rotor4D &p_right) const;
 	Rotor4D slerp(Rotor4D p_to, const real_t p_weight) const;
-	Rotor4D slerp_fraction(const real_t p_weight) const;
+	Rotor4D slerp_fraction(const real_t p_weight = 0.5f) const;
 
 	// Length functions.
 	real_t length() const;
@@ -61,16 +61,16 @@ struct _NO_DISCARD_ Rotor4D {
 
 	// Static functions for doing math on non-Rotor4D types and returning a Rotor4D.
 	static Rotor4D vector_product(const Vector4 &p_a, const Vector4 &p_b);
-	static Rotor4D rotation_bivector_magnitude(const Bivector4D &p_bivector);
-	static Rotor4D rotation_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle);
-	static Rotor4D rotation_xy(const real_t p_angle);
-	static Rotor4D rotation_xz(const real_t p_angle);
-	static Rotor4D rotation_zx(const real_t p_angle);
-	static Rotor4D rotation_xw(const real_t p_angle);
-	static Rotor4D rotation_yz(const real_t p_angle);
-	static Rotor4D rotation_yw(const real_t p_angle);
-	static Rotor4D rotation_wy(const real_t p_angle);
-	static Rotor4D rotation_zw(const real_t p_angle);
+	static Rotor4D from_bivector_magnitude(const Bivector4D &p_bivector);
+	static Rotor4D from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle);
+	static Rotor4D from_xy(const real_t p_angle);
+	static Rotor4D from_xz(const real_t p_angle);
+	static Rotor4D from_zx(const real_t p_angle);
+	static Rotor4D from_xw(const real_t p_angle);
+	static Rotor4D from_yz(const real_t p_angle);
+	static Rotor4D from_yw(const real_t p_angle);
+	static Rotor4D from_wy(const real_t p_angle);
+	static Rotor4D from_zw(const real_t p_angle);
 	static Rotor4D identity();
 
 	// Component with-style setters.

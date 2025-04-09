@@ -124,7 +124,7 @@ TEST_CASE("[Multivector4D] Rotation of Vector4") {
 		CHECK_MESSAGE(rot_xy_90.rotate_vector(vector).is_equal_approx(expected), "Multivector4D rotation of Vector4 should work as expected.");
 
 		// Alternate way to create the same rotation.
-		rot_xy_90 = Multivector4D::from_rotor(Rotor4D::rotation_xy(Math_TAU / 2));
+		rot_xy_90 = Multivector4D::from_rotor(Rotor4D::from_xy(Math_TAU / 2));
 		CHECK_MESSAGE(rot_xy_90.is_equal_approx(rot_xy_90), "Multivector4D rotation of Vector4 should work as expected.");
 	}
 }

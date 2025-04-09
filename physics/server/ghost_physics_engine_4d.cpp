@@ -6,7 +6,7 @@
 
 void GhostPhysicsEngine4D::_step_dynamic_rigid_body(RigidBody4D *p_moving_body, double p_delta) {
 	p_moving_body->set_global_position(p_moving_body->get_global_position() + p_moving_body->get_linear_velocity() * p_delta);
-	Rotor4D rotor = Rotor4D::rotation_bivector_magnitude(p_moving_body->get_angular_velocity() * p_delta);
+	Rotor4D rotor = Rotor4D::from_bivector_magnitude(p_moving_body->get_angular_velocity() * p_delta);
 	p_moving_body->set_global_basis(rotor.rotate_basis(p_moving_body->get_global_basis()));
 }
 

@@ -243,10 +243,10 @@ Rotor4D Rotor4D::slerp_fraction(const real_t p_weight) const {
 	double_t angle = Math::acos(parts.scalar);
 	double_t sin_angle = Math::sin(angle);
 	double_t fractional_angle = p_weight * angle;
-	double_t new_s = Math::cos(fractional_angle);
+	double_t new_scalar = Math::cos(fractional_angle);
 	double_t new_sin_angle = Math::sin(fractional_angle);
 	Bivector4D new_bivector = parts.bivector * (new_sin_angle / sin_angle);
-	return Rotor4D(new_s, new_bivector).normalized();
+	return Rotor4D(new_scalar, new_bivector).normalized();
 }
 
 // Length functions.
@@ -294,15 +294,15 @@ Rotor4D Rotor4D::vector_product(const Vector4 &p_a, const Vector4 &p_b) {
 	return result;
 }
 
-Rotor4D Rotor4D::rotation_bivector_magnitude(const Bivector4D &p_bivector) {
+Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
 	const real_t length_angle = p_bivector.length();
 	if (Math::is_zero_approx(length_angle)) {
 		return identity();
 	}
-	return rotation_bivector_normal_angle(p_bivector / length_angle, length_angle);
+	return from_bivector_normal_angle(p_bivector / length_angle, length_angle);
 }
 
-Rotor4D Rotor4D::rotation_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle) {
+Rotor4D Rotor4D::from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle) {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!p_bivector_normal.is_normalized(), Rotor4D(), "The bivector must be normalized in order to create a rotation, but was " + p_bivector_normal.operator String() + " (length " + rtos(p_bivector_normal.length()) + ").");
 #endif
@@ -315,7 +315,7 @@ Rotor4D Rotor4D::rotation_bivector_normal_angle(const Bivector4D &p_bivector_nor
 	return Rotor4D(cos_half_angle, p_bivector_normal * sin_half_angle);
 }
 
-Rotor4D Rotor4D::rotation_xy(const real_t p_angle) {
+Rotor4D Rotor4D::from_xy(const real_t p_angle) {
 	Rotor4D result;
 	const real_t half_angle = p_angle * 0.5;
 	result.s = Math::cos(half_angle);
@@ -323,7 +323,7 @@ Rotor4D Rotor4D::rotation_xy(const real_t p_angle) {
 	return result;
 }
 
-Rotor4D Rotor4D::rotation_xz(const real_t p_angle) {
+Rotor4D Rotor4D::from_xz(const real_t p_angle) {
 	Rotor4D result;
 	const real_t half_angle = p_angle * 0.5;
 	result.s = Math::cos(half_angle);
@@ -331,7 +331,7 @@ Rotor4D Rotor4D::rotation_xz(const real_t p_angle) {
 	return result;
 }
 
-Rotor4D Rotor4D::rotation_zx(const real_t p_angle) {
+Rotor4D Rotor4D::from_zx(const real_t p_angle) {
 	Rotor4D result;
 	const real_t half_angle = p_angle * -0.5;
 	result.s = Math::cos(half_angle);
@@ -339,7 +339,7 @@ Rotor4D Rotor4D::rotation_zx(const real_t p_angle) {
 	return result;
 }
 
-Rotor4D Rotor4D::rotation_xw(const real_t p_angle) {
+Rotor4D Rotor4D::from_xw(const real_t p_angle) {
 	Rotor4D result;
 	const real_t half_angle = p_angle * 0.5;
 	result.s = Math::cos(half_angle);
@@ -347,7 +347,7 @@ Rotor4D Rotor4D::rotation_xw(const real_t p_angle) {
 	return result;
 }
 
-Rotor4D Rotor4D::rotation_yz(const real_t p_angle) {
+Rotor4D Rotor4D::from_yz(const real_t p_angle) {
 	Rotor4D result;
 	const real_t half_angle = p_angle * 0.5;
 	result.s = Math::cos(half_angle);
@@ -355,7 +355,7 @@ Rotor4D Rotor4D::rotation_yz(const real_t p_angle) {
 	return result;
 }
 
-Rotor4D Rotor4D::rotation_yw(const real_t p_angle) {
+Rotor4D Rotor4D::from_yw(const real_t p_angle) {
 	Rotor4D result;
 	const real_t half_angle = p_angle * 0.5;
 	result.s = Math::cos(half_angle);
@@ -363,7 +363,7 @@ Rotor4D Rotor4D::rotation_yw(const real_t p_angle) {
 	return result;
 }
 
-Rotor4D Rotor4D::rotation_wy(const real_t p_angle) {
+Rotor4D Rotor4D::from_wy(const real_t p_angle) {
 	Rotor4D result;
 	const real_t half_angle = p_angle * -0.5;
 	result.s = Math::cos(half_angle);
@@ -371,7 +371,7 @@ Rotor4D Rotor4D::rotation_wy(const real_t p_angle) {
 	return result;
 }
 
-Rotor4D Rotor4D::rotation_zw(const real_t p_angle) {
+Rotor4D Rotor4D::from_zw(const real_t p_angle) {
 	Rotor4D result;
 	const real_t half_angle = p_angle * 0.5;
 	result.s = Math::cos(half_angle);
