@@ -45,6 +45,27 @@
 				Converts a [param from_array] [PackedFloat32Array] or [PackedFloat64Array] to a [Basis4D] matrix as a [Projection]. The array must have at least 16 numbers.
 			</description>
 		</method>
+		<method name="from_euler" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="euler" type="Euler4D" />
+			<description>
+				Constructs a [Basis4D] matrix as a [Projection] from the [param euler] [Euler4D] rotation in radians. This is an alias for [method Euler4D.to_basis] provided for convenience.
+			</description>
+		</method>
+		<method name="from_euler_aabb" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="euler" type="AABB" />
+			<description>
+				Constructs a [Basis4D] matrix as a [Projection] from the [param euler] [AABB] rotation in radians. This is an alias for [method Euler4D.aabb_to_basis] provided for convenience.
+			</description>
+		</method>
+		<method name="from_rotor" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="rotor" type="Rotor4D" />
+			<description>
+				Constructs a [Basis4D] matrix as a [Projection] from the [param rotor] [Rotor4D]. This is an alias for [method Rotor4D.to_basis] provided for convenience.
+			</description>
+		</method>
 		<method name="from_scale" qualifiers="static">
 			<return type="Projection" />
 			<param index="0" name="scale" type="Vector4" />
@@ -192,7 +213,7 @@
 			<return type="bool" />
 			<param index="0" name="basis" type="Projection" />
 			<description>
-				Returns true if the basis is a pure rotation matrix, so it has no scale, skew, shear, or flip/reflection, and can be decomposed into rotation.
+				Returns true if the basis is a pure rotation matrix, so it has no scale, skew, shear, or flip/reflection, and can be decomposed into rotation. This means the basis is orthonormal and has a determinant of 1.
 			</description>
 		</method>
 		<method name="lerp" qualifiers="static">
@@ -250,6 +271,24 @@
 				Returns the [param basis] [Basis4D] scaled uniformly by the given scale value. This multiplies all components of the matrix by the scale value.
 			</description>
 		</method>
+		<method name="slerp" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from" type="Projection" />
+			<param index="1" name="to" type="Projection" />
+			<param index="2" name="weight" type="float" />
+			<description>
+				Performs a spherical linear interpolation between two [Basis4D] matrices, providing smooth rotation interpolation. Scale is preserved and interpolated as well. The [param weight] value on a range of 0 to 1, representing the amount of interpolation.
+			</description>
+		</method>
+		<method name="slerp_rotation" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="from" type="Projection" />
+			<param index="1" name="to" type="Projection" />
+			<param index="2" name="weight" type="float" />
+			<description>
+				Performs a spherical linear interpolation between two [Basis4D] matrices, providing smooth rotation interpolation. This function is faster than [method slerp], but assumes that the input [Basis4D] matrices represent pure rotations as defined by [method is_rotation]: no scale, no flip, no skew/shear, orthonormal, determinant of 1. The [param weight] value on a range of 0 to 1, representing the amount of interpolation.
+			</description>
+		</method>
 		<method name="to_3d" qualifiers="static">
 			<return type="Basis" />
 			<param index="0" name="from_4d" type="Projection" />
@@ -264,6 +303,29 @@
 			<param index="0" name="from_basis" type="Projection" />
 			<description>
 				Converts the [param from_basis] [Basis4D] matrix as a [Projection] to a [PackedFloat32Array] or [PackedFloat64Array]. The array will have 16 numbers.
+			</description>
+		</method>
+		<method name="to_euler" qualifiers="static">
+			<return type="Euler4D" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="use_special_cases" type="bool" default="true" />
+			<description>
+				Converts the [param basis] [Basis4D] matrix as a [Projection] to an [Euler4D] rotation in radians. This is an alias for [method Euler4D.from_basis] provided for convenience.
+			</description>
+		</method>
+		<method name="to_euler_aabb" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="use_special_cases" type="bool" default="true" />
+			<description>
+				Converts the [param basis] [Basis4D] matrix as a [Projection] to an [Euler4D] [AABB] rotation in radians. This is an alias for [method Euler4D.aabb_from_basis] provided for convenience.
+			</description>
+		</method>
+		<method name="to_rotor" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Converts the [param basis] [Basis4D] matrix as a [Projection] to a [Rotor4D]. This is an alias for [method Rotor4D.from_basis] provided for convenience.
 			</description>
 		</method>
 		<method name="transform_to" qualifiers="static">

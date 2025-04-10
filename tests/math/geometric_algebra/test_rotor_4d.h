@@ -8,17 +8,20 @@ namespace TestRotor4D {
 TEST_CASE("[Rotor4D] Conversion to Basis4D") {
 	Rotor4D rot_xy_rotor = Rotor4D::from_xy(Math_TAU / 4);
 	CHECK_MESSAGE(rot_xy_rotor.is_equal_approx(Rotor4D(Math_SQRT12, Math_SQRT12, 0, 0, 0, 0, 0, 0)), "Rotor4D XY rotation should work as expected.");
-	CHECK_MESSAGE(rot_xy_rotor.get_rotation_basis().is_equal_approx(Basis4D(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)), "Rotor4D to_basis should work as expected.");
+	CHECK_MESSAGE(rot_xy_rotor.to_basis().is_equal_approx(Basis4D(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)), "Rotor4D to_basis should work as expected.");
 	Basis4D rot_xy_basis = Basis4D::from_xy(Math_TAU / 4);
-	CHECK_MESSAGE(rot_xy_rotor.get_rotation_basis().is_equal_approx(rot_xy_basis), "Rotor4D to_basis should work as expected.");
+	CHECK_MESSAGE(rot_xy_rotor.to_basis().is_equal_approx(rot_xy_basis), "Rotor4D to_basis should work as expected.");
+	CHECK_MESSAGE(Rotor4D::from_basis(rot_xy_basis).is_equal_approx(rot_xy_rotor), "Rotor4D from_basis should work as expected.");
 
 	Rotor4D rot_zw_rotor = Rotor4D::from_zw(Math_TAU / 8);
 	Basis4D rot_zw_basis = Basis4D::from_zw(Math_TAU / 8);
-	CHECK_MESSAGE(rot_zw_rotor.get_rotation_basis().is_equal_approx(rot_zw_basis), "Rotor4D to_basis should work as expected.");
+	CHECK_MESSAGE(rot_zw_rotor.to_basis().is_equal_approx(rot_zw_basis), "Rotor4D to_basis should work as expected.");
+	CHECK_MESSAGE(Rotor4D::from_basis(rot_zw_basis).is_equal_approx(rot_zw_rotor), "Rotor4D from_basis should work as expected.");
 
 	Rotor4D rot_yw_rotor = Rotor4D::from_yw(Math_TAU / 16);
 	Basis4D rot_wy_basis = Basis4D::from_wy(-Math_TAU / 16);
-	CHECK_MESSAGE(rot_yw_rotor.get_rotation_basis().is_equal_approx(rot_wy_basis), "Rotor4D to_basis should work as expected.");
+	CHECK_MESSAGE(rot_yw_rotor.to_basis().is_equal_approx(rot_wy_basis), "Rotor4D to_basis should work as expected.");
+	CHECK_MESSAGE(Rotor4D::from_basis(rot_wy_basis).is_equal_approx(rot_yw_rotor), "Rotor4D from_basis should work as expected.");
 }
 
 TEST_CASE("[Rotor4D] Inverse") {
@@ -201,24 +204,34 @@ TEST_CASE("[Rotor4D] Rotation of Basis4D") {
 		result = rot_xy_zw.rotate_basis(basis);
 		CHECK_MESSAGE(result.get_scale().is_equal_approx(basis.get_scale()), "Rotor4D rotation should not affect the scale of Basis4D.");
 		CHECK_MESSAGE(result.is_equal_approx(expected), "Rotor4D rotation of Basis4D should work as expected.");
+		Rotor4D rot_from_basis = Rotor4D::from_basis(result);
+		CHECK_MESSAGE(rot_from_basis.is_equal_approx(rot_xy_zw), "Rotor4D from_basis should work as expected.");
 
 		// Alternate way to create the same rotation.
 		rot_xy_zw = Rotor4D::vector_product(Vector4(1, 0, 0, 0), Vector4(Math_SQRT12, Math_SQRT12, 0, 0)) * Rotor4D::vector_product(Vector4(0, 0, 1, 0), Vector4(0, 0, Math_SQRT12, Math_SQRT12));
 		result = rot_xy_zw.rotate_basis(basis);
 		CHECK_MESSAGE(result.get_scale().is_equal_approx(basis.get_scale()), "Rotor4D rotation should not affect the scale of Basis4D.");
 		CHECK_MESSAGE(result.is_equal_approx(expected), "Rotor4D rotation of Basis4D should work as expected.");
+		CHECK_MESSAGE(rot_from_basis.is_equal_approx(rot_xy_zw), "Rotor4D from_basis should work as expected.");
+		rot_from_basis = Rotor4D::from_basis(result);
+		CHECK_MESSAGE(rot_from_basis.is_equal_approx(rot_xy_zw), "Rotor4D from_basis should work as expected.");
 
 		// Another alternate way to create the same rotation.
 		rot_xy_zw = Rotor4D::vector_product(Vector4(Math_SQRT12, Math_SQRT12, 0, 0), Vector4(0, 1, 0, 0)) * Rotor4D::vector_product(Vector4(0, 0, Math_SQRT12, Math_SQRT12), Vector4(0, 0, 0, 1));
 		result = rot_xy_zw.rotate_basis(basis);
 		CHECK_MESSAGE(result.get_scale().is_equal_approx(basis.get_scale()), "Rotor4D rotation should not affect the scale of Basis4D.");
 		CHECK_MESSAGE(result.is_equal_approx(expected), "Rotor4D rotation of Basis4D should work as expected.");
+		CHECK_MESSAGE(rot_from_basis.is_equal_approx(rot_xy_zw), "Rotor4D from_basis should work as expected.");
+		rot_from_basis = Rotor4D::from_basis(result);
+		CHECK_MESSAGE(rot_from_basis.is_equal_approx(rot_xy_zw), "Rotor4D from_basis should work as expected.");
 
 		// Reverse the rotation.
 		rot_xy_zw = rot_xy_zw.reverse();
 		result = rot_xy_zw.rotate_basis(basis);
 		CHECK_MESSAGE(result.get_scale().is_equal_approx(basis.get_scale()), "Rotor4D rotation should not affect the scale of Basis4D.");
 		CHECK_MESSAGE(result.is_equal_approx(-expected), "Rotor4D rotation by 90 degrees in opposite direction should give the opposite / negative basis.");
+		rot_from_basis = Rotor4D::from_basis(result);
+		CHECK_MESSAGE(rot_from_basis.is_equal_approx(rot_xy_zw), "Rotor4D from_basis should work as expected.");
 	}
 }
 

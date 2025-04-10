@@ -24,7 +24,11 @@ struct _NO_DISCARD_ Basis4D {
 	// Misc methods.
 	real_t determinant() const;
 	bool is_equal_approx(const Basis4D &p_basis) const;
-	Basis4D lerp(const Basis4D &p_to, const real_t &p_weight) const;
+
+	// Interpolation.
+	Basis4D lerp(const Basis4D &p_to, const real_t p_weight) const;
+	Basis4D slerp(const Basis4D &p_to, const real_t p_weight) const;
+	Basis4D slerp_rotation(const Basis4D &p_to, const real_t p_weight) const;
 
 	// Transformation methods.
 	Basis4D compose(const Basis4D &p_child) const;

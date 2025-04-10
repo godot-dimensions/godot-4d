@@ -29,19 +29,29 @@
 		<method name="get_global_rotation_degrees_euler">
 			<return type="Euler4D" />
 			<description>
-				Gets the global rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_global_rotation_degrees_euler]. Therefore, this is not exposed as a property to prevent misuse.
+				Gets the global rotation of this [Node4D] in degrees, in the form of an [Euler4D] object.
+				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the computed values. Changing the members will not transform the Node4D unless set using [method set_global_rotation_degrees_euler]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
 		<method name="get_global_rotation_euler">
 			<return type="Euler4D" />
 			<description>
-				Gets the global rotation of this [Node4D] in radians, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_global_rotation_euler]. Therefore, this is not exposed as a property to prevent misuse.
+				Gets the global rotation of this [Node4D] in radians, in the form of an [Euler4D] object.
+				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the computed values. Changing the members will not transform the Node4D unless set using [method set_global_rotation_euler]. Therefore, this is not exposed as a property to prevent misuse.
+			</description>
+		</method>
+		<method name="get_global_rotation_rotor" qualifiers="const">
+			<return type="Rotor4D" />
+			<description>
+				Gets the global rotation of this [Node4D] as a [Rotor4D], the 4D equivalent of a quaternion.
+				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the computed values. Changing the members will not transform the Node4D unless set using [method set_global_rotation_rotor]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
 		<method name="get_global_transform" qualifiers="const">
 			<return type="Transform4D" />
 			<description>
-				Gets the global transformation matrix of this [Node4D], in the form of a [Transform4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_global_transform]. Therefore, this is not exposed as a property to prevent misuse.
+				Gets the global transformation matrix of this [Node4D], in the form of a [Transform4D] object.
+				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the transform values. Changing the members will not transform the Node4D unless set using [method set_global_transform]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
 		<method name="get_rect_bounds" qualifiers="const">
@@ -63,19 +73,27 @@
 		<method name="get_rotation_degrees_euler">
 			<return type="Euler4D" />
 			<description>
-				Gets the parent-relative rotation of this [Node4D] in degrees, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_rotation_degrees_euler]. Therefore, this is not exposed as a property to prevent misuse.
+				Gets the parent-relative rotation of this [Node4D] in degrees, in the form of an [Euler4D] object.
+				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the computed values. Changing the members will not transform the Node4D unless set using [method set_rotation_degrees_euler]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
 		<method name="get_rotation_euler">
 			<return type="Euler4D" />
 			<description>
-				Gets the parent-relative rotation of this [Node4D] in radians, in the form of an [Euler4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_rotation_euler]. Therefore, this is not exposed as a property to prevent misuse.
+				Gets the parent-relative rotation of this [Node4D] in radians, in the form of an [Euler4D] object.
+				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the computed values. Changing the members will not transform the Node4D unless set using [method set_rotation_euler]. Therefore, this is not exposed as a property to prevent misuse.
+			</description>
+		</method>
+		<method name="get_rotation_rotor" qualifiers="const">
+			<return type="Rotor4D" />
+			<description>
 			</description>
 		</method>
 		<method name="get_transform" qualifiers="const">
 			<return type="Transform4D" />
 			<description>
-				Gets the transformation matrix of this [Node4D], in the form of a [Transform4D] object. Note: Changing the members will not transform the Node4D unless set using [method set_transform]. Therefore, this is not exposed as a property to prevent misuse.
+				Gets the transformation matrix of this [Node4D], in the form of a [Transform4D] object.
+				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the transform values. Changing the members will not transform the Node4D unless set using [method set_transform]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
 		<method name="is_visible_in_tree" qualifiers="const">
@@ -126,13 +144,6 @@
 				Rotate this [Node4D] by a rotation as a [Rotor4D], the 4D equivalent of a quaternion. This rotates in object-local space.
 			</description>
 		</method>
-		<method name="set_global_rotation_bivector_magnitude">
-			<return type="void" />
-			<param index="0" name="global_bivector" type="AABB" />
-			<description>
-				Sets the global rotation of this [Node4D] to a rotation in bivector-magnitude format (encoded as an [AABB]). The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes.
-			</description>
-		</method>
 		<method name="set_global_rotation_degrees_euler">
 			<return type="void" />
 			<param index="0" name="global_euler" type="Euler4D" />
@@ -159,13 +170,6 @@
 			<param index="0" name="global_transform" type="Transform4D" />
 			<description>
 				Sets the global transformation matrix of this [Node4D], in the form of a [Transform4D] object. See also [method get_global_transform].
-			</description>
-		</method>
-		<method name="set_rotation_bivector_magnitude">
-			<return type="void" />
-			<param index="0" name="bivector" type="AABB" />
-			<description>
-				Sets the parent-relative rotation of this [Node4D] to a rotation in bivector-magnitude format (encoded as an [AABB]). The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes.
 			</description>
 		</method>
 		<method name="set_rotation_degrees_euler">
@@ -206,10 +210,18 @@
 	</methods>
 	<members>
 		<member name="basis" type="Projection" setter="set_basis" getter="get_basis" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)">
-			The transformation basis of this [Node4D], representing rotation and scale. This is the same as the basis part of [member transform_array].
+			The local (parent-relative) transformation basis of this [Node4D], representing rotation and scale. This is the same as the basis part of [member transform_array].
+		</member>
+		<member name="bivector_magnitude" type="AABB" setter="set_rotation_bivector_magnitude" getter="get_rotation_bivector_magnitude">
+			The local (parent-relative) rotation of this [Node4D], in the form of a bivector-magnitude stored as an [AABB]. The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes. This is exposed as an [AABB] for binding reasons.
+			[b]Note:[/b] The bivector components are stored in lexicographic order: XY, XZ, XW, YZ, YW, ZW, and each component is lexicographically ordered within itself: XZ instead of ZX. The labels in the editor inspector are therefore not intuitive.
 		</member>
 		<member name="global_basis" type="Projection" setter="set_global_basis" getter="get_global_basis">
 			The global transformation basis of this [Node4D], representing rotation and scale. This is the same as the basis part of [member global_transform_array]. This is exposed as a [Projection] for binding reasons.
+		</member>
+		<member name="global_bivector_magnitude" type="AABB" setter="set_global_rotation_bivector_magnitude" getter="get_global_rotation_bivector_magnitude">
+			The global rotation of this [Node4D], in the form of a bivector-magnitude stored as an [AABB]. The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes. This is exposed as an [AABB] for binding reasons.
+			[b]Note:[/b] The bivector components are stored in lexicographic order: XY, XZ, XW, YZ, YW, ZW, and each component is lexicographically ordered within itself: XZ instead of ZX. The labels in the editor inspector are therefore not intuitive.
 		</member>
 		<member name="global_position" type="Vector4" setter="set_global_position" getter="get_global_position">
 			The global position of this [Node4D]. This is the same as [code]global_transform.origin[/code].
@@ -219,6 +231,15 @@
 		</member>
 		<member name="global_rotation_degrees" type="AABB" setter="set_global_rotation_degrees" getter="get_global_rotation_degrees">
 			The global rotation of this [Node4D], in the form of an [Euler4D] stored as an [AABB] with degrees as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
+		</member>
+		<member name="global_rotor_array" type="PackedFloat32Array" setter="set_global_rotation_rotor_array" getter="get_global_rotation_rotor_array">
+			The global rotation of this [Node4D], in the form of a [Rotor4D] stored as a [PackedFloat32Array] or [PackedFloat64Array]. The array has 8 numbers, the first number is the scalar, the next 6 are the bivector components, and the last number is the pseudoscalar. The pseudoscalar part does not affect the rotation and may be omitted when setting this property.
+		</member>
+		<member name="global_rotor_bivector" type="AABB" setter="set_global_rotor_bivector" getter="get_global_rotor_bivector">
+			The bivector part of the global rotation [Rotor4D] of this [Node4D], in the form of a bivector stored as an [AABB]. This property only makes sense in combination with the [member global_rotor_scalar] property, which form a [Rotor4D].
+		</member>
+		<member name="global_rotor_scalar" type="float" setter="set_global_rotor_scalar" getter="get_global_rotor_scalar">
+			The scalar part of the global rotation [Rotor4D] of this [Node4D], in the form of a [float]. This property only makes sense in combination with the [member global_rotor_bivector] property, which form a [Rotor4D].
 		</member>
 		<member name="global_scale" type="Vector4" setter="set_global_scale" getter="get_global_scale">
 			The global scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).
@@ -230,25 +251,34 @@
 			The global uniform scale of this [Node4D]. This will be negative in the case of a flip/reflection (when the basis determinant is negative).
 		</member>
 		<member name="position" type="Vector4" setter="set_position" getter="get_position" default="Vector4(0, 0, 0, 0)">
-			The position of this [Node4D]. This is the same as [code]transform.origin[/code].
+			The local (parent-relative) position of this [Node4D]. This is the same as [code]transform.origin[/code].
 		</member>
 		<member name="rotation" type="AABB" setter="set_rotation" getter="get_rotation">
-			The rotation of this [Node4D], in the form of an [Euler4D] with radians as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
+			The local (parent-relative) rotation of this [Node4D], in the form of an [Euler4D] with radians as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
 		</member>
 		<member name="rotation_degrees" type="AABB" setter="set_rotation_degrees" getter="get_rotation_degrees" default="AABB(0, 0, 0, 0, 0, 0)">
 			The rotation of this [Node4D], in the form of an [Euler4D] with degrees as the unit of measurement. The first 3 angles are analogous to 3D rotation. This is exposed as an [AABB] for binding reasons.
 		</member>
 		<member name="rotation_edit_mode" type="int" setter="set_rotation_edit_mode" getter="get_rotation_edit_mode" enum="Node4D.RotationEditMode" default="0">
-			Specifies how rotation is displayed in the editor. In Euler4D mode, [member rotation_degrees] is displayed as an [Euler4D] (exposed as an [AABB]), and the [member scale] is also displayed. In Basis4D mode, both of those are hidden, and instead the [member basis] is displayed as a [Basis4D] (exposed as a [Projection]).
+			Specifies how rotation is displayed in the editor. In Euler4D mode, [member rotation_degrees] is displayed as an [Euler4D] (exposed as an [AABB]). In Rotor4D mode are similar, [member rotor_bivector] and [member rotor_scalar] are displayed. In Bivector4D mode, [member bivector_magnitude] is displayed. In all three of those, the [member scale] is also displayed for editing the scale separately. The "Uniform" versions of each mode are similar, but the [member scale] is replaced with [member uniform_scale] for editing the scale uniformly. In Basis4D mode, all of those are hidden, and instead the [member basis] is displayed as a [Basis4D] (exposed as a [Projection]), allowing for unified editing of rotation, scale, and shear/skew.
+		</member>
+		<member name="rotor_array" type="PackedFloat32Array" setter="set_rotation_rotor_array" getter="get_rotation_rotor_array">
+			The local (parent-relative) rotation of this [Node4D], in the form of a [Rotor4D] stored as a [PackedFloat32Array] or [PackedFloat64Array]. The array has 8 numbers, the first number is the scalar, the next 6 are the bivector components, and the last number is the pseudoscalar. The pseudoscalar part does not affect the rotation and may be omitted when setting this property.
+		</member>
+		<member name="rotor_bivector" type="AABB" setter="set_rotor_bivector" getter="get_rotor_bivector">
+			The bivector part of the local (parent-relative) rotation [Rotor4D] of this [Node4D], in the form of a bivector stored as an [AABB]. This property only makes sense in combination with the [member rotor_scalar] property, which form a [Rotor4D].
+		</member>
+		<member name="rotor_scalar" type="float" setter="set_rotor_scalar" getter="get_rotor_scalar">
+			The scalar part of the local (parent-relative) rotation [Rotor4D] of this [Node4D], in the form of a [float]. This property only makes sense in combination with the [member rotor_bivector] property, which form a [Rotor4D].
 		</member>
 		<member name="scale" type="Vector4" setter="set_scale" getter="get_scale" default="Vector4(1, 1, 1, 1)">
-			The scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).
+			The local (parent-relative) scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).
 		</member>
 		<member name="transform_array" type="PackedFloat32Array" setter="set_transform_array" getter="get_transform_array">
-			The transformation matrix of this [Node4D] as a [PackedFloat32Array] or [PackedFloat64Array]. This is a combination of [member basis] and [member position].
+			The local (parent-relative) transformation matrix of this [Node4D] as a [PackedFloat32Array] or [PackedFloat64Array]. This is a combination of [member basis] and [member position].
 		</member>
 		<member name="uniform_scale" type="float" setter="set_uniform_scale" getter="get_uniform_scale">
-			The uniform scale of this [Node4D]. This will be negative in the case of a flip/reflection (when the basis determinant is negative).
+			The local (parent-relative) uniform scale of this [Node4D]. This will be negative in the case of a flip/reflection (when the basis determinant is negative).
 		</member>
 		<member name="visible" type="bool" setter="set_visible" getter="is_visible" default="true">
 			If [code]true[/code], this [Node4D] is set as visible. Whether or not it is actually visible is determined by the [member visible] property of all of its parents (see [method is_visible_in_tree]).
@@ -263,13 +293,25 @@
 	</signals>
 	<constants>
 		<constant name="ROTATION_EDIT_MODE_EULER4D" value="0" enum="RotationEditMode">
-			Edit rotation as 4D Euler angles. This uses 6 numbers to represent the rotation in 4D space, in the order YZ, ZX, XY, XW, WY, ZW, exposed as an AABB. Scale is edited separately as a Vector4. This is the default mode, analogous to [constant Node3D.ROTATION_EDIT_MODE_EULER].
+			Edit rotation as 4D Euler angles. This uses 6 numbers to represent the rotation in 4D space, in the order YZ, ZX, XY, XW, WY, ZW, exposed as an AABB. Scale is edited separately as a Vector4. This is the default mode, analogous to [constant Node3D.ROTATION_EDIT_MODE_EULER]. This will display the [member rotation_degrees] and [member scale] properties in the inspector.
 		</constant>
 		<constant name="ROTATION_EDIT_MODE_EULER4D_UNIFORM" value="1" enum="RotationEditMode">
-			Edit rotation as 4D Euler angles. This uses 6 numbers to represent the rotation in 4D space, in the order YZ, ZX, XY, XW, WY, ZW, exposed as an AABB. Scale is edited uniformly as a single number.
+			Edit rotation as 4D Euler angles. This uses 6 numbers to represent the rotation in 4D space, in the order YZ, ZX, XY, XW, WY, ZW, exposed as an AABB. Scale is edited uniformly as a single number. This is useful when you want to edit the scale uniformly. This will display the [member rotation_degrees] and [member uniform_scale] properties in the inspector.
 		</constant>
 		<constant name="ROTATION_EDIT_MODE_BASIS4D" value="2" enum="RotationEditMode">
 			Edit rotation as a 4D basis. This uses 16 numbers to represent rotation, scale, and shear/skew in 4D space, exposed as a Projection. This is useful when you want control over the whole transformation matrix. This is analogous to [constant Node3D.ROTATION_EDIT_MODE_BASIS].
+		</constant>
+		<constant name="ROTATION_EDIT_MODE_ROTOR4D" value="3" enum="RotationEditMode">
+			Edit rotation as a 4D rotor. This uses 7 numbers to represent the rotation in 4D space using a bivector and scalar which together form a [Rotor4D]. The bivector is exposed as an [AABB], and the scalar is exposed as a [float]. Scale is edited separately as a Vector4. This is analogous to [constant Node3D.ROTATION_EDIT_MODE_QUATERNION]. This will display the [member rotor_bivector], [member rotor_scalar], and [member scale] properties in the inspector.
+		</constant>
+		<constant name="ROTATION_EDIT_MODE_ROTOR4D_UNIFORM" value="4" enum="RotationEditMode">
+			Edit rotation as a 4D rotor. This uses 7 numbers to represent the rotation in 4D space using a bivector and scalar which together form a [Rotor4D]. The bivector is exposed as an [AABB], and the scalar is exposed as a [float]. Scale is edited uniformly as a single number. This will display the [member rotor_bivector], [member rotor_scalar], and [member scale] properties in the inspector.
+		</constant>
+		<constant name="ROTATION_EDIT_MODE_BIVECTOR4D" value="5" enum="RotationEditMode">
+			Edit rotation as a 4D bivector. This uses 6 numbers to represent the rotation in 4D space. The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes. Scale is edited separately as a Vector4. This will display the [member bivector_magnitude] and [member uniform_scale] properties in the inspector.
+		</constant>
+		<constant name="ROTATION_EDIT_MODE_BIVECTOR4D_UNIFORM" value="6" enum="RotationEditMode">
+			Edit rotation as a 4D bivector. This uses 6 numbers to represent the rotation in 4D space. The length of the bivector is the angle of rotation in radians, and the direction is the shadow of the rotation in each of the 6 bivector rotation planes. Scale is edited uniformly as a single number. This will display the [member bivector_magnitude] and [member uniform_scale] properties in the inspector.
 		</constant>
 	</constants>
 </class>

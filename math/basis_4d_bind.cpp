@@ -12,8 +12,18 @@ bool godot_4d_bind::Basis4D::is_equal_approx(const Projection &p_a, const Projec
 	return ::Basis4D(p_a).is_equal_approx(::Basis4D(p_b));
 }
 
-Projection godot_4d_bind::Basis4D::lerp(const Projection &p_from, const Projection &p_to, const real_t &p_weight) {
+// Interpolation.
+
+Projection godot_4d_bind::Basis4D::lerp(const Projection &p_from, const Projection &p_to, const real_t p_weight) {
 	return ::Basis4D(p_from).lerp(::Basis4D(p_to), p_weight);
+}
+
+Projection godot_4d_bind::Basis4D::slerp(const Projection &p_from, const Projection &p_to, const real_t p_weight) {
+	return ::Basis4D(p_from).slerp(::Basis4D(p_to), p_weight);
+}
+
+Projection godot_4d_bind::Basis4D::slerp_rotation(const Projection &p_from, const Projection &p_to, const real_t p_weight) {
+	return ::Basis4D(p_from).slerp_rotation(::Basis4D(p_to), p_weight);
 }
 
 // Transformation methods.
@@ -122,6 +132,33 @@ Vector4 godot_4d_bind::Basis4D::get_main_diagonal(const Projection &p_basis) {
 	return ::Basis4D(p_basis).get_main_diagonal();
 }
 
+// Helper Euler4D and Rotor4D functions. Can't be done internally
+// because of dependency order but exposed for convenience.
+
+Projection godot_4d_bind::Basis4D::from_euler(const Ref<Euler4D> &p_euler) {
+	return p_euler->to_basis();
+}
+
+Projection godot_4d_bind::Basis4D::from_euler_aabb(const AABB &p_euler) {
+	return ::Euler4D(p_euler).to_basis();
+}
+
+Ref<godot_4d_bind::Euler4D> godot_4d_bind::Basis4D::to_euler(const Projection &p_basis, const bool p_use_special_cases) {
+	return Euler4D::from_basis(::Basis4D(p_basis), p_use_special_cases);
+}
+
+AABB godot_4d_bind::Basis4D::to_euler_aabb(const Projection &p_basis, const bool p_use_special_cases) {
+	return ::Euler4D::from_basis(::Basis4D(p_basis), p_use_special_cases);
+}
+
+Projection godot_4d_bind::Basis4D::from_rotor(const Ref<Rotor4D> &p_rotor) {
+	return p_rotor->to_basis();
+}
+
+Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Basis4D::to_rotor(const Projection &p_basis) {
+	return Rotor4D::from_basis(::Basis4D(p_basis));
+}
+
 // Conversion.
 
 Projection godot_4d_bind::Basis4D::from_3d(const Basis &p_from_3d) {
@@ -182,7 +219,10 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	// Misc methods.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("determinant", "basis"), &godot_4d_bind::Basis4D::determinant);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("is_equal_approx", "a", "b"), &godot_4d_bind::Basis4D::is_equal_approx);
+	// Interpolation.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("lerp", "from", "to", "weight"), &godot_4d_bind::Basis4D::lerp);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("slerp", "from", "to", "weight"), &godot_4d_bind::Basis4D::slerp);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("slerp_rotation", "from", "to", "weight"), &godot_4d_bind::Basis4D::slerp_rotation);
 	// Transformation methods.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("compose", "parent", "child"), &godot_4d_bind::Basis4D::compose);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("transform_to", "from", "to"), &godot_4d_bind::Basis4D::transform_to);
@@ -212,6 +252,13 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	ClassDB::bind_static_method("Basis4D", D_METHOD("get_column", "basis", "index"), &godot_4d_bind::Basis4D::get_column);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("get_row", "basis", "index"), &godot_4d_bind::Basis4D::get_row);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("get_main_diagonal", "basis"), &godot_4d_bind::Basis4D::get_main_diagonal);
+	// Helper Euler4D and Rotor4D functions.
+	ClassDB::bind_static_method("Basis4D", D_METHOD("from_euler", "euler"), &godot_4d_bind::Basis4D::from_euler);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("from_euler_aabb", "euler"), &godot_4d_bind::Basis4D::from_euler_aabb);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("to_euler", "basis", "use_special_cases"), &godot_4d_bind::Basis4D::to_euler, DEFVAL(true));
+	ClassDB::bind_static_method("Basis4D", D_METHOD("to_euler_aabb", "basis", "use_special_cases"), &godot_4d_bind::Basis4D::to_euler_aabb, DEFVAL(true));
+	ClassDB::bind_static_method("Basis4D", D_METHOD("from_rotor", "rotor"), &godot_4d_bind::Basis4D::from_rotor);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("to_rotor", "basis"), &godot_4d_bind::Basis4D::to_rotor);
 	// Conversion.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("to_3d", "from_4d", "orthonormalized"), &godot_4d_bind::Basis4D::to_3d, DEFVAL(false));
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_3d", "from_3d"), &godot_4d_bind::Basis4D::from_3d);

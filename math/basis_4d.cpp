@@ -1,5 +1,7 @@
 #include "basis_4d.h"
 
+#include "geometric_algebra/rotor_4d.h"
+
 // Misc methods.
 
 real_t Basis4D::determinant() const {
@@ -20,12 +22,31 @@ bool Basis4D::is_equal_approx(const Basis4D &p_basis) const {
 			w.is_equal_approx(p_basis.w));
 }
 
-Basis4D Basis4D::lerp(const Basis4D &p_to, const real_t &p_weight) const {
+// Interpolation.
+
+Basis4D Basis4D::lerp(const Basis4D &p_to, const real_t p_weight) const {
 	return Basis4D(
 			x.lerp(p_to.x, p_weight),
 			y.lerp(p_to.y, p_weight),
 			z.lerp(p_to.z, p_weight),
 			w.lerp(p_to.w, p_weight));
+}
+
+Basis4D Basis4D::slerp(const Basis4D &p_to, const real_t p_weight) const {
+	const Vector4 scale = get_scale().lerp(p_to.get_scale(), p_weight);
+	Basis4D ret = orthonormalized().slerp_rotation(p_to.orthonormalized(), p_weight);
+	ret.scale_local(scale);
+	return ret;
+}
+
+Basis4D Basis4D::slerp_rotation(const Basis4D &p_to, const real_t p_weight) const {
+#ifdef MATH_CHECKS
+	ERR_FAIL_COND_V_MSG(!is_rotation(), Basis4D(), "Basis4D.slerp_rotation: The from basis " + operator String() + " must be a pure rotation.");
+	ERR_FAIL_COND_V_MSG(!p_to.is_rotation(), Basis4D(), "Basis4D.slerp_rotation: The to basis " + p_to.operator String() + " must be a pure rotation.");
+#endif
+	const Rotor4D a = Rotor4D::from_basis(*this);
+	const Rotor4D b = Rotor4D::from_basis(p_to);
+	return a.slerp(b, p_weight).to_basis();
 }
 
 // Transformation methods.

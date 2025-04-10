@@ -24,6 +24,10 @@ public:
 		ROTATION_EDIT_MODE_EULER4D,
 		ROTATION_EDIT_MODE_EULER4D_UNIFORM,
 		ROTATION_EDIT_MODE_BASIS4D,
+		ROTATION_EDIT_MODE_ROTOR4D,
+		ROTATION_EDIT_MODE_ROTOR4D_UNIFORM,
+		ROTATION_EDIT_MODE_BIVECTOR4D,
+		ROTATION_EDIT_MODE_BIVECTOR4D_UNIFORM,
 	};
 
 private:
@@ -112,10 +116,22 @@ public:
 	void set_uniform_scale(const real_t p_scale);
 
 	// Geometric algebra local rotation properties.
+	Bivector4D get_rotation_bivector_magnitude() const;
 	void set_rotation_bivector_magnitude(const Bivector4D &p_bivector);
+	AABB get_rotation_bivector_magnitude_bind() const;
 	void set_rotation_bivector_magnitude_bind(const AABB &p_bivector);
+	Rotor4D get_rotation_rotor() const;
 	void set_rotation_rotor(const Rotor4D &p_rotor);
+	Ref<godot_4d_bind::Rotor4D> get_rotation_rotor_bind() const;
 	void set_rotation_rotor_bind(const Ref<godot_4d_bind::Rotor4D> &p_rotor);
+	PackedRealArray get_rotation_rotor_array() const;
+	void set_rotation_rotor_array(const PackedRealArray &p_rotor_array);
+	Bivector4D get_rotor_bivector() const;
+	void set_rotor_bivector(const Bivector4D &p_bivector);
+	AABB get_rotor_bivector_bind() const;
+	void set_rotor_bivector_bind(const AABB &p_bivector);
+	real_t get_rotor_scalar() const;
+	void set_rotor_scalar(const real_t p_scalar);
 
 	// Global transform and basis.
 	Transform4D get_global_transform() const;
@@ -161,10 +177,22 @@ public:
 	void set_global_uniform_scale(const real_t p_global_scale);
 
 	// Geometric algebra global rotation properties.
+	Bivector4D get_global_rotation_bivector_magnitude() const;
 	void set_global_rotation_bivector_magnitude(const Bivector4D &p_bivector);
+	AABB get_global_rotation_bivector_magnitude_bind() const;
 	void set_global_rotation_bivector_magnitude_bind(const AABB &p_bivector);
+	Rotor4D get_global_rotation_rotor() const;
 	void set_global_rotation_rotor(const Rotor4D &p_rotor);
+	Ref<godot_4d_bind::Rotor4D> get_global_rotation_rotor_bind() const;
 	void set_global_rotation_rotor_bind(const Ref<godot_4d_bind::Rotor4D> &p_rotor);
+	PackedRealArray get_global_rotation_rotor_array() const;
+	void set_global_rotation_rotor_array(const PackedRealArray &p_rotor_array);
+	Bivector4D get_global_rotor_bivector() const;
+	void set_global_rotor_bivector(const Bivector4D &p_bivector);
+	AABB get_global_rotor_bivector_bind() const;
+	void set_global_rotor_bivector_bind(const AABB &p_bivector);
+	real_t get_global_rotor_scalar() const;
+	void set_global_rotor_scalar(const real_t p_scalar);
 
 	// Visibility.
 	bool is_visible() const;

@@ -42,11 +42,12 @@ struct _NO_DISCARD_ Rotor4D {
 	Rotor4D wedge_product(const Rotor4D &p_b) const;
 
 	// Rotation functions.
-	Basis4D get_rotation_basis() const;
+	Basis4D to_basis() const;
 	real_t get_rotation_angle() const;
 	Bivector4D get_rotation_bivector_magnitude() const;
 	Bivector4D get_rotation_bivector_normal() const;
 	Basis4D rotate_basis(const Basis4D &p_basis) const;
+	Rotor4D rotate_rotor(const Rotor4D &p_rotor) const;
 	Vector4 rotate_vector(const Vector4 &p_vec) const;
 	Vector4 sandwich(const Vector4 &p_vec, const Rotor4D &p_right) const;
 	Rotor4D slerp(Rotor4D p_to, const real_t p_weight) const;
@@ -61,6 +62,7 @@ struct _NO_DISCARD_ Rotor4D {
 
 	// Static functions for doing math on non-Rotor4D types and returning a Rotor4D.
 	static Rotor4D vector_product(const Vector4 &p_a, const Vector4 &p_b);
+	static Rotor4D from_basis(const Basis4D &p_basis);
 	static Rotor4D from_bivector_magnitude(const Bivector4D &p_bivector);
 	static Rotor4D from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle);
 	static Rotor4D from_xy(const real_t p_angle);

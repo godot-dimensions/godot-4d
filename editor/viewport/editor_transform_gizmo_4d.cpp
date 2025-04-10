@@ -336,7 +336,13 @@ Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p
 
 Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp, const bool correct_for_ring) {
 	const Vector4 axis1_slid = Vector4D::slide(p_axis1, p_perp).normalized();
+	if (axis1_slid == Vector4()) {
+		return Vector4();
+	}
 	const Vector4 axis2_slid = Vector4D::slide(p_axis2, p_perp).normalized();
+	if (axis2_slid == Vector4()) {
+		return Vector4();
+	}
 	Vector4 plane_normal = Vector4D::slide(p_ray_direction, axis1_slid);
 	plane_normal = Vector4D::slide(plane_normal, axis2_slid);
 	plane_normal = Vector4D::slide(plane_normal, p_perp);

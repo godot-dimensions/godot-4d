@@ -5,7 +5,7 @@
 	</brief_description>
 	<description>
 		Rotor4D is a 4D geometric algebra rotor that can be used to represent rotations in 4D space. It is the 4D equivalent of a quaternion, which allows for 3D rotations. Quaternions are isomorphic to 3D rotors, which means that the calculations work out to be the same, but rotors are more general and can represent rotations in any number of dimensions.
-		In geometric algebra terms, a rotor is a multivector that represents a rotation in a subspace. The rotor is a sum of a scalar part and a bivector part. The scalar part represents the cosine of half the rotation angle, and the bivector part represents the sine of half the rotation angle. The bivector part is a sum of the shadows of the rotation in each plane of the subspace. Rotor4D also includes the pseudoscalar part, which is not used for rotations but is required for some calculations such as being closed under multiplication.
+		In geometric algebra terms, a rotor is a multivector that represents a rotation in a subspace. The rotor is a sum of a scalar part and a bivector part. For simple rotations, the scalar part represents the cosine of half the rotation angle, and the bivector part represents the sine of half the rotation angle. The bivector part is a sum of the shadows of the rotation in each plane of the subspace. Rotor4D also includes the pseudoscalar part, which is not used for rotations but is required for some calculations such as being closed under multiplication.
 	</description>
 	<tutorials>
 		<link title="An Overview of the Operations in Geometric Algebra by sudgylacmoe">https://www.youtube.com/watch?v=2AKt6adG_OI</link>
@@ -41,6 +41,13 @@
 			<param index="0" name="from_array" type="PackedFloat32Array" />
 			<description>
 				Creates a [Rotor4D] from a [PackedFloat32Array] or [PackedFloat64Array]. The array may be of any length, but only the first 8 elements will be used.
+			</description>
+		</method>
+		<method name="from_basis" qualifiers="static">
+			<return type="Rotor4D" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Constructs a rotor from the rotation of a [param basis] [Basis4D] stored as a [Projection].
 			</description>
 		</method>
 		<method name="from_bivector_magnitude" qualifiers="static">
@@ -142,12 +149,6 @@
 				Returns the angle of the rotation represented by the rotor. This function, and [method get_rotation_bivector_normal], are the inverse of [method rotation_bivector_normal_angle].
 			</description>
 		</method>
-		<method name="get_rotation_basis" qualifiers="const">
-			<return type="Projection" />
-			<description>
-				Converts the rotor to a Basis4D pure rotation matrix. This is equivalent to rotating the identity basis by the rotor, but faster. In GDScript, the basis is bound as a [Projection] for use in Variant.
-			</description>
-		</method>
 		<method name="get_rotation_bivector_magnitude" qualifiers="const">
 			<return type="AABB" />
 			<description>
@@ -229,6 +230,13 @@
 				Rotates a basis by this rotor. This is equivalent to rotating each vector in the basis by the rotor.
 			</description>
 		</method>
+		<method name="rotate_rotor" qualifiers="const">
+			<return type="Rotor4D" />
+			<param index="0" name="rotor" type="Rotor4D" />
+			<description>
+				Rotates a rotor by this rotor. This is equivalent to multiplying the two rotors together, but operators cannot be exposed on classes in GDScript.
+			</description>
+		</method>
 		<method name="rotate_vector" qualifiers="const">
 			<return type="Vector4" />
 			<param index="0" name="vector" type="Vector4" />
@@ -270,6 +278,12 @@
 			<return type="PackedFloat32Array" />
 			<description>
 				Converts the [Rotor4D] to a [PackedFloat32Array] or [PackedFloat64Array]. The array will have 8 elements.
+			</description>
+		</method>
+		<method name="to_basis" qualifiers="const">
+			<return type="Projection" />
+			<description>
+				Converts the rotor to a Basis4D pure rotation matrix. This is equivalent to rotating the identity basis by the rotor, but faster. In GDScript, the basis is bound as a [Projection] for use in Variant.
 			</description>
 		</method>
 		<method name="vector_product" qualifiers="static">

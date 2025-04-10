@@ -52,8 +52,8 @@ Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::wedge_product(const Ref<godo
 
 // Rotation functions.
 
-Projection godot_4d_bind::Rotor4D::get_rotation_basis() const {
-	return rotor.get_rotation_basis();
+Projection godot_4d_bind::Rotor4D::to_basis() const {
+	return rotor.to_basis();
 }
 
 real_t godot_4d_bind::Rotor4D::get_rotation_angle() const {
@@ -70,6 +70,10 @@ AABB godot_4d_bind::Rotor4D::get_rotation_bivector_normal() const {
 
 Projection godot_4d_bind::Rotor4D::rotate_basis(const Projection &p_basis) const {
 	return rotor.rotate_basis(p_basis);
+}
+
+Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::rotate_rotor(const Ref<godot_4d_bind::Rotor4D> &p_rotor) const {
+	ROTOR4D_BIND_RETURN_REF(rotor * p_rotor->get_rotor());
 }
 
 Vector4 godot_4d_bind::Rotor4D::rotate_vector(const Vector4 &p_vec) const {
@@ -110,6 +114,10 @@ bool godot_4d_bind::Rotor4D::is_normalized() const {
 
 Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::vector_product(const Vector4 &p_a, const Vector4 &p_b) {
 	ROTOR4D_BIND_RETURN_REF(::Rotor4D::vector_product(p_a, p_b));
+}
+
+Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::from_basis(const Projection &p_basis) {
+	ROTOR4D_BIND_RETURN_REF(::Rotor4D::from_basis(p_basis));
 }
 
 Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::from_bivector_magnitude(const AABB &p_bivector) {
@@ -253,11 +261,12 @@ void godot_4d_bind::Rotor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("wedge_product", "b"), &godot_4d_bind::Rotor4D::wedge_product);
 
 	// Rotation functions.
-	ClassDB::bind_method(D_METHOD("get_rotation_basis"), &godot_4d_bind::Rotor4D::get_rotation_basis);
+	ClassDB::bind_method(D_METHOD("to_basis"), &godot_4d_bind::Rotor4D::to_basis);
 	ClassDB::bind_method(D_METHOD("get_rotation_angle"), &godot_4d_bind::Rotor4D::get_rotation_angle);
 	ClassDB::bind_method(D_METHOD("get_rotation_bivector_magnitude"), &godot_4d_bind::Rotor4D::get_rotation_bivector_magnitude);
 	ClassDB::bind_method(D_METHOD("get_rotation_bivector_normal"), &godot_4d_bind::Rotor4D::get_rotation_bivector_normal);
 	ClassDB::bind_method(D_METHOD("rotate_basis", "basis"), &godot_4d_bind::Rotor4D::rotate_basis);
+	ClassDB::bind_method(D_METHOD("rotate_rotor", "rotor"), &godot_4d_bind::Rotor4D::rotate_rotor);
 	ClassDB::bind_method(D_METHOD("rotate_vector", "vector"), &godot_4d_bind::Rotor4D::rotate_vector);
 	ClassDB::bind_method(D_METHOD("sandwich", "vector", "right"), &godot_4d_bind::Rotor4D::sandwich);
 	ClassDB::bind_method(D_METHOD("slerp", "to", "weight"), &godot_4d_bind::Rotor4D::slerp);
@@ -271,6 +280,7 @@ void godot_4d_bind::Rotor4D::_bind_methods() {
 
 	// Static functions for doing math on non-Rotor4D types and returning a Rotor4D.
 	ClassDB::bind_static_method("Rotor4D", D_METHOD("vector_product", "a", "b"), &godot_4d_bind::Rotor4D::vector_product);
+	ClassDB::bind_static_method("Rotor4D", D_METHOD("from_basis", "basis"), &godot_4d_bind::Rotor4D::from_basis);
 	ClassDB::bind_static_method("Rotor4D", D_METHOD("from_bivector_magnitude", "bivector"), &godot_4d_bind::Rotor4D::from_bivector_magnitude);
 	ClassDB::bind_static_method("Rotor4D", D_METHOD("from_bivector_normal_angle", "bivector_normal", "angle"), &godot_4d_bind::Rotor4D::from_bivector_normal_angle);
 	ClassDB::bind_static_method("Rotor4D", D_METHOD("from_xy", "angle"), &godot_4d_bind::Rotor4D::from_xy);

@@ -167,7 +167,7 @@ void Transform4D::rotate_bivector_magnitude(const Bivector4D &p_bivector) {
 
 void Transform4D::rotate_bivector_magnitude_local(const Bivector4D &p_bivector_local) {
 	Rotor4D rot_local = Rotor4D::from_bivector_magnitude(p_bivector_local);
-	basis *= rot_local.get_rotation_basis();
+	basis *= rot_local.to_basis();
 }
 
 void Transform4D::rotate_rotor(const Rotor4D &p_rotor) {
@@ -176,7 +176,7 @@ void Transform4D::rotate_rotor(const Rotor4D &p_rotor) {
 }
 
 void Transform4D::rotate_rotor_local(const Rotor4D &p_rotor_local) {
-	basis *= p_rotor_local.get_rotation_basis();
+	basis *= p_rotor_local.to_basis();
 }
 
 // Geometric algebra rotation properties.
@@ -184,12 +184,12 @@ void Transform4D::rotate_rotor_local(const Rotor4D &p_rotor_local) {
 void Transform4D::set_rotation_bivector_magnitude(const Bivector4D &p_bivector) {
 	const Vector4 scale = basis.get_scale();
 	Rotor4D rot = Rotor4D::from_bivector_magnitude(p_bivector);
-	basis = rot.get_rotation_basis().scaled_local(scale);
+	basis = rot.to_basis().scaled_local(scale);
 }
 
 void Transform4D::set_rotation_rotor(const Rotor4D &p_rotor) {
 	const Vector4 scale = basis.get_scale();
-	basis = p_rotor.get_rotation_basis().scaled_local(scale);
+	basis = p_rotor.to_basis().scaled_local(scale);
 }
 
 // Scale methods.

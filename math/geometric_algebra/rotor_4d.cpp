@@ -1,5 +1,7 @@
 #include "rotor_4d.h"
 
+#include "../euler_4d.h"
+
 // Geometric algebra functions.
 
 // Conjugate flips the sign of the bivector components. For 4D rotors, this is identical to the reverse, but both are included for completeness and clarity.
@@ -123,7 +125,7 @@ Rotor4D Rotor4D::wedge_product(const Rotor4D &p_b) const {
 
 // Rotation functions.
 
-Basis4D Rotor4D::get_rotation_basis() const {
+Basis4D Rotor4D::to_basis() const {
 	Basis4D basis;
 	basis.x = Vector4(
 			s * s - xy * xy - xz * xz - xw * xw + yz * yz + yw * yw + zw * zw - xyzw * xyzw, // X.X
@@ -149,7 +151,7 @@ Basis4D Rotor4D::get_rotation_basis() const {
 			-xw * xz - yw * yz - zw * s - s * zw - xyzw * xy - xy * xyzw - xz * xw - yz * yw, // W.Z
 			-xw * xw - yw * yw - zw * zw + s * s - xyzw * xyzw + xy * xy + xz * xz + yz * yz // W.W
 	);
-	return basis;
+	return basis.orthonormalized();
 }
 
 real_t Rotor4D::get_rotation_angle() const {
@@ -174,6 +176,11 @@ Basis4D Rotor4D::rotate_basis(const Basis4D &p_basis) const {
 			rev.sandwich(p_basis.y, *this),
 			rev.sandwich(p_basis.z, *this),
 			rev.sandwich(p_basis.w, *this));
+}
+
+// Same as operator* but as a function.
+Rotor4D Rotor4D::rotate_rotor(const Rotor4D &p_rotor) const {
+	return *this * p_rotor;
 }
 
 Vector4 Rotor4D::rotate_vector(const Vector4 &p_vec) const {
@@ -292,6 +299,14 @@ Rotor4D Rotor4D::vector_product(const Vector4 &p_a, const Vector4 &p_b) {
 	result.yw = p_a.y * p_b.w - p_a.w * p_b.y;
 	result.zw = p_a.z * p_b.w - p_a.w * p_b.z;
 	return result;
+}
+
+Rotor4D Rotor4D::from_basis(const Basis4D &p_basis) {
+	const Basis4D ortho = p_basis.orthonormalized();
+	ERR_FAIL_COND_V_MSG(!Math::is_equal_approx(ortho.determinant(), 1), Rotor4D(), "The basis must be orthonormal in order to create a rotation, but was " + p_basis.operator String() + " (determinant " + rtos(p_basis.determinant()) + ").");
+	// TODO: This Euler-based algorithm sucks. It should be replaced with a better one when one is discovered.
+	const Euler4D euler = Euler4D::from_basis(ortho);
+	return from_zx(euler.zx) * from_zw(euler.zw) * from_xw(euler.xw) * from_yz(euler.yz) * from_xy(euler.xy) * from_wy(euler.wy);
 }
 
 Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
@@ -642,17 +657,17 @@ Rotor4D operator*(const Bivector4D p_bivector, const Rotor4D &p_rotor) {
 }
 
 Rotor4D Rotor4D::from_array(const PackedRealArray &p_from_array) {
-	const int stop_index = MIN(p_from_array.size(), 16);
-	Rotor4D multivec;
+	const int stop_index = MIN(p_from_array.size(), 8);
+	Rotor4D rot;
 	for (int i = 0; i < stop_index; i++) {
-		multivec.elements[i] = p_from_array[i];
+		rot.elements[i] = p_from_array[i];
 	}
-	return multivec;
+	return rot;
 }
 
 PackedRealArray Rotor4D::to_array() const {
 	PackedRealArray arr;
-	arr.resize(16);
+	arr.resize(8);
 	real_t *ptr = arr.ptrw();
 	ptr[0] = s;
 	ptr[1] = xy;
