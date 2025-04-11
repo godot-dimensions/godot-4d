@@ -1,7 +1,7 @@
 #include "shape_4d.h"
 
-#include "../../mesh/tetra/tetra_mesh_4d.h"
-#include "../../mesh/wire/wire_mesh_4d.h"
+#include "../../model/tetra/tetra_mesh_4d.h"
+#include "../../model/wire/wire_mesh_4d.h"
 
 real_t Shape4D::get_hypervolume() const {
 	real_t hypervolume = 0.0;

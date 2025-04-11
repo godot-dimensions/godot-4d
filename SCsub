@@ -14,7 +14,7 @@ env_4d.add_source_files(env.modules_sources, "nodes/*.cpp")
 env_4d.add_source_files(env.modules_sources, "resources/*.cpp")
 
 SConscript("math/SCsub")
-SConscript("mesh/SCsub")
+SConscript("model/SCsub")
 SConscript("physics/SCsub")
 SConscript("render/SCsub")
 

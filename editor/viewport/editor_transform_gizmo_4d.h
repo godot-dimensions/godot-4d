@@ -3,7 +3,7 @@
 #include "editor_viewport_4d_defines.h"
 
 #include "../../math/rect4.h"
-#include "../../mesh/mesh_instance_4d.h"
+#include "../../model/mesh_instance_4d.h"
 
 class Camera4D;
 class RenderingEngine4D;

@@ -11,7 +11,7 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
-#include "../../mesh/mesh_instance_4d.h"
+#include "../mesh_instance_4d.h"
 #include "../tetra/tetra_material_4d.h"
 #include "../wire/wire_material_4d.h"
 

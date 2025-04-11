@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../mesh/wire/array_wire_mesh_4d.h"
+#include "../../model/wire/array_wire_mesh_4d.h"
 #include "tests/test_macros.h"
 
 namespace TestArrayWireMesh4D {

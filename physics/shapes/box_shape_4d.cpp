@@ -1,7 +1,7 @@
 #include "box_shape_4d.h"
 
-#include "../../mesh/tetra/box_tetra_mesh_4d.h"
-#include "../../mesh/wire/box_wire_mesh_4d.h"
+#include "../../model/tetra/box_tetra_mesh_4d.h"
+#include "../../model/wire/box_wire_mesh_4d.h"
 
 Vector4 BoxShape4D::get_half_extents() const {
 	return _size * 0.5f;

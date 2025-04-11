@@ -1,6 +1,6 @@
 #include "editor_import_plugin_off_tetra_4d.h"
 
-#include "../../mesh/off/off_document.h"
+#include "../../model/off/off_document.h"
 
 String EditorImportPluginOFFTetra4D::GDEXTMOD_GET_IMPORTER_NAME() const {
 	return "godot_4d.off_geometry_format.array_tetra_mesh_4d";

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../mesh/off/off_document.h"
+#include "../../model/off/off_document.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_import_plugin.hpp>

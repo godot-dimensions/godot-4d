@@ -12,10 +12,10 @@ env.Append(
         "../../math/geometric_algebra",
         "../../nodes",
         "../../resources",
-        "../../mesh",
-        "../../mesh/off",
-        "../../mesh/tetra",
-        "../../mesh/wire",
+        "../../model",
+        "../../model/off",
+        "../../model/tetra",
+        "../../model/wire",
         "../../physics",
         "../../physics/bodies",
         "../../physics/server",
@@ -33,10 +33,10 @@ sources = (
     + Glob("../../math/geometric_algebra/*.cpp")
     + Glob("../../nodes/*.cpp")
     + Glob("../../resources/*.cpp")
-    + Glob("../../mesh/*.cpp")
-    + Glob("../../mesh/off/*.cpp")
-    + Glob("../../mesh/tetra/*.cpp")
-    + Glob("../../mesh/wire/*.cpp")
+    + Glob("../../model/*.cpp")
+    + Glob("../../model/off/*.cpp")
+    + Glob("../../model/tetra/*.cpp")
+    + Glob("../../model/wire/*.cpp")
     + Glob("../../physics/*.cpp")
     + Glob("../../physics/bodies/*.cpp")
     + Glob("../../physics/server/*.cpp")
