@@ -87,7 +87,8 @@ Rotor4D Rotor4D::regressive_product(const Rotor4D &p_b) const {
 	return result;
 }
 
-// The reverse function flips the sign of the bivector components. For 4D rotors, this is identical to the conjugate, but both are included for completeness and clarity.
+// The reverse function flips the sign of the bivector components. It is denoted in math notation by the dagger symbol.
+// For 4D rotors, this is identical to the conjugate, but both are included for completeness and clarity.
 // 1 - xy - xz - xw - yz - yw - zw + xyzw
 Rotor4D Rotor4D::reverse() const {
 	Rotor4D result;
@@ -266,12 +267,20 @@ real_t Rotor4D::length_squared() const {
 	return parts.scalar * parts.scalar + parts.bivector.length_squared() + parts.pseudoscalar * parts.pseudoscalar;
 }
 
+// The multiplication of the reverse of the rotor with the rotor itself, which only has scalar and pseudoscalar components.
+SplitComplex4D Rotor4D::split_magnitude_squared() const {
+	SplitComplex4D result;
+	result.s = s * s + xy * xy + xz * xz + xw * xw + yz * yz + yw * yw + zw * zw + xyzw * xyzw; // Scalar
+	result.xyzw = s * xyzw - xy * zw + xz * yw - xw * yz - yz * xw + yw * xz - zw * xy + xyzw * s; // XYZW
+	return result;
+}
+
 Rotor4D Rotor4D::normalized() const {
-	const real_t len_sq = length_squared();
-	if (len_sq == 0) {
+	const SplitComplex4D split_inv_sqrt = split_magnitude_squared().inverse_square_root();
+	if (split_inv_sqrt == SplitComplex4D(0.0f, 0.0f)) {
 		return Rotor4D();
 	}
-	return *this / Math::sqrt(len_sq);
+	return *this * split_inv_sqrt;
 }
 
 bool Rotor4D::is_normalized() const {
@@ -474,6 +483,15 @@ void Rotor4D::set_pseudoscalar(const real_t p_pseudoscalar) {
 	parts.pseudoscalar = p_pseudoscalar;
 }
 
+SplitComplex4D Rotor4D::get_split_complex() const {
+	return SplitComplex4D(parts.scalar, parts.pseudoscalar);
+}
+
+void Rotor4D::set_split_complex(const SplitComplex4D &p_split) {
+	parts.scalar = p_split.s;
+	parts.pseudoscalar = p_split.xyzw;
+}
+
 // Operators.
 
 bool Rotor4D::is_equal_approx(const Rotor4D &p_other) const {
@@ -534,6 +552,41 @@ Rotor4D Rotor4D::operator*(const Rotor4D &p_b) const {
 	result.zw = s * p_b.zw - xy * p_b.xyzw - xz * p_b.xw + xw * p_b.xz - yz * p_b.yw + yw * p_b.yz + zw * p_b.s - xyzw * p_b.xy; // ZW
 	result.xyzw = s * p_b.xyzw + xy * p_b.zw - xz * p_b.yw + xw * p_b.yz + yz * p_b.xw - yw * p_b.xz + zw * p_b.xy + xyzw * p_b.s; // XYZW
 	return result;
+}
+
+Rotor4D &Rotor4D::operator*=(const SplitComplex4D &p_split) {
+	// Can't do an in-place multiply because the operation requires the original values throughout the calculation.
+	Rotor4D result = *this * p_split;
+	parts.scalar = result.parts.scalar;
+	parts.bivector = result.parts.bivector;
+	parts.pseudoscalar = result.parts.pseudoscalar;
+	return *this;
+}
+
+Rotor4D Rotor4D::operator*(const SplitComplex4D &p_split) const {
+	Rotor4D result;
+	result.s = s * p_split.s + xyzw * p_split.xyzw; // Scalar
+	result.xy = xy * p_split.s - zw * p_split.xyzw; // XY
+	result.xz = xz * p_split.s + yw * p_split.xyzw; // XZ
+	result.xw = xw * p_split.s - yz * p_split.xyzw; // XW
+	result.yz = yz * p_split.s - xw * p_split.xyzw; // YZ
+	result.yw = yw * p_split.s + xz * p_split.xyzw; // YW
+	result.zw = zw * p_split.s - xy * p_split.xyzw; // ZW
+	result.xyzw = xyzw * p_split.s + s * p_split.xyzw; // XYZW
+	return result;
+}
+
+Rotor4D &Rotor4D::operator/=(const SplitComplex4D &p_split) {
+	// Can't do an in-place multiply because the operation requires the original values throughout the calculation.
+	Rotor4D result = *this * p_split.inverse();
+	parts.scalar = result.parts.scalar;
+	parts.bivector = result.parts.bivector;
+	parts.pseudoscalar = result.parts.pseudoscalar;
+	return *this;
+}
+
+Rotor4D Rotor4D::operator/(const SplitComplex4D &p_split) const {
+	return *this * p_split.inverse();
 }
 
 Rotor4D &Rotor4D::operator+=(const real_t p_scalar) {
@@ -632,7 +685,7 @@ Rotor4D operator+(const real_t p_scalar, const Rotor4D &p_rotor) {
 	return result;
 }
 
-Rotor4D operator+(const Bivector4D p_bivector, const Rotor4D &p_rotor) {
+Rotor4D operator+(const Bivector4D &p_bivector, const Rotor4D &p_rotor) {
 	// Addition is commutative, so b += a is the same as a = a + b.
 	Rotor4D result = p_rotor;
 	result.parts.bivector += p_bivector;
@@ -643,7 +696,7 @@ Rotor4D operator*(const real_t p_scalar, const Rotor4D &p_rotor) {
 	return Rotor4D(p_scalar * p_rotor.parts.scalar, p_scalar * p_rotor.parts.bivector, p_scalar * p_rotor.parts.pseudoscalar);
 }
 
-Rotor4D operator*(const Bivector4D p_bivector, const Rotor4D &p_rotor) {
+Rotor4D operator*(const Bivector4D &p_bivector, const Rotor4D &p_rotor) {
 	Rotor4D result;
 	result.s = p_rotor.s - p_bivector.xy * p_rotor.xy - p_bivector.xz * p_rotor.xz - p_bivector.xw * p_rotor.xw - p_bivector.yz * p_rotor.yz - p_bivector.yw * p_rotor.yw - p_bivector.zw * p_rotor.zw; // Scalar
 	result.xy = p_rotor.xy + p_bivector.xy * p_rotor.s - p_bivector.xz * p_rotor.yz - p_bivector.xw * p_rotor.yw + p_bivector.yz * p_rotor.xz + p_bivector.yw * p_rotor.xw - p_bivector.zw * p_rotor.xyzw; // XY
@@ -653,6 +706,19 @@ Rotor4D operator*(const Bivector4D p_bivector, const Rotor4D &p_rotor) {
 	result.yw = p_rotor.yw - p_bivector.xy * p_rotor.xw + p_bivector.xz * p_rotor.xyzw + p_bivector.xw * p_rotor.xy + p_bivector.yz * p_rotor.zw + p_bivector.yw * p_rotor.s - p_bivector.zw * p_rotor.yz; // YW
 	result.zw = p_rotor.zw - p_bivector.xy * p_rotor.xyzw - p_bivector.xz * p_rotor.xw + p_bivector.xw * p_rotor.xz - p_bivector.yz * p_rotor.yw + p_bivector.yw * p_rotor.yz + p_bivector.zw * p_rotor.s; // ZW
 	result.xyzw = p_rotor.xyzw + p_bivector.xy * p_rotor.zw - p_bivector.xz * p_rotor.yw + p_bivector.xw * p_rotor.yz + p_bivector.yz * p_rotor.xw - p_bivector.yw * p_rotor.xz + p_bivector.zw * p_rotor.xy; // XYZW
+	return result;
+}
+
+Rotor4D operator*(const SplitComplex4D &p_split, const Rotor4D &p_rotor) {
+	Rotor4D result;
+	result.s = p_split.s * p_rotor.s + p_split.xyzw * p_rotor.xyzw; // Scalar
+	result.xy = p_split.s * p_rotor.xy - p_split.xyzw * p_rotor.zw; // XY
+	result.xz = p_split.s * p_rotor.xz + p_split.xyzw * p_rotor.yw; // XZ
+	result.xw = p_split.s * p_rotor.xw - p_split.xyzw * p_rotor.yz; // XW
+	result.yz = p_split.s * p_rotor.yz - p_split.xyzw * p_rotor.xw; // YZ
+	result.yw = p_split.s * p_rotor.yw + p_split.xyzw * p_rotor.xz; // YW
+	result.zw = p_split.s * p_rotor.zw - p_split.xyzw * p_rotor.xy; // ZW
+	result.xyzw = p_split.s * p_rotor.xyzw + p_split.xyzw * p_rotor.s; // XYZW
 	return result;
 }
 

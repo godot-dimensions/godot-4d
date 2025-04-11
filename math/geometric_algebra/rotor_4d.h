@@ -2,6 +2,7 @@
 
 #include "../basis_4d.h"
 #include "bivector_4d.h"
+#include "split_complex_4d.h"
 #include "trivector_4d.h"
 
 // Rotor4D represents a 4D Geometric Algebra rotor. It is a combination of a scalar and a bivector.
@@ -56,6 +57,7 @@ struct _NO_DISCARD_ Rotor4D {
 	// Length functions.
 	real_t length() const;
 	real_t length_squared() const;
+	SplitComplex4D split_magnitude_squared() const;
 	Rotor4D normalized() const;
 	bool is_normalized() const;
 	bool is_rotation() const;
@@ -95,6 +97,9 @@ struct _NO_DISCARD_ Rotor4D {
 	real_t get_pseudoscalar() const;
 	void set_pseudoscalar(const real_t p_pseudoscalar);
 
+	SplitComplex4D get_split_complex() const;
+	void set_split_complex(const SplitComplex4D &p_split);
+
 	// Operators.
 	_FORCE_INLINE_ const real_t &operator[](int p_axis) const {
 		DEV_ASSERT((unsigned int)p_axis < 8);
@@ -118,6 +123,11 @@ struct _NO_DISCARD_ Rotor4D {
 
 	Rotor4D &operator*=(const Rotor4D &p_b);
 	Rotor4D operator*(const Rotor4D &p_b) const;
+
+	Rotor4D &operator*=(const SplitComplex4D &p_split);
+	Rotor4D operator*(const SplitComplex4D &p_split) const;
+	Rotor4D &operator/=(const SplitComplex4D &p_split);
+	Rotor4D operator/(const SplitComplex4D &p_split) const;
 
 	Rotor4D &operator+=(const real_t p_scalar);
 	Rotor4D operator+(const real_t p_scalar) const;
@@ -160,9 +170,10 @@ struct _NO_DISCARD_ Rotor4D {
 };
 
 Rotor4D operator+(const real_t p_scalar, const Rotor4D &p_rotor);
-Rotor4D operator+(const Bivector4D p_bivector, const Rotor4D &p_rotor);
+Rotor4D operator+(const Bivector4D &p_bivector, const Rotor4D &p_rotor);
 
 Rotor4D operator*(const real_t p_scalar, const Rotor4D &p_rotor);
-Rotor4D operator*(const Bivector4D p_bivector, const Rotor4D &p_rotor);
+Rotor4D operator*(const Bivector4D &p_bivector, const Rotor4D &p_rotor);
+Rotor4D operator*(const SplitComplex4D &p_split, const Rotor4D &p_rotor);
 
 static_assert(sizeof(Rotor4D) == sizeof(real_t) * 8);

@@ -236,10 +236,16 @@
 			The global rotation of this [Node4D], in the form of a [Rotor4D] stored as a [PackedFloat32Array] or [PackedFloat64Array]. The array has 8 numbers, the first number is the scalar, the next 6 are the bivector components, and the last number is the pseudoscalar. The pseudoscalar part does not affect the rotation and may be omitted when setting this property.
 		</member>
 		<member name="global_rotor_bivector" type="AABB" setter="set_global_rotor_bivector" getter="get_global_rotor_bivector">
-			The bivector part of the global rotation [Rotor4D] of this [Node4D], in the form of a bivector stored as an [AABB]. This property only makes sense in combination with the [member global_rotor_scalar] property, which form a [Rotor4D].
+			The bivector part of the global rotation [Rotor4D] of this [Node4D], in the form of a bivector stored as an [AABB]. This property only makes sense in combination with the [member global_rotor_scalar] and [member global_rotor_pseudoscalar] properties, or the [member global_rotor_split_complex] property, which form a [Rotor4D]. This property is exposed as an [AABB] for binding reasons.
+		</member>
+		<member name="global_rotor_pseudoscalar" type="float" setter="set_global_rotor_pseudoscalar" getter="get_global_rotor_pseudoscalar">
+			The _pseudoscalar part of the global rotation [Rotor4D] of this [Node4D], in the form of a [float]. This property only makes sense in combination with the [member global_rotor_bivector] and [member global_rotor_scalar] properties, which form a [Rotor4D].
 		</member>
 		<member name="global_rotor_scalar" type="float" setter="set_global_rotor_scalar" getter="get_global_rotor_scalar">
-			The scalar part of the global rotation [Rotor4D] of this [Node4D], in the form of a [float]. This property only makes sense in combination with the [member global_rotor_bivector] property, which form a [Rotor4D].
+			The scalar part of the global rotation [Rotor4D] of this [Node4D], in the form of a [float]. This property only makes sense in combination with the [member global_rotor_bivector] and [member global_rotor_pseudoscalar] properties, which form a [Rotor4D].
+		</member>
+		<member name="global_rotor_split_complex" type="Vector2" setter="set_global_rotor_split_complex" getter="get_global_rotor_split_complex">
+			The split-complex part of the global rotation [Rotor4D] of this [Node4D], exposed as a [Vector2]. This is the same as [member global_rotor_scalar] and [member global_rotor_pseudoscalar] but packed into a single [Vector2]. This property only makes sense in combination with the [member global_rotor_bivector] property, which forms a [Rotor4D].
 		</member>
 		<member name="global_scale" type="Vector4" setter="set_global_scale" getter="get_global_scale">
 			The global scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).
@@ -266,10 +272,16 @@
 			The local (parent-relative) rotation of this [Node4D], in the form of a [Rotor4D] stored as a [PackedFloat32Array] or [PackedFloat64Array]. The array has 8 numbers, the first number is the scalar, the next 6 are the bivector components, and the last number is the pseudoscalar. The pseudoscalar part does not affect the rotation and may be omitted when setting this property.
 		</member>
 		<member name="rotor_bivector" type="AABB" setter="set_rotor_bivector" getter="get_rotor_bivector">
-			The bivector part of the local (parent-relative) rotation [Rotor4D] of this [Node4D], in the form of a bivector stored as an [AABB]. This property only makes sense in combination with the [member rotor_scalar] property, which form a [Rotor4D].
+			The bivector part of the local (parent-relative) rotation [Rotor4D] of this [Node4D], in the form of a bivector stored as an [AABB]. This property only makes sense in combination with the [member rotor_scalar] and [member rotor_pseudoscalar] properties, or the [member rotor_split_complex] property, which form a [Rotor4D]. This property is exposed as an [AABB] for binding reasons.
+		</member>
+		<member name="rotor_pseudoscalar" type="float" setter="set_rotor_pseudoscalar" getter="get_rotor_pseudoscalar">
+			The pseudoscalar part of the local (parent-relative) rotation [Rotor4D] of this [Node4D], in the form of a [float]. This property only makes sense in combination with the [member rotor_bivector] and [member rotor_scalar] properties, which form a [Rotor4D].
 		</member>
 		<member name="rotor_scalar" type="float" setter="set_rotor_scalar" getter="get_rotor_scalar">
-			The scalar part of the local (parent-relative) rotation [Rotor4D] of this [Node4D], in the form of a [float]. This property only makes sense in combination with the [member rotor_bivector] property, which form a [Rotor4D].
+			The scalar part of the local (parent-relative) rotation [Rotor4D] of this [Node4D], in the form of a [float]. This property only makes sense in combination with the [member rotor_bivector] and [member rotor_pseudoscalar] properties, which form a [Rotor4D].
+		</member>
+		<member name="rotor_split_complex" type="Vector2" setter="set_rotor_split_complex" getter="get_rotor_split_complex">
+			The split-complex part of the local (parent-relative) rotation [Rotor4D] of this [Node4D], exposed as a [Vector2]. This is the same as [member rotor_scalar] and [member rotor_pseudoscalar] but packed into a single [Vector2]. This property only makes sense in combination with the [member rotor_bivector] property, which forms a [Rotor4D].
 		</member>
 		<member name="scale" type="Vector4" setter="set_scale" getter="get_scale" default="Vector4(1, 1, 1, 1)">
 			The local (parent-relative) scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).

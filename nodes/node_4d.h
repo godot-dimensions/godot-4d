@@ -132,6 +132,12 @@ public:
 	void set_rotor_bivector_bind(const AABB &p_bivector);
 	real_t get_rotor_scalar() const;
 	void set_rotor_scalar(const real_t p_scalar);
+	real_t get_rotor_pseudoscalar() const;
+	void set_rotor_pseudoscalar(const real_t p_pseudoscalar);
+	SplitComplex4D get_rotor_split_complex() const;
+	void set_rotor_split_complex(const SplitComplex4D &p_split);
+	Vector2 get_rotor_split_complex_bind() const;
+	void set_rotor_split_complex_bind(const Vector2 &p_split);
 
 	// Global transform and basis.
 	Transform4D get_global_transform() const;
@@ -193,6 +199,12 @@ public:
 	void set_global_rotor_bivector_bind(const AABB &p_bivector);
 	real_t get_global_rotor_scalar() const;
 	void set_global_rotor_scalar(const real_t p_scalar);
+	real_t get_global_rotor_pseudoscalar() const;
+	void set_global_rotor_pseudoscalar(const real_t p_pseudoscalar);
+	SplitComplex4D get_global_rotor_split_complex() const;
+	void set_global_rotor_split_complex(const SplitComplex4D &p_split);
+	Vector2 get_global_rotor_split_complex_bind() const;
+	void set_global_rotor_split_complex_bind(const Vector2 &p_split);
 
 	// Visibility.
 	bool is_visible() const;

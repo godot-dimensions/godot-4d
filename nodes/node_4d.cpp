@@ -331,7 +331,8 @@ Bivector4D Node4D::get_rotor_bivector() const {
 
 void Node4D::set_rotor_bivector(const Bivector4D &p_bivector) {
 	const Vector4 scale = get_scale();
-	Rotor4D rot = Rotor4D::from_scalar_bivector(get_rotation_rotor().get_scalar(), p_bivector).normalized();
+	const Rotor4D old_rotor = get_rotation_rotor();
+	const Rotor4D rot = Rotor4D(old_rotor.get_scalar(), p_bivector, old_rotor.get_pseudoscalar()).normalized();
 	set_basis(rot.to_basis().scaled_local(scale));
 }
 
@@ -349,8 +350,39 @@ real_t Node4D::get_rotor_scalar() const {
 
 void Node4D::set_rotor_scalar(const real_t p_scalar) {
 	const Vector4 scale = get_scale();
-	Rotor4D rot = Rotor4D::from_scalar_bivector(p_scalar, get_rotation_rotor().get_bivector()).normalized();
+	const Rotor4D old_rotor = get_rotation_rotor();
+	const Rotor4D rot = Rotor4D(p_scalar, old_rotor.get_bivector(), old_rotor.get_pseudoscalar()).normalized();
 	set_basis(rot.to_basis().scaled_local(scale));
+}
+
+real_t Node4D::get_rotor_pseudoscalar() const {
+	return Rotor4D::from_basis(_transform.basis).get_pseudoscalar();
+}
+
+void Node4D::set_rotor_pseudoscalar(const real_t p_pseudoscalar) {
+	const Vector4 scale = get_scale();
+	const Rotor4D old_rotor = get_rotation_rotor();
+	const Rotor4D rot = Rotor4D(old_rotor.get_scalar(), old_rotor.get_bivector(), p_pseudoscalar).normalized();
+	set_basis(rot.to_basis().scaled_local(scale));
+}
+
+SplitComplex4D Node4D::get_rotor_split_complex() const {
+	return Rotor4D::from_basis(_transform.basis).get_split_complex();
+}
+
+void Node4D::set_rotor_split_complex(const SplitComplex4D &p_split) {
+	const Vector4 scale = get_scale();
+	const Rotor4D old_rotor = get_rotation_rotor();
+	const Rotor4D rot = Rotor4D(p_split.get_scalar(), old_rotor.get_bivector(), p_split.get_pseudoscalar()).normalized();
+	set_basis(rot.to_basis().scaled_local(scale));
+}
+
+Vector2 Node4D::get_rotor_split_complex_bind() const {
+	return get_rotor_split_complex();
+}
+
+void Node4D::set_rotor_split_complex_bind(const Vector2 &p_split) {
+	set_rotor_split_complex(p_split);
 }
 
 // Global transform and basis.
@@ -572,7 +604,7 @@ Bivector4D Node4D::get_global_rotation_bivector_magnitude() const {
 
 void Node4D::set_global_rotation_bivector_magnitude(const Bivector4D &p_bivector) {
 	const Vector4 global_scale = get_global_scale();
-	Rotor4D rot = Rotor4D::from_bivector_magnitude(p_bivector);
+	const Rotor4D rot = Rotor4D::from_bivector_magnitude(p_bivector);
 	set_global_basis(rot.to_basis().scaled_local(global_scale));
 }
 
@@ -619,7 +651,7 @@ Bivector4D Node4D::get_global_rotor_bivector() const {
 void Node4D::set_global_rotor_bivector(const Bivector4D &p_bivector) {
 	const Basis4D global_basis = get_global_basis();
 	const Vector4 global_scale = global_basis.get_scale();
-	Rotor4D rot = Rotor4D::from_scalar_bivector(Rotor4D::from_basis(global_basis).get_scalar(), p_bivector).normalized();
+	const Rotor4D rot = Rotor4D::from_scalar_bivector(Rotor4D::from_basis(global_basis).get_scalar(), p_bivector).normalized();
 	set_global_basis(rot.to_basis().scaled_local(global_scale));
 }
 
@@ -638,8 +670,41 @@ real_t Node4D::get_global_rotor_scalar() const {
 void Node4D::set_global_rotor_scalar(const real_t p_scalar) {
 	const Basis4D global_basis = get_global_basis();
 	const Vector4 global_scale = global_basis.get_scale();
-	Rotor4D rot = Rotor4D::from_scalar_bivector(p_scalar, Rotor4D::from_basis(global_basis).get_bivector()).normalized();
+	const Rotor4D old_global_rotor = Rotor4D::from_basis(global_basis);
+	const Rotor4D rot = Rotor4D(p_scalar, old_global_rotor.get_bivector(), old_global_rotor.get_pseudoscalar()).normalized();
 	set_global_basis(rot.to_basis().scaled_local(global_scale));
+}
+
+real_t Node4D::get_global_rotor_pseudoscalar() const {
+	return Rotor4D::from_basis(get_global_basis()).get_pseudoscalar();
+}
+
+void Node4D::set_global_rotor_pseudoscalar(const real_t p_pseudoscalar) {
+	const Basis4D global_basis = get_global_basis();
+	const Vector4 global_scale = global_basis.get_scale();
+	const Rotor4D old_global_rotor = Rotor4D::from_basis(global_basis);
+	const Rotor4D rot = Rotor4D(old_global_rotor.get_scalar(), old_global_rotor.get_bivector(), p_pseudoscalar).normalized();
+	set_global_basis(rot.to_basis().scaled_local(global_scale));
+}
+
+SplitComplex4D Node4D::get_global_rotor_split_complex() const {
+	return Rotor4D::from_basis(get_global_basis()).get_split_complex();
+}
+
+void Node4D::set_global_rotor_split_complex(const SplitComplex4D &p_split) {
+	const Basis4D global_basis = get_global_basis();
+	const Vector4 global_scale = global_basis.get_scale();
+	const Rotor4D old_global_rotor = Rotor4D::from_basis(global_basis);
+	const Rotor4D rot = Rotor4D(p_split.get_scalar(), old_global_rotor.get_bivector(), p_split.get_pseudoscalar()).normalized();
+	set_global_basis(rot.to_basis().scaled_local(global_scale));
+}
+
+Vector2 Node4D::get_global_rotor_split_complex_bind() const {
+	return get_global_rotor_split_complex();
+}
+
+void Node4D::set_global_rotor_split_complex_bind(const Vector2 &p_split) {
+	set_global_rotor_split_complex(p_split);
 }
 
 // Visibility.
@@ -757,6 +822,10 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_rotor_bivector", "bivector"), &Node4D::set_rotor_bivector_bind);
 	ClassDB::bind_method(D_METHOD("get_rotor_scalar"), &Node4D::get_rotor_scalar);
 	ClassDB::bind_method(D_METHOD("set_rotor_scalar", "scalar"), &Node4D::set_rotor_scalar);
+	ClassDB::bind_method(D_METHOD("get_rotor_pseudoscalar"), &Node4D::get_rotor_pseudoscalar);
+	ClassDB::bind_method(D_METHOD("set_rotor_pseudoscalar", "pseudoscalar"), &Node4D::set_rotor_pseudoscalar);
+	ClassDB::bind_method(D_METHOD("get_rotor_split_complex"), &Node4D::get_rotor_split_complex_bind);
+	ClassDB::bind_method(D_METHOD("set_rotor_split_complex", "split"), &Node4D::set_rotor_split_complex_bind);
 	// Global transform and basis.
 	ClassDB::bind_method(D_METHOD("get_global_transform"), &Node4D::get_global_transform_bind);
 	ClassDB::bind_method(D_METHOD("set_global_transform", "global_transform"), &Node4D::set_global_transform_bind);
@@ -790,6 +859,10 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_global_rotor_bivector", "global_bivector"), &Node4D::set_global_rotor_bivector_bind);
 	ClassDB::bind_method(D_METHOD("get_global_rotor_scalar"), &Node4D::get_global_rotor_scalar);
 	ClassDB::bind_method(D_METHOD("set_global_rotor_scalar", "global_scalar"), &Node4D::set_global_rotor_scalar);
+	ClassDB::bind_method(D_METHOD("get_global_rotor_pseudoscalar"), &Node4D::get_global_rotor_pseudoscalar);
+	ClassDB::bind_method(D_METHOD("set_global_rotor_pseudoscalar", "global_pseudoscalar"), &Node4D::set_global_rotor_pseudoscalar);
+	ClassDB::bind_method(D_METHOD("get_global_rotor_split_complex"), &Node4D::get_global_rotor_split_complex_bind);
+	ClassDB::bind_method(D_METHOD("set_global_rotor_split_complex", "global_split"), &Node4D::set_global_rotor_split_complex_bind);
 	// Visibility.
 	ClassDB::bind_method(D_METHOD("is_visible"), &Node4D::is_visible);
 	ClassDB::bind_method(D_METHOD("is_visible_in_tree"), &Node4D::is_visible_in_tree);
@@ -812,6 +885,8 @@ void Node4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(PACKED_REAL_ARRAY, "rotor_array", PROPERTY_HINT_NONE, "", PROPERTY_HINT_NONE), "set_rotation_rotor_array", "get_rotation_rotor_array");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "rotor_bivector", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_rotor_bivector", "get_rotor_bivector");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rotor_scalar", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_rotor_scalar", "get_rotor_scalar");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rotor_pseudoscalar", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_rotor_pseudoscalar", "get_rotor_pseudoscalar");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "rotor_split_complex", PROPERTY_HINT_NONE, "", PROPERTY_HINT_NONE), "set_rotor_split_complex", "get_rotor_split_complex");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "bivector_magnitude", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_rotation_bivector_magnitude", "get_rotation_bivector_magnitude");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_scale", "get_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "uniform_scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_uniform_scale", "get_uniform_scale");
@@ -825,6 +900,8 @@ void Node4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(PACKED_REAL_ARRAY, "global_rotor_array", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_rotation_rotor_array", "get_global_rotation_rotor_array");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "global_rotor_bivector", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_rotor_bivector", "get_global_rotor_bivector");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "global_rotor_scalar", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_rotor_scalar", "get_global_rotor_scalar");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "global_rotor_pseudoscalar", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_rotor_pseudoscalar", "get_global_rotor_pseudoscalar");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "global_rotor_split_complex", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_rotor_split_complex", "get_global_rotor_split_complex");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "global_bivector_magnitude", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_rotation_bivector_magnitude", "get_global_rotation_bivector_magnitude");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "global_scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_scale", "get_global_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "global_uniform_scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_uniform_scale", "get_global_uniform_scale");
@@ -861,6 +938,9 @@ void Node4D::_validate_property(PropertyInfo &p_property) const {
 			p_property.usage = PROPERTY_USAGE_NONE;
 		}
 		if (p_property.name == StringName("rotor_scalar")) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+		if (p_property.name == StringName("rotor_pseudoscalar")) {
 			p_property.usage = PROPERTY_USAGE_NONE;
 		}
 	}

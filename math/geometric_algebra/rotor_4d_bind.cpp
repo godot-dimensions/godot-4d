@@ -216,6 +216,14 @@ void godot_4d_bind::Rotor4D::set_bivector_aabb(const AABB &p_bivector_aabb) {
 	rotor.parts.bivector = p_bivector_aabb;
 }
 
+Vector2 godot_4d_bind::Rotor4D::get_split_complex() const {
+	return rotor.get_split_complex();
+}
+
+void godot_4d_bind::Rotor4D::set_split_complex(const Vector2 &p_split) {
+	rotor.set_split_complex(p_split);
+}
+
 Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::from_numbers(const real_t p_s, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yz, const real_t p_yw, const real_t p_zw, const real_t p_xyzw) {
 	ROTOR4D_BIND_RETURN_REF(::Rotor4D(p_s, p_xy, p_xz, p_xw, p_yz, p_yw, p_zw, p_xyzw));
 }
@@ -296,6 +304,10 @@ void godot_4d_bind::Rotor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_bivector"), &godot_4d_bind::Rotor4D::get_bivector_aabb);
 	ClassDB::bind_method(D_METHOD("set_bivector", "bivector_aabb"), &godot_4d_bind::Rotor4D::set_bivector_aabb);
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "bivector"), "set_bivector", "get_bivector");
+
+	ClassDB::bind_method(D_METHOD("get_split_complex"), &godot_4d_bind::Rotor4D::get_split_complex);
+	ClassDB::bind_method(D_METHOD("set_split_complex", "split"), &godot_4d_bind::Rotor4D::set_split_complex);
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "split_complex"), "set_split_complex", "get_split_complex");
 
 	// Individual component with-style setters.
 	ClassDB::bind_method(D_METHOD("with_s", "s"), &godot_4d_bind::Rotor4D::with_s);

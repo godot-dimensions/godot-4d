@@ -98,6 +98,9 @@ public:
 	AABB get_bivector_aabb() const;
 	void set_bivector_aabb(const AABB &p_bivector_aabb);
 
+	Vector2 get_split_complex() const;
+	void set_split_complex(const Vector2 &p_split);
+
 	// Conversion.
 	static Ref<Rotor4D> from_array(const PackedRealArray &p_from_array);
 	PackedRealArray to_array() const;

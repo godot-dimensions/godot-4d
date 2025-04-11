@@ -3,6 +3,9 @@
 #include "rotor_4d.h"
 
 // Motor4D combines together a Rotor4D and a 4D vector, representing a rigid transformation in 4D space.
+// NOTE: This is not very useful, and sudgylacmoe advises against this existing
+// because he has never heard of even subalgebra plus vector, and the name can
+// be confused with Projective Geometric Algebra. May delete this in the future.
 struct _NO_DISCARD_ Motor4D {
 	union {
 		struct {
