@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFState4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Holds all data of a G4MF file.
+	</brief_description>
+	<description>
+		Contains all nodes and resources of a G4MF file. This is used by [G4MFDocument4D] as data storage, which allows [G4MFDocument4D] to be stateless.
+		When importing a G4MF file, a G4MFState4D can be populated by [G4MFDocument4D] by reading a file. This data can then be used by [G4MFDocument4D] to create a Godot scene or a mesh resource.
+		When exporting a Godot scene, a G4MFState4D can be populated by [G4MFDocument4D] by converting the scene. This data can then be used by [G4MFDocument4D] to save to a G4MF file.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="append_g4mf_node">
+			<return type="void" />
+			<param index="0" name="node" type="G4MFNode4D" />
+			<description>
+				Appends a [G4MFNode4D] to the G4MF state. This will add the node to the [member g4mf_nodes] array, and ensure its name is unique. Other data in the node is expected to be handled elsewhere.
+			</description>
+		</method>
+		<method name="reserve_unique_name">
+			<return type="String" />
+			<param index="0" name="requested" type="String" />
+			<description>
+				Reserves a unique name based on the requested name. This allows you to create a unique name for a node or resource in the G4MF file without conflicting with other names. If the requested name is already in use, a number will be appended to the name to make it unique. The number will be incremented until a unique name is found. The returned name is guaranteed to be unique relative to already reserved names.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="base_path" type="String" setter="set_base_path" getter="get_base_path" default="&quot;&quot;">
+			The base path of the G4MF file. This is used to resolve relative paths in the G4MF file. This is set when reading a G4MF file, and is used when writing a G4MF file.
+		</member>
+		<member name="filename" type="String" setter="set_filename" getter="get_filename" default="&quot;&quot;">
+			The filename of the G4MF file, including the file extension. If it ends with [code].g4tf[/code], this is a text-based G4MF, otherwise this is a binary G4MF. This will be set during import when appending from a file, and will be set during export when writing to a file. If writing to a buffer, this will be an empty string.
+		</member>
+		<member name="g4mf_nodes" type="G4MFNode4D[]" setter="set_g4mf_nodes" getter="get_g4mf_nodes" default="[]">
+			The array of [G4MFNode4D]s in this G4MF file. If empty, the G4MF file does not have any nodes. If non-empty, the node at index 0 is the root node.
+		</member>
+		<member name="godot_nodes" type="Node4D[]" setter="set_godot_nodes" getter="get_godot_nodes" default="[]">
+			The array of Godot nodes corresponding to the G4MF nodes. This is used when importing a G4MF file and generating Godot nodes, after the nodes are generated, this array will have the same length as [member g4mf_nodes]. This is also used when converting a Godot scene to a G4MF file, after the nodes are converted, this array will have the same length as [member g4mf_nodes]. The node at each index corresponds to the G4MF node with the same index in the [member g4mf_nodes] array.
+		</member>
+	</members>
+</class>

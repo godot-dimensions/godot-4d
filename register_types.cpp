@@ -32,6 +32,7 @@
 #include "physics/shapes/shape_4d.h"
 
 // Model.
+#include "model/g4mf/g4mf_document_4d.h"
 #include "model/mesh_instance_4d.h"
 #include "model/off/off_document.h"
 #include "model/tetra/array_tetra_mesh_4d.h"
@@ -170,6 +171,11 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(RigidBody4D);
 		GDREGISTER_CLASS(SphereShape4D);
 		GDREGISTER_CLASS(StaticBody4D);
+		// G4MF (register in dependency order).
+		GDREGISTER_CLASS(G4MFItem4D);
+		GDREGISTER_CLASS(G4MFNode4D);
+		GDREGISTER_CLASS(G4MFState4D);
+		GDREGISTER_CLASS(G4MFDocument4D);
 #if GDEXTENSION
 		GDREGISTER_CLASS(AxisAlignedBoxPhysicsEngine4D);
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
@@ -192,7 +198,9 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 #ifdef GDEXTENSION
 		GDREGISTER_CLASS(EditorCamera4D);
 		GDREGISTER_CLASS(EditorCreate4DSceneButton);
+		GDREGISTER_CLASS(EditorExportDialogG4MF4D);
 		GDREGISTER_CLASS(EditorImportPluginBase4D);
+		GDREGISTER_CLASS(EditorImportPluginG4MFScene4D);
 		GDREGISTER_CLASS(EditorImportPluginOFFBase);
 		GDREGISTER_CLASS(EditorImportPluginOFFMesh3D);
 		GDREGISTER_CLASS(EditorImportPluginOFFScene);

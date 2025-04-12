@@ -99,23 +99,29 @@ void Godot4DEditorPlugin::_create_4d_scene() {
 void Godot4DEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+			_g4mf_scene_4d_importer.instantiate();
 			_off_mesh_3d_importer.instantiate();
 			_off_scene_importer.instantiate();
 			_off_tetra_4d_importer.instantiate();
 			_off_wire_4d_importer.instantiate();
+			add_import_plugin(_g4mf_scene_4d_importer);
 			add_import_plugin(_off_mesh_3d_importer);
 			add_import_plugin(_off_scene_importer);
 			add_import_plugin(_off_tetra_4d_importer);
 			add_import_plugin(_off_wire_4d_importer);
 			_add_4d_main_screen();
 			_move_4d_main_screen_tab_button();
+			_g4mf_export_dialog = memnew(EditorExportDialogG4MF4D);
+			_g4mf_export_dialog->setup(get_export_as_menu());
 			call_deferred(StringName("_inject_4d_scene_button"));
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
+			remove_import_plugin(_g4mf_scene_4d_importer);
 			remove_import_plugin(_off_mesh_3d_importer);
 			remove_import_plugin(_off_scene_importer);
 			remove_import_plugin(_off_tetra_4d_importer);
 			remove_import_plugin(_off_wire_4d_importer);
+			_g4mf_export_dialog->queue_free();
 		} break;
 	}
 }

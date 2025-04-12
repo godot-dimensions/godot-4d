@@ -59,6 +59,11 @@ def get_doc_classes():
 		"Shape4D",
 		"SphereShape4D",
 		"StaticBody4D",
+		# G4MF (listed in dependency order).
+		"G4MFItem4D",
+		"G4MFNode4D",
+		"G4MFState4D",
+		"G4MFDocument4D",
 	]
 
 

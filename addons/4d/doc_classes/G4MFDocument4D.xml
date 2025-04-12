@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFDocument4D" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Handles processing of G4MF files.
+	</brief_description>
+	<description>
+		G4MFDocument4D contains functions for importing and exporting G4MF files. It uses a [G4MFState4D] as data storage, which allows G4MFDocument4D to be stateless.
+		When importing a G4MF file, a [G4MFState4D] can be populated by G4MFDocument4D by reading a file. This data can then be used to create a Godot scene or a mesh resource.
+		When exporting a Godot scene, a [G4MFState4D] can be populated by G4MFDocument4D by converting the scene. This data can then be used to save to a G4MF file.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="export_append_from_godot_scene">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="scene_root" type="Node" />
+			<description>
+				Part of the export process. Populates a [G4MFState4D] with data from a Godot scene. To export a scene to a G4MF, first call this function, then call [method export_write_to_file].
+			</description>
+		</method>
+		<method name="export_write_to_file">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Part of the export process. Writes a [G4MFState4D] to a G4MF file at the given [param path]. To export a scene to a G4MF, first call [method export_append_from_godot_scene], then call this function.
+			</description>
+		</method>
+		<method name="import_generate_godot_scene">
+			<return type="Node4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Part of the import process. Generates a Godot scene from a [G4MFState4D]. To import a G4MF file, first call [method import_read_from_file], then call this function. The returned node can be added to the scene tree or saved as a PackedScene.
+			</description>
+		</method>
+		<method name="import_read_from_file">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="path" type="String" />
+			<description>
+				Part of the import process. Reads a G4MF file at the given [param path] and populates a [G4MFState4D]. To import a G4MF file, first call this function, then call [method import_generate_godot_scene].
+			</description>
+		</method>
+	</methods>
+</class>

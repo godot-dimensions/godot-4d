@@ -13,6 +13,8 @@ env.Append(
         "../../nodes",
         "../../resources",
         "../../model",
+        "../../model/g4mf",
+        "../../model/g4mf/structures",
         "../../model/off",
         "../../model/tetra",
         "../../model/wire",
@@ -34,6 +36,8 @@ sources = (
     + Glob("../../nodes/*.cpp")
     + Glob("../../resources/*.cpp")
     + Glob("../../model/*.cpp")
+    + Glob("../../model/g4mf/*.cpp")
+    + Glob("../../model/g4mf/structures/*.cpp")
     + Glob("../../model/off/*.cpp")
     + Glob("../../model/tetra/*.cpp")
     + Glob("../../model/wire/*.cpp")
@@ -53,12 +57,14 @@ if env["target"] == "editor":
             "../../editor",
             "../../editor/icons",
             "../../editor/import",
+            "../../editor/import/g4mf",
             "../../editor/import/off",
             "../../editor/viewport",
         ]
     )
     sources += Glob("../../editor/*.cpp")
     sources += Glob("../../editor/icons/*.cpp")
+    sources += Glob("../../editor/import/g4mf/*.cpp")
     sources += Glob("../../editor/import/off/*.cpp")
     sources += Glob("../../editor/viewport/*.cpp")
 
