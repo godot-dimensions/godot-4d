@@ -69,7 +69,7 @@ PackedVector4Array BoxWireMesh4D::get_vertices() {
 	return _vertices_cache;
 }
 
-Ref<ArrayWireMesh4D> BoxWireMesh4D::subdivide(const Vector4i &p_subdivision_segments, const bool p_fill_cells, const bool p_breakup_edges) const {
+Ref<ArrayWireMesh4D> BoxWireMesh4D::subdivide_box(const Vector4i &p_subdivision_segments, const bool p_fill_cells, const bool p_breakup_edges) const {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
 	ERR_FAIL_COND_V_MSG(p_subdivision_segments.x < 1 || p_subdivision_segments.y < 1 || p_subdivision_segments.z < 1 || p_subdivision_segments.w < 1, wire_mesh, "Subdivision segments must be greater than 0.");
@@ -179,7 +179,7 @@ Ref<WireMesh4D> BoxWireMesh4D::to_wire_mesh() {
 }
 
 void BoxWireMesh4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("subdivide", "subdivision_segments", "fill_cells", "breakup_edges"), &BoxWireMesh4D::subdivide, DEFVAL(false), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("subdivide_box", "subdivision_segments", "fill_cells", "breakup_edges"), &BoxWireMesh4D::subdivide_box, DEFVAL(false), DEFVAL(false));
 
 	ClassDB::bind_method(D_METHOD("get_half_extents"), &BoxWireMesh4D::get_half_extents);
 	ClassDB::bind_method(D_METHOD("set_half_extents", "half_extents"), &BoxWireMesh4D::set_half_extents);

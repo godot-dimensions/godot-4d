@@ -52,6 +52,21 @@
 				This method will also attempt to merge the materials of the two meshes, by calling [method Material4D.merge_with] on this mesh's material and passing the other mesh's material as an argument. See [method Material4D.merge_with] for more information.
 			</description>
 		</method>
+		<method name="subdivide_edges">
+			<return type="void" />
+			<param index="0" name="subdivision_segments" type="int" default="2" />
+			<description>
+				Subdivides the edges of the wireframe mesh into smaller segments. Each edge of the original mesh will be divided into [param subdivision_segments] segments, such that the edge count will be multiplied by [param subdivision_segments]. The new vertices will be added to the end of the [member vertices] array, and the new edges will be added to the end of the [member edge_indices] array.
+			</description>
+		</method>
+		<method name="subdivide_one_edge">
+			<return type="void" />
+			<param index="0" name="edge_number" type="int" />
+			<param index="1" name="subdivision_segments" type="int" default="2" />
+			<description>
+				Subdivides a single edge of the wireframe mesh into smaller segments. The edge is specified by its edge number, which is half the index of the edge indices in the [member edge_indices] array. The edge will be divided into [param subdivision_segments] segments, such that [code]subdivision_segments - 1[/code] new vertices will be added to the end of the [member vertices] array, and [code]subdivision_segments - 1[/code] new edges will be added to the end of the [member edge_indices] array.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="edge_indices" type="PackedInt32Array" setter="set_edge_indices" getter="get_edge_indices" default="PackedInt32Array()">

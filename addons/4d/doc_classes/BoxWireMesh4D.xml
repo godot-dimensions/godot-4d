@@ -16,7 +16,7 @@
 				Creates a box wireframe mesh from a [BoxTetraMesh4D]. The box wireframe mesh will have the same size and material as the tetrahedral mesh.
 			</description>
 		</method>
-		<method name="subdivide" qualifiers="const">
+		<method name="subdivide_box" qualifiers="const">
 			<return type="ArrayWireMesh4D" />
 			<param index="0" name="subdivision_segments" type="Vector4i" />
 			<param index="1" name="fill_cells" type="bool" default="false" />

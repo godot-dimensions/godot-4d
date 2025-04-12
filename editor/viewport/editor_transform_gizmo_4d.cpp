@@ -85,7 +85,7 @@ Ref<WireMaterial4D> _make_rotation_ring_material_4d(const Color &p_first_color, 
 Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh_4d() {
 	// First, create a 3D sphere for the base of the 4D arrow.
 	// For symmetry between all axes, make a subdivided octahedron and normalize it.
-	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::make_3d_orthoplex_sphere(MOVE_ARROW_RADIUS_4D, MOVE_ARROW_SUBDIVISIONS_4D, MOVE_ARROW_TIP_POSITION_4D);
+	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::create_3d_orthoplex_sphere(MOVE_ARROW_RADIUS_4D, MOVE_ARROW_SUBDIVISIONS_4D, MOVE_ARROW_TIP_POSITION_4D);
 	PackedVector4Array vertices = mesh->get_vertices();
 	PackedInt32Array edge_indices = mesh->get_edge_indices();
 	const int octahedral_cone_vertex_count = vertices.size();
@@ -125,7 +125,7 @@ Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh_4d() {
 	box_mesh.instantiate();
 	box_mesh->set_size(Vector4(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D));
 	const Vector4i subdiv_segments = Vector4i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D);
-	Ref<ArrayWireMesh4D> mesh = box_mesh->subdivide(subdiv_segments);
+	Ref<ArrayWireMesh4D> mesh = box_mesh->subdivide_box(subdiv_segments);
 	mesh->append_edge_points(Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0));
 	return mesh;
 }
@@ -149,7 +149,7 @@ Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
 }
 
 Ref<ArrayWireMesh4D> _make_stretch_triplane_wire_mesh_4d() {
-	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::make_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
+	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::create_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
 	return mesh;
 }
 

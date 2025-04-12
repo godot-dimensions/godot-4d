@@ -9,7 +9,7 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="make_3d_orthoplex_sphere" qualifiers="static">
+		<method name="create_3d_orthoplex_sphere" qualifiers="static">
 			<return type="ArrayWireMesh4D" />
 			<param index="0" name="radius" type="float" />
 			<param index="1" name="subdivisions" type="int" />
@@ -19,7 +19,7 @@
 				If [param cone_tip_position] is 0, the sphere will be flat on the W axis. If non-zero, an extra point will be added at this W coordinate, turning the 3D sphere into the base of a 4D cone.
 			</description>
 		</method>
-		<method name="make_3d_subdivided_box" qualifiers="static">
+		<method name="create_3d_subdivided_box" qualifiers="static">
 			<return type="ArrayWireMesh4D" />
 			<param index="0" name="size" type="Vector3" />
 			<param index="1" name="subdivision_segments" type="Vector3i" />

@@ -1,13 +1,11 @@
 #include "wire_mesh_builder_4d.h"
 
-Ref<ArrayWireMesh4D> WireMeshBuilder4D::make_3d_orthoplex_sphere(const real_t p_radius, const int p_subdivisions, const real_t p_cone_tip_position) {
+Ref<ArrayWireMesh4D> WireMeshBuilder4D::create_3d_orthoplex_sphere(const real_t p_radius, const int p_subdivisions, const real_t p_cone_tip_position) {
 	PackedVector4Array vertices;
 	PackedInt32Array edge_indices;
 	const bool make_cone = p_cone_tip_position != 0.0;
 	const int octahedral_vertex_count = 8 * (p_subdivisions * (p_subdivisions + 1)) / 2;
 	vertices.resize(octahedral_vertex_count + make_cone);
-	// First, create a 3D sphere for the base of the 4D arrow.
-	// For symmetry between all axes, make a subdivided octahedron and normalize it.
 	int vertex_index = 0;
 	for (int x_sign = -1; x_sign < 2; x_sign += 2) {
 		for (int y_sign = -1; y_sign < 2; y_sign += 2) {
@@ -65,7 +63,7 @@ Ref<ArrayWireMesh4D> WireMeshBuilder4D::make_3d_orthoplex_sphere(const real_t p_
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> WireMeshBuilder4D::make_3d_subdivided_box(const Vector3 &p_size, const Vector3i &p_subdivision_segments, const bool p_fill_cell, const bool p_breakup_edges) {
+Ref<ArrayWireMesh4D> WireMeshBuilder4D::create_3d_subdivided_box(const Vector3 &p_size, const Vector3i &p_subdivision_segments, const bool p_fill_cell, const bool p_breakup_edges) {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
 	ERR_FAIL_COND_V_MSG(p_subdivision_segments.x < 1 || p_subdivision_segments.y < 1 || p_subdivision_segments.z < 1, wire_mesh, "Subdivision segments must be greater than 0.");
@@ -130,6 +128,6 @@ Ref<ArrayWireMesh4D> WireMeshBuilder4D::make_3d_subdivided_box(const Vector3 &p_
 WireMeshBuilder4D *WireMeshBuilder4D::singleton = nullptr;
 
 void WireMeshBuilder4D::_bind_methods() {
-	ClassDB::bind_static_method("WireMeshBuilder4D", D_METHOD("make_3d_orthoplex_sphere", "radius", "subdivisions", "cone_tip_position"), &WireMeshBuilder4D::make_3d_orthoplex_sphere, DEFVAL(0.0));
-	ClassDB::bind_static_method("WireMeshBuilder4D", D_METHOD("make_3d_subdivided_box", "size", "subdivision_segments", "fill_cell", "breakup_edges"), &WireMeshBuilder4D::make_3d_subdivided_box, DEFVAL(false), DEFVAL(false));
+	ClassDB::bind_static_method("WireMeshBuilder4D", D_METHOD("create_3d_orthoplex_sphere", "radius", "subdivisions", "cone_tip_position"), &WireMeshBuilder4D::create_3d_orthoplex_sphere, DEFVAL(0.0));
+	ClassDB::bind_static_method("WireMeshBuilder4D", D_METHOD("create_3d_subdivided_box", "size", "subdivision_segments", "fill_cell", "breakup_edges"), &WireMeshBuilder4D::create_3d_subdivided_box, DEFVAL(false), DEFVAL(false));
 }
