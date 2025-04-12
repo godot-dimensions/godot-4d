@@ -25,6 +25,7 @@ struct _NO_DISCARD_ SplitComplex4D {
 	SplitComplex4D inverse() const;
 	SplitComplex4D inverse_square_root() const;
 	SplitComplex4D square_root() const;
+	bool is_valid() const;
 
 	// Trivial getters and setters.
 	real_t get_scalar() const;

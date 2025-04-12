@@ -221,8 +221,8 @@ Vector4 Rotor4D::sandwich(const Vector4 &p_vec, const Rotor4D &p_right) const {
 
 Rotor4D Rotor4D::slerp(Rotor4D p_to, const real_t p_weight) const {
 #ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D(), "The start rotor " + operator String() + " must be normalized.");
-	ERR_FAIL_COND_V_MSG(!p_to.is_normalized(), Rotor4D(), "The end rotor " + p_to.operator String() + " must be normalized.");
+	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D::identity(), "The start Rotor4D " + operator String() + " must be normalized.");
+	ERR_FAIL_COND_V_MSG(!p_to.is_normalized(), Rotor4D::identity(), "The end Rotor4D " + p_to.operator String() + " must be normalized.");
 #endif
 	double_t alignment = dot(p_to);
 	if (alignment < 0.0f) {
@@ -246,7 +246,7 @@ Rotor4D Rotor4D::slerp(Rotor4D p_to, const real_t p_weight) const {
 
 Rotor4D Rotor4D::slerp_fraction(const real_t p_weight) const {
 #ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D(), "The rotor " + operator String() + " must be normalized.");
+	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D::identity(), "The Rotor4D " + operator String() + " must be normalized.");
 #endif
 	double_t angle = Math::acos(parts.scalar);
 	double_t sin_angle = Math::sin(angle);
@@ -276,10 +276,10 @@ SplitComplex4D Rotor4D::split_magnitude_squared() const {
 }
 
 Rotor4D Rotor4D::normalized() const {
-	const SplitComplex4D split_inv_sqrt = split_magnitude_squared().inverse_square_root();
-	if (split_inv_sqrt == SplitComplex4D(0.0f, 0.0f)) {
-		return Rotor4D();
-	}
+	const SplitComplex4D split = split_magnitude_squared();
+	ERR_FAIL_COND_V_MSG(!split.is_valid(), Rotor4D::identity(), "The Rotor4D must have a valid split square magnitude in order to be normalized. Returning the identity rotor.");
+	const SplitComplex4D split_inv_sqrt = split.inverse_square_root();
+	// Divide by the square root of the split magnitude squared (or, faster: multiply by the inverse square root).
 	return *this * split_inv_sqrt;
 }
 
@@ -312,7 +312,7 @@ Rotor4D Rotor4D::vector_product(const Vector4 &p_a, const Vector4 &p_b) {
 
 Rotor4D Rotor4D::from_basis(const Basis4D &p_basis) {
 	const Basis4D ortho = p_basis.orthonormalized();
-	ERR_FAIL_COND_V_MSG(!Math::is_equal_approx(ortho.determinant(), 1), Rotor4D(), "The basis must be orthonormal in order to create a rotation, but was " + p_basis.operator String() + " (determinant " + rtos(p_basis.determinant()) + ").");
+	ERR_FAIL_COND_V_MSG(!Math::is_equal_approx(ortho.determinant(), 1), Rotor4D::identity(), "The basis must be orthonormal in order to create a rotation, but was " + p_basis.operator String() + " (determinant " + rtos(p_basis.determinant()) + ").");
 	// TODO: This Euler-based algorithm sucks. It should be replaced with a better one when one is discovered.
 	const Euler4D euler = Euler4D::from_basis(ortho);
 	return from_zx(euler.zx) * from_zw(euler.zw) * from_xw(euler.xw) * from_yz(euler.yz) * from_xy(euler.xy) * from_wy(euler.wy);
@@ -328,7 +328,7 @@ Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
 
 Rotor4D Rotor4D::from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle) {
 #ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(!p_bivector_normal.is_normalized(), Rotor4D(), "The bivector must be normalized in order to create a rotation, but was " + p_bivector_normal.operator String() + " (length " + rtos(p_bivector_normal.length()) + ").");
+	ERR_FAIL_COND_V_MSG(!p_bivector_normal.is_normalized(), Rotor4D::identity(), "The bivector must be normalized in order to create a rotation, but was " + p_bivector_normal.operator String() + " (length " + rtos(p_bivector_normal.length()) + ").");
 #endif
 	if (Math::is_zero_approx(p_angle)) {
 		return identity();

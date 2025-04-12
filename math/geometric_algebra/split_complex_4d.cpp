@@ -11,8 +11,8 @@ real_t SplitComplex4D::dot(const SplitComplex4D &p_b) const {
 
 SplitComplex4D SplitComplex4D::inverse() const {
 #ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(s == 0.0f, SplitComplex4D::identity(), "Cannot invert a split complex number with a zero scalar.");
-	ERR_FAIL_COND_V_MSG(Math::abs(xyzw) >= Math::abs(s), SplitComplex4D::identity(), "Cannot invert a split complex number with a more significant pseudoscalar than scalar.");
+	ERR_FAIL_COND_V_MSG(s == 0.0f, SplitComplex4D(0.0f, 0.0f), "Cannot invert a split complex number with a zero scalar.");
+	ERR_FAIL_COND_V_MSG(Math::abs(xyzw) >= Math::abs(s), SplitComplex4D(0.0f, 0.0f), "Cannot invert a split complex number with a more significant pseudoscalar than scalar.");
 #endif
 	const real_t c = s / (s * s - xyzw * xyzw);
 	const real_t d = -c * (xyzw / s);
@@ -21,8 +21,8 @@ SplitComplex4D SplitComplex4D::inverse() const {
 
 SplitComplex4D SplitComplex4D::inverse_square_root() const {
 #ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(s <= 0.0f, SplitComplex4D::identity(), "Cannot inverse square root a split complex number with a non-positive scalar.");
-	ERR_FAIL_COND_V_MSG(Math::abs(xyzw) >= s, SplitComplex4D::identity(), "Cannot inverse square root a split complex number with a more significant pseudoscalar than scalar.");
+	ERR_FAIL_COND_V_MSG(s <= 0.0f, SplitComplex4D(0.0f, 0.0f), "Cannot inverse square root a split complex number with a non-positive scalar.");
+	ERR_FAIL_COND_V_MSG(Math::abs(xyzw) >= s, SplitComplex4D(0.0f, 0.0f), "Cannot inverse square root a split complex number with a more significant pseudoscalar than scalar.");
 #endif
 	const real_t sum = 1.0f / Math::sqrt(s + xyzw); // c+d
 	const real_t prod = xyzw / (2.0f * (xyzw * xyzw - s * s)); // cd
@@ -35,8 +35,8 @@ SplitComplex4D SplitComplex4D::inverse_square_root() const {
 
 SplitComplex4D SplitComplex4D::square_root() const {
 #ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(s < 0.0f, SplitComplex4D::identity(), "Cannot square root a split complex number with a negative scalar.");
-	ERR_FAIL_COND_V_MSG(Math::abs(xyzw) > s, SplitComplex4D::identity(), "Cannot square root a split complex number with a more significant pseudoscalar than scalar.");
+	ERR_FAIL_COND_V_MSG(s < 0.0f, SplitComplex4D(0.0f, 0.0f), "Cannot square root a split complex number with a negative scalar.");
+	ERR_FAIL_COND_V_MSG(Math::abs(xyzw) > s, SplitComplex4D(0.0f, 0.0f), "Cannot square root a split complex number with a more significant pseudoscalar than scalar.");
 #endif
 	const real_t c = Math::sqrt((s + Math::sqrt(s * s - xyzw * xyzw)) * 0.5f);
 	if (unlikely(c == 0.0f)) {
@@ -44,6 +44,12 @@ SplitComplex4D SplitComplex4D::square_root() const {
 	}
 	const real_t d = xyzw / (2.0f * c);
 	return SplitComplex4D(c, d);
+}
+
+// Returns true if the SplitComplex4D is valid for all operations, meaning
+// that inverse, square root, and inverse square root are all possible.
+bool SplitComplex4D::is_valid() const {
+	return s > 0.0f && Math::abs(xyzw) < s;
 }
 
 // Trivial getters and setters.
