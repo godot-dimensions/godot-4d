@@ -132,6 +132,22 @@
 				Returns the [param euler] [Euler4D] converted to degrees, assuming the input is in radians.
 			</description>
 		</method>
+		<method name="aabb_rotate_basis" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="euler_4d" type="AABB" />
+			<param index="1" name="basis" type="Projection" />
+			<description>
+				Rotates the [param basis] by the [param euler_4d] [Euler4D]. This is based on how the resulting [Basis4D] rotates the point after using [method to_basis] on the [Euler4D]. The basis from the [Euler4D] is used as the parent, and the [param basis] argument is used as the child.
+			</description>
+		</method>
+		<method name="aabb_rotate_point" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="euler_4d" type="AABB" />
+			<param index="1" name="point" type="Vector4" />
+			<description>
+				Rotates the [param point] by the [param euler_4d] [Euler4D]. This is based on how the resulting [Basis4D] rotates the point after using [method to_basis] on the [Euler4D].
+			</description>
+		</method>
 		<method name="aabb_rotation_to" qualifiers="static">
 			<return type="AABB" />
 			<param index="0" name="from" type="AABB" />
@@ -310,6 +326,20 @@
 			<return type="Euler4D" />
 			<description>
 				Assuming this [Euler4D] is in radians, return a copy converted to degrees.
+			</description>
+		</method>
+		<method name="rotate_basis" qualifiers="const">
+			<return type="Projection" />
+			<param index="0" name="basis" type="Projection" />
+			<description>
+				Rotates the [param basis] by this [Euler4D]. This is based on how the resulting [Basis4D] rotates the point after using [method to_basis] on the [Euler4D]. The basis from this [Euler4D] is used as the parent, and the [param basis] argument is used as the child.
+			</description>
+		</method>
+		<method name="rotate_point" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="point" type="Vector4" />
+			<description>
+				Rotates the [param point] by this [Euler4D]. This is based on how the resulting [Basis4D] rotates the point after using [method to_basis] on the [Euler4D].
 			</description>
 		</method>
 		<method name="rotation_to" qualifiers="const">

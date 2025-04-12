@@ -37,7 +37,11 @@ struct _NO_DISCARD_ Basis4D {
 	Vector4 xform(const Vector4 &p_vector) const;
 	Vector4 xform_inv(const Vector4 &p_vector) const;
 	Vector4 xform_transposed(const Vector4 &p_vector) const;
+
+	// Rotation methods.
 	Bivector4D rotate_bivector(const Bivector4D &p_bivector) const;
+	Basis4D rotate_plane_global(const Vector4 &p_plane_from, const Vector4 &p_plane_to, const real_t p_angle) const;
+	Basis4D rotate_plane_local(const Vector4 &p_local_plane_from, const Vector4 &p_local_plane_to, const real_t p_angle) const;
 
 	// Inversion methods.
 	void transpose();

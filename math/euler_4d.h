@@ -34,6 +34,8 @@ struct _NO_DISCARD_ Euler4D {
 	// Misc methods.
 	Euler4D compose(const Euler4D &p_child) const;
 	bool is_equal_approx(const Euler4D &p_other) const;
+	Basis4D rotate_basis(const Basis4D &p_basis) const;
+	Vector4 rotate_point(const Vector4 &p_point) const;
 	Euler4D rotation_to(const Euler4D &p_to) const;
 	Euler4D wrapped() const;
 

@@ -30,6 +30,14 @@ bool godot_4d_bind::Euler4D::is_equal_exact(const Ref<godot_4d_bind::Euler4D> &p
 	return euler == p_other->euler;
 }
 
+Projection godot_4d_bind::Euler4D::rotate_basis(const Projection &p_basis) const {
+	return euler.rotate_basis(p_basis);
+}
+
+Vector4 godot_4d_bind::Euler4D::rotate_point(const Vector4 &p_point) const {
+	return euler.rotate_point(p_point);
+}
+
 Ref<godot_4d_bind::Euler4D> godot_4d_bind::Euler4D::rotation_to(const Ref<godot_4d_bind::Euler4D> &p_to) const {
 	EULER4D_BIND_RETURN_REF(euler.rotation_to(p_to->get_euler()));
 }
@@ -140,6 +148,14 @@ AABB godot_4d_bind::Euler4D::aabb_compose(const AABB &p_parent, const AABB &p_ch
 
 bool godot_4d_bind::Euler4D::aabb_is_equal_approx(const AABB &p_a, const AABB &p_b) {
 	return p_a.is_equal_approx(p_b);
+}
+
+Projection godot_4d_bind::Euler4D::aabb_rotate_basis(const AABB &p_euler_4d, const Projection &p_basis) {
+	return ::Euler4D(p_euler_4d).rotate_basis(p_basis);
+}
+
+Vector4 godot_4d_bind::Euler4D::aabb_rotate_point(const AABB &p_euler_4d, const Vector4 &p_point) {
+	return ::Euler4D(p_euler_4d).rotate_point(p_point);
 }
 
 AABB godot_4d_bind::Euler4D::aabb_rotation_to(const AABB &p_from, const AABB &p_to) {
@@ -257,6 +273,8 @@ void godot_4d_bind::Euler4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("compose", "child"), &godot_4d_bind::Euler4D::compose);
 	ClassDB::bind_method(D_METHOD("is_equal_approx", "other"), &godot_4d_bind::Euler4D::is_equal_approx);
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &godot_4d_bind::Euler4D::is_equal_exact);
+	ClassDB::bind_method(D_METHOD("rotate_basis", "basis"), &godot_4d_bind::Euler4D::rotate_basis);
+	ClassDB::bind_method(D_METHOD("rotate_point", "point"), &godot_4d_bind::Euler4D::rotate_point);
 	ClassDB::bind_method(D_METHOD("rotation_to", "to"), &godot_4d_bind::Euler4D::rotation_to);
 	ClassDB::bind_method(D_METHOD("wrapped"), &godot_4d_bind::Euler4D::wrapped);
 	// Radians/degrees.
@@ -305,6 +323,8 @@ void godot_4d_bind::Euler4D::_bind_methods() {
 	// Misc methods.
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_compose", "parent", "child"), &godot_4d_bind::Euler4D::aabb_compose);
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_is_equal_approx", "a", "b"), &godot_4d_bind::Euler4D::aabb_is_equal_approx);
+	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_rotate_basis", "euler_4d", "basis"), &godot_4d_bind::Euler4D::aabb_rotate_basis);
+	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_rotate_point", "euler_4d", "point"), &godot_4d_bind::Euler4D::aabb_rotate_point);
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_rotation_to", "from", "to"), &godot_4d_bind::Euler4D::aabb_rotation_to);
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_wrapped", "euler"), &godot_4d_bind::Euler4D::aabb_wrapped);
 	// Radians/degrees.

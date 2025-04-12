@@ -100,6 +100,14 @@ bool Euler4D::is_equal_approx(const Euler4D &p_other) const {
 	return Math::is_equal_approx(yz, p_other.yz) && Math::is_equal_approx(zx, p_other.zx) && Math::is_equal_approx(xy, p_other.xy) && Math::is_equal_approx(xw, p_other.xw) && Math::is_equal_approx(wy, p_other.wy) && Math::is_equal_approx(zw, p_other.zw);
 }
 
+Basis4D Euler4D::rotate_basis(const Basis4D &p_basis) const {
+	return to_basis() * p_basis;
+}
+
+Vector4 Euler4D::rotate_point(const Vector4 &p_point) const {
+	return to_basis().xform(p_point);
+}
+
 Euler4D Euler4D::rotation_to(const Euler4D &p_to) const {
 	return from_basis(to_basis().inverse() * p_to.to_basis());
 }

@@ -27,6 +27,8 @@ public:
 	Ref<Euler4D> compose(const Ref<Euler4D> &p_child) const;
 	bool is_equal_approx(const Ref<Euler4D> &p_other) const;
 	bool is_equal_exact(const Ref<Euler4D> &p_other) const;
+	Projection rotate_basis(const Projection &p_basis) const;
+	Vector4 rotate_point(const Vector4 &p_point) const;
 	Ref<Euler4D> rotation_to(const Ref<Euler4D> &p_to) const;
 	Ref<Euler4D> wrapped() const;
 
@@ -100,6 +102,8 @@ public:
 	// Misc methods.
 	static AABB aabb_compose(const AABB &p_parent, const AABB &p_child);
 	static bool aabb_is_equal_approx(const AABB &p_a, const AABB &p_b);
+	static Projection aabb_rotate_basis(const AABB &p_euler_4d, const Projection &p_basis);
+	static Vector4 aabb_rotate_point(const AABB &p_euler_4d, const Vector4 &p_point);
 	static AABB aabb_rotation_to(const AABB &p_from, const AABB &p_to);
 	static AABB aabb_wrapped(const AABB &p_euler_4d);
 

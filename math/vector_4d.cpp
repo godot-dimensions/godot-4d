@@ -103,6 +103,20 @@ Vector4 Vector4D::reflect(const Vector4 &p_vector, const Vector4 &p_normal) {
 	return 2.0f * p_vector.dot(p_normal) * p_normal - p_vector;
 }
 
+Vector4 Vector4D::rotate_in_plane(const Vector4 &p_vector, const Vector4 &p_plane_from, const Vector4 &p_plane_to, const real_t p_angle) {
+	const Vector4 plane_cos = p_plane_from.normalized();
+	const Vector4 plane_sin = (p_plane_to - plane_cos * p_plane_from.dot(p_plane_to)).normalized();
+	// Determine the destination plane vectors.
+	const real_t angle_cos = Math::cos(p_angle);
+	const real_t angle_sin = Math::sin(p_angle);
+	const Vector4 dest_cos = plane_cos * angle_cos + plane_sin * angle_sin;
+	const Vector4 dest_sin = plane_cos * -angle_sin + plane_sin * angle_cos;
+	// Reproject the vector onto the plane.
+	const real_t dot_cos = p_vector.dot(plane_cos);
+	const real_t dot_sin = p_vector.dot(plane_sin);
+	return p_vector - (plane_cos * dot_cos + plane_sin * dot_sin) + (dest_cos * dot_cos + dest_sin * dot_sin);
+}
+
 // Slide returns the component of the vector along the given plane, specified by its normal vector.
 Vector4 Vector4D::slide(const Vector4 &p_vector, const Vector4 &p_normal) {
 #ifdef MATH_CHECKS
@@ -111,10 +125,25 @@ Vector4 Vector4D::slide(const Vector4 &p_vector, const Vector4 &p_normal) {
 	return p_vector - p_normal * p_vector.dot(p_normal);
 }
 
+// Generation.
+
+Vector4 Vector4D::random_in_radius(const real_t p_radius) {
+	while (true) {
+		Vector4 random_point = Vector4(Math::random(-p_radius, p_radius), Math::random(-p_radius, p_radius), Math::random(-p_radius, p_radius), Math::random(-p_radius, p_radius));
+		if (random_point.length_squared() <= 1.0f) {
+			return random_point * p_radius;
+		}
+	}
+}
+
+Vector4 Vector4D::random_in_range(const Vector4 &p_from, const Vector4 &p_to) {
+	return Vector4(Math::random(p_from.x, p_to.x), Math::random(p_from.y, p_to.y), Math::random(p_from.z, p_to.z), Math::random(p_from.w, p_to.w));
+}
+
 // Conversion.
 
-Vector4 Vector4D::from_3d(const Vector3 &p_vector) {
-	return Vector4(p_vector.x, p_vector.y, p_vector.z, 0.0);
+Vector4 Vector4D::from_3d(const Vector3 &p_vector, const real_t p_w) {
+	return Vector4(p_vector.x, p_vector.y, p_vector.z, p_w);
 }
 
 Vector3 Vector4D::to_3d(const Vector4 &p_vector) {
@@ -124,6 +153,7 @@ Vector3 Vector4D::to_3d(const Vector4 &p_vector) {
 Vector4D *Vector4D::singleton = nullptr;
 
 void Vector4D::_bind_methods() {
+	// Vector math.
 	ClassDB::bind_static_method("Vector4D", D_METHOD("angle_to", "from", "to"), &Vector4D::angle_to);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce", "vector", "normal"), &Vector4D::bounce);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce_ratio", "vector", "normal", "bounce_ratio"), &Vector4D::bounce_ratio);
@@ -133,8 +163,12 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("perpendicular", "a", "b", "c"), &Vector4D::perpendicular);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("project", "vector", "on_normal"), &Vector4D::project);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("reflect", "vector", "normal"), &Vector4D::reflect);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("rotate_in_plane", "vector", "plane_from", "plane_to", "angle"), &Vector4D::rotate_in_plane);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("slide", "vector", "normal"), &Vector4D::slide);
+	// Generation.
+	ClassDB::bind_static_method("Vector4D", D_METHOD("random_in_radius", "radius"), &Vector4D::random_in_radius, DEFVAL(1.0));
+	ClassDB::bind_static_method("Vector4D", D_METHOD("random_in_range", "from", "to"), &Vector4D::random_in_range, DEFVAL(Vector4(0, 0, 0, 0)), DEFVAL(Vector4(1, 1, 1, 1)));
 	// Conversion.
-	ClassDB::bind_static_method("Vector4D", D_METHOD("from_3d", "vector"), &Vector4D::from_3d);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("from_3d", "vector", "w"), &Vector4D::from_3d, DEFVAL(0.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("to_3d", "vector"), &Vector4D::to_3d);
 }

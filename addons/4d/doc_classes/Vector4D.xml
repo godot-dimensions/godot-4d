@@ -46,8 +46,9 @@
 		<method name="from_3d" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="vector" type="Vector3" />
+			<param index="1" name="w" type="float" default="0.0" />
 			<description>
-				Converts a [Vector3] to a [Vector4] with the W component set to 0.
+				Converts a [Vector3] to a [Vector4] with the W component set to [param w], or [code]0.0[/code] if not specified.
 			</description>
 		</method>
 		<method name="limit_length" qualifiers="static">
@@ -85,12 +86,37 @@
 				Returns [param vector] projected onto the vector [param on_normal].
 			</description>
 		</method>
+		<method name="random_in_radius" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="radius" type="float" default="1.0" />
+			<description>
+				Returns a random [Vector4] inside a 4D sphere (hypersphere) with the given [param radius], inclusive. If the radius is not specified, it defaults to [code]1.0[/code]. The returned vector is uniformly distributed inside the hypersphere.
+			</description>
+		</method>
+		<method name="random_in_range" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="from" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="1" name="to" type="Vector4" default="Vector4(1, 1, 1, 1)" />
+			<description>
+				Returns a random [Vector4] between the two given vectors, inclusive. If the vectors are not specified, they default to zero and one vectors respectively. The returned vector is uniformly distributed inside the box defined by the two vectors.
+			</description>
+		</method>
 		<method name="reflect" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="vector" type="Vector4" />
 			<param index="1" name="normal" type="Vector4" />
 			<description>
 				Returns [param vector] reflected from a hyperplane defined by the [param normal] vector.
+			</description>
+		</method>
+		<method name="rotate_in_plane" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector4" />
+			<param index="1" name="plane_from" type="Vector4" />
+			<param index="2" name="plane_to" type="Vector4" />
+			<param index="3" name="angle" type="float" />
+			<description>
+				Rotates [param vector] in the plane defined by the [param plane_from] and [param plane_to] vectors by the given [param angle] in radians. The rotation happens from [param plane_from] to [param plane_to], such that a rotation of [code]TAU / 4[/code] will rotate [param plane_from] to [param plane_to].
 			</description>
 		</method>
 		<method name="slide" qualifiers="static">

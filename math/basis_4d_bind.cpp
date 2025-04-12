@@ -48,8 +48,18 @@ Vector4 godot_4d_bind::Basis4D::xform_transposed(const Projection &p_basis, cons
 	return ::Basis4D(p_basis).xform_transposed(p_vector);
 }
 
+// Rotation methods.
+
 AABB godot_4d_bind::Basis4D::rotate_bivector(const Projection &p_basis, const AABB &p_bivector) {
 	return ::Basis4D(p_basis).rotate_bivector(p_bivector);
+}
+
+Projection godot_4d_bind::Basis4D::rotate_plane_global(const Projection &p_basis, const Vector4 &p_plane_from, const Vector4 &p_plane_to, const real_t p_angle) {
+	return ::Basis4D(p_basis).rotate_plane_global(p_plane_from, p_plane_to, p_angle);
+}
+
+Projection godot_4d_bind::Basis4D::rotate_plane_local(const Projection &p_basis, const Vector4 &p_local_plane_from, const Vector4 &p_local_plane_to, const real_t p_angle) {
+	return ::Basis4D(p_basis).rotate_plane_local(p_local_plane_from, p_local_plane_to, p_angle);
 }
 
 // Inversion methods.
@@ -229,7 +239,10 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform", "basis", "vector"), &godot_4d_bind::Basis4D::xform);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_inv", "basis", "vector"), &godot_4d_bind::Basis4D::xform_inv);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_transposed", "basis", "vector"), &godot_4d_bind::Basis4D::xform_transposed);
+	// Rotation methods.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("rotate_bivector", "basis", "bivector"), &godot_4d_bind::Basis4D::rotate_bivector);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("rotate_plane_global", "basis", "plane_from", "plane_to", "angle"), &godot_4d_bind::Basis4D::rotate_plane_global);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("rotate_plane_local", "basis", "local_plane_from", "local_plane_to", "angle"), &godot_4d_bind::Basis4D::rotate_plane_local);
 	// Inversion methods.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("inverse", "basis"), &godot_4d_bind::Basis4D::inverse);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("transposed", "basis"), &godot_4d_bind::Basis4D::transposed);

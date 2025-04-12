@@ -1,6 +1,7 @@
 #include "basis_4d.h"
 
 #include "geometric_algebra/rotor_4d.h"
+#include "vector_4d.h"
 
 // Misc methods.
 
@@ -79,6 +80,8 @@ Vector4 Basis4D::xform_transposed(const Vector4 &p_vector) const {
 			w.dot(p_vector));
 }
 
+// Rotation methods.
+
 Bivector4D Basis4D::rotate_bivector(const Bivector4D &p_bivector) const {
 	// This commented-out code is simple, following the math, but computationally wasteful:
 	//Basis4D antisymmetric_matrix = Basis4D(
@@ -108,6 +111,19 @@ Bivector4D Basis4D::rotate_bivector(const Bivector4D &p_bivector) const {
 	rotated.yw = wip_y_x * x.w + wip_y_y * y.w + wip_y_z * z.w + wip_y_w * w.w;
 	rotated.zw = wip_z_x * x.w + wip_z_y * y.w + wip_z_z * z.w + wip_z_w * w.w;
 	return rotated;
+}
+
+Basis4D Basis4D::rotate_plane_global(const Vector4 &p_plane_from, const Vector4 &p_plane_to, const real_t p_angle) const {
+	return Basis4D(Vector4D::rotate_in_plane(x, p_plane_from, p_plane_to, p_angle),
+			Vector4D::rotate_in_plane(y, p_plane_from, p_plane_to, p_angle),
+			Vector4D::rotate_in_plane(z, p_plane_from, p_plane_to, p_angle),
+			Vector4D::rotate_in_plane(w, p_plane_from, p_plane_to, p_angle));
+}
+
+Basis4D Basis4D::rotate_plane_local(const Vector4 &p_local_plane_from, const Vector4 &p_local_plane_to, const real_t p_angle) const {
+	const Vector4 global_plane_from = xform(p_local_plane_from);
+	const Vector4 global_plane_to = xform(p_local_plane_to);
+	return rotate_plane_global(global_plane_from, global_plane_to, p_angle);
 }
 
 // Inversion methods.
