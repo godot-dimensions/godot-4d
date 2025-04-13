@@ -19,6 +19,7 @@
 #include <godot_cpp/variant/string.hpp>
 #define GDEXTMOD_GUI_INPUT _gui_input
 #define GET_NODE_TYPE(m_parent, m_type, m_path) m_parent->get_node<m_type>(NodePath(m_path))
+#define VariantUtilityFunctions UtilityFunctions
 // Including the namespace helps make GDExtension code more similar to module code.
 using namespace godot;
 #elif GODOT_MODULE

@@ -2,6 +2,12 @@
 
 #include <algorithm>
 
+#if GDEXTENSION
+#include <godot_cpp/variant/utility_functions.hpp>
+#elif GODOT_MODULE
+#include "core/variant/variant_utility.h"
+#endif
+
 real_t Vector4D::angle_to(const Vector4 &p_from, const Vector4 &p_to) {
 	return Math::acos(p_from.dot(p_to) / (p_from.length() * p_to.length()));
 }
@@ -129,7 +135,7 @@ Vector4 Vector4D::slide(const Vector4 &p_vector, const Vector4 &p_normal) {
 
 Vector4 Vector4D::random_in_radius(const real_t p_radius) {
 	while (true) {
-		Vector4 random_point = Vector4(Math::random(-p_radius, p_radius), Math::random(-p_radius, p_radius), Math::random(-p_radius, p_radius), Math::random(-p_radius, p_radius));
+		Vector4 random_point = Vector4(VariantUtilityFunctions::randf_range(-p_radius, p_radius), VariantUtilityFunctions::randf_range(-p_radius, p_radius), VariantUtilityFunctions::randf_range(-p_radius, p_radius), VariantUtilityFunctions::randf_range(-p_radius, p_radius));
 		if (random_point.length_squared() <= 1.0f) {
 			return random_point * p_radius;
 		}
@@ -137,7 +143,7 @@ Vector4 Vector4D::random_in_radius(const real_t p_radius) {
 }
 
 Vector4 Vector4D::random_in_range(const Vector4 &p_from, const Vector4 &p_to) {
-	return Vector4(Math::random(p_from.x, p_to.x), Math::random(p_from.y, p_to.y), Math::random(p_from.z, p_to.z), Math::random(p_from.w, p_to.w));
+	return Vector4(VariantUtilityFunctions::randf_range(p_from.x, p_to.x), VariantUtilityFunctions::randf_range(p_from.y, p_to.y), VariantUtilityFunctions::randf_range(p_from.z, p_to.z), VariantUtilityFunctions::randf_range(p_from.w, p_to.w));
 }
 
 // Conversion.
