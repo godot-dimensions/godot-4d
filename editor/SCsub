@@ -7,7 +7,7 @@ env_4d = env_modules.Clone()
 
 env_4d.add_source_files(env.modules_sources, "*.cpp")
 env_4d.add_source_files(env.modules_sources, "icons/*.cpp")
-env_4d.add_source_files(env.modules_sources, "off/*.cpp")
+env_4d.add_source_files(env.modules_sources, "import/off/*.cpp")
 env_4d.add_source_files(env.modules_sources, "viewport/*.cpp")
 
 # The rest of this file handles generating the 4D icons header file.

@@ -52,13 +52,14 @@ if env["target"] == "editor":
         CPPPATH=[
             "../../editor",
             "../../editor/icons",
-            "../../editor/off",
+            "../../editor/import",
+            "../../editor/import/off",
             "../../editor/viewport",
         ]
     )
     sources += Glob("../../editor/*.cpp")
     sources += Glob("../../editor/icons/*.cpp")
-    sources += Glob("../../editor/off/*.cpp")
+    sources += Glob("../../editor/import/off/*.cpp")
     sources += Glob("../../editor/viewport/*.cpp")
 
 if env["platform"] == "windows":

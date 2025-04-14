@@ -40,6 +40,18 @@ void EditorCreate4DSceneButton::_notification(int p_what) {
 	}
 }
 
+void Godot4DEditorPlugin::_add_4d_main_screen() {
+	Control *godot_editor_main_screen = EditorInterface::get_singleton()->get_editor_main_screen();
+	if (godot_editor_main_screen->has_node(NodePath("EditorMainScreen4D"))) {
+		_main_screen = GET_NODE_TYPE(godot_editor_main_screen, EditorMainScreen4D, "EditorMainScreen4D");
+		ERR_PRINT("EditorMainScreen4D already exists.");
+	} else {
+		_main_screen = memnew(EditorMainScreen4D);
+		_main_screen->setup(get_undo_redo());
+		godot_editor_main_screen->add_child(_main_screen);
+	}
+}
+
 void Godot4DEditorPlugin::_move_4d_main_screen_tab_button() const {
 	Control *editor = EditorInterface::get_singleton()->get_base_control();
 	ERR_FAIL_NULL(editor);
@@ -87,10 +99,15 @@ void Godot4DEditorPlugin::_create_4d_scene() {
 void Godot4DEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+			_off_mesh_3d_importer.instantiate();
+			_off_scene_importer.instantiate();
+			_off_tetra_4d_importer.instantiate();
+			_off_wire_4d_importer.instantiate();
 			add_import_plugin(_off_mesh_3d_importer);
 			add_import_plugin(_off_scene_importer);
 			add_import_plugin(_off_tetra_4d_importer);
 			add_import_plugin(_off_wire_4d_importer);
+			_add_4d_main_screen();
 			_move_4d_main_screen_tab_button();
 			call_deferred(StringName("_inject_4d_scene_button"));
 		} break;
@@ -126,16 +143,4 @@ void Godot4DEditorPlugin::_bind_methods() {
 
 Godot4DEditorPlugin::Godot4DEditorPlugin() {
 	set_name(StringName("Godot4DEditorPlugin"));
-	_off_mesh_3d_importer.instantiate();
-	_off_scene_importer.instantiate();
-	_off_tetra_4d_importer.instantiate();
-	_off_wire_4d_importer.instantiate();
-	Control *godot_editor_main_screen = EditorInterface::get_singleton()->get_editor_main_screen();
-	if (godot_editor_main_screen->has_node(NodePath("EditorMainScreen4D"))) {
-		_main_screen = GET_NODE_TYPE(godot_editor_main_screen, EditorMainScreen4D, "EditorMainScreen4D");
-	} else {
-		_main_screen = memnew(EditorMainScreen4D);
-		_main_screen->setup(get_undo_redo());
-		godot_editor_main_screen->add_child(_main_screen);
-	}
 }

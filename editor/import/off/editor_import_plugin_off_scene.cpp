@@ -1,5 +1,7 @@
 #include "editor_import_plugin_off_scene.h"
 
+#include "../../../model/off/off_document.h"
+
 #if GDEXTENSION
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>

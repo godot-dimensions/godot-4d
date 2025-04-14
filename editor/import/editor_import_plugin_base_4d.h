@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../model/off/off_document.h"
+#include "../../godot_4d_defines.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_import_plugin.hpp>
@@ -27,14 +27,13 @@
 #define GDEXTMOD_GET_VISIBLE_NAME get_visible_name
 #endif
 
-class EditorImportPluginOFFBase : public EditorImportPlugin {
-	GDCLASS(EditorImportPluginOFFBase, EditorImportPlugin);
+class EditorImportPluginBase4D : public EditorImportPlugin {
+	GDCLASS(EditorImportPluginBase4D, EditorImportPlugin);
 
 protected:
 	static void _bind_methods() {}
 
 public:
-	virtual int GDEXTMOD_GET_IMPORT_ORDER() const override { return 0; }
 	virtual int GDEXTMOD_GET_PRESET_COUNT() const override { return 0; }
 	virtual String GDEXTMOD_GET_PRESET_NAME(int p_idx) const override { return String("Default"); }
 	virtual String GDEXTMOD_GET_SAVE_EXTENSION() const override { return "res"; }
@@ -45,16 +44,10 @@ public:
 	virtual bool _get_option_visibility(const String &p_path, const StringName &p_option_name, const Dictionary &p_options) const override {
 		return true;
 	}
-	virtual PackedStringArray _get_recognized_extensions() const override {
-		return PackedStringArray{ "off" };
-	}
 #elif GODOT_MODULE
 	virtual void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const override {}
 	virtual bool get_option_visibility(const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const override {
 		return true;
-	}
-	virtual void get_recognized_extensions(List<String> *p_extensions) const override {
-		p_extensions->push_back("off");
 	}
 #endif
 };

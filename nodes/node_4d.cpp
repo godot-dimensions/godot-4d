@@ -882,11 +882,11 @@ void Node4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "position", PROPERTY_HINT_NONE, "suffix:m"), "set_position", "get_position");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "rotation", PROPERTY_HINT_NONE, "radians_as_degrees", PROPERTY_USAGE_NONE), "set_rotation", "get_rotation");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "rotation_degrees", PROPERTY_HINT_NONE, U"suffix:\u00B0", PROPERTY_USAGE_EDITOR), "set_rotation_degrees", "get_rotation_degrees");
-	ADD_PROPERTY(PropertyInfo(PACKED_REAL_ARRAY, "rotor_array", PROPERTY_HINT_NONE, "", PROPERTY_HINT_NONE), "set_rotation_rotor_array", "get_rotation_rotor_array");
+	ADD_PROPERTY(PropertyInfo(PACKED_REAL_ARRAY, "rotor_array", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_rotation_rotor_array", "get_rotation_rotor_array");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "rotor_bivector", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_rotor_bivector", "get_rotor_bivector");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rotor_scalar", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_rotor_scalar", "get_rotor_scalar");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rotor_pseudoscalar", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_rotor_pseudoscalar", "get_rotor_pseudoscalar");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "rotor_split_complex", PROPERTY_HINT_NONE, "", PROPERTY_HINT_NONE), "set_rotor_split_complex", "get_rotor_split_complex");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "rotor_split_complex", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_rotor_split_complex", "get_rotor_split_complex");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "bivector_magnitude", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_rotation_bivector_magnitude", "get_rotation_bivector_magnitude");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_scale", "get_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "uniform_scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_uniform_scale", "get_uniform_scale");

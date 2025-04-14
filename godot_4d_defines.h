@@ -28,6 +28,11 @@ using namespace godot;
 #include "core/version.h"
 #define GDEXTMOD_GUI_INPUT gui_input
 #define GET_NODE_TYPE(m_parent, m_type, m_path) Object::cast_to<m_type>(m_parent->get_node(NodePath(m_path)))
+#ifndef GODOT_VERSION_MAJOR
+#define GODOT_VERSION_MAJOR VERSION_MAJOR
+#define GODOT_VERSION_MINOR VERSION_MINOR
+#define GODOT_VERSION_PATCH VERSION_PATCH
+#endif
 
 #define MOUSE_BUTTON_LEFT MouseButton::LEFT
 #else

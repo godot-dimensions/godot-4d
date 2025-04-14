@@ -16,6 +16,7 @@ public:
 	static Vector4 bounce(const Vector4 &p_vector, const Vector4 &p_normal);
 	static Vector4 bounce_ratio(const Vector4 &p_vector, const Vector4 &p_normal, const real_t p_bounce_ratio);
 	static real_t cross(const Vector4 &p_a, const Vector4 &p_b);
+	static bool is_uniform(const Vector4 &p_vector);
 	static Vector4 limit_length(const Vector4 &p_vector, const real_t p_len = 1.0);
 	static Vector4 limit_length_taxicab(const Vector4 &p_vector, const real_t p_len = 1.0);
 	static Vector4 move_toward(const Vector4 &p_from, const Vector4 &p_to, const real_t p_delta);
@@ -32,6 +33,8 @@ public:
 	// Conversion.
 	static Vector4 from_3d(const Vector3 &p_vector, const real_t p_w = 0.0);
 	static Vector3 to_3d(const Vector4 &p_vector);
+	static Vector4 from_json_array(const Array &p_json_array);
+	static Array to_json_array(const Vector4 &p_vector);
 
 	static Vector4D *get_singleton() { return singleton; }
 	Vector4D() { singleton = this; }

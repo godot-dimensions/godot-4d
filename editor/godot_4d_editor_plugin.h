@@ -1,9 +1,9 @@
 #pragma once
 
-#include "off/editor_import_plugin_off_mesh_3d.h"
-#include "off/editor_import_plugin_off_scene.h"
-#include "off/editor_import_plugin_off_tetra_4d.h"
-#include "off/editor_import_plugin_off_wire_4d.h"
+#include "import/off/editor_import_plugin_off_mesh_3d.h"
+#include "import/off/editor_import_plugin_off_scene.h"
+#include "import/off/editor_import_plugin_off_tetra_4d.h"
+#include "import/off/editor_import_plugin_off_wire_4d.h"
 #include "viewport/editor_main_screen_4d.h"
 
 #if GDEXTENSION
@@ -45,6 +45,7 @@ class Godot4DEditorPlugin : public EditorPlugin {
 	Ref<EditorImportPluginOFFWire4D> _off_wire_4d_importer;
 	EditorMainScreen4D *_main_screen = nullptr;
 
+	void _add_4d_main_screen();
 	void _move_4d_main_screen_tab_button() const;
 	void _inject_4d_scene_button();
 	void _create_4d_scene();

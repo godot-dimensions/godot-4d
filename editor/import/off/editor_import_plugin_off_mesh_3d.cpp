@@ -1,6 +1,6 @@
 #include "editor_import_plugin_off_mesh_3d.h"
 
-#include "../../model/off/off_document.h"
+#include "../../../model/off/off_document.h"
 
 String EditorImportPluginOFFMesh3D::GDEXTMOD_GET_IMPORTER_NAME() const {
 	return "godot_4d.off_geometry_format.array_mesh_3d";

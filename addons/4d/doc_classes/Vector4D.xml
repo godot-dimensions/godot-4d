@@ -51,6 +51,20 @@
 				Converts a [Vector3] to a [Vector4] with the W component set to [param w], or [code]0.0[/code] if not specified.
 			</description>
 		</method>
+		<method name="from_json_array" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="json_array" type="Array" />
+			<description>
+				Converts a JSON array of numbers to a [Vector4]. If the array contains less than 4 elements, the missing elements are treated as [code]0.0[/code]. If the array contains more than 4 elements, only the first 4 elements are used. Any non-number values are converted as best as possible according to the [Variant] rules. This is the inverse of [method to_json_array].
+			</description>
+		</method>
+		<method name="is_uniform" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="vector" type="Vector4" />
+			<description>
+				Returns [code]true[/code] if all components of [param vector] are equal to each other, [code]false[/code] otherwise.
+			</description>
+		</method>
 		<method name="limit_length" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="vector" type="Vector4" />
@@ -132,6 +146,13 @@
 			<param index="0" name="vector" type="Vector4" />
 			<description>
 				Converts a [Vector4] to a [Vector3] by discarding the W component.
+			</description>
+		</method>
+		<method name="to_json_array" qualifiers="static">
+			<return type="Array" />
+			<param index="0" name="vector" type="Vector4" />
+			<description>
+				Converts a [Vector4] to a JSON array of numbers. The array will contain 4 elements, one for each component of the vector. This is the inverse of [method from_json_array].
 			</description>
 		</method>
 	</methods>

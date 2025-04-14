@@ -31,7 +31,7 @@
 #include "model/wire/wire_mesh_4d.h"
 #include "physics/shapes/shape_4d.h"
 
-// Mesh.
+// Model.
 #include "model/mesh_instance_4d.h"
 #include "model/off/off_document.h"
 #include "model/tetra/array_tetra_mesh_4d.h"
@@ -76,11 +76,11 @@
 #include "render/wireframe_canvas/wireframe_render_canvas_4d.h"
 #ifdef TOOLS_ENABLED
 #include "editor/godot_4d_editor_plugin.h"
-#include "editor/off/editor_import_plugin_off_base.h"
-#include "editor/off/editor_import_plugin_off_mesh_3d.h"
-#include "editor/off/editor_import_plugin_off_scene.h"
-#include "editor/off/editor_import_plugin_off_tetra_4d.h"
-#include "editor/off/editor_import_plugin_off_wire_4d.h"
+#include "editor/import/off/editor_import_plugin_off_base.h"
+#include "editor/import/off/editor_import_plugin_off_mesh_3d.h"
+#include "editor/import/off/editor_import_plugin_off_scene.h"
+#include "editor/import/off/editor_import_plugin_off_tetra_4d.h"
+#include "editor/import/off/editor_import_plugin_off_wire_4d.h"
 #include "editor/viewport/editor_camera_4d.h"
 #include "editor/viewport/editor_input_surface_4d.h"
 #include "editor/viewport/editor_main_screen_4d.h"
@@ -192,6 +192,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 #ifdef GDEXTENSION
 		GDREGISTER_CLASS(EditorCamera4D);
 		GDREGISTER_CLASS(EditorCreate4DSceneButton);
+		GDREGISTER_CLASS(EditorImportPluginBase4D);
 		GDREGISTER_CLASS(EditorImportPluginOFFBase);
 		GDREGISTER_CLASS(EditorImportPluginOFFMesh3D);
 		GDREGISTER_CLASS(EditorImportPluginOFFScene);

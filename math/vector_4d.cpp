@@ -26,6 +26,12 @@ real_t Vector4D::cross(const Vector4 &p_a, const Vector4 &p_b) {
 	return sqrt(diagonal - non_diagonal * non_diagonal);
 }
 
+bool Vector4D::is_uniform(const Vector4 &p_vector) {
+	return Math::is_equal_approx(p_vector.x, p_vector.y) &&
+			Math::is_equal_approx(p_vector.x, p_vector.z) &&
+			Math::is_equal_approx(p_vector.x, p_vector.w);
+}
+
 Vector4 Vector4D::limit_length(const Vector4 &p_vector, const real_t p_len) {
 	const real_t l = p_vector.length();
 	Vector4 v = p_vector;
@@ -156,6 +162,29 @@ Vector3 Vector4D::to_3d(const Vector4 &p_vector) {
 	return Vector3(p_vector.x, p_vector.y, p_vector.z);
 }
 
+Array Vector4D::to_json_array(const Vector4 &p_vector) {
+	Array json_array;
+	json_array.resize(4);
+	json_array[0] = p_vector.x;
+	json_array[1] = p_vector.y;
+	json_array[2] = p_vector.z;
+	json_array[3] = p_vector.w;
+	return json_array;
+}
+
+Vector4 Vector4D::from_json_array(const Array &p_json_array) {
+	if (likely(p_json_array.size() > 3)) {
+		return Vector4(p_json_array[0], p_json_array[1], p_json_array[2], p_json_array[3]);
+	} else if (p_json_array.size() == 3) {
+		return Vector4(p_json_array[0], p_json_array[1], p_json_array[2], 0.0);
+	} else if (p_json_array.size() == 2) {
+		return Vector4(p_json_array[0], p_json_array[1], 0.0, 0.0);
+	} else if (p_json_array.size() == 1) {
+		return Vector4(p_json_array[0], 0.0, 0.0, 0.0);
+	}
+	return Vector4();
+}
+
 Vector4D *Vector4D::singleton = nullptr;
 
 void Vector4D::_bind_methods() {
@@ -164,6 +193,7 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce", "vector", "normal"), &Vector4D::bounce);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce_ratio", "vector", "normal", "bounce_ratio"), &Vector4D::bounce_ratio);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("cross", "a", "b"), &Vector4D::cross);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("is_uniform", "vector"), &Vector4D::is_uniform);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("limit_length", "vector", "length"), &Vector4D::limit_length, DEFVAL(1.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("move_toward", "from", "to", "delta"), &Vector4D::move_toward);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("perpendicular", "a", "b", "c"), &Vector4D::perpendicular);
@@ -177,4 +207,6 @@ void Vector4D::_bind_methods() {
 	// Conversion.
 	ClassDB::bind_static_method("Vector4D", D_METHOD("from_3d", "vector", "w"), &Vector4D::from_3d, DEFVAL(0.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("to_3d", "vector"), &Vector4D::to_3d);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("from_json_array", "json_array"), &Vector4D::from_json_array);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("to_json_array", "vector"), &Vector4D::to_json_array);
 }
