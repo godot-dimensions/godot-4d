@@ -23,20 +23,26 @@ String G4MFState4D::reserve_unique_name(const String &p_requested_name) {
 }
 
 void G4MFState4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_base_path"), &G4MFState4D::get_base_path);
+	ClassDB::bind_method(D_METHOD("set_base_path", "base_path"), &G4MFState4D::set_base_path);
+	ClassDB::bind_method(D_METHOD("get_buffers"), &G4MFState4D::get_buffers);
+	ClassDB::bind_method(D_METHOD("set_buffers", "buffers"), &G4MFState4D::set_buffers);
+	ClassDB::bind_method(D_METHOD("get_filename"), &G4MFState4D::get_filename);
+	ClassDB::bind_method(D_METHOD("set_filename", "filename"), &G4MFState4D::set_filename);
+	ClassDB::bind_method(D_METHOD("get_g4mf_json"), &G4MFState4D::get_g4mf_json);
+	ClassDB::bind_method(D_METHOD("set_g4mf_json", "g4mf_json"), &G4MFState4D::set_g4mf_json);
 	ClassDB::bind_method(D_METHOD("get_g4mf_nodes"), &G4MFState4D::get_g4mf_nodes);
 	ClassDB::bind_method(D_METHOD("set_g4mf_nodes", "g4mf_nodes"), &G4MFState4D::set_g4mf_nodes);
 	ClassDB::bind_method(D_METHOD("get_godot_nodes"), &G4MFState4D::get_godot_nodes);
 	ClassDB::bind_method(D_METHOD("set_godot_nodes", "godot_nodes"), &G4MFState4D::set_godot_nodes);
-	ClassDB::bind_method(D_METHOD("get_base_path"), &G4MFState4D::get_base_path);
-	ClassDB::bind_method(D_METHOD("set_base_path", "base_path"), &G4MFState4D::set_base_path);
-	ClassDB::bind_method(D_METHOD("get_filename"), &G4MFState4D::get_filename);
-	ClassDB::bind_method(D_METHOD("set_filename", "filename"), &G4MFState4D::set_filename);
 
 	ClassDB::bind_method(D_METHOD("append_g4mf_node", "node"), &G4MFState4D::append_g4mf_node);
 	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested"), &G4MFState4D::reserve_unique_name);
 
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "base_path"), "set_base_path", "get_base_path");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "buffers", PROPERTY_HINT_ARRAY_TYPE, "PackedByteArray"), "set_buffers", "get_buffers");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "filename"), "set_filename", "get_filename");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "g4mf_json"), "set_g4mf_json", "get_g4mf_json");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_nodes", PROPERTY_HINT_ARRAY_TYPE, "G4MFNode4D"), "set_g4mf_nodes", "get_g4mf_nodes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "godot_nodes", PROPERTY_HINT_ARRAY_TYPE, "Node4D"), "set_godot_nodes", "get_godot_nodes");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "base_path"), "set_base_path", "get_base_path");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "filename"), "set_filename", "get_filename");
 }

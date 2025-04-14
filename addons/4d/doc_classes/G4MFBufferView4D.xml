@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFBufferView4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Untyped slice or view into a G4MF buffer.
+	</brief_description>
+	<description>
+		G4MFBufferView4D is a class that represents a slice or view into a G4MF buffer. As an analogy with computer storage drives, if a buffer is a disk and an accessor is a file system, then a buffer view is a partition.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFBufferView4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Creates a new [G4MFBufferView4D] from the given dictionary representing the JSON data of the G4MF buffer view. This is used when importing the buffer view from a file.
+			</description>
+		</method>
+		<method name="load_buffer_view_data" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the slice of data this buffer view points to from the corresponding G4MF buffer into a [PackedByteArray].
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Returns a dictionary representing the JSON data of the G4MF buffer view. This is used to serialize the buffer view to a file when exporting.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="buffer_index" type="int" setter="set_buffer_index" getter="get_buffer_index" default="-1">
+			The index of the buffer this buffer view points to. This is the index of the buffer in the G4MF buffers array.
+		</member>
+		<member name="byte_length" type="int" setter="set_byte_length" getter="get_byte_length" default="0">
+			The length of the buffer view in bytes. This is the size of the slice of data this buffer view points to.
+		</member>
+		<member name="byte_offset" type="int" setter="set_byte_offset" getter="get_byte_offset" default="0">
+			The offset of the buffer view in bytes. This is the start of the slice in bytes from the start of the buffer.
+		</member>
+	</members>
+</class>

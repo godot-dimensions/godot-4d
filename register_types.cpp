@@ -173,6 +173,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(StaticBody4D);
 		// G4MF (register in dependency order).
 		GDREGISTER_CLASS(G4MFItem4D);
+		GDREGISTER_CLASS(G4MFAccessor4D);
+		GDREGISTER_CLASS(G4MFBufferView4D);
 		GDREGISTER_CLASS(G4MFNode4D);
 		GDREGISTER_CLASS(G4MFState4D);
 		GDREGISTER_CLASS(G4MFDocument4D);

@@ -30,8 +30,14 @@
 		<member name="base_path" type="String" setter="set_base_path" getter="get_base_path" default="&quot;&quot;">
 			The base path of the G4MF file. This is used to resolve relative paths in the G4MF file. This is set when reading a G4MF file, and is used when writing a G4MF file.
 		</member>
+		<member name="buffers" type="PackedByteArray[]" setter="set_buffers" getter="get_buffers" default="[]">
+			The array of buffers in the G4MF file. This is used to store binary blobs of data, such as mesh data. Each buffer is used by a [G4MFBufferView4D] to access a slice of the buffer, which is then used by [G4MFAccessor4D] to access the data in the buffer in a typed way.
+		</member>
 		<member name="filename" type="String" setter="set_filename" getter="get_filename" default="&quot;&quot;">
 			The filename of the G4MF file, including the file extension. If it ends with [code].g4tf[/code], this is a text-based G4MF, otherwise this is a binary G4MF. This will be set during import when appending from a file, and will be set during export when writing to a file. If writing to a buffer, this will be an empty string.
+		</member>
+		<member name="g4mf_json" type="Dictionary" setter="set_g4mf_json" getter="get_g4mf_json" default="{}">
+			The JSON data of the G4MF file. This is set when reading a G4MF file at the start of the import process before parsing, and is set when writing a G4MF file at the end of the export process after serializing.
 		</member>
 		<member name="g4mf_nodes" type="G4MFNode4D[]" setter="set_g4mf_nodes" getter="get_g4mf_nodes" default="[]">
 			The array of [G4MFNode4D]s in this G4MF file. If empty, the G4MF file does not have any nodes. If non-empty, the node at index 0 is the root node.

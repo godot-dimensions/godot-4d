@@ -9,9 +9,9 @@ class G4MFState4D;
 class G4MFNode4D : public G4MFItem4D {
 	GDCLASS(G4MFNode4D, G4MFItem4D);
 
+	Transform4D _transform = Transform4D();
 	PackedInt32Array _children_indices;
 	int _parent_index = -1;
-	Transform4D _transform = Transform4D();
 	bool _visible = true;
 
 	NodePath _make_node_path(const Vector<StringName> &p_path) const;
