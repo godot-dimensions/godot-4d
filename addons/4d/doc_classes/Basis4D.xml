@@ -225,6 +225,19 @@
 				Performs a trivial linear interpolation between two [Basis4D] matrices. The behavior of lerp will not be ideal in all situations, such as rotation, especially compared to a slerp. The [param weight] value on a range of 0 to 1, representing the amount of interpolation.
 			</description>
 		</method>
+		<method name="looking_at" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="target" type="Vector4" />
+			<param index="1" name="perp" type="Vector4" default="Vector4(0, 0, 0, 1)" />
+			<param index="2" name="up" type="Vector4" default="Vector4(0, 1, 0, 0)" />
+			<param index="3" name="use_model_front" type="bool" default="false" />
+			<description>
+				Constructs a [Basis4D] matrix that "looks at" the [param target] point in 4D space. This is the 4D equivalent of the 3D [method Basis.looking_at] function.
+				The local Z axis points away from the target, or towards if [param use_model_front] is [code]true[/code]. The local W axis is aligned as close to the [param perp] vector as possible while staying perpendicular to the local forward axis. The local Y axis is aligned as close to the [param up] vector as possible while staying perpendicular to the local forward and perpendicular axes. The local X axis is perpendicular to all three. The determinant of the returned rotation will be [code]1.0[/code] within the tolerance of floating point precision.
+				The [param target], [param perp], and [param up] vectors cannot be [constant Vector4.ZERO], and cannot be parallel to each other.
+				If [param use_model_front] is true, the +Z axis (asset front) is treated as forward (implies +X is left side) and points toward the target position. By default, the -Z axis (camera forward) is treated as forward (implies +X is right direction).
+			</description>
+		</method>
 		<method name="orthogonalized" qualifiers="static">
 			<return type="Projection" />
 			<param index="0" name="basis" type="Projection" />

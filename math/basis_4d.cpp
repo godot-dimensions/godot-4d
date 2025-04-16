@@ -589,4 +589,40 @@ FROM_SINGLE_ANGLE(x, w)
 FROM_SINGLE_ANGLE(w, y)
 FROM_SINGLE_ANGLE(z, w)
 
+Basis4D Basis4D::looking_at(const Vector4 &p_target, const Vector4 &p_perp, const Vector4 &p_up, bool p_use_model_front) {
+#ifdef MATH_CHECKS
+	ERR_FAIL_COND_V_MSG(p_target.is_zero_approx(), Basis4D(), "Basis4D.looking_at: The target vector can't be zero.");
+	ERR_FAIL_COND_V_MSG(p_up.is_zero_approx(), Basis4D(), "Basis4D.looking_at: The up vector can't be zero.");
+	ERR_FAIL_COND_V_MSG(p_perp.is_zero_approx(), Basis4D(), "Basis4D.looking_at: The perpendicular vector can't be zero.");
+#endif
+	Vector4 z = p_target.normalized();
+	if (!p_use_model_front) {
+		z = -z;
+	}
+	Vector4 x = Vector4D::perpendicular(z, p_up, p_perp);
+	if (x.is_zero_approx()) {
+		WARN_PRINT("Basis4D.looking_at: Target, up, and/or perpendicular vectors are colinear.");
+		x = Vector4(1, 0, 0, 0);
+	} else {
+		x.normalize();
+	}
+	Vector4 w = Vector4D::perpendicular(x, p_up, z);
+	if (w.is_zero_approx()) {
+		WARN_PRINT("Basis4D.looking_at: Target, up, and/or perpendicular vectors are colinear.");
+		w = Vector4(0, 0, 0, 1);
+	} else {
+		w.normalize();
+	}
+	Vector4 y = Vector4D::perpendicular(x, z, w);
+	if (y.is_zero_approx()) {
+		WARN_PRINT("Basis4D.looking_at: Target, up, and/or perpendicular vectors are colinear.");
+		y = Vector4(0, 1, 0, 0);
+	} else {
+		y.normalize();
+	}
+	const Basis4D b = Basis4D(x, y, z, w);
+	ERR_FAIL_COND_V_MSG(!Math::is_equal_approx(b.determinant(), 1.0f), Basis4D(), "Basis4D.looking_at: Failed to calculate a valid rotation.");
+	return b;
+}
+
 static_assert(sizeof(Basis4D) == 16 * sizeof(real_t));

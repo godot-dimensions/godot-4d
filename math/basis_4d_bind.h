@@ -93,6 +93,7 @@ public:
 	static Projection from_xw(const real_t p_xw);
 	static Projection from_wy(const real_t p_wy);
 	static Projection from_zw(const real_t p_zw);
+	static Projection looking_at(const Vector4 &p_target, const Vector4 &p_perp = Vector4(0, 0, 0, 1), const Vector4 &p_up = Vector4(0, 1, 0, 0), bool p_use_model_front = false);
 
 	static Basis4D *get_singleton() { return singleton; }
 	Basis4D() { singleton = this; }

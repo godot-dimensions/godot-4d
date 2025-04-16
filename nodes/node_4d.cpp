@@ -21,6 +21,15 @@ void Node4D::translate_local(const Vector4 &p_amount) {
 	_transform.translate_local(p_amount);
 }
 
+void Node4D::look_at(const Vector4 &p_global_target, const Vector4 &p_up, const bool p_use_model_front) {
+	Transform4D global_transform = get_global_transform();
+	const Vector4 relative_target = p_global_target - global_transform.origin;
+	const Vector4 abs_scale = global_transform.basis.get_scale_abs();
+	global_transform.basis = Basis4D::looking_at(relative_target, global_transform.basis.w, p_up, p_use_model_front);
+	global_transform.basis.scale_local(abs_scale);
+	set_global_transform(global_transform);
+}
+
 void Node4D::rotate_euler(const Euler4D &p_euler) {
 	Basis4D rot = p_euler.to_basis();
 	set_basis(rot * get_basis());
@@ -782,6 +791,7 @@ void Node4D::_bind_methods() {
 	// Transform altering methods.
 	ClassDB::bind_method(D_METHOD("apply_scale", "ratio"), &Node4D::apply_scale);
 	ClassDB::bind_method(D_METHOD("translate_local", "offset"), &Node4D::translate_local);
+	ClassDB::bind_method(D_METHOD("look_at", "global_target", "up", "use_model_front"), &Node4D::look_at, DEFVAL(Vector4(0, 1, 0, 0)), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("rotate_euler", "euler"), &Node4D::rotate_euler_bind);
 	ClassDB::bind_method(D_METHOD("rotate_euler_local", "euler_local"), &Node4D::rotate_euler_local_bind);
 	// Geometric algebra rotation altering methods.

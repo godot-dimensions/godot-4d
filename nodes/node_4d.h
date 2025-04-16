@@ -56,6 +56,7 @@ public:
 	// Transform altering methods.
 	void apply_scale(const Vector4 &p_amount);
 	void translate_local(const Vector4 &p_amount);
+	void look_at(const Vector4 &p_global_target, const Vector4 &p_up = Vector4(0, 1, 0, 0), const bool p_use_model_front = false);
 
 	void rotate_euler(const Euler4D &p_euler);
 	void rotate_euler_bind(const AABB &p_euler);

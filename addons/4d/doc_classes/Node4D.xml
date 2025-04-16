@@ -102,6 +102,20 @@
 				Returns [code]true[/code] if the [Node4D] is visible in the scene tree (this node and all parent [Node4D]s are visible).
 			</description>
 		</method>
+		<method name="look_at">
+			<return type="void" />
+			<param index="0" name="global_target" type="Vector4" />
+			<param index="1" name="up" type="Vector4" default="Vector4(0, 1, 0, 0)" />
+			<param index="2" name="use_model_front" type="bool" default="false" />
+			<description>
+				Rotates the node so that its global forward basis vector points toward the global target position. This is the 4D equivalent of the 3D [method Node3D.look_at] function.
+				The Z axis points away from the target, or towards if [param use_model_front] is [code]true[/code]. The W axis is aligned as close to the existing W axis as possible while staying perpendicular to the forward axis. The Y axis is aligned as close to the [param up] vector as possible while staying perpendicular to the forward and perpendicular axes. The X axis is perpendicular to all three.
+				The [param global_target] position cannot be the same as the node's global position. The [param up] vector cannot be Vector4.ZERO. Furthermore, the direction from the node's position to the target position cannot be parallel to the [param up] vector, to avoid an unintended rotation around the local Z axis.
+				If the node has a positive scale, this will be preserved when performing [method look_at]. Negative scales will become positive.
+				Operations take place in global space, which means that the node must be in the scene tree.
+				If [param use_model_front] is true, the +Z axis (asset front) is treated as forward (implies +X is left side) and points toward the target position. By default, the -Z axis (camera forward) is treated as forward (implies +X is right direction).
+			</description>
+		</method>
 		<method name="rotate_bivector_magnitude">
 			<return type="void" />
 			<param index="0" name="bivector" type="AABB" />
