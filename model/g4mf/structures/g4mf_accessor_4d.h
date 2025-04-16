@@ -12,10 +12,17 @@ class G4MFAccessor4D : public G4MFItem4D {
 	int _vector_size = 1;
 
 	// Private general helper functions.
-	static double _float8_to_double(uint8_t p_float8);
-	static double _float16_to_double(uint16_t p_float16);
-	static uint8_t _double_to_float8(double p_double);
-	static uint16_t _double_to_float16(double p_double);
+	static double _float8_to_double(const uint8_t p_float8);
+	static double _float16_to_double(const uint16_t p_float16);
+	static uint8_t _double_to_float8(const double p_double);
+	static uint16_t _double_to_float16(const double p_double);
+
+	// Private functions for determining the minimal primitive type.
+	static constexpr uint32_t CANT_USE_PRIM_TYPE = 1000000; // Any very big number will do.
+	static bool _double_bits_equal(const double p_a, const double p_b);
+	static void _minimal_primitive_bits_for_int64(const int64_t p_value, uint32_t &r_int_bits, uint32_t &r_uint_bits);
+	static void _minimal_primitive_bits_for_double(const double p_value, uint32_t &r_float_bits, uint32_t &r_int_bits, uint32_t &r_uint_bits);
+	static String _minimal_primitive_type_given_bits(const uint32_t p_float_bits, const uint32_t p_int_bits, const uint32_t p_uint_bits);
 
 	// Private decode functions. Use `decode_accessor_as_variants` publicly.
 	Array _decode_floats_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
@@ -41,13 +48,20 @@ public:
 	void set_vector_size(const int p_vector_size);
 
 	// General helper functions.
+	bool is_equal_exact(const Ref<G4MFAccessor4D> &p_other) const;
 	int64_t bytes_per_primitive() const;
 	int64_t bytes_per_vector() const;
 	static int64_t primitives_per_variant(const Variant::Type p_variant_type);
 
+	// Determine the minimal primitive type for the given data.
+	// Add more types only as needed otherwise this will be a mess.
+	static String minimal_primitive_type_for_int32s(const PackedInt32Array &p_input_data);
+	static String minimal_primitive_type_for_vector4s(const PackedVector4Array &p_input_data);
+
 	// Decode functions.
 	PackedByteArray load_bytes_from_buffer_view(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedFloat64Array decode_floats_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedInt32Array decode_int32s_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt64Array decode_ints_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Vector<uint64_t> decode_uints_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Array decode_accessor_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
@@ -56,7 +70,8 @@ public:
 	PackedByteArray encode_floats_as_primitives(const PackedFloat64Array &p_input_data) const;
 	PackedByteArray encode_ints_as_primitives(const PackedInt64Array &p_input_data) const;
 	PackedByteArray encode_uints_as_primitives(const Vector<uint64_t> &p_input_data) const;
-	PackedByteArray encode_accessor(const Array &p_input_data) const;
+	PackedByteArray encode_accessor_from_variants(const Array &p_input_data) const;
+	static int encode_new_accessor_into_state(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_primitive_type, const int p_vector_size = 1, const bool p_deduplicate = true);
 
 	static Ref<G4MFAccessor4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;

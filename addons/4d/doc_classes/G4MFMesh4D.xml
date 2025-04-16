@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFMesh4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents visual geometry that may be attached to G4MF nodes.
+	</brief_description>
+	<description>
+		G4MFMesh4D is a class for 4D meshes in the G4MF format. It is used to represent visual geometry found in a G4MF scene. It may be attached to G4MF nodes so that it may be rendered in the Godot scene and given a position. A mesh is a collection of surfaces, each of which may have different materials.
+		[b]Note:[/b]: Godot 4D currently only supports one surface per mesh, but multiple surfaces are allowed in the G4MF format.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="convert_mesh_into_state" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="mesh" type="Mesh4D" />
+			<description>
+				Converts the given [Mesh4D] into a [G4MFMesh4D] inside of the [G4MFState4D], encoding all data of the mesh inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF, and is the inverse of [method generate_mesh]. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the index of the new mesh will be returned, which may be used on nodes or anything else. If this function fails, it will return [code]-1[/code].
+			</description>
+		</method>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFMesh4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF mesh to a [G4MFMesh4D]. This will set the fields of the [G4MFMesh4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="generate_mesh" qualifiers="const">
+			<return type="Mesh4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="force_wireframe" type="bool" default="false" />
+			<description>
+				Generates a [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. This will create either a [ArrayTetraMesh4D] or [ArrayWireMesh4D] and return it. This is used for importing a mesh from G4MF, and is the inverse of [method convert_mesh_into_state].
+				If [force_wireframe] is set to true, the mesh will always be generated as a wireframe mesh. Otherwise, the mesh will be generated as a tetrahedral mesh if the [G4MFMesh4D] defines cells, or as a wireframe mesh if the [G4MFMesh4D] does not define cells.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF mesh to a [Dictionary]. This is used for serializing the G4MF mesh as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="surfaces" type="G4MFMeshSurface4D[]" setter="set_surfaces" getter="get_surfaces" default="[]">
+			An array of [G4MFMeshSurface4D]s that define the geometry of the mesh. Each surface may have a material.
+		</member>
+	</members>
+</class>

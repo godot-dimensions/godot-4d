@@ -37,6 +37,24 @@ NodePath G4MFNode4D::get_scene_node_path(const Ref<G4MFState4D> &p_g4mf_state) c
 	return _make_node_path(path);
 }
 
+// Returns the global transform of this node relative to the root node of the scene.
+Transform4D G4MFNode4D::get_scene_global_transform(const Ref<G4MFState4D> &p_g4mf_state) const {
+	Transform4D global_transform = _transform;
+	if (_parent_index < 0) {
+		return global_transform;
+	}
+	const TypedArray<G4MFNode4D> all_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
+	const int g4mf_node_count = all_g4mf_nodes.size();
+	int current_ancestor = _parent_index;
+	while (current_ancestor > 0) {
+		ERR_FAIL_INDEX_V(current_ancestor, g4mf_node_count, global_transform);
+		const Ref<G4MFNode4D> current_g4mf_node = all_g4mf_nodes[current_ancestor];
+		global_transform = current_g4mf_node->get_transform() * global_transform;
+		current_ancestor = current_g4mf_node->get_parent_index();
+	}
+	return global_transform;
+}
+
 Ref<G4MFNode4D> G4MFNode4D::from_godot_node(const Node *p_godot_node) {
 	Ref<G4MFNode4D> g4mf_node;
 	g4mf_node.instantiate();
@@ -65,7 +83,7 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 		node->_transform.basis = json_array_to_basis_4d(p_dict["basis"]);
 	} else {
 		if (p_dict.has("rotor")) {
-			node->_transform.basis = Rotor4D::from_array(p_dict["rotor"]).to_basis();
+			node->_transform.basis = json_array_to_rotor_4d(p_dict["rotor"]).to_basis();
 		}
 		if (p_dict.has("scale")) {
 			const Array scale_array = p_dict["scale"];
@@ -78,6 +96,9 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 	}
 	if (p_dict.has("children")) {
 		node->_children_indices = json_array_to_int32_array(p_dict["children"]);
+	}
+	if (p_dict.has("mesh")) {
+		node->_mesh_index = p_dict["mesh"];
 	}
 	if (p_dict.has("parent")) {
 		// Not a part of the G4MF spec but useful if an extension wants to
@@ -97,18 +118,24 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	Dictionary dict = write_item_entries_to_dictionary();
 	if (!_transform.basis.is_equal_approx(Basis4D())) {
 		if (!p_prefer_basis && _transform.basis.is_orthogonal() && _transform.basis.determinant() > 0) {
-			if (!_transform.basis.is_diagonal()) {
-				dict["rotor"] = rotor_4d_to_json_array(Rotor4D::from_basis(_transform.basis));
-			}
-			Vector4 scale = _transform.basis.get_scale();
-			if (!scale.is_equal_approx(Vector4(1, 1, 1, 1))) {
-				if (Vector4D::is_uniform(scale)) {
-					Array uniform_scale_array;
-					uniform_scale_array.push_back(scale.x);
-					dict["scale"] = uniform_scale_array;
-				} else {
-					dict["scale"] = Vector4D::to_json_array(scale);
+			const Rotor4D rotor = Rotor4D::from_basis(_transform.basis);
+			// TODO: Double rotations in Rotor4D are still buggy, so export as basis for now.
+			if (Math::is_zero_approx(rotor.get_pseudoscalar())) {
+				if (!_transform.basis.is_diagonal()) {
+					dict["rotor"] = rotor_4d_to_json_array(rotor);
 				}
+				Vector4 scale = _transform.basis.get_scale();
+				if (!scale.is_equal_approx(Vector4(1, 1, 1, 1))) {
+					if (Vector4D::is_uniform(scale)) {
+						Array uniform_scale_array;
+						uniform_scale_array.push_back(scale.x);
+						dict["scale"] = uniform_scale_array;
+					} else {
+						dict["scale"] = Vector4D::to_json_array(scale);
+					}
+				}
+			} else {
+				dict["basis"] = basis_4d_to_json_array(_transform.basis);
 			}
 		} else {
 			dict["basis"] = basis_4d_to_json_array(_transform.basis);
@@ -116,6 +143,9 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	}
 	if (!_children_indices.is_empty()) {
 		dict["children"] = int32_array_to_json_array(_children_indices);
+	}
+	if (_mesh_index >= 0) {
+		dict["mesh"] = _mesh_index;
 	}
 	if (!_transform.origin.is_zero_approx()) {
 		dict["position"] = Vector4D::to_json_array(_transform.origin);

@@ -2,6 +2,7 @@
 
 #include "structures/g4mf_accessor_4d.h"
 #include "structures/g4mf_buffer_view_4d.h"
+#include "structures/g4mf_mesh_4d.h"
 #include "structures/g4mf_node_4d.h"
 
 #include "../../nodes/node_4d.h"
@@ -19,6 +20,7 @@ class G4MFState4D : public G4MFItem4D {
 	TypedArray<G4MFAccessor4D> _accessors;
 	TypedArray<PackedByteArray> _buffers;
 	TypedArray<G4MFBufferView4D> _buffer_views;
+	TypedArray<G4MFMesh4D> _g4mf_meshes;
 	TypedArray<G4MFNode4D> _g4mf_nodes;
 	TypedArray<Node4D> _godot_nodes;
 	HashSet<String> _unique_names;
@@ -47,6 +49,9 @@ public:
 
 	Dictionary get_g4mf_json() const { return _g4mf_json; }
 	void set_g4mf_json(const Dictionary &p_g4mf_json) { _g4mf_json = p_g4mf_json; }
+
+	TypedArray<G4MFMesh4D> get_g4mf_meshes() const { return _g4mf_meshes; }
+	void set_g4mf_meshes(const TypedArray<G4MFMesh4D> &p_g4mf_meshes) { _g4mf_meshes = p_g4mf_meshes; }
 
 	TypedArray<G4MFNode4D> get_g4mf_nodes() const { return _g4mf_nodes; }
 	void set_g4mf_nodes(const TypedArray<G4MFNode4D> &p_g4mf_nodes) { _g4mf_nodes = p_g4mf_nodes; }

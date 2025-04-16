@@ -29,6 +29,16 @@
 				Returns a dictionary representing the JSON data of the G4MF buffer view. This is used to serialize the buffer view to a file when exporting.
 			</description>
 		</method>
+		<method name="write_new_buffer_view_into_state" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="input_data" type="PackedByteArray" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<param index="3" name="buffer_index" type="int" default="0" />
+			<description>
+				Writes the given input data into a buffer view in the given G4MF state. This is usually a new buffer view, but may refer to an existing buffer view if an identical buffer view already exists and [param deduplicate] is [code]true[/code] (default). When a new buffer view is created, [param buffer_index] determines which buffer the new buffer view will point to, which is buffer 0 by default.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="buffer_index" type="int" setter="set_buffer_index" getter="get_buffer_index" default="-1">

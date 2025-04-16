@@ -4,7 +4,7 @@
 
 // Private general helper functions.
 
-double G4MFAccessor4D::_float8_to_double(uint8_t p_float8) {
+double G4MFAccessor4D::_float8_to_double(const uint8_t p_float8) {
 	const uint8_t f8_sign = (p_float8 >> 7) & 0x1;
 	const uint8_t f8_exponent = (p_float8 >> 3) & 0xF;
 	const uint8_t f8_mantissa = p_float8 & 0x7;
@@ -30,13 +30,13 @@ double G4MFAccessor4D::_float8_to_double(uint8_t p_float8) {
 	}
 	union {
 		double d;
-		uint64_t u;
-	} bits;
-	bits.u = f64_sign | f64_exponent | f64_mantissa;
-	return bits.d;
+		uint64_t bits;
+	} u;
+	u.bits = f64_sign | f64_exponent | f64_mantissa;
+	return u.d;
 }
 
-double G4MFAccessor4D::_float16_to_double(uint16_t p_float16) {
+double G4MFAccessor4D::_float16_to_double(const uint16_t p_float16) {
 	const uint16_t f16_sign = (p_float16 >> 15) & 0x1;
 	const uint16_t f16_exponent = (p_float16 >> 10) & 0x1F;
 	const uint16_t f16_mantissa = p_float16 & 0x3FF;
@@ -62,21 +62,21 @@ double G4MFAccessor4D::_float16_to_double(uint16_t p_float16) {
 	}
 	union {
 		double d;
-		uint64_t u;
-	} bits;
-	bits.u = f64_sign | f64_exponent | f64_mantissa;
-	return bits.d;
+		uint64_t bits;
+	} u;
+	u.bits = f64_sign | f64_exponent | f64_mantissa;
+	return u.d;
 }
 
-uint8_t G4MFAccessor4D::_double_to_float8(double p_double) {
+uint8_t G4MFAccessor4D::_double_to_float8(const double p_double) {
 	union {
 		double d;
-		uint64_t u;
-	} bits;
-	bits.d = p_double;
-	const uint64_t f64_sign = (bits.u >> 63) & 0x1;
-	const uint64_t f64_exponent = (bits.u >> 52) & 0x7FF;
-	const uint64_t f64_mantissa = bits.u & ((uint64_t(1) << 52) - 1);
+		uint64_t bits;
+	} u;
+	u.d = p_double;
+	const uint64_t f64_sign = (u.bits >> 63) & 0x1;
+	const uint64_t f64_exponent = (u.bits >> 52) & 0x7FF;
+	const uint64_t f64_mantissa = u.bits & ((uint64_t(1) << 52) - 1);
 	const uint8_t f8_sign = f64_sign << 7;
 	if (f64_exponent == 0x7FF) {
 		// Infinity or NaN.
@@ -123,15 +123,15 @@ uint8_t G4MFAccessor4D::_double_to_float8(double p_double) {
 	return f8_sign | uint8_t(f8_exponent << 3) | uint8_t(f8_mantissa_bits);
 }
 
-uint16_t G4MFAccessor4D::_double_to_float16(double p_double) {
+uint16_t G4MFAccessor4D::_double_to_float16(const double p_double) {
 	union {
 		double d;
-		uint64_t u;
-	} bits;
-	bits.d = p_double;
-	const uint64_t f64_sign = (bits.u >> 63) & 0x1;
-	const uint64_t f64_exponent = (bits.u >> 52) & 0x7FF;
-	const uint64_t f64_mantissa = bits.u & ((uint64_t(1) << 52) - 1);
+		uint64_t bits;
+	} u;
+	u.d = p_double;
+	const uint64_t f64_sign = (u.bits >> 63) & 0x1;
+	const uint64_t f64_exponent = (u.bits >> 52) & 0x7FF;
+	const uint64_t f64_mantissa = u.bits & ((uint64_t(1) << 52) - 1);
 	const uint16_t f16_sign = f64_sign << 15;
 	if (f64_exponent == 0x7FF) {
 		// Infinity or NaN.
@@ -175,6 +175,74 @@ uint16_t G4MFAccessor4D::_double_to_float16(double p_double) {
 		}
 	}
 	return f16_sign | uint16_t(f16_exponent << 10) | uint16_t(f16_mantissa_bits);
+}
+
+// Private functions for determining the minimal primitive type.
+
+bool G4MFAccessor4D::_double_bits_equal(const double p_a, const double p_b) {
+	union {
+		double d;
+		uint64_t bits;
+	} a{ p_a }, b{ p_b };
+	return a.bits == b.bits;
+}
+
+void G4MFAccessor4D::_minimal_primitive_bits_for_int64(const int64_t p_value, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
+	if (r_int_bits == 8 && !(p_value >= INT8_MIN && p_value <= INT8_MAX)) {
+		r_int_bits = 16;
+	}
+	if (r_int_bits == 16 && !(p_value >= INT16_MIN && p_value <= INT16_MAX)) {
+		r_int_bits = 32;
+	}
+	if (r_int_bits == 32 && !(p_value >= INT32_MIN && p_value <= INT32_MAX)) {
+		r_int_bits = 64;
+	}
+	if (p_value < 0) {
+		// Can't be represented as an unsigned int, so just set this to a very big number.
+		r_uint_bits = CANT_USE_PRIM_TYPE;
+		return;
+	}
+	if (r_uint_bits == 8 && p_value > UINT8_MAX) {
+		r_uint_bits = 16;
+	}
+	if (r_uint_bits == 16 && p_value > UINT16_MAX) {
+		r_uint_bits = 32;
+	}
+	if (r_uint_bits == 32 && p_value > UINT32_MAX) {
+		r_uint_bits = 64;
+	}
+}
+
+void G4MFAccessor4D::_minimal_primitive_bits_for_double(const double p_value, uint32_t &r_float_bits, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
+	if (r_float_bits == 8 && !_double_bits_equal(_float8_to_double(_double_to_float8(p_value)), p_value)) {
+		r_float_bits = 16;
+	}
+	if (r_float_bits == 16 && !_double_bits_equal(_float16_to_double(_double_to_float16(p_value)), p_value)) {
+		r_float_bits = 32;
+	}
+	if (r_float_bits == 32 && !_double_bits_equal((double)(float)p_value, p_value)) {
+		r_float_bits = 64;
+	}
+	const int64_t as_int = (int64_t)p_value;
+	if (p_value != (double)as_int) {
+		// Can't be represented as an int, so just set these to a very big number.
+		r_int_bits = CANT_USE_PRIM_TYPE;
+		r_uint_bits = CANT_USE_PRIM_TYPE;
+		return;
+	}
+	_minimal_primitive_bits_for_int64(as_int, r_int_bits, r_uint_bits);
+}
+
+String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float_bits, const uint32_t p_int_bits, const uint32_t p_uint_bits) {
+	// Only use floats if they are more efficient than integers.
+	if (p_float_bits < p_int_bits && p_float_bits < p_uint_bits) {
+		return String("float") + String::num_uint64(p_float_bits);
+	}
+	if (p_int_bits < p_uint_bits) {
+		return String("int") + String::num_uint64(p_int_bits);
+	}
+	// Prefer unsigned ints if all are equally efficient.
+	return String("uint") + String::num_uint64(p_int_bits);
 }
 
 // Private decode functions. Use `decode_accessor_as_variants` publicly.
@@ -421,6 +489,12 @@ void G4MFAccessor4D::set_vector_size(const int p_vector_size) {
 
 // General helper functions.
 
+bool G4MFAccessor4D::is_equal_exact(const Ref<G4MFAccessor4D> &p_other) const {
+	return (_buffer_view_index == p_other->get_buffer_view_index() &&
+			_vector_size == p_other->get_vector_size() &&
+			_primitive_type == p_other->get_primitive_type());
+}
+
 int64_t G4MFAccessor4D::bytes_per_primitive() const {
 	// The `to_int` function only looks at numeric digits, so for example, "float32" -> 32 -> 4.
 	return _primitive_type.to_int() / 8;
@@ -486,10 +560,35 @@ int64_t G4MFAccessor4D::primitives_per_variant(const Variant::Type p_variant_typ
 	return 0;
 }
 
+// Determine the minimal primitive type for encoding the given data.
+// Add more types only as needed for export, otherwise this will be a mess.
+
+String G4MFAccessor4D::minimal_primitive_type_for_int32s(const PackedInt32Array &p_input_data) {
+	uint32_t min_int_bits = 8;
+	uint32_t min_uint_bits = 8;
+	for (const int32_t i : p_input_data) {
+		_minimal_primitive_bits_for_int64(i, min_int_bits, min_uint_bits);
+	}
+	return _minimal_primitive_type_given_bits(CANT_USE_PRIM_TYPE, min_int_bits, min_uint_bits);
+}
+
+String G4MFAccessor4D::minimal_primitive_type_for_vector4s(const PackedVector4Array &p_input_data) {
+	uint32_t min_float_bits = 8;
+	uint32_t min_int_bits = 8;
+	uint32_t min_uint_bits = 8;
+	for (const Vector4 &vec : p_input_data) {
+		_minimal_primitive_bits_for_double(vec.x, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_primitive_bits_for_double(vec.y, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_primitive_bits_for_double(vec.z, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_primitive_bits_for_double(vec.w, min_float_bits, min_int_bits, min_uint_bits);
+	}
+	return _minimal_primitive_type_given_bits(min_float_bits, min_int_bits, min_uint_bits);
+}
+
 // Decode functions.
 
 PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4D> &p_g4mf_state) const {
-	const TypedArray<PackedByteArray> state_buffer_views = p_g4mf_state->get_buffer_views();
+	const TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_buffer_views();
 	ERR_FAIL_INDEX_V_MSG(_buffer_view_index, state_buffer_views.size(), PackedByteArray(), "G4MF import: The buffer view index is out of bounds. Returning an empty byte array.");
 	const Ref<G4MFBufferView4D> buffer_view = state_buffer_views[_buffer_view_index];
 	const PackedByteArray raw_bytes = buffer_view->load_buffer_view_data(p_g4mf_state);
@@ -497,99 +596,105 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 	return raw_bytes;
 }
 
-PackedFloat64Array G4MFAccessor4D::decode_floats_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const {
-	PackedFloat64Array ret;
-	ERR_FAIL_COND_V_MSG(!_primitive_type.begins_with("float"), ret, "G4MF import: Cannot decode floats from an accessor of type '" + _primitive_type + "'. Returning an empty float array.");
-	const PackedByteArray raw_bytes = load_bytes_from_buffer_view(p_g4mf_state);
-	const int64_t raw_byte_size = raw_bytes.size();
-	const int64_t bytes_per_prim = bytes_per_primitive();
-	const int64_t prim_size = raw_byte_size / bytes_per_prim;
-	ret.resize(prim_size);
-	for (int i = 0; i < prim_size; i++) {
-		const int byte_offset = i * bytes_per_prim;
-		switch (bytes_per_prim) {
-			case 1: {
-				const uint8_t quarter_float_bits = *(const uint8_t *)&raw_bytes[byte_offset];
-				ret.set(i, _float8_to_double(quarter_float_bits));
-			} break;
-			case 2: {
-				const uint16_t half_float_bits = *(const uint16_t *)&raw_bytes[byte_offset];
-				ret.set(i, _float16_to_double(half_float_bits));
-			} break;
-			case 4: {
-				ret.set(i, *(const float *)&raw_bytes[byte_offset]);
-			} break;
-			case 8: {
-				ret.set(i, *(const double *)&raw_bytes[byte_offset]);
-			} break;
-			default: {
-				ERR_FAIL_V_MSG(ret, "G4MF import: Godot does not support reading G4MF accessor primitives of type '" + _primitive_type + "'.");
-			}
-		}
+#define G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(m_numbers, m_prim_type)                                                                                                         \
+	const PackedByteArray raw_bytes = load_bytes_from_buffer_view(p_g4mf_state);                                                                                                        \
+	const int64_t raw_byte_size = raw_bytes.size();                                                                                                                                     \
+	const int64_t bytes_per_prim = bytes_per_primitive();                                                                                                                               \
+	const int64_t prim_size = raw_byte_size / bytes_per_prim;                                                                                                                           \
+	m_numbers.resize(prim_size);                                                                                                                                                        \
+	if (_primitive_type.begins_with("uint")) {                                                                                                                                          \
+		for (int i = 0; i < prim_size; i++) {                                                                                                                                           \
+			const int byte_offset = i * bytes_per_prim;                                                                                                                                 \
+			switch (bytes_per_prim) {                                                                                                                                                   \
+				case 1: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const uint8_t *)&raw_bytes[byte_offset]));                                                                                           \
+				} break;                                                                                                                                                                \
+				case 2: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const uint16_t *)&raw_bytes[byte_offset]));                                                                                          \
+				} break;                                                                                                                                                                \
+				case 4: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const uint32_t *)&raw_bytes[byte_offset]));                                                                                          \
+				} break;                                                                                                                                                                \
+				case 8: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const uint64_t *)&raw_bytes[byte_offset]));                                                                                          \
+				} break;                                                                                                                                                                \
+				default: {                                                                                                                                                              \
+					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor uint primitives of type '" + _primitive_type + "'. Returning an zero array."); \
+				}                                                                                                                                                                       \
+			}                                                                                                                                                                           \
+		}                                                                                                                                                                               \
+	} else if (_primitive_type.begins_with("int")) {                                                                                                                                    \
+		for (int i = 0; i < prim_size; i++) {                                                                                                                                           \
+			const int byte_offset = i * bytes_per_prim;                                                                                                                                 \
+			switch (bytes_per_prim) {                                                                                                                                                   \
+				case 1: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const int8_t *)&raw_bytes[byte_offset]));                                                                                            \
+				} break;                                                                                                                                                                \
+				case 2: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const int16_t *)&raw_bytes[byte_offset]));                                                                                           \
+				} break;                                                                                                                                                                \
+				case 4: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const int32_t *)&raw_bytes[byte_offset]));                                                                                           \
+				} break;                                                                                                                                                                \
+				case 8: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const int64_t *)&raw_bytes[byte_offset]));                                                                                           \
+				} break;                                                                                                                                                                \
+				default: {                                                                                                                                                              \
+					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor int primitives of type '" + _primitive_type + "'. Returning an zero array.");  \
+				}                                                                                                                                                                       \
+			}                                                                                                                                                                           \
+		}                                                                                                                                                                               \
+	} else if (_primitive_type.begins_with("float")) {                                                                                                                                  \
+		for (int i = 0; i < prim_size; i++) {                                                                                                                                           \
+			const int byte_offset = i * bytes_per_prim;                                                                                                                                 \
+			switch (bytes_per_prim) {                                                                                                                                                   \
+				case 1: {                                                                                                                                                               \
+					const uint8_t quarter_float_bits = *(const uint8_t *)&raw_bytes[byte_offset];                                                                                       \
+					m_numbers.set(i, m_prim_type(_float8_to_double(quarter_float_bits)));                                                                                               \
+				} break;                                                                                                                                                                \
+				case 2: {                                                                                                                                                               \
+					const uint16_t half_float_bits = *(const uint16_t *)&raw_bytes[byte_offset];                                                                                        \
+					m_numbers.set(i, m_prim_type(_float16_to_double(half_float_bits)));                                                                                                 \
+				} break;                                                                                                                                                                \
+				case 4: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const float *)&raw_bytes[byte_offset]));                                                                                             \
+				} break;                                                                                                                                                                \
+				case 8: {                                                                                                                                                               \
+					m_numbers.set(i, m_prim_type(*(const double *)&raw_bytes[byte_offset]));                                                                                            \
+				} break;                                                                                                                                                                \
+				default: {                                                                                                                                                              \
+					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor primitives of type '" + _primitive_type + "'. Returning an zero array.");      \
+				}                                                                                                                                                                       \
+			}                                                                                                                                                                           \
+		}                                                                                                                                                                               \
+	} else {                                                                                                                                                                            \
+		ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor primitives of type '" + _primitive_type + "'. Returning an zero array.");                  \
 	}
-	return ret;
+
+PackedFloat64Array G4MFAccessor4D::decode_floats_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const {
+	PackedFloat64Array numbers;
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(numbers, double);
+	return numbers;
+}
+
+// The 64-bit version alone works but since int32 is very common
+// and needed internally let's provide a dedicated function for it.
+PackedInt32Array G4MFAccessor4D::decode_int32s_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const {
+	PackedInt32Array numbers;
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(numbers, int32_t);
+	return numbers;
 }
 
 PackedInt64Array G4MFAccessor4D::decode_ints_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const {
-	PackedInt64Array ret;
-	ERR_FAIL_COND_V_MSG(!_primitive_type.begins_with("int"), ret, "G4MF import: Cannot decode ints from an accessor of type '" + _primitive_type + "'. Returning an empty int array.");
-	const PackedByteArray raw_bytes = load_bytes_from_buffer_view(p_g4mf_state);
-	const int64_t raw_byte_size = raw_bytes.size();
-	const int64_t bytes_per_prim = bytes_per_primitive();
-	const int64_t prim_size = raw_byte_size / bytes_per_prim;
-	ret.resize(prim_size);
-	for (int i = 0; i < prim_size; i++) {
-		const int byte_offset = i * bytes_per_prim;
-		switch (bytes_per_prim) {
-			case 1: {
-				ret.set(i, *(const int8_t *)&raw_bytes[byte_offset]);
-			} break;
-			case 2: {
-				ret.set(i, *(const int16_t *)&raw_bytes[byte_offset]);
-			} break;
-			case 4: {
-				ret.set(i, *(const int32_t *)&raw_bytes[byte_offset]);
-			} break;
-			case 8: {
-				ret.set(i, *(const int64_t *)&raw_bytes[byte_offset]);
-			} break;
-			default: {
-				ERR_FAIL_V_MSG(ret, "G4MF import: Godot does not support reading G4MF accessor primitives of type '" + _primitive_type + "'.");
-			}
-		}
-	}
-	return ret;
+	PackedInt64Array numbers;
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(numbers, int64_t);
+	return numbers;
 }
 
 Vector<uint64_t> G4MFAccessor4D::decode_uints_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const {
-	Vector<uint64_t> ret;
-	ERR_FAIL_COND_V_MSG(!_primitive_type.begins_with("uint"), ret, "G4MF import: Cannot decode uints from an accessor of type '" + _primitive_type + "'. Returning an empty uint array.");
-	const PackedByteArray raw_bytes = load_bytes_from_buffer_view(p_g4mf_state);
-	const int64_t raw_byte_size = raw_bytes.size();
-	const int64_t bytes_per_prim = bytes_per_primitive();
-	const int64_t prim_size = raw_byte_size / bytes_per_prim;
-	ret.resize(prim_size);
-	for (int i = 0; i < prim_size; i++) {
-		const int byte_offset = i * bytes_per_prim;
-		switch (bytes_per_prim) {
-			case 1: {
-				ret.set(i, *(const uint8_t *)&raw_bytes[byte_offset]);
-			} break;
-			case 2: {
-				ret.set(i, *(const uint16_t *)&raw_bytes[byte_offset]);
-			} break;
-			case 4: {
-				ret.set(i, *(const uint32_t *)&raw_bytes[byte_offset]);
-			} break;
-			case 8: {
-				ret.set(i, *(const uint64_t *)&raw_bytes[byte_offset]);
-			} break;
-			default: {
-				ERR_FAIL_V_MSG(ret, "G4MF import: Godot does not support reading G4MF accessor primitives of type '" + _primitive_type + "'.");
-			}
-		}
-	}
-	return ret;
+	Vector<uint64_t> numbers;
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(numbers, uint64_t);
+	return numbers;
 }
 
 Array G4MFAccessor4D::decode_accessor_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
@@ -706,10 +811,16 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_primitives(const Vector<uint64_t
 	const Variant &first_element = m_input_data[0];                                                                                                                                               \
 	const Variant::Type first_type = first_element.get_type();                                                                                                                                    \
 	const int64_t prim_per_variant = primitives_per_variant(first_type);                                                                                                                          \
+	/* For the most part, use the vector size, so for example, encoding Vector2s as Vector3s leaves 0 at the end. */                                                                              \
+	/* However, when the inputs are scalars, it's usually expected to just write those all together. */                                                                                           \
+	/* Ex: If the G4MF is supposed to contain an integer Vector2 array, but Godot doesn't have PackedVector2iArray, */                                                                            \
+	/* we would use PackedInt32Array in Godot as a substitute, so the encoding needs to handle this. */                                                                                           \
+	const int vector_size = prim_per_variant == 1 ? 1 : _vector_size;                                                                                                                             \
 	const int input_size = m_input_data.size();                                                                                                                                                   \
-	m_numbers.resize(input_size *_vector_size);                                                                                                                                                   \
+	m_numbers.resize(input_size *vector_size);                                                                                                                                                    \
 	for (int input_index = 0; input_index < input_size; input_index++) {                                                                                                                          \
 		Variant variant = m_input_data[input_index];                                                                                                                                              \
+		const int vector_offset = input_index * vector_size;                                                                                                                                      \
 		const Variant::Type variant_type = variant.get_type();                                                                                                                                    \
 		ERR_FAIL_COND_V_MSG(variant_type != first_type, m_error_type(), "G4MF export: Cannot encode an array of mixed types. All elements must be of the same homogeneous type.");                \
 		switch (variant_type) {                                                                                                                                                                   \
@@ -717,13 +828,8 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_primitives(const Vector<uint64_t
 			case Variant::BOOL:                                                                                                                                                                   \
 			case Variant::INT:                                                                                                                                                                    \
 			case Variant::FLOAT: {                                                                                                                                                                \
-				/* For scalar values, just append them. Variant can convert all of these to double. Some padding may also be needed. */                                                           \
-				m_numbers.append(variant);                                                                                                                                                        \
-				if (unlikely(_vector_size > 1)) {                                                                                                                                                 \
-					for (int i = 1; i < _vector_size; i++) {                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
-					}                                                                                                                                                                             \
-				}                                                                                                                                                                                 \
+				/* For scalar values, just set them. Variant can convert all of these to each other */                                                                                            \
+				m_numbers.set(vector_offset, variant);                                                                                                                                            \
 			} break;                                                                                                                                                                              \
 			case Variant::PLANE:                                                                                                                                                                  \
 			case Variant::QUATERNION:                                                                                                                                                             \
@@ -746,21 +852,21 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_primitives(const Vector<uint64_t
 			case Variant::VECTOR4I: {                                                                                                                                                             \
 				/* Variant can handle converting Vector2/2i/3/3i/4/4i to Vector4 for us. */                                                                                                       \
 				Vector4 vec = variant;                                                                                                                                                            \
-				for (int i = 0; i < _vector_size; i++) {                                                                                                                                          \
+				for (int i = 0; i < vector_size; i++) {                                                                                                                                           \
 					if (i < prim_per_variant) {                                                                                                                                                   \
-						m_numbers.append(vec[i]);                                                                                                                                                 \
+						m_numbers.set(vector_offset + i, vec[i]);                                                                                                                                 \
 					} else {                                                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
+						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::COLOR: {                                                                                                                                                                \
 				Color c = variant;                                                                                                                                                                \
-				for (int i = 0; i < _vector_size; i++) {                                                                                                                                          \
+				for (int i = 0; i < vector_size; i++) {                                                                                                                                           \
 					if (i < prim_per_variant) {                                                                                                                                                   \
-						m_numbers.append(c[i]);                                                                                                                                                   \
+						m_numbers.set(vector_offset + i, c[i]);                                                                                                                                   \
 					} else {                                                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
+						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
@@ -771,61 +877,61 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_primitives(const Vector<uint64_t
 				/* Variant can handle converting Transform2D/Transform3D/Basis to Projection for us. */                                                                                           \
 				Projection p = variant;                                                                                                                                                           \
 				real_t *proj_numbers = (real_t *)&p;                                                                                                                                              \
-				for (int i = 0; i < _vector_size; i++) {                                                                                                                                          \
+				for (int i = 0; i < vector_size; i++) {                                                                                                                                           \
 					if (i < 16) {                                                                                                                                                                 \
-						m_numbers.append(proj_numbers[i]);                                                                                                                                        \
+						m_numbers.set(vector_offset + i, proj_numbers[i]);                                                                                                                        \
 					} else {                                                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
+						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_BYTE_ARRAY: {                                                                                                                                                    \
 				PackedByteArray packed_array = variant;                                                                                                                                           \
-				for (int i = 0; i < _vector_size; i++) {                                                                                                                                          \
+				for (int i = 0; i < vector_size; i++) {                                                                                                                                           \
 					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.append(packed_array[i]);                                                                                                                                        \
+						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
 					} else {                                                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
+						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT32_ARRAY: {                                                                                                                                                   \
 				PackedInt32Array packed_array = variant;                                                                                                                                          \
-				for (int i = 0; i < _vector_size; i++) {                                                                                                                                          \
+				for (int i = 0; i < vector_size; i++) {                                                                                                                                           \
 					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.append(packed_array[i]);                                                                                                                                        \
+						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
 					} else {                                                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
+						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT64_ARRAY: {                                                                                                                                                   \
 				PackedInt64Array packed_array = variant;                                                                                                                                          \
-				for (int i = 0; i < _vector_size; i++) {                                                                                                                                          \
+				for (int i = 0; i < vector_size; i++) {                                                                                                                                           \
 					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.append(packed_array[i]);                                                                                                                                        \
+						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
 					} else {                                                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
+						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT32_ARRAY: {                                                                                                                                                 \
 				PackedFloat32Array packed_array = variant;                                                                                                                                        \
-				for (int i = 0; i < _vector_size; i++) {                                                                                                                                          \
+				for (int i = 0; i < vector_size; i++) {                                                                                                                                           \
 					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.append(packed_array[i]);                                                                                                                                        \
+						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
 					} else {                                                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
+						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT64_ARRAY: {                                                                                                                                                 \
 				PackedFloat64Array packed_array = variant;                                                                                                                                        \
-				for (int i = 0; i < _vector_size; i++) {                                                                                                                                          \
+				for (int i = 0; i < vector_size; i++) {                                                                                                                                           \
 					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.append(packed_array[i]);                                                                                                                                        \
+						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
 					} else {                                                                                                                                                                      \
-						m_numbers.append(0);                                                                                                                                                      \
+						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
@@ -853,11 +959,47 @@ Vector<uint64_t> G4MFAccessor4D::_encode_variants_as_uints(const Array &p_input_
 	return numbers;
 }
 
-PackedByteArray G4MFAccessor4D::encode_accessor(const Array &p_input_data) const {
+PackedByteArray G4MFAccessor4D::encode_accessor_from_variants(const Array &p_input_data) const {
 	ERR_FAIL_COND_V_MSG(p_input_data.is_empty(), PackedByteArray(), "G4MF export: Cannot encode an empty array.");
 	const int64_t bytes_per_vec = bytes_per_vector();
 	ERR_FAIL_COND_V_MSG(bytes_per_vec == 0, PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _primitive_type + "'.");
-	return PackedByteArray();
+	if (_primitive_type.begins_with("float")) {
+		PackedFloat64Array numbers = _encode_variants_as_floats(p_input_data);
+		return encode_floats_as_primitives(numbers);
+	} else if (_primitive_type.begins_with("int")) {
+		PackedInt64Array numbers = _encode_variants_as_ints(p_input_data);
+		return encode_ints_as_primitives(numbers);
+	} else if (_primitive_type.begins_with("uint")) {
+		Vector<uint64_t> numbers = _encode_variants_as_uints(p_input_data);
+		return encode_uints_as_primitives(numbers);
+	}
+	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _primitive_type + "' as a G4MF accessor.");
+}
+
+int G4MFAccessor4D::encode_new_accessor_into_state(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_primitive_type, const int p_vector_size, const bool p_deduplicate) {
+	Ref<G4MFAccessor4D> accessor;
+	accessor.instantiate();
+	accessor->set_primitive_type(p_primitive_type);
+	accessor->set_vector_size(p_vector_size);
+	// Write the data into a new buffer view.
+	PackedByteArray encoded_bytes = accessor->encode_accessor_from_variants(p_input_data);
+	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
+	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
+	ERR_FAIL_COND_V_MSG(buffer_view_index == -1, -1, "G4MF export: Accessor failed to write new buffer view into G4MF state.");
+	accessor->set_buffer_view_index(buffer_view_index);
+	// Add the new accessor to the state, but check for duplicates first.
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	const int accessor_count = state_accessors.size();
+	for (int i = 0; i < accessor_count; i++) {
+		Ref<G4MFAccessor4D> existing_accessor = state_accessors[i];
+		if (accessor->is_equal_exact(existing_accessor)) {
+			// An identical accessor already exists in the state, so just return the index.
+			return i;
+		}
+	}
+	state_accessors.append(accessor);
+	p_g4mf_state->set_accessors(state_accessors);
+	return accessor_count;
 }
 
 Ref<G4MFAccessor4D> G4MFAccessor4D::from_dictionary(const Dictionary &p_dict) {
@@ -903,16 +1045,21 @@ void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("bytes_per_vector"), &G4MFAccessor4D::bytes_per_vector);
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("primitives_per_variant", "variant_type"), &G4MFAccessor4D::primitives_per_variant);
 
+	// Determine the minimal primitive type for the given data.
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_int32s", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_int32s);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_vector4s", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_vector4s);
+
 	// Decode functions.
-	ClassDB::bind_method(D_METHOD("decode_accessor_as_variants", "state", "variant_type"), &G4MFAccessor4D::decode_accessor_as_variants);
-	ClassDB::bind_method(D_METHOD("decode_floats_from_primitives", "state"), &G4MFAccessor4D::decode_floats_from_primitives);
-	ClassDB::bind_method(D_METHOD("decode_ints_from_primitives", "state"), &G4MFAccessor4D::decode_ints_from_primitives);
-	ClassDB::bind_method(D_METHOD("load_bytes_from_buffer_view", "state"), &G4MFAccessor4D::load_bytes_from_buffer_view);
+	ClassDB::bind_method(D_METHOD("decode_accessor_as_variants", "g4mf_state", "variant_type"), &G4MFAccessor4D::decode_accessor_as_variants);
+	ClassDB::bind_method(D_METHOD("decode_floats_from_primitives", "g4mf_state"), &G4MFAccessor4D::decode_floats_from_primitives);
+	ClassDB::bind_method(D_METHOD("decode_ints_from_primitives", "g4mf_state"), &G4MFAccessor4D::decode_ints_from_primitives);
+	ClassDB::bind_method(D_METHOD("load_bytes_from_buffer_view", "g4mf_state"), &G4MFAccessor4D::load_bytes_from_buffer_view);
 
 	// Encode functions.
-	ClassDB::bind_method(D_METHOD("encode_accessor", "input_data"), &G4MFAccessor4D::encode_accessor);
+	ClassDB::bind_method(D_METHOD("encode_accessor_from_variants", "input_data"), &G4MFAccessor4D::encode_accessor_from_variants);
 	ClassDB::bind_method(D_METHOD("encode_floats_as_primitives", "input_data"), &G4MFAccessor4D::encode_floats_as_primitives);
 	ClassDB::bind_method(D_METHOD("encode_ints_as_primitives", "input_data"), &G4MFAccessor4D::encode_ints_as_primitives);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_into_state", "g4mf_state", "input_data", "primitive_type", "vector_size"), &G4MFAccessor4D::encode_new_accessor_into_state);
 
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("from_dictionary", "dict"), &G4MFAccessor4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFAccessor4D::to_dictionary);

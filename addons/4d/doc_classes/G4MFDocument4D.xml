@@ -43,4 +43,9 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="force_wireframe" type="bool" setter="set_force_wireframe" getter="get_force_wireframe" default="false">
+			Whether to force all meshes to be generated as wireframe meshes. If [code]true[/code], all meshes will be generated as wireframe meshes, and meshes without edges will have their edges calculated from the cells. If [code]false[/code] (default), meshes will be generated as tetrahedral meshes if they have cells, or as wireframe meshes if they do not have cells.
+		</member>
+	</members>
 </class>

@@ -63,6 +63,8 @@ def get_doc_classes():
 		"G4MFItem4D",
 		"G4MFAccessor4D",
 		"G4MFBufferView4D",
+		"G4MFMesh4D",
+		"G4MFMeshSurface4D",
 		"G4MFNode4D",
 		"G4MFState4D",
 		"G4MFDocument4D",
