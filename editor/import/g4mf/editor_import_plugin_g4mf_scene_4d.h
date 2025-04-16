@@ -17,12 +17,13 @@ public:
 	virtual float GDEXTMOD_GET_PRIORITY() const override { return 200.0f; }
 #if GDEXTENSION
 	virtual PackedStringArray _get_recognized_extensions() const override {
-		return PackedStringArray{ "g4mf" };
+		return PackedStringArray{ "g4tf", "g4b" };
 	}
 	virtual Error _import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const override;
 #elif GODOT_MODULE
 	virtual void get_recognized_extensions(List<String> *p_extensions) const override {
-		p_extensions->push_back("g4mf");
+		p_extensions->push_back("g4tf");
+		p_extensions->push_back("g4b");
 	}
 #if VERSION_HEX < 0x040400
 	virtual Error import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;

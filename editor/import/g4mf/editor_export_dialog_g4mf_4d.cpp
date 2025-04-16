@@ -35,7 +35,7 @@ void EditorExportDialogG4MF4D::_popup_g4mf_export_dialog() {
 	if (filename.is_empty()) {
 		filename = scene_root->get_name();
 	}
-	set_current_file(filename + ".g4mf");
+	set_current_file(filename + ".g4tf");
 	// Show the file dialog.
 	popup_centered_ratio();
 }
@@ -59,7 +59,8 @@ void EditorExportDialogG4MF4D::setup(PopupMenu *p_export_menu) {
 	set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 	set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	clear_filters();
-	add_filter("*.g4mf", "G4MF File");
+	add_filter("*.g4tf", "G4MF Text File");
+	add_filter("*.g4b", "G4MF Binary File");
 	set_title("Export 4D Scene as G4MF File");
 	EditorInterface *editor_interface = EditorInterface::get_singleton();
 	ERR_FAIL_NULL(editor_interface);

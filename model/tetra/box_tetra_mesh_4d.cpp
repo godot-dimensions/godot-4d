@@ -161,11 +161,19 @@
 	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.6, 0.6), \
 	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.3, 0.6, 0.3), Vector3(0.6, 0.6, 0.6), \
 }
+
+#define BOX_48_CELL_POLYTOPE_EDGE_INDICES PackedInt32Array { \
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, /* X */ \
+	0, 2, 1, 3, 4, 6, 5, 7, 8, 10, 9, 11, 12, 14, 13, 15, /* Y */ \
+	0, 4, 1, 5, 2, 6, 3, 7, 8, 12, 9, 13, 10, 14, 11, 15, /* Z */ \
+	0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15, /* W */ \
+}
 /* clang-format on */
 
 void BoxTetraMesh4D::_clear_caches() {
 	_cell_positions_cache.clear();
 	_vertices_cache.clear();
+	tetra_mesh_clear_cache();
 }
 
 Vector4 BoxTetraMesh4D::get_half_extents() const {
@@ -215,6 +223,13 @@ PackedVector4Array BoxTetraMesh4D::get_cell_normals() {
 
 PackedVector3Array BoxTetraMesh4D::get_cell_uvw_map() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_UVW_MAP : BOX_48_CELL_UVW_MAP;
+}
+
+PackedInt32Array BoxTetraMesh4D::get_edge_indices() {
+	if (_tetra_decomp == BOX_TETRA_DECOMP_48_CELL_POLYTOPE) {
+		return BOX_48_CELL_POLYTOPE_EDGE_INDICES;
+	}
+	return TetraMesh4D::get_edge_indices();
 }
 
 PackedVector4Array BoxTetraMesh4D::get_vertices() {
@@ -271,11 +286,12 @@ void BoxTetraMesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_tetra_decomp"), &BoxTetraMesh4D::get_tetra_decomp);
 	ClassDB::bind_method(D_METHOD("set_tetra_decomp", "decomp"), &BoxTetraMesh4D::set_tetra_decomp);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "tetra_decomp", PROPERTY_HINT_ENUM, "40 Cell,48 Cell"), "set_tetra_decomp", "get_tetra_decomp");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "tetra_decomp", PROPERTY_HINT_ENUM, "40 Cell,48 Cell,48 Cell Polytope"), "set_tetra_decomp", "get_tetra_decomp");
 
 	ClassDB::bind_static_method("BoxTetraMesh4D", D_METHOD("from_box_wire_mesh", "wire_mesh"), &BoxTetraMesh4D::from_box_wire_mesh);
 	ClassDB::bind_method(D_METHOD("to_box_wire_mesh"), &BoxTetraMesh4D::to_box_wire_mesh);
 
 	BIND_ENUM_CONSTANT(BOX_TETRA_DECOMP_40_CELL);
 	BIND_ENUM_CONSTANT(BOX_TETRA_DECOMP_48_CELL);
+	BIND_ENUM_CONSTANT(BOX_TETRA_DECOMP_48_CELL_POLYTOPE);
 }

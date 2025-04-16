@@ -12,6 +12,7 @@ public:
 	enum BoxTetraDecomp {
 		BOX_TETRA_DECOMP_40_CELL,
 		BOX_TETRA_DECOMP_48_CELL,
+		BOX_TETRA_DECOMP_48_CELL_POLYTOPE,
 	};
 
 private:
@@ -41,6 +42,7 @@ public:
 	virtual PackedVector4Array get_cell_positions() override;
 	virtual PackedVector4Array get_cell_normals() override;
 	virtual PackedVector3Array get_cell_uvw_map() override;
+	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_vertices() override;
 
 	static Ref<BoxTetraMesh4D> from_box_wire_mesh(const Ref<BoxWireMesh4D> &p_wire_mesh);

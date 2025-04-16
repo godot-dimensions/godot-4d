@@ -29,6 +29,7 @@ public:
 	virtual PackedVector4Array get_cell_normals();
 	virtual PackedVector3Array get_cell_uvw_map();
 
+	static PackedInt32Array calculate_edge_indices_from_cell_indices(const PackedInt32Array &p_cell_indices, const bool p_deduplicate = true);
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_edge_positions() override;
 

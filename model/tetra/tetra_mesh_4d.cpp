@@ -97,27 +97,35 @@ PackedVector3Array TetraMesh4D::get_cell_uvw_map() {
 	return uvw_map;
 }
 
+PackedInt32Array TetraMesh4D::calculate_edge_indices_from_cell_indices(const PackedInt32Array &p_cell_indices, const bool p_deduplicate) {
+	PackedInt32Array edge_indices;
+	edge_indices.resize(p_cell_indices.size() * 3);
+	const int stop = p_cell_indices.size() / 4;
+	for (int i = 0; i < stop; i++) {
+		const int cell_index = i * 4;
+		edge_indices.set(i * 12 + 0, p_cell_indices[cell_index + 0]);
+		edge_indices.set(i * 12 + 1, p_cell_indices[cell_index + 1]);
+		edge_indices.set(i * 12 + 2, p_cell_indices[cell_index + 0]);
+		edge_indices.set(i * 12 + 3, p_cell_indices[cell_index + 2]);
+		edge_indices.set(i * 12 + 4, p_cell_indices[cell_index + 0]);
+		edge_indices.set(i * 12 + 5, p_cell_indices[cell_index + 3]);
+		edge_indices.set(i * 12 + 6, p_cell_indices[cell_index + 1]);
+		edge_indices.set(i * 12 + 7, p_cell_indices[cell_index + 2]);
+		edge_indices.set(i * 12 + 8, p_cell_indices[cell_index + 1]);
+		edge_indices.set(i * 12 + 9, p_cell_indices[cell_index + 3]);
+		edge_indices.set(i * 12 + 10, p_cell_indices[cell_index + 2]);
+		edge_indices.set(i * 12 + 11, p_cell_indices[cell_index + 3]);
+	}
+	if (p_deduplicate) {
+		edge_indices = deduplicate_edge_indices(edge_indices);
+	}
+	return edge_indices;
+}
+
 PackedInt32Array TetraMesh4D::get_edge_indices() {
 	if (_edge_indices_cache.is_empty()) {
-		const PackedInt32Array cell_indices = get_cell_indices();
-		const int stop = cell_indices.size() / 4;
-		for (int i = 0; i < stop; i++) {
-			const int cell_index = i * 4;
-			_edge_indices_cache.append(cell_indices[cell_index + 0]);
-			_edge_indices_cache.append(cell_indices[cell_index + 1]);
-			_edge_indices_cache.append(cell_indices[cell_index + 0]);
-			_edge_indices_cache.append(cell_indices[cell_index + 2]);
-			_edge_indices_cache.append(cell_indices[cell_index + 0]);
-			_edge_indices_cache.append(cell_indices[cell_index + 3]);
-			_edge_indices_cache.append(cell_indices[cell_index + 1]);
-			_edge_indices_cache.append(cell_indices[cell_index + 2]);
-			_edge_indices_cache.append(cell_indices[cell_index + 1]);
-			_edge_indices_cache.append(cell_indices[cell_index + 3]);
-			_edge_indices_cache.append(cell_indices[cell_index + 2]);
-			_edge_indices_cache.append(cell_indices[cell_index + 3]);
-		}
+		_edge_indices_cache = calculate_edge_indices_from_cell_indices(get_cell_indices(), true);
 	}
-	_edge_indices_cache = deduplicate_edge_indices(_edge_indices_cache);
 	return _edge_indices_cache;
 }
 

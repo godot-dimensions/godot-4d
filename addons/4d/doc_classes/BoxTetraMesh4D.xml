@@ -36,10 +36,13 @@
 	</members>
 	<constants>
 		<constant name="BOX_TETRA_DECOMP_40_CELL" value="0" enum="BoxTetraDecomp">
-			Generate box meshes with 40-cell tetrahedra, where each side of the box is a cube decomposed into 5 tetrahedra. 40-cell is the decomposition with the fewest tetrahedra possible for a box. Both the 40-cell and 48-cell have the same UVW mapping, allowing the same textures to be used for both.
+			Generate box meshes with 40-cell tetrahedra, where each side of the 8 sides of the box is a cube decomposed into 5 tetrahedra. 40-cell is the decomposition with the fewest tetrahedra possible for a box. Both the 40-cell and 48-cell have the same UVW mapping, allowing the same textures to be used for both.
 		</constant>
 		<constant name="BOX_TETRA_DECOMP_48_CELL" value="1" enum="BoxTetraDecomp">
-			Generate box meshes with 48-cell tetrahedra, where each side of the box is a cube decomposed into 6 tetrahedra. 48-cell has more symmetry than 40-cell, since each cell in the 48-cell is the same size and shape. Both the 40-cell and 48-cell have the same UVW mapping, allowing the same textures to be used for both.
+			Generate box meshes with 48-cell tetrahedra, where each side of the 8 sides of the box is a cube decomposed into 6 tetrahedra. 48-cell has more symmetry than 40-cell, since each cell in the 48-cell is the same size and shape. Both the 40-cell and 48-cell have the same UVW mapping, allowing the same textures to be used for both.
+		</constant>
+		<constant name="BOX_TETRA_DECOMP_48_CELL_POLYTOPE" value="2" enum="BoxTetraDecomp">
+			Generate box meshes with 48-cell tetrahedra, where each side of the 8 sides of the box is a cube decomposed into 6 tetrahedra. 48-cell has more symmetry than 40-cell, since each cell in the 48-cell is the same size and shape. Both the 40-cell and 48-cell have the same UVW mapping, allowing the same textures to be used for both. This "Polytope" option affects wireframe rendering, since it only includes the outer edges of the box, as opposed to including all edges of the tetrahedra. This "Polytope" option will also include edge indices and enable the `"polytopeCells"` property when exporting to G4MF.
 		</constant>
 	</constants>
 </class>

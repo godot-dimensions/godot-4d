@@ -47,6 +47,7 @@ Error EditorImportPluginG4MFScene4D::import(ResourceUID::ID p_source_id, const S
 	Ref<PackedScene> packed_scene;
 	packed_scene.instantiate();
 	err = packed_scene->pack(node);
+	memdelete(node);
 	ERR_FAIL_COND_V(err != OK, err);
 	const String save_file = p_save_path + String(".scn");
 #if GDEXTENSION
