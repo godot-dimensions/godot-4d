@@ -621,7 +621,7 @@ Basis4D Basis4D::looking_at(const Vector4 &p_target, const Vector4 &p_perp, cons
 		y.normalize();
 	}
 	const Basis4D b = Basis4D(x, y, z, w);
-	ERR_FAIL_COND_V_MSG(!Math::is_equal_approx(b.determinant(), 1.0f), Basis4D(), "Basis4D.looking_at: Failed to calculate a valid rotation.");
+	ERR_FAIL_COND_V_MSG(!Math::is_equal_approx(b.determinant(), (real_t)1), Basis4D(), "Basis4D.looking_at: Failed to calculate a valid rotation.");
 	return b;
 }
 
