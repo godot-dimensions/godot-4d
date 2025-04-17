@@ -9,7 +9,6 @@ class G4MFMesh4D : public G4MFItem4D {
 
 	TypedArray<G4MFMeshSurface4D> _surfaces;
 
-	bool _can_generate_tetra_meshes_for_all_surfaces() const;
 	Ref<ArrayTetraMesh4D> _generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const int p_surface) const;
 	Ref<ArrayWireMesh4D> _generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const int p_surface) const;
 
@@ -20,6 +19,7 @@ public:
 	TypedArray<G4MFMeshSurface4D> get_surfaces() const { return _surfaces; }
 	void set_surfaces(const TypedArray<G4MFMeshSurface4D> &p_surfaces) { _surfaces = p_surfaces; }
 
+	bool can_generate_tetra_meshes_for_all_surfaces() const;
 	bool is_equal_exact(const Ref<G4MFMesh4D> &p_other) const;
 
 	Ref<Mesh4D> generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_wireframe = false) const;

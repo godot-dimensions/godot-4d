@@ -2,16 +2,6 @@
 
 #include "../g4mf_state_4d.h"
 
-bool G4MFMesh4D::_can_generate_tetra_meshes_for_all_surfaces() const {
-	for (int i = 0; i < _surfaces.size(); i++) {
-		const Ref<G4MFMeshSurface4D> surface = _surfaces[i];
-		if (surface->get_cells_accessor_index() < 0) {
-			return false;
-		}
-	}
-	return true;
-}
-
 Ref<ArrayTetraMesh4D> G4MFMesh4D::_generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const int p_surface) const {
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
@@ -26,6 +16,16 @@ Ref<ArrayWireMesh4D> G4MFMesh4D::_generate_wire_mesh_surface(const Ref<G4MFState
 	ERR_FAIL_INDEX_V(p_surface, _surfaces.size(), wire_mesh);
 	const Ref<G4MFMeshSurface4D> surface = _surfaces[p_surface];
 	return surface->generate_wire_mesh_surface(p_g4mf_state);
+}
+
+bool G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces() const {
+	for (int i = 0; i < _surfaces.size(); i++) {
+		const Ref<G4MFMeshSurface4D> surface = _surfaces[i];
+		if (surface->get_cells_accessor_index() < 0) {
+			return false;
+		}
+	}
+	return true;
 }
 
 bool G4MFMesh4D::is_equal_exact(const Ref<G4MFMesh4D> &p_other) const {
@@ -53,13 +53,14 @@ Ref<Mesh4D> G4MFMesh4D::generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, cons
 	if (surface_count > 1) {
 		WARN_PRINT("G4MFMesh4D.generate_mesh: Godot 4D only supports one surface per mesh. These will be merged into one surface.");
 	}
-	const bool use_tetra_mesh = !p_force_wireframe && _can_generate_tetra_meshes_for_all_surfaces();
+	const bool use_tetra_mesh = !p_force_wireframe && can_generate_tetra_meshes_for_all_surfaces();
 	if (use_tetra_mesh) {
 		Ref<ArrayTetraMesh4D> tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, 0);
 		for (int i = 1; i < surface_count; i++) {
 			Ref<ArrayTetraMesh4D> next_tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, i);
 			tetra_mesh->merge_with(next_tetra_mesh);
 		}
+		tetra_mesh->set_name(get_name());
 		return tetra_mesh;
 	}
 	Ref<ArrayWireMesh4D> wire_mesh = _generate_wire_mesh_surface(p_g4mf_state, 0);
@@ -67,6 +68,7 @@ Ref<Mesh4D> G4MFMesh4D::generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, cons
 		Ref<ArrayWireMesh4D> next_wire_mesh = _generate_wire_mesh_surface(p_g4mf_state, i);
 		wire_mesh->merge_with(next_wire_mesh);
 	}
+	wire_mesh->set_name(get_name());
 	return wire_mesh;
 }
 
@@ -85,10 +87,11 @@ int G4MFMesh4D::convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref
 	for (int i = 0; i < state_mesh_count; i++) {
 		const Ref<G4MFMesh4D> state_mesh = state_meshes[i];
 		if (g4mf_mesh->is_equal_exact(state_mesh)) {
-			// An identical already exists in state, we can just use that.
+			// An identical mesh already exists in state, we can just use that.
 			return i;
 		}
 	}
+	g4mf_mesh->set_name(p_mesh->get_name());
 	state_meshes.append(g4mf_mesh);
 	p_g4mf_state->set_g4mf_meshes(state_meshes);
 	return state_mesh_count;
@@ -129,6 +132,9 @@ Dictionary G4MFMesh4D::to_dictionary() const {
 void G4MFMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_surfaces"), &G4MFMesh4D::get_surfaces);
 	ClassDB::bind_method(D_METHOD("set_surfaces", "surfaces"), &G4MFMesh4D::set_surfaces);
+
+	ClassDB::bind_method(D_METHOD("can_generate_tetra_meshes_for_all_surfaces"), &G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces);
+	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMesh4D::is_equal_exact);
 
 	ClassDB::bind_method(D_METHOD("generate_mesh", "g4mf_state", "force_wireframe"), &G4MFMesh4D::generate_mesh, DEFVAL(false));
 	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("convert_mesh_into_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMesh4D::convert_mesh_into_state, DEFVAL(true));

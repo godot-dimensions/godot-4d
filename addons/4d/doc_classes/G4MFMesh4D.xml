@@ -10,6 +10,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="can_generate_tetra_meshes_for_all_surfaces" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Checks if all surfaces in the mesh can generate tetrahedral meshes, meaning that they all have a non-negative [member G4MFMeshSurface4D.cells_accessor_index]. This does not check if the accessor exists or if it contains valid data. Returns [code]true[/code] if all surfaces can generate tetrahedral meshes, and returns [code]false[/code] if even one surface cannot.
+			</description>
+		</method>
 		<method name="convert_mesh_into_state" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -33,6 +39,13 @@
 			<description>
 				Generates a [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. This will create either a [ArrayTetraMesh4D] or [ArrayWireMesh4D] and return it. This is used for importing a mesh from G4MF, and is the inverse of [method convert_mesh_into_state].
 				If [force_wireframe] is set to true, the mesh will always be generated as a wireframe mesh. Otherwise, the mesh will be generated as a tetrahedral mesh if the [G4MFMesh4D] defines cells, or as a wireframe mesh if the [G4MFMesh4D] does not define cells.
+			</description>
+		</method>
+		<method name="is_equal_exact" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="G4MFMesh4D" />
+			<description>
+				Checks if the [G4MFMesh4D] is equal to another [G4MFMesh4D] exactly by checking if the surface count is the same and all surfaces have the same exact data and refer to the same accessors. If a surface refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the mesh is not checked, and any metadata is ignored.
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">

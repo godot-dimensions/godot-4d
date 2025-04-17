@@ -11,6 +11,14 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="export_append_from_godot_mesh">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="mesh" type="Mesh4D" />
+			<description>
+				Part of the export process. Populates a [G4MFState4D] with data from a Godot [Mesh4D]. This may be used instead of [method export_append_from_godot_scene], or after it. This function will not add any nodes to the [G4MFState4D], only a mesh.
+			</description>
+		</method>
 		<method name="export_append_from_godot_scene">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -25,6 +33,15 @@
 			<param index="1" name="path" type="String" />
 			<description>
 				Part of the export process. Writes a [G4MFState4D] to a G4MF file at the given [param path]. To export a scene to a G4MF, first call [method export_append_from_godot_scene], then call this function.
+			</description>
+		</method>
+		<method name="import_generate_godot_mesh">
+			<return type="Mesh4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="include_invisible" type="bool" default="false" />
+			<description>
+				Part of the import process. Generates a Godot [Mesh4D] from the G4MF data in a [G4MFState4D]. If the G4MF data does not contain nodes, the mesh at index 0 will be generated exactly as-is, and any other meshes will be ignored.
+				If the G4MF data contains nodes, the nodes will be used to determine the transforms of the mesh instances and generate a combined mesh. The combined mesh will only be tetrahedral if every mesh in the G4MF data can be generated as a tetrahedral mesh and [member force_wireframe] is set to [code]false[/code], otherwise the combined mesh will be wireframe.
 			</description>
 		</method>
 		<method name="import_generate_godot_scene">

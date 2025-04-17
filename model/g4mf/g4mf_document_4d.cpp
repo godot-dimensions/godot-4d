@@ -90,7 +90,9 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 		buffer_dict["uri"] = String("data:application/octet-stream;base64,") + base64_buffer;
 		serialized_buffers[i] = buffer_dict;
 	}
-	p_g4mf_json["buffers"] = serialized_buffers;
+	if (!serialized_buffers.is_empty()) {
+		p_g4mf_json["buffers"] = serialized_buffers;
+	}
 	// Serialize buffer views (only relevant if buffers exist).
 	TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_buffer_views();
 	const int buffer_view_count = state_buffer_views.size();
@@ -105,7 +107,9 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 		Dictionary buffer_view_dict = state_buffer_view->to_dictionary();
 		serialized_buffer_views[i] = buffer_view_dict;
 	}
-	p_g4mf_json["bufferViews"] = serialized_buffer_views;
+	if (!serialized_buffer_views.is_empty()) {
+		p_g4mf_json["bufferViews"] = serialized_buffer_views;
+	}
 	// Serialize accessors (only relevant if buffer views exist).
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
 	const int accessor_count = state_accessors.size();
@@ -120,7 +124,9 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 		Dictionary accessor_dict = state_accessor->to_dictionary();
 		serialized_accessors[i] = accessor_dict;
 	}
-	p_g4mf_json["accessors"] = serialized_accessors;
+	if (!serialized_accessors.is_empty()) {
+		p_g4mf_json["accessors"] = serialized_accessors;
+	}
 	return OK;
 }
 
@@ -138,7 +144,10 @@ Error G4MFDocument4D::_export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Di
 		Dictionary serialized_mesh = g4mf_mesh->to_dictionary();
 		serialized_meshes[i] = serialized_mesh;
 	}
-	p_g4mf_json["meshes"] = serialized_meshes;
+	if (!serialized_meshes.is_empty()) {
+		p_g4mf_json["meshes"] = serialized_meshes;
+		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	}
 	return OK;
 }
 
@@ -149,12 +158,17 @@ Error G4MFDocument4D::_export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dic
 	serialized_nodes.resize(node_count);
 	for (int i = 0; i < node_count; i++) {
 		Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
+		if (i == 0) {
+			g4mf_node->set_transform(Transform4D());
+		}
 		Dictionary serialized_node = g4mf_node->to_dictionary();
 		serialized_nodes[i] = serialized_node;
 	}
 	Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
-	g4mf_json["nodes"] = serialized_nodes;
-	p_g4mf_state->set_g4mf_json(g4mf_json);
+	if (!serialized_nodes.is_empty()) {
+		g4mf_json["nodes"] = serialized_nodes;
+		p_g4mf_state->set_g4mf_json(g4mf_json);
+	}
 	return OK;
 }
 
@@ -304,6 +318,8 @@ Error G4MFDocument4D::_import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Diction
 		}
 	}
 	// TODO: Extensions.
+	Ref<G4MFNode4D> root_node = g4mf_nodes[0];
+	root_node->set_transform(Transform4D());
 	p_g4mf_state->set_g4mf_nodes(g4mf_nodes);
 	return OK;
 }
@@ -332,6 +348,7 @@ Node4D *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_stat
 		args.append(p_scene_root);
 		godot_node->propagate_call(StringName("set_owner"), args);
 	} else {
+		godot_node->set_transform(Transform4D());
 		p_parent_node = godot_node;
 		p_scene_root = godot_node;
 		// If multiple nodes were generated under the root node, ensure they have the owner set.
@@ -358,7 +375,7 @@ Node4D *G4MFDocument4D::_import_generate_builtin_node(const Ref<G4MFState4D> p_g
 		TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
 		ERR_FAIL_INDEX_V(mesh_index, state_g4mf_meshes.size(), nullptr);
 		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
-		Ref<Mesh4D> mesh = g4mf_mesh->generate_mesh(p_g4mf_state);
+		Ref<Mesh4D> mesh = g4mf_mesh->generate_mesh(p_g4mf_state, _force_wireframe);
 		if (mesh.is_valid()) {
 			MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
 			mesh_instance->set_mesh(mesh);
@@ -368,10 +385,75 @@ Node4D *G4MFDocument4D::_import_generate_builtin_node(const Ref<G4MFState4D> p_g
 	return nullptr;
 }
 
+Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible) {
+	const TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
+	const int mesh_count = state_g4mf_meshes.size();
+	const TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
+	const int node_count = state_g4mf_nodes.size();
+	bool wireframe = _force_wireframe;
+	if (!_force_wireframe) {
+		for (int i = 0; i < mesh_count; i++) {
+			Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[i];
+			if (!g4mf_mesh->can_generate_tetra_meshes_for_all_surfaces()) {
+				wireframe = true;
+				break;
+			}
+		}
+	}
+	if (wireframe) {
+		Ref<ArrayWireMesh4D> combined_wire_mesh;
+		combined_wire_mesh.instantiate();
+		for (int i = 0; i < node_count; i++) {
+			Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
+			const int mesh_index = g4mf_node->get_mesh_index();
+			if (mesh_index < 0) {
+				continue;
+			}
+			if (!(p_include_invisible || g4mf_node->get_visible())) {
+				continue;
+			}
+			ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
+			Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
+			Ref<ArrayWireMesh4D> mesh = g4mf_mesh->generate_mesh(p_g4mf_state, wireframe);
+			if (mesh.is_valid()) {
+				combined_wire_mesh->merge_with(mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
+			}
+		}
+		return combined_wire_mesh;
+	}
+	Ref<ArrayTetraMesh4D> combined_tetra_mesh;
+	combined_tetra_mesh.instantiate();
+	for (int i = 0; i < node_count; i++) {
+		Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
+		const int mesh_index = g4mf_node->get_mesh_index();
+		if (mesh_index < 0) {
+			continue;
+		}
+		if (!(p_include_invisible || g4mf_node->get_visible())) {
+			continue;
+		}
+		ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
+		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
+		Ref<ArrayTetraMesh4D> mesh = g4mf_mesh->generate_mesh(p_g4mf_state, wireframe);
+		if (mesh.is_valid()) {
+			combined_tetra_mesh->merge_with(mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
+		}
+	}
+	return combined_tetra_mesh;
+}
+
 // Public functions.
 
 Error G4MFDocument4D::export_append_from_godot_scene(Ref<G4MFState4D> p_g4mf_state, Node *p_scene_root) {
+	ERR_FAIL_COND_V_MSG(p_scene_root == nullptr, ERR_INVALID_PARAMETER, "G4MF export: Cannot export a scene without a root node.");
 	return _export_convert_scene_node(p_g4mf_state, p_scene_root, -1);
+}
+
+Error G4MFDocument4D::export_append_from_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh) {
+	ERR_FAIL_COND_V_MSG(p_mesh.is_null(), ERR_INVALID_PARAMETER, "G4MF export: Cannot export a null mesh.");
+	const int mesh_index = G4MFMesh4D::convert_mesh_into_state(p_g4mf_state, p_mesh);
+	ERR_FAIL_COND_V_MSG(mesh_index < 0, ERR_INVALID_PARAMETER, "G4MF export: Failed to convert mesh into G4MF state.");
+	return OK;
 }
 
 Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
@@ -400,19 +482,55 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 
 Node4D *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state) {
 	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
-	ERR_FAIL_COND_V_MSG(state_g4mf_nodes.is_empty(), nullptr, "G4MF import: This G4MF file has no nodes, so it cannot be imported as a scene.");
+	if (state_g4mf_nodes.is_empty()) {
+		// If there are no nodes, we can implicitly generate a MeshInstance4D for the first mesh.
+		TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
+		const int mesh_count = state_g4mf_meshes.size();
+		ERR_FAIL_COND_V_MSG(mesh_count == 0, nullptr, "G4MF import: This G4MF file has no nodes or meshes, so it cannot be imported as a scene.");
+		WARN_PRINT("G4MF import: This G4MF file has no nodes. Try importing as a mesh instead (Import dock -> Import As: 4D Mesh).");
+		MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
+		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[0];
+		mesh_instance->set_mesh(g4mf_mesh->generate_mesh(p_g4mf_state, _force_wireframe));
+		const String mesh_name = g4mf_mesh->get_name();
+		if (mesh_name.is_empty()) {
+			mesh_instance->set_name(p_g4mf_state->get_filename().get_basename());
+		} else {
+			mesh_instance->set_name(mesh_name);
+		}
+		return mesh_instance;
+	}
 	TypedArray<Node4D> state_godot_nodes;
 	state_godot_nodes.resize(state_g4mf_nodes.size());
 	p_g4mf_state->set_godot_nodes(state_godot_nodes);
 	return _import_generate_scene_node(p_g4mf_state, 0, nullptr, nullptr);
 }
 
+Ref<Mesh4D> G4MFDocument4D::import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible) {
+	const TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
+	const int mesh_count = state_g4mf_meshes.size();
+	ERR_FAIL_COND_V_MSG(mesh_count == 0, Ref<Mesh4D>(), "G4MF import: This G4MF file has no meshes, so it cannot be imported as a mesh.");
+	const TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
+	// If there are no nodes, generate the first mesh. We can't combine
+	// in this situation because we don't know the mesh transforms.
+	if (state_g4mf_nodes.is_empty()) {
+		if (mesh_count > 1) {
+			WARN_PRINT("G4MF import: This G4MF file has multiple meshes, but only the first mesh will be imported.");
+		}
+		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[0];
+		return g4mf_mesh->generate_mesh(p_g4mf_state, _force_wireframe);
+	}
+	// If there are nodes, generate a combined mesh.
+	return _import_generate_combined_mesh(p_g4mf_state, p_include_invisible);
+}
+
 void G4MFDocument4D::_bind_methods() {
 	// Main import and export functions.
 	ClassDB::bind_method(D_METHOD("export_append_from_godot_scene", "g4mf_state", "scene_root"), &G4MFDocument4D::export_append_from_godot_scene);
+	ClassDB::bind_method(D_METHOD("export_append_from_godot_mesh", "g4mf_state", "mesh"), &G4MFDocument4D::export_append_from_godot_mesh);
 	ClassDB::bind_method(D_METHOD("export_write_to_file", "g4mf_state", "path"), &G4MFDocument4D::export_write_to_file);
 	ClassDB::bind_method(D_METHOD("import_read_from_file", "g4mf_state", "path"), &G4MFDocument4D::import_read_from_file);
 	ClassDB::bind_method(D_METHOD("import_generate_godot_scene", "g4mf_state"), &G4MFDocument4D::import_generate_godot_scene);
+	ClassDB::bind_method(D_METHOD("import_generate_godot_mesh", "g4mf_state", "include_invisible"), &G4MFDocument4D::import_generate_godot_mesh, DEFVAL(false));
 
 	// Settings for the import process.
 	ClassDB::bind_method(D_METHOD("get_force_wireframe"), &G4MFDocument4D::get_force_wireframe);

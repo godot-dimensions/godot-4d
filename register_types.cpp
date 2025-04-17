@@ -204,6 +204,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorCreate4DSceneButton);
 		GDREGISTER_CLASS(EditorExportDialogG4MF4D);
 		GDREGISTER_CLASS(EditorImportPluginBase4D);
+		GDREGISTER_CLASS(EditorImportPluginG4MFMesh4D);
 		GDREGISTER_CLASS(EditorImportPluginG4MFScene4D);
 		GDREGISTER_CLASS(EditorImportPluginOFFBase);
 		GDREGISTER_CLASS(EditorImportPluginOFFMesh3D);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "import/g4mf/editor_export_dialog_g4mf_4d.h"
+#include "import/g4mf/editor_import_plugin_g4mf_mesh_4d.h"
 #include "import/g4mf/editor_import_plugin_g4mf_scene_4d.h"
 #include "import/off/editor_import_plugin_off_mesh_3d.h"
 #include "import/off/editor_import_plugin_off_scene.h"
@@ -41,6 +42,7 @@ protected:
 
 class Godot4DEditorPlugin : public EditorPlugin {
 	GDCLASS(Godot4DEditorPlugin, EditorPlugin);
+	Ref<EditorImportPluginG4MFMesh4D> _g4mf_mesh_4d_importer;
 	Ref<EditorImportPluginG4MFScene4D> _g4mf_scene_4d_importer;
 	Ref<EditorImportPluginOFFMesh3D> _off_mesh_3d_importer;
 	Ref<EditorImportPluginOFFScene> _off_scene_importer;

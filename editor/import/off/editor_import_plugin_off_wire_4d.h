@@ -12,7 +12,7 @@ public:
 	virtual String GDEXTMOD_GET_IMPORTER_NAME() const override;
 	virtual String GDEXTMOD_GET_RESOURCE_TYPE() const override;
 	virtual String GDEXTMOD_GET_VISIBLE_NAME() const override;
-	virtual float GDEXTMOD_GET_PRIORITY() const override { return 3.0f; }
+	virtual float GDEXTMOD_GET_PRIORITY() const override { return 5.0f; }
 #if GDEXTENSION
 	virtual TypedArray<Dictionary> _get_import_options(const String &p_path, int32_t p_preset_index) const override;
 	virtual Error _import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const override;

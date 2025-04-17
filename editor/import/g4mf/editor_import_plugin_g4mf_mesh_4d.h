@@ -2,19 +2,19 @@
 
 #include "../editor_import_plugin_base_4d.h"
 
-class EditorImportPluginG4MFScene4D : public EditorImportPluginBase4D {
-	GDCLASS(EditorImportPluginG4MFScene4D, EditorImportPluginBase4D);
+class EditorImportPluginG4MFMesh4D : public EditorImportPluginBase4D {
+	GDCLASS(EditorImportPluginG4MFMesh4D, EditorImportPluginBase4D);
 
 protected:
 	static void _bind_methods() {}
 
 public:
-	virtual int GDEXTMOD_GET_IMPORT_ORDER() const override { return 200; }
+	virtual int GDEXTMOD_GET_IMPORT_ORDER() const override { return 10; }
 	virtual String GDEXTMOD_GET_IMPORTER_NAME() const override;
 	virtual String GDEXTMOD_GET_RESOURCE_TYPE() const override;
 	virtual String GDEXTMOD_GET_SAVE_EXTENSION() const override;
 	virtual String GDEXTMOD_GET_VISIBLE_NAME() const override;
-	virtual float GDEXTMOD_GET_PRIORITY() const override { return 200.0f; }
+	virtual float GDEXTMOD_GET_PRIORITY() const override { return 100.0f; }
 #if GDEXTENSION
 	virtual TypedArray<Dictionary> _get_import_options(const String &p_path, int32_t p_preset_index) const override;
 	virtual PackedStringArray _get_recognized_extensions() const override {

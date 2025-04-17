@@ -99,11 +99,13 @@ void Godot4DEditorPlugin::_create_4d_scene() {
 void Godot4DEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+			_g4mf_mesh_4d_importer.instantiate();
 			_g4mf_scene_4d_importer.instantiate();
 			_off_mesh_3d_importer.instantiate();
 			_off_scene_importer.instantiate();
 			_off_tetra_4d_importer.instantiate();
 			_off_wire_4d_importer.instantiate();
+			add_import_plugin(_g4mf_mesh_4d_importer);
 			add_import_plugin(_g4mf_scene_4d_importer);
 			add_import_plugin(_off_mesh_3d_importer);
 			add_import_plugin(_off_scene_importer);
@@ -116,6 +118,7 @@ void Godot4DEditorPlugin::_notification(int p_what) {
 			call_deferred(StringName("_inject_4d_scene_button"));
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
+			remove_import_plugin(_g4mf_mesh_4d_importer);
 			remove_import_plugin(_g4mf_scene_4d_importer);
 			remove_import_plugin(_off_mesh_3d_importer);
 			remove_import_plugin(_off_scene_importer);
