@@ -131,7 +131,7 @@ void G4MFMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_surfaces", "surfaces"), &G4MFMesh4D::set_surfaces);
 
 	ClassDB::bind_method(D_METHOD("generate_mesh", "g4mf_state", "force_wireframe"), &G4MFMesh4D::generate_mesh, DEFVAL(false));
-	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("convert_mesh_into_state", "g4mf_state", "mesh"), &G4MFMesh4D::convert_mesh_into_state);
+	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("convert_mesh_into_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMesh4D::convert_mesh_into_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("from_dictionary", "dict"), &G4MFMesh4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMesh4D::to_dictionary);

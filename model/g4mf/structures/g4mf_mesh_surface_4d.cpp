@@ -211,7 +211,7 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_vertices", "g4mf_state"), &G4MFMeshSurface4D::load_vertices);
 	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_surface", "g4mf_state"), &G4MFMeshSurface4D::generate_tetra_mesh_surface);
 	ClassDB::bind_method(D_METHOD("generate_wire_mesh_surface", "g4mf_state"), &G4MFMeshSurface4D::generate_wire_mesh_surface);
-	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("convert_mesh_surface_for_state", "g4mf_state", "mesh"), &G4MFMeshSurface4D::convert_mesh_surface_for_state);
+	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("convert_mesh_surface_for_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMeshSurface4D::convert_mesh_surface_for_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("from_dictionary", "dict"), &G4MFMeshSurface4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurface4D::to_dictionary);

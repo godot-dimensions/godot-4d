@@ -14,6 +14,7 @@
 			<return type="G4MFMeshSurface4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="mesh" type="Mesh4D" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
 			<description>
 				Converts the given [Mesh4D] into encoded G4MF mesh data and stores this inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF. The returned [G4MFMeshSurface4D] is intended to be used by a [G4MFMesh4D], which goes inside of the [G4MFState4D]. See [method G4MFMesh4D.convert_mesh_into_state].
 			</description>

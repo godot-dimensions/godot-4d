@@ -1059,7 +1059,7 @@ void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("encode_accessor_from_variants", "input_data"), &G4MFAccessor4D::encode_accessor_from_variants);
 	ClassDB::bind_method(D_METHOD("encode_floats_as_primitives", "input_data"), &G4MFAccessor4D::encode_floats_as_primitives);
 	ClassDB::bind_method(D_METHOD("encode_ints_as_primitives", "input_data"), &G4MFAccessor4D::encode_ints_as_primitives);
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_into_state", "g4mf_state", "input_data", "primitive_type", "vector_size"), &G4MFAccessor4D::encode_new_accessor_into_state);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_into_state", "g4mf_state", "input_data", "primitive_type", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_into_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("from_dictionary", "dict"), &G4MFAccessor4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFAccessor4D::to_dictionary);

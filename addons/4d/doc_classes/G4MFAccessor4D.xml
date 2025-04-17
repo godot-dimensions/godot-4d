@@ -71,6 +71,7 @@
 			<param index="1" name="input_data" type="Array" />
 			<param index="2" name="primitive_type" type="String" />
 			<param index="3" name="vector_size" type="int" />
+			<param index="4" name="deduplicate" type="bool" default="true" />
 			<description>
 				Creates a new [G4MFAccessor4D] with the given [param primitive_type] and [param vector_size] settings and adds it to the [G4MFState4D]. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to.
 			</description>
