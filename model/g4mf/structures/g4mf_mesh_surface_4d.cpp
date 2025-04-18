@@ -3,48 +3,6 @@
 #include "../../tetra/box_tetra_mesh_4d.h"
 #include "../g4mf_state_4d.h"
 
-Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::from_dictionary(const Dictionary &p_dict) {
-	Ref<G4MFMeshSurface4D> surface;
-	surface.instantiate();
-	surface->read_item_entries_from_dictionary(p_dict);
-	if (p_dict.has("cells")) {
-		surface->set_cells_accessor_index(p_dict["cells"]);
-	}
-	if (p_dict.has("cellNormals")) {
-		surface->set_cell_normals_accessor_index(p_dict["cellNormals"]);
-	}
-	if (p_dict.has("edges")) {
-		surface->set_edges_accessor_index(p_dict["edges"]);
-	}
-	if (p_dict.has("vertices")) {
-		surface->set_vertices_accessor_index(p_dict["vertices"]);
-	}
-	if (p_dict.has("polytopeCells")) {
-		surface->set_polytope_cells(p_dict["polytopeCells"]);
-	}
-	return surface;
-}
-
-Dictionary G4MFMeshSurface4D::to_dictionary() const {
-	Dictionary dict = write_item_entries_to_dictionary();
-	if (_cells_accessor_index >= 0) {
-		dict["cells"] = _cells_accessor_index;
-	}
-	if (_cell_normals_accessor_index >= 0) {
-		dict["cellNormals"] = _cell_normals_accessor_index;
-	}
-	if (_edges_accessor_index >= 0) {
-		dict["edges"] = _edges_accessor_index;
-	}
-	if (_vertices_accessor_index >= 0) {
-		dict["vertices"] = _vertices_accessor_index;
-	}
-	if (_polytope_cells) {
-		dict["polytopeCells"] = _polytope_cells;
-	}
-	return dict;
-}
-
 bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const {
 	return (_cells_accessor_index == p_other->get_cells_accessor_index() &&
 			_cell_normals_accessor_index == p_other->get_cell_normals_accessor_index() &&
@@ -105,6 +63,14 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 	}
 	const bool is_valid = tetra_mesh->is_mesh_data_valid();
 	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");
+	if (_material_index >= 0) {
+		const TypedArray<G4MFMaterial4D> materials = p_g4mf_state->get_g4mf_materials();
+		ERR_FAIL_INDEX_V(_material_index, materials.size(), tetra_mesh);
+		const Ref<G4MFMaterial4D> g4mf_material = materials[_material_index];
+		ERR_FAIL_COND_V(g4mf_material.is_null(), tetra_mesh);
+		Ref<TetraMaterial4D> tetra_material = g4mf_material->generate_tetra_material(p_g4mf_state);
+		tetra_mesh->set_material(tetra_material);
+	}
 	return tetra_mesh;
 }
 
@@ -122,10 +88,18 @@ Ref<ArrayWireMesh4D> G4MFMeshSurface4D::generate_wire_mesh_surface(const Ref<G4M
 	}
 	const bool is_valid = wire_mesh->is_mesh_data_valid();
 	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");
+	if (_material_index >= 0) {
+		const TypedArray<G4MFMaterial4D> materials = p_g4mf_state->get_g4mf_materials();
+		ERR_FAIL_INDEX_V(_material_index, materials.size(), wire_mesh);
+		const Ref<G4MFMaterial4D> g4mf_material = materials[_material_index];
+		ERR_FAIL_COND_V(g4mf_material.is_null(), wire_mesh);
+		Ref<WireMaterial4D> wire_material = g4mf_material->generate_wire_material(p_g4mf_state);
+		wire_mesh->set_material(wire_material);
+	}
 	return wire_mesh;
 }
 
-Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate) {
+Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const Ref<Material4D> &p_material, const bool p_deduplicate) {
 	Ref<G4MFMeshSurface4D> surface;
 	surface.instantiate();
 	// Convert the vertices into an accessor.
@@ -140,6 +114,14 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 	const int vertices_accessor = G4MFAccessor4D::encode_new_accessor_into_state(p_g4mf_state, vertices_variants, vert_prim_type, 4, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(vertices_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode vertices into G4MFState4D.");
 	surface->set_vertices_accessor_index(vertices_accessor);
+	// Convert the material.
+	if (p_material.is_valid() && !p_material->is_default_material()) {
+		const int material_index = G4MFMaterial4D::convert_material_into_state(p_g4mf_state, p_material, p_deduplicate);
+		surface->set_material_index(material_index);
+		if (material_index < 0) {
+			ERR_PRINT("G4MFMeshSurface4D: Failed to encode material into G4MFState4D.");
+		}
+	}
 	// Convert tetrahedral cells into an accessor.
 	const Ref<TetraMesh4D> tetra_mesh = p_mesh;
 	if (tetra_mesh.is_valid()) {
@@ -193,6 +175,54 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 	return surface;
 }
 
+Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::from_dictionary(const Dictionary &p_dict) {
+	Ref<G4MFMeshSurface4D> surface;
+	surface.instantiate();
+	surface->read_item_entries_from_dictionary(p_dict);
+	if (p_dict.has("cells")) {
+		surface->set_cells_accessor_index(p_dict["cells"]);
+	}
+	if (p_dict.has("cellNormals")) {
+		surface->set_cell_normals_accessor_index(p_dict["cellNormals"]);
+	}
+	if (p_dict.has("edges")) {
+		surface->set_edges_accessor_index(p_dict["edges"]);
+	}
+	if (p_dict.has("vertices")) {
+		surface->set_vertices_accessor_index(p_dict["vertices"]);
+	}
+	if (p_dict.has("material")) {
+		surface->set_material_index(p_dict["material"]);
+	}
+	if (p_dict.has("polytopeCells")) {
+		surface->set_polytope_cells(p_dict["polytopeCells"]);
+	}
+	return surface;
+}
+
+Dictionary G4MFMeshSurface4D::to_dictionary() const {
+	Dictionary dict = write_item_entries_to_dictionary();
+	if (_cells_accessor_index >= 0) {
+		dict["cells"] = _cells_accessor_index;
+	}
+	if (_cell_normals_accessor_index >= 0) {
+		dict["cellNormals"] = _cell_normals_accessor_index;
+	}
+	if (_edges_accessor_index >= 0) {
+		dict["edges"] = _edges_accessor_index;
+	}
+	if (_vertices_accessor_index >= 0) {
+		dict["vertices"] = _vertices_accessor_index;
+	}
+	if (_material_index >= 0) {
+		dict["material"] = _material_index;
+	}
+	if (_polytope_cells) {
+		dict["polytopeCells"] = _polytope_cells;
+	}
+	return dict;
+}
+
 void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_cells_accessor_index"), &G4MFMeshSurface4D::get_cells_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_cells_accessor_index", "cells_accessor_index"), &G4MFMeshSurface4D::set_cells_accessor_index);
@@ -202,16 +232,19 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_edges_accessor_index", "edges_accessor_index"), &G4MFMeshSurface4D::set_edges_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_vertices_accessor_index"), &G4MFMeshSurface4D::get_vertices_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_vertices_accessor_index", "vertices_accessor_index"), &G4MFMeshSurface4D::set_vertices_accessor_index);
+	ClassDB::bind_method(D_METHOD("get_material_index"), &G4MFMeshSurface4D::get_material_index);
+	ClassDB::bind_method(D_METHOD("set_material_index", "material_index"), &G4MFMeshSurface4D::set_material_index);
 	ClassDB::bind_method(D_METHOD("get_polytope_cells"), &G4MFMeshSurface4D::get_polytope_cells);
 	ClassDB::bind_method(D_METHOD("set_polytope_cells", "polytope_cells"), &G4MFMeshSurface4D::set_polytope_cells);
 
+	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMeshSurface4D::is_equal_exact);
 	ClassDB::bind_method(D_METHOD("load_cell_indices", "g4mf_state"), &G4MFMeshSurface4D::load_cell_indices);
 	ClassDB::bind_method(D_METHOD("load_cell_normals", "g4mf_state"), &G4MFMeshSurface4D::load_cell_normals);
 	ClassDB::bind_method(D_METHOD("load_edge_indices", "g4mf_state"), &G4MFMeshSurface4D::load_edge_indices);
 	ClassDB::bind_method(D_METHOD("load_vertices", "g4mf_state"), &G4MFMeshSurface4D::load_vertices);
 	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_surface", "g4mf_state"), &G4MFMeshSurface4D::generate_tetra_mesh_surface);
 	ClassDB::bind_method(D_METHOD("generate_wire_mesh_surface", "g4mf_state"), &G4MFMeshSurface4D::generate_wire_mesh_surface);
-	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("convert_mesh_surface_for_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMeshSurface4D::convert_mesh_surface_for_state, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("convert_mesh_surface_for_state", "g4mf_state", "mesh", "material", "deduplicate"), &G4MFMeshSurface4D::convert_mesh_surface_for_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("from_dictionary", "dict"), &G4MFMeshSurface4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurface4D::to_dictionary);
@@ -220,5 +253,6 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_normals_accessor_index"), "set_cell_normals_accessor_index", "get_cell_normals_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "edges_accessor_index"), "set_edges_accessor_index", "get_edges_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "vertices_accessor_index"), "set_vertices_accessor_index", "get_vertices_accessor_index");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_index"), "set_material_index", "get_material_index");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "polytope_cells"), "set_polytope_cells", "get_polytope_cells");
 }

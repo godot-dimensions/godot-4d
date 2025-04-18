@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFMaterialChannel4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents a single channel of a G4MF material, such as the base color, normal map, or emission properties.
+	</brief_description>
+	<description>
+		G4MFMaterialChannel4D is a class for material channels inside of a [G4MFMaterial4D]. A material channel is a single property of a material, such as [member G4MFMaterial4D.base_color_channel], [member G4MFMaterial4D.normal_channel], [member G4MFMaterial4D.emissive_channel], and [member G4MFMaterial4D.orm_channel]. The colors in a material channel may represent actual colors, or may be more abstract data, such as a normal map's color values encoding the normal vectors of a surface.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFMaterialChannel4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF material channel to a [G4MFMaterialChannel4D]. This will set the fields of the [G4MFMaterialChannel4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="is_equal_exact" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="G4MFMaterialChannel4D" />
+			<description>
+				Checks if the [G4MFMaterialChannel4D] is equal to another [G4MFMaterialChannel4D] exactly by checking if the properties are equal and all accessor indices refer to the same accessors. If a material channel refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the material channel is not checked, and any metadata is ignored.
+			</description>
+		</method>
+		<method name="load_cell_colors" qualifiers="const">
+			<return type="PackedColorArray" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the cell colors from the [G4MFAccessor4D] at [member cell_colors_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
+			</description>
+		</method>
+		<method name="load_edge_colors" qualifiers="const">
+			<return type="PackedColorArray" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the edge colors from the [G4MFAccessor4D] at [member edge_colors_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
+			</description>
+		</method>
+		<method name="load_vertex_colors" qualifiers="const">
+			<return type="PackedColorArray" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the vertex colors from the [G4MFAccessor4D] at [member vertex_colors_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF material channel to a [Dictionary]. This is used for serializing the G4MF material channel as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cell_colors_accessor_index" type="int" setter="set_cell_colors_accessor_index" getter="get_cell_colors_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-cell color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the cells. If not defined, the surface does not have per-cell colors. If defined (set to a valid index), the amount of cell colors MUST match or exceed the amount of cells in the surface.
+		</member>
+		<member name="cell_texture_index" type="int" setter="set_cell_texture_index" getter="get_cell_texture_index" default="-1">
+			The index of the [G4MFTexture4D] in the [G4MFState4D]'s textures array that contains the texture for this surface. This is per-component multiplied with the [member single_color] and the cell colors to get the final color of the cells. If not defined, the surface does not have a texture.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+		<member name="cell_texture_map_accessor_index" type="int" setter="set_cell_texture_map_accessor_index" getter="get_cell_texture_map_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-cell texture map data for this surface, also known as a UV map or UVW map. This is used to map the texture to the surface cells. If not defined (set to a negative index), the surface does not have a texture map. If defined, the amount of texture map data MUST match or exceed the amount of cells in the surface.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+		<member name="edge_colors_accessor_index" type="int" setter="set_edge_colors_accessor_index" getter="get_edge_colors_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-edge color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the edges. If not defined, the surface does not have per-edge colors. If defined (set to a valid index), the amount of edge colors MUST match or exceed the amount of edges in the surface.
+		</member>
+		<member name="single_color" type="Color" setter="set_single_color" getter="get_single_color" default="Color(-1, -1, -1, -1)">
+			The single color of the surface. If non-negative, this is per-component multiplied with other properties to get the final color of the cells and edges, or if no other properties are defined, this is the only color used.
+		</member>
+		<member name="vertex_colors_accessor_index" type="int" setter="set_vertex_colors_accessor_index" getter="get_vertex_colors_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-vertex color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the vertices. If not defined, the surface does not have per-vertex colors. If defined (set to a valid index), the amount of vertex colors MUST match or exceed the amount of vertices in the surface.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+	</members>
+</class>

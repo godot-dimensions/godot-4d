@@ -39,8 +39,17 @@
 		<member name="g4mf_json" type="Dictionary" setter="set_g4mf_json" getter="get_g4mf_json" default="{}">
 			The JSON data of the G4MF file. This is set when reading a G4MF file at the start of the import process before parsing, and is set when writing a G4MF file at the end of the export process after serializing.
 		</member>
+		<member name="g4mf_materials" type="G4MFMaterial4D[]" setter="set_g4mf_materials" getter="get_g4mf_materials" default="[]">
+			The array of [G4MFMaterial4D]s in this G4MF file. If empty, the G4MF file does not have any materials. Materials are referenced by index in [G4MFMeshSurface4D]s which are used in [G4MFMesh4D]s.
+		</member>
+		<member name="g4mf_meshes" type="G4MFMesh4D[]" setter="set_g4mf_meshes" getter="get_g4mf_meshes" default="[]">
+			The array of [G4MFMesh4D]s in this G4MF file. If empty, the G4MF file does not have any meshes. Meshes are referenced by index in [G4MFNode4D]s.
+		</member>
 		<member name="g4mf_nodes" type="G4MFNode4D[]" setter="set_g4mf_nodes" getter="get_g4mf_nodes" default="[]">
 			The array of [G4MFNode4D]s in this G4MF file. If empty, the G4MF file does not have any nodes. If non-empty, the node at index 0 is the root node.
+		</member>
+		<member name="g4mf_textures" type="G4MFTexture4D[]" setter="set_g4mf_textures" getter="get_g4mf_textures" default="[]">
+			The array of [G4MFTexture4D]s in this G4MF file. If empty, the G4MF file does not have any textures. Textures are referenced by index in [G4MFMaterialChannel4D]s which are used in [G4MFMaterial4D]s.
 		</member>
 		<member name="godot_nodes" type="Node4D[]" setter="set_godot_nodes" getter="get_godot_nodes" default="[]">
 			The array of Godot nodes corresponding to the G4MF nodes. This is used when importing a G4MF file and generating Godot nodes, after the nodes are generated, this array will have the same length as [member g4mf_nodes]. This is also used when converting a Godot scene to a G4MF file, after the nodes are converted, this array will have the same length as [member g4mf_nodes]. The node at each index corresponds to the G4MF node with the same index in the [member g4mf_nodes] array.

@@ -43,6 +43,7 @@ protected:
 	PackedColorArray _albedo_color_array;
 
 public:
+	virtual bool is_default_material() const;
 	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_edge_count, const int p_second_edge_count);
 
 	ColorSourceFlags get_albedo_source_flags() const;

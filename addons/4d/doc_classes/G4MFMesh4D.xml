@@ -20,7 +20,8 @@
 			<return type="int" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="mesh" type="Mesh4D" />
-			<param index="2" name="deduplicate" type="bool" default="true" />
+			<param index="2" name="material" type="Material4D" />
+			<param index="3" name="deduplicate" type="bool" default="true" />
 			<description>
 				Converts the given [Mesh4D] into a [G4MFMesh4D] inside of the [G4MFState4D], encoding all data of the mesh inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF, and is the inverse of [method generate_mesh]. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the index of the new mesh will be returned, which may be used on nodes or anything else. If this function fails, it will return [code]-1[/code].
 			</description>

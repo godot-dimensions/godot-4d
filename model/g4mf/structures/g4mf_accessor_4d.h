@@ -20,8 +20,9 @@ class G4MFAccessor4D : public G4MFItem4D {
 	// Private functions for determining the minimal primitive type.
 	static constexpr uint32_t CANT_USE_PRIM_TYPE = 1000000; // Any very big number will do.
 	static bool _double_bits_equal(const double p_a, const double p_b);
-	static void _minimal_primitive_bits_for_int64(const int64_t p_value, uint32_t &r_int_bits, uint32_t &r_uint_bits);
+	static void _minimal_primitive_bits_for_double_only(const double p_value, uint32_t &r_float_bits);
 	static void _minimal_primitive_bits_for_double(const double p_value, uint32_t &r_float_bits, uint32_t &r_int_bits, uint32_t &r_uint_bits);
+	static void _minimal_primitive_bits_for_int64(const int64_t p_value, uint32_t &r_int_bits, uint32_t &r_uint_bits);
 	static String _minimal_primitive_type_given_bits(const uint32_t p_float_bits, const uint32_t p_int_bits, const uint32_t p_uint_bits);
 
 	// Private decode functions. Use `decode_accessor_as_variants` publicly.
@@ -55,6 +56,7 @@ public:
 
 	// Determine the minimal primitive type for the given data.
 	// Add more types only as needed otherwise this will be a mess.
+	static String minimal_primitive_type_for_colors(const PackedColorArray &p_input_data);
 	static String minimal_primitive_type_for_int32s(const PackedInt32Array &p_input_data);
 	static String minimal_primitive_type_for_vector4s(const PackedVector4Array &p_input_data);
 

@@ -48,7 +48,11 @@ Error G4MFDocument4D::_export_convert_builtin_node(Ref<G4MFState4D> p_g4mf_state
 	if (mesh_instance) {
 		const Ref<Mesh4D> mesh = mesh_instance->get_mesh();
 		if (mesh.is_valid()) {
-			const int mesh_index = G4MFMesh4D::convert_mesh_into_state(p_g4mf_state, mesh);
+			Ref<Material4D> material = mesh_instance->get_material_override();
+			if (material.is_null()) {
+				material = mesh->get_material();
+			}
+			const int mesh_index = G4MFMesh4D::convert_mesh_into_state(p_g4mf_state, mesh, material, true);
 			p_g4mf_node->set_mesh_index(mesh_index);
 		}
 	}
@@ -60,6 +64,8 @@ Error G4MFDocument4D::_export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state)
 	p_g4mf_state->set_g4mf_json(g4mf_json);
 	_export_serialize_asset_header(p_g4mf_state, g4mf_json);
 	_export_serialize_buffers_accessors(p_g4mf_state, g4mf_json);
+	_export_serialize_textures(p_g4mf_state, g4mf_json);
+	_export_serialize_materials(p_g4mf_state, g4mf_json);
 	_export_serialize_meshes(p_g4mf_state, g4mf_json);
 	_export_serialize_nodes(p_g4mf_state, g4mf_json);
 	return OK;
@@ -130,6 +136,48 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 	return OK;
 }
 
+Error G4MFDocument4D::_export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFTexture4D> state_g4mf_textures = p_g4mf_state->get_g4mf_textures();
+	const int texture_count = state_g4mf_textures.size();
+	if (texture_count == 0) {
+		return OK; // No textures to serialize.
+	}
+	Array serialized_textures;
+	serialized_textures.resize(texture_count);
+	for (int i = 0; i < texture_count; i++) {
+		Ref<G4MFTexture4D> g4mf_texture = state_g4mf_textures[i];
+		ERR_FAIL_COND_V(g4mf_texture.is_null(), ERR_INVALID_DATA);
+		Dictionary serialized_texture = g4mf_texture->to_dictionary();
+		serialized_textures[i] = serialized_texture;
+	}
+	if (!serialized_textures.is_empty()) {
+		p_g4mf_json["textures"] = serialized_textures;
+		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	}
+	return OK;
+}
+
+Error G4MFDocument4D::_export_serialize_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFMaterial4D> state_g4mf_materials = p_g4mf_state->get_g4mf_materials();
+	const int material_count = state_g4mf_materials.size();
+	if (material_count == 0) {
+		return OK; // No materials to serialize.
+	}
+	Array serialized_materials;
+	serialized_materials.resize(material_count);
+	for (int i = 0; i < material_count; i++) {
+		Ref<G4MFMaterial4D> g4mf_material = state_g4mf_materials[i];
+		ERR_FAIL_COND_V(g4mf_material.is_null(), ERR_INVALID_DATA);
+		Dictionary serialized_material = g4mf_material->to_dictionary();
+		serialized_materials[i] = serialized_material;
+	}
+	if (!serialized_materials.is_empty()) {
+		p_g4mf_json["materials"] = serialized_materials;
+		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	}
+	return OK;
+}
+
 Error G4MFDocument4D::_export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
 	const int mesh_count = state_g4mf_meshes.size();
@@ -179,6 +227,10 @@ Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dic
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse asset header.");
 	err = _import_parse_buffers_accessors(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse buffers and accessors.");
+	err = _import_parse_textures(p_g4mf_state, p_g4mf_json);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse textures.");
+	err = _import_parse_materials(p_g4mf_state, p_g4mf_json);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse materials.");
 	err = _import_parse_meshes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse meshes.");
 	err = _import_parse_nodes(p_g4mf_state, p_g4mf_json);
@@ -270,6 +322,48 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 	return OK;
 }
 
+Error G4MFDocument4D::_import_parse_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	if (!p_g4mf_json.has("textures")) {
+		return OK; // No textures to parse.
+	}
+	Array json_textures = p_g4mf_json["textures"];
+	const int texture_count = json_textures.size();
+	if (texture_count == 0) {
+		return OK; // No textures to parse.
+	}
+	TypedArray<G4MFTexture4D> g4mf_textures = p_g4mf_state->get_g4mf_textures();
+	g4mf_textures.resize(texture_count);
+	for (int i = 0; i < texture_count; i++) {
+		const Dictionary file_texture = json_textures[i];
+		Ref<G4MFTexture4D> g4mf_texture = G4MFTexture4D::from_dictionary(file_texture);
+		ERR_FAIL_COND_V_MSG(g4mf_texture.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse texture. Aborting file import.");
+		g4mf_textures[i] = g4mf_texture;
+	}
+	p_g4mf_state->set_g4mf_textures(g4mf_textures);
+	return OK;
+}
+
+Error G4MFDocument4D::_import_parse_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	if (!p_g4mf_json.has("materials")) {
+		return OK; // No materials to parse.
+	}
+	Array json_materials = p_g4mf_json["materials"];
+	const int material_count = json_materials.size();
+	if (material_count == 0) {
+		return OK; // No materials to parse.
+	}
+	TypedArray<G4MFMaterial4D> g4mf_materials = p_g4mf_state->get_g4mf_materials();
+	g4mf_materials.resize(material_count);
+	for (int i = 0; i < material_count; i++) {
+		const Dictionary file_material = json_materials[i];
+		Ref<G4MFMaterial4D> g4mf_material = G4MFMaterial4D::from_dictionary(file_material);
+		ERR_FAIL_COND_V_MSG(g4mf_material.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse material. Aborting file import.");
+		g4mf_materials[i] = g4mf_material;
+	}
+	p_g4mf_state->set_g4mf_materials(g4mf_materials);
+	return OK;
+}
+
 Error G4MFDocument4D::_import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	if (!p_g4mf_json.has("meshes")) {
 		return OK; // No meshes to parse.
@@ -279,7 +373,7 @@ Error G4MFDocument4D::_import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictio
 	if (json_mesh_count == 0) {
 		return OK; // No meshes to parse.
 	}
-	TypedArray<G4MFMesh4D> g4mf_meshes;
+	TypedArray<G4MFMesh4D> g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
 	g4mf_meshes.resize(json_mesh_count);
 	for (int i = 0; i < json_mesh_count; i++) {
 		const Dictionary file_mesh = json_meshes[i];
@@ -451,7 +545,7 @@ Error G4MFDocument4D::export_append_from_godot_scene(Ref<G4MFState4D> p_g4mf_sta
 
 Error G4MFDocument4D::export_append_from_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh) {
 	ERR_FAIL_COND_V_MSG(p_mesh.is_null(), ERR_INVALID_PARAMETER, "G4MF export: Cannot export a null mesh.");
-	const int mesh_index = G4MFMesh4D::convert_mesh_into_state(p_g4mf_state, p_mesh);
+	const int mesh_index = G4MFMesh4D::convert_mesh_into_state(p_g4mf_state, p_mesh, p_mesh->get_material(), true);
 	ERR_FAIL_COND_V_MSG(mesh_index < 0, ERR_INVALID_PARAMETER, "G4MF export: Failed to convert mesh into G4MF state.");
 	return OK;
 }

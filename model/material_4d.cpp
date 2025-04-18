@@ -1,5 +1,9 @@
 #include "material_4d.h"
 
+bool Material4D::is_default_material() const {
+	return _albedo_source_flags == COLOR_SOURCE_FLAG_SINGLE_COLOR && _albedo_color == Color(1, 1, 1, 1);
+}
+
 void Material4D::merge_with(const Ref<Material4D> &p_material, const int p_first_item_count, const int p_second_item_count) {
 	const Color start_albedo_color = _albedo_color;
 	const ColorSourceFlags start_albedo_source_flags = _albedo_source_flags;
@@ -88,6 +92,7 @@ void Material4D::resize_albedo_color_array(const int64_t p_size, const Color &p_
 }
 
 void Material4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("is_default_material"), &Material4D::is_default_material);
 	ClassDB::bind_method(D_METHOD("merge_with", "material", "first_item_count", "second_item_count"), &Material4D::merge_with);
 
 	ClassDB::bind_method(D_METHOD("get_albedo_source_flags"), &Material4D::get_albedo_source_flags);

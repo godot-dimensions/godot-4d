@@ -187,6 +187,38 @@ bool G4MFAccessor4D::_double_bits_equal(const double p_a, const double p_b) {
 	return a.bits == b.bits;
 }
 
+void G4MFAccessor4D::_minimal_primitive_bits_for_double_only(const double p_value, uint32_t &r_float_bits) {
+	if (r_float_bits == 8 && !_double_bits_equal(_float8_to_double(_double_to_float8(p_value)), p_value)) {
+		r_float_bits = 16;
+	}
+	if (r_float_bits == 16 && !_double_bits_equal(_float16_to_double(_double_to_float16(p_value)), p_value)) {
+		r_float_bits = 32;
+	}
+	if (r_float_bits == 32 && !_double_bits_equal((double)(float)p_value, p_value)) {
+		r_float_bits = 64;
+	}
+}
+
+void G4MFAccessor4D::_minimal_primitive_bits_for_double(const double p_value, uint32_t &r_float_bits, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
+	if (r_float_bits == 8 && !_double_bits_equal(_float8_to_double(_double_to_float8(p_value)), p_value)) {
+		r_float_bits = 16;
+	}
+	if (r_float_bits == 16 && !_double_bits_equal(_float16_to_double(_double_to_float16(p_value)), p_value)) {
+		r_float_bits = 32;
+	}
+	if (r_float_bits == 32 && !_double_bits_equal((double)(float)p_value, p_value)) {
+		r_float_bits = 64;
+	}
+	const int64_t as_int = (int64_t)p_value;
+	if (p_value != (double)as_int) {
+		// Can't be represented as an int, so just set these to a very big number.
+		r_int_bits = CANT_USE_PRIM_TYPE;
+		r_uint_bits = CANT_USE_PRIM_TYPE;
+		return;
+	}
+	_minimal_primitive_bits_for_int64(as_int, r_int_bits, r_uint_bits);
+}
+
 void G4MFAccessor4D::_minimal_primitive_bits_for_int64(const int64_t p_value, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
 	if (r_int_bits == 8 && !(p_value >= INT8_MIN && p_value <= INT8_MAX)) {
 		r_int_bits = 16;
@@ -211,26 +243,6 @@ void G4MFAccessor4D::_minimal_primitive_bits_for_int64(const int64_t p_value, ui
 	if (r_uint_bits == 32 && p_value > UINT32_MAX) {
 		r_uint_bits = 64;
 	}
-}
-
-void G4MFAccessor4D::_minimal_primitive_bits_for_double(const double p_value, uint32_t &r_float_bits, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
-	if (r_float_bits == 8 && !_double_bits_equal(_float8_to_double(_double_to_float8(p_value)), p_value)) {
-		r_float_bits = 16;
-	}
-	if (r_float_bits == 16 && !_double_bits_equal(_float16_to_double(_double_to_float16(p_value)), p_value)) {
-		r_float_bits = 32;
-	}
-	if (r_float_bits == 32 && !_double_bits_equal((double)(float)p_value, p_value)) {
-		r_float_bits = 64;
-	}
-	const int64_t as_int = (int64_t)p_value;
-	if (p_value != (double)as_int) {
-		// Can't be represented as an int, so just set these to a very big number.
-		r_int_bits = CANT_USE_PRIM_TYPE;
-		r_uint_bits = CANT_USE_PRIM_TYPE;
-		return;
-	}
-	_minimal_primitive_bits_for_int64(as_int, r_int_bits, r_uint_bits);
 }
 
 String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float_bits, const uint32_t p_int_bits, const uint32_t p_uint_bits) {
@@ -562,6 +574,17 @@ int64_t G4MFAccessor4D::primitives_per_variant(const Variant::Type p_variant_typ
 
 // Determine the minimal primitive type for encoding the given data.
 // Add more types only as needed for export, otherwise this will be a mess.
+
+String G4MFAccessor4D::minimal_primitive_type_for_colors(const PackedColorArray &p_input_data) {
+	uint32_t min_float_bits = 8;
+	for (const Color &color : p_input_data) {
+		_minimal_primitive_bits_for_double_only(color.r, min_float_bits);
+		_minimal_primitive_bits_for_double_only(color.g, min_float_bits);
+		_minimal_primitive_bits_for_double_only(color.b, min_float_bits);
+		_minimal_primitive_bits_for_double_only(color.a, min_float_bits);
+	}
+	return _minimal_primitive_type_given_bits(min_float_bits, CANT_USE_PRIM_TYPE, CANT_USE_PRIM_TYPE);
+}
 
 String G4MFAccessor4D::minimal_primitive_type_for_int32s(const PackedInt32Array &p_input_data) {
 	uint32_t min_int_bits = 8;

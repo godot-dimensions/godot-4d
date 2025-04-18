@@ -23,7 +23,7 @@ public:
 	bool is_equal_exact(const Ref<G4MFMesh4D> &p_other) const;
 
 	Ref<Mesh4D> generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_wireframe = false) const;
-	static int convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate = true);
+	static int convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const Ref<Material4D> &p_material, const bool p_deduplicate = true);
 
 	static Ref<G4MFMesh4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;

@@ -46,6 +46,7 @@
 	</methods>
 	<members>
 		<member name="active" type="bool" setter="set_active" getter="get_active" default="true">
+			Whether the physics server is active. If set to [code]false[/code], the physics server will not simulate the scene. By default, this is [code]true[/code] when running projects, and [code]false[/code] when in the editor.
 		</member>
 		<member name="current_physics_engine_name" type="String" setter="set_current_physics_engine_name" getter="get_current_physics_engine_name" default="&quot;AxisAlignedBoxPhysicsEngine4D&quot;">
 			The name of the current physics engine being used. If only one physics engine is registered, this will be set to that engine's name automatically.

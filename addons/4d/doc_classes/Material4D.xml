@@ -36,6 +36,12 @@
 				[b]Note:[/b] When making materials, use the high-level properties from the derived classes instead, such as [member WireMaterial4D.albedo_source] or [member TetraMaterial4D.albedo_source].
 			</description>
 		</method>
+		<method name="is_default_material" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if this material is equivalent to the default material, meaning that its only color source is a single color, and that color is exactly white.
+			</description>
+		</method>
 		<method name="merge_with">
 			<return type="void" />
 			<param index="0" name="material" type="Material4D" />

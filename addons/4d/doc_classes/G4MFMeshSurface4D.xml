@@ -14,7 +14,8 @@
 			<return type="G4MFMeshSurface4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="mesh" type="Mesh4D" />
-			<param index="2" name="deduplicate" type="bool" default="true" />
+			<param index="2" name="material" type="Material4D" />
+			<param index="3" name="deduplicate" type="bool" default="true" />
 			<description>
 				Converts the given [Mesh4D] into encoded G4MF mesh data and stores this inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF. The returned [G4MFMeshSurface4D] is intended to be used by a [G4MFMesh4D], which goes inside of the [G4MFState4D]. See [method G4MFMesh4D.convert_mesh_into_state].
 			</description>
@@ -38,6 +39,13 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
 				Generates an [ArrayWireMesh4D] from the G4MF mesh surface data inside of the [G4MFState4D]. This is used for importing a mesh from G4MF. If the mesh surface does not have edge indices but does have cell indices, edges will be calculated from the cells.
+			</description>
+		</method>
+		<method name="is_equal_exact" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="G4MFMeshSurface4D" />
+			<description>
+				Checks if the [G4MFMeshSurface4D] is equal to another [G4MFMeshSurface4D] exactly by checking if the properties are equal and all accessor indices refer to the same accessors. If a mesh surface refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the mesh surface is not checked, and any metadata is ignored.
 			</description>
 		</method>
 		<method name="load_cell_indices" qualifiers="const">
@@ -84,6 +92,9 @@
 		</member>
 		<member name="edges_accessor_index" type="int" setter="set_edges_accessor_index" getter="get_edges_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the edge indices for this surface. Each integer in the array is an index of a vertex in the vertices array, and MUST NOT exceed the bounds of the vertices array. If not defined, the surface does not have explicit edges, but edges may be calculated from the cells if needed.
+		</member>
+		<member name="material_index" type="int" setter="set_material_index" getter="get_material_index" default="-1">
+			The index of the [G4MFMaterial4D] in the [G4MFState4D]'s materials array that contains the material for this surface. This is used to define the appearance of the surface. If not defined, the surface should render with a default white material.
 		</member>
 		<member name="polytope_cells" type="bool" setter="set_polytope_cells" getter="get_polytope_cells" default="false">
 			If [code]true[/code], allow treating the tetrahedral cells as part of a larger polytope instead of just simplexes. Each polytope is defined by a set of consecutive cells that share the same starting vertex. This is not used by Godot 4D when importing the mesh.

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFTexture4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Texture for G4MF material cells.
+	</brief_description>
+	<description>
+		G4MFTexture4D is a class for textures in the G4MF format. It is used to define the texture of a [G4MFMaterialChannel4D], which affects the appearance of the [G4MFMaterial4D] and therefore any [G4MFMeshSurface4D] that uses the material.
+		[b]Note:[/b] This class is a placeholder, and currently does not do anything.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFTexture4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF texture to a [G4MFTexture4D]. This will set the fields of the [G4MFTexture4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF texture to a [Dictionary]. This is used for serializing the G4MF texture as JSON.
+			</description>
+		</method>
+	</methods>
+</class>

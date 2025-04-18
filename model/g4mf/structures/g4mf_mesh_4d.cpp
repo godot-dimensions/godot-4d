@@ -72,8 +72,8 @@ Ref<Mesh4D> G4MFMesh4D::generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, cons
 	return wire_mesh;
 }
 
-int G4MFMesh4D::convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate) {
-	Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(p_g4mf_state, p_mesh, p_deduplicate);
+int G4MFMesh4D::convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const Ref<Material4D> &p_material, const bool p_deduplicate) {
+	Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(p_g4mf_state, p_mesh, p_material, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(surface->get_vertices_accessor_index() < 0, -1, "G4MFMesh4D.convert_mesh_into_state: Failed to convert mesh surface.");
 	// Prepare a G4MFMesh4D with the surface.
 	TypedArray<G4MFMeshSurface4D> surfaces;
@@ -81,14 +81,16 @@ int G4MFMesh4D::convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref
 	Ref<G4MFMesh4D> g4mf_mesh;
 	g4mf_mesh.instantiate();
 	g4mf_mesh->set_surfaces(surfaces);
-	// Add the G4MFMesh4D to the G4MFState4D.
+	// Add the G4MFMesh4D to the G4MFState4D, but check for duplicates first.
 	TypedArray<G4MFMesh4D> state_meshes = p_g4mf_state->get_g4mf_meshes();
 	const int state_mesh_count = state_meshes.size();
-	for (int i = 0; i < state_mesh_count; i++) {
-		const Ref<G4MFMesh4D> state_mesh = state_meshes[i];
-		if (g4mf_mesh->is_equal_exact(state_mesh)) {
-			// An identical mesh already exists in state, we can just use that.
-			return i;
+	if (p_deduplicate) {
+		for (int i = 0; i < state_mesh_count; i++) {
+			const Ref<G4MFMesh4D> state_mesh = state_meshes[i];
+			if (g4mf_mesh->is_equal_exact(state_mesh)) {
+				// An identical mesh already exists in state, we can just use that.
+				return i;
+			}
 		}
 	}
 	g4mf_mesh->set_name(p_mesh->get_name());
@@ -137,7 +139,7 @@ void G4MFMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMesh4D::is_equal_exact);
 
 	ClassDB::bind_method(D_METHOD("generate_mesh", "g4mf_state", "force_wireframe"), &G4MFMesh4D::generate_mesh, DEFVAL(false));
-	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("convert_mesh_into_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMesh4D::convert_mesh_into_state, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("convert_mesh_into_state", "g4mf_state", "mesh", "material", "deduplicate"), &G4MFMesh4D::convert_mesh_into_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("from_dictionary", "dict"), &G4MFMesh4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMesh4D::to_dictionary);

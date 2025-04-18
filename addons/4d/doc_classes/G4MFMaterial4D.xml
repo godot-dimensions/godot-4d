@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFMaterial4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Material for G4MF meshes.
+	</brief_description>
+	<description>
+		G4MFMaterial4D is a class for materials in the G4MF format. It is used to define the appearance of a [G4MFMeshSurface4D] inside of a [G4MFMesh4D].
+		A G4MF material has multiple channels represented by [G4MFMaterialChannel4D] objects. Each channel may be used to define a different property of the material, such as the [member base_color_channel], [member normal_channel], [member emissive_channel], and [member orm_channel].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="convert_material_into_state" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="material" type="Material4D" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Converts the given [Material4D] into a [G4MFMaterial4D] inside of the [G4MFState4D], encoding any color arrays into the buffers and accessors of the [G4MFState4D]. This is used for exporting the material to G4MF. The [G4MFMaterial4D] will be added to the [G4MFState4D]'s materials array, and the index of the new material will be returned, which may be used on meshes or anything else. If this function fails, it will return [code]-1[/code].
+			</description>
+		</method>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFMaterial4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF material to a [G4MFMaterial4D]. This will set the fields of the [G4MFMaterial4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="generate_tetra_material" qualifiers="const">
+			<return type="TetraMaterial4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Generates a [TetraMaterial4D] from the G4MF material data. This is used for importing a material used on a [G4MFMesh4D] with cells that get imported as an [ArrayTetraMesh4D].
+			</description>
+		</method>
+		<method name="generate_wire_material" qualifiers="const">
+			<return type="WireMaterial4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Generates a [WireMaterial4D] from the G4MF material data. This is used for importing a material used on a [G4MFMesh4D] with edges that get imported as an [ArrayWireMesh4D].
+			</description>
+		</method>
+		<method name="is_equal_exact" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="G4MFMaterial4D" />
+			<description>
+				Checks if the [G4MFMaterial4D] is equal to another [G4MFMaterial4D] exactly by checking if the properties are equal. This runs [method G4MFMaterialChannel4D.is_equal_exact] on all channels to check if they are equal. The name of the material is not checked, and any metadata is ignored.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF material to a [Dictionary]. This is used for serializing the G4MF material as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="base_color_channel" type="G4MFMaterialChannel4D" setter="set_base_color_channel" getter="get_base_color_channel">
+			The base color channel of the material, also known as the albedo channel. See [G4MFMaterialChannel4D] for possible data that may be stored in this channel.
+		</member>
+		<member name="emissive_channel" type="G4MFMaterialChannel4D" setter="set_emissive_channel" getter="get_emissive_channel">
+			The emissive channel of the material. This is used to define the color of the light emitted by the material. See [G4MFMaterialChannel4D] for possible data that may be stored in this channel.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+		<member name="normal_channel" type="G4MFMaterialChannel4D" setter="set_normal_channel" getter="get_normal_channel">
+			The normal channel of the material. This is used to define the normal map of the material. See [G4MFMaterialChannel4D] for possible data that may be stored in this channel.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+		<member name="orm_channel" type="G4MFMaterialChannel4D" setter="set_orm_channel" getter="get_orm_channel">
+			The ORM channel of the material, also known as the ORM map. This is used to define the occlusion, roughness, and metallic properties of the material. See [G4MFMaterialChannel4D] for possible data that may be stored in this channel.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+	</members>
+</class>
