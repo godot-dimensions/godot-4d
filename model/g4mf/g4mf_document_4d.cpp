@@ -234,7 +234,6 @@ Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dic
 	err = _import_parse_meshes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse meshes.");
 	err = _import_parse_nodes(p_g4mf_state, p_g4mf_json);
-	Ref<G4MFAccessor4D> accessor = p_g4mf_state->get_accessors()[1];
 	return err;
 }
 
