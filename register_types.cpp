@@ -34,7 +34,7 @@
 // Model.
 #include "model/g4mf/g4mf_document_4d.h"
 #include "model/mesh_instance_4d.h"
-#include "model/off/off_document.h"
+#include "model/off/off_document_4d.h"
 #include "model/tetra/array_tetra_mesh_4d.h"
 #include "model/tetra/box_tetra_mesh_4d.h"
 #include "model/tetra/orthoplex_tetra_mesh_4d.h"
@@ -150,7 +150,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(BoxTetraMesh4D);
 		GDREGISTER_CLASS(BoxWireMesh4D);
 		GDREGISTER_CLASS(MeshInstance4D);
-		GDREGISTER_CLASS(OFFDocument);
+		GDREGISTER_CLASS(OFFDocument4D);
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
 		GDREGISTER_CLASS(TetraMaterial4D);

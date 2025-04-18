@@ -1,4 +1,4 @@
-#include "off_document.h"
+#include "off_document_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/file_access.hpp>
@@ -15,7 +15,7 @@
 #include "../tetra/tetra_material_4d.h"
 #include "../wire/wire_material_4d.h"
 
-void OFFDocument::_count_unique_edges_from_faces() {
+void OFFDocument4D::_count_unique_edges_from_faces() {
 	_edge_count = 0;
 	HashSet<Vector2i> unique_items;
 	for (int face_number = 0; face_number < _face_vertex_indices.size(); face_number++) {
@@ -35,7 +35,7 @@ void OFFDocument::_count_unique_edges_from_faces() {
 	}
 }
 
-int OFFDocument::_find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
+int OFFDocument4D::_find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
 	const int vertex_count = _vertices.size();
 	if (p_deduplicate_vertices) {
 		for (int vertex_number = 0; vertex_number < vertex_count; vertex_number++) {
@@ -48,8 +48,8 @@ int OFFDocument::_find_or_insert_vertex(const Vector4 &p_vertex, const bool p_de
 	return vertex_count;
 }
 
-Ref<OFFDocument> OFFDocument::convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices) {
-	Ref<OFFDocument> off_document;
+Ref<OFFDocument4D> OFFDocument4D::convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices) {
+	Ref<OFFDocument4D> off_document;
 	ERR_FAIL_COND_V(p_mesh.is_null(), off_document);
 	off_document.instantiate();
 #if GDEXTENSION
@@ -80,7 +80,7 @@ bool _do_triangle_faces_match(const PackedInt32Array &p_face_a, const PackedInt3
 			(p_face_a[0] == p_face_b[2] && p_face_a[1] == p_face_b[1] && p_face_a[2] == p_face_b[0]));
 }
 
-int OFFDocument::_find_or_insert_face(const int p_a, const int p_b, const int p_c, const bool p_deduplicate_faces) {
+int OFFDocument4D::_find_or_insert_face(const int p_a, const int p_b, const int p_c, const bool p_deduplicate_faces) {
 	PackedInt32Array face = PackedInt32Array{ p_a, p_b, p_c };
 	const int face_count = _face_vertex_indices.size();
 	if (p_deduplicate_faces) {
@@ -94,8 +94,8 @@ int OFFDocument::_find_or_insert_face(const int p_a, const int p_b, const int p_
 	return face_count;
 }
 
-Ref<OFFDocument> OFFDocument::convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces) {
-	Ref<OFFDocument> off_document;
+Ref<OFFDocument4D> OFFDocument4D::convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces) {
+	Ref<OFFDocument4D> off_document;
 	ERR_FAIL_COND_V(p_tetra_mesh.is_null(), off_document);
 	off_document.instantiate();
 	off_document->_vertices = p_tetra_mesh->get_vertices();
@@ -119,7 +119,7 @@ Ref<OFFDocument> OFFDocument::convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_me
 	return off_document;
 }
 
-Ref<ArrayMesh> OFFDocument::generate_mesh_3d(const bool p_per_face_vertices) {
+Ref<ArrayMesh> OFFDocument4D::generate_mesh_3d(const bool p_per_face_vertices) {
 	PackedVector3Array vertices_3d;
 	for (int vert_index = 0; vert_index < _vertices.size(); vert_index++) {
 		vertices_3d.append(Vector3(_vertices[vert_index].x, _vertices[vert_index].y, _vertices[vert_index].z));
@@ -170,7 +170,7 @@ Ref<ArrayMesh> OFFDocument::generate_mesh_3d(const bool p_per_face_vertices) {
 	return array_mesh;
 }
 
-Ref<ArrayTetraMesh4D> OFFDocument::generate_tetra_mesh_4d() {
+Ref<ArrayTetraMesh4D> OFFDocument4D::generate_tetra_mesh_4d() {
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	tetra_mesh->set_vertices(_vertices);
@@ -208,7 +208,7 @@ Ref<ArrayTetraMesh4D> OFFDocument::generate_tetra_mesh_4d() {
 	return tetra_mesh;
 }
 
-Ref<ArrayWireMesh4D> OFFDocument::generate_wire_mesh_4d(const bool p_deduplicate_edges) {
+Ref<ArrayWireMesh4D> OFFDocument4D::generate_wire_mesh_4d(const bool p_deduplicate_edges) {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
 	wire_mesh->set_vertices(_vertices);
@@ -237,7 +237,7 @@ Ref<ArrayWireMesh4D> OFFDocument::generate_wire_mesh_4d(const bool p_deduplicate
 	return wire_mesh;
 }
 
-Node *OFFDocument::generate_node(const bool p_deduplicate_edges, const bool p_per_face_vertices) {
+Node *OFFDocument4D::generate_node(const bool p_deduplicate_edges, const bool p_per_face_vertices) {
 	if (_cell_face_indices.is_empty()) {
 		MeshInstance3D *mesh_instance_3d = memnew(MeshInstance3D);
 		Ref<ArrayMesh> mesh_3d = generate_mesh_3d(p_per_face_vertices);
@@ -262,53 +262,53 @@ Node *OFFDocument::generate_node(const bool p_deduplicate_edges, const bool p_pe
 	return mesh_instance_4d;
 }
 
-PackedColorArray OFFDocument::get_cell_colors() const {
+PackedColorArray OFFDocument4D::get_cell_colors() const {
 	return _cell_colors;
 }
 
-void OFFDocument::set_cell_colors(const PackedColorArray &p_cell_colors) {
+void OFFDocument4D::set_cell_colors(const PackedColorArray &p_cell_colors) {
 	_cell_colors = p_cell_colors;
 	_has_any_cell_colors = true;
 }
 
-TypedArray<PackedInt32Array> OFFDocument::get_cell_face_indices() const {
+TypedArray<PackedInt32Array> OFFDocument4D::get_cell_face_indices() const {
 	return _cell_face_indices;
 }
 
-void OFFDocument::set_cell_face_indices(const TypedArray<PackedInt32Array> &p_cell_face_indices) {
+void OFFDocument4D::set_cell_face_indices(const TypedArray<PackedInt32Array> &p_cell_face_indices) {
 	_cell_face_indices = p_cell_face_indices;
 }
 
-int OFFDocument::get_edge_count() const {
+int OFFDocument4D::get_edge_count() const {
 	return _edge_count;
 }
 
-void OFFDocument::set_edge_count(const int p_edge_count) {
+void OFFDocument4D::set_edge_count(const int p_edge_count) {
 	_edge_count = p_edge_count;
 }
 
-PackedColorArray OFFDocument::get_face_colors() const {
+PackedColorArray OFFDocument4D::get_face_colors() const {
 	return _face_colors;
 }
 
-void OFFDocument::set_face_colors(const PackedColorArray &p_face_colors) {
+void OFFDocument4D::set_face_colors(const PackedColorArray &p_face_colors) {
 	_face_colors = p_face_colors;
 	_has_any_face_colors = true;
 }
 
-TypedArray<PackedInt32Array> OFFDocument::get_face_vertex_indices() const {
+TypedArray<PackedInt32Array> OFFDocument4D::get_face_vertex_indices() const {
 	return _face_vertex_indices;
 }
 
-void OFFDocument::set_face_vertex_indices(const TypedArray<PackedInt32Array> &p_face_vertex_indices) {
+void OFFDocument4D::set_face_vertex_indices(const TypedArray<PackedInt32Array> &p_face_vertex_indices) {
 	_face_vertex_indices = p_face_vertex_indices;
 }
 
-PackedVector4Array OFFDocument::get_vertices() const {
+PackedVector4Array OFFDocument4D::get_vertices() const {
 	return _vertices;
 }
 
-void OFFDocument::set_vertices(const PackedVector4Array &p_vertices) {
+void OFFDocument4D::set_vertices(const PackedVector4Array &p_vertices) {
 	_vertices = p_vertices;
 }
 
@@ -319,8 +319,8 @@ enum class OFFDocumentReadState {
 	READ_CELLS,
 };
 
-Ref<OFFDocument> OFFDocument::load_from_file(const String &p_path) {
-	Ref<OFFDocument> off_document;
+Ref<OFFDocument4D> OFFDocument4D::load_from_file(const String &p_path) {
+	Ref<OFFDocument4D> off_document;
 	bool can_warn = true;
 	OFFDocumentReadState read_state = OFFDocumentReadState::READ_SIZE;
 	int cell_count = 0;
@@ -371,7 +371,7 @@ Ref<OFFDocument> OFFDocument::load_from_file(const String &p_path) {
 				if (can_warn) {
 					if (!items[0].contains(".") || !items[1].contains(".") || !items[2].contains(".")) {
 						can_warn = false;
-						WARN_PRINT("Warning: OFF file " + p_path + " contains invalid vertex line: '" + line + "'. Every number in a vertex should be a floating-point number, whole numbers should end with '.0'. Reading this as a vertex anyway.");
+						//WARN_PRINT("Warning: OFF file " + p_path + " contains invalid vertex line: '" + line + "'. Every number in a vertex should be a floating-point number, whole numbers should end with '.0'. Reading this as a vertex anyway.");
 					}
 				}
 				if (item_count == 3) {
@@ -380,7 +380,7 @@ Ref<OFFDocument> OFFDocument::load_from_file(const String &p_path) {
 					if (can_warn) {
 						if (!items[3].contains(".")) {
 							can_warn = false;
-							WARN_PRINT("Warning: OFF file " + p_path + " contains invalid vertex line: '" + line + "'. Every number in a vertex should be a floating-point number, whole numbers should end with '.0'. Reading this as a vertex anyway.");
+							//WARN_PRINT("Warning: OFF file " + p_path + " contains invalid vertex line: '" + line + "'. Every number in a vertex should be a floating-point number, whole numbers should end with '.0'. Reading this as a vertex anyway.");
 						}
 					}
 					off_document->_vertices.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), items[2].to_float(), items[3].to_float()));
@@ -485,7 +485,7 @@ String _cell_or_face_to_off_string(const PackedInt32Array &p_face) {
 	return ret;
 }
 
-void OFFDocument::save_to_file_3d(const String &p_path) {
+void OFFDocument4D::save_to_file_3d(const String &p_path) {
 #if GDEXTENSION
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
 	ERR_FAIL_COND_MSG(file.is_null(), "Error: Could not open file " + p_path + " for writing.");
@@ -510,7 +510,7 @@ void OFFDocument::save_to_file_3d(const String &p_path) {
 	}
 }
 
-void OFFDocument::save_to_file_4d(const String &p_path) {
+void OFFDocument4D::save_to_file_4d(const String &p_path) {
 	if (_edge_count == 0) {
 		_count_unique_edges_from_faces();
 	}
@@ -546,39 +546,39 @@ void OFFDocument::save_to_file_4d(const String &p_path) {
 	}
 }
 
-void OFFDocument::_bind_methods() {
-	ClassDB::bind_static_method("OFFDocument", D_METHOD("convert_mesh_3d", "mesh", "deduplicate_vertices"), &OFFDocument::convert_mesh_3d, DEFVAL(true));
-	ClassDB::bind_static_method("OFFDocument", D_METHOD("convert_mesh_4d", "mesh", "deduplicate_faces"), &OFFDocument::convert_mesh_4d, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("generate_mesh_3d", "per_face_vertices"), &OFFDocument::generate_mesh_3d, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_4d"), &OFFDocument::generate_tetra_mesh_4d);
-	ClassDB::bind_method(D_METHOD("generate_wire_mesh_4d", "deduplicate_edges"), &OFFDocument::generate_wire_mesh_4d, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("generate_node", "deduplicate_edges", "per_face_vertices"), &OFFDocument::generate_node, DEFVAL(true), DEFVAL(true));
+void OFFDocument4D::_bind_methods() {
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("convert_mesh_3d", "mesh", "deduplicate_vertices"), &OFFDocument4D::convert_mesh_3d, DEFVAL(true));
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("convert_mesh_4d", "mesh", "deduplicate_faces"), &OFFDocument4D::convert_mesh_4d, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("generate_mesh_3d", "per_face_vertices"), &OFFDocument4D::generate_mesh_3d, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_4d"), &OFFDocument4D::generate_tetra_mesh_4d);
+	ClassDB::bind_method(D_METHOD("generate_wire_mesh_4d", "deduplicate_edges"), &OFFDocument4D::generate_wire_mesh_4d, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("generate_node", "deduplicate_edges", "per_face_vertices"), &OFFDocument4D::generate_node, DEFVAL(true), DEFVAL(true));
 
-	ClassDB::bind_method(D_METHOD("get_cell_colors"), &OFFDocument::get_cell_colors);
-	ClassDB::bind_method(D_METHOD("set_cell_colors", "cell_colors"), &OFFDocument::set_cell_colors);
+	ClassDB::bind_method(D_METHOD("get_cell_colors"), &OFFDocument4D::get_cell_colors);
+	ClassDB::bind_method(D_METHOD("set_cell_colors", "cell_colors"), &OFFDocument4D::set_cell_colors);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "cell_colors"), "set_cell_colors", "get_cell_colors");
 
-	ClassDB::bind_method(D_METHOD("get_cell_face_indices"), &OFFDocument::get_cell_face_indices);
-	ClassDB::bind_method(D_METHOD("set_cell_face_indices", "cell_face_indices"), &OFFDocument::set_cell_face_indices);
+	ClassDB::bind_method(D_METHOD("get_cell_face_indices"), &OFFDocument4D::get_cell_face_indices);
+	ClassDB::bind_method(D_METHOD("set_cell_face_indices", "cell_face_indices"), &OFFDocument4D::set_cell_face_indices);
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "cell_face_indices"), "set_cell_face_indices", "get_cell_face_indices");
 
-	ClassDB::bind_method(D_METHOD("get_edge_count"), &OFFDocument::get_edge_count);
-	ClassDB::bind_method(D_METHOD("set_edge_count", "edge_count"), &OFFDocument::set_edge_count);
+	ClassDB::bind_method(D_METHOD("get_edge_count"), &OFFDocument4D::get_edge_count);
+	ClassDB::bind_method(D_METHOD("set_edge_count", "edge_count"), &OFFDocument4D::set_edge_count);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "edge_count"), "set_edge_count", "get_edge_count");
 
-	ClassDB::bind_method(D_METHOD("get_face_colors"), &OFFDocument::get_face_colors);
-	ClassDB::bind_method(D_METHOD("set_face_colors", "face_colors"), &OFFDocument::set_face_colors);
+	ClassDB::bind_method(D_METHOD("get_face_colors"), &OFFDocument4D::get_face_colors);
+	ClassDB::bind_method(D_METHOD("set_face_colors", "face_colors"), &OFFDocument4D::set_face_colors);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "face_colors"), "set_face_colors", "get_face_colors");
 
-	ClassDB::bind_method(D_METHOD("get_face_vertex_indices"), &OFFDocument::get_face_vertex_indices);
-	ClassDB::bind_method(D_METHOD("set_face_vertex_indices", "face_vertex_indices"), &OFFDocument::set_face_vertex_indices);
+	ClassDB::bind_method(D_METHOD("get_face_vertex_indices"), &OFFDocument4D::get_face_vertex_indices);
+	ClassDB::bind_method(D_METHOD("set_face_vertex_indices", "face_vertex_indices"), &OFFDocument4D::set_face_vertex_indices);
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "face_vertex_indices"), "set_face_vertex_indices", "get_face_vertex_indices");
 
-	ClassDB::bind_method(D_METHOD("get_vertices"), &OFFDocument::get_vertices);
-	ClassDB::bind_method(D_METHOD("set_vertices", "vertices"), &OFFDocument::set_vertices);
+	ClassDB::bind_method(D_METHOD("get_vertices"), &OFFDocument4D::get_vertices);
+	ClassDB::bind_method(D_METHOD("set_vertices", "vertices"), &OFFDocument4D::set_vertices);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertices"), "set_vertices", "get_vertices");
 
-	ClassDB::bind_static_method("OFFDocument", D_METHOD("load_from_file", "path"), &OFFDocument::load_from_file);
-	ClassDB::bind_method(D_METHOD("save_to_file_3d", "path"), &OFFDocument::save_to_file_3d);
-	ClassDB::bind_method(D_METHOD("save_to_file_4d", "path"), &OFFDocument::save_to_file_4d);
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("load_from_file", "path"), &OFFDocument4D::load_from_file);
+	ClassDB::bind_method(D_METHOD("save_to_file_3d", "path"), &OFFDocument4D::save_to_file_3d);
+	ClassDB::bind_method(D_METHOD("save_to_file_4d", "path"), &OFFDocument4D::save_to_file_4d);
 }

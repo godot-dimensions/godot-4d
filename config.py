@@ -27,7 +27,7 @@ def get_doc_classes():
 		"ArrayWireMesh4D",
 		"BoxTetraMesh4D",
 		"BoxWireMesh4D",
-		"OFFDocument",
+		"OFFDocument4D",
 		"OrthoplexTetraMesh4D",
 		"OrthoplexWireMesh4D",
 		"Material4D",
