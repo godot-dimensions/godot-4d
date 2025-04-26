@@ -3,7 +3,7 @@
 #include "physics_body_4d.h"
 
 #include "../../math/geometric_algebra/bivector_4d.h"
-#include "../../math/geometric_algebra/inertia_tensor.h"
+#include "../../math/inertia_tensor.h"
 
 class RigidBody4D : public PhysicsBody4D {
 	GDCLASS(RigidBody4D, PhysicsBody4D);
