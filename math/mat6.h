@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../godot_4d_defines.h"
+
 struct _NO_DISCARD_ Mat6 {
 	union {
 		struct {
