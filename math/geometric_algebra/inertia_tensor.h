@@ -77,4 +77,6 @@ struct _NO_DISCARD_ InertiaTensor {
 	);
 };
 
+InertiaTensor operator*(const real_t p_scalar, const InertiaTensor &p_tensor);
+
 static_assert(sizeof(InertiaTensor) == sizeof(real_t) * 21);

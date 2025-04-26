@@ -6,7 +6,7 @@
 #include "core/math/basis.h"
 #endif
 
-InertiaTensor InertiaTensor::inverse() const {
+InertiaTensor InertiaTensor::inverse() const { // Algorithm from https://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
     Basis Ai = Basis(
         i11, i12, i13,
         i12, i22, i23,
@@ -41,12 +41,12 @@ InertiaTensor InertiaTensor::inverse() const {
                                                                                    a22.rows[2].z
     );
 
-    inv = (2 * inv) - (inv * (this) * inv); // One iteration of Newtons method
+    inv = (2 * inv) - (inv * (*this) * inv); // One iteration of Newtons method
 
 	return inv;
 }
 
-InertiaTensor &InertiaTensor::operator+=(const InertiaTensor &p_b) const {
+InertiaTensor &InertiaTensor::operator+=(const InertiaTensor &p_b) {
     i11 += p_b.i11;
     i12 += p_b.i12;
     i13 += p_b.i13;
@@ -72,7 +72,7 @@ InertiaTensor &InertiaTensor::operator+=(const InertiaTensor &p_b) const {
 }
 
 InertiaTensor InertiaTensor::operator+(const InertiaTensor &p_b) const {
-    return new InertiaTensor(
+    return InertiaTensor(
         i11+p_b.i11, i12+p_b.i12, i13+p_b.i13, i14+p_b.i14, i15+p_b.i15, i16+p_b.i16,
         i22+p_b.i22, i23+p_b.i23, i24+p_b.i24, i25+p_b.i25, i26+p_b.i26,
         i33+p_b.i33, i34+p_b.i34, i35+p_b.i35, i36+p_b.i36,
@@ -82,7 +82,7 @@ InertiaTensor InertiaTensor::operator+(const InertiaTensor &p_b) const {
     );
 }
 
-InertiaTensor &InertiaTensor::operator-=(const InertiaTensor &p_b) const {
+InertiaTensor &InertiaTensor::operator-=(const InertiaTensor &p_b) {
     i11 -= p_b.i11;
     i12 -= p_b.i12;
     i13 -= p_b.i13;
@@ -108,7 +108,7 @@ InertiaTensor &InertiaTensor::operator-=(const InertiaTensor &p_b) const {
 }
 
 InertiaTensor InertiaTensor::operator-(const InertiaTensor &p_b) const {
-    return new InertiaTensor(
+    return InertiaTensor(
         i11-p_b.i11, i12-p_b.i12, i13-p_b.i13, i14-p_b.i14, i15-p_b.i15, i16-p_b.i16,
         i22-p_b.i22, i23-p_b.i23, i24-p_b.i24, i25-p_b.i25, i26-p_b.i26,
         i33-p_b.i33, i34-p_b.i34, i35-p_b.i35, i36-p_b.i36,
@@ -119,7 +119,7 @@ InertiaTensor InertiaTensor::operator-(const InertiaTensor &p_b) const {
 }
 
 InertiaTensor InertiaTensor::operator*(const InertiaTensor &p_b) const {
-    return new InertiaTensor(
+    return InertiaTensor(
         i11*p_b.i11 + i12*p_b.i12 + i13*p_b.i13 + i14*p_b.i14 + i15*p_b.i15 + i16*p_b.i16,
         i11*p_b.i12 + i12*p_b.i22 + i13*p_b.i23 + i14*p_b.i24 + i15*p_b.i25 + i16*p_b.i26,
         i11*p_b.i13 + i12*p_b.i23 + i13*p_b.i33 + i14*p_b.i34 + i15*p_b.i35 + i16*p_b.i36,
@@ -164,7 +164,7 @@ InertiaTensor InertiaTensor::operator*(const InertiaTensor &p_b) const {
     );
 }
 
-InertiaTensor &InertiaTensor::operator*=(const real_t p_scalar) const {
+InertiaTensor &InertiaTensor::operator*=(const real_t p_scalar) {
     i11 *= p_scalar;
     i12 *= p_scalar;
     i13 *= p_scalar;
@@ -200,7 +200,7 @@ InertiaTensor InertiaTensor::operator*(const real_t p_scalar) const {
     );
 }
 
-InertiaTensor &InertiaTensor::operator/=(const real_t p_scalar) const {
+InertiaTensor &InertiaTensor::operator/=(const real_t p_scalar) {
     i11 /= p_scalar;
     i12 /= p_scalar;
     i13 /= p_scalar;
@@ -318,6 +318,17 @@ InertiaTensor::InertiaTensor(
     i55 = p_i55;
     i56 = p_i56;
     i66 = p_i66;
+}
+
+InertiaTensor operator*(const real_t p_scalar, const InertiaTensor &p_tensor) {
+    return InertiaTensor(
+        p_tensor.i11*p_scalar, p_tensor.i12*p_scalar, p_tensor.i13*p_scalar, p_tensor.i14*p_scalar, p_tensor.i15*p_scalar, p_tensor.i16*p_scalar,
+        p_tensor.i22*p_scalar, p_tensor.i23*p_scalar, p_tensor.i24*p_scalar, p_tensor.i25*p_scalar, p_tensor.i26*p_scalar,
+        p_tensor.i33*p_scalar, p_tensor.i34*p_scalar, p_tensor.i35*p_scalar, p_tensor.i36*p_scalar,
+        p_tensor.i44*p_scalar, p_tensor.i45*p_scalar, p_tensor.i46*p_scalar,
+        p_tensor.i55*p_scalar, p_tensor.i56*p_scalar,
+        p_tensor.i66*p_scalar
+    );
 }
 
 static_assert(sizeof(InertiaTensor) == 21 * sizeof(real_t));
