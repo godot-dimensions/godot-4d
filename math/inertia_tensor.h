@@ -1,7 +1,8 @@
 #pragma once
 
-#include "bivector_4d.h"
-#include "rotor_4d.h"
+#include "geometric_algebra/bivector_4d.h"
+#include "geometric_algebra/rotor_4d.h"
+#include "mat6.h"
 
 // The Inertia Tensor is symetric so we only store the top half
 struct _NO_DISCARD_ InertiaTensor {
@@ -50,8 +51,8 @@ struct _NO_DISCARD_ InertiaTensor {
 	InertiaTensor &operator-=(const InertiaTensor &p_b);
 	InertiaTensor operator-(const InertiaTensor &p_b) const;
 
-	// InertiaTensor &operator*=(const InertiaTensor &p_b);
-	InertiaTensor operator*(const InertiaTensor &p_b) const;
+	// Mat6 &operator*=(const InertiaTensor &p_b);
+	Mat6 operator*(const InertiaTensor &p_b) const;
 	// InertiaTensor &operator/=(const InertiaTensor &p_b);
 	// InertiaTensor operator/(const InertiaTensor &p_b) const;
 

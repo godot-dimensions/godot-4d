@@ -41,7 +41,7 @@ InertiaTensor InertiaTensor::inverse() const { // Algorithm from https://en.wiki
                                                                                    a22.rows[2].z
     );
 
-    inv = (2 * inv) - (inv * (*this) * inv); // One iteration of Newtons method
+    // inv = (2 * inv) - (inv * (*this) * inv); // One iteration of Newtons method
 
 	return inv;
 }
@@ -118,8 +118,8 @@ InertiaTensor InertiaTensor::operator-(const InertiaTensor &p_b) const {
     );
 }
 
-InertiaTensor InertiaTensor::operator*(const InertiaTensor &p_b) const {
-    return InertiaTensor(
+Mat6 InertiaTensor::operator*(const InertiaTensor &p_b) const {
+    return Mat6(
         i11*p_b.i11 + i12*p_b.i12 + i13*p_b.i13 + i14*p_b.i14 + i15*p_b.i15 + i16*p_b.i16,
         i11*p_b.i12 + i12*p_b.i22 + i13*p_b.i23 + i14*p_b.i24 + i15*p_b.i25 + i16*p_b.i26,
         i11*p_b.i13 + i12*p_b.i23 + i13*p_b.i33 + i14*p_b.i34 + i15*p_b.i35 + i16*p_b.i36,
@@ -127,39 +127,39 @@ InertiaTensor InertiaTensor::operator*(const InertiaTensor &p_b) const {
         i11*p_b.i15 + i12*p_b.i25 + i13*p_b.i35 + i14*p_b.i45 + i15*p_b.i55 + i16*p_b.i56,
         i11*p_b.i16 + i12*p_b.i26 + i13*p_b.i36 + i14*p_b.i46 + i15*p_b.i56 + i16*p_b.i66,
 
-        //i12*p_b.i11 + i22*p_b.i12 + i23*p_b.i13 + i24*p_b.i14 + i25*p_b.i15 + i26*p_b.i16,
+        i12*p_b.i11 + i22*p_b.i12 + i23*p_b.i13 + i24*p_b.i14 + i25*p_b.i15 + i26*p_b.i16,
         i12*p_b.i12 + i22*p_b.i22 + i23*p_b.i23 + i24*p_b.i24 + i25*p_b.i25 + i26*p_b.i26,
         i12*p_b.i13 + i22*p_b.i23 + i23*p_b.i33 + i24*p_b.i34 + i25*p_b.i35 + i26*p_b.i36,
         i12*p_b.i14 + i22*p_b.i24 + i23*p_b.i34 + i24*p_b.i44 + i25*p_b.i45 + i26*p_b.i46,
         i12*p_b.i15 + i22*p_b.i25 + i23*p_b.i35 + i24*p_b.i45 + i25*p_b.i55 + i26*p_b.i56,
         i12*p_b.i16 + i22*p_b.i26 + i23*p_b.i36 + i24*p_b.i46 + i25*p_b.i56 + i26*p_b.i66,
 
-        //i13*p_b.i11 + i23*p_b.i12 + i33*p_b.i13 + i34*p_b.i14 + i35*p_b.i15 + i36*p_b.i16,
-        //i13*p_b.i12 + i23*p_b.i22 + i33*p_b.i23 + i34*p_b.i24 + i35*p_b.i25 + i36*p_b.i26,
+        i13*p_b.i11 + i23*p_b.i12 + i33*p_b.i13 + i34*p_b.i14 + i35*p_b.i15 + i36*p_b.i16,
+        i13*p_b.i12 + i23*p_b.i22 + i33*p_b.i23 + i34*p_b.i24 + i35*p_b.i25 + i36*p_b.i26,
         i13*p_b.i13 + i23*p_b.i23 + i33*p_b.i33 + i34*p_b.i34 + i35*p_b.i35 + i36*p_b.i36,
         i13*p_b.i14 + i23*p_b.i24 + i33*p_b.i34 + i34*p_b.i44 + i35*p_b.i45 + i36*p_b.i46,
         i13*p_b.i15 + i23*p_b.i25 + i33*p_b.i35 + i34*p_b.i45 + i35*p_b.i55 + i36*p_b.i56,
         i13*p_b.i16 + i23*p_b.i26 + i33*p_b.i36 + i34*p_b.i46 + i35*p_b.i56 + i36*p_b.i66,
 
-        //i14*p_b.i11 + i24*p_b.i12 + i34*p_b.i13 + i44*p_b.i14 + i45*p_b.i15 + i46*p_b.i16,
-        //i14*p_b.i12 + i24*p_b.i22 + i34*p_b.i23 + i44*p_b.i24 + i45*p_b.i25 + i46*p_b.i26,
-        //i14*p_b.i13 + i24*p_b.i23 + i34*p_b.i33 + i44*p_b.i34 + i45*p_b.i35 + i46*p_b.i36,
+        i14*p_b.i11 + i24*p_b.i12 + i34*p_b.i13 + i44*p_b.i14 + i45*p_b.i15 + i46*p_b.i16,
+        i14*p_b.i12 + i24*p_b.i22 + i34*p_b.i23 + i44*p_b.i24 + i45*p_b.i25 + i46*p_b.i26,
+        i14*p_b.i13 + i24*p_b.i23 + i34*p_b.i33 + i44*p_b.i34 + i45*p_b.i35 + i46*p_b.i36,
         i14*p_b.i14 + i24*p_b.i24 + i34*p_b.i34 + i44*p_b.i44 + i45*p_b.i45 + i46*p_b.i46,
         i14*p_b.i15 + i24*p_b.i25 + i34*p_b.i35 + i44*p_b.i45 + i45*p_b.i55 + i46*p_b.i56,
         i14*p_b.i16 + i24*p_b.i26 + i34*p_b.i36 + i44*p_b.i46 + i45*p_b.i56 + i46*p_b.i66,
 
-        //i15*p_b.i11 + i25*p_b.i12 + i35*p_b.i13 + i45*p_b.i14 + i55*p_b.i15 + i56*p_b.i16,
-        //i15*p_b.i12 + i25*p_b.i22 + i35*p_b.i23 + i45*p_b.i24 + i55*p_b.i25 + i56*p_b.i26,
-        //i15*p_b.i13 + i25*p_b.i23 + i35*p_b.i33 + i45*p_b.i34 + i55*p_b.i35 + i56*p_b.i36,
-        //i15*p_b.i14 + i25*p_b.i24 + i35*p_b.i34 + i45*p_b.i44 + i55*p_b.i45 + i56*p_b.i46,
+        i15*p_b.i11 + i25*p_b.i12 + i35*p_b.i13 + i45*p_b.i14 + i55*p_b.i15 + i56*p_b.i16,
+        i15*p_b.i12 + i25*p_b.i22 + i35*p_b.i23 + i45*p_b.i24 + i55*p_b.i25 + i56*p_b.i26,
+        i15*p_b.i13 + i25*p_b.i23 + i35*p_b.i33 + i45*p_b.i34 + i55*p_b.i35 + i56*p_b.i36,
+        i15*p_b.i14 + i25*p_b.i24 + i35*p_b.i34 + i45*p_b.i44 + i55*p_b.i45 + i56*p_b.i46,
         i15*p_b.i15 + i25*p_b.i25 + i35*p_b.i35 + i45*p_b.i45 + i55*p_b.i55 + i56*p_b.i56,
         i15*p_b.i16 + i25*p_b.i26 + i35*p_b.i36 + i45*p_b.i46 + i55*p_b.i56 + i56*p_b.i66,
 
-        //i16*p_b.i11 + i26*p_b.i12 + i36*p_b.i13 + i46*p_b.i14 + i56*p_b.i15 + i66*p_b.i16,
-        //i16*p_b.i12 + i26*p_b.i22 + i36*p_b.i23 + i46*p_b.i24 + i56*p_b.i25 + i66*p_b.i26,
-        //i16*p_b.i13 + i26*p_b.i23 + i36*p_b.i33 + i46*p_b.i34 + i56*p_b.i35 + i66*p_b.i36,
-        //i16*p_b.i14 + i26*p_b.i24 + i36*p_b.i34 + i46*p_b.i44 + i56*p_b.i45 + i66*p_b.i46,
-        //i16*p_b.i15 + i26*p_b.i25 + i36*p_b.i35 + i46*p_b.i45 + i56*p_b.i55 + i66*p_b.i56,
+        i16*p_b.i11 + i26*p_b.i12 + i36*p_b.i13 + i46*p_b.i14 + i56*p_b.i15 + i66*p_b.i16,
+        i16*p_b.i12 + i26*p_b.i22 + i36*p_b.i23 + i46*p_b.i24 + i56*p_b.i25 + i66*p_b.i26,
+        i16*p_b.i13 + i26*p_b.i23 + i36*p_b.i33 + i46*p_b.i34 + i56*p_b.i35 + i66*p_b.i36,
+        i16*p_b.i14 + i26*p_b.i24 + i36*p_b.i34 + i46*p_b.i44 + i56*p_b.i45 + i66*p_b.i46,
+        i16*p_b.i15 + i26*p_b.i25 + i36*p_b.i35 + i46*p_b.i45 + i56*p_b.i55 + i66*p_b.i56,
         i16*p_b.i16 + i26*p_b.i26 + i36*p_b.i36 + i46*p_b.i46 + i56*p_b.i56 + i66*p_b.i66
     );
 }
