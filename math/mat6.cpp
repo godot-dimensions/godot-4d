@@ -98,7 +98,7 @@ Mat6 Mat6::operator+(const Mat6 &p_b) const {
         i31+p_b.i31, i32+p_b.i32, i33+p_b.i33, i34+p_b.i34, i35+p_b.i35, i36+p_b.i36,
         i41+p_b.i41, i42+p_b.i42, i43+p_b.i43, i44+p_b.i44, i45+p_b.i45, i46+p_b.i46,
         i51+p_b.i51, i52+p_b.i52, i53+p_b.i53, i54+p_b.i54, i55+p_b.i55, i56+p_b.i56,
-        i61+p_b.i61, i62+p_b.i62, i63+p_b.i63, i64+p_b.i64, i65+p_b.i65, i66+p_b.i66,
+        i61+p_b.i61, i62+p_b.i62, i63+p_b.i63, i64+p_b.i64, i65+p_b.i65, i66+p_b.i66
     );
 }
 
@@ -154,7 +154,7 @@ Mat6 Mat6::operator-(const Mat6 &p_b) const {
         i31-p_b.i31, i32-p_b.i32, i33-p_b.i33, i34-p_b.i34, i35-p_b.i35, i36-p_b.i36,
         i41-p_b.i41, i42-p_b.i42, i43-p_b.i43, i44-p_b.i44, i45-p_b.i45, i46-p_b.i46,
         i51-p_b.i51, i52-p_b.i52, i53-p_b.i53, i54-p_b.i54, i55-p_b.i55, i56-p_b.i56,
-        i61-p_b.i61, i62-p_b.i62, i63-p_b.i63, i64-p_b.i64, i65-p_b.i65, i66-p_b.i66,
+        i61-p_b.i61, i62-p_b.i62, i63-p_b.i63, i64-p_b.i64, i65-p_b.i65, i66-p_b.i66
     );
 }
 

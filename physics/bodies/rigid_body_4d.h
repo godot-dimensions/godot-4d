@@ -8,7 +8,7 @@
 class RigidBody4D : public PhysicsBody4D {
 	GDCLASS(RigidBody4D, PhysicsBody4D);
 
-	Bivector4D _angular_momentum;
+	Bivector4D _angular_velocity;
 	real_t _mass = 1.0f;
 	real_t _gravity_scale = 1.0f;
 	Vector4 _linear_velocity;
