@@ -130,26 +130,26 @@ Basis4D Rotor4D::to_basis() const {
 	Basis4D basis;
 	basis.x = Vector4(
 			s * s - xy * xy - xz * xz - xw * xw + yz * yz + yw * yw + zw * zw - xyzw * xyzw, // X.X
-			s * xy + xy * s - xz * yz - xw * yw - yz * xz - yw * xw + zw * xyzw + xyzw * zw, // X.Y
-			s * xz + xy * yz + xz * s - xw * zw + yz * xy - yw * xyzw - zw * xw - xyzw * yw, // X.Z
-			s * xw + xy * yw + xz * zw + xw * s + yz * xyzw + yw * xy + zw * xz + xyzw * yz // X.W
+			2 * (s * xy - xz * yz - xw * yw + zw * xyzw), // X.Y
+			2 * (s * xz + xy * yz - xw * zw - yw * xyzw), // X.Z
+			2 * (s * xw + xy * yw + xz * zw + yz * xyzw) // X.W
 	);
 	basis.y = Vector4(
-			-xy * s - s * xy - yz * xz - yw * xw - xz * yz - xw * yw - xyzw * zw - zw * xyzw, // Y.X
+			2 * (-xy * s - yz * xz - yw * xw - xyzw * zw), // Y.X
 			-xy * xy + s * s - yz * yz - yw * yw + xz * xz + xw * xw - xyzw * xyzw + zw * zw, // Y.Y
-			-xy * xz + s * yz + yz * s - yw * zw - xz * xy + xw * xyzw + xyzw * xw - zw * yw, // Y.Z
-			-xy * xw + s * yw + yz * zw + yw * s - xz * xyzw - xw * xy - xyzw * xz + zw * yz // Y.W
+			2 * (-xy * xz + s * yz - yw * zw + xw * xyzw), // Y.Z
+			2 * (-xy * xw + s * yw + yz * zw - xz * xyzw) // Y.W
 	);
 	basis.z = Vector4(
-			-xz * s + yz * xy - s * xz - zw * xw + xy * yz + xyzw * yw - xw * zw + yw * xyzw, // Z.X
-			-xz * xy - yz * s - s * yz - zw * yw - xy * xz - xyzw * xw - xw * xyzw - yw * zw, // Z.Y
+			2 * (-xz * s + yz * xy - zw * xw + xyzw * yw), // Z.X
+			2 * (-xz * xy - yz * s - zw * yw - xyzw * xw), // Z.Y
 			-xz * xz - yz * yz + s * s - zw * zw + xy * xy - xyzw * xyzw + xw * xw + yw * yw, // Z.Z
-			-xz * xw - yz * yw + s * zw + zw * s + xy * xyzw + xyzw * xy - xw * xz - yw * yz // Z.W
+			2 * (-xz * xw - yz * yw + s * zw + xy * xyzw) // Z.W
 	);
 	basis.w = Vector4(
-			-xw * s + yw * xy + zw * xz - s * xw - xyzw * yz + xy * yw + xz * zw - yz * xyzw, // W.X
-			-xw * xy - yw * s + zw * yz - s * yw + xyzw * xz - xy * xw + xz * xyzw + yz * zw, // W.Y
-			-xw * xz - yw * yz - zw * s - s * zw - xyzw * xy - xy * xyzw - xz * xw - yz * yw, // W.Z
+			2 * (-xw * s + yw * xy + zw * xz - xyzw * yz), // W.X
+			2 * (-xw * xy - yw * s + zw * yz + xyzw * xz), // W.Y
+			2 * (-xw * xz - yw * yz - zw * s - xyzw * xy), // W.Z
 			-xw * xw - yw * yw - zw * zw + s * s - xyzw * xyzw + xy * xy + xz * xz + yz * yz // W.W
 	);
 	return basis.orthonormalized();
