@@ -23,7 +23,7 @@ Vector4 Vector4D::bounce_ratio(const Vector4 &p_vector, const Vector4 &p_normal,
 real_t Vector4D::cross(const Vector4 &p_a, const Vector4 &p_b) {
 	const real_t diagonal = p_a.length_squared() * p_b.length_squared();
 	const real_t non_diagonal = p_a.dot(p_b);
-	return sqrt(diagonal - non_diagonal * non_diagonal);
+	return Math::sqrt(diagonal - non_diagonal * non_diagonal);
 }
 
 bool Vector4D::is_uniform(const Vector4 &p_vector) {
