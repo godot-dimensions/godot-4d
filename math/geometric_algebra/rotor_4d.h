@@ -60,7 +60,7 @@ struct _NO_DISCARD_ Rotor4D {
 	SplitComplex4D split_magnitude_squared() const;
 	Rotor4D normalized() const;
 	bool is_normalized() const;
-	bool is_rotation() const;
+	bool is_simple_rotation() const;
 
 	// Static functions for doing math on non-Rotor4D types and returning a Rotor4D.
 	static Rotor4D vector_product(const Vector4 &p_a, const Vector4 &p_b);
