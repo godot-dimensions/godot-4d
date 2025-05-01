@@ -77,13 +77,12 @@ void ArrayTetraMesh4D::calculate_normals(const bool p_keep_existing) {
 		if (p_keep_existing && _cell_normals[i] != Vector4()) {
 			continue;
 		}
-		const Vector4 a = _vertices[_cell_indices[i * 4 + 0]];
-		const Vector4 b = _vertices[_cell_indices[i * 4 + 1]];
-		const Vector4 c = _vertices[_cell_indices[i * 4 + 2]];
-		const Vector4 d = _vertices[_cell_indices[i * 4 + 3]];
-		Basis4D basis = Basis4D(b - a, c - a, d - a, a + b + c + d);
-		basis.orthonormalize();
-		_cell_normals.set(i, basis.w);
+		const Vector4 pivot = _vertices[_cell_indices[i * 4]];
+		const Vector4 a = _vertices[_cell_indices[1 + i * 4]];
+		const Vector4 b = _vertices[_cell_indices[2 + i * 4]];
+		const Vector4 c = _vertices[_cell_indices[3 + i * 4]];
+		Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
+		_cell_normals.set(i, perp);
 	}
 }
 

@@ -5,7 +5,6 @@
 
 bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const {
 	return (_cells_accessor_index == p_other->get_cells_accessor_index() &&
-			_cell_normals_accessor_index == p_other->get_cell_normals_accessor_index() &&
 			_edges_accessor_index == p_other->get_edges_accessor_index() &&
 			_vertices_accessor_index == p_other->get_vertices_accessor_index() &&
 			_polytope_cells == p_other->get_polytope_cells());
@@ -16,19 +15,6 @@ PackedInt32Array G4MFMeshSurface4D::load_cell_indices(const Ref<G4MFState4D> &p_
 	ERR_FAIL_INDEX_V(_cells_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_cells_accessor_index];
 	return accessor->decode_int32s_from_primitives(p_g4mf_state);
-}
-
-PackedVector4Array G4MFMeshSurface4D::load_cell_normals(const Ref<G4MFState4D> &p_g4mf_state) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
-	ERR_FAIL_INDEX_V(_cell_normals_accessor_index, state_accessors.size(), PackedVector4Array());
-	const Ref<G4MFAccessor4D> accessor = state_accessors[_cell_normals_accessor_index];
-	Array variants = accessor->decode_accessor_as_variants(p_g4mf_state, Variant::VECTOR4);
-	PackedVector4Array normals;
-	normals.resize(variants.size());
-	for (int i = 0; i < variants.size(); i++) {
-		normals.set(i, (Vector4)variants[i]);
-	}
-	return normals;
 }
 
 PackedInt32Array G4MFMeshSurface4D::load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
@@ -57,9 +43,10 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	tetra_mesh->set_vertices(load_vertices(p_g4mf_state));
-	tetra_mesh->set_cell_indices(load_cell_indices(p_g4mf_state));
-	if (_cell_normals_accessor_index >= 0) {
-		tetra_mesh->set_cell_normals(load_cell_normals(p_g4mf_state));
+	if (_cells_accessor_index >= 0) {
+		tetra_mesh->set_cell_indices(load_cell_indices(p_g4mf_state));
+		tetra_mesh->calculate_normals();
+		print_line(tetra_mesh->get_cell_normals());
 	}
 	const bool is_valid = tetra_mesh->is_mesh_data_valid();
 	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");
@@ -136,19 +123,6 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 			const int cells_accessor = G4MFAccessor4D::encode_new_accessor_into_state(p_g4mf_state, cell_indices_variants, cell_prim_type, 4, p_deduplicate);
 			ERR_FAIL_COND_V_MSG(cells_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode cells into G4MFState4D.");
 			surface->set_cells_accessor_index(cells_accessor);
-			// Convert tetrahedral cell normals into an accessor.
-			const PackedVector4Array cell_normals = tetra_mesh->get_cell_normals();
-			if (cell_normals.size() == cell_indices.size()) {
-				Array cell_normals_variants;
-				cell_normals_variants.resize(cell_normals.size());
-				for (int i = 0; i < cell_normals.size(); i++) {
-					cell_normals_variants[i] = cell_normals[i];
-				}
-				const String cell_norm_prim_type = G4MFAccessor4D::minimal_primitive_type_for_vector4s(cell_normals);
-				const int cell_normals_accessor = G4MFAccessor4D::encode_new_accessor_into_state(p_g4mf_state, cell_normals_variants, cell_norm_prim_type, 4, p_deduplicate);
-				ERR_FAIL_COND_V_MSG(cell_normals_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode cell normals into G4MFState4D.");
-				surface->set_cell_normals_accessor_index(cell_normals_accessor);
-			}
 		}
 		// For ArrayTetraMesh4D, the only edges are those implicitly calculated from cells.
 		// However, for other tetra meshes like BoxTetraMesh4D, use its explicitly defined edges.
@@ -182,9 +156,6 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::from_dictionary(const Dictionary &p_di
 	if (p_dict.has("cells")) {
 		surface->set_cells_accessor_index(p_dict["cells"]);
 	}
-	if (p_dict.has("cellNormals")) {
-		surface->set_cell_normals_accessor_index(p_dict["cellNormals"]);
-	}
 	if (p_dict.has("edges")) {
 		surface->set_edges_accessor_index(p_dict["edges"]);
 	}
@@ -205,9 +176,6 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 	if (_cells_accessor_index >= 0) {
 		dict["cells"] = _cells_accessor_index;
 	}
-	if (_cell_normals_accessor_index >= 0) {
-		dict["cellNormals"] = _cell_normals_accessor_index;
-	}
 	if (_edges_accessor_index >= 0) {
 		dict["edges"] = _edges_accessor_index;
 	}
@@ -226,8 +194,6 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_cells_accessor_index"), &G4MFMeshSurface4D::get_cells_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_cells_accessor_index", "cells_accessor_index"), &G4MFMeshSurface4D::set_cells_accessor_index);
-	ClassDB::bind_method(D_METHOD("get_cell_normals_accessor_index"), &G4MFMeshSurface4D::get_cell_normals_accessor_index);
-	ClassDB::bind_method(D_METHOD("set_cell_normals_accessor_index", "cell_normals_accessor_index"), &G4MFMeshSurface4D::set_cell_normals_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_edges_accessor_index"), &G4MFMeshSurface4D::get_edges_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_edges_accessor_index", "edges_accessor_index"), &G4MFMeshSurface4D::set_edges_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_vertices_accessor_index"), &G4MFMeshSurface4D::get_vertices_accessor_index);
@@ -239,7 +205,6 @@ void G4MFMeshSurface4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMeshSurface4D::is_equal_exact);
 	ClassDB::bind_method(D_METHOD("load_cell_indices", "g4mf_state"), &G4MFMeshSurface4D::load_cell_indices);
-	ClassDB::bind_method(D_METHOD("load_cell_normals", "g4mf_state"), &G4MFMeshSurface4D::load_cell_normals);
 	ClassDB::bind_method(D_METHOD("load_edge_indices", "g4mf_state"), &G4MFMeshSurface4D::load_edge_indices);
 	ClassDB::bind_method(D_METHOD("load_vertices", "g4mf_state"), &G4MFMeshSurface4D::load_vertices);
 	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_surface", "g4mf_state"), &G4MFMeshSurface4D::generate_tetra_mesh_surface);
@@ -250,7 +215,6 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurface4D::to_dictionary);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "cells_accessor_index"), "set_cells_accessor_index", "get_cells_accessor_index");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_normals_accessor_index"), "set_cell_normals_accessor_index", "get_cell_normals_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "edges_accessor_index"), "set_edges_accessor_index", "get_edges_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "vertices_accessor_index"), "set_vertices_accessor_index", "get_vertices_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_index"), "set_material_index", "get_material_index");

@@ -18,7 +18,6 @@ class G4MFMeshSurface4D : public G4MFItem4D {
 	GDCLASS(G4MFMeshSurface4D, G4MFItem4D);
 
 	int _cells_accessor_index = -1;
-	int _cell_normals_accessor_index = -1;
 	int _edges_accessor_index = -1;
 	int _vertices_accessor_index = -1;
 	int _material_index = -1;
@@ -30,9 +29,6 @@ protected:
 public:
 	int get_cells_accessor_index() const { return _cells_accessor_index; }
 	void set_cells_accessor_index(const int p_cells_accessor_index) { _cells_accessor_index = p_cells_accessor_index; }
-
-	int get_cell_normals_accessor_index() const { return _cell_normals_accessor_index; }
-	void set_cell_normals_accessor_index(const int p_cell_normals_accessor_index) { _cell_normals_accessor_index = p_cell_normals_accessor_index; }
 
 	int get_edges_accessor_index() const { return _edges_accessor_index; }
 	void set_edges_accessor_index(const int p_edges_accessor_index) { _edges_accessor_index = p_edges_accessor_index; }
@@ -48,7 +44,6 @@ public:
 
 	bool is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const;
 	PackedInt32Array load_cell_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
-	PackedVector4Array load_cell_normals(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedVector4Array load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const;
 
