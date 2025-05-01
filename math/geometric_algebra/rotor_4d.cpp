@@ -155,16 +155,22 @@ Basis4D Rotor4D::to_basis() const {
 	return basis.orthonormalized();
 }
 
-real_t Rotor4D::get_rotation_angle() const {
+real_t Rotor4D::get_simple_rotation_angle() const {
 	return 2.0f * Math::atan2(parts.bivector.length(), s);
 }
 
-Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
-	return parts.bivector * get_rotation_angle();
+// Should be moved to bivector
+real_t Rotor4D::get_rotation_angle() const {
+	return 2.0f * get_rotation_bivector().length();
 }
 
-Bivector4D Rotor4D::get_rotation_bivector_normal() const {
-	return parts.bivector.normalized();
+Bivector4D Rotor4D::get_rotation_bivector() const {
+	return ;
+}
+
+// Should be removed
+Bivector4D Rotor4D::get_rotation_bivector_normalized() const {
+	return get_rotation_bivector().normalized();
 }
 
 Basis4D Rotor4D::rotate_basis(const Basis4D &p_basis) const {
