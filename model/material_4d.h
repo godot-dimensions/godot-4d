@@ -9,6 +9,8 @@
 #include "core/io/resource.h"
 #endif
 
+class Mesh4D;
+
 class Material4D : public Resource {
 	GDCLASS(Material4D, Resource);
 
@@ -17,7 +19,7 @@ public:
 		SHADING_MODE_UNSHADED,
 	};
 
-	// TODO: Switch to BitField in a future Godot version https://github.com/godotengine/godot/pull/89457
+	// TODO: Switch to BitField in a future Godot version https://github.com/godotengine/godot/pull/95916
 	// Most of these values are not used in the current implementation but are reserved for future use.
 	enum ColorSourceFlags {
 		COLOR_SOURCE_FLAG_NONE = 0, // Use for errors.
@@ -38,11 +40,13 @@ public:
 protected:
 	static void _bind_methods();
 
-	ColorSourceFlags _albedo_source_flags = COLOR_SOURCE_FLAG_SINGLE_COLOR;
-	Color _albedo_color = Color(1, 1, 1, 1);
+	PackedColorArray _edge_albedo_color_cache;
 	PackedColorArray _albedo_color_array;
+	Color _albedo_color = Color(1, 1, 1, 1);
+	ColorSourceFlags _albedo_source_flags = COLOR_SOURCE_FLAG_SINGLE_COLOR;
 
 public:
+	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh);
 	virtual bool is_default_material() const;
 	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_edge_count, const int p_second_edge_count);
 

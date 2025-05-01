@@ -1,6 +1,6 @@
 #include "wire_material_4d.h"
 
-Material4D::ColorSourceFlags _wire_source_to_flags(const WireMaterial4D::WireColorSource p_wire_source) {
+Material4D::ColorSourceFlags WireMaterial4D::_wire_source_to_flags(const WireColorSource p_wire_source) {
 	switch (p_wire_source) {
 		case WireMaterial4D::WIRE_COLOR_SOURCE_SINGLE_COLOR:
 			return Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR;

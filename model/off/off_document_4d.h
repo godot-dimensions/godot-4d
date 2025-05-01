@@ -28,6 +28,8 @@ class OFFDocument4D : public Resource {
 	void _count_unique_edges_from_faces();
 	int _find_or_insert_face(const int p_a, const int p_b, const int p_c, const bool p_deduplicate_faces = true);
 	int _find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
+	TypedArray<PackedInt32Array> _calculate_cell_vertex_indices();
+	TypedArray<PackedInt32Array> _calculate_simplex_vertex_indices(const TypedArray<PackedInt32Array> &p_cell_vertex_indices);
 
 protected:
 	static void _bind_methods();
