@@ -271,7 +271,7 @@ real_t Rotor4D::length_squared() const {
 SplitComplex4D Rotor4D::split_magnitude_squared() const {
 	SplitComplex4D result;
 	result.s = s * s + xy * xy + xz * xz + xw * xw + yz * yz + yw * yw + zw * zw + xyzw * xyzw; // Scalar
-	result.xyzw = s * xyzw - xy * zw + xz * yw - xw * yz - yz * xw + yw * xz - zw * xy + xyzw * s; // XYZW
+	result.xyzw = 2 * (s * xyzw - xy * zw + xz * yw - xw * yz); // XYZW
 	return result;
 }
 
