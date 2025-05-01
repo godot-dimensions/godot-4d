@@ -295,7 +295,7 @@ bool Rotor4D::is_normalized() const {
 	return Math::is_equal_approx(sms.s, (real_t)1.0) && Math::is_equal_approx(sms.xyzw, (real_t)0.0);
 }
 
-bool Rotor4D::is_rotation() const {
+bool Rotor4D::is_simple_rotation() const {
 	return Math::is_zero_approx(xyzw) && is_normalized();
 }
 
