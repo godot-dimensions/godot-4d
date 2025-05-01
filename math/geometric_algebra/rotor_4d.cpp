@@ -285,7 +285,8 @@ Rotor4D Rotor4D::normalized() const {
 }
 
 bool Rotor4D::is_normalized() const {
-	return Math::is_equal_approx(length_squared(), (real_t)1.0);
+	SplitComplex4D sms = split_magnitude_squared();
+	return Math::is_equal_approx(sms.s, (real_t)1.0) && Math::is_equal_approx(sms.xyzw, (real_t)0.0);
 }
 
 bool Rotor4D::is_rotation() const {
