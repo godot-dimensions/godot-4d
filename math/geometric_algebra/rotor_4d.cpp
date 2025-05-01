@@ -219,6 +219,7 @@ Vector4 Rotor4D::sandwich(const Vector4 &p_vec, const Rotor4D &p_right) const {
 	);
 }
 
+// Need to test these against an implimentation using rotor exp and log to check validity
 Rotor4D Rotor4D::slerp(Rotor4D p_to, const real_t p_weight) const {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D::identity(), "The start Rotor4D " + operator String() + " must be normalized.");
