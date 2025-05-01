@@ -326,12 +326,31 @@ Rotor4D Rotor4D::from_basis(const Basis4D &p_basis) {
 	return from_zx(euler.zx) * from_zw(euler.zw) * from_xw(euler.xw) * from_yz(euler.yz) * from_xy(euler.xy) * from_wy(euler.wy);
 }
 
+// Should be renamed to something that includes exp
 Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
-	const real_t length_angle = p_bivector.length();
-	if (Math::is_zero_approx(length_angle)) {
-		return identity();
-	}
-	return from_bivector_normal_angle(p_bivector / length_angle, length_angle);
+	const real_t il = 0.5 * (xw + yz);
+    const real_t jl = 0.5 * (yw - xz);
+    const real_t kl = 0.5 * (zw + xy);
+    const real_t ir = 0.5 * (xw - yz);
+    const real_t jr = 0.5 * (yw + xz);
+    const real_t kr = 0.5 * (zw - xy);
+    
+    const Bivector4D left = Bivector4D( kl, -jl, il,  il, jl, kl);
+    const Bivector4D right = Bivector4D(-kr,  jr, ir, -ir, jr, kr);
+    
+    const real_t l = left.length();
+    const real_t r = right.length();
+    
+    left *= (Math.sin(l) / l);
+    right *= (Math.sin(r) / r);
+    
+    l = Math.cos(l);
+    r = Math.cos(r);
+    
+    Rotor4 L = Rotor4(l, left, 0);
+    Rotor4 R = Rotor4(r, right, 0);
+    
+    return L * R;
 }
 
 Rotor4D Rotor4D::from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle) {
