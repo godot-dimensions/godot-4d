@@ -7,6 +7,8 @@
 		G4MFMaterialChannel4D is a class for material channels inside of a [G4MFMaterial4D]. A material channel is a single property of a material, such as [member G4MFMaterial4D.base_color_channel], [member G4MFMaterial4D.normal_channel], [member G4MFMaterial4D.emissive_channel], and [member G4MFMaterial4D.orm_channel]. The colors in a material channel may represent actual colors, or may be more abstract data, such as a normal map's color values encoding the normal vectors of a surface.
 	</description>
 	<tutorials>
+		<link title="G4MF Material Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/material.md</link>
+		<link title="G4MF Material Channel Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.material.channel.schema.json</link>
 	</tutorials>
 	<methods>
 		<method name="from_dictionary" qualifiers="static">

@@ -97,17 +97,17 @@ bool Camera4D::get_depth_fade() const {
 	return _use_depth_fade;
 }
 
-void Camera4D::set_depth_fade_start(const real_t p_depth_fade_start) {
+void Camera4D::set_depth_fade_start(const double p_depth_fade_start) {
 	_depth_fade_start = p_depth_fade_start;
 }
 
-real_t Camera4D::get_depth_fade_start() const {
+double Camera4D::get_depth_fade_start() const {
 	return _depth_fade_start;
 }
 
 bool Camera4D::is_position_behind(const Vector4 &p_global_position) const {
 	const Transform4D global_xform = get_global_transform();
-	return global_xform.basis.z.dot(p_global_position - global_xform.origin) > -_near;
+	return global_xform.basis.z.dot(p_global_position - global_xform.origin) > -_clip_near;
 }
 
 Vector4 Camera4D::viewport_to_world_ray_origin(const Vector2 &p_viewport_position) const {
@@ -119,7 +119,7 @@ Vector4 Camera4D::viewport_to_world_ray_origin(const Vector2 &p_viewport_positio
 	}
 	// Orthographic cameras have ray origins offset by the orthographic size.
 	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
-	const real_t pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
+	const double pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
 	const Vector2 scaled_position = (p_viewport_position * 2.0f - viewport_size) * (_orthographic_size / pixel_size);
 	return global_xform.origin + global_xform.basis.x * scaled_position.x + global_xform.basis.y * -scaled_position.y;
 }
@@ -133,8 +133,8 @@ Vector4 Camera4D::viewport_to_world_ray_direction(const Vector2 &p_viewport_posi
 	}
 	// Perspective cameras have ray directions pointing more to the side when near the sides of the viewport.
 	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
-	const real_t pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
-	const real_t focal_length = _projection_type == PROJECTION4D_PERSPECTIVE_4D ? _focal_length_4d : _focal_length_3d;
+	const double pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
+	const double focal_length = _projection_type == PROJECTION4D_PERSPECTIVE_4D ? _focal_length_4d : _focal_length_3d;
 	const Vector2 scaled_position = (p_viewport_position * 2.0f - viewport_size) / pixel_size;
 	const Vector4 ray_direction = global_xform.basis.x * scaled_position.x + global_xform.basis.y * -scaled_position.y + global_xform.basis.z * -focal_length;
 	return ray_direction.normalized();
@@ -161,7 +161,7 @@ Vector2 Camera4D::world_to_viewport_local_normal(const Vector4 &p_local_position
 Vector2 Camera4D::world_to_viewport(const Vector4 &p_global_position) const {
 	const Vector4 local_position = get_global_transform().xform_transposed(p_global_position);
 	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
-	const real_t pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
+	const double pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
 	const Vector2 projected = world_to_viewport_local_normal(local_position);
 	return (projected * pixel_size + viewport_size) * 0.5f;
 }
@@ -240,28 +240,28 @@ void Camera4D::set_field_of_view_3d(const double p_field_of_view_3d) {
 	_focal_length_3d = Math::tan((Math_PI - p_field_of_view_3d) * 0.5);
 }
 
-real_t Camera4D::get_orthographic_size() const {
+double Camera4D::get_orthographic_size() const {
 	return _orthographic_size;
 }
 
-void Camera4D::set_orthographic_size(const real_t p_orthographic_size) {
+void Camera4D::set_orthographic_size(const double p_orthographic_size) {
 	_orthographic_size = p_orthographic_size;
 }
 
-real_t Camera4D::get_near() const {
-	return _near;
+double Camera4D::get_clip_near() const {
+	return _clip_near;
 }
 
-void Camera4D::set_near(const real_t p_near) {
-	_near = p_near;
+void Camera4D::set_clip_near(const double p_clip_near) {
+	_clip_near = p_clip_near;
 }
 
-real_t Camera4D::get_far() const {
-	return _far;
+double Camera4D::get_clip_far() const {
+	return _clip_far;
 }
 
-void Camera4D::set_far(const real_t p_far) {
-	_far = p_far;
+void Camera4D::set_clip_far(const double p_clip_far) {
+	_clip_far = p_clip_far;
 }
 
 Camera4D::WFadeMode Camera4D::get_w_fade_mode() const {
@@ -289,19 +289,19 @@ void Camera4D::set_w_fade_color_positive(const Color &p_w_fade_color_positive) {
 	_w_fade_color_positive = p_w_fade_color_positive;
 }
 
-real_t Camera4D::get_w_fade_distance() const {
+double Camera4D::get_w_fade_distance() const {
 	return _w_fade_distance;
 }
 
-void Camera4D::set_w_fade_distance(const real_t p_w_fade_distance) {
+void Camera4D::set_w_fade_distance(const double p_w_fade_distance) {
 	_w_fade_distance = p_w_fade_distance;
 }
 
-real_t Camera4D::get_w_fade_slope() const {
+double Camera4D::get_w_fade_slope() const {
 	return _w_fade_slope;
 }
 
-void Camera4D::set_w_fade_slope(const real_t p_w_fade_slope) {
+void Camera4D::set_w_fade_slope(const double p_w_fade_slope) {
 	_w_fade_slope = p_w_fade_slope;
 }
 
@@ -357,13 +357,13 @@ void Camera4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_orthographic_size", "orthographic_size"), &Camera4D::set_orthographic_size);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "orthographic_size", PROPERTY_HINT_NONE, "suffix:m"), "set_orthographic_size", "get_orthographic_size");
 
-	ClassDB::bind_method(D_METHOD("get_near"), &Camera4D::get_near);
-	ClassDB::bind_method(D_METHOD("set_near", "near"), &Camera4D::set_near);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "near", PROPERTY_HINT_RANGE, "0.001,1000,0.001,or_greater,exp,suffix:m"), "set_near", "get_near");
+	ClassDB::bind_method(D_METHOD("get_clip_near"), &Camera4D::get_clip_near);
+	ClassDB::bind_method(D_METHOD("set_clip_near", "clip_near"), &Camera4D::set_clip_near);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clip_near", PROPERTY_HINT_RANGE, "0.001,1000,0.001,or_greater,exp,suffix:m"), "set_clip_near", "get_clip_near");
 
-	ClassDB::bind_method(D_METHOD("get_far"), &Camera4D::get_far);
-	ClassDB::bind_method(D_METHOD("set_far", "far"), &Camera4D::set_far);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "far", PROPERTY_HINT_RANGE, "0.01,4000,0.01,or_greater,exp,suffix:m"), "set_far", "get_far");
+	ClassDB::bind_method(D_METHOD("get_clip_far"), &Camera4D::get_clip_far);
+	ClassDB::bind_method(D_METHOD("set_clip_far", "clip_far"), &Camera4D::set_clip_far);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clip_far", PROPERTY_HINT_RANGE, "0.01,4000,0.01,or_greater,exp,suffix:m"), "set_clip_far", "get_clip_far");
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_mode"), &Camera4D::get_w_fade_mode);
 	ClassDB::bind_method(D_METHOD("set_w_fade_mode", "w_fade_mode"), &Camera4D::set_w_fade_mode);

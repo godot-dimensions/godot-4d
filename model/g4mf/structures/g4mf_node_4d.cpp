@@ -64,6 +64,10 @@ Ref<G4MFNode4D> G4MFNode4D::from_godot_node(const Node *p_godot_node) {
 	if (godot_node_4d) {
 		g4mf_node->set_transform(godot_node_4d->get_transform());
 		g4mf_node->set_visible(godot_node_4d->is_visible());
+		const Camera4D *godot_camera_4d = Object::cast_to<Camera4D>(godot_node_4d);
+		if (godot_camera_4d) {
+			g4mf_node->set_camera(G4MFCamera4D::convert_camera_4d(godot_camera_4d));
+		}
 	}
 	return g4mf_node;
 }
@@ -97,9 +101,6 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 	if (p_dict.has("children")) {
 		node->_children_indices = json_array_to_int32_array(p_dict["children"]);
 	}
-	if (p_dict.has("mesh")) {
-		node->_mesh_index = p_dict["mesh"];
-	}
 	if (p_dict.has("parent")) {
 		// Not a part of the G4MF spec but useful if an extension wants to
 		// compose external G4MF nodes on top of a G4MF scene. (G4MFX?)
@@ -110,6 +111,13 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 	}
 	if (p_dict.has("visible")) {
 		node->_visible = p_dict["visible"];
+	}
+	// Component properties.
+	if (p_dict.has("mesh")) {
+		node->_mesh_index = p_dict["mesh"];
+	}
+	if (p_dict.has("camera")) {
+		node->_camera = G4MFCamera4D::from_dictionary(p_dict["camera"]);
 	}
 	return node;
 }
@@ -144,14 +152,17 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	if (!_children_indices.is_empty()) {
 		dict["children"] = int32_array_to_json_array(_children_indices);
 	}
-	if (_mesh_index >= 0) {
-		dict["mesh"] = _mesh_index;
-	}
 	if (!_transform.origin.is_zero_approx()) {
 		dict["position"] = Vector4D::to_json_array(_transform.origin);
 	}
 	if (!_visible) {
 		dict["visible"] = _visible;
+	}
+	// Component properties.
+	if (_mesh_index >= 0) {
+		dict["mesh"] = _mesh_index;
+	} else if (_camera.is_valid()) {
+		dict["camera"] = _camera->to_dictionary();
 	}
 	return dict;
 }
@@ -264,28 +275,40 @@ Rotor4D G4MFNode4D::json_array_to_rotor_4d(const Array &p_json_array) {
 }
 
 void G4MFNode4D::_bind_methods() {
+	// Node hierarchy.
 	ClassDB::bind_method(D_METHOD("get_children_indices"), &G4MFNode4D::get_children_indices);
 	ClassDB::bind_method(D_METHOD("set_children_indices", "children"), &G4MFNode4D::set_children_indices);
 	ClassDB::bind_method(D_METHOD("get_parent_index"), &G4MFNode4D::get_parent_index);
 	ClassDB::bind_method(D_METHOD("set_parent_index", "parent_index"), &G4MFNode4D::set_parent_index);
+	ClassDB::bind_method(D_METHOD("get_visible"), &G4MFNode4D::get_visible);
+	ClassDB::bind_method(D_METHOD("set_visible", "visible"), &G4MFNode4D::set_visible);
+	// Transform properties.
 	ClassDB::bind_method(D_METHOD("get_basis"), &G4MFNode4D::get_basis_bind);
 	ClassDB::bind_method(D_METHOD("set_basis", "basis"), &G4MFNode4D::set_basis_bind);
 	ClassDB::bind_method(D_METHOD("get_position"), &G4MFNode4D::get_position);
 	ClassDB::bind_method(D_METHOD("set_position", "position"), &G4MFNode4D::set_position);
 	ClassDB::bind_method(D_METHOD("get_scale"), &G4MFNode4D::get_scale);
 	ClassDB::bind_method(D_METHOD("set_scale", "scale"), &G4MFNode4D::set_scale);
-	ClassDB::bind_method(D_METHOD("get_visible"), &G4MFNode4D::get_visible);
-	ClassDB::bind_method(D_METHOD("set_visible", "visible"), &G4MFNode4D::set_visible);
+	// Component properties.
+	ClassDB::bind_method(D_METHOD("get_camera"), &G4MFNode4D::get_camera);
+	ClassDB::bind_method(D_METHOD("set_camera", "camera"), &G4MFNode4D::set_camera);
+	ClassDB::bind_method(D_METHOD("get_mesh_index"), &G4MFNode4D::get_mesh_index);
+	ClassDB::bind_method(D_METHOD("set_mesh_index", "mesh_index"), &G4MFNode4D::set_mesh_index);
 
 	ClassDB::bind_method(D_METHOD("get_scene_node_path", "g4mf_state"), &G4MFNode4D::get_scene_node_path);
 
 	ClassDB::bind_static_method("G4MFNode4D", D_METHOD("from_dictionary", "dict"), &G4MFNode4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary", "prefer_basis"), &G4MFNode4D::to_dictionary);
 
+	// Node hierarchy.
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "children_indices"), "set_children_indices", "get_children_indices");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "parent_index"), "set_parent_index", "get_parent_index");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "visible"), "set_visible", "get_visible");
+	// Transform properties.
 	ADD_PROPERTY(PropertyInfo(Variant::PROJECTION, "basis"), "set_basis", "get_basis");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "position", PROPERTY_HINT_NONE, "suffix:m"), "set_position", "get_position");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_scale", "get_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "visible"), "set_visible", "get_visible");
+	// Component properties.
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "camera", PROPERTY_HINT_RESOURCE_TYPE, "G4MFCamera4D"), "set_camera", "get_camera");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_index"), "set_mesh_index", "get_mesh_index");
 }

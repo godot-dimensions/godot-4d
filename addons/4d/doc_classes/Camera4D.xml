@@ -73,6 +73,12 @@
 		</method>
 	</methods>
 	<members>
+		<member name="clip_far" type="float" setter="set_clip_far" getter="get_clip_far" default="4000.0">
+			The distance to the far clipping plane or far culling boundary for this camera relative to its local -Z axis. Higher values allow the camera to see further away, while decreasing can improve performance if it results in objects being partially or fully culled.
+		</member>
+		<member name="clip_near" type="float" setter="set_clip_near" getter="get_clip_near" default="0.05">
+			The distance to the near clipping plane or near culling boundary for this camera relative to its local -Z axis. Lower values allow the camera to see objects closer to its position, at the cost of lower precision across the [i]entire[/i] range. Values lower than the default can lead to increased Z-fighting.
+		</member>
 		<member name="current" type="bool" setter="set_current" getter="is_current" default="false">
 			If [code]true[/code], the ancestor [Viewport] is currently using this camera. Only one [Camera4D] node can be current at a time for each [Viewport].
 			If multiple cameras are a descendant of the [Viewport], the cameras will try to keep at least one of them current. For example, if two [Camera4D] nodes are present in the scene and only one is current, setting one camera's [member current] to [code]false[/code] will cause the other camera to be made current. If three or more [Camera4D] nodes are present in the scene, setting [member current] to [code]false[/code] on the active camera will result in the cameras activating in a round-robin fashion. To deactivate a camera without activating another, use [method clear_current] instead.
@@ -82,9 +88,6 @@
 		</member>
 		<member name="depth_fade_start" type="float" setter="set_depth_fade_start" getter="get_depth_fade_start" default="25.0">
 			How many units on the camera's Z axis away an edge has to be before it starts fading. Only applies if [member depth_fade] is [code]true[/code]. This is also known as fog.
-		</member>
-		<member name="far" type="float" setter="set_far" getter="get_far" default="4000.0">
-			The distance to the far culling boundary for this camera relative to its local -Z axis. Higher values allow the camera to see further away, while decreasing can improve performance if it results in objects being partially or fully culled.
 		</member>
 		<member name="field_of_view_3d" type="float" setter="set_field_of_view_3d" getter="get_field_of_view_3d">
 			The field of view of the camera when projecting from 3D to 2D. This value is in radians, but is displayed as degrees in the inspector. The field of view must be between 0 and TAU / 2 radians (0 and 180 degrees), exclusive. The default field of view is TAU / 4 radians, or 90 degrees. This is only used when [member projection_type] is set to [constant PROJECTION4D_PERSPECTIVE_3D] and [member view_angle_type] is set to [constant VIEW_ANGLE_FIELD_OF_VIEW].
@@ -100,9 +103,6 @@
 		</member>
 		<member name="keep_aspect" type="int" setter="set_keep_aspect" getter="get_keep_aspect" enum="Camera4D.KeepAspect" default="1">
 			Controls whether the FOV, focal length, and/or size properties control the width or height of the camera's view. If [constant KEEP_WIDTH], these properties control the width, and if [constant KEEP_HEIGHT], they control the height. The other dimension will be adjusted to fill the window. By default, the height is kept, and the width is adjusted as the window is resized.
-		</member>
-		<member name="near" type="float" setter="set_near" getter="get_near" default="0.05">
-			The distance to the near culling boundary for this camera relative to its local -Z axis. Lower values allow the camera to see objects closer to its position, at the cost of lower precision across the [i]entire[/i] range. Values lower than the default can lead to increased Z-fighting.
 		</member>
 		<member name="orthographic_size" type="float" setter="set_orthographic_size" getter="get_orthographic_size">
 			The size in meters of the orthographic camera when projecting from 4D to 3D. This is only used when [member projection_type] is set to [constant PROJECTION4D_ORTHOGRAPHIC].

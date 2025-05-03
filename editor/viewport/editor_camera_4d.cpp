@@ -69,10 +69,10 @@ void EditorCamera4D::_update_camera_auto_orthographicness() {
 	}
 	if (should_be_orthographic) {
 		_camera->set_projection_type(Camera4D::PROJECTION4D_ORTHOGRAPHIC);
-		_camera->set_near(-_camera->get_far());
+		_camera->set_clip_near(-_camera->get_clip_far());
 	} else {
 		_camera->set_projection_type(Camera4D::PROJECTION4D_PERSPECTIVE_4D);
-		_camera->set_near(0.05);
+		_camera->set_clip_near(0.05);
 	}
 }
 
@@ -81,10 +81,10 @@ const Camera4D *EditorCamera4D::get_camera_readonly() const {
 }
 
 double EditorCamera4D::change_speed_and_zoom(const double p_change) {
-	real_t min_distance = _camera->get_near() * 4.0f;
-	real_t max_distance = _camera->get_far() * 0.25f;
+	const double min_distance = _camera->get_clip_near() * 4.0;
+	const double max_distance = _camera->get_clip_far() * 0.25;
 	if (unlikely(min_distance > max_distance)) {
-		_target_speed_and_zoom = (min_distance + max_distance) * 0.5f;
+		_target_speed_and_zoom = (min_distance + max_distance) * 0.5;
 	} else {
 		_target_speed_and_zoom = CLAMP(_target_speed_and_zoom * p_change, min_distance, max_distance);
 	}
@@ -188,7 +188,7 @@ void EditorCamera4D::set_orthogonal_view_plane(const Vector4::Axis p_right, cons
 	}
 	if (_is_auto_orthographic) {
 		_camera->set_projection_type(Camera4D::PROJECTION4D_ORTHOGRAPHIC);
-		_camera->set_near(-_camera->get_far());
+		_camera->set_clip_near(-_camera->get_clip_far());
 	}
 	_pitch_angle = 0.0f;
 	set_basis(_ground_basis);

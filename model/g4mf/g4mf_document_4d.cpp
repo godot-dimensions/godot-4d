@@ -475,6 +475,10 @@ Node4D *G4MFDocument4D::_import_generate_builtin_node(const Ref<G4MFState4D> p_g
 			return mesh_instance;
 		}
 	}
+	const Ref<G4MFCamera4D> g4mf_camera = p_g4mf_node->get_camera();
+	if (g4mf_camera.is_valid()) {
+		return g4mf_camera->generate_camera_4d();
+	}
 	return nullptr;
 }
 
