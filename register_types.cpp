@@ -72,6 +72,7 @@
 #include "physics/shapes/sphere_shape_4d.h"
 
 // Render.
+#include "render/cross_section/cross_section_rendering_engine_4d.h"
 #include "render/rendering_engine_4d.h"
 #include "render/rendering_server_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
@@ -210,6 +211,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
 		GDREGISTER_CLASS(WireframeRenderCanvas4D);
 		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
+		GDREGISTER_CLASS(CrossSectionRenderingEngine4D);
 #endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
 #ifdef TOOLS_ENABLED
@@ -221,6 +223,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Render.
 		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
 		rendering_server->register_rendering_engine(memnew(WireframeCanvasRenderingEngine4D));
+		rendering_server->register_rendering_engine(memnew(CrossSectionRenderingEngine4D));
 		add_godot_singleton("RenderingServer4D", rendering_server);
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {

@@ -18,6 +18,8 @@ protected:
 	PackedInt32Array _edge_indices_cache;
 	PackedVector4Array _edge_positions_cache;
 
+	virtual void update_cross_section_mesh() override;
+
 public:
 	Ref<ArrayMesh> export_uvw_map_mesh();
 	void tetra_mesh_clear_cache();
