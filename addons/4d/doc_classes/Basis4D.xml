@@ -80,6 +80,13 @@
 				Constructs a pure uniformly scaled [Basis4D] matrix with no rotation or shearing. The scale value is set as the diagonal of the matrix, and the other parts of the matrix are zero.
 			</description>
 		</method>
+		<method name="from_swap_rotation" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="rot_from" type="int" />
+			<param index="1" name="rot_to" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="from_wy" qualifiers="static">
 			<return type="Projection" />
 			<param index="0" name="wy" type="float" />

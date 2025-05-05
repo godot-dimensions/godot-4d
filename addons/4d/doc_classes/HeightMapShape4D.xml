@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="HeightMapShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D height map physics shape with a 3D surface.
+	</brief_description>
+	<description>
+		HeightMapShape4D describes a 4D height map physics shape using an array of height values, also known as a height field. Height maps are commonly used for terrain. To represent holes in the heightmap, use a very large negative number.
+		The size of the heightmap is defined in the X, Z, and W directions, which can be accessed as a single [Vector3i] [member size], or individually as [member size_width], [member size_depth], and [member size_thickness]. The [member height_data] is an array of floats for the height values. See [method get_height_index] for how the array index is calculated.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_height_index" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="x" type="int" />
+			<param index="1" name="z" type="int" />
+			<param index="2" name="w" type="int" />
+			<description>
+				Returns the index in the [member height_data] array for the given X, Z, and W grid index coordinates. The index is calculated as [code]x + (z * size_width) + (w * size_width * size_depth)[/code]. All parameters must be on the range of 0 (inclusive) to the size of the heightmap in the respective axis (exclusive) or the function will error and return [code]-1[/code].
+			</description>
+		</method>
+		<method name="get_height_index_vec3i" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="vector" type="Vector3i" />
+			<description>
+				Returns the index in the [member height_data] array for the given X, Z, and W grid index coordinates packed into a [Vector3i] (see [member size]). The index is calculated as [code]x + (z * size_width) + (w * size_width * size_depth)[/code]. All components of the vector must be on the range of 0 (inclusive) to the size of the heightmap in the respective axis in [member size] (exclusive) or the function will error and return [code]-1[/code].
+			</description>
+		</method>
+		<method name="get_height_on_grid_vec3i" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="grid_pos" type="Vector3i" />
+			<description>
+				Given grid index coordinates, returns the height at that position. All components of the vector must be on the range of 0 (inclusive) to the size of the heightmap in the respective axis in [member size] (exclusive) or the function will error and return [code]0.0[/code].
+			</description>
+		</method>
+		<method name="get_height_on_grid_vec4i" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="grid_pos" type="Vector4i" />
+			<description>
+				Given grid index coordinates, returns the height at that position. The Y axis is not used, only the X, Z, and W axes are used. The X, Z, and W axes must be on the range of 0 (inclusive) to the size of the heightmap in the respective axis (exclusive) or the function will error and return [code]0.0[/code].
+			</description>
+		</method>
+		<method name="get_height_vec3" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="pos" type="Vector3" />
+			<description>
+				Given a flat position of X, Z, and W coordinates packed into a [Vector3], returns the height at that position. These are not grid coordinates, so a zero vector refers to the center of the heightmap, not the corner. The position may be any finite vector. If the position is between multiple grid points, the height uses trilinear interpolation to find the height at that position. If the position is outside the bounds of the heightmap, the heights will be clamped to the edge of the heightmap, allowing the heightmap to be infinitely large in all directions.
+			</description>
+		</method>
+		<method name="get_height_vec4" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="pos" type="Vector4" />
+			<description>
+				Given a position in 4D space, returns the height at that position. The Y axis is not used, only the X, Z, and W axes are used. These are not grid coordinates, so a zero vector refers to the center of the heightmap, not the corner. The position may be any finite vector. If the position is between multiple grid points, the height uses trilinear interpolation to find the height at that position. If the position is outside the bounds of the heightmap, the heights will be clamped to the edge of the heightmap, allowing the heightmap to be infinitely large in all directions.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="height_data" type="PackedFloat64Array" setter="set_height_data" getter="get_height_data" default="PackedFloat64Array(0, 0, 0, 0, 0, 0, 0, 0)">
+			The height data of the 4D heightmap, stored as a [PackedFloat64Array]. The size of the array is always equal to the size of the heightmap in the X, Z, and W directions, multiplied together.
+		</member>
+		<member name="size" type="Vector3i" setter="set_size" getter="get_size" default="Vector3i(2, 2, 2)">
+			The flat 3D size of the 4D heightmap in the X, Z, and W directions, packed into a [Vector3i]. The X axis is the X width, the Y axis is the Z depth, and the Z axis is the W thickness. For improved readability, you can use the [member size_width], [member size_depth], and [member size_thickness] properties instead.
+		</member>
+		<member name="size_depth" type="int" setter="set_size_depth" getter="get_size_depth" default="2">
+			The size of the heightmap in the Z direction. This is equivalent to the Y axis of [member size].
+		</member>
+		<member name="size_thickness" type="int" setter="set_size_thickness" getter="get_size_thickness" default="2">
+			The size of the heightmap in the W direction. This is equivalent to the Z axis of [member size].
+		</member>
+		<member name="size_width" type="int" setter="set_size_width" getter="get_size_width" default="2">
+			The size of the heightmap in the X direction. This is equivalent to the X axis of [member size].
+		</member>
+	</members>
+</class>

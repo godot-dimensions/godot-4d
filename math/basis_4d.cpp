@@ -589,6 +589,17 @@ FROM_SINGLE_ANGLE(x, w)
 FROM_SINGLE_ANGLE(w, y)
 FROM_SINGLE_ANGLE(z, w)
 
+Basis4D Basis4D::from_swap_rotation(const int p_rot_from, const int p_rot_to) {
+	Basis4D ret;
+	ERR_FAIL_COND_V_MSG(p_rot_from < 0 || p_rot_from > 3 || p_rot_to < 0 || p_rot_to > 3 || p_rot_from == p_rot_to, ret, "Invalid rotation dimension indices.");
+	// Set the rotation values as if the rotation was 90 degrees.
+	ret[p_rot_from][p_rot_from] = 0.0f;
+	ret[p_rot_to][p_rot_to] = 0.0f;
+	ret[p_rot_from][p_rot_to] = 1.0f;
+	ret[p_rot_to][p_rot_from] = -1.0f;
+	return ret;
+}
+
 Basis4D Basis4D::looking_at(const Vector4 &p_target, const Vector4 &p_perp, const Vector4 &p_up, bool p_use_model_front) {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(p_target.is_zero_approx(), Basis4D(), "Basis4D.looking_at: The target vector can't be zero.");

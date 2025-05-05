@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RayShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D ray physics shape.
+	</brief_description>
+	<description>
+		RayShape4D describes a 4D ray physics shape. It defines a ray that can be used for raycasting in 4D space, including collision and detection of objects. Unlike a different shape such as [BoxShape4D] or [CapsuleShape4D] thinned down to a line, the ray is unidirectional, meaning it only detects objects in the direction of the ray, not in the opposite direction. The ray always points in the local -Y direction from the local origin. To change the position or rotation of the ray, move or rotate the [CollisionShape4D] node the ray is attached to.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="ray_length" type="float" setter="set_ray_length" getter="get_ray_length" default="1.0">
+			The length of the ray, which is the distance from the local origin to the tip of the ray in the local -Y direction. To change the position or rotation of the ray, move or rotate the [CollisionShape4D] node the ray is attached to.
+		</member>
+		<member name="ray_target_y" type="float" setter="set_ray_target_y" getter="get_ray_target_y">
+			The target local Y coordinate of the ray. This is the negative of [member ray_length]. To change the position or rotation of the ray, move or rotate the [CollisionShape4D] node the ray is attached to.
+		</member>
+	</members>
+</class>
