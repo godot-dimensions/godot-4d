@@ -61,6 +61,7 @@
 #include "physics/shapes/cubinder_shape_4d.h"
 #include "physics/shapes/cylinder_shape_4d.h"
 #include "physics/shapes/duocylinder_shape_4d.h"
+#include "physics/shapes/general_shape_4d.h"
 #include "physics/shapes/height_map_shape_4d.h"
 #include "physics/shapes/orthoplex_shape_4d.h"
 #include "physics/shapes/plane_shape_4d.h"
@@ -169,6 +170,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(CubinderShape4D);
 		GDREGISTER_CLASS(CylinderShape4D);
 		GDREGISTER_CLASS(DuocylinderShape4D);
+		GDREGISTER_CLASS(GeneralShape4D);
+		GDREGISTER_CLASS(GeneralShapeCurve4D);
 		GDREGISTER_CLASS(HeightMapShape4D);
 		GDREGISTER_CLASS(KinematicCollision4D);
 		GDREGISTER_CLASS(OrthoplexShape4D);

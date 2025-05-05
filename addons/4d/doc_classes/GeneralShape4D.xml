@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GeneralShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A highly generalized 4D physics shape. It can be used to create a wide variety of shapes.
+	</brief_description>
+	<description>
+		GeneralShape4D describes a highly generalized 4D physics shape. It can be used to create a wide variety of shapes.
+		The base of a general shape is a box defined by the [member base_size] property, which is the size of a 4D box in all directions. This alone can be used to create a [BoxShape4D]. Curves can be added to the shape in the form of Minkowski sums, which are defined by [GeneralShapeCurve4D] objects in the [member curves] property. This includes 4D curves used on hyperspheres like [SphereShape4D] and [CapsuleShape4D], 3D curves used on shapes like [CylinderShape4D], and 2D curves used on shapes like [CubinderShape4D] and [DuocylinderShape4D].
+		The difference between a GeneralShape4D set up like a [SphereShape4D] versus a [CapsuleShape4D] is that the former has a [member base_size] of zero, while the latter has a [member base_size] with the Y component set to the mid-height of the capsule. Both have a single 4D curve, which creates a "swept sphere" shape over the base size. This also means that a [member base_size] with two values set to non-zero creates what looks like a rounded rectangle from the correct angle, and a [member base_size] with all four values set to non-zero creates a rounded 4D box.
+		GeneralShape4D should be avoided if other shapes can be used instead, as it is much less efficient to calculate collisions with.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="set_warnings_enabled" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="warnings_enabled" type="bool" />
+			<description>
+				By default, the [GeneralShape4D] class will print warnings when its data describes a shape that its functions cannot properly calculate. If you see these warnings, it is recommended that you simplify your shape to ensure it can be calculated properly. However, many of the functions will still work with approximately correct results. If this is acceptable, you can disable the warnings by calling this function with [code]false[/code]. This is a static function which disables the warning globally for all [GeneralShape4D] instances. Disabling the warnings also disables checking for these problems, which may make the functions slightly faster.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="base_half_extents" type="Vector4" setter="set_base_half_extents" getter="get_base_half_extents">
+			The base half extents of the shape, which is the "radius" of the inner box in meters. This is a wrapper for [member base_size] which uses half the size. The size and half extents MUST only consist of finite non-negative values.
+		</member>
+		<member name="base_size" type="Vector4" setter="set_base_size" getter="get_base_size" default="Vector4(0, 0, 0, 0)">
+			The base size of the shape, which is the diameter of the inner box in meters. If any curves are present, they are added to the box in the form of a "sweep" or a Minkowski sum, otherwise the shape is just a box with this size. The size MUST only consist of finite non-negative values.
+		</member>
+		<member name="curves" type="GeneralShapeCurve4D[]" setter="set_curves" getter="get_curves" default="[]">
+			The curves of the shape. If any curves are present, they are added to the base box in the form of a "sweep" or a Minkowski sum to create the final shape, such as a capsule, cylinder, cubinder, rounded box, etc. If [member base_size] is zero, the curves are the only source of the shape, which can be used to create a hypersphere or duocylinder. All values in curves MUST be finite and non-negative.
+		</member>
+	</members>
+</class>

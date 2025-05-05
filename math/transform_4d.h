@@ -1,6 +1,7 @@
 #pragma once
 
 #include "euler_4d.h"
+#include "rect4.h"
 
 #include "geometric_algebra/rotor_4d.h"
 
@@ -28,6 +29,7 @@ struct _NO_DISCARD_ Transform4D {
 	Vector4 xform(const Vector4 &p_vector) const;
 	PackedVector4Array xform_many(const PackedVector4Array &p_vectors) const;
 	Basis4D xform_basis(const Basis4D &p_basis) const;
+	Rect4 xform_rect(const Rect4 &p_rect) const;
 
 	Vector4 xform_inv(const Vector4 &p_vector) const;
 	PackedVector4Array xform_inv_many(const PackedVector4Array &p_vectors) const;

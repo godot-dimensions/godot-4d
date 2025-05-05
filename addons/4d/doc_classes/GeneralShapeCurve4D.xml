@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GeneralShapeCurve4D" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A curve inside of a [GeneralShape4D] class.
+	</brief_description>
+	<description>
+		GeneralShapeCurve4D describes a curve inside of a [GeneralShape4D] class. It can describe a wide variety of curves, including 4D curves used on hyperspheres like [SphereShape4D] and [CapsuleShape4D], 3D curves used on shapes like [CylinderShape4D], and 2D curves used on shapes like [CubinderShape4D] and [DuocylinderShape4D]. The curves may be used on any axes by setting the [member radii] property, and any axes with zero radii are not used for the curve.
+		Additionally, curves may by ellipsoidal by setting different radius values, have a custom [member exponent] to make the shape pointier or rounder, and may have tapering defined, however these features are not yet supported in most calculations. In many cases, closed form solutions do not exist. It is recommended to not use ellipsoidal curves, custom exponents, or tapering.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_radii_dimension" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of dimensions of the curve based on the radii. This is the number of axes that have a positive radius in the [member radii] property. This is the same as the length of the array returned by [method get_used_axes].
+			</description>
+		</method>
+		<method name="get_radii_sum" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the sum of the radii of the curve. The average used radius is this value divided by [method get_radii_dimension].
+			</description>
+		</method>
+		<method name="get_used_axes" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+				Returns the indices of the axes that are used by the curve. This is a list of the axes that have positive radii in the [member radii] property. The items in this array are everything not in the array returned by [method get_zero_axes].
+			</description>
+		</method>
+		<method name="get_zero_axes" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+				Returns the indices of the axes that are not used by the curve. This is a list of the axes that have zero radii in the [member radii] property. The items in this array are everything not in the array returned by [method get_used_axes].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="exponent" type="float" setter="set_exponent" getter="get_exponent" default="2.0">
+			The exponent of the curve. This is used to make the curve pointier or rounder. A value of [code]2.0[/code] uses Euclidean distance like a standard circle, sphere, ellipsoid, etc. Values less than [code]2.0[/code] create a shape pointier than circles in the axis-aligned directions, with a value of [code]1.0[/code] creating a "diamond" shape. Values greater than [code]2.0[/code] create a superellipse or squircle shape which is pointier than circles in the diagonal directions.
+			[b]Note:[/b] This property is not supported in most calculations yet. Changing this value to something other than [code]2.0[/code] will have no effect.
+		</member>
+		<member name="radii" type="Vector4" setter="set_radii" getter="get_radii" default="Vector4(0, 0, 0, 0)">
+			The radii of the curve, which is the radius of the curve in each axis. The radii MUST only consist of finite non-negative values. If the curve is not used on an axis, the radius in that axis is zero. If the curve is used on an axis, the radius in that axis is a finite positive number. If the positive radius values are different, the curve is ellipsoidal.
+			[b]Note:[/b] For many functions, a closed-form solution does not exist for ellipsoidal curves. In those cases, ellipsoidal curve calculations use approximate solutions instead, which give mostly correct results for sphere-like ellipsoids, but diverge for highly elongated ellipsoids.
+		</member>
+	</members>
+</class>
