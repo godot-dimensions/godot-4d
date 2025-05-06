@@ -221,6 +221,10 @@ Projection godot_4d_bind::Basis4D::from_zw(const real_t p_zw) {
 	return ::Basis4D::from_zw(p_zw);
 }
 
+Projection godot_4d_bind::Basis4D::from_swap_rotation(const int p_rot_from, const int p_rot_to) {
+	return ::Basis4D::from_swap_rotation(p_rot_from, p_rot_to);
+}
+
 Projection godot_4d_bind::Basis4D::looking_at(const Vector4 &p_target, const Vector4 &p_perp, const Vector4 &p_up, bool p_use_model_front) {
 	return ::Basis4D::looking_at(p_target, p_perp, p_up, p_use_model_front);
 }
@@ -290,5 +294,6 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_xw", "xw"), &godot_4d_bind::Basis4D::from_xw);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_wy", "wy"), &godot_4d_bind::Basis4D::from_wy);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_zw", "zw"), &godot_4d_bind::Basis4D::from_zw);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("from_swap_rotation", "rot_from", "rot_to"), &godot_4d_bind::Basis4D::from_swap_rotation);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("looking_at", "target", "perp", "up", "use_model_front"), &godot_4d_bind::Basis4D::looking_at, DEFVAL(Vector4(0, 0, 0, 1)), DEFVAL(Vector4(0, 1, 0, 0)), DEFVAL(false));
 }

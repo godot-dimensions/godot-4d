@@ -8,6 +8,7 @@
 		[b]Note:[/b] This class is a placeholder, and currently does not do anything.
 	</description>
 	<tutorials>
+		<link title="G4MF Texture Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.texture.schema.json</link>
 	</tutorials>
 	<methods>
 		<method name="from_dictionary" qualifiers="static">

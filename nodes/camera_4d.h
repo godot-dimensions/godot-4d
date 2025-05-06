@@ -7,8 +7,8 @@ class Camera4D : public Node4D {
 
 public:
 	enum KeepAspect {
-		KEEP_WIDTH,
-		KEEP_HEIGHT
+		KEEP_WIDTH = 0,
+		KEEP_HEIGHT = 1,
 	};
 
 	enum ProjectionType4D {
@@ -43,12 +43,12 @@ private:
 
 	Color _w_fade_color_negative = Color(0.0f, 0.0f, 1.0f);
 	Color _w_fade_color_positive = Color(1.0f, 0.0f, 0.0f);
-	real_t _depth_fade_start = 25.0;
-	real_t _orthographic_size = 5.0;
-	real_t _near = 0.05;
-	real_t _far = 4000.0;
-	real_t _w_fade_distance = 5.0;
-	real_t _w_fade_slope = 1.0;
+	double _depth_fade_start = 25.0;
+	double _orthographic_size = 5.0;
+	double _clip_near = 0.05;
+	double _clip_far = 4000.0;
+	double _w_fade_distance = 5.0;
+	double _w_fade_slope = 1.0;
 	bool _is_current = false;
 	bool _use_depth_fade = false;
 
@@ -95,14 +95,14 @@ public:
 	double get_field_of_view_3d() const;
 	void set_field_of_view_3d(const double p_field_of_view_3d);
 
-	real_t get_orthographic_size() const;
-	void set_orthographic_size(const real_t p_orthographic_size);
+	double get_orthographic_size() const;
+	void set_orthographic_size(const double p_orthographic_size);
 
-	real_t get_near() const;
-	void set_near(const real_t p_near);
+	double get_clip_near() const;
+	void set_clip_near(const double p_clip_near);
 
-	real_t get_far() const;
-	void set_far(const real_t p_far);
+	double get_clip_far() const;
+	void set_clip_far(const double p_clip_far);
 
 	WFadeMode get_w_fade_mode() const;
 	void set_w_fade_mode(const WFadeMode p_w_fade_mode);
@@ -113,17 +113,17 @@ public:
 	Color get_w_fade_color_positive() const;
 	void set_w_fade_color_positive(const Color &p_w_fade_color_positive);
 
-	real_t get_w_fade_distance() const;
-	void set_w_fade_distance(const real_t p_w_fade_distance);
+	double get_w_fade_distance() const;
+	void set_w_fade_distance(const double p_w_fade_distance);
 
-	real_t get_w_fade_slope() const;
-	void set_w_fade_slope(const real_t p_w_fade_slope);
+	double get_w_fade_slope() const;
+	void set_w_fade_slope(const double p_w_fade_slope);
 
 	bool get_depth_fade() const;
 	void set_depth_fade(const bool p_depth_fade);
 
-	real_t get_depth_fade_start() const;
-	void set_depth_fade_start(const real_t p_depth_fade_start);
+	double get_depth_fade_start() const;
+	void set_depth_fade_start(const double p_depth_fade_start);
 };
 
 VARIANT_ENUM_CAST(Camera4D::KeepAspect);

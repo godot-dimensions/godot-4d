@@ -1,6 +1,6 @@
 #pragma once
 
-#include "g4mf_item_4d.h"
+#include "g4mf_camera_4d.h"
 
 #include "../../../nodes/node_4d.h"
 
@@ -12,6 +12,8 @@ class G4MFNode4D : public G4MFItem4D {
 	Transform4D _transform = Transform4D();
 	PackedInt32Array _children_indices;
 	int _parent_index = -1;
+
+	Ref<G4MFCamera4D> _camera;
 	int _mesh_index = -1;
 	bool _visible = true;
 
@@ -21,15 +23,17 @@ protected:
 	static void _bind_methods();
 
 public:
+	// Node hierarchy.
 	PackedInt32Array get_children_indices() const { return _children_indices; }
 	void set_children_indices(const PackedInt32Array &p_children) { _children_indices = p_children; }
 
 	int get_parent_index() const { return _parent_index; }
 	void set_parent_index(const int p_parent_index) { _parent_index = p_parent_index; }
 
-	int get_mesh_index() const { return _mesh_index; }
-	void set_mesh_index(const int p_mesh_index) { _mesh_index = p_mesh_index; }
+	bool get_visible() const { return _visible; }
+	void set_visible(const bool p_visible) { _visible = p_visible; }
 
+	// Transform properties.
 	Basis4D get_basis() const { return _transform.basis; }
 	void set_basis(const Basis4D &p_basis) { _transform.basis = p_basis; }
 
@@ -48,8 +52,12 @@ public:
 	Transform4D get_transform() const { return _transform; }
 	void set_transform(const Transform4D &p_transform) { _transform = p_transform; }
 
-	bool get_visible() const { return _visible; }
-	void set_visible(const bool p_visible) { _visible = p_visible; }
+	// Component properties.
+	Ref<G4MFCamera4D> get_camera() const { return _camera; }
+	void set_camera(const Ref<G4MFCamera4D> &p_camera) { _camera = p_camera; }
+
+	int get_mesh_index() const { return _mesh_index; }
+	void set_mesh_index(const int p_mesh_index) { _mesh_index = p_mesh_index; }
 
 	NodePath get_scene_node_path(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Transform4D get_scene_global_transform(const Ref<G4MFState4D> &p_g4mf_state) const;

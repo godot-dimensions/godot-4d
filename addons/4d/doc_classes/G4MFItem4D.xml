@@ -7,6 +7,7 @@
 		G4MFItem4D is a minimal class that handles common functionality for all G4MF items, including nodes and resources. It has a name, it can be converted to a Dictionary for serializing as JSON, and it can store additional data from extensions.
 	</description>
 	<tutorials>
+		<link title="G4MF Item Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf_item.schema.json</link>
 	</tutorials>
 	<methods>
 		<method name="get_additional_data">

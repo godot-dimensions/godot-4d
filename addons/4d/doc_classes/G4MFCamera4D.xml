@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFCamera4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents a camera on a G4MF node.
+	</brief_description>
+	<description>
+		G4MFCamera4D is a class for cameras in the G4MF format. It may be set directly on a G4MF node to make that node a camera, and its properties define how it views the scene.
+	</description>
+	<tutorials>
+		<link title="G4MF Camera Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/camera.md</link>
+		<link title="G4MF Camera Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.node.camera.schema.json</link>
+	</tutorials>
+	<methods>
+		<method name="convert_camera_4d" qualifiers="static">
+			<return type="G4MFCamera4D" />
+			<param index="0" name="camera" type="Camera4D" />
+			<description>
+				Converts the given [Camera4D] into a [G4MFCamera4D]. This is used for exporting the camera to G4MF, and is the inverse of [method generate_camera_4d].
+			</description>
+		</method>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFCamera4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF camera to a [G4MFCamera4D]. This will set the fields of the [G4MFCamera4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="generate_camera_4d" qualifiers="const">
+			<return type="Camera4D" />
+			<description>
+				Generates a [Camera4D] node from the [G4MFCamera4D] data. This is used for importing a camera from G4MF, and is the inverse of [method convert_camera_4d].
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the [G4MFCamera4D] to a [Dictionary] representing the JSON of a G4MF camera. This will set the fields of the [Dictionary] based on the data in the [G4MFCamera4D] and [G4MFItem4D] classes.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="clip_far" type="float" setter="set_clip_far" getter="get_clip_far" default="inf">
+			The distance to the far clipping plane in meters. If not defined, the camera does not have an explicitly defined far clipping plane.
+		</member>
+		<member name="clip_near" type="float" setter="set_clip_near" getter="get_clip_near" default="inf_neg">
+			The distance to the near clipping plane in meters. If not defined, the camera does not have an explicitly defined near clipping plane. For perspective cameras, this value MUST be positive.
+		</member>
+		<member name="fov_radians" type="float" setter="set_fov_radians" getter="get_fov_radians" default="1.5708">
+			The field of view of the perspective camera in radians. If not defined, the default is [code]1.5707963267948966[/code] radians (90 degrees).
+		</member>
+		<member name="keep_aspect" type="int" setter="set_keep_aspect" getter="get_keep_aspect" default="1">
+			The screen space dimension index that [member fov_radians] and [member size_meters] refer to. If not defined, the default is 1, referring to the screen height.
+		</member>
+		<member name="projection_type" type="String" setter="set_projection_type" getter="get_projection_type" default="&quot;perspective&quot;">
+			The type of camera projection. If not defined, the default is [code]"perspective"[/code].
+		</member>
+		<member name="size_meters" type="float" setter="set_size_meters" getter="get_size_meters" default="1.0">
+			The size in meters of the orthographic camera. If not defined, the default is [code]1.0[/code], or one meter.
+		</member>
+	</members>
+</class>

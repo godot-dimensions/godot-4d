@@ -162,6 +162,13 @@ void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int6
 	wire_mesh_clear_cache();
 }
 
+void ArrayWireMesh4D::transform_all_vertices(const Transform4D &p_transform) {
+	for (int64_t i = 0; i < _vertices.size(); i++) {
+		_vertices.set(i, p_transform * _vertices[i]);
+	}
+	wire_mesh_clear_cache();
+}
+
 PackedInt32Array ArrayWireMesh4D::get_edge_indices() {
 	return _edge_indices;
 }

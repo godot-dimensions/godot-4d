@@ -7,6 +7,8 @@
 		G4MFNode4D represents all nodes in a G4MF file. All G4MF nodes have a transform, have an array of child nodes, and may have other data set on them.
 	</description>
 	<tutorials>
+		<link title="G4MF Node Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/node.md</link>
+		<link title="G4MF Node Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.node.schema.json</link>
 	</tutorials>
 	<methods>
 		<method name="from_dictionary" qualifiers="static">
@@ -35,8 +37,14 @@
 		<member name="basis" type="Projection" setter="set_basis" getter="get_basis" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)">
 			The local (parent-relative) transformation basis of this [G4MFNode4D], representing rotation and scale.
 		</member>
+		<member name="camera" type="G4MFCamera4D" setter="set_camera" getter="get_camera">
+			The camera of this [G4MFNode4D]. If this node is not a camera, this is [code]null[/code].
+		</member>
 		<member name="children_indices" type="PackedInt32Array" setter="set_children_indices" getter="get_children_indices" default="PackedInt32Array()">
 			The indices of the child nodes of this [G4MFNode4D]. Each index refers to the index of a [G4MFNode4D] in the [member G4MFState4D.nodes] array.
+		</member>
+		<member name="mesh_index" type="int" setter="set_mesh_index" getter="get_mesh_index" default="-1">
+			The index of the mesh of this [G4MFNode4D]. This is the index of a [G4MFMesh4D] in the [member G4MFState4D.meshes] array. If this node does not have a mesh, this is [code]-1[/code].
 		</member>
 		<member name="parent_index" type="int" setter="set_parent_index" getter="get_parent_index" default="-1">
 			The index of the parent node of this [G4MFNode4D]. This is the index of a [G4MFNode4D] in the [member G4MFState4D.nodes] array. If this is the root node, this is [code]-1[/code].

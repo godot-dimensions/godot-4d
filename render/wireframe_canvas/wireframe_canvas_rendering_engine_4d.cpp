@@ -30,6 +30,12 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 	const bool camera_has_w_fading = camera->get_w_fade_mode() != Camera4D::W_FADE_DISABLED;
 	const bool camera_has_w_fade_hue_shift = camera->get_w_fade_mode() & Camera4D::W_FADE_HUE_SHIFT;
 	const bool camera_has_w_fade_transparency = camera->get_w_fade_mode() & Camera4D::W_FADE_TRANSPARENCY;
+	const real_t camera_clip_depth_near = camera->get_clip_near();
+	const real_t negative_camera_clip_depth_near = -camera_clip_depth_near;
+	const real_t camera_w_fade_distance = camera->get_w_fade_distance();
+	const real_t camera_w_fade_slope = camera->get_w_fade_slope();
+	const real_t camera_clip_depth_far = camera->get_clip_far();
+	const real_t camera_depth_fade_start = camera->get_depth_fade_start();
 	for (int mesh_index = 0; mesh_index < mesh_instances.size(); mesh_index++) {
 		MeshInstance4D *mesh_inst = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
 		ERR_CONTINUE(mesh_inst == nullptr);
@@ -49,22 +55,22 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 			const int b_index = edge_indices[edge_index * 2 + 1];
 			const Vector4 a_vert_4d = camera_relative_vertices[a_index];
 			const Vector4 b_vert_4d = camera_relative_vertices[b_index];
-			if (a_vert_4d.z > -camera->get_near()) {
-				if (b_vert_4d.z > -camera->get_near()) {
+			if (a_vert_4d.z > negative_camera_clip_depth_near) {
+				if (b_vert_4d.z > negative_camera_clip_depth_near) {
 					// Both points are behind the camera, so we skip this edge.
 					continue;
 				} else {
 					// A is behind the camera, while B is in front of the camera.
-					const real_t factor = (a_vert_4d.z + camera->get_near()) / (a_vert_4d.z - b_vert_4d.z);
+					const real_t factor = (a_vert_4d.z + camera_clip_depth_near) / (a_vert_4d.z - b_vert_4d.z);
 					const Vector4 clipped = a_vert_4d.lerp(b_vert_4d, factor);
 					edge_vertices.push_back(camera->world_to_viewport_local_normal(clipped));
 					edge_vertices.push_back(projected_vertices[b_index]);
 				}
 			} else {
 				edge_vertices.push_back(projected_vertices[a_index]);
-				if (b_vert_4d.z > -camera->get_near()) {
+				if (b_vert_4d.z > negative_camera_clip_depth_near) {
 					// B is behind the camera, while A is in front of the camera.
-					const real_t factor = (b_vert_4d.z + camera->get_near()) / (b_vert_4d.z - a_vert_4d.z);
+					const real_t factor = (b_vert_4d.z + camera_clip_depth_near) / (b_vert_4d.z - a_vert_4d.z);
 					const Vector4 clipped = b_vert_4d.lerp(a_vert_4d, factor);
 					edge_vertices.push_back(camera->world_to_viewport_local_normal(clipped));
 				} else {
@@ -74,9 +80,9 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 			}
 			Color edge_color = _get_material_edge_color(material, mesh_inst->get_mesh(), edge_index);
 			if (camera_has_w_fading) {
-				real_t fade_denom = camera->get_w_fade_distance();
+				real_t fade_denom = camera_w_fade_distance;
 				if (camera_has_perspective) {
-					fade_denom += camera->get_w_fade_slope() * -0.5f * (a_vert_4d.z + b_vert_4d.z);
+					fade_denom += camera_w_fade_slope * -0.5f * (a_vert_4d.z + b_vert_4d.z);
 				}
 				const real_t fade_factor = (a_vert_4d.w + b_vert_4d.w) * (0.5f / fade_denom);
 				if (camera_has_w_fade_hue_shift) {
@@ -94,15 +100,12 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 				const real_t depth = abs((a_vert_4d.length() + b_vert_4d.length()) * 0.5);
 				real_t alpha = 1.0;
 
-				const real_t depth_far = camera->get_far();
-				const real_t depth_start = camera->get_depth_fade_start();
-
-				if (depth > depth_far) {
+				if (depth > camera_clip_depth_far) {
 					alpha = 0.0;
-				} else if (depth < depth_start) {
+				} else if (depth < camera_depth_fade_start) {
 					alpha = 1.0;
 				} else {
-					const real_t unit_distance = (depth - depth_start) / (depth_far - depth_start); // Inverse lerp
+					const real_t unit_distance = (depth - camera_depth_fade_start) / (camera_clip_depth_far - camera_depth_fade_start); // Inverse lerp
 					alpha = 1.0 - unit_distance;
 				}
 

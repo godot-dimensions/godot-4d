@@ -7,6 +7,8 @@
 		G4MFAccessor4D is a class that provides a typed way to access the data in a [G4MFBufferView4D]. As an analogy with computer storage drives, if a buffer is a disk and a buffer view is a partition, then an accessor is a file system.
 	</description>
 	<tutorials>
+		<link title="G4MF Data Storage Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/data.md</link>
+		<link title="G4MF Accessor Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.accessor.schema.json</link>
 	</tutorials>
 	<methods>
 		<method name="bytes_per_primitive" qualifiers="const">

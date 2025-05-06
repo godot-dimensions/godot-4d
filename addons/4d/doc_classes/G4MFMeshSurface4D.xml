@@ -8,6 +8,8 @@
 		[b]Note:[/b]: Godot 4D currently only supports one surface per mesh, but multiple surfaces are allowed in the G4MF format.
 	</description>
 	<tutorials>
+		<link title="G4MF Mesh Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/mesh.md</link>
+		<link title="G4MF Mesh Surface Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.mesh.surface.schema.json</link>
 	</tutorials>
 	<methods>
 		<method name="convert_mesh_surface_for_state" qualifiers="static">
@@ -55,13 +57,6 @@
 				Loads the cell indices from the [G4MFAccessor4D] at [member cells_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid cell indices.
 			</description>
 		</method>
-		<method name="load_cell_normals" qualifiers="const">
-			<return type="PackedVector4Array" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<description>
-				Loads the cell normals from the [G4MFAccessor4D] at [member cell_normals_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid cell normals.
-			</description>
-		</method>
 		<method name="load_edge_indices" qualifiers="const">
 			<return type="PackedInt32Array" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -84,9 +79,6 @@
 		</method>
 	</methods>
 	<members>
-		<member name="cell_normals_accessor_index" type="int" setter="set_cell_normals_accessor_index" getter="get_cell_normals_accessor_index" default="-1">
-			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-cell normal data for this surface. If not defined, the surface does not have explicitly defined normals. If defined, the amount of cell normals MUST match the amount of cells.
-		</member>
 		<member name="cells_accessor_index" type="int" setter="set_cells_accessor_index" getter="get_cells_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the cell indices for this surface. Each integer in the array is an index of a vertex in the vertices array, and MUST NOT exceed the bounds of the vertices array. If not defined, the surface does not have explicit cells, and may be a wireframe-only surface.
 		</member>

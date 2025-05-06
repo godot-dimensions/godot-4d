@@ -9,6 +9,8 @@
 		When exporting a Godot scene, a [G4MFState4D] can be populated by G4MFDocument4D by converting the scene. This data can then be used to save to a G4MF file.
 	</description>
 	<tutorials>
+		<link title="G4MF Main Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/specification.md</link>
+		<link title="G4MF Main Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.schema.json</link>
 	</tutorials>
 	<methods>
 		<method name="export_append_from_godot_mesh">

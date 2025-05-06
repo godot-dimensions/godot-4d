@@ -60,6 +60,23 @@ Basis4D Transform4D::xform_basis(const Basis4D &p_basis) const {
 	return basis * p_basis;
 }
 
+Rect4 Transform4D::xform_rect(const Rect4 &p_rect) const {
+	const Vector4 start = p_rect.get_position();
+	const Vector4 size = p_rect.get_size();
+	Rect4 ret = Rect4(origin, Vector4(0, 0, 0, 0));
+	for (int x = 0; x < 2; x++) {
+		for (int y = 0; y < 2; y++) {
+			for (int z = 0; z < 2; z++) {
+				for (int w = 0; w < 2; w++) {
+					const Vector4 point = start + size * Vector4(x, y, z, w);
+					ret.expand_self_to_point(xform(point));
+				}
+			}
+		}
+	}
+	return ret;
+}
+
 Vector4 Transform4D::xform_inv(const Vector4 &p_vector) const {
 	return inverse().xform(p_vector);
 }

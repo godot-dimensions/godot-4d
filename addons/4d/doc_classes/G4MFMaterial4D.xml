@@ -8,6 +8,8 @@
 		A G4MF material has multiple channels represented by [G4MFMaterialChannel4D] objects. Each channel may be used to define a different property of the material, such as the [member base_color_channel], [member normal_channel], [member emissive_channel], and [member orm_channel].
 	</description>
 	<tutorials>
+		<link title="G4MF Material Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/material.md</link>
+		<link title="G4MF Material Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.material.schema.json</link>
 	</tutorials>
 	<methods>
 		<method name="convert_material_into_state" qualifiers="static">

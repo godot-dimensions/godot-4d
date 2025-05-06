@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PlaneShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D plane physics shape with a 3D surface.
+	</brief_description>
+	<description>
+		PlaneShape4D describes a 4D plane physics shape with a 3D surface. It can be used to create world boundaries, such as an infinite floor or infinite walls. Planes may only be used with non-moving [StaticBody4D] or [Area4D] nodes, and cannot be used with moving bodies.
+		For simplicity, the plane always has its normal vector pointing in the local +Y direction, and always intersects the local origin. This means the plane has no properties. The plane is infinite in the local X, Z, and W directions. To make a finite plane instead of an infinite one, use a [BoxShape4D] shape instead. To change the position or rotation of the plane, move or rotate the [CollisionShape4D] node the plane is attached to.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>
