@@ -92,18 +92,40 @@
 				Loads the raw bytes from the [G4MFBufferView4D] this accessor is pointing to. Compared to accessing the buffer view directly, this function will return an empty array if the buffer view's size is not a multiple of the accessor's vector element size (see [method bytes_per_vector]).
 			</description>
 		</method>
+		<method name="make_new_accessor_without_data" qualifiers="static">
+			<return type="G4MFAccessor4D" />
+			<param index="0" name="primitive_type" type="String" />
+			<param index="1" name="vector_size" type="int" default="1" />
+			<description>
+				Creates a new [G4MFAccessor4D] with the given [param primitive_type] and [param vector_size] settings. This accessor will not have any data in it. Consider using [method encode_new_accessor_into_state] instead, which will create a new accessor with data in it and insert it into the [G4MFState4D].
+			</description>
+		</method>
+		<method name="minimal_primitive_type_for_colors" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="input_data" type="PackedColorArray" />
+			<description>
+				Given a [PackedColorArray], returns the minimal primitive type that can be used to store all of the data in the array. This function will only consider floating point types as available options, up to the 32-bit size of Color data, meaning that the result will only ever be [code]"float8"[/code], [code]"float16"[/code], or [code]"float32"[/code].
+			</description>
+		</method>
+		<method name="minimal_primitive_type_for_floats" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="input_data" type="PackedFloat64Array" />
+			<description>
+				Given a [PackedFloat64Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only integers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains integers -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains any non-integer floating point numbers, then the minimal primitive type will be the smallest float type that can losslessly represent all of the data in the array. This can be used to determine the most efficient lossless primitive type to use when encoding the data in the accessor.
+			</description>
+		</method>
 		<method name="minimal_primitive_type_for_int32s" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="input_data" type="PackedInt32Array" />
 			<description>
-				Given a [PackedInt32Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only numbers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains 0 to 500, then the minimal primitive type is [code]"uint16"[/code]. This can be used to determine the most efficient primitive type to use when encoding the data in the accessor.
+				Given a [PackedInt32Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only numbers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains 0 to 500, then the minimal primitive type is [code]"uint16"[/code]. This can be used to determine the most efficient lossless primitive type to use when encoding the data in the accessor.
 			</description>
 		</method>
 		<method name="minimal_primitive_type_for_vector4s" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="input_data" type="PackedVector4Array" />
 			<description>
-				Given a [PackedVector4Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only integers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains integers -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains any non-integer floating point numbers, then the minimal primitive type will be the smallest float type that can losslessly represent all of the data in the array. This can be used to determine the most efficient primitive type to use when encoding the data in the accessor.
+				Given a [PackedVector4Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only integers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains integers -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains any non-integer floating point numbers, then the minimal primitive type will be the smallest float type that can losslessly represent all of the data in the array. This can be used to determine the most efficient lossless primitive type to use when encoding the data in the accessor.
 			</description>
 		</method>
 		<method name="primitives_per_variant" qualifiers="static">
@@ -111,6 +133,16 @@
 			<param index="0" name="variant_type" type="int" enum="Variant.Type" />
 			<description>
 				Returns the amount of primitive numeric components in a supported Variant type, or returns [code]0[/code] if the type is not supported. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String].
+			</description>
+		</method>
+		<method name="store_accessor_data_into_state">
+			<return type="int" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="data_bytes" type="PackedByteArray" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Stores an [G4MFAccessor4D] with the given [param data_bytes] into the [G4MFState4D] and returns the index of the inserted [G4MFAccessor4D]. This is meant to be used with [method make_new_accessor_without_data] when it is desired to separate the steps of creating the accessor, encoding the data, and inserting the accessor into the state. Consider using [method encode_new_accessor_into_state] instead, which will do all of this in one step.
+				If [param deduplicate] is [code]true[/code], then the function will check if an identical accessor with identical data already exists in the state. If it does, then the function will return the index of the existing accessor, and the current object will not be inserted into the state. If [param deduplicate] is [code]false[/code] or no duplicate is found, this accessor will be inserted into the state at the returned index.
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">

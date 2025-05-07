@@ -90,10 +90,8 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 	serialized_buffers.resize(buffer_count);
 	for (int i = 0; i < buffer_count; i++) {
 		const PackedByteArray state_buffer = state_buffers[i];
-		const String base64_buffer = Marshalls::get_singleton()->raw_to_base64(state_buffer);
 		Dictionary buffer_dict;
 		buffer_dict["byteLength"] = state_buffer.size();
-		buffer_dict["uri"] = String("data:application/octet-stream;base64,") + base64_buffer;
 		serialized_buffers[i] = buffer_dict;
 	}
 	if (!serialized_buffers.is_empty()) {
@@ -132,6 +130,37 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 	}
 	if (!serialized_accessors.is_empty()) {
 		p_g4mf_json["accessors"] = serialized_accessors;
+	}
+	return OK;
+}
+
+Error G4MFDocument4D::_export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_state) {
+	Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
+	if (!g4mf_json.has("buffers")) {
+		return OK; // No buffers to serialize.
+	}
+	TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_buffers();
+	Array json_buffers = g4mf_json["buffers"];
+	ERR_FAIL_COND_V(state_buffers.size() != json_buffers.size(), ERR_INVALID_DATA);
+	const String file_prefix = p_g4mf_state->get_filename().get_basename();
+	for (int buffer_index = 0; buffer_index < state_buffers.size(); buffer_index++) {
+		Dictionary json_buffer_dict = json_buffers[buffer_index];
+		PackedByteArray state_buffer = state_buffers[buffer_index];
+		// Prefer writing to a separate file if the buffer is large enough.
+		if (!file_prefix.is_empty() && state_buffer.size() > 5000) {
+			const String buffer_rel_path = file_prefix + String("_buffer") + String::num_int64(buffer_index) + String(".bin");
+			Ref<FileAccess> file = FileAccess::open(p_g4mf_state->get_base_path().path_join(buffer_rel_path), FileAccess::WRITE);
+			if (file.is_valid()) {
+				file->store_buffer(state_buffer);
+				file->close();
+				json_buffer_dict["uri"] = buffer_rel_path;
+				continue;
+			} else {
+				WARN_PRINT("G4MF export: Failed to write buffer data to file: " + buffer_rel_path + ". Writing as base64 instead.");
+			}
+		}
+		const String base64_buffer = Marshalls::get_singleton()->raw_to_base64(state_buffer);
+		json_buffer_dict["uri"] = String("data:application/octet-stream;base64,") + base64_buffer;
 	}
 	return OK;
 }
@@ -220,7 +249,95 @@ Error G4MFDocument4D::_export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dic
 	return OK;
 }
 
+PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state) {
+	const Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
+	ERR_FAIL_COND_V(!g4mf_json.has("asset"), PackedByteArray());
+	const String json_string = JSON::stringify(g4mf_json, "", true);
+	const uint64_t json_string_size = json_string.length();
+	ERR_FAIL_COND_V(json_string_size < 25, PackedByteArray()); // Minimum possible valid JSON is `{"asset":{"dimension":4}}` (25 bytes).
+	CharString json_string_utf8 = json_string.utf8();
+	const uint64_t json_string_utf8_size_without_null = json_string_utf8.size() - 1;
+	uint64_t total_file_size = 32 + json_string_utf8_size_without_null;
+	// Add binary buffer chunks to the file size.
+	const TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_buffers();
+	if (!state_buffers.is_empty()) {
+		ERR_FAIL_COND_V(!g4mf_json.has("buffers"), PackedByteArray());
+		Array json_buffers = g4mf_json["buffers"];
+		ERR_FAIL_COND_V(state_buffers.size() != json_buffers.size(), PackedByteArray());
+		for (int i = 0; i < state_buffers.size(); i++) {
+			// The start of each chunk needs to be padded to 16 bytes.
+			total_file_size = _ceiling_division(total_file_size, 16) * 16;
+			const PackedByteArray buffer = state_buffers[i];
+			total_file_size += 16 + buffer.size();
+		}
+	}
+	// Done gathering information, now create the byte array.
+	PackedByteArray file_bytes;
+	file_bytes.resize(total_file_size);
+	// Write the file header.
+	uint8_t *file_bytes_ptrw = file_bytes.ptrw();
+	*(uint32_t *)file_bytes_ptrw = (uint32_t)0x464D3447; // "G4MF"
+	size_t write_offset = 4;
+	*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x00000000; // Version 0
+	write_offset += 4;
+	*(uint64_t *)(file_bytes_ptrw + write_offset) = total_file_size; // File size
+	write_offset += 8;
+	// Write the JSON chunk.
+	*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x4E4F534A; // "JSON"
+	write_offset += 4;
+	*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x00000000; // No compression
+	write_offset += 4;
+	*(uint64_t *)(file_bytes_ptrw + write_offset) = json_string_utf8_size_without_null; // JSON size
+	write_offset += 8;
+	memcpy(file_bytes_ptrw + write_offset, json_string_utf8.get_data(), json_string_utf8_size_without_null);
+	write_offset += json_string_utf8_size_without_null;
+	// Write other chunks.
+	for (int buffer_index = 0; buffer_index < state_buffers.size(); buffer_index++) {
+		// Pad the previous chunk to 16 bytes if needed.
+		const uint64_t write_offset_padded = _ceiling_division(write_offset, 16) * 16;
+		for (uint64_t pad_index = write_offset; pad_index < write_offset_padded; pad_index++) {
+			*(file_bytes_ptrw + write_offset) = (buffer_index == 0) ? (uint8_t)0x20 : (uint8_t)0x00; // Pad with zero bytes or spaces.
+			write_offset++;
+		}
+		const PackedByteArray buffer = state_buffers[buffer_index];
+		const uint64_t buffer_size = buffer.size();
+		*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x424F4C42; // "BLOB"
+		write_offset += 4;
+		*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x00000000; // No compression
+		write_offset += 4;
+		*(uint64_t *)(file_bytes_ptrw + write_offset) = buffer_size; // Buffer size
+		write_offset += 8;
+		memcpy(file_bytes_ptrw + write_offset, buffer.ptr(), buffer_size);
+		write_offset += buffer_size;
+	}
+	ERR_FAIL_COND_V(write_offset != total_file_size, PackedByteArray());
+	return file_bytes;
+}
+
 // Import process.
+
+// Internal helper function. Expects the read offset to be at the start of a chunk, will crash otherwise.
+PackedByteArray G4MFDocument4D::_import_next_chunk_bytes_uncompressed(Ref<G4MFState4D> p_g4mf_state, const uint8_t *p_file_bytes, const uint64_t p_file_size, size_t &p_read_offset) {
+	CRASH_COND(p_read_offset % 16 != 0);
+	PackedByteArray chunk_raw_data;
+	if (unlikely(p_read_offset + 16 > p_file_size)) {
+		p_read_offset = p_file_size;
+		ERR_FAIL_V_MSG(chunk_raw_data, "G4MF import: Not enough bytes are left to form a chunk header. File is corrupted.");
+	}
+	p_read_offset += 4; // Skip chunk type. The caller can check this if needed.
+	const uint32_t chunk_compression = *(uint32_t *)(p_file_bytes + p_read_offset);
+	p_read_offset += 4;
+	const uint64_t chunk_raw_size = *(uint64_t *)(p_file_bytes + p_read_offset);
+	p_read_offset += 8;
+	ERR_FAIL_COND_V_MSG(p_read_offset + chunk_raw_size > p_file_size, chunk_raw_data, "G4MF import: Chunk size goes past end of file. File is corrupted.");
+	chunk_raw_data.resize(chunk_raw_size);
+	memcpy(chunk_raw_data.ptrw(), p_file_bytes + p_read_offset, chunk_raw_size);
+	p_read_offset += chunk_raw_size;
+	p_read_offset = _ceiling_division(p_read_offset, 16) * 16; // Chunks start at 16-byte boundaries.
+	// TODO: Handle compressed data.
+	ERR_FAIL_COND_V_MSG(chunk_compression > (uint32_t)0x00000000, PackedByteArray(), "G4MF import: Support for reading compressed data is not implemented.");
+	return chunk_raw_data;
+}
 
 Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	Error err = _import_parse_asset_header(p_g4mf_state, p_g4mf_json);
@@ -264,13 +381,13 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 		if (buffer_count == 0) {
 			return OK; // No buffers to parse.
 		}
-		TypedArray<PackedByteArray> buffers;
+		TypedArray<PackedByteArray> buffers = p_g4mf_state->get_buffers();
 		buffers.resize(buffer_count);
 		for (int i = 0; i < buffer_count; i++) {
 			const Dictionary json_buffer = json_buffers[i];
 			ERR_FAIL_COND_V_MSG(!json_buffer.has("byteLength"), ERR_INVALID_DATA, "G4MF import: Buffer is missing required field 'byteLength'. Aborting file import.");
-			const int byte_length = json_buffer["byteLength"];
-			PackedByteArray buffer;
+			const uint64_t byte_length = json_buffer["byteLength"];
+			PackedByteArray buffer = buffers[i];
 			if (json_buffer.has("uri")) {
 				const String uri = json_buffer["uri"];
 				if (uri.begins_with("data:")) {
@@ -279,8 +396,18 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 					buffer = Marshalls::get_singleton()->base64_to_raw(split[1]);
 				} else {
 					// TODO: Load from external file.
+					const String buffer_path = p_g4mf_state->get_base_path().path_join(uri);
+					Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::READ);
+					if (file.is_valid()) {
+						buffer = file->get_buffer(byte_length);
+						file->close();
+					} else {
+						// The file is not valid, but only fail if the buffer is not empty. It may have been filled by a chunk.
+						ERR_FAIL_COND_V_MSG(buffer.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to open buffer file: " + buffer_path + ". Aborting file import.");
+					}
 				}
 			}
+			ERR_FAIL_COND_V_MSG(buffer.size() < byte_length, ERR_INVALID_DATA, "G4MF import: Buffer size is not at least the declared size. Aborting file import.");
 			buffer.resize(byte_length);
 			buffers[i] = buffer;
 		}
@@ -553,16 +680,65 @@ Error G4MFDocument4D::export_append_from_godot_mesh(Ref<G4MFState4D> p_g4mf_stat
 	return OK;
 }
 
+PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4mf_state) {
+	Error err = _export_serialize_json_data(p_g4mf_state);
+	ERR_FAIL_COND_V_MSG(err != OK, PackedByteArray(), "G4MF export: Failed to serialize G4MF data.");
+	return _export_encode_as_byte_array(p_g4mf_state);
+}
+
 Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF export: Failed to open file for writing.");
 	p_g4mf_state->set_base_path(p_path.get_base_dir());
-	p_g4mf_state->set_filename(p_path.get_file());
+	const String filename = p_path.get_file();
+	p_g4mf_state->set_filename(filename);
 	Error err = _export_serialize_json_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF data.");
-	const Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
-	const String json_string = JSON::stringify(g4mf_json, "", true);
-	file->store_string(json_string + String("\n"));
+	const String file_extension = filename.get_extension();
+	// Checking `length > 3` handles "g4tf", "g4mf", "json", "g4tf.json", "g4mf.json", etc.
+	if (file_extension.length() > 3) {
+		// Write to a G4MF text file. Export the buffers either as base64 or as separate files.
+		err = _export_serialize_buffer_data(p_g4mf_state);
+		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF buffer data.");
+		const Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
+		const String json_string = JSON::stringify(g4mf_json, "", true);
+		file->store_string(json_string + String("\n"));
+	} else {
+		// Write to a G4MF binary file. Export the buffers as binary blob chunks.
+		const PackedByteArray json_bytes = _export_encode_as_byte_array(p_g4mf_state);
+		file->store_buffer(json_bytes);
+	}
+	return OK;
+}
+
+Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_byte_array) {
+	const uint64_t byte_array_size = p_byte_array.size();
+	ERR_FAIL_COND_V_MSG(byte_array_size < (uint64_t)32, ERR_INVALID_DATA, "G4MF import: Byte array is too small to be a valid G4MF file.");
+	const uint8_t *byte_array_ptr = p_byte_array.ptr();
+	ERR_FAIL_COND_V_MSG(*(uint32_t *)byte_array_ptr != (uint32_t)0x464D3447, ERR_INVALID_DATA, "G4MF import: Byte array is not a valid G4MF file.");
+	size_t read_offset = 4;
+	ERR_FAIL_COND_V_MSG(*(uint32_t *)(byte_array_ptr + read_offset) > (uint32_t)0x00000000, ERR_UNAVAILABLE, "G4MF import: G4MF file version is not supported.");
+	read_offset += 4;
+	const uint64_t file_size = *(uint64_t *)(byte_array_ptr + read_offset);
+	ERR_FAIL_COND_V_MSG(file_size != byte_array_size, ERR_INVALID_DATA, "G4MF import: Declared file size does not match actual file size. File is corrupted.");
+	read_offset += 8;
+	// Read the chunks.
+	ERR_FAIL_COND_V_MSG(*(uint32_t *)(byte_array_ptr + read_offset) != (uint32_t)0x4E4F534A, ERR_INVALID_DATA, "G4MF import: First chunk is not JSON. File is corrupted.");
+	const PackedByteArray json_chunk = _import_next_chunk_bytes_uncompressed(p_g4mf_state, byte_array_ptr, byte_array_size, read_offset);
+	TypedArray<PackedByteArray> blob_chunks;
+	while (read_offset < byte_array_size) {
+		const uint32_t chunk_type = *(uint32_t *)(byte_array_ptr + read_offset);
+		if (chunk_type != (uint32_t)0x424F4C42) {
+			break; // Not a "BLOB" chunk. All "BLOB" chunks MUST come first according to the specification, so there must not be any more.
+		}
+		const PackedByteArray blob_chunk = _import_next_chunk_bytes_uncompressed(p_g4mf_state, byte_array_ptr, byte_array_size, read_offset);
+		blob_chunks.append(blob_chunk);
+	}
+	p_g4mf_state->set_buffers(blob_chunks);
+	// Parse the data.
+	const String json_string = String::utf8(reinterpret_cast<const char *>(json_chunk.ptr()), json_chunk.size());
+	Dictionary g4mf_json = JSON::parse_string(json_string);
+	_import_parse_json_data(p_g4mf_state, g4mf_json);
 	return OK;
 }
 
@@ -570,8 +746,17 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF import: Failed to open file for reading.");
 	p_g4mf_state->set_base_path(p_path.get_base_dir());
-	p_g4mf_state->set_filename(p_path.get_file());
-	// TODO: Handle binary files.
+	const String filename = p_path.get_file();
+	p_g4mf_state->set_filename(filename);
+	ERR_FAIL_COND_V_MSG(file->get_length() < 25, ERR_INVALID_DATA, "G4MF import: File is too small to be a valid G4MF file.");
+	// Check for the magic number to allow reading G4MF files regardless of file extension.
+	const uint32_t magic_number_maybe = file->get_32();
+	file->seek(0);
+	if (magic_number_maybe == (uint32_t)0x464D3447) {
+		const PackedByteArray file_bytes = file->get_buffer(file->get_length());
+		return import_read_from_byte_array(p_g4mf_state, file_bytes);
+	}
+	// If there is no magic number, try reading the file as JSON.
 	Dictionary g4mf_json = JSON::parse_string(file->get_as_text(true));
 	p_g4mf_state->set_g4mf_json(g4mf_json);
 	return _import_parse_json_data(p_g4mf_state, g4mf_json);
@@ -624,7 +809,9 @@ void G4MFDocument4D::_bind_methods() {
 	// Main import and export functions.
 	ClassDB::bind_method(D_METHOD("export_append_from_godot_scene", "g4mf_state", "scene_root"), &G4MFDocument4D::export_append_from_godot_scene);
 	ClassDB::bind_method(D_METHOD("export_append_from_godot_mesh", "g4mf_state", "mesh"), &G4MFDocument4D::export_append_from_godot_mesh);
+	ClassDB::bind_method(D_METHOD("export_write_to_byte_array", "g4mf_state"), &G4MFDocument4D::export_write_to_byte_array);
 	ClassDB::bind_method(D_METHOD("export_write_to_file", "g4mf_state", "path"), &G4MFDocument4D::export_write_to_file);
+	ClassDB::bind_method(D_METHOD("import_read_from_byte_array", "g4mf_state", "byte_array"), &G4MFDocument4D::import_read_from_byte_array);
 	ClassDB::bind_method(D_METHOD("import_read_from_file", "g4mf_state", "path"), &G4MFDocument4D::import_read_from_file);
 	ClassDB::bind_method(D_METHOD("import_generate_godot_scene", "g4mf_state"), &G4MFDocument4D::import_generate_godot_scene);
 	ClassDB::bind_method(D_METHOD("import_generate_godot_mesh", "g4mf_state", "include_invisible"), &G4MFDocument4D::import_generate_godot_mesh, DEFVAL(false));
