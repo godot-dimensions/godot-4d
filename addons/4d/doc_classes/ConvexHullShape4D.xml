@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ConvexHullShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D convex hull shape.
+	</brief_description>
+	<description>
+		ConvexHullShape4D is a solid 4D convex shape that is defined by a set of points in 4D space. The convex hull is the smallest convex shape that contains all the points. This shape can be used to create bounding shapes for arbitrary 4D meshes or point clouds.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_from_mesh" qualifiers="static">
+			<return type="ConvexHullShape4D" />
+			<param index="0" name="mesh" type="Mesh4D" />
+			<description>
+				Computes a convex hull shape from the vertices of a [Mesh4D]. The resulting shape will be the smallest convex shape that contains all the vertices of the mesh.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="points" type="PackedVector4Array" setter="set_points" getter="get_points" default="PackedVector4Array()">
+			The points that define the convex hull shape.
+		</member>
+	</members>
+</class>

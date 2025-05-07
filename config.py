@@ -45,7 +45,7 @@ def get_doc_classes():
 		"CharacterBody4D",
 		"CollisionObject4D",
 		"CollisionShape4D",
-		"ConcaveTetrameshShape4D",
+		"ConcaveMeshShape4D",
 		"ConvexHullShape4D",
 		"CubinderShape4D",
 		"CylinderShape4D",

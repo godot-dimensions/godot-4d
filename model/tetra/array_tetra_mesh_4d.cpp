@@ -81,7 +81,7 @@ void ArrayTetraMesh4D::calculate_normals(const bool p_keep_existing) {
 		const Vector4 a = _vertices[_cell_indices[1 + i * 4]];
 		const Vector4 b = _vertices[_cell_indices[2 + i * 4]];
 		const Vector4 c = _vertices[_cell_indices[3 + i * 4]];
-		Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
+		const Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
 		_cell_normals.set(i, perp);
 	}
 }

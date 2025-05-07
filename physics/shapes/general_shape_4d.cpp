@@ -312,12 +312,20 @@ Vector4 GeneralShape4D::get_nearest_point(const Vector4 &p_point) const {
 		GENERAL_SHAPE_4D_CURVE_ERR_WARN(curve, Vector4());
 		const Vector4 radii = curve->get_radii();
 		const PackedInt32Array used_axes = curve->get_used_axes();
-		real_t ellipsoid_distance_squared = 0.0f;
-		for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
-			const int32_t axis = used_axes[used_index];
-			ellipsoid_distance_squared += (local_offset_abs[axis] * local_offset_abs[axis]) / (radii[axis] * radii[axis]);
+		const double exponent = curve->get_exponent();
+		double ellipsoid_distance_pow = 0.0f;
+		if (likely(exponent == 2.0)) {
+			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
+				const int32_t axis = used_axes[used_index];
+				ellipsoid_distance_pow += (local_offset_abs[axis] * local_offset_abs[axis]) / (radii[axis] * radii[axis]);
+			}
+		} else {
+			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
+				const int32_t axis = used_axes[used_index];
+				ellipsoid_distance_pow += Math::pow((double)local_offset_abs[axis], exponent) / Math::pow((double)radii[axis], exponent);
+			}
 		}
-		if (ellipsoid_distance_squared <= 1.0f) {
+		if (ellipsoid_distance_pow <= 1.0) {
 			// The point is inside the ellipsoid on these axes, and we are done with them.
 			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
 				const int32_t axis = used_axes[used_index];
@@ -362,16 +370,29 @@ Vector4 GeneralShape4D::get_support_point(const Vector4 &p_direction) const {
 		GENERAL_SHAPE_4D_CURVE_ERR_WARN(curve, Vector4());
 		const Vector4 radii = curve->get_radii();
 		const PackedInt32Array used_axes = curve->get_used_axes();
+		const double exponent = curve->get_exponent();
 		// Based on this: https://math.stackexchange.com/questions/2267688/locating-a-line-perpendicular-to-an-ellipse
 		Vector4 ellipsoid_support = Vector4();
-		real_t ellipsoid_support_len_squared = 0.0f;
-		for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
-			const int axis = used_axes[used_index];
-			const real_t radius_squared = radii[axis] * radii[axis];
-			ellipsoid_support[axis] = radius_squared;
-			ellipsoid_support_len_squared += (p_direction[axis] * p_direction[axis]) * radius_squared;
+		if (likely(exponent == 2.0)) {
+			real_t ellipsoid_support_len_squared = 0.0f;
+			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
+				const int axis = used_axes[used_index];
+				const real_t radius_squared = radii[axis] * radii[axis];
+				ellipsoid_support[axis] = radius_squared;
+				ellipsoid_support_len_squared += (p_direction[axis] * p_direction[axis]) * radius_squared;
+			}
+			ellipsoid_support /= Math::sqrt(ellipsoid_support_len_squared);
+		} else {
+			double ellipsoid_support_len_pow = 0.0f;
+			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
+				const int axis = used_axes[used_index];
+				const double radius_pow = Math::pow((double)radii[axis], exponent);
+				ellipsoid_support[axis] = radius_pow;
+				ellipsoid_support_len_pow += Math::pow((double)p_direction[axis], exponent) * radius_pow;
+			}
+			ellipsoid_support /= Math::pow((double)ellipsoid_support_len_pow, 1.0 / exponent);
 		}
-		support += p_direction * ellipsoid_support / Math::sqrt(ellipsoid_support_len_squared);
+		support += p_direction * ellipsoid_support;
 	}
 	return support;
 }
@@ -393,12 +414,20 @@ bool GeneralShape4D::has_point(const Vector4 &p_point) const {
 		GENERAL_SHAPE_4D_CURVE_ERR_WARN(curve, false);
 		const Vector4 radii = curve->get_radii();
 		const PackedInt32Array used_axes = curve->get_used_axes();
-		real_t ellipsoid_distance_squared = 0.0f;
-		for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
-			const int axis = used_axes[used_index];
-			ellipsoid_distance_squared += (local_offset_abs[axis] * local_offset_abs[axis]) / (radii[axis] * radii[axis]);
+		const double exponent = curve->get_exponent();
+		double ellipsoid_distance_pow = 0.0f;
+		if (likely(exponent == 2.0)) {
+			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
+				const int axis = used_axes[used_index];
+				ellipsoid_distance_pow += (local_offset_abs[axis] * local_offset_abs[axis]) / (radii[axis] * radii[axis]);
+			}
+		} else {
+			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
+				const int axis = used_axes[used_index];
+				ellipsoid_distance_pow += Math::pow((double)local_offset_abs[axis], exponent) / Math::pow((double)radii[axis], exponent);
+			}
 		}
-		if (ellipsoid_distance_squared > 1.0f) {
+		if (ellipsoid_distance_pow > 1.0) {
 			// The point is outside the ellipsoid.
 			return false;
 		}

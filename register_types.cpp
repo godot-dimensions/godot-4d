@@ -58,6 +58,8 @@
 #include "physics/server/physics_server_4d.h"
 #include "physics/shapes/box_shape_4d.h"
 #include "physics/shapes/capsule_shape_4d.h"
+#include "physics/shapes/concave_mesh_shape_4d.h"
+#include "physics/shapes/convex_hull_shape_4d.h"
 #include "physics/shapes/cubinder_shape_4d.h"
 #include "physics/shapes/cylinder_shape_4d.h"
 #include "physics/shapes/duocylinder_shape_4d.h"
@@ -167,6 +169,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(CapsuleShape4D);
 		GDREGISTER_CLASS(CharacterBody4D);
 		GDREGISTER_CLASS(CollisionShape4D);
+		GDREGISTER_CLASS(ConcaveMeshShape4D);
+		GDREGISTER_CLASS(ConvexHullShape4D);
 		GDREGISTER_CLASS(CubinderShape4D);
 		GDREGISTER_CLASS(CylinderShape4D);
 		GDREGISTER_CLASS(DuocylinderShape4D);
