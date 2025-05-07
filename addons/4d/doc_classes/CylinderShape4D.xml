@@ -8,6 +8,8 @@
 		When a 4D cylinder is viewed directly from the top or bottom, it appears as a flat 3D sphere, and when viewed from the side, it appears to be a cuboid. This is similar to how a 3D cylinder appears as a 2D circle when viewed from the top or bottom, and as a rectangle when viewed from the side.
 	</description>
 	<tutorials>
+		<link title="Miraheze Polytope Wiki Spherinder">https://polytope.miraheze.org/wiki/Spherinder</link>
+		<link title="Wikipedia Implicit Surface">https://en.wikipedia.org/wiki/Implicit_surface</link>
 	</tutorials>
 	<members>
 		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">

@@ -7,7 +7,9 @@
 		DuocylinderShape4D describes a 4D duocylinder, the cartesian product of two circles in 4D space. It is defined by the radiuses of two circles, one in the XY plane and one in the ZW plane. The duocylinder is centered at the origin. If you want a duocylinder in a different orientation, you can rotate the [CollisionShape4D] node the duocylinder is attached to.
 	</description>
 	<tutorials>
+		<link title="Miraheze Polytope Wiki Duocylinder">https://polytope.miraheze.org/wiki/Duocylinder</link>
 		<link title="Wikipedia Duocylinder">https://en.wikipedia.org/wiki/Duocylinder</link>
+		<link title="Wikipedia Implicit Surface">https://en.wikipedia.org/wiki/Implicit_surface</link>
 	</tutorials>
 	<members>
 		<member name="radius_xy" type="float" setter="set_radius_xy" getter="get_radius_xy" default="0.5">

@@ -71,6 +71,14 @@ bool BoxShape4D::has_point(const Vector4 &p_point) const {
 	return abs_point.x <= half_extents.x && abs_point.y <= half_extents.y && abs_point.z <= half_extents.z && abs_point.w <= half_extents.w;
 }
 
+bool BoxShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<BoxShape4D> box_shape = p_shape;
+	if (box_shape.is_null()) {
+		return false;
+	}
+	return _size == box_shape->get_size();
+}
+
 Ref<TetraMesh4D> BoxShape4D::to_tetra_mesh() const {
 	Ref<BoxTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();

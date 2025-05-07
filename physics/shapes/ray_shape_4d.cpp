@@ -38,6 +38,14 @@ bool RayShape4D::has_point(const Vector4 &p_point) const {
 	return Math::is_equal_approx(p_point.y, clamped_y);
 }
 
+bool RayShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<RayShape4D> other = p_shape;
+	if (other.is_null()) {
+		return false;
+	}
+	return _ray_target_y == other->get_ray_target_y();
+}
+
 Ref<WireMesh4D> RayShape4D::to_wire_mesh() const {
 	Ref<ArrayWireMesh4D> ray_wire_mesh;
 	ray_wire_mesh.instantiate();

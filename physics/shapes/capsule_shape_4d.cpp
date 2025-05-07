@@ -80,6 +80,14 @@ bool CapsuleShape4D::has_point(const Vector4 &p_point) const {
 	return abs_point.length_squared() <= _radius * _radius;
 }
 
+bool CapsuleShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<CapsuleShape4D> capsule_shape = p_shape;
+	if (capsule_shape.is_null()) {
+		return false;
+	}
+	return _height == capsule_shape->get_height() && _radius == capsule_shape->get_radius();
+}
+
 void CapsuleShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_height"), &CapsuleShape4D::get_height);
 	ClassDB::bind_method(D_METHOD("set_height", "height"), &CapsuleShape4D::set_height);

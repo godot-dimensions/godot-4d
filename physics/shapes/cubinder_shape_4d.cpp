@@ -83,6 +83,14 @@ bool CubinderShape4D::has_point(const Vector4 &p_point) const {
 	return abs_point.length_squared() <= _radius * _radius;
 }
 
+bool CubinderShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	Ref<CubinderShape4D> cubinder = p_shape;
+	if (cubinder.is_null()) {
+		return false;
+	}
+	return _height == cubinder->_height && _radius == cubinder->_radius && _thickness == cubinder->_thickness;
+}
+
 void CubinderShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_height"), &CubinderShape4D::get_height);
 	ClassDB::bind_method(D_METHOD("set_height", "height"), &CubinderShape4D::set_height);

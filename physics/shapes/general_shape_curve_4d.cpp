@@ -43,6 +43,37 @@ PackedInt32Array GeneralShapeCurve4D::get_zero_axes() const {
 	return zero_axes;
 }
 
+bool GeneralShapeCurveTaperPoint4D::is_equal_exact(const GeneralShapeCurveTaperPoint4D &p_other) const {
+	if (position != p_other.position) {
+		return false;
+	}
+	if (radii != p_other.radii) {
+		return false;
+	}
+	if (exponent != p_other.exponent) {
+		return false;
+	}
+	return true;
+}
+
+bool GeneralShapeCurve4D::is_equal_exact(const Ref<GeneralShapeCurve4D> &p_other) const {
+	if (p_other.is_null()) {
+		return false;
+	}
+	if (_radii != p_other->_radii) {
+		return false;
+	}
+	if (_exponent != p_other->_exponent) {
+		return false;
+	}
+	for (int i = 0; i < _taper.size(); i++) {
+		if (!_taper[i].is_equal_exact(p_other->_taper[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
 void GeneralShapeCurve4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_radii"), &GeneralShapeCurve4D::get_radii);
 	ClassDB::bind_method(D_METHOD("set_radii", "radii"), &GeneralShapeCurve4D::set_radii);

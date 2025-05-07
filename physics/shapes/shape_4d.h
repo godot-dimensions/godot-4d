@@ -30,6 +30,8 @@ public:
 	virtual Vector4 get_support_point(const Vector4 &p_direction) const;
 	virtual bool has_point(const Vector4 &p_point) const;
 
+	virtual bool is_equal_exact(const Ref<Shape4D> &p_shape) const;
+
 	virtual Ref<TetraMesh4D> to_tetra_mesh() const;
 	virtual Ref<WireMesh4D> to_wire_mesh() const;
 
@@ -40,6 +42,8 @@ public:
 	GDVIRTUAL1RC(Vector4, _get_nearest_point, Vector4);
 	GDVIRTUAL1RC(Vector4, _get_support_point, Vector4);
 	GDVIRTUAL1RC(bool, _has_point, Vector4);
+
+	GDVIRTUAL1RC(bool, _is_equal_exact, Ref<Shape4D>);
 
 	GDVIRTUAL0RC(Ref<TetraMesh4D>, _to_tetra_mesh);
 	GDVIRTUAL0RC(Ref<WireMesh4D>, _to_wire_mesh);

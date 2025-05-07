@@ -9,8 +9,11 @@
 #endif
 
 struct GeneralShapeCurveTaperPoint4D {
-	Vector4 _position;
-	Vector4 _radii;
+	Vector4 position = Vector4();
+	Vector4 radii = Vector4();
+	double exponent = 2.0;
+
+	bool is_equal_exact(const GeneralShapeCurveTaperPoint4D &p_other) const;
 };
 
 class GeneralShapeCurve4D : public Resource {
@@ -30,9 +33,13 @@ public:
 	double get_exponent() const { return _exponent; }
 	void set_exponent(double p_exponent);
 
+	Vector<GeneralShapeCurveTaperPoint4D> get_taper() const { return _taper; }
+	void set_taper(const Vector<GeneralShapeCurveTaperPoint4D> &p_taper) { _taper = p_taper; }
+
 	int get_radii_dimension() const;
 	real_t get_radii_sum() const;
 	int get_taper_count() const { return _taper.size(); }
 	PackedInt32Array get_used_axes() const;
 	PackedInt32Array get_zero_axes() const;
+	bool is_equal_exact(const Ref<GeneralShapeCurve4D> &p_other) const;
 };

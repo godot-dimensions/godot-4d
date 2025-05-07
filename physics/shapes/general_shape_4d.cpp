@@ -410,6 +410,30 @@ bool GeneralShape4D::has_point(const Vector4 &p_point) const {
 	return local_offset_abs == Vector4();
 }
 
+bool GeneralShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<GeneralShape4D> other = p_shape;
+	if (other.is_null()) {
+		return false;
+	}
+	if (_base_size != other->_base_size) {
+		return false;
+	}
+	if (_curves.size() != other->_curves.size()) {
+		return false;
+	}
+	for (int64_t i = 0; i < _curves.size(); i++) {
+		const Ref<GeneralShapeCurve4D> this_curve = _curves[i];
+		const Ref<GeneralShapeCurve4D> other_curve = other->_curves[i];
+		if (this_curve.is_null() || other_curve.is_null()) {
+			return false;
+		}
+		if (!this_curve->is_equal_exact(other_curve)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 void GeneralShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_base_size"), &GeneralShape4D::get_base_size);
 	ClassDB::bind_method(D_METHOD("set_base_size", "base_size"), &GeneralShape4D::set_base_size);

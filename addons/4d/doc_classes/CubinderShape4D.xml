@@ -7,7 +7,8 @@
 		CubinderShape4D is a shape created by extruding a 3D cylinder into 4D space. It is defined by a radius of a circle in the XZ plane, a height in the Y direction, and a thickness in the W direction. The cubinder is centered at the origin. If you want a cubinder in a different orientation, you can rotate the [CollisionShape4D] node the cubinder is attached to.
 	</description>
 	<tutorials>
-		<link title="Miraheze Wiki Cubinder">https://polytope.miraheze.org/wiki/Cubinder</link>
+		<link title="Miraheze Polytope Wiki Cubinder">https://polytope.miraheze.org/wiki/Cubinder</link>
+		<link title="Wikipedia Implicit Surface">https://en.wikipedia.org/wiki/Implicit_surface</link>
 	</tutorials>
 	<members>
 		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">

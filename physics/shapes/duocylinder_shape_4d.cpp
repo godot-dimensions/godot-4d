@@ -51,6 +51,14 @@ bool DuocylinderShape4D::has_point(const Vector4 &p_point) const {
 	return in_xy && in_zw;
 }
 
+bool DuocylinderShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<DuocylinderShape4D> shape = p_shape;
+	if (shape.is_null()) {
+		return false;
+	}
+	return _radius_xy == shape->_radius_xy && _radius_zw == shape->_radius_zw;
+}
+
 void DuocylinderShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_radius_xy"), &DuocylinderShape4D::get_radius_xy);
 	ClassDB::bind_method(D_METHOD("set_radius_xy", "radius_xy"), &DuocylinderShape4D::set_radius_xy);

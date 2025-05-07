@@ -57,6 +57,14 @@ bool CylinderShape4D::has_point(const Vector4 &p_point) const {
 	return abs_point.length_squared() <= _radius * _radius;
 }
 
+bool CylinderShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<CylinderShape4D> cylinder_shape = p_shape;
+	if (cylinder_shape.is_null()) {
+		return false;
+	}
+	return _height == cylinder_shape->_height && _radius == cylinder_shape->_radius;
+}
+
 void CylinderShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_height"), &CylinderShape4D::get_height);
 	ClassDB::bind_method(D_METHOD("set_height", "height"), &CylinderShape4D::set_height);

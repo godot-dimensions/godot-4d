@@ -8,7 +8,9 @@
 		The 3D version of an orthoplex is the octahedron, which has 6 vertices (-X, +X, -Y, +Y, -Z, +Z) and 8 triangular faces in each octant. The 2D version is a diamond (square rotated 45 degrees), which has 4 vertices (-X, +X, -Y, +Y) and 4 edges in each quadrant. Orthoplexes exist in all dimensions, and are the dual of boxes (square/cube/hypercube).
 	</description>
 	<tutorials>
+		<link title="Miraheze Polytope Wiki Hexadecachoron">https://polytope.miraheze.org/wiki/Hexadecachoron</link>
 		<link title="Wikipedia 16-cell / 4D Orthoplex">https://en.wikipedia.org/wiki/16-cell</link>
+		<link title="Wikipedia Implicit Surface">https://en.wikipedia.org/wiki/Implicit_surface</link>
 	</tutorials>
 	<members>
 		<member name="half_extents" type="Vector4" setter="set_half_extents" getter="get_half_extents">
