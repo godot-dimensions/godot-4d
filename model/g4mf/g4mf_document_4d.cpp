@@ -9,9 +9,34 @@
 #include <godot_cpp/core/version.hpp>
 #elif GODOT_MODULE
 #include "core/core_bind.h"
+#include "core/io/compression.h"
 #include "core/io/json.h"
 using namespace core_bind;
 #endif
+
+uint32_t G4MFDocument4D::_compression_format_to_indicator(const CompressionFormat p_compression_format) {
+	switch (p_compression_format) {
+		case COMPRESSION_FORMAT_NONE:
+			return 0x00000000;
+		case COMPRESSION_FORMAT_ZSTD:
+			// "Zstd" in ASCII. Note that this does not need to match the magic number in Zstd itself (0xFD2FB528).
+			return 0x6474735A;
+		case COMPRESSION_FORMAT_UNKNOWN:
+			return 0xFFFFFFFF; // Unknown compression format.
+	}
+	return 0xFFFFFFFF; // Unknown compression format.
+}
+
+G4MFDocument4D::CompressionFormat G4MFDocument4D::_compression_indicator_to_format(const uint32_t p_magic) {
+	switch (p_magic) {
+		case 0x00000000:
+			return COMPRESSION_FORMAT_NONE;
+		case 0x6474735A:
+			// "Zstd" in ASCII. Note that this does not need to match the magic number in Zstd itself (0xFD2FB528).
+			return COMPRESSION_FORMAT_ZSTD;
+	}
+	return COMPRESSION_FORMAT_UNKNOWN;
+}
 
 // Export process.
 
@@ -249,26 +274,58 @@ Error G4MFDocument4D::_export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dic
 	return OK;
 }
 
+PackedByteArray G4MFDocument4D::_export_compress_buffer_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data) {
+	const int64_t buffer_size = p_buffer_data.size();
+	switch (_compression_format) {
+		case G4MFDocument4D::COMPRESSION_FORMAT_NONE:
+			return p_buffer_data;
+		case G4MFDocument4D::COMPRESSION_FORMAT_ZSTD: {
+			// Compress the buffer data using Zstd.
+#if GDEXTENSION
+			return p_buffer_data.compress(FileAccess::CompressionMode::COMPRESSION_ZSTD);
+#elif GODOT_MODULE
+			PackedByteArray compressed;
+			if (buffer_size > 0) {
+				constexpr Compression::Mode mode = Compression::Mode::MODE_ZSTD;
+				compressed.resize(Compression::get_max_compressed_buffer_size(buffer_size, mode));
+				int result = Compression::compress(compressed.ptrw(), p_buffer_data.ptr(), buffer_size, mode);
+				ERR_FAIL_COND_V(result < 0, PackedByteArray());
+				compressed.resize(result);
+			}
+			return compressed;
+#endif
+		}
+		case G4MFDocument4D::COMPRESSION_FORMAT_UNKNOWN:
+			break;
+	}
+	CRASH_NOW_MSG("G4MF export: Unknown compression format. This should never happen (the switch should handle all cases the enum is allowed to be set to).");
+}
+
 PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state) {
+	const uint32_t compression_format_indicator = _compression_format_to_indicator(_compression_format);
+	CRASH_COND(compression_format_indicator == 0xFFFFFFFF);
 	const Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
 	ERR_FAIL_COND_V(!g4mf_json.has("asset"), PackedByteArray());
 	const String json_string = JSON::stringify(g4mf_json, "", true);
-	const uint64_t json_string_size = json_string.length();
-	ERR_FAIL_COND_V(json_string_size < 25, PackedByteArray()); // Minimum possible valid JSON is `{"asset":{"dimension":4}}` (25 bytes).
-	CharString json_string_utf8 = json_string.utf8();
-	const uint64_t json_string_utf8_size_without_null = json_string_utf8.size() - 1;
-	uint64_t total_file_size = 32 + json_string_utf8_size_without_null;
+	ERR_FAIL_COND_V(json_string.length() < 25, PackedByteArray()); // Minimum possible valid JSON is `{"asset":{"dimension":4}}` (25 bytes).
+	const PackedByteArray json_compressed = _export_compress_buffer_data(p_g4mf_state, json_string.to_utf8_buffer());
+	const uint64_t json_compressed_size = json_compressed.size();
+	uint64_t total_file_size = 32 + json_compressed_size;
 	// Add binary buffer chunks to the file size.
 	const TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_buffers();
+	Vector<PackedByteArray> buffers_compressed;
 	if (!state_buffers.is_empty()) {
 		ERR_FAIL_COND_V(!g4mf_json.has("buffers"), PackedByteArray());
 		Array json_buffers = g4mf_json["buffers"];
-		ERR_FAIL_COND_V(state_buffers.size() != json_buffers.size(), PackedByteArray());
-		for (int i = 0; i < state_buffers.size(); i++) {
+		const int state_buffers_size = state_buffers.size();
+		ERR_FAIL_COND_V(state_buffers_size != json_buffers.size(), PackedByteArray());
+		buffers_compressed.resize(state_buffers_size);
+		for (int i = 0; i < state_buffers_size; i++) {
 			// The start of each chunk needs to be padded to 16 bytes.
 			total_file_size = _ceiling_division(total_file_size, 16) * 16;
-			const PackedByteArray buffer = state_buffers[i];
-			total_file_size += 16 + buffer.size();
+			const PackedByteArray buffer_compressed = _export_compress_buffer_data(p_g4mf_state, state_buffers[i]);
+			total_file_size += 16 + buffer_compressed.size();
+			buffers_compressed.set(i, buffer_compressed);
 		}
 	}
 	// Done gathering information, now create the byte array.
@@ -285,30 +342,31 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 	// Write the JSON chunk.
 	*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x4E4F534A; // "JSON"
 	write_offset += 4;
-	*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x00000000; // No compression
+	*(uint32_t *)(file_bytes_ptrw + write_offset) = compression_format_indicator;
 	write_offset += 4;
-	*(uint64_t *)(file_bytes_ptrw + write_offset) = json_string_utf8_size_without_null; // JSON size
+	*(uint64_t *)(file_bytes_ptrw + write_offset) = json_compressed_size; // JSON size after compression.
 	write_offset += 8;
-	memcpy(file_bytes_ptrw + write_offset, json_string_utf8.get_data(), json_string_utf8_size_without_null);
-	write_offset += json_string_utf8_size_without_null;
+	memcpy(file_bytes_ptrw + write_offset, json_compressed.ptr(), json_compressed_size);
+	write_offset += json_compressed_size;
 	// Write other chunks.
-	for (int buffer_index = 0; buffer_index < state_buffers.size(); buffer_index++) {
+	for (int buffer_index = 0; buffer_index < buffers_compressed.size(); buffer_index++) {
 		// Pad the previous chunk to 16 bytes if needed.
 		const uint64_t write_offset_padded = _ceiling_division(write_offset, 16) * 16;
 		for (uint64_t pad_index = write_offset; pad_index < write_offset_padded; pad_index++) {
-			*(file_bytes_ptrw + write_offset) = (buffer_index == 0) ? (uint8_t)0x20 : (uint8_t)0x00; // Pad with zero bytes or spaces.
+			const bool use_spaces = (_compression_format == COMPRESSION_FORMAT_NONE && buffer_index == 0);
+			*(file_bytes_ptrw + write_offset) = use_spaces ? (uint8_t)0x20 : (uint8_t)0x00; // Pad with zero bytes or spaces.
 			write_offset++;
 		}
-		const PackedByteArray buffer = state_buffers[buffer_index];
-		const uint64_t buffer_size = buffer.size();
+		const PackedByteArray buffer_compressed = buffers_compressed[buffer_index];
+		const uint64_t buffer_compressed_size = buffer_compressed.size();
 		*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x424F4C42; // "BLOB"
 		write_offset += 4;
-		*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x00000000; // No compression
+		*(uint32_t *)(file_bytes_ptrw + write_offset) = compression_format_indicator;
 		write_offset += 4;
-		*(uint64_t *)(file_bytes_ptrw + write_offset) = buffer_size; // Buffer size
+		*(uint64_t *)(file_bytes_ptrw + write_offset) = buffer_compressed_size; // Buffer size after compression.
 		write_offset += 8;
-		memcpy(file_bytes_ptrw + write_offset, buffer.ptr(), buffer_size);
-		write_offset += buffer_size;
+		memcpy(file_bytes_ptrw + write_offset, buffer_compressed.ptr(), buffer_compressed_size);
+		write_offset += buffer_compressed_size;
 	}
 	ERR_FAIL_COND_V(write_offset != total_file_size, PackedByteArray());
 	return file_bytes;
@@ -325,7 +383,7 @@ PackedByteArray G4MFDocument4D::_import_next_chunk_bytes_uncompressed(Ref<G4MFSt
 		ERR_FAIL_V_MSG(chunk_raw_data, "G4MF import: Not enough bytes are left to form a chunk header. File is corrupted.");
 	}
 	p_read_offset += 4; // Skip chunk type. The caller can check this if needed.
-	const uint32_t chunk_compression = *(uint32_t *)(p_file_bytes + p_read_offset);
+	const uint32_t chunk_compression_indicator = *(uint32_t *)(p_file_bytes + p_read_offset);
 	p_read_offset += 4;
 	const uint64_t chunk_raw_size = *(uint64_t *)(p_file_bytes + p_read_offset);
 	p_read_offset += 8;
@@ -334,22 +392,68 @@ PackedByteArray G4MFDocument4D::_import_next_chunk_bytes_uncompressed(Ref<G4MFSt
 	memcpy(chunk_raw_data.ptrw(), p_file_bytes + p_read_offset, chunk_raw_size);
 	p_read_offset += chunk_raw_size;
 	p_read_offset = _ceiling_division(p_read_offset, 16) * 16; // Chunks start at 16-byte boundaries.
-	// TODO: Handle compressed data.
-	ERR_FAIL_COND_V_MSG(chunk_compression > (uint32_t)0x00000000, PackedByteArray(), "G4MF import: Support for reading compressed data is not implemented.");
-	return chunk_raw_data;
+	// Done reading the chunk header and raw data. Now to uncompress it, if needed.
+	const CompressionFormat chunk_compression_indicator_format = _compression_indicator_to_format(chunk_compression_indicator);
+	switch (chunk_compression_indicator_format) {
+		case COMPRESSION_FORMAT_UNKNOWN:
+			break;
+		case COMPRESSION_FORMAT_NONE:
+			return chunk_raw_data;
+		case COMPRESSION_FORMAT_ZSTD: {
+#if GDEXTENSION
+			return chunk_raw_data.decompress_dynamic(-1, FileAccess::CompressionMode::COMPRESSION_ZSTD);
+#elif GODOT_MODULE
+			PackedByteArray decompressed;
+			if (chunk_raw_size > 0) {
+				constexpr Compression::Mode mode = Compression::Mode::MODE_ZSTD;
+				int result;
+				// We have to guess the decompressed size. Zstd usually has a ratio of 3 or 4, so 8 is very likely to succeed. Else, try bigger ratios.
+				for (uint64_t ratio = 8; ratio < uint64_t(1 << 20); ratio *= 2) {
+					const uint64_t decompressed_size_guess = chunk_raw_size * ratio;
+					decompressed.resize(decompressed_size_guess);
+					result = Compression::decompress(decompressed.ptrw(), decompressed_size_guess, chunk_raw_data.ptr(), chunk_raw_size, mode);
+					if (result >= 0) {
+						break;
+					}
+				}
+				ERR_FAIL_COND_V(result < 0, PackedByteArray());
+				decompressed.resize(result);
+			}
+			return decompressed;
+#endif
+		}
+	}
+	const String friendly = _uint32_to_string(chunk_compression_indicator);
+	const String number = String::num_uint64(chunk_compression_indicator, 16, true);
+	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF import: Support for reading \"" + friendly + "\" (0x" + number + ") compressed chunks is not implemented.");
+}
+
+String G4MFDocument4D::_uint32_to_string(uint32_t p_value) {
+	CharString str;
+	str.resize(4);
+	for (int i = 0; i < 4; i++) {
+		const uint8_t low_byte = (uint8_t)p_value;
+		if (low_byte > 0x1F && low_byte < 0x7F) {
+			str.set(i, low_byte);
+		} else {
+			str.set(i, '?');
+		}
+		p_value >>= 8;
+	}
+	return String(str);
 }
 
 Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	Error err = _import_parse_asset_header(p_g4mf_state, p_g4mf_json);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse asset header.");
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse asset header. Aborting file import.");
 	err = _import_parse_buffers_accessors(p_g4mf_state, p_g4mf_json);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse buffers and accessors.");
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse buffers and/or accessors. Aborting file import.");
 	err = _import_parse_textures(p_g4mf_state, p_g4mf_json);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse textures.");
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse textures. Aborting file import.");
 	err = _import_parse_materials(p_g4mf_state, p_g4mf_json);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse materials.");
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse materials. Aborting file import.");
 	err = _import_parse_meshes(p_g4mf_state, p_g4mf_json);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse meshes.");
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse meshes. Aborting file import.");
 	err = _import_parse_nodes(p_g4mf_state, p_g4mf_json);
 	return err;
 }
@@ -407,7 +511,10 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 					}
 				}
 			}
-			ERR_FAIL_COND_V_MSG(buffer.size() < byte_length, ERR_INVALID_DATA, "G4MF import: Buffer size is not at least the declared size. Aborting file import.");
+			if (buffer.size() < byte_length) {
+				ERR_FAIL_COND_V_MSG(buffer.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to read buffer data. Aborting file import.");
+				ERR_FAIL_V_MSG(ERR_INVALID_DATA, "G4MF import: Buffer size is not at least the declared size. Aborting file import.");
+			}
 			buffer.resize(byte_length);
 			buffers[i] = buffer;
 		}
@@ -738,8 +845,7 @@ Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state,
 	// Parse the data.
 	const String json_string = String::utf8(reinterpret_cast<const char *>(json_chunk.ptr()), json_chunk.size());
 	Dictionary g4mf_json = JSON::parse_string(json_string);
-	_import_parse_json_data(p_g4mf_state, g4mf_json);
-	return OK;
+	return _import_parse_json_data(p_g4mf_state, g4mf_json);
 }
 
 Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
@@ -805,6 +911,11 @@ Ref<Mesh4D> G4MFDocument4D::import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_s
 	return _import_generate_combined_mesh(p_g4mf_state, p_include_invisible);
 }
 
+void G4MFDocument4D::set_compression_format(const CompressionFormat p_compression_format) {
+	ERR_FAIL_COND_MSG(_compression_format_to_indicator(p_compression_format) == (uint32_t)0xFFFFFFFF, "G4MF: Invalid compression format.");
+	_compression_format = p_compression_format;
+}
+
 void G4MFDocument4D::_bind_methods() {
 	// Main import and export functions.
 	ClassDB::bind_method(D_METHOD("export_append_from_godot_scene", "g4mf_state", "scene_root"), &G4MFDocument4D::export_append_from_godot_scene);
@@ -816,10 +927,18 @@ void G4MFDocument4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("import_generate_godot_scene", "g4mf_state"), &G4MFDocument4D::import_generate_godot_scene);
 	ClassDB::bind_method(D_METHOD("import_generate_godot_mesh", "g4mf_state", "include_invisible"), &G4MFDocument4D::import_generate_godot_mesh, DEFVAL(false));
 
+	// Settings for the export process.
+	ClassDB::bind_method(D_METHOD("get_compression_format"), &G4MFDocument4D::get_compression_format);
+	ClassDB::bind_method(D_METHOD("set_compression_format", "compression_format"), &G4MFDocument4D::set_compression_format);
+
 	// Settings for the import process.
 	ClassDB::bind_method(D_METHOD("get_force_wireframe"), &G4MFDocument4D::get_force_wireframe);
 	ClassDB::bind_method(D_METHOD("set_force_wireframe", "force_wireframe"), &G4MFDocument4D::set_force_wireframe);
 
 	// Properties.
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "compression_format", PROPERTY_HINT_ENUM, "None,Zstd"), "set_compression_format", "get_compression_format");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "force_wireframe"), "set_force_wireframe", "get_force_wireframe");
+
+	BIND_ENUM_CONSTANT(COMPRESSION_FORMAT_NONE);
+	BIND_ENUM_CONSTANT(COMPRESSION_FORMAT_ZSTD);
 }

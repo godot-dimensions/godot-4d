@@ -80,8 +80,19 @@
 		</method>
 	</methods>
 	<members>
+		<member name="compression_format" type="int" setter="set_compression_format" getter="get_compression_format" enum="G4MFDocument4D.CompressionFormat" default="0">
+			The compression format to use when exporting a binary G4MF file or byte array. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays. The [code]".g4tf"[/code] Good 4D model Text File format is always uncompressed. See [enum CompressionFormat] for the available formats. The default is [enum CompressionFormat.COMPRESSION_FORMAT_NONE], which does not compress the G4MF data.
+		</member>
 		<member name="force_wireframe" type="bool" setter="set_force_wireframe" getter="get_force_wireframe" default="false">
 			Whether to force all meshes to be generated as wireframe meshes. If [code]true[/code], all meshes will be generated as wireframe meshes, and meshes without edges will have their edges calculated from the cells. If [code]false[/code] (default), meshes will be generated as tetrahedral meshes if they have cells, or as wireframe meshes if they do not have cells.
 		</member>
 	</members>
+	<constants>
+		<constant name="COMPRESSION_FORMAT_NONE" value="0" enum="CompressionFormat">
+			Do not compress the G4MF dat when exporting a binary G4MF file or byte array. This is the default.
+		</constant>
+		<constant name="COMPRESSION_FORMAT_ZSTD" value="1" enum="CompressionFormat">
+			Compress the binary G4MF data using Zstandard compression. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays.
+		</constant>
+	</constants>
 </class>

@@ -56,7 +56,7 @@ Error EditorImportPluginG4MFScene4D::import(ResourceUID::ID p_source_id, const S
 	g4mf_state.instantiate();
 	g4mf_doc->set_force_wireframe(p_options[StringName("force_wireframe")]);
 	Error err = g4mf_doc->import_read_from_file(g4mf_state, p_source_file);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "Editor: Failed to read G4MF document from file.");
+	ERR_FAIL_COND_V_MSG(err != OK, err, "Editor: Failed to read G4MF document from file. Aborting file import.");
 	Node *node = g4mf_doc->import_generate_godot_scene(g4mf_state);
 	ERR_FAIL_NULL_V_MSG(node, ERR_INVALID_DATA, "Editor: Failed to generate scene from G4MF document.");
 	Ref<PackedScene> packed_scene;

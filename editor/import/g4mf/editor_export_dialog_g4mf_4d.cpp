@@ -8,6 +8,7 @@
 #elif GODOT_MODULE
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
+#include "editor/themes/editor_scale.h"
 #endif
 
 #if GDEXTENSION
@@ -36,6 +37,10 @@ void EditorExportDialogG4MF4D::_popup_g4mf_export_dialog() {
 		filename = scene_root->get_name();
 	}
 	set_current_file(filename + ".g4tf");
+#if GODOT_MODULE
+	_settings_inspector->edit(nullptr);
+	_settings_inspector->edit(_export_settings.ptr());
+#endif // GODOT_MODULE
 	// Show the file dialog.
 	popup_centered_ratio();
 }
@@ -45,17 +50,16 @@ void EditorExportDialogG4MF4D::_export_scene_as_g4mf(const String &p_path) {
 	ERR_FAIL_NULL(editor_interface);
 	Node *scene_root = editor_interface->get_edited_scene_root();
 	ERR_FAIL_COND_SHOW_DIALOG(scene_root == nullptr, "G4MF error: Cannot export scene without a root node.");
-	Ref<G4MFDocument4D> g4mf_doc;
 	Ref<G4MFState4D> g4mf_state;
-	g4mf_doc.instantiate();
 	g4mf_state.instantiate();
-	Error err = g4mf_doc->export_append_from_godot_scene(g4mf_state, scene_root);
+	Error err = _g4mf_document->export_append_from_godot_scene(g4mf_state, scene_root);
 	ERR_FAIL_COND_SHOW_DIALOG(err != OK, "G4MF editor export: Error while running export_append_from_godot_scene.");
-	err = g4mf_doc->export_write_to_file(g4mf_state, p_path);
+	err = _g4mf_document->export_write_to_file(g4mf_state, p_path);
 	ERR_FAIL_COND_SHOW_DIALOG(err != OK, "G4MF editor export: Error while running export_write_to_file.");
 }
 
 void EditorExportDialogG4MF4D::setup(PopupMenu *p_export_menu) {
+	_g4mf_document.instantiate();
 	set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 	set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	clear_filters();
@@ -66,6 +70,12 @@ void EditorExportDialogG4MF4D::setup(PopupMenu *p_export_menu) {
 	ERR_FAIL_NULL(editor_interface);
 	connect("file_selected", callable_mp(this, &EditorExportDialogG4MF4D::_export_scene_as_g4mf));
 	editor_interface->get_base_control()->add_child(this);
+	// Set up the export settings menu.
+	_export_settings.instantiate();
+	_export_settings->setup(_g4mf_document);
+	_settings_inspector = memnew(EditorInspector);
+	_settings_inspector->set_custom_minimum_size(Size2(350, 300) * EDSCALE);
+	add_side_menu(_settings_inspector, TTR("Export Settings:"));
 	// Add a button to the Scene -> Export menu to pop up the settings dialog.
 	const int index = p_export_menu->get_item_count();
 	p_export_menu->add_item("4D Scene as G4MF...");

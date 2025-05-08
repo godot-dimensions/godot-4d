@@ -62,7 +62,7 @@ Error EditorImportPluginG4MFMesh4D::import(ResourceUID::ID p_source_id, const St
 	g4mf_state.instantiate();
 	g4mf_doc->set_force_wireframe(p_options[StringName("force_wireframe")]);
 	Error err = g4mf_doc->import_read_from_file(g4mf_state, p_source_file);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "Editor: Failed to read G4MF document from file.");
+	ERR_FAIL_COND_V_MSG(err != OK, err, "Editor: Failed to read G4MF document from file. Aborting file import.");
 	const bool include_invisible = p_options[StringName("include_invisible")];
 	Ref<Mesh4D> mesh = g4mf_doc->import_generate_godot_mesh(g4mf_state, include_invisible);
 	ERR_FAIL_COND_V_MSG(mesh.is_null(), ERR_INVALID_DATA, "Editor: Failed to generate scene from G4MF document.");
