@@ -195,14 +195,16 @@ void TetraMesh4D::update_cross_section_mesh() {
 		surface_tool->set_custom(2, vec4_to_color(vertices[cell_indices[i + 2]]));
 		surface_tool->set_custom(3, vec4_to_color(vertices[cell_indices[i + 3]]));
 
-		// UVW texture coords, need 4*3 float slots.  Using UV, UV2, Normal, Color, and one vertex.y.
+		// UVW texture coords, need 4*3 float slots.  Using UV, UV2, Normal, Color, vertex.y, and vertex.z.
+		// Normal gets normalized somewhere in the pipeline, so last coord of 1.0 will get set to whatever we need to divide by to get
+		// to get the original coords.
 		Vector3 uvw1 = cell_uvws[cell_indices[i]];
 		Vector3 uvw2 = cell_uvws[cell_indices[i + 1]];
 		Vector3 uvw3 = cell_uvws[cell_indices[i + 2]];
 		Vector3 uvw4 = cell_uvws[cell_indices[i + 3]];
 		surface_tool->set_uv(Vector2(uvw1.x, uvw1.y));
 		surface_tool->set_uv2(Vector2(uvw2.x, uvw2.y));
-		surface_tool->set_normal(uvw3);
+		surface_tool->set_normal(Vector3(uvw3.x, uvw3.y, 1.0));
 		surface_tool->set_color(Color(uvw4.x, uvw4.y, uvw4.z, uvw1.z));
 
 		// Not enough slots left for normals. Also interpolating the 4D normals gives weird results, needs more experimentation.
@@ -211,13 +213,13 @@ void TetraMesh4D::update_cross_section_mesh() {
 		//// Vertices:
 
 		// Not storing actual position data in the vertex positions, x is an index, y is UVW data, z is unused.
-		surface_tool->add_vertex(Vector3(0.0, uvw2.z, 0.0));
-		surface_tool->add_vertex(Vector3(1.0, uvw2.z, 0.0));
-		surface_tool->add_vertex(Vector3(2.0, uvw2.z, 0.0));
+		surface_tool->add_vertex(Vector3(0.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(1.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(2.0, uvw2.z, uvw3.z));
 
-		surface_tool->add_vertex(Vector3(3.0, uvw2.z, 0.0));
-		surface_tool->add_vertex(Vector3(4.0, uvw2.z, 0.0));
-		surface_tool->add_vertex(Vector3(5.0, uvw2.z, 0.0));
+		surface_tool->add_vertex(Vector3(3.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(4.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(5.0, uvw2.z, uvw3.z));
 	}
 	surface_tool->commit(_cross_section_mesh);
 
