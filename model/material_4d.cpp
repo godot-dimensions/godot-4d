@@ -1,6 +1,5 @@
 #include "material_4d.h"
 
-#include "../render/cross_section/cross_section_shader.glsl.gen.h"
 #include "mesh_4d.h"
 
 Color Material4D::get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh) {
@@ -157,18 +156,6 @@ Ref<ShaderMaterial> Material4D::get_cross_section_material() {
 }
 
 void Material4D::update_cross_section_material() {
-	if (_cross_section_material.is_null()) {
-		// Want to skip updating if we never access the cross section material, so leave uninitialized until first get.
-		return;
-	}
-	if (_cross_section_material->get_shader().is_null()) {
-		// TODO this re-compiles the shader for every material, should cache the Shader object somewhere.
-		Ref<Shader> cross_section_shader;
-		cross_section_shader.instantiate();
-		cross_section_shader->set_code(cross_section_shader_shader_glsl);
-		_cross_section_material->set_shader(cross_section_shader);
-	}
-	_cross_section_material->set_shader_parameter("albedo", get_albedo_color());
 }
 
 void Material4D::_bind_methods() {
