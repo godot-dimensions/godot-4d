@@ -400,17 +400,27 @@ PackedByteArray G4MFDocument4D::_import_next_chunk_bytes_uncompressed(Ref<G4MFSt
 		case COMPRESSION_FORMAT_NONE:
 			return chunk_raw_data;
 		case COMPRESSION_FORMAT_ZSTD: {
-#if GDEXTENSION
-			return chunk_raw_data.decompress_dynamic(-1, FileAccess::CompressionMode::COMPRESSION_ZSTD);
-#elif GODOT_MODULE
 			PackedByteArray decompressed;
 			if (chunk_raw_size > 0) {
-				constexpr Compression::Mode mode = Compression::Mode::MODE_ZSTD;
-				int result;
+#if GDEXTENSION
 				// We have to guess the decompressed size. Zstd usually has a ratio of 3 or 4, so 8 is very likely to succeed. Else, try bigger ratios.
 				for (uint64_t ratio = 8; ratio < uint64_t(1 << 20); ratio *= 2) {
 					const uint64_t decompressed_size_guess = chunk_raw_size * ratio;
 					decompressed.resize(decompressed_size_guess);
+					constexpr FileAccess::CompressionMode mode = FileAccess::CompressionMode::COMPRESSION_ZSTD;
+					decompressed = chunk_raw_data.decompress(decompressed_size_guess, mode);
+					if (decompressed.size() != 0) {
+						break;
+					}
+				}
+				ERR_FAIL_COND_V(decompressed.size() == 0, decompressed);
+#elif GODOT_MODULE
+				int result = 0;
+				// We have to guess the decompressed size. Zstd usually has a ratio of 3 or 4, so 8 is very likely to succeed. Else, try bigger ratios.
+				for (uint64_t ratio = 8; ratio < uint64_t(1 << 20); ratio *= 2) {
+					const uint64_t decompressed_size_guess = chunk_raw_size * ratio;
+					decompressed.resize(decompressed_size_guess);
+					constexpr Compression::Mode mode = Compression::Mode::MODE_ZSTD;
 					result = Compression::decompress(decompressed.ptrw(), decompressed_size_guess, chunk_raw_data.ptr(), chunk_raw_size, mode);
 					if (result >= 0) {
 						break;
@@ -418,9 +428,9 @@ PackedByteArray G4MFDocument4D::_import_next_chunk_bytes_uncompressed(Ref<G4MFSt
 				}
 				ERR_FAIL_COND_V(result < 0, PackedByteArray());
 				decompressed.resize(result);
+#endif
 			}
 			return decompressed;
-#endif
 		}
 	}
 	const String friendly = _uint32_to_string(chunk_compression_indicator);
@@ -832,6 +842,7 @@ Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state,
 	// Read the chunks.
 	ERR_FAIL_COND_V_MSG(*(uint32_t *)(byte_array_ptr + read_offset) != (uint32_t)0x4E4F534A, ERR_INVALID_DATA, "G4MF import: First chunk is not JSON. File is corrupted.");
 	const PackedByteArray json_chunk = _import_next_chunk_bytes_uncompressed(p_g4mf_state, byte_array_ptr, byte_array_size, read_offset);
+	ERR_FAIL_COND_V_MSG(json_chunk.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to read JSON chunk. File may be corrupted or uses unsupported compression.");
 	TypedArray<PackedByteArray> blob_chunks;
 	while (read_offset < byte_array_size) {
 		const uint32_t chunk_type = *(uint32_t *)(byte_array_ptr + read_offset);
