@@ -35,6 +35,8 @@ private:
 	Error _export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_state);
+	static String _export_pretty_print_compact(const Variant &p_variant);
+	static String _export_pretty_print_json(const Dictionary &p_g4mf_json);
 	PackedByteArray _export_compress_buffer_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data);
 	PackedByteArray _export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state);
 

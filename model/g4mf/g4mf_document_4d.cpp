@@ -279,6 +279,134 @@ Error G4MFDocument4D::_export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dic
 	return OK;
 }
 
+// Includes spaces after braces and commas, and avoids unnecessary digits for floats.
+String G4MFDocument4D::_export_pretty_print_compact(const Variant &p_variant) {
+	if (p_variant.get_type() == Variant::DICTIONARY) {
+		Dictionary dict = p_variant;
+		if (dict.is_empty()) {
+			return "{}";
+		}
+		Array keys = dict.keys();
+		keys.sort();
+		String compact = "{ ";
+		for (int i = 0; i < keys.size(); i++) {
+			String key = keys[i];
+			Variant value = dict[key];
+			if (i > 0) {
+				compact += ", ";
+			}
+			compact += "\"" + key + "\": " + _export_pretty_print_compact(value);
+		}
+		compact += " }";
+		return compact;
+	} else if (p_variant.get_type() == Variant::ARRAY) {
+		Array arr = p_variant;
+		String compact = "[";
+		for (int i = 0; i < arr.size(); i++) {
+			Variant value = arr[i];
+			if (i > 0) {
+				compact += ", ";
+			}
+			compact += _export_pretty_print_compact(value);
+		}
+		compact += "]";
+		return compact;
+	} else if (p_variant.get_type() == Variant::FLOAT) {
+		const double num = (double)p_variant;
+		const String num_short = String::num(num, 6);
+		if (num_short.contains(".")) {
+			const double back = num_short.to_float();
+			if (num == back || float(num) == float(back)) {
+				return num_short;
+			}
+		}
+	}
+	return JSON::stringify(p_variant, "", true);
+}
+
+// Only indents the first three levels of the JSON for increased readability.
+String G4MFDocument4D::_export_pretty_print_json(const Dictionary &p_g4mf_json) {
+#if GDEXTENSION
+	// HACK: `.sort()` is too new of an API to use here, so sort using an ugly workaround...
+	Dictionary g4mf_json = JSON::parse_string(JSON::stringify(g4mf_json, "", true));
+#elif GODOT_MODULE
+	Dictionary g4mf_json = p_g4mf_json;
+	g4mf_json.sort();
+#endif
+	String pretty = "{\n";
+	Array top_keys = g4mf_json.keys();
+	const int top_key_count = top_keys.size();
+	for (int top_index = 0; top_index < top_key_count; top_index++) {
+		String top_key = top_keys[top_index];
+		Variant top_value = g4mf_json[top_key];
+		if (top_value.get_type() == Variant::DICTIONARY) {
+			Dictionary top_dict = top_value;
+#if GODOT_MODULE
+			top_dict.sort();
+#endif
+			pretty += "\t\"" + top_key + "\": {\n";
+			Array sub_keys = top_dict.keys();
+			for (int sub_index = 0; sub_index < sub_keys.size(); sub_index++) {
+				String sub_key = sub_keys[sub_index];
+				Variant sub_value = top_dict[sub_key];
+				pretty += "\t\t\"" + sub_key + "\": " + _export_pretty_print_compact(sub_value);
+				if (sub_index < sub_keys.size() - 1) {
+					pretty += ",\n";
+				} else {
+					pretty += "\n";
+				}
+			}
+			if (top_index < top_key_count - 1) {
+				pretty += "\t},\n";
+			} else {
+				pretty += "\t}\n";
+			}
+		} else if (top_value.get_type() == Variant::ARRAY) {
+			pretty += "\t\"" + top_key + "\": [\n";
+			Array top_array = top_value;
+			for (int top_array_index = 0; top_array_index < top_array.size(); top_array_index++) {
+				Variant top_array_value = top_array[top_array_index];
+				pretty += "\t\t";
+				if (top_array_value.get_type() == Variant::DICTIONARY) {
+					Dictionary sub_dict = top_array_value;
+#if GODOT_MODULE
+					sub_dict.sort();
+#endif
+					pretty += "{\n";
+					Array sub_keys = sub_dict.keys();
+					for (int sub_dict_index = 0; sub_dict_index < sub_keys.size(); sub_dict_index++) {
+						String sub_dict_key = sub_keys[sub_dict_index];
+						Variant sub_dict_value = sub_dict[sub_dict_key];
+						pretty += "\t\t\t\"" + sub_dict_key + "\": " + _export_pretty_print_compact(sub_dict_value);
+						if (sub_dict_index < sub_keys.size() - 1) {
+							pretty += ",\n";
+						} else {
+							pretty += "\n";
+						}
+					}
+					pretty += "\t\t}";
+				} else {
+					pretty += JSON::stringify(top_array_value, "", true);
+				}
+				if (top_array_index < top_array.size() - 1) {
+					pretty += ",\n";
+				} else {
+					pretty += "\n";
+				}
+			}
+			if (top_index < top_key_count - 1) {
+				pretty += "\t],\n";
+			} else {
+				pretty += "\t]\n";
+			}
+		} else {
+			pretty += "\t\"" + top_key + "\": " + _export_pretty_print_compact(top_value);
+		}
+	}
+	pretty += "}\n";
+	return pretty;
+}
+
 PackedByteArray G4MFDocument4D::_export_compress_buffer_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data) {
 	const int64_t buffer_size = p_buffer_data.size();
 	switch (_compression_format) {
@@ -826,8 +954,8 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 		err = _export_serialize_buffer_data(p_g4mf_state);
 		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF buffer data.");
 		const Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
-		const String json_string = JSON::stringify(g4mf_json, "", true);
-		file->store_string(json_string + String("\n"));
+		const String json_string = _export_pretty_print_json(g4mf_json);
+		file->store_string(json_string);
 	} else {
 		// Write to a G4MF binary file. Export the buffers as binary blob chunks.
 		const PackedByteArray json_bytes = _export_encode_as_byte_array(p_g4mf_state);
