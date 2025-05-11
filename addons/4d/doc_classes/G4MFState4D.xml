@@ -52,6 +52,9 @@
 		<member name="g4mf_nodes" type="G4MFNode4D[]" setter="set_g4mf_nodes" getter="get_g4mf_nodes" default="[]">
 			The array of [G4MFNode4D]s in this G4MF file. If empty, the G4MF file does not have any nodes. If non-empty, the node at index 0 is the root node.
 		</member>
+		<member name="g4mf_shapes" type="G4MFShape4D[]" setter="set_g4mf_shapes" getter="get_g4mf_shapes" default="[]">
+			The array of [G4MFShape4D]s in this G4MF file. If empty, the G4MF file does not have any shapes. Shapes are referenced by index in [G4MFNodePhysics4D]s which are used in [G4MFNode4D]s.
+		</member>
 		<member name="g4mf_textures" type="G4MFTexture4D[]" setter="set_g4mf_textures" getter="get_g4mf_textures" default="[]">
 			The array of [G4MFTexture4D]s in this G4MF file. If empty, the G4MF file does not have any textures. Textures are referenced by index in [G4MFMaterialChannel4D]s which are used in [G4MFMaterial4D]s.
 		</member>

@@ -92,6 +92,7 @@ Error G4MFDocument4D::_export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state)
 	_export_serialize_textures(p_g4mf_state, g4mf_json);
 	_export_serialize_materials(p_g4mf_state, g4mf_json);
 	_export_serialize_meshes(p_g4mf_state, g4mf_json);
+	_export_serialize_shapes(p_g4mf_state, g4mf_json);
 	_export_serialize_nodes(p_g4mf_state, g4mf_json);
 	return OK;
 }
@@ -248,6 +249,27 @@ Error G4MFDocument4D::_export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Di
 	}
 	if (!serialized_meshes.is_empty()) {
 		p_g4mf_json["meshes"] = serialized_meshes;
+		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	}
+	return OK;
+}
+
+Error G4MFDocument4D::_export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFShape4D> state_g4mf_shapes = p_g4mf_state->get_g4mf_shapes();
+	const int shape_count = state_g4mf_shapes.size();
+	if (shape_count == 0) {
+		return OK; // No shapes to serialize.
+	}
+	Array serialized_shapes;
+	serialized_shapes.resize(shape_count);
+	for (int i = 0; i < shape_count; i++) {
+		Ref<G4MFShape4D> g4mf_shape = state_g4mf_shapes[i];
+		ERR_FAIL_COND_V(g4mf_shape.is_null(), ERR_INVALID_DATA);
+		Dictionary serialized_shape = g4mf_shape->to_dictionary();
+		serialized_shapes[i] = serialized_shape;
+	}
+	if (!serialized_shapes.is_empty()) {
+		p_g4mf_json["shapes"] = serialized_shapes;
 		p_g4mf_state->set_g4mf_json(p_g4mf_json);
 	}
 	return OK;
@@ -464,6 +486,8 @@ Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dic
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse materials. Aborting file import.");
 	err = _import_parse_meshes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse meshes. Aborting file import.");
+	err = _import_parse_shapes(p_g4mf_state, p_g4mf_json);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse shapes. Aborting file import.");
 	err = _import_parse_nodes(p_g4mf_state, p_g4mf_json);
 	return err;
 }
@@ -625,6 +649,27 @@ Error G4MFDocument4D::_import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictio
 		g4mf_meshes[i] = g4mf_mesh;
 	}
 	p_g4mf_state->set_g4mf_meshes(g4mf_meshes);
+	return OK;
+}
+
+Error G4MFDocument4D::_import_parse_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	if (!p_g4mf_json.has("shapes")) {
+		return OK; // No shapes to parse.
+	}
+	Array json_shapes = p_g4mf_json["shapes"];
+	const int shape_count = json_shapes.size();
+	if (shape_count == 0) {
+		return OK; // No shapes to parse.
+	}
+	TypedArray<G4MFShape4D> g4mf_shapes = p_g4mf_state->get_g4mf_shapes();
+	g4mf_shapes.resize(shape_count);
+	for (int i = 0; i < shape_count; i++) {
+		const Dictionary file_shape = json_shapes[i];
+		Ref<G4MFShape4D> g4mf_shape = G4MFShape4D::from_dictionary(file_shape);
+		ERR_FAIL_COND_V_MSG(g4mf_shape.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse shape. Aborting file import.");
+		g4mf_shapes[i] = g4mf_shape;
+	}
+	p_g4mf_state->set_g4mf_shapes(g4mf_shapes);
 	return OK;
 }
 

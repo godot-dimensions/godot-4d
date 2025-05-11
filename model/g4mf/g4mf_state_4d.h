@@ -5,6 +5,7 @@
 #include "structures/g4mf_material_4d.h"
 #include "structures/g4mf_mesh_4d.h"
 #include "structures/g4mf_node_4d.h"
+#include "structures/g4mf_shape_4d.h"
 #include "structures/g4mf_texture_4d.h"
 
 #include "../../nodes/node_4d.h"
@@ -25,6 +26,7 @@ class G4MFState4D : public G4MFItem4D {
 	TypedArray<G4MFTexture4D> _g4mf_textures;
 	TypedArray<G4MFMaterial4D> _g4mf_materials;
 	TypedArray<G4MFMesh4D> _g4mf_meshes;
+	TypedArray<G4MFShape4D> _g4mf_shapes;
 	TypedArray<G4MFNode4D> _g4mf_nodes;
 	TypedArray<Node4D> _godot_nodes;
 	HashSet<String> _unique_names;
@@ -62,6 +64,9 @@ public:
 
 	TypedArray<G4MFMesh4D> get_g4mf_meshes() const { return _g4mf_meshes; }
 	void set_g4mf_meshes(const TypedArray<G4MFMesh4D> &p_g4mf_meshes) { _g4mf_meshes = p_g4mf_meshes; }
+
+	TypedArray<G4MFShape4D> get_g4mf_shapes() const { return _g4mf_shapes; }
+	void set_g4mf_shapes(const TypedArray<G4MFShape4D> &p_g4mf_shapes) { _g4mf_shapes = p_g4mf_shapes; }
 
 	TypedArray<G4MFNode4D> get_g4mf_nodes() const { return _g4mf_nodes; }
 	void set_g4mf_nodes(const TypedArray<G4MFNode4D> &p_g4mf_nodes) { _g4mf_nodes = p_g4mf_nodes; }
