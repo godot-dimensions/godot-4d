@@ -1,22 +1,25 @@
 #include "g4mf_shape_4d.h"
 
-#include "../../../math/vector_4d.h"
-#include "../../../physics/shapes/box_shape_4d.h"
-#include "../../../physics/shapes/capsule_shape_4d.h"
-#include "../../../physics/shapes/concave_mesh_shape_4d.h"
-#include "../../../physics/shapes/convex_hull_shape_4d.h"
-#include "../../../physics/shapes/cubinder_shape_4d.h"
-#include "../../../physics/shapes/cylinder_shape_4d.h"
-#include "../../../physics/shapes/duocylinder_shape_4d.h"
-#include "../../../physics/shapes/height_map_shape_4d.h"
-#include "../../../physics/shapes/orthoplex_shape_4d.h"
-#include "../../../physics/shapes/plane_shape_4d.h"
-#include "../../../physics/shapes/ray_shape_4d.h"
-#include "../../../physics/shapes/sphere_shape_4d.h"
-#include "../g4mf_state_4d.h"
+#include "../../../../math/vector_4d.h"
+#include "../../../../physics/shapes/box_shape_4d.h"
+#include "../../../../physics/shapes/capsule_shape_4d.h"
+#include "../../../../physics/shapes/concave_mesh_shape_4d.h"
+#include "../../../../physics/shapes/convex_hull_shape_4d.h"
+#include "../../../../physics/shapes/cubinder_shape_4d.h"
+#include "../../../../physics/shapes/cylinder_shape_4d.h"
+#include "../../../../physics/shapes/duocylinder_shape_4d.h"
+#include "../../../../physics/shapes/height_map_shape_4d.h"
+#include "../../../../physics/shapes/orthoplex_shape_4d.h"
+#include "../../../../physics/shapes/plane_shape_4d.h"
+#include "../../../../physics/shapes/ray_shape_4d.h"
+#include "../../../../physics/shapes/sphere_shape_4d.h"
+#include "../../g4mf_state_4d.h"
 
 bool G4MFShape4D::is_equal_exact(const Ref<G4MFShape4D> &p_other) const {
 	if (p_other.is_null()) {
+		return false;
+	}
+	if (_shape_type != p_other->_shape_type) {
 		return false;
 	}
 	if (_base_size != p_other->_base_size) {
@@ -31,6 +34,15 @@ bool G4MFShape4D::is_equal_exact(const Ref<G4MFShape4D> &p_other) const {
 		if (!this_curve->is_equal_exact(other_curve)) {
 			return false;
 		}
+	}
+	if (_heights_accessor_index != p_other->_heights_accessor_index) {
+		return false;
+	}
+	if (_mesh_index != p_other->_mesh_index) {
+		return false;
+	}
+	if (_ray_length != p_other->_ray_length) {
+		return false;
 	}
 	return true;
 }
@@ -164,6 +176,7 @@ Ref<Shape4D> G4MFShape4D::generate_shape(const Ref<G4MFState4D> &p_g4mf_state) c
 
 Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const Ref<Shape4D> &p_shape, const bool p_deduplicate) {
 	Ref<G4MFShape4D> ret;
+	ret.instantiate();
 	ret->set_name(p_shape->get_name());
 	const Ref<BoxShape4D> box_shape = p_shape;
 	if (box_shape.is_valid()) {
@@ -219,7 +232,7 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 		const real_t capsule_height = capsule_shape->get_height();
 		ret->set_base_size(Vector4(0.0, capsule_height, 0.0, 0.0));
 		const real_t capsule_radius = capsule_shape->get_radius();
-		curve->set_radii(Vector4(capsule_radius, capsule_radius, capsule_radius, capsule_height));
+		curve->set_radii(Vector4(capsule_radius, capsule_radius, capsule_radius, capsule_radius));
 		ret->_curves.append(curve);
 		return ret;
 	}
@@ -239,6 +252,7 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 		ret->set_base_size(Vector4(0.0, cubinder_height, 0.0, cubinder_thickness));
 		const real_t cubinder_radius = cubinder_shape->get_radius();
 		curve->set_radii(Vector4(cubinder_radius, 0.0, cubinder_radius, 0.0));
+		ret->_curves.append(curve);
 		return ret;
 	}
 	const Ref<DuocylinderShape4D> duocylinder_shape = p_shape;

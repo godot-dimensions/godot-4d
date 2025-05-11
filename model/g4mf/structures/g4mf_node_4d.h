@@ -1,6 +1,7 @@
 #pragma once
 
 #include "g4mf_camera_4d.h"
+#include "physics/g4mf_node_physics_4d.h"
 
 #include "../../../nodes/node_4d.h"
 
@@ -14,6 +15,7 @@ class G4MFNode4D : public G4MFItem4D {
 	int _parent_index = -1;
 
 	Ref<G4MFCamera4D> _camera;
+	Ref<G4MFNodePhysics4D> _physics;
 	int _mesh_index = -1;
 	bool _visible = true;
 
@@ -56,20 +58,22 @@ public:
 	Ref<G4MFCamera4D> get_camera() const { return _camera; }
 	void set_camera(const Ref<G4MFCamera4D> &p_camera) { _camera = p_camera; }
 
+	Ref<G4MFNodePhysics4D> get_physics() const { return _physics; }
+	void set_physics(const Ref<G4MFNodePhysics4D> &p_physics) { _physics = p_physics; }
+
 	int get_mesh_index() const { return _mesh_index; }
 	void set_mesh_index(const int p_mesh_index) { _mesh_index = p_mesh_index; }
 
 	NodePath get_scene_node_path(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Transform4D get_scene_global_transform(const Ref<G4MFState4D> &p_g4mf_state) const;
 
-	static Ref<G4MFNode4D> from_godot_node(const Node *p_godot_node);
+	static Ref<G4MFNode4D> from_godot_node(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
+	Node4D *generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, const Node *p_scene_parent, const bool p_force_wireframe = false) const;
 	void apply_to_godot_node_4d(Node4D *p_godot_node) const;
 	static Ref<G4MFNode4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary(const bool p_prefer_basis = false) const;
 
 	// Static helper functions.
 	static Array basis_4d_to_json_array(const Basis4D &p_basis);
-	static Array rotor_4d_to_json_array(const Rotor4D &p_rotor);
 	static Basis4D json_array_to_basis_4d(const Array &p_json_array);
-	static Rotor4D json_array_to_rotor_4d(const Array &p_json_array);
 };

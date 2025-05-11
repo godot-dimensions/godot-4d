@@ -11,11 +11,36 @@
 		<link title="G4MF Node Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.node.schema.json</link>
 	</tutorials>
 	<methods>
+		<method name="apply_to_godot_node_4d" qualifiers="const">
+			<return type="void" />
+			<param index="0" name="node" type="Node4D" />
+			<description>
+				Sets the name, transform, visibility, and extras of the given [Node4D] to match this [G4MFNode4D].
+			</description>
+		</method>
 		<method name="from_dictionary" qualifiers="static">
 			<return type="G4MFNode4D" />
 			<param index="0" name="dict" type="Dictionary" />
 			<description>
 				Converts the given [Dictionary] representing the JSON of a G4MF node to a [G4MFNode4D]. This will set the fields of the [G4MFNode4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="from_godot_node" qualifiers="static">
+			<return type="G4MFNode4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="godot_node" type="Node" />
+			<description>
+				Converts the given [Node] into a [G4MFNode4D]. This will set the fields of the [G4MFNode4D] based on the data in the [Node] for physics nodes, mesh instance nodes, and camera nodes. For all 4D nodes, this will set the transform and visibility. For all nodes, this will set the name and extras as handled by [G4MFItem4D].
+			</description>
+		</method>
+		<method name="generate_godot_node" qualifiers="const">
+			<return type="Node4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="scene_parent" type="Node" />
+			<param index="2" name="force_wireframe" type="bool" />
+			<description>
+				Generates a [Node4D] from the G4MF node data. This will consider all fields of the [G4MFNode4D] except for the [member children_indices] and [member parent_index] properties, since this does not traverse the G4MF hierarchy to generate descendant nodes. This function also does not consider any additional data provided by extensions, only the base G4MF node data. To generate a full scene and handle extensions, use [G4MFDocument4D.import_generate_godot_scene] to generate a complete scene from the [G4MFState] data.
+				The [param g4mf_state] parameter is used to access [G4MFShape4D] objects when generating physics shapes, and to access [G4MFMesh4D] and [G4MFMaterial4D] objects when generating meshes. The [param p_scene_parent] parameter is only used when generating physics nodes. The [param force_wireframe] parameter is only used when generating meshes.
 			</description>
 		</method>
 		<method name="get_scene_node_path" qualifiers="const">

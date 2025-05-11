@@ -57,14 +57,14 @@
 			<return type="PackedByteArray" />
 			<param index="0" name="input_data" type="PackedFloat64Array" />
 			<description>
-				Encodes the given [PackedFloat64Array] as a [PackedByteArray] and returns it. This is a low-level function that only works if the [member primitive_type] is some kind of float. If you want to convert other data to floats, use [method encode_accessor] instead.
+				Encodes the given [PackedFloat64Array] as a [PackedByteArray] and returns it. If you want to convert other data to floats, use [method encode_accessor] instead.
 			</description>
 		</method>
 		<method name="encode_ints_as_primitives" qualifiers="const">
 			<return type="PackedByteArray" />
 			<param index="0" name="input_data" type="PackedInt64Array" />
 			<description>
-				Encodes the given [PackedInt64Array] as a [PackedByteArray] and returns it. This is a low-level function that only works if the [member primitive_type] is some kind of signed integer. If you want to convert other data to signed integers, use [method encode_accessor] instead.
+				Encodes the given [PackedInt64Array] as a [PackedByteArray] and returns it. If you want to convert other data to signed integers, use [method encode_accessor] instead.
 			</description>
 		</method>
 		<method name="encode_new_accessor_into_state" qualifiers="static">

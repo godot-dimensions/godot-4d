@@ -22,6 +22,13 @@
 				Appends a [G4MFNode4D] to the G4MF state. This will add the node to the [member g4mf_nodes] array, and ensure its name is unique. Other data in the node is expected to be handled elsewhere.
 			</description>
 		</method>
+		<method name="get_node_index">
+			<return type="int" />
+			<param index="0" name="node" type="Node4D" />
+			<description>
+				Gets the index of the G4MF node in the state's [member g4mf_nodes] array corresponding to the given Godot node. This will return [code]-1[/code] if the node is not found. Since it is possible for a G4MF node to generate multiple Godot nodes, if this returns [code]-1[/code], you may wish to call this function again with the parent node to give it another try.
+			</description>
+		</method>
 		<method name="reserve_unique_name">
 			<return type="String" />
 			<param index="0" name="requested" type="String" />

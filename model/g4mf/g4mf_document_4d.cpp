@@ -41,10 +41,9 @@ G4MFDocument4D::CompressionFormat G4MFDocument4D::_compression_indicator_to_form
 // Export process.
 
 Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index) {
-	Ref<G4MFNode4D> g4mf_node = G4MFNode4D::from_godot_node(p_current_node);
+	Ref<G4MFNode4D> g4mf_node = G4MFNode4D::from_godot_node(p_g4mf_state, p_current_node);
 	g4mf_node->set_parent_index(p_parent_index);
 	// Convert node types.
-	_export_convert_builtin_node(p_g4mf_state, g4mf_node, p_current_node);
 	// Allow excluding a node from export by setting the parent index to -2.
 	if (g4mf_node->get_parent_index() < -1) {
 		return OK;
@@ -59,28 +58,12 @@ Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, 
 	for (int i = 0; i < p_current_node->get_child_count(); i++) {
 		children_indices.append(state_g4mf_nodes.size());
 		Node *child = p_current_node->get_child(i);
-		Error err = _export_convert_scene_node(p_g4mf_state, child, new_node_index);
+		const Error err = _export_convert_scene_node(p_g4mf_state, child, new_node_index);
 		if (err != OK) {
 			return err;
 		}
 	}
 	g4mf_node->set_children_indices(children_indices);
-	return OK;
-}
-
-Error G4MFDocument4D::_export_convert_builtin_node(Ref<G4MFState4D> p_g4mf_state, Ref<G4MFNode4D> &p_g4mf_node, Node *p_current_node) {
-	const MeshInstance4D *mesh_instance = Object::cast_to<MeshInstance4D>(p_current_node);
-	if (mesh_instance) {
-		const Ref<Mesh4D> mesh = mesh_instance->get_mesh();
-		if (mesh.is_valid()) {
-			Ref<Material4D> material = mesh_instance->get_material_override();
-			if (material.is_null()) {
-				material = mesh->get_material();
-			}
-			const int mesh_index = G4MFMesh4D::convert_mesh_into_state(p_g4mf_state, mesh, material, true);
-			p_g4mf_node->set_mesh_index(mesh_index);
-		}
-	}
 	return OK;
 }
 
@@ -706,7 +689,7 @@ Error G4MFDocument4D::_import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Diction
 	return OK;
 }
 
-Node4D *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_parent_node, Node *p_scene_root) {
+Node4D *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root) {
 	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	ERR_FAIL_INDEX_V(p_node_index, state_g4mf_nodes.size(), nullptr);
 	Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[p_node_index];
@@ -714,7 +697,7 @@ Node4D *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_stat
 	// First, check if any extension wants to generate a node.
 	// If no extension generated a node, check the built-in types.
 	if (godot_node == nullptr) {
-		godot_node = _import_generate_builtin_node(p_g4mf_state, g4mf_node);
+		godot_node = g4mf_node->generate_godot_node(p_g4mf_state, p_scene_parent, _force_wireframe);
 		if (godot_node == nullptr) {
 			godot_node = memnew(Node4D);
 		}
@@ -724,14 +707,14 @@ Node4D *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_stat
 	TypedArray<Node4D> state_godot_nodes = p_g4mf_state->get_godot_nodes();
 	state_godot_nodes[p_node_index] = godot_node;
 	// Add the Godot node to the tree and set the owner.
-	if (p_parent_node) {
-		p_parent_node->add_child(godot_node);
+	if (p_scene_parent) {
+		p_scene_parent->add_child(godot_node);
 		Array args;
 		args.append(p_scene_root);
 		godot_node->propagate_call(StringName("set_owner"), args);
 	} else {
 		godot_node->set_transform(Transform4D());
-		p_parent_node = godot_node;
+		p_scene_parent = godot_node;
 		p_scene_root = godot_node;
 		// If multiple nodes were generated under the root node, ensure they have the owner set.
 		if (unlikely(godot_node->get_child_count() > 0)) {
@@ -749,26 +732,6 @@ Node4D *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_stat
 		_import_generate_scene_node(p_g4mf_state, child_index, godot_node, p_scene_root);
 	}
 	return godot_node;
-}
-
-Node4D *G4MFDocument4D::_import_generate_builtin_node(const Ref<G4MFState4D> p_g4mf_state, const Ref<G4MFNode4D> p_g4mf_node) {
-	const int mesh_index = p_g4mf_node->get_mesh_index();
-	if (mesh_index >= 0) {
-		TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
-		ERR_FAIL_INDEX_V(mesh_index, state_g4mf_meshes.size(), nullptr);
-		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
-		Ref<Mesh4D> mesh = g4mf_mesh->generate_mesh(p_g4mf_state, _force_wireframe);
-		if (mesh.is_valid()) {
-			MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
-			mesh_instance->set_mesh(mesh);
-			return mesh_instance;
-		}
-	}
-	const Ref<G4MFCamera4D> g4mf_camera = p_g4mf_node->get_camera();
-	if (g4mf_camera.is_valid()) {
-		return g4mf_camera->generate_camera_4d();
-	}
-	return nullptr;
 }
 
 Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible) {

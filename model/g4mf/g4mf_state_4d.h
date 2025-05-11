@@ -5,8 +5,8 @@
 #include "structures/g4mf_material_4d.h"
 #include "structures/g4mf_mesh_4d.h"
 #include "structures/g4mf_node_4d.h"
-#include "structures/g4mf_shape_4d.h"
 #include "structures/g4mf_texture_4d.h"
+#include "structures/physics/g4mf_shape_4d.h"
 
 #include "../../nodes/node_4d.h"
 
@@ -74,6 +74,7 @@ public:
 	TypedArray<Node4D> get_godot_nodes() const { return _godot_nodes; }
 	void set_godot_nodes(const TypedArray<Node4D> &p_godot_nodes) { _godot_nodes = p_godot_nodes; }
 
-	void append_g4mf_node(Ref<G4MFNode4D> p_node);
+	int append_g4mf_node(Ref<G4MFNode4D> p_node);
+	int get_node_index(const Node4D *p_node);
 	String reserve_unique_name(const String &p_requested_name);
 };

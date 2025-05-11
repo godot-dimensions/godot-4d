@@ -18,3 +18,8 @@ public:
 
 	TypedArray<CollisionShape4D> get_collision_shapes() const;
 };
+
+// Due to the usage of TypedArray, we need CollisionShape4D to be always
+// included for all users of CollisionObject4D, but it's not needed for the
+// header of CollisionObject4D itself. So we put this at the bottom instead.
+#include "../collision_shape_4d.h"

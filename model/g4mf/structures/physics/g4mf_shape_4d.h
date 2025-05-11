@@ -1,8 +1,8 @@
 #pragma once
 
-#include "g4mf_item_4d.h"
+#include "../g4mf_item_4d.h"
 
-#include "../../../physics/shapes/general_shape_4d.h"
+#include "../../../../physics/shapes/general_shape_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/variant/typed_array.hpp>

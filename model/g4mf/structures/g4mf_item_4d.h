@@ -29,4 +29,8 @@ public:
 	// Static helper functions.
 	static Array int32_array_to_json_array(const PackedInt32Array &p_int32_array);
 	static PackedInt32Array json_array_to_int32_array(const Array &p_json_array);
+	static Array bivector_4d_to_json_array(const Bivector4D &p_bivector);
+	static Bivector4D json_array_to_bivector_4d(const Array &p_json_array);
+	static Array rotor_4d_to_json_array(const Rotor4D &p_rotor);
+	static Rotor4D json_array_to_rotor_4d(const Array &p_json_array);
 };

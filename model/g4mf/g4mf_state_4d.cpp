@@ -1,11 +1,26 @@
 #include "g4mf_state_4d.h"
 
-void G4MFState4D::append_g4mf_node(Ref<G4MFNode4D> p_node) {
+int G4MFState4D::append_g4mf_node(Ref<G4MFNode4D> p_node) {
 	const String requested_name = p_node->get_name();
 	if (!requested_name.is_empty()) {
 		p_node->set_name(reserve_unique_name(requested_name));
 	}
+	const int node_index = _g4mf_nodes.size();
 	_g4mf_nodes.push_back(p_node);
+	return node_index;
+}
+
+int G4MFState4D::get_node_index(const Node4D *p_node) {
+	if (p_node == nullptr) {
+		return -1;
+	}
+	for (int i = 0; i < _godot_nodes.size(); i++) {
+		Node4D *node = Object::cast_to<Node4D>(_godot_nodes[i]);
+		if (node == p_node) {
+			return i;
+		}
+	}
+	return -1;
 }
 
 String G4MFState4D::reserve_unique_name(const String &p_requested_name) {
@@ -45,6 +60,7 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_godot_nodes", "godot_nodes"), &G4MFState4D::set_godot_nodes);
 
 	ClassDB::bind_method(D_METHOD("append_g4mf_node", "node"), &G4MFState4D::append_g4mf_node);
+	ClassDB::bind_method(D_METHOD("get_node_index", "node"), &G4MFState4D::get_node_index);
 	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested"), &G4MFState4D::reserve_unique_name);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "base_path"), "set_base_path", "get_base_path");

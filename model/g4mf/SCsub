@@ -7,3 +7,4 @@ env_4d = env_modules.Clone()
 
 env_4d.add_source_files(env.modules_sources, "*.cpp")
 env_4d.add_source_files(env.modules_sources, "structures/*.cpp")
+env_4d.add_source_files(env.modules_sources, "structures/physics/*.cpp")

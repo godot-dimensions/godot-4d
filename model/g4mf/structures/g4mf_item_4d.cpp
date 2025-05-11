@@ -52,6 +52,79 @@ PackedInt32Array G4MFItem4D::json_array_to_int32_array(const Array &p_json_array
 	return int32_array;
 }
 
+Array G4MFItem4D::bivector_4d_to_json_array(const Bivector4D &p_bivector) {
+	// Note: Bivector4D uses lexicographic geometric algebra order, but G4MF uses dimensionally-increasing order.
+	Array json_array;
+	json_array.resize(6);
+	json_array[0] = p_bivector.xy;
+	json_array[1] = p_bivector.xz;
+	json_array[2] = p_bivector.yz;
+	json_array[3] = p_bivector.xw;
+	json_array[4] = p_bivector.yw;
+	json_array[5] = p_bivector.zw;
+	return json_array;
+}
+
+Bivector4D G4MFItem4D::json_array_to_bivector_4d(const Array &p_json_array) {
+	// Note: Bivector4D uses lexicographic geometric algebra order, but G4MF uses dimensionally-increasing order.
+	if (likely(p_json_array.size() >= 6)) {
+		return Bivector4D(
+				p_json_array[0], p_json_array[1], p_json_array[3],
+				p_json_array[2], p_json_array[4], p_json_array[5]);
+	}
+	if (p_json_array.size() >= 3) {
+		return Bivector4D(
+				p_json_array[0], p_json_array[1], 0.0,
+				p_json_array[2], 0.0, 0.0);
+	}
+	if (p_json_array.size() >= 1) {
+		return Bivector4D(p_json_array[0], 0.0, 0.0, 0.0, 0.0, 0.0);
+	}
+	return Bivector4D();
+}
+
+Array G4MFItem4D::rotor_4d_to_json_array(const Rotor4D &p_rotor) {
+	// Note: Rotor4D uses lexicographic geometric algebra order, but G4MF uses dimensionally-increasing order.
+	Array json_array;
+	json_array.resize(8);
+	json_array[0] = p_rotor.s;
+	json_array[1] = p_rotor.xy;
+	json_array[2] = p_rotor.xz;
+	json_array[3] = p_rotor.yz;
+	json_array[4] = p_rotor.xw;
+	json_array[5] = p_rotor.yw;
+	json_array[6] = p_rotor.zw;
+	json_array[7] = p_rotor.xyzw;
+	return json_array;
+}
+
+Rotor4D G4MFItem4D::json_array_to_rotor_4d(const Array &p_json_array) {
+	// Note: Rotor4D uses lexicographic geometric algebra order, but G4MF uses dimensionally-increasing order.
+	if (likely(p_json_array.size() == 8)) {
+		return Rotor4D(
+				p_json_array[0], p_json_array[1], p_json_array[2], p_json_array[4],
+				p_json_array[3], p_json_array[5], p_json_array[6], p_json_array[7])
+				.normalized();
+	}
+	// The rest of these only support simple rotations.
+	if (p_json_array.size() >= 7) {
+		return Rotor4D(
+				p_json_array[0], p_json_array[1], p_json_array[2], p_json_array[4],
+				p_json_array[3], p_json_array[5], p_json_array[6], 0.0)
+				.normalized();
+	}
+	if (p_json_array.size() >= 4) {
+		return Rotor4D(
+				p_json_array[0], p_json_array[1], p_json_array[2], 0.0,
+				p_json_array[3], 0.0, 0.0, 0.0)
+				.normalized();
+	}
+	if (p_json_array.size() >= 2) {
+		return Rotor4D(p_json_array[0], p_json_array[1], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).normalized();
+	}
+	return Rotor4D::identity();
+}
+
 void G4MFItem4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_additional_data", "extension_name"), &G4MFItem4D::get_additional_data);
 	ClassDB::bind_method(D_METHOD("has_additional_data", "extension_name"), &G4MFItem4D::has_additional_data);
