@@ -73,6 +73,7 @@ def get_doc_classes():
 		"G4MFMaterial4D",
 		"G4MFMeshSurface4D",
 		"G4MFMesh4D",
+		"G4MFLight4D",
 		"G4MFCamera4D",
 		"G4MFShape4D",
 		"G4MFNodePhysics4D",

@@ -16,6 +16,7 @@ class G4MFNode4D : public G4MFItem4D {
 
 	Ref<G4MFCamera4D> _camera;
 	Ref<G4MFNodePhysics4D> _physics;
+	int _light_index = -1;
 	int _mesh_index = -1;
 	bool _visible = true;
 
@@ -60,6 +61,9 @@ public:
 
 	Ref<G4MFNodePhysics4D> get_physics() const { return _physics; }
 	void set_physics(const Ref<G4MFNodePhysics4D> &p_physics) { _physics = p_physics; }
+
+	int get_light_index() const { return _light_index; }
+	void set_light_index(const int p_light_index) { _light_index = p_light_index; }
 
 	int get_mesh_index() const { return _mesh_index; }
 	void set_mesh_index(const int p_mesh_index) { _mesh_index = p_mesh_index; }

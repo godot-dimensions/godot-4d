@@ -77,6 +77,9 @@ Dictionary G4MFCamera4D::to_dictionary() const {
 			ret["size"] = _size_meters;
 		}
 	}
+#if GODOT_MODULE
+	ret.sort();
+#endif
 	return ret;
 }
 

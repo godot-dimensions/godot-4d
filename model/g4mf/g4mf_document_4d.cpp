@@ -76,6 +76,7 @@ Error G4MFDocument4D::_export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state)
 	_export_serialize_materials(p_g4mf_state, g4mf_json);
 	_export_serialize_meshes(p_g4mf_state, g4mf_json);
 	_export_serialize_shapes(p_g4mf_state, g4mf_json);
+	_export_serialize_lights(p_g4mf_state, g4mf_json);
 	_export_serialize_nodes(p_g4mf_state, g4mf_json);
 	return OK;
 }
@@ -253,6 +254,27 @@ Error G4MFDocument4D::_export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Di
 	}
 	if (!serialized_shapes.is_empty()) {
 		p_g4mf_json["shapes"] = serialized_shapes;
+		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	}
+	return OK;
+}
+
+Error G4MFDocument4D::_export_serialize_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFLight4D> state_g4mf_lights = p_g4mf_state->get_g4mf_lights();
+	const int light_count = state_g4mf_lights.size();
+	if (light_count == 0) {
+		return OK; // No lights to serialize.
+	}
+	Array serialized_lights;
+	serialized_lights.resize(light_count);
+	for (int i = 0; i < light_count; i++) {
+		Ref<G4MFLight4D> g4mf_light = state_g4mf_lights[i];
+		ERR_FAIL_COND_V(g4mf_light.is_null(), ERR_INVALID_DATA);
+		Dictionary serialized_light = g4mf_light->to_dictionary();
+		serialized_lights[i] = serialized_light;
+	}
+	if (!serialized_lights.is_empty()) {
+		p_g4mf_json["lights"] = serialized_lights;
 		p_g4mf_state->set_g4mf_json(p_g4mf_json);
 	}
 	return OK;
@@ -599,6 +621,8 @@ Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dic
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse meshes. Aborting file import.");
 	err = _import_parse_shapes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse shapes. Aborting file import.");
+	err = _import_parse_lights(p_g4mf_state, p_g4mf_json);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse lights. Aborting file import.");
 	err = _import_parse_nodes(p_g4mf_state, p_g4mf_json);
 	return err;
 }
@@ -781,6 +805,27 @@ Error G4MFDocument4D::_import_parse_shapes(Ref<G4MFState4D> p_g4mf_state, Dictio
 		g4mf_shapes[i] = g4mf_shape;
 	}
 	p_g4mf_state->set_g4mf_shapes(g4mf_shapes);
+	return OK;
+}
+
+Error G4MFDocument4D::_import_parse_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	if (!p_g4mf_json.has("lights")) {
+		return OK; // No lights to parse.
+	}
+	Array json_lights = p_g4mf_json["lights"];
+	const int light_count = json_lights.size();
+	if (light_count == 0) {
+		return OK; // No lights to parse.
+	}
+	TypedArray<G4MFLight4D> g4mf_lights = p_g4mf_state->get_g4mf_lights();
+	g4mf_lights.resize(light_count);
+	for (int i = 0; i < light_count; i++) {
+		const Dictionary file_light = json_lights[i];
+		Ref<G4MFLight4D> g4mf_light = G4MFLight4D::from_dictionary(file_light);
+		ERR_FAIL_COND_V_MSG(g4mf_light.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse light. Aborting file import.");
+		g4mf_lights[i] = g4mf_light;
+	}
+	p_g4mf_state->set_g4mf_lights(g4mf_lights);
 	return OK;
 }
 

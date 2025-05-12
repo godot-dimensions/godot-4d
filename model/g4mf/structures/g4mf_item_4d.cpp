@@ -23,16 +23,46 @@ void G4MFItem4D::read_item_entries_from_dictionary(const Dictionary &p_dict) {
 
 Dictionary G4MFItem4D::write_item_entries_to_dictionary() const {
 	Dictionary dict;
-	if (!dict.has("name") && !get_name().is_empty()) {
-		dict["name"] = get_name();
-	}
 	if (!dict.has("extras") && has_meta("extras")) {
 		dict["extras"] = get_meta("extras");
+	}
+	if (!dict.has("name") && !get_name().is_empty()) {
+		dict["name"] = get_name();
 	}
 	return dict;
 }
 
 // Static helper functions.
+
+Array G4MFItem4D::color_to_json_array(const Color &p_color, const bool p_force_include_alpha) {
+	const bool include_alpha = p_force_include_alpha || p_color.a != 1.0;
+	Array json_array;
+	json_array.resize(include_alpha ? 4 : 3);
+	json_array[0] = p_color.r;
+	json_array[1] = p_color.g;
+	json_array[2] = p_color.b;
+	if (include_alpha) {
+		json_array[3] = p_color.a;
+	}
+	return json_array;
+}
+
+Color G4MFItem4D::json_array_to_color(const Array &p_json_array) {
+	Color color;
+	if (likely(p_json_array.size() >= 3)) {
+		color.r = p_json_array[0];
+		color.g = p_json_array[1];
+		color.b = p_json_array[2];
+	} else if (p_json_array.size() >= 1) {
+		color.r = color.g = color.b = p_json_array[0];
+	}
+	if (p_json_array.size() >= 4) {
+		color.a = p_json_array[3];
+	} else {
+		color.a = 1.0;
+	}
+	return color;
+}
 
 Array G4MFItem4D::int32_array_to_json_array(const PackedInt32Array &p_int32_array) {
 	Array json_array;

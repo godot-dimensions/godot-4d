@@ -27,6 +27,8 @@ public:
 	Dictionary write_item_entries_to_dictionary() const;
 
 	// Static helper functions.
+	static Array color_to_json_array(const Color &p_color, const bool p_force_include_alpha = true);
+	static Color json_array_to_color(const Array &p_json_array);
 	static Array int32_array_to_json_array(const PackedInt32Array &p_int32_array);
 	static PackedInt32Array json_array_to_int32_array(const Array &p_json_array);
 	static Array bivector_4d_to_json_array(const Bivector4D &p_bivector);
