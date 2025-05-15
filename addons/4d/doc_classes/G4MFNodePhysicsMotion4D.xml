@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFNodePhysicsMotion4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents the physics motion properties of a G4MF node.
+	</brief_description>
+	<description>
+		G4MFNodePhysicsMotion4D describes the physics motion properties of a G4MF node. The existence of this object indicates that the transform of the node is driven by the physics engine with the given physical motion properties, such as mass, inertia, and velocity.
+	</description>
+	<tutorials>
+		<link title="G4MF Node Physics Motion Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/physics/motion.md</link>
+		<link title="G4MF Node Physics Motion Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/physics/g4mf.node.physics.motion.schema.json</link>
+	</tutorials>
+	<methods>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFNodePhysicsMotion4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of G4MF node physics motion to a [G4MFNodePhysicsMotion4D]. This will set the fields of the [G4MFNodePhysicsMotion4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="from_physics_body" qualifiers="static">
+			<return type="G4MFNodePhysicsMotion4D" />
+			<param index="0" name="physics_body" type="PhysicsBody4D" />
+			<description>
+				Converts the given [PhysicsBody4D] into a [G4MFNodePhysicsMotion4D]. This will set the fields of the [G4MFNodePhysicsMotion4D] based on the data in the [PhysicsBody4D], which is meant to be added to [member G4MFNodePhysics4D.motion] property.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF physics motion data to a [Dictionary]. This is used for serializing the G4MF physics motion data as JSON.
+			</description>
+		</method>
+		<method name="to_physics_body" qualifiers="const">
+			<return type="PhysicsBody4D" />
+			<description>
+				Generates a [PhysicsBody4D] node from the G4MF physics motion data. This will create a [PhysicsBody4D]-derived node, such as [RigidBody4D], [CharacterBody4D], or [StaticBody4D]. This uses only the data in the [G4MFNodePhysicsMotion4D] and only ever generates one node.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="angular_velocity" type="AABB" setter="set_angular_velocity" getter="get_angular_velocity" default="AABB(0, 0, 0, 0, 0, 0)">
+			The angular velocity of the G4MF physics motion in radians per second. This is a 4D bivector, with 6 numbers.
+		</member>
+		<member name="gravity_factor" type="float" setter="set_gravity_factor" getter="get_gravity_factor" default="1.0">
+			A multiplier applied to the acceleration due to gravity. Values other than 1.0 are not realistic, but may be useful for artistic effects.
+		</member>
+		<member name="inertia_diagonal" type="AABB" setter="set_inertia_diagonal" getter="get_inertia_diagonal" default="AABB(0, 0, 0, 0, 0, 0)">
+			The inertia in the principle rotation planes in kilogram meter squared (kg⋅m²).
+		</member>
+		<member name="linear_velocity" type="Vector4" setter="set_linear_velocity" getter="get_linear_velocity" default="Vector4(0, 0, 0, 0)">
+			The linear velocity of the G4MF physics motion in meters per second.
+		</member>
+		<member name="mass" type="float" setter="set_mass" getter="get_mass" default="1.0">
+			The mass of the G4MF physics motion in kilograms (kg). The center of mass is defined as the local space origin of the body. Calculations like torque and rotational inertia are done relative to the center of mass at the body's local space origin.
+		</member>
+		<member name="motion_type" type="String" setter="set_motion_type" getter="get_motion_type" default="&quot;dynamic&quot;">
+			The type of motion as a lowercase string. Different types of physics bodies have different interactions with physics systems and other bodies within a scene. The motion type may be one of these three values: [code]"static"[/code], [code]"kinematic"[/code], or [code]"dynamic"[/code].
+		</member>
+	</members>
+</class>

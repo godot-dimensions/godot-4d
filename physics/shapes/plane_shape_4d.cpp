@@ -80,6 +80,12 @@ bool PlaneShape4D::has_point(const Vector4 &p_point) const {
 	return p_point.y <= 0.0f;
 }
 
+bool PlaneShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<PlaneShape4D> other = p_shape;
+	// PlaneShape4D has no properties, so any valid PlaneShape4D is equal to another.
+	return other.is_valid();
+}
+
 Ref<WireMesh4D> PlaneShape4D::to_wire_mesh() const {
 	Ref<ArrayWireMesh4D> plane_wire_mesh = WireMeshBuilder4D::create_3d_subdivided_box(Vector3(5.0f, 5.0f, 5.0f), Vector3i(10, 10, 10), true, false);
 	Basis4D swap_yw_rot = Basis4D::from_swap_rotation(1, 3);

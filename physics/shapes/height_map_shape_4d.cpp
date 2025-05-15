@@ -181,6 +181,17 @@ bool HeightMapShape4D::has_point(const Vector4 &p_point) const {
 	return p_point.y <= height;
 }
 
+bool HeightMapShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<HeightMapShape4D> other = p_shape;
+	if (other.is_null()) {
+		return false;
+	}
+	if (_size != other->_size) {
+		return false;
+	}
+	return _height_data == other->_height_data;
+}
+
 Ref<WireMesh4D> HeightMapShape4D::to_wire_mesh() const {
 	const Vector3 start_flat_pos = -_get_start_offset();
 	PackedVector4Array vertices;

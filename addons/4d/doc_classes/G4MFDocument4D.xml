@@ -29,12 +29,21 @@
 				Part of the export process. Populates a [G4MFState4D] with data from a Godot scene. To export a scene to a G4MF, first call this function, then call [method export_write_to_file].
 			</description>
 		</method>
+		<method name="export_write_to_byte_array">
+			<return type="PackedByteArray" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Part of the export process. Writes a [G4MFState4D] to a [PackedByteArray] in memory. The data is always the Good 4D model Binary format. This is useful if you want to send the data over a network or save it to a file later.
+				To export a scene to a G4MF, first call [method export_append_from_godot_scene], then call this function, or [method export_write_to_file] if you want the data on disk instead of in memory.
+			</description>
+		</method>
 		<method name="export_write_to_file">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="path" type="String" />
 			<description>
-				Part of the export process. Writes a [G4MFState4D] to a G4MF file at the given [param path]. To export a scene to a G4MF, first call [method export_append_from_godot_scene], then call this function.
+				Part of the export process. Writes a [G4MFState4D] to a G4MF file on disk at the given [param path]. The file may have a [code]".g4tf"[/code] file extension to export it as a Good 4D model Text File, or a [code]".g4b"[/code] file extension to export it as a Good 4D model Binary file.
+				To export a scene to a G4MF, first call [method export_append_from_godot_scene], then call either this function, or [method export_write_to_byte_array] if you want the data in memory instead of on disk.
 			</description>
 		</method>
 		<method name="import_generate_godot_mesh">
@@ -53,18 +62,37 @@
 				Part of the import process. Generates a Godot scene from a [G4MFState4D]. To import a G4MF file, first call [method import_read_from_file], then call this function. The returned node can be added to the scene tree or saved as a PackedScene.
 			</description>
 		</method>
+		<method name="import_read_from_byte_array">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="byte_array" type="PackedByteArray" />
+			<description>
+				Part of the import process. Reads a G4MF file from a [PackedByteArray] in memory and populates a [G4MFState4D]. To import G4MF data in memory, first call this function, then call [method import_generate_godot_scene]. If the G4MF data is in a file, use [method import_read_from_file] instead.
+			</description>
+		</method>
 		<method name="import_read_from_file">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="path" type="String" />
 			<description>
-				Part of the import process. Reads a G4MF file at the given [param path] and populates a [G4MFState4D]. To import a G4MF file, first call this function, then call [method import_generate_godot_scene].
+				Part of the import process. Reads a G4MF file at the given [param path] and populates a [G4MFState4D]. To import a G4MF file, first call this function, then call [method import_generate_godot_scene]. This can be used with either a [code]".g4tf"[/code] Good 4D model Text File or a [code]".g4b"[/code] Good 4D model Binary file. This checks the magic number, meaning f the file extension is not correct, the file will be read correctly anyway.
 			</description>
 		</method>
 	</methods>
 	<members>
+		<member name="compression_format" type="int" setter="set_compression_format" getter="get_compression_format" enum="G4MFDocument4D.CompressionFormat" default="0">
+			The compression format to use when exporting a binary G4MF file or byte array. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays. The [code]".g4tf"[/code] Good 4D model Text File format is always uncompressed. See [enum CompressionFormat] for the available formats. The default is [enum CompressionFormat.COMPRESSION_FORMAT_NONE], which does not compress the G4MF data.
+		</member>
 		<member name="force_wireframe" type="bool" setter="set_force_wireframe" getter="get_force_wireframe" default="false">
 			Whether to force all meshes to be generated as wireframe meshes. If [code]true[/code], all meshes will be generated as wireframe meshes, and meshes without edges will have their edges calculated from the cells. If [code]false[/code] (default), meshes will be generated as tetrahedral meshes if they have cells, or as wireframe meshes if they do not have cells.
 		</member>
 	</members>
+	<constants>
+		<constant name="COMPRESSION_FORMAT_NONE" value="0" enum="CompressionFormat">
+			Do not compress the G4MF dat when exporting a binary G4MF file or byte array. This is the default.
+		</constant>
+		<constant name="COMPRESSION_FORMAT_ZSTD" value="1" enum="CompressionFormat">
+			Compress the binary G4MF data using Zstandard compression. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays.
+		</constant>
+	</constants>
 </class>

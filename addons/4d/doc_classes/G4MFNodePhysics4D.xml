@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFNodePhysics4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents the physics properties of a G4MF node.
+	</brief_description>
+	<description>
+		G4MFNodePhysics4D describes the physics properties of a G4MF node. It allows using shapes to define solid colliders or non-solid triggers, and allows defining the motion properties of objects, including mass, inertia, and more. Physics properties are not needed for loading the mesh geometry of the scene, and may be ignored if the file is only used for visual purposes, or if loading into an application that does not support physics and only needs the mesh geometry.
+	</description>
+	<tutorials>
+		<link title="G4MF Node Physics Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/physics/physics.md</link>
+		<link title="G4MF Node Physics Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/physics/g4mf.node.physics.schema.json</link>
+		<link title="G4MF Node Physics Collider Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/physics/g4mf.node.physics.collider.schema.json</link>
+		<link title="G4MF Node Physics Trigger Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/physics/g4mf.node.physics.trigger.schema.json</link>
+	</tutorials>
+	<methods>
+		<method name="from_collision_object_4d" qualifiers="static">
+			<return type="G4MFNodePhysics4D" />
+			<param index="0" name="collision_object" type="CollisionObject4D" />
+			<description>
+				Converts the given [CollisionObject4D] into a [G4MFNodePhysics4D]. This will set the fields of the [G4MFNodePhysics4D] based on the data in the [CollisionObject4D], usually including the [member motion] property. See [G4MFNodePhysicsMotion4D] for more information.
+			</description>
+		</method>
+		<method name="from_collision_shape_4d" qualifiers="static">
+			<return type="G4MFNodePhysics4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="collision_shape" type="CollisionShape4D" />
+			<description>
+				Converts the given [CollisionShape4D] into a [G4MFNodePhysics4D]. This will set the fields of the [G4MFNodePhysics4D] based on the data in the [CollisionShape4D] by encoding the shapes into the [G4MFState4D] and referencing them by index as either a collider or trigger shape depending on what type of collision object is the ancestor of the given node.
+			</description>
+		</method>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFNodePhysics4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of G4MF node physics to a [G4MFNodePhysics4D]. This will set the fields of the [G4MFNodePhysics4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="generate_physics_node" qualifiers="const">
+			<return type="Node4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="g4mf_node" type="G4MFNode4D" />
+			<param index="2" name="scene_parent" type="Node" />
+			<description>
+				Generates a physics [Node4D] from the G4MF physics data. This will create either a [CollisionObject4D]-derived node, or a [CollisionShape4D] node with a [Shape4D]-derived resource set as the shape, depending on the contents of the [G4MFNodePhysics4D]. In some cases, multiple nodes may be created, such as a trigger shape needing to generate both an [Area4D] node and a [CollisionShape4D] node.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF physics data to a [Dictionary]. This is used for serializing the G4MF physics data as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="collider_shape_index" type="int" setter="set_collider_shape_index" getter="get_collider_shape_index" default="-1">
+			The index of the [G4MFShape4D] in the [G4MFState4D]'s shapes array that is used as the solid collider shape. If this is set to -1, this node does not have a solid collider shape.
+		</member>
+		<member name="motion" type="G4MFNodePhysicsMotion4D" setter="set_motion" getter="get_motion">
+			The motion properties of the G4MF node. This is used to define the motion type, mass, inertia, and other properties of the node that affect how its transform is driven by the physics engine. If this is set to [code]null[/code], the node is not driven by the physics engine. If this is set to a valid value, the node is equivalent to some kind of [PhysicsBody4D] node, such as [RigidBody4D], [CharacterBody4D], or [StaticBody4D].
+		</member>
+		<member name="trigger_node_indices" type="PackedInt32Array" setter="set_trigger_node_indices" getter="get_trigger_node_indices" default="PackedInt32Array()">
+			The array of indices of the [G4MFNode4D]s in the [G4MFState4D]'s nodes array that are used as trigger nodes as part of a compound trigger on this node. If non-empty, or if all other properties are set to [code]null[/code] or [code]-1[/code], this node is equivalent to an [Area4D] node.
+		</member>
+		<member name="trigger_shape_index" type="int" setter="set_trigger_shape_index" getter="get_trigger_shape_index" default="-1">
+			The index of the [G4MFShape4D] in the [G4MFState4D]'s shapes array that is used as the trigger shape. If this is set to -1, this node does not have a trigger shape.
+		</member>
+	</members>
+</class>

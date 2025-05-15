@@ -4,9 +4,10 @@
 		Base class for primitive 4D shapes.
 	</brief_description>
 	<description>
-		Shape4D is the base class for all 4D shape resources, such as [BoxShape4D], [SphereShape4D], [CapsuleShape4D], and [CylinderShape4D]. It can be used to provide a shape resource to a [CollisionShape4D] node.
+		Shape4D is the base class for all 4D shape resources, such as [BoxShape4D], [SphereShape4D], [CapsuleShape4D], and [CylinderShape4D]. It can be used to provide a shape resource to a [CollisionShape4D] node. Shape4D classes usually describe implicit surfaces, that is, shapes with a surface defined by a mathematical function with a well-defined inside and outside, but not always, such as a concave mesh shape, which is not an implicit surface.
 	</description>
 	<tutorials>
+		<link title="Wikipedia Implicit Surface">https://en.wikipedia.org/wiki/Implicit_surface</link>
 	</tutorials>
 	<methods>
 		<method name="_get_hypervolume" qualifiers="virtual const">
@@ -49,6 +50,13 @@
 			<param index="0" name="point" type="Vector4" />
 			<description>
 				Callback method that should return whether a 4D shape contains a given point. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method has_point].
+			</description>
+		</method>
+		<method name="_is_equal_exact" qualifiers="virtual const">
+			<return type="bool" />
+			<param index="0" name="shape" type="Shape4D" />
+			<description>
+				Callback method that should return whether two 4D shapes are exactly equal. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method is_equal_exact].
 			</description>
 		</method>
 		<method name="_to_tetra_mesh" qualifiers="virtual const">
@@ -102,6 +110,13 @@
 			<param index="0" name="point" type="Vector4" />
 			<description>
 				Returns [code]true[/code] if the 4D shape contains the given point. Points exactly on the surface are considered inside.
+			</description>
+		</method>
+		<method name="is_equal_exact" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="shape" type="Shape4D" />
+			<description>
+				Returns [code]true[/code] if the two 4D shapes are exactly equal. This is used to check if two shapes are the same type and have the same parameters. The specific check depends on the shape type. This function never uses approximate equality comparisons, only exact equality.
 			</description>
 		</method>
 		<method name="to_tetra_mesh" qualifiers="const">

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFLight4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents properties of a light source in G4MF.
+	</brief_description>
+	<description>
+		G4MFLight4D is a class for 4D light source properties in the G4MF format. An array of lights may be defined in [G4MFState4D], which is then referenced by the [member G4MFNode4D.light_index] property. Each light may have its [member light_type] set to [code]"directional"[/code], [code]"point"[/code], or [code]"spot"[/code], which determine how light is emitted. The [member range] property is only used by point and spot lights, and the [member cone_inner_angle] and [member cone_outer_angle] properties are only used by spot lights. The [member color] and [member intensity] properties are used by all light types, with the [member intensity] unit changing depending on the light type. The light emitted is a product of the [member color] and [member intensity] properties.
+	</description>
+	<tutorials>
+		<link title="G4MF Light Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/light.md</link>
+		<link title="G4MF Light Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.light.schema.json</link>
+	</tutorials>
+	<methods>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFLight4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF light to a [G4MFLight4D]. This will set the fields of the [G4MFLight4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF light to a [Dictionary]. This is used for serializing the G4MF light as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color(1, 1, 1, 1)">
+			The color of the light in linear color space. The red, green, and blue channels are used to set the color of the light, but the alpha channel is ignored. The color is multiplied by the intensity of the light to get the final amount of light emitted.
+		</member>
+		<member name="cone_inner_angle" type="float" setter="set_cone_inner_angle" getter="get_cone_inner_angle" default="0.0">
+			The inner angle radius of the light cone in radians. This property is only used for spot lights. Inside the cone inner angle, the intensity of the light is maximal. Between the cone inner angle and the cone outer angle, the intensity of the light is interpolated.
+		</member>
+		<member name="cone_outer_angle" type="float" setter="set_cone_outer_angle" getter="get_cone_outer_angle" default="0.785398">
+			The outer angle radius of the light cone in radians. This property is only used for spot lights. Beyond the cone outer angle, the intensity of the light is zero. Between the cone inner angle and the cone outer angle, the intensity of the light is interpolated.
+		</member>
+		<member name="intensity" type="float" setter="set_intensity" getter="get_intensity" default="1.0">
+			The intensity of the light. The unit of measurement used depends on the type of light. Point and spot lights use lumens per choradian, while directional lights use lumens per cubic meter. The final light emitted is the product of the color and the intensity.
+			The intensity scales up with the uniform scale of the node the light is attached to, in order to ensure that a scaled model keeps the same light intensity relative to itself. For example, a uniform scale of 2.0 scales up the intensity by 8.0.
+		</member>
+		<member name="light_type" type="String" setter="set_light_type" getter="get_light_type" default="&quot;point&quot;">
+			The type of light as a [String]-based enum. The following light types are defined in the base specification:
+			- [code]"directional"[/code]: A directional light is like sunlight, it emits light in the node's local -Z direction.
+			- [code]"point"[/code]: A point light emits light in all directions from a single point in space, the node's local origin.
+			- [code]"spot"[/code]: A spot light emits light in a cone shape from a single point in space, the node's local origin, in the node's local -Z direction.
+		</member>
+		<member name="range" type="float" setter="set_range" getter="get_range" default="inf">
+			The range of the light. The range is only used for point and spot lights. The range defines the distance from the light source beyond which the light intensity is zero. The range MUST scale up with the uniform scale of the node the light is attached to, in order to ensure that a scaled model keeps the same light range relative to itself. For a uniform scale of 2.0, the range should be scaled up by 2.0.
+		</member>
+	</members>
+</class>

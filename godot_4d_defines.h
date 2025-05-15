@@ -17,8 +17,10 @@
 #if GDEXTENSION
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/string.hpp>
+#define EDSCALE EditorInterface::get_singleton()->get_editor_scale()
 #define GDEXTMOD_GUI_INPUT _gui_input
 #define GET_NODE_TYPE(m_parent, m_type, m_path) m_parent->get_node<m_type>(NodePath(m_path))
+#define TTR(m_text) m_text
 #define VariantUtilityFunctions UtilityFunctions
 // Including the namespace helps make GDExtension code more similar to module code.
 using namespace godot;

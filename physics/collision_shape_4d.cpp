@@ -1,13 +1,28 @@
 #include "collision_shape_4d.h"
 
 #include "bodies/collision_object_4d.h"
+#include "bodies/static_body_4d.h"
+#include "server/physics_server_4d.h"
+
+CollisionObject4D *CollisionShape4D::_global_static_body_for_bodyless_shapes = nullptr;
+
+CollisionObject4D *CollisionShape4D::_get_or_create_global_static_body() {
+	if (_global_static_body_for_bodyless_shapes != nullptr) {
+		return _global_static_body_for_bodyless_shapes;
+	}
+	StaticBody4D *global_static_body = memnew(StaticBody4D);
+	global_static_body->set_name("_GlobalStaticBody4D");
+	PhysicsServer4D::get_singleton()->register_physics_body(global_static_body);
+	_global_static_body_for_bodyless_shapes = global_static_body;
+	return _global_static_body_for_bodyless_shapes;
+}
 
 CollisionObject4D *CollisionShape4D::_get_ancestor_collision_object() const {
 	Node *parent = get_parent();
 	while (parent) {
 		Node4D *parent_4d = Object::cast_to<Node4D>(parent);
 		if (unlikely(!parent_4d)) {
-			return nullptr;
+			return _get_or_create_global_static_body();
 		}
 		CollisionObject4D *co = Object::cast_to<CollisionObject4D>(parent);
 		if (likely(co)) {
@@ -15,7 +30,7 @@ CollisionObject4D *CollisionShape4D::_get_ancestor_collision_object() const {
 		}
 		parent = parent->get_parent();
 	}
-	return nullptr;
+	return _get_or_create_global_static_body();
 }
 
 void CollisionShape4D::_notification(int p_what) {

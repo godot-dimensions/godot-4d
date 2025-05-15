@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://djwta2euegiix"
-path="res://.godot/imported/ConcaveTetrameshShape4D.svg-b87722a9af581e2fb1ae531aea34d6fd.ctex"
+path="res://.godot/imported/ConcaveMeshShape4D.svg-dc81aba8ad63094e051a83956557d219.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/4d/icons/ConcaveTetrameshShape4D.svg"
-dest_files=["res://.godot/imported/ConcaveTetrameshShape4D.svg-b87722a9af581e2fb1ae531aea34d6fd.ctex"]
+source_file="res://addons/4d/icons/ConcaveMeshShape4D.svg"
+dest_files=["res://.godot/imported/ConcaveMeshShape4D.svg-dc81aba8ad63094e051a83956557d219.ctex"]
 
 [params]
 

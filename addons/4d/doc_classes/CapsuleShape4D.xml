@@ -8,6 +8,8 @@
 		When a 4D capsule is viewed directly from the top or bottom, it appears as a 3D sphere, with the center of the sphere closer to the viewer. This is similar to how a 3D capsule appears as a 2D circle when viewed from the top or bottom, with the center of the circle closer to the viewer.
 	</description>
 	<tutorials>
+		<link title="Wikipedia Capsule (Geometry)">https://en.wikipedia.org/wiki/Capsule_(geometry)</link>
+		<link title="Wikipedia Implicit Surface">https://en.wikipedia.org/wiki/Implicit_surface</link>
 	</tutorials>
 	<members>
 		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">

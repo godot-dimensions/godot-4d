@@ -64,6 +64,14 @@ bool OrthoplexShape4D::has_point(const Vector4 &p_point) const {
 	return (abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w) <= 1.0f;
 }
 
+bool OrthoplexShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<OrthoplexShape4D> other_shape = p_shape;
+	if (other_shape.is_null()) {
+		return false;
+	}
+	return _size == other_shape->get_size();
+}
+
 Ref<TetraMesh4D> OrthoplexShape4D::to_tetra_mesh() const {
 	Ref<OrthoplexTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();

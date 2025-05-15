@@ -58,6 +58,8 @@
 #include "physics/server/physics_server_4d.h"
 #include "physics/shapes/box_shape_4d.h"
 #include "physics/shapes/capsule_shape_4d.h"
+#include "physics/shapes/concave_mesh_shape_4d.h"
+#include "physics/shapes/convex_hull_shape_4d.h"
 #include "physics/shapes/cubinder_shape_4d.h"
 #include "physics/shapes/cylinder_shape_4d.h"
 #include "physics/shapes/duocylinder_shape_4d.h"
@@ -167,6 +169,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(CapsuleShape4D);
 		GDREGISTER_CLASS(CharacterBody4D);
 		GDREGISTER_CLASS(CollisionShape4D);
+		GDREGISTER_CLASS(ConcaveMeshShape4D);
+		GDREGISTER_CLASS(ConvexHullShape4D);
 		GDREGISTER_CLASS(CubinderShape4D);
 		GDREGISTER_CLASS(CylinderShape4D);
 		GDREGISTER_CLASS(DuocylinderShape4D);
@@ -189,6 +193,10 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(G4MFMaterial4D);
 		GDREGISTER_CLASS(G4MFMeshSurface4D);
 		GDREGISTER_CLASS(G4MFMesh4D);
+		GDREGISTER_CLASS(G4MFShape4D);
+		GDREGISTER_CLASS(G4MFNodePhysics4D);
+		GDREGISTER_CLASS(G4MFNodePhysicsMotion4D);
+		GDREGISTER_CLASS(G4MFLight4D);
 		GDREGISTER_CLASS(G4MFCamera4D);
 		GDREGISTER_CLASS(G4MFNode4D);
 		GDREGISTER_CLASS(G4MFState4D);
@@ -216,6 +224,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorCamera4D);
 		GDREGISTER_CLASS(EditorCreate4DSceneButton);
 		GDREGISTER_CLASS(EditorExportDialogG4MF4D);
+		GDREGISTER_CLASS(EditorExportSettingsG4MF4D);
 		GDREGISTER_CLASS(EditorImportPluginBase4D);
 		GDREGISTER_CLASS(EditorImportPluginG4MFMesh4D);
 		GDREGISTER_CLASS(EditorImportPluginG4MFScene4D);

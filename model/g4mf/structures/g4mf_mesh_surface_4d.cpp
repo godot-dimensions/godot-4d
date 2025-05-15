@@ -179,14 +179,14 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 	if (_edges_accessor_index >= 0) {
 		dict["edges"] = _edges_accessor_index;
 	}
-	if (_vertices_accessor_index >= 0) {
-		dict["vertices"] = _vertices_accessor_index;
-	}
 	if (_material_index >= 0) {
 		dict["material"] = _material_index;
 	}
 	if (_polytope_cells) {
 		dict["polytopeCells"] = _polytope_cells;
+	}
+	if (_vertices_accessor_index >= 0) {
+		dict["vertices"] = _vertices_accessor_index;
 	}
 	return dict;
 }

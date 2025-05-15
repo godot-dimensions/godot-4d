@@ -32,6 +32,14 @@ bool SphereShape4D::has_point(const Vector4 &p_point) const {
 	return p_point.length_squared() <= _radius * _radius;
 }
 
+bool SphereShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	const Ref<SphereShape4D> sphere_shape = p_shape;
+	if (sphere_shape.is_null()) {
+		return false;
+	}
+	return _radius == sphere_shape->get_radius();
+}
+
 void SphereShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_radius"), &SphereShape4D::get_radius);
 	ClassDB::bind_method(D_METHOD("set_radius", "radius"), &SphereShape4D::set_radius);

@@ -16,10 +16,17 @@
 	</tutorials>
 	<methods>
 		<method name="append_g4mf_node">
-			<return type="void" />
+			<return type="int" />
 			<param index="0" name="node" type="G4MFNode4D" />
 			<description>
-				Appends a [G4MFNode4D] to the G4MF state. This will add the node to the [member g4mf_nodes] array, and ensure its name is unique. Other data in the node is expected to be handled elsewhere.
+				Appends a [G4MFNode4D] to the G4MF state. This will add the node to the [member g4mf_nodes] array, and ensure its name is unique. Other data in the node is expected to be handled elsewhere. Returns the index of the newly inserted node in the [member g4mf_nodes] array.
+			</description>
+		</method>
+		<method name="get_node_index">
+			<return type="int" />
+			<param index="0" name="node" type="Node4D" />
+			<description>
+				Gets the index of the G4MF node in the state's [member g4mf_nodes] array corresponding to the given Godot node. This will return [code]-1[/code] if the node is not found. Since it is possible for a G4MF node to generate multiple Godot nodes, if this returns [code]-1[/code], you may wish to call this function again with the parent node to give it another try.
 			</description>
 		</method>
 		<method name="reserve_unique_name">
@@ -43,6 +50,9 @@
 		<member name="g4mf_json" type="Dictionary" setter="set_g4mf_json" getter="get_g4mf_json" default="{}">
 			The JSON data of the G4MF file. This is set when reading a G4MF file at the start of the import process before parsing, and is set when writing a G4MF file at the end of the export process after serializing.
 		</member>
+		<member name="g4mf_lights" type="G4MFLight4D[]" setter="set_g4mf_lights" getter="get_g4mf_lights" default="[]">
+			The array of [G4MFLight4D]s in this G4MF file. If empty, the G4MF file does not have any lights. Lights are referenced by index in [G4MFNode4D]s.
+		</member>
 		<member name="g4mf_materials" type="G4MFMaterial4D[]" setter="set_g4mf_materials" getter="get_g4mf_materials" default="[]">
 			The array of [G4MFMaterial4D]s in this G4MF file. If empty, the G4MF file does not have any materials. Materials are referenced by index in [G4MFMeshSurface4D]s which are used in [G4MFMesh4D]s.
 		</member>
@@ -51,6 +61,9 @@
 		</member>
 		<member name="g4mf_nodes" type="G4MFNode4D[]" setter="set_g4mf_nodes" getter="get_g4mf_nodes" default="[]">
 			The array of [G4MFNode4D]s in this G4MF file. If empty, the G4MF file does not have any nodes. If non-empty, the node at index 0 is the root node.
+		</member>
+		<member name="g4mf_shapes" type="G4MFShape4D[]" setter="set_g4mf_shapes" getter="get_g4mf_shapes" default="[]">
+			The array of [G4MFShape4D]s in this G4MF file. If empty, the G4MF file does not have any shapes. Shapes are referenced by index in [G4MFNodePhysics4D]s which are used in [G4MFNode4D]s.
 		</member>
 		<member name="g4mf_textures" type="G4MFTexture4D[]" setter="set_g4mf_textures" getter="get_g4mf_textures" default="[]">
 			The array of [G4MFTexture4D]s in this G4MF file. If empty, the G4MF file does not have any textures. Textures are referenced by index in [G4MFMaterialChannel4D]s which are used in [G4MFMaterial4D]s.

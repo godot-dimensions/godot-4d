@@ -586,6 +586,16 @@ String G4MFAccessor4D::minimal_primitive_type_for_colors(const PackedColorArray 
 	return _minimal_primitive_type_given_bits(min_float_bits, CANT_USE_PRIM_TYPE, CANT_USE_PRIM_TYPE);
 }
 
+String G4MFAccessor4D::minimal_primitive_type_for_floats(const PackedFloat64Array &p_input_data) {
+	uint32_t min_float_bits = 8;
+	uint32_t min_int_bits = 8;
+	uint32_t min_uint_bits = 8;
+	for (const double d : p_input_data) {
+		_minimal_primitive_bits_for_double(d, min_float_bits, min_int_bits, min_uint_bits);
+	}
+	return _minimal_primitive_type_given_bits(min_float_bits, min_int_bits, min_uint_bits);
+}
+
 String G4MFAccessor4D::minimal_primitive_type_for_int32s(const PackedInt32Array &p_input_data) {
 	uint32_t min_int_bits = 8;
 	uint32_t min_uint_bits = 8;
@@ -735,98 +745,91 @@ Array G4MFAccessor4D::decode_accessor_as_variants(const Ref<G4MFState4D> &p_g4mf
 
 // Encode functions.
 
-PackedByteArray G4MFAccessor4D::encode_floats_as_primitives(const PackedFloat64Array &p_input_data) const {
-	PackedByteArray ret;
-	ERR_FAIL_COND_V_MSG(!_primitive_type.begins_with("float"), ret, "G4MF export: Cannot encode floats as primitives of type '" + _primitive_type + "'.");
-	const int64_t input_size = p_input_data.size();
-	const int64_t bytes_per_prim = bytes_per_primitive();
-	const int64_t raw_byte_size = bytes_per_prim * input_size;
-	ret.resize(raw_byte_size);
-	uint8_t *ret_write = ret.ptrw();
-	for (int i = 0; i < input_size; i++) {
-		const int byte_offset = i * bytes_per_prim;
-		switch (bytes_per_prim) {
-			case 1: {
-				const uint8_t quarter_float_bits = _double_to_float8(p_input_data[i]);
-				*(uint8_t *)&ret_write[byte_offset] = quarter_float_bits;
-			} break;
-			case 2: {
-				const uint16_t half_float_bits = _double_to_float16(p_input_data[i]);
-				*(uint16_t *)&ret_write[byte_offset] = half_float_bits;
-			} break;
-			case 4: {
-				*(float *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			case 8: {
-				*(double *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			default: {
-				ERR_FAIL_V_MSG(ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'.");
-			}
-		}
+#define G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(m_input_numbers, m_ret)                                                                         \
+	const int64_t input_size = m_input_numbers.size();                                                                                                \
+	const int64_t bytes_per_prim = bytes_per_primitive();                                                                                             \
+	const int64_t raw_byte_size = bytes_per_prim * input_size;                                                                                        \
+	const bool prim_is_float = _primitive_type.begins_with("float");                                                                                  \
+	const bool prim_is_int = _primitive_type.begins_with("int");                                                                                      \
+	const bool prim_is_uint = _primitive_type.begins_with("uint");                                                                                    \
+	m_ret.resize(raw_byte_size);                                                                                                                      \
+	uint8_t *ret_write = m_ret.ptrw();                                                                                                                \
+	for (int i = 0; i < input_size; i++) {                                                                                                            \
+		const int byte_offset = i * bytes_per_prim;                                                                                                   \
+		if (prim_is_float) {                                                                                                                          \
+			switch (bytes_per_prim) {                                                                                                                 \
+				case 1: {                                                                                                                             \
+					const uint8_t quarter_float_bits = _double_to_float8(m_input_numbers[i]);                                                         \
+					*(uint8_t *)&ret_write[byte_offset] = quarter_float_bits;                                                                         \
+				} break;                                                                                                                              \
+				case 2: {                                                                                                                             \
+					const uint16_t half_float_bits = _double_to_float16(m_input_numbers[i]);                                                          \
+					*(uint16_t *)&ret_write[byte_offset] = half_float_bits;                                                                           \
+				} break;                                                                                                                              \
+				case 4: {                                                                                                                             \
+					*(float *)&ret_write[byte_offset] = m_input_numbers[i];                                                                           \
+				} break;                                                                                                                              \
+				case 8: {                                                                                                                             \
+					*(double *)&ret_write[byte_offset] = m_input_numbers[i];                                                                          \
+				} break;                                                                                                                              \
+				default: {                                                                                                                            \
+					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'."); \
+				}                                                                                                                                     \
+			}                                                                                                                                         \
+		} else if (prim_is_int) {                                                                                                                     \
+			switch (bytes_per_prim) {                                                                                                                 \
+				case 1: {                                                                                                                             \
+					*(int8_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                          \
+				} break;                                                                                                                              \
+				case 2: {                                                                                                                             \
+					*(int16_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                         \
+				} break;                                                                                                                              \
+				case 4: {                                                                                                                             \
+					*(int32_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                         \
+				} break;                                                                                                                              \
+				case 8: {                                                                                                                             \
+					*(int64_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                         \
+				} break;                                                                                                                              \
+				default: {                                                                                                                            \
+					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'."); \
+				}                                                                                                                                     \
+			}                                                                                                                                         \
+		} else if (prim_is_uint) {                                                                                                                    \
+			switch (bytes_per_prim) {                                                                                                                 \
+				case 1: {                                                                                                                             \
+					*(uint8_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                         \
+				} break;                                                                                                                              \
+				case 2: {                                                                                                                             \
+					*(uint16_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                        \
+				} break;                                                                                                                              \
+				case 4: {                                                                                                                             \
+					*(uint32_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                        \
+				} break;                                                                                                                              \
+				case 8: {                                                                                                                             \
+					*(uint64_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                        \
+				} break;                                                                                                                              \
+				default: {                                                                                                                            \
+					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'."); \
+				}                                                                                                                                     \
+			}                                                                                                                                         \
+		}                                                                                                                                             \
 	}
+
+PackedByteArray G4MFAccessor4D::encode_floats_as_primitives(const PackedFloat64Array &p_input_numbers) const {
+	PackedByteArray ret;
+	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(p_input_numbers, ret);
 	return ret;
 }
 
-PackedByteArray G4MFAccessor4D::encode_ints_as_primitives(const PackedInt64Array &p_input_data) const {
+PackedByteArray G4MFAccessor4D::encode_ints_as_primitives(const PackedInt64Array &p_input_numbers) const {
 	PackedByteArray ret;
-	ERR_FAIL_COND_V_MSG(!_primitive_type.begins_with("int"), ret, "G4MF export: Cannot encode ints as primitives of type '" + _primitive_type + "'.");
-	const int64_t input_size = p_input_data.size();
-	const int64_t bytes_per_prim = bytes_per_primitive();
-	const int64_t raw_byte_size = bytes_per_prim * input_size;
-	ret.resize(raw_byte_size);
-	uint8_t *ret_write = ret.ptrw();
-	for (int i = 0; i < input_size; i++) {
-		const int byte_offset = i * bytes_per_prim;
-		switch (bytes_per_prim) {
-			case 1: {
-				*(int8_t *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			case 2: {
-				*(int16_t *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			case 4: {
-				*(int32_t *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			case 8: {
-				*(int64_t *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			default: {
-				ERR_FAIL_V_MSG(ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'.");
-			}
-		}
-	}
+	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(p_input_numbers, ret);
 	return ret;
 }
 
-PackedByteArray G4MFAccessor4D::encode_uints_as_primitives(const Vector<uint64_t> &p_input_data) const {
+PackedByteArray G4MFAccessor4D::encode_uints_as_primitives(const Vector<uint64_t> &p_input_numbers) const {
 	PackedByteArray ret;
-	ERR_FAIL_COND_V_MSG(!_primitive_type.begins_with("uint"), ret, "G4MF export: Cannot encode uints as primitives of type '" + _primitive_type + "'.");
-	const int64_t input_size = p_input_data.size();
-	const int64_t bytes_per_prim = bytes_per_primitive();
-	const int64_t raw_byte_size = bytes_per_prim * input_size;
-	ret.resize(raw_byte_size);
-	uint8_t *ret_write = ret.ptrw();
-	for (int i = 0; i < input_size; i++) {
-		const int byte_offset = i * bytes_per_prim;
-		switch (bytes_per_prim) {
-			case 1: {
-				*(uint8_t *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			case 2: {
-				*(uint16_t *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			case 4: {
-				*(uint32_t *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			case 8: {
-				*(uint64_t *)&ret_write[byte_offset] = p_input_data[i];
-			} break;
-			default: {
-				ERR_FAIL_V_MSG(ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'.");
-			}
-		}
-	}
+	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(p_input_numbers, ret);
 	return ret;
 }
 
@@ -1025,6 +1028,36 @@ int G4MFAccessor4D::encode_new_accessor_into_state(const Ref<G4MFState4D> &p_g4m
 	return accessor_count;
 }
 
+int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data_bytes, const bool p_deduplicate) {
+	ERR_FAIL_COND_V_MSG(p_data_bytes.is_empty(), -1, "G4MF export: Cannot store nothing.");
+	// Write the data into a new buffer view.
+	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, p_deduplicate);
+	ERR_FAIL_COND_V_MSG(buffer_view_index == -1, -1, "G4MF export: Accessor failed to write new buffer view into G4MF state.");
+	set_buffer_view_index(buffer_view_index);
+	// Add the new accessor to the state, but check for duplicates first.
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	const int accessor_count = state_accessors.size();
+	for (int i = 0; i < accessor_count; i++) {
+		Ref<G4MFAccessor4D> existing_accessor = state_accessors[i];
+		if (is_equal_exact(existing_accessor)) {
+			// An identical accessor already exists in the state, so just return the index.
+			return i;
+		}
+	}
+	Ref<G4MFAccessor4D> me = this;
+	state_accessors.append(me);
+	p_g4mf_state->set_accessors(state_accessors);
+	return accessor_count;
+}
+
+Ref<G4MFAccessor4D> G4MFAccessor4D::make_new_accessor_without_data(const String &p_primitive_type, const int p_vector_size) {
+	Ref<G4MFAccessor4D> accessor;
+	accessor.instantiate();
+	accessor->set_primitive_type(p_primitive_type);
+	accessor->set_vector_size(p_vector_size);
+	return accessor;
+}
+
 Ref<G4MFAccessor4D> G4MFAccessor4D::from_dictionary(const Dictionary &p_dict) {
 	Ref<G4MFAccessor4D> accessor;
 	accessor.instantiate();
@@ -1069,6 +1102,8 @@ void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("primitives_per_variant", "variant_type"), &G4MFAccessor4D::primitives_per_variant);
 
 	// Determine the minimal primitive type for the given data.
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_colors", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_colors);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_floats", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_floats);
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_int32s", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_int32s);
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_vector4s", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_vector4s);
 
@@ -1083,6 +1118,9 @@ void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("encode_floats_as_primitives", "input_data"), &G4MFAccessor4D::encode_floats_as_primitives);
 	ClassDB::bind_method(D_METHOD("encode_ints_as_primitives", "input_data"), &G4MFAccessor4D::encode_ints_as_primitives);
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_into_state", "g4mf_state", "input_data", "primitive_type", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_into_state, DEFVAL(true));
+
+	ClassDB::bind_method(D_METHOD("store_accessor_data_into_state", "g4mf_state", "data_bytes", "deduplicate"), &G4MFAccessor4D::store_accessor_data_into_state, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("make_new_accessor_without_data", "primitive_type", "vector_size"), &G4MFAccessor4D::make_new_accessor_without_data, DEFVAL(1));
 
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("from_dictionary", "dict"), &G4MFAccessor4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFAccessor4D::to_dictionary);

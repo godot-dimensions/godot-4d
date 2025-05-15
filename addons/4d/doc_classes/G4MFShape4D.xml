@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFShape4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents a 4D shape that can be used by G4MF nodes.
+	</brief_description>
+	<description>
+		G4MFShape4D is a pure geometric object defined by an enumerated type and a set of size parameters. Shapes are useful for things like physics calculations, but are not expected to be directly used for rendering.
+	</description>
+	<tutorials>
+		<link title="G4MF Shape Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/physics/shape.md</link>
+		<link title="G4MF Shape Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/physics/g4mf.shape.schema.json</link>
+	</tutorials>
+	<methods>
+		<method name="convert_shape" qualifiers="static">
+			<return type="G4MFShape4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="shape" type="Shape4D" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Converts a [Shape4D] into a [G4MFShape4D] and returns it. This will return a shape with [member shape_type] set to [code]"general"[/code] for [BoxShape4D], [SphereShape4D], [CapsuleShape4D], [CylinderShape4D], [CubinderShape4D], DuocylinderShape4D], [OrthoplexShape4D], and [GeneralShape4D]. For other shape types, it will return a [G4MFShape4D] with the appropriate type set. If the shape is not recognized, it will return an empty [G4MFShape4D].
+				This will return a [G4MFShape4D], but not append it to the [G4MFState4D]. However, if the shape contained mesh or heightmap data, this will be encoded in the [G4MFState4D], which is why the [G4MFState4D] and [param deduplicate] parameters exist. If [param deduplicate] is set to [code]true[/code], the mesh and heightmap data will be deduplicated. If you are sure the shape is not a mesh or heightmap, [param deduplicate] is not used, and [param g4mf_state] may be [code]null[/code].
+			</description>
+		</method>
+		<method name="convert_shape_into_state" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="shape" type="Shape4D" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Converts a [Shape4D] into a [G4MFShape4D] and adds it to the [G4MFState4D]. This will return a shape with [member shape_type] set to [code]"general"[/code] for [BoxShape4D], [SphereShape4D], [CapsuleShape4D], [CylinderShape4D], [CubinderShape4D], DuocylinderShape4D], [OrthoplexShape4D], and [GeneralShape4D]. For other shape types, it will return a [G4MFShape4D] with the appropriate type set. If the shape is not recognized, it will return an empty [G4MFShape4D].
+				This will append the shape to the [G4MFState4D] and return the index of the shape in the [G4MFState4D]'s shapes array. If [param deduplicate] is set to [code]true[/code], any mesh or heightmap data inside will be deduplicated, and the shape itself will also be deduplicated.
+			</description>
+		</method>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFShape4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF shape to a [G4MFShape4D]. This will set the fields of the [G4MFShape4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="generate_shape" qualifiers="const">
+			<return type="Shape4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Generates a [Shape4D] from the G4MF shape data inside of the [G4MFState4D]. When [member shape_type] is set to [code]"general"[/code], it will check for special cases and be able to return [BoxShape4D], [SphereShape4D], [CapsuleShape4D], [CylinderShape4D], [CubinderShape4D], DuocylinderShape4D], and [OrthoplexShape4D], but will return a [GeneralShape4D] if the shape is not a special case. For other shape types, it may return [ConcaveMeshShape4D], [ConvexHullShape4D], [HeightMapShape4D], [PlaneShape4D], or [RayShape4D]. If the shape is not valid or unrecognized, it will return a [GeneralShape4D].
+			</description>
+		</method>
+		<method name="load_heights" qualifiers="const">
+			<return type="PackedFloat64Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the height data of a heightmap shape as a [PackedFloat64Array]. This gets the accessor at the index specified by [member heights_accessor_index] and decodes its data as a [PackedFloat64Array]. This function does not check if [member shape_type] is [code]"heightmap"[/code], and does not check if the returned data matches the dimensions defined by [member base_size]'s X, Z, and W axes.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF shape to a [Dictionary]. This is used for serializing the G4MF shape as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="base_size" type="Vector4" setter="set_base_size" getter="get_base_size" default="Vector4(0, 0, 0, 0)">
+			The base size of the shape in meters. This is used to create boxes, capsules, cylinders, and more when [member shape_type] is set to [code]"general"[/code] (default). The non-Y axes are also used as the size of the height data for [code]"heightmap"[/code] shapes.
+		</member>
+		<member name="curves" type="GeneralShapeCurve4D[]" setter="set_curves" getter="get_curves" default="[]">
+			The curves of the shape, if any. This is used to create spheres, capsules, cylinders, and more when [member shape_type] is set to [code]"general"[/code] (default), and is ignored for other shape types.
+		</member>
+		<member name="heights_accessor_index" type="int" setter="set_heights_accessor_index" getter="get_heights_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the height data for heightmap shapes. The heights array MUST be an array of floats with the same number of elements as the base size in the X, Z, and W axes multiplied together. If [member shape_type] is set to [code]"heightmap"[/code], this MUST be set to the index of a valid [G4MFAccessor4D] in the [G4MFState4D]'s accessors array.
+		</member>
+		<member name="mesh_index" type="int" setter="set_mesh_index" getter="get_mesh_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the mesh data for mesh shapes. If [member shape_type] is set to [code]"concave"[/code] or [code]"convex"[/code], this MUST be set to the index of a valid [G4MFMesh4D] in the [G4MFState4D]'s accessors array.
+		</member>
+		<member name="ray_length" type="float" setter="set_ray_length" getter="get_ray_length" default="1.0">
+			The length of the ray shape in meters, if the shape is a ray. It is not used for other built-in shape types. The ray points in the local -Y direction from the local origin. If a ray is desired in a different location or direction, transform the G4MF node it is attached to.
+		</member>
+		<member name="shape_type" type="String" setter="set_shape_type" getter="get_shape_type" default="&quot;general&quot;">
+			The type of the shape as a [String]. The following shape types are defined in the base G4MF specification:
+			- [code]"general"[/code]: A general shape with a size and optional curves. The center of the shape is at the origin of the local coordinate system.
+			- [code]"concave"[/code]: A concave mesh shape, defined by a mesh. The mesh exists relative to the local coordinate system.
+			- [code]"convex"[/code]: A convex hull mesh shape, defined by a mesh. The mesh exists relative to the local coordinate system.
+			- [code]"heightmap"[/code]: A heightmap shape, defined by an array of height values, with the size property defining the dimensions of the data in the heights accessor.
+			- [code]"plane"[/code]: A plane shape, defining an infinite boundary. The plane points up in the local +Y direction from the local origin.
+			- [code]"ray"[/code]: A ray shape, defining a one-way line segment. The ray points in the local -Y direction from the local origin.
+		</member>
+	</members>
+</class>

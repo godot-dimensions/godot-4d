@@ -59,6 +59,12 @@ bool Shape4D::has_point(const Vector4 &p_point) const {
 	return has;
 }
 
+bool Shape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
+	bool equal = false;
+	GDVIRTUAL_CALL(_is_equal_exact, p_shape, equal);
+	return equal;
+}
+
 Ref<TetraMesh4D> Shape4D::to_tetra_mesh() const {
 	Ref<TetraMesh4D> tetra_mesh;
 	GDVIRTUAL_CALL(_to_tetra_mesh, tetra_mesh);
@@ -78,6 +84,7 @@ void Shape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_nearest_point", "point"), &Shape4D::get_nearest_point);
 	ClassDB::bind_method(D_METHOD("get_support_point", "direction"), &Shape4D::get_support_point);
 	ClassDB::bind_method(D_METHOD("has_point", "point"), &Shape4D::has_point);
+	ClassDB::bind_method(D_METHOD("is_equal_exact", "shape"), &Shape4D::is_equal_exact);
 	ClassDB::bind_method(D_METHOD("to_tetra_mesh"), &Shape4D::to_tetra_mesh);
 	ClassDB::bind_method(D_METHOD("to_wire_mesh"), &Shape4D::to_wire_mesh);
 	// Bind the virtual methods to allow users to make their own shapes.
@@ -87,6 +94,7 @@ void Shape4D::_bind_methods() {
 	GDVIRTUAL_BIND(_get_nearest_point, "point");
 	GDVIRTUAL_BIND(_get_support_point, "direction");
 	GDVIRTUAL_BIND(_has_point, "point");
+	GDVIRTUAL_BIND(_is_equal_exact, "shape");
 	GDVIRTUAL_BIND(_to_tetra_mesh);
 	GDVIRTUAL_BIND(_to_wire_mesh);
 }

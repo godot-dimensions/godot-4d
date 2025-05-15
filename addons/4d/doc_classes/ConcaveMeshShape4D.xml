@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ConcaveMeshShape4D" inherits="Shape4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D concave tetrahedral cell mesh shape.
+	</brief_description>
+	<description>
+		ConcaveMeshShape4D defines a shape using a set of tetrahedral cells. It is highly configurable, and can be used to create any arbitrary polytopes, even shapes that do not enclose a volume. Unlike most other shapes, ConcaveMeshShape4D is not a solid shape, it is hollow. It is not an implicit surface, and does not have a well-defined inside or outside.
+		ConcaveMeshShape4D is the slowest of the 4D shapes, but it is also the most flexible. ConcaveMeshShape4D cannot collide with other ConcaveMeshShape4D shapes, and therefore should not be used for moving objects, only static objects.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_from_mesh" qualifiers="static">
+			<return type="ConcaveMeshShape4D" />
+			<param index="0" name="mesh" type="TetraMesh4D" />
+			<description>
+				Creates a new [ConcaveMeshShape4D] from a [TetraMesh4D] object. The resulting shape will have the same cell geometry as the input mesh, but will not have any of the mesh's materials, skins, or other properties.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cells" type="PackedVector4Array" setter="set_cells" getter="get_cells" default="PackedVector4Array()">
+			The cells that define the concave mesh shape. Every vector defines the position of a vertex, and every 4 vertices defines a tetrahedral cell, similar to how in 3D every 3 vertices define a triangular face. The size of this array MUST be a multiple of 4. Unlike the data in a [TetraMesh4D], the vertices are not deduplicated, so if multiple cells share a vertex, the vertex is repeated in the array.
+		</member>
+	</members>
+</class>

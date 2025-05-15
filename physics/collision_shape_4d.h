@@ -20,6 +20,8 @@ class CollisionShape4D : public Node4D {
 	uint32_t _collision_layer = 1;
 	uint32_t _collision_mask = 1;
 
+	static CollisionObject4D *_global_static_body_for_bodyless_shapes;
+	static CollisionObject4D *_get_or_create_global_static_body();
 	CollisionObject4D *_get_ancestor_collision_object() const;
 
 protected:
