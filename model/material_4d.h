@@ -4,9 +4,11 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/resource.hpp>
+#include <godot_cpp/classes/shader_material.hpp>
 #include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "core/io/resource.h"
+#include "scene/resources/material.h"
 #endif
 
 class Mesh4D;
@@ -44,6 +46,10 @@ protected:
 	PackedColorArray _albedo_color_array;
 	Color _albedo_color = Color(1, 1, 1, 1);
 	ColorSourceFlags _albedo_source_flags = COLOR_SOURCE_FLAG_SINGLE_COLOR;
+	Ref<ShaderMaterial> _cross_section_material;
+
+	// Update _cross_section_material to match current settings on the material, skip if _cross_section_material is null.
+	virtual void update_cross_section_material();
 
 public:
 	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh);
@@ -60,6 +66,8 @@ public:
 	void set_albedo_color_array(const PackedColorArray &p_albedo_color_array);
 	void append_albedo_color(const Color &p_albedo_color);
 	void resize_albedo_color_array(const int64_t p_size, const Color &p_fill_color = Color(1, 1, 1, 1));
+
+	Ref<ShaderMaterial> get_cross_section_material();
 };
 
 VARIANT_ENUM_CAST(Material4D::ColorSourceFlags);
