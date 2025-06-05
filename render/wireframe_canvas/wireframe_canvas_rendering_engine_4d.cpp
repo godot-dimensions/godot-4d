@@ -100,7 +100,7 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 					}
 				}
 				if (camera_has_w_fade_transparency) {
-					edge_color.a = 1.0f - MIN(1.0f, ABS(fade_factor));
+					edge_color.a *= 1.0f - MIN(1.0f, ABS(fade_factor));
 				}
 			}
 			if (camera->get_depth_fade()) {
