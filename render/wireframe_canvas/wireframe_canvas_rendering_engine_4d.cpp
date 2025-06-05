@@ -43,9 +43,16 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 		Projection mesh_relative_basis = mesh_relative_basises[mesh_index];
 		Vector4 mesh_relative_position = mesh_relative_positions[mesh_index];
 		const PackedVector4Array camera_relative_vertices = Transform4D(mesh_relative_basis, mesh_relative_position).xform_many(mesh_inst->get_mesh()->get_vertices());
+		if (camera_relative_vertices.is_empty()) {
+			continue;
+		}
 		PackedVector2Array projected_vertices;
-		for (int vertex = 0; vertex < camera_relative_vertices.size(); vertex++) {
-			projected_vertices.push_back(camera->world_to_viewport_local_normal(camera_relative_vertices[vertex]));
+		{
+			const int64_t vertex_count = camera_relative_vertices.size();
+			projected_vertices.resize(vertex_count);
+			for (int vertex = 0; vertex < vertex_count; vertex++) {
+				projected_vertices.set(vertex, camera->world_to_viewport_local_normal(camera_relative_vertices[vertex]));
+			}
 		}
 		PackedColorArray edge_colors;
 		PackedVector2Array edge_vertices;
