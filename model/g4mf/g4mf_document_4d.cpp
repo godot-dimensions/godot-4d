@@ -349,7 +349,7 @@ String G4MFDocument4D::_export_pretty_print_compact(const Variant &p_variant) {
 // Only indents the first three levels of the JSON for increased readability.
 String G4MFDocument4D::_export_pretty_print_json(const Dictionary &p_g4mf_json) {
 	Dictionary g4mf_json = p_g4mf_json;
-#if GODOT_MODULE && GODOT_VERSION_MAJOR >= 4 && GODOT_VERSION_MINOR >= 4
+#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 	g4mf_json.sort();
 #else
 	// HACK: `.sort()` is too new of an API to use here, so sort using an ugly workaround...
@@ -363,7 +363,7 @@ String G4MFDocument4D::_export_pretty_print_json(const Dictionary &p_g4mf_json) 
 		Variant top_value = g4mf_json[top_key];
 		if (top_value.get_type() == Variant::DICTIONARY) {
 			Dictionary top_dict = top_value;
-#if GODOT_MODULE && GODOT_VERSION_MAJOR >= 4 && GODOT_VERSION_MINOR >= 4
+#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 			top_dict.sort();
 #endif
 			pretty += "\t\"" + top_key + "\": {\n";
@@ -391,7 +391,7 @@ String G4MFDocument4D::_export_pretty_print_json(const Dictionary &p_g4mf_json) 
 				pretty += "\t\t";
 				if (top_array_value.get_type() == Variant::DICTIONARY) {
 					Dictionary sub_dict = top_array_value;
-#if GODOT_MODULE && GODOT_VERSION_MAJOR >= 4 && GODOT_VERSION_MINOR >= 4
+#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 					sub_dict.sort();
 #endif
 					pretty += "{\n";
