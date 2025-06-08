@@ -32,9 +32,11 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 	if (p_deduplicate) {
 		for (int i = 0; i < buffer_view_index; i++) {
 			const Ref<G4MFBufferView4D> existing_buffer_view = state_buffer_views[i];
-			if (existing_buffer_view->load_buffer_view_data(p_g4mf_state) == p_input_data) {
-				// Duplicate found, return the index of the existing buffer view.
-				return i;
+			if (existing_buffer_view->get_byte_offset() % p_alignment == 0) {
+				if (existing_buffer_view->load_buffer_view_data(p_g4mf_state) == p_input_data) {
+					// Duplicate found, return the index of the existing buffer view.
+					return i;
+				}
 			}
 		}
 	}
