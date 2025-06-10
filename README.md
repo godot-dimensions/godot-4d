@@ -7,7 +7,47 @@ Have you ever wanted to make 4D games in Godot?
 ...no? You say you haven't? Ok, then this module isn't for you.
 
 For anyone who does want to make a 4D game, Node4D and other 4D nodes now
-exist, just download the fork of Godot that includes this module!
+exist, just download and compile this module, and you can make 4D games in Godot!
+
+## Installation
+
+First, have all the Godot dependencies installed on your computer as per the
+[official instructions](https://docs.godotengine.org/en/stable/contributing/development/compiling/index.html).
+
+If you want all of the Godot Dimensions modules at once, you can grab a
+branch of [our Godot fork](https://github.com/godot-dimensions/godot/tree/dimensions-latest).
+
+```shell
+git clone https://github.com/godot-dimensions/godot godot-dimensions
+cd godot-dimensions
+# First, make sure you can compile regular Godot.
+scons
+# Then, switch to the dimensions branch and download the submodules.
+git switch dimensions-latest
+git submodule update --init --recursive
+scons
+# Re-run the `scons` command to re-compile if you make changes.
+```
+
+Alternatively, if you only want 4D, you can start with any clone
+of Godot Engine and add this module to it:
+
+```shell
+cd modules
+git clone https://github.com/godot-dimensions/godot-4d 4d
+# Make sure the folder is named `4d`, not `godot-4d`!
+cd ..
+scons
+# Re-run the `scons` command to re-compile if you make changes.
+```
+
+It should now be successfully compiled, and you can run the executable in the `bin` folder.
+
+Alternatively, Godot 4D can be compiled as a GDExtension. The module approach
+is recommended, but GDExtension allows you to avoid recompiling Godot.
+To compile as a GDExtension, clone this repository anywhere, with submodules,
+and run `scons target=editor`. You can open the repository's `project.godot`
+in Godot to test the GDExtension, and copy the `addons/4d` to your own project.
 
 ## Nodes
 
