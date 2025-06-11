@@ -124,6 +124,23 @@ void TetraMaterial4D::set_albedo_source(const TetraColorSource p_albedo_source) 
 	notify_property_list_changed();
 }
 
+Ref<Texture3D> TetraMaterial4D::get_texture() const {
+	return _texture;
+}
+
+void TetraMaterial4D::set_texture(const Ref<Texture3D> &p_texture) {
+	_texture = p_texture;
+	update_cross_section_material();
+}
+
+void TetraMaterial4D::update_cross_section_material() {
+	if (_cross_section_material.is_null()) {
+		return;
+	}
+	Material4D::update_cross_section_material();
+	_cross_section_material->set_shader_parameter("albedo_texture", _texture);
+}
+
 void TetraMaterial4D::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (List<PropertyInfo>::Element *E = p_list->front(); E; E = E->next()) {
 		PropertyInfo &prop = E->get();
@@ -142,11 +159,14 @@ TetraMaterial4D::TetraMaterial4D() {
 void TetraMaterial4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_albedo_source"), &TetraMaterial4D::get_albedo_source);
 	ClassDB::bind_method(D_METHOD("set_albedo_source", "albedo_source"), &TetraMaterial4D::set_albedo_source);
+	ClassDB::bind_method(D_METHOD("get_texture"), &TetraMaterial4D::get_texture);
+	ClassDB::bind_method(D_METHOD("set_texture", "texture"), &TetraMaterial4D::set_texture);
 
 	//ADD_GROUP("Albedo", "albedo_");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "albedo_source", PROPERTY_HINT_ENUM, "Single Color,Per Vertex Only,Per Cell Only,Cell UVW Only,Texture4D Only,Per Vertex and Single Color,Per Cell and Single Color,Cell UVW and Single Color,Texture4D and Single Color"), "set_albedo_source", "get_albedo_source");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "albedo_color"), "set_albedo_color", "get_albedo_color");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "albedo_color_array"), "set_albedo_color_array", "get_albedo_color_array");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture3D"), "set_texture", "get_texture");
 
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_SINGLE_COLOR);
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_PER_VERT_ONLY);
