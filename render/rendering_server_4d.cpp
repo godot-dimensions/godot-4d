@@ -84,7 +84,7 @@ void RenderingServer4D::register_camera(Camera4D *p_camera) {
 	cameras.append(p_camera);
 	_viewport_cameras[viewport] = cameras;
 	p_camera->make_current();
-	// Is this also the first time any Camera4D has been registered? If so, connect to the SceneTree's frame signal.
+	// Is this also the first time any Camera4D has been registered? If so, connect to the RenderingServer's frame signal.
 	if (_is_render_frame_connected) {
 		return;
 	}

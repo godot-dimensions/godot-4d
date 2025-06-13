@@ -248,7 +248,7 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	if (_physics.is_valid()) {
 		dict["physics"] = _physics->to_dictionary();
 	}
-#if GODOT_MODULE
+#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 	dict.sort();
 #endif
 	return dict;

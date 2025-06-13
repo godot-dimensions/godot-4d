@@ -77,7 +77,7 @@ Dictionary G4MFCamera4D::to_dictionary() const {
 			ret["size"] = _size_meters;
 		}
 	}
-#if GODOT_MODULE
+#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 	ret.sort();
 #endif
 	return ret;

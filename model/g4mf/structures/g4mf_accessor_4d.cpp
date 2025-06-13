@@ -1010,28 +1010,15 @@ int G4MFAccessor4D::encode_new_accessor_into_state(const Ref<G4MFState4D> &p_g4m
 	// Write the data into a new buffer view.
 	PackedByteArray encoded_bytes = accessor->encode_accessor_from_variants(p_input_data);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
-	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
-	ERR_FAIL_COND_V_MSG(buffer_view_index == -1, -1, "G4MF export: Accessor failed to write new buffer view into G4MF state.");
-	accessor->set_buffer_view_index(buffer_view_index);
-	// Add the new accessor to the state, but check for duplicates first.
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
-	const int accessor_count = state_accessors.size();
-	for (int i = 0; i < accessor_count; i++) {
-		Ref<G4MFAccessor4D> existing_accessor = state_accessors[i];
-		if (accessor->is_equal_exact(existing_accessor)) {
-			// An identical accessor already exists in the state, so just return the index.
-			return i;
-		}
-	}
-	state_accessors.append(accessor);
-	p_g4mf_state->set_accessors(state_accessors);
-	return accessor_count;
+	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
 
 int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data_bytes, const bool p_deduplicate) {
 	ERR_FAIL_COND_V_MSG(p_data_bytes.is_empty(), -1, "G4MF export: Cannot store nothing.");
 	// Write the data into a new buffer view.
-	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, p_deduplicate);
+	// The byte offset of an accessor's buffer view MUST be a multiple of the accessor's primitive size.
+	// https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/data.md#accessors
+	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, bytes_per_primitive(), p_deduplicate);
 	ERR_FAIL_COND_V_MSG(buffer_view_index == -1, -1, "G4MF export: Accessor failed to write new buffer view into G4MF state.");
 	set_buffer_view_index(buffer_view_index);
 	// Add the new accessor to the state, but check for duplicates first.
@@ -1044,8 +1031,8 @@ int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4m
 			return i;
 		}
 	}
-	Ref<G4MFAccessor4D> me = this;
-	state_accessors.append(me);
+	Ref<G4MFAccessor4D> self = this;
+	state_accessors.append(self);
 	p_g4mf_state->set_accessors(state_accessors);
 	return accessor_count;
 }
