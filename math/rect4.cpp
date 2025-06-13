@@ -461,7 +461,7 @@ bool Rect4::operator!=(const Rect4 &p_other) const {
 }
 
 Rect4::operator String() const {
-	return "[P: " + position.operator String() + ", S: " + size + "]";
+	return "[P: " + String(position) + ", S: " + String(size) + "]";
 }
 
 static_assert(sizeof(Rect4) == 8 * sizeof(real_t));

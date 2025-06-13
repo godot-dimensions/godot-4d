@@ -11,7 +11,12 @@
 #include "core/core_bind.h"
 #include "core/io/compression.h"
 #include "core/io/json.h"
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 4
+// In Godot 4.5 and later, namespaces were capitalized: core_bind -> CoreBind.
+using namespace CoreBind;
+#else
 using namespace core_bind;
+#endif
 #endif
 
 uint32_t G4MFDocument4D::_compression_format_to_indicator(const CompressionFormat p_compression_format) {
@@ -594,14 +599,13 @@ PackedByteArray G4MFDocument4D::_import_next_chunk_bytes_uncompressed(Ref<G4MFSt
 }
 
 String G4MFDocument4D::_uint32_to_string(uint32_t p_value) {
-	CharString str;
-	str.resize(4);
+	char str[4];
 	for (int i = 0; i < 4; i++) {
 		const uint8_t low_byte = (uint8_t)p_value;
 		if (low_byte > 0x1F && low_byte < 0x7F) {
-			str.set(i, low_byte);
+			str[i] = (char)low_byte;
 		} else {
-			str.set(i, '?');
+			str[i] = '?';
 		}
 		p_value >>= 8;
 	}

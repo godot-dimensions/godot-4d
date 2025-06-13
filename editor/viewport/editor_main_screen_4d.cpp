@@ -39,7 +39,7 @@ void EditorMainScreen4D::_on_selection_changed() {
 #if GDEXTENSION
 	top_selected_nodes = selection->get_top_selected_nodes();
 #elif GODOT_MODULE
-	List<Node *> &top_selected_node_list = selection->get_top_selected_nodes();
+	const List<Node *> &top_selected_node_list = selection->get_top_selected_nodes();
 	for (Node *node : top_selected_node_list) {
 		top_selected_nodes.push_back(node);
 	}
