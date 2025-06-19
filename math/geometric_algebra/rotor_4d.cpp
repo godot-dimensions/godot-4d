@@ -164,9 +164,22 @@ real_t Rotor4D::get_simple_rotation_angle() const {
 // 	return 2.0f * get_rotation_bivector().length();
 // }
 
-// Bivector4D Rotor4D::get_rotation_bivector() const {
-// 	return ;
-// }
+Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
+	real_t a = s*s;
+	real_t b = -(xy*xy + xz*xz + xw*xw + yz*yz + yw*yw + zw*zw);
+	real_t c = xyzw*xyzw;
+	real_t y1 = b + sqrt(b*b - 4*a*c) / (2*a);
+	// real_t y2 = b - sqrt(b*b - 4*a*c) / (2*a)
+	Rotor4D bi = Rotor4D(0, xy, xz, xw, yz, yw, zw, 0);
+	real_t splitc = s / (s*s - xyzw*xyzw);
+	real_t splitd = -c * (xyzw / s);
+	SplitComplex4D split = SplitComplex4D(splitc, splitd);
+	Rotor4D rot1 = (bi * split).reverse();
+	rot1.s += 1;
+	Rotor4D rot2 = rot1.reverse() * *this;
+	
+	return Math::acos(rot1.s) * rot1.parts.bivector + Math::acos(rot2.s) * rot2.parts.bivector;
+}
 
 // Should be removed
 // Bivector4D Rotor4D::get_rotation_bivector_normalized() const {
