@@ -32,9 +32,9 @@ public:
 
 	// Rotation functions.
 	Projection to_basis() const;
-	// real_t get_rotation_angle() const;
+	real_t get_rotation_angle() const;
 	AABB get_rotation_bivector_magnitude() const;
-	// AABB get_rotation_bivector_normal() const;
+	AABB get_rotation_bivector_normal() const;
 	Projection rotate_basis(const Projection &p_basis) const;
 	Ref<Rotor4D> rotate_rotor(const Ref<Rotor4D> &p_rotor) const;
 	Vector4 rotate_vector(const Vector4 &p_vec) const;

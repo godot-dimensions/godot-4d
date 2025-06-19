@@ -822,7 +822,7 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_uniform_scale"), &Node4D::get_uniform_scale);
 	ClassDB::bind_method(D_METHOD("set_uniform_scale", "uniform_scale"), &Node4D::set_uniform_scale);
 	// Geometric algebra local rotation properties.
-	// ClassDB::bind_method(D_METHOD("get_rotation_bivector_magnitude"), &Node4D::get_rotation_bivector_magnitude_bind);
+	ClassDB::bind_method(D_METHOD("get_rotation_bivector_magnitude"), &Node4D::get_rotation_bivector_magnitude_bind);
 	ClassDB::bind_method(D_METHOD("set_rotation_bivector_magnitude", "bivector"), &Node4D::set_rotation_bivector_magnitude_bind);
 	ClassDB::bind_method(D_METHOD("get_rotation_rotor"), &Node4D::get_rotation_rotor_bind);
 	ClassDB::bind_method(D_METHOD("set_rotation_rotor", "rotor"), &Node4D::set_rotation_rotor_bind);
@@ -859,7 +859,7 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_global_uniform_scale"), &Node4D::get_global_uniform_scale);
 	ClassDB::bind_method(D_METHOD("set_global_uniform_scale", "global_uniform_scale"), &Node4D::set_global_uniform_scale);
 	// Geometric algebra global rotation properties.
-	// ClassDB::bind_method(D_METHOD("get_global_rotation_bivector_magnitude"), &Node4D::get_global_rotation_bivector_magnitude_bind);
+	ClassDB::bind_method(D_METHOD("get_global_rotation_bivector_magnitude"), &Node4D::get_global_rotation_bivector_magnitude_bind);
 	ClassDB::bind_method(D_METHOD("set_global_rotation_bivector_magnitude", "global_bivector"), &Node4D::set_global_rotation_bivector_magnitude_bind);
 	ClassDB::bind_method(D_METHOD("get_global_rotation_rotor"), &Node4D::get_global_rotation_rotor_bind);
 	ClassDB::bind_method(D_METHOD("set_global_rotation_rotor", "global_rotor"), &Node4D::set_global_rotation_rotor_bind);

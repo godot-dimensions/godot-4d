@@ -160,10 +160,11 @@ real_t Rotor4D::get_simple_rotation_angle() const {
 }
 
 // Should be moved to bivector
-// real_t Rotor4D::get_rotation_angle() const {
-// 	return 2.0f * get_rotation_bivector().length();
-// }
+real_t Rotor4D::get_rotation_angle() const {
+	return 2.0f * get_rotation_bivector_magnitude().length();
+}
 
+// Should remove _magnitude from the name
 Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
 	real_t a = s*s;
 	real_t b = -(xy*xy + xz*xz + xw*xw + yz*yz + yw*yw + zw*zw);
@@ -178,13 +179,13 @@ Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
 	rot1.s += 1;
 	Rotor4D rot2 = rot1.reverse() * *this;
 	
-	return Math::acos(rot1.s) * rot1.parts.bivector + Math::acos(rot2.s) * rot2.parts.bivector;
+	return Math::acos(rot1.s) * rot1.parts.bivector.normalized() + Math::acos(rot2.s) * rot2.parts.bivector.normalized();
 }
 
 // Should be removed
-// Bivector4D Rotor4D::get_rotation_bivector_normalized() const {
-// 	return get_rotation_bivector().normalized();
-// }
+Bivector4D Rotor4D::get_rotation_bivector_normal() const {
+	return get_rotation_bivector_magnitude().normalized();
+}
 
 Basis4D Rotor4D::rotate_basis(const Basis4D &p_basis) const {
 #ifdef MATH_CHECKS
