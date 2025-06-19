@@ -160,18 +160,18 @@ real_t Rotor4D::get_simple_rotation_angle() const {
 }
 
 // Should be moved to bivector
-real_t Rotor4D::get_rotation_angle() const {
-	return 2.0f * get_rotation_bivector().length();
-}
+// real_t Rotor4D::get_rotation_angle() const {
+// 	return 2.0f * get_rotation_bivector().length();
+// }
 
-Bivector4D Rotor4D::get_rotation_bivector() const {
-	return ;
-}
+// Bivector4D Rotor4D::get_rotation_bivector() const {
+// 	return ;
+// }
 
 // Should be removed
-Bivector4D Rotor4D::get_rotation_bivector_normalized() const {
-	return get_rotation_bivector().normalized();
-}
+// Bivector4D Rotor4D::get_rotation_bivector_normalized() const {
+// 	return get_rotation_bivector().normalized();
+// }
 
 Basis4D Rotor4D::rotate_basis(const Basis4D &p_basis) const {
 #ifdef MATH_CHECKS
@@ -328,27 +328,27 @@ Rotor4D Rotor4D::from_basis(const Basis4D &p_basis) {
 
 // Should be renamed to something that includes exp
 Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
-	const real_t il = 0.5 * (xw + yz);
-    const real_t jl = 0.5 * (yw - xz);
-    const real_t kl = 0.5 * (zw + xy);
-    const real_t ir = 0.5 * (xw - yz);
-    const real_t jr = 0.5 * (yw + xz);
-    const real_t kr = 0.5 * (zw - xy);
+	const real_t il = 0.5 * (p_bivector.xw + p_bivector.yz);
+    const real_t jl = 0.5 * (p_bivector.yw - p_bivector.xz);
+    const real_t kl = 0.5 * (p_bivector.zw + p_bivector.xy);
+    const real_t ir = 0.5 * (p_bivector.xw - p_bivector.yz);
+    const real_t jr = 0.5 * (p_bivector.yw + p_bivector.xz);
+    const real_t kr = 0.5 * (p_bivector.zw - p_bivector.xy);
     
-    const Bivector4D left = Bivector4D( kl, -jl, il,  il, jl, kl);
-    const Bivector4D right = Bivector4D(-kr,  jr, ir, -ir, jr, kr);
+    Bivector4D left = Bivector4D( kl, -jl, il,  il, jl, kl);
+    Bivector4D right = Bivector4D(-kr,  jr, ir, -ir, jr, kr);
     
-    const real_t l = left.length();
-    const real_t r = right.length();
+    real_t l = left.length();
+    real_t r = right.length();
     
-    left *= (Math.sin(l) / l);
-    right *= (Math.sin(r) / r);
+    left *= (Math::sin(l) / l);
+    right *= (Math::sin(r) / r);
     
-    l = Math.cos(l);
-    r = Math.cos(r);
+    l = Math::cos(l);
+    r = Math::cos(r);
     
-    Rotor4 L = Rotor4(l, left, 0);
-    Rotor4 R = Rotor4(r, right, 0);
+    const Rotor4D L = Rotor4D(l, left, 0);
+    const Rotor4D R = Rotor4D(r, right, 0);
     
     return L * R;
 }

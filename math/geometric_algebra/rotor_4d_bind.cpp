@@ -56,17 +56,17 @@ Projection godot_4d_bind::Rotor4D::to_basis() const {
 	return rotor.to_basis();
 }
 
-real_t godot_4d_bind::Rotor4D::get_rotation_angle() const {
-	return rotor.get_rotation_angle();
-}
+// real_t godot_4d_bind::Rotor4D::get_rotation_angle() const {
+// 	return rotor.get_rotation_angle();
+// }
 
-AABB godot_4d_bind::Rotor4D::get_rotation_bivector_magnitude() const {
-	return rotor.get_rotation_bivector_magnitude();
-}
+// AABB godot_4d_bind::Rotor4D::get_rotation_bivector_magnitude() const {
+// 	return rotor.get_rotation_bivector_magnitude();
+// }
 
-AABB godot_4d_bind::Rotor4D::get_rotation_bivector_normal() const {
-	return rotor.get_rotation_bivector_normal();
-}
+// AABB godot_4d_bind::Rotor4D::get_rotation_bivector_normal() const {
+// 	return rotor.get_rotation_bivector_normal();
+// }
 
 Projection godot_4d_bind::Rotor4D::rotate_basis(const Projection &p_basis) const {
 	return rotor.rotate_basis(p_basis);
@@ -270,9 +270,9 @@ void godot_4d_bind::Rotor4D::_bind_methods() {
 
 	// Rotation functions.
 	ClassDB::bind_method(D_METHOD("to_basis"), &godot_4d_bind::Rotor4D::to_basis);
-	ClassDB::bind_method(D_METHOD("get_rotation_angle"), &godot_4d_bind::Rotor4D::get_rotation_angle);
-	ClassDB::bind_method(D_METHOD("get_rotation_bivector_magnitude"), &godot_4d_bind::Rotor4D::get_rotation_bivector_magnitude);
-	ClassDB::bind_method(D_METHOD("get_rotation_bivector_normal"), &godot_4d_bind::Rotor4D::get_rotation_bivector_normal);
+	// ClassDB::bind_method(D_METHOD("get_rotation_angle"), &godot_4d_bind::Rotor4D::get_rotation_angle);
+	// ClassDB::bind_method(D_METHOD("get_rotation_bivector_magnitude"), &godot_4d_bind::Rotor4D::get_rotation_bivector_magnitude);
+	// ClassDB::bind_method(D_METHOD("get_rotation_bivector_normal"), &godot_4d_bind::Rotor4D::get_rotation_bivector_normal);
 	ClassDB::bind_method(D_METHOD("rotate_basis", "basis"), &godot_4d_bind::Rotor4D::rotate_basis);
 	ClassDB::bind_method(D_METHOD("rotate_rotor", "rotor"), &godot_4d_bind::Rotor4D::rotate_rotor);
 	ClassDB::bind_method(D_METHOD("rotate_vector", "vector"), &godot_4d_bind::Rotor4D::rotate_vector);

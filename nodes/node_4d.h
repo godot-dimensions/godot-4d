@@ -117,9 +117,9 @@ public:
 	void set_uniform_scale(const real_t p_scale);
 
 	// Geometric algebra local rotation properties.
-	Bivector4D get_rotation_bivector_magnitude() const;
+	// Bivector4D get_rotation_bivector_magnitude() const;
 	void set_rotation_bivector_magnitude(const Bivector4D &p_bivector);
-	AABB get_rotation_bivector_magnitude_bind() const;
+	// AABB get_rotation_bivector_magnitude_bind() const;
 	void set_rotation_bivector_magnitude_bind(const AABB &p_bivector);
 	Rotor4D get_rotation_rotor() const;
 	void set_rotation_rotor(const Rotor4D &p_rotor);
@@ -184,9 +184,9 @@ public:
 	void set_global_uniform_scale(const real_t p_global_scale);
 
 	// Geometric algebra global rotation properties.
-	Bivector4D get_global_rotation_bivector_magnitude() const;
+	// Bivector4D get_global_rotation_bivector_magnitude() const;
 	void set_global_rotation_bivector_magnitude(const Bivector4D &p_bivector);
-	AABB get_global_rotation_bivector_magnitude_bind() const;
+	// AABB get_global_rotation_bivector_magnitude_bind() const;
 	void set_global_rotation_bivector_magnitude_bind(const AABB &p_bivector);
 	Rotor4D get_global_rotation_rotor() const;
 	void set_global_rotation_rotor(const Rotor4D &p_rotor);
