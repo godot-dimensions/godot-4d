@@ -360,7 +360,7 @@ bool Rect4i::operator!=(const Rect4i &p_other) const {
 }
 
 Rect4i::operator String() const {
-	return "[P: " + position.operator String() + ", S: " + size + "]";
+	return "[P: " + String(position) + ", S: " + String(size) + "]";
 }
 
 static_assert(sizeof(Rect4i) == 8 * sizeof(int32_t));

@@ -45,6 +45,16 @@ using namespace godot;
 #define free_rid free
 #endif
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 4
+// In Godot 4.5 and later, Math_TAU was replaced with Math::TAU, and a few other things also moved to the Math namespace.
+#define ABS Math::abs
+#define Math_E Math::E
+#define Math_PI Math::PI
+#define Math_SQRT12 Math::SQRT12
+#define Math_SQRT2 Math::SQRT2
+#define Math_TAU Math::TAU
+#endif
+
 #define MOUSE_BUTTON_LEFT MouseButton::LEFT
 #else
 #error "Must build as Godot GDExtension or Godot module."
