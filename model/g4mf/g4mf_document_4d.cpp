@@ -663,7 +663,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 		for (int i = 0; i < buffer_count; i++) {
 			const Dictionary json_buffer = json_buffers[i];
 			ERR_FAIL_COND_V_MSG(!json_buffer.has("byteLength"), ERR_INVALID_DATA, "G4MF import: Buffer is missing required field 'byteLength'. Aborting file import.");
-			const uint64_t byte_length = json_buffer["byteLength"];
+			const int64_t byte_length = json_buffer["byteLength"];
 			PackedByteArray buffer = buffers[i];
 			if (json_buffer.has("uri")) {
 				const String uri = json_buffer["uri"];
