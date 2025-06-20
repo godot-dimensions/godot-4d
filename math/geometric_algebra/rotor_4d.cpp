@@ -178,7 +178,7 @@ Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
 	Rotor4D rot1 = (bi * split).reverse();
 	rot1.s += 1;
 	Rotor4D rot2 = rot1.reverse() * *this;
-	
+
 	return Math::acos(rot1.s) * rot1.parts.bivector.normalized() + Math::acos(rot2.s) * rot2.parts.bivector.normalized();
 }
 
