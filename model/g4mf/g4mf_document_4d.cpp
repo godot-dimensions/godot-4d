@@ -459,6 +459,7 @@ PackedByteArray G4MFDocument4D::_export_compress_buffer_data(Ref<G4MFState4D> p_
 			break;
 	}
 	CRASH_NOW_MSG("G4MF export: Unknown compression format. This should never happen (the switch should handle all cases the enum is allowed to be set to).");
+	return PackedByteArray(); // Unreachable, but MSVC complains about not all control paths returning a value.
 }
 
 PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state) {
