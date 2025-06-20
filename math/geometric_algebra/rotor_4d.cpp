@@ -166,13 +166,13 @@ real_t Rotor4D::get_rotation_angle() const {
 
 // Should remove _magnitude from the name
 Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
-	real_t a = s*s;
-	real_t b = -(xy*xy + xz*xz + xw*xw + yz*yz + yw*yw + zw*zw);
-	real_t c = xyzw*xyzw;
-	real_t y1 = b + sqrt(b*b - 4*a*c) / (2*a);
+	real_t a = s * s;
+	real_t b = -(xy * xy + xz * xz + xw * xw + yz * yz + yw * yw + zw * zw);
+	real_t c = xyzw * xyzw;
+	real_t y1 = b + sqrt(b * b - 4 * a * c) / (2 * a);
 	// real_t y2 = b - sqrt(b*b - 4*a*c) / (2*a)
 	Rotor4D bi = Rotor4D(0, xy, xz, xw, yz, yw, zw, 0);
-	real_t splitc = s / (s*s - xyzw*xyzw);
+	real_t splitc = s / (s * s - xyzw * xyzw);
 	real_t splitd = -c * (xyzw / s);
 	SplitComplex4D split = SplitComplex4D(splitc, splitd);
 	Rotor4D rot1 = (bi * split).reverse();
@@ -239,7 +239,7 @@ Vector4 Rotor4D::sandwich(const Vector4 &p_vec, const Rotor4D &p_right) const {
 	);
 }
 
-// Need to test these against an implimentation using rotor exp and log to check validity
+// Need to test these against an implementation using rotor exp and log to check validity
 Rotor4D Rotor4D::slerp(Rotor4D p_to, const real_t p_weight) const {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D::identity(), "The start Rotor4D " + operator String() + " must be normalized.");
@@ -343,28 +343,28 @@ Rotor4D Rotor4D::from_basis(const Basis4D &p_basis) {
 // Should be renamed to something that includes exp
 Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
 	const real_t il = 0.5 * (p_bivector.xw + p_bivector.yz);
-    const real_t jl = 0.5 * (p_bivector.yw - p_bivector.xz);
-    const real_t kl = 0.5 * (p_bivector.zw + p_bivector.xy);
-    const real_t ir = 0.5 * (p_bivector.xw - p_bivector.yz);
-    const real_t jr = 0.5 * (p_bivector.yw + p_bivector.xz);
-    const real_t kr = 0.5 * (p_bivector.zw - p_bivector.xy);
-    
-    Bivector4D left = Bivector4D( kl, -jl, il,  il, jl, kl);
-    Bivector4D right = Bivector4D(-kr,  jr, ir, -ir, jr, kr);
-    
-    real_t l = left.length();
-    real_t r = right.length();
-    
-    left *= (Math::sin(l) / l);
-    right *= (Math::sin(r) / r);
-    
-    l = Math::cos(l);
-    r = Math::cos(r);
-    
-    const Rotor4D L = Rotor4D(l, left, 0);
-    const Rotor4D R = Rotor4D(r, right, 0);
-    
-    return L * R;
+	const real_t jl = 0.5 * (p_bivector.yw - p_bivector.xz);
+	const real_t kl = 0.5 * (p_bivector.zw + p_bivector.xy);
+	const real_t ir = 0.5 * (p_bivector.xw - p_bivector.yz);
+	const real_t jr = 0.5 * (p_bivector.yw + p_bivector.xz);
+	const real_t kr = 0.5 * (p_bivector.zw - p_bivector.xy);
+
+	Bivector4D left = Bivector4D( kl, -jl, il,  il, jl, kl);
+	Bivector4D right = Bivector4D(-kr,  jr, ir, -ir, jr, kr);
+
+	real_t l = left.length();
+	real_t r = right.length();
+
+	left *= (Math::sin(l) / l);
+	right *= (Math::sin(r) / r);
+
+	l = Math::cos(l);
+	r = Math::cos(r);
+
+	const Rotor4D L = Rotor4D(l, left, 0);
+	const Rotor4D R = Rotor4D(r, right, 0);
+
+	return L * R;
 }
 
 Rotor4D Rotor4D::from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle) {
