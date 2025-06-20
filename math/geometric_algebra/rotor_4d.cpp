@@ -349,8 +349,8 @@ Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
 	const real_t jr = 0.5 * (p_bivector.yw + p_bivector.xz);
 	const real_t kr = 0.5 * (p_bivector.zw - p_bivector.xy);
 
-	Bivector4D left = Bivector4D( kl, -jl, il,  il, jl, kl);
-	Bivector4D right = Bivector4D(-kr,  jr, ir, -ir, jr, kr);
+	Bivector4D left = Bivector4D(kl, -jl, il, il, jl, kl);
+	Bivector4D right = Bivector4D(-kr, jr, ir, -ir, jr, kr);
 
 	real_t l = left.length();
 	real_t r = right.length();
