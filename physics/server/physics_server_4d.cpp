@@ -18,16 +18,19 @@ void PhysicsServer4D::_physics_process() {
 }
 
 Ref<KinematicCollision4D> PhysicsServer4D::move_and_collide(PhysicsBody4D *p_body_node, Vector4 p_motion, bool p_test_only) {
+	ERR_FAIL_NULL_V_MSG(p_body_node, Ref<KinematicCollision4D>(), "PhysicsServer4D: Cannot move a null PhysicsBody4D node.");
 	ERR_FAIL_COND_V_MSG(_current_physics_engine.is_null(), Ref<KinematicCollision4D>(), "PhysicsServer4D: No physics engine is set.");
 	return _current_physics_engine->move_and_collide(p_body_node, p_motion, p_test_only);
 }
 
 void PhysicsServer4D::move_area(Area4D *p_area_node, Vector4 p_motion) {
+	ERR_FAIL_NULL_MSG(p_area_node, "PhysicsServer4D: Cannot move a null Area4D node.");
 	ERR_FAIL_COND_MSG(_current_physics_engine.is_null(), "PhysicsServer4D: No physics engine is set.");
 	_current_physics_engine->move_area(p_area_node, p_motion);
 }
 
 void PhysicsServer4D::register_area(Area4D *p_area_node) {
+	ERR_FAIL_NULL_MSG(p_area_node, "PhysicsServer4D: Cannot register a null Area4D node.");
 	_area_nodes.append(p_area_node);
 	if (likely(_is_physics_process_connected)) {
 		return;
@@ -38,20 +41,26 @@ void PhysicsServer4D::register_area(Area4D *p_area_node) {
 }
 
 void PhysicsServer4D::unregister_area(Area4D *p_area_node) {
+	ERR_FAIL_NULL_MSG(p_area_node, "PhysicsServer4D: Cannot unregister a null Area4D node.");
 	_area_nodes.erase(p_area_node);
 }
 
 void PhysicsServer4D::register_physics_body(PhysicsBody4D *p_physics_body_node) {
+	ERR_FAIL_NULL_MSG(p_physics_body_node, "PhysicsServer4D: Cannot register a null PhysicsBody4D node.");
 	_physics_body_nodes.append(p_physics_body_node);
 	if (likely(_is_physics_process_connected)) {
 		return;
 	}
 	_scene_tree = p_physics_body_node->get_tree();
+	if (_scene_tree == nullptr) {
+		return;
+	}
 	_scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_physics_process));
 	_is_physics_process_connected = true;
 }
 
 void PhysicsServer4D::unregister_physics_body(PhysicsBody4D *p_physics_body_node) {
+	ERR_FAIL_NULL_MSG(p_physics_body_node, "PhysicsServer4D: Cannot unregister a null PhysicsBody4D node.");
 	_physics_body_nodes.erase(p_physics_body_node);
 }
 
