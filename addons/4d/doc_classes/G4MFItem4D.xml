@@ -61,7 +61,7 @@
 		</method>
 	</methods>
 	<members>
-		<member name="name" type="String" setter="set_name" getter="get_name" default="&quot;&quot;">
+		<member name="item_name" type="String" setter="set_item_name" getter="get_item_name" default="&quot;&quot;">
 			The name of the G4MF item. This is the same as [member Resource.resource_name]. If non-empty, this MUST be unique within the G4MF file.
 		</member>
 	</members>
