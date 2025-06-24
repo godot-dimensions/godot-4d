@@ -1,11 +1,12 @@
 #include "editor_main_screen_4d.h"
 
-#include "../../nodes/quad_split_container.h"
-
 #include "editor_camera_4d.h"
 #include "editor_main_viewport_4d.h"
 #include "editor_transform_gizmo_4d.h"
 #include "editor_viewport_rotation_4d.h"
+
+#include "../../nodes/marker_4d.h"
+#include "../../nodes/quad_split_container.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_interface.hpp>
@@ -237,9 +238,16 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->connect("toggled", callable_mp(this, &EditorMainScreen4D::_on_button_toggled).bind(TOOLBAR_BUTTON_USE_LOCAL_ROTATION));
 	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]);
 
-	// All viewports share one gizmo.
+	// All viewports share one gizmo and origin marker.
 	_transform_gizmo_4d = memnew(EditorTransformGizmo4D);
 	add_child(_transform_gizmo_4d);
+
+	_origin_marker = memnew(Marker4D);
+	_origin_marker->set_name(StringName("OriginMarker4D"));
+	_origin_marker->set_marker_extents(1 << 30);
+	_origin_marker->set_darken_negative_amount(0.0f);
+	_origin_marker->set_subdivisions(40);
+	add_child(_origin_marker);
 
 	// Set up the viewports.
 	_editor_main_viewport_holder = memnew(QuadSplitContainer);

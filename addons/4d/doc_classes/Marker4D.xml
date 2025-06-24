@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Marker4D" inherits="MeshInstance4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		4D position marker.
+	</brief_description>
+	<description>
+		Marker4D is a 4D position marker that can be used to visualize locations in 4D space. It displays as a set of colored lines, representing the basis vectors, which intersect at the marker's position. The marker may be given any size and subdivided. Optionally, the negative directions of the lines can be darkened to show orientation.
+		Marker4D is useful for debugging, such as displaying positions in the editor. Depending on the runtime behavior, it can be automatically hidden or even deleted at runtime, allowing for them to be kept in the scene tree in the editor without cluttering the scene at runtime.
+		This is the 4D equivalent of [Marker2D] and [Marker3D].
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="darken_negative_amount" type="float" setter="set_darken_negative_amount" getter="get_darken_negative_amount" default="0.75">
+			Darkens the negative direction of the marker lines by this amount. This calls [method Color.darkened] on the axis colors. This must be on the range of 0.0 to 1.0, inclusive. If set to 0.0, the negative direction will have the same color as the positive direction. If set to 1.0, the negative direction will be black.
+		</member>
+		<member name="marker_extents" type="float" setter="set_marker_extents" getter="get_marker_extents" default="0.25">
+			The extents of the marker, the length of each direction line in meters. The default is 0.25, which gives lines 0.25 meters long in each direction, or 0.5 meters wide when considering both the positive and negative directions.
+		</member>
+		<member name="runtime_behavior" type="int" setter="set_runtime_behavior" getter="get_runtime_behavior" enum="Marker4D.RuntimeBehavior" default="2">
+			The runtime behavior of the marker. While markers are always visible in the editor, this setting determines whether they are shown at runtime. The default is to delete the marker at runtime, which is useful for editor-only markers. See [enum RuntimeBehavior] for options.
+		</member>
+		<member name="subdivisions" type="int" setter="set_subdivisions" getter="get_subdivisions" default="4">
+			The number of subdivisions to use for the marker. This determines how many segments are used to draw the lines. The lines are subdivided by powers of two, so a marker with 4 subdivisions and an extents of 10 will have vertices at 10.0, 5.0, 2.5, 1.25, and 0.0 meters. The minimum is 1, which will give a single line from the origin to the extents in each direction.
+		</member>
+	</members>
+	<constants>
+		<constant name="RUNTIME_BEHAVIOR_SHOW" value="0" enum="RuntimeBehavior">
+			Show this [Marker4D] in the editor and at runtime. This can be useful for debugging or when the marker is desired to be seen in-game.
+		</constant>
+		<constant name="RUNTIME_BEHAVIOR_HIDE" value="1" enum="RuntimeBehavior">
+			Show this [Marker4D] in the editor but hide it at runtime. The node will still be present in the scene tree, but nothing will be displayed.
+		</constant>
+		<constant name="RUNTIME_BEHAVIOR_DELETE" value="2" enum="RuntimeBehavior">
+			Show this [Marker4D] in the editor but delete it at runtime. This is useful for editor-only markers such as editor visual aids. This is the default.
+		</constant>
+	</constants>
+</class>

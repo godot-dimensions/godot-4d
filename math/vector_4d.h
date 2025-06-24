@@ -11,6 +11,10 @@ protected:
 	static void _bind_methods();
 
 public:
+	// Cosmetic functions.
+	static Color axis_color(int64_t p_axis);
+	static String axis_letter(int64_t p_axis);
+
 	// Vector math.
 	static real_t angle_to(const Vector4 &p_from, const Vector4 &p_to);
 	static Vector4 bounce(const Vector4 &p_vector, const Vector4 &p_normal);

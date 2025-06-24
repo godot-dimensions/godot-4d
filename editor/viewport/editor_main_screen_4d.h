@@ -12,6 +12,7 @@
 #include "scene/gui/menu_button.h"
 #endif
 
+class Marker4D;
 class QuadSplitContainer;
 
 // Main class for the 4D editor main screen.
@@ -22,7 +23,7 @@ class EditorMainScreen4D : public Control {
 
 	// Defined for readability but not intended to be changed ever.
 	// QuadSplitContainer can only handle up to 4 Control children.
-	static const int _MAX_VIEWPORTS = 4;
+	static constexpr int _MAX_VIEWPORTS = 4;
 
 public:
 	// Ensure the MODE items are kept in sync with EditorTransformGizmo4D::GizmoMode.
@@ -65,6 +66,7 @@ private:
 	EditorMainViewport4D *_editor_main_viewports[_MAX_VIEWPORTS] = { nullptr };
 	HBoxContainer *_toolbar_hbox = nullptr;
 	EditorTransformGizmo4D *_transform_gizmo_4d = nullptr;
+	Marker4D *_origin_marker = nullptr;
 
 	double _information_label_auto_hide_time = 0.0;
 

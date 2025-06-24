@@ -8,6 +8,36 @@
 #include "core/variant/variant_utility.h"
 #endif
 
+// NOTE: Editor code grabs the colors from the Godot editor theme instead.
+// This function is for non-editor code or when the theme is not available.
+Color Vector4D::axis_color(int64_t p_axis) {
+	switch (p_axis) {
+		case Vector4::Axis::AXIS_X:
+			return Color(0.96f, 0.20f, 0.32f);
+		case Vector4::Axis::AXIS_Y:
+			return Color(0.53f, 0.84f, 0.01f);
+		case Vector4::Axis::AXIS_Z:
+			return Color(0.16f, 0.55f, 0.96f);
+		case Vector4::Axis::AXIS_W:
+			return Color(0.9f, 0.75f, 0.1f);
+	}
+	return Color(0.55f, 0.55f, 0.55f);
+}
+
+String Vector4D::axis_letter(int64_t p_axis) {
+	switch (p_axis) {
+		case Vector4::Axis::AXIS_X:
+			return "X";
+		case Vector4::Axis::AXIS_Y:
+			return "Y";
+		case Vector4::Axis::AXIS_Z:
+			return "Z";
+		case Vector4::Axis::AXIS_W:
+			return "W";
+	}
+	return "?";
+}
+
 real_t Vector4D::angle_to(const Vector4 &p_from, const Vector4 &p_to) {
 	return Math::acos(p_from.dot(p_to) / (p_from.length() * p_to.length()));
 }
@@ -188,6 +218,9 @@ Vector4 Vector4D::from_json_array(const Array &p_json_array) {
 Vector4D *Vector4D::singleton = nullptr;
 
 void Vector4D::_bind_methods() {
+	// Cosmetic functions.
+	ClassDB::bind_static_method("Vector4D", D_METHOD("axis_color", "axis"), &Vector4D::axis_color);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("axis_letter", "axis"), &Vector4D::axis_letter);
 	// Vector math.
 	ClassDB::bind_static_method("Vector4D", D_METHOD("angle_to", "from", "to"), &Vector4D::angle_to);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce", "vector", "normal"), &Vector4D::bounce);

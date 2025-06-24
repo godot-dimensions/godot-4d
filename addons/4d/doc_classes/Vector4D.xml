@@ -17,6 +17,20 @@
 				Returns the unsigned minimum angle between the given vectors, in radians.
 			</description>
 		</method>
+		<method name="axis_color" qualifiers="static">
+			<return type="Color" />
+			<param index="0" name="axis" type="int" />
+			<description>
+				Returns a color representing the given axis index. 0 returns red, 1 returns green, 2 returns blue, and 3 returns yellow. Any other value returns gray. The specific color tones match Godot's default editor theme colors for the axes. This does not actually read the colors from the editor theme, making it usable outside the editor, but the colors may not match if the user changes the editor theme.
+			</description>
+		</method>
+		<method name="axis_letter" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="axis" type="int" />
+			<description>
+				Returns a letter representing the given axis index. 0 returns "X", 1 returns "Y", 2 returns "Z", and 3 returns "W". Any other value returns a question mark.
+			</description>
+		</method>
 		<method name="bounce" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="vector" type="Vector4" />

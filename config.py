@@ -38,6 +38,8 @@ def get_doc_classes():
 		"WireMaterial4D",
 		"WireMesh4D",
 		"WireMeshBuilder4D",
+		# Depends on mesh.
+		"Marker4D",
 		# Physics.
 		"Area4D",
 		"BoxShape4D",

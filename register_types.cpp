@@ -21,6 +21,7 @@
 #include "math/transform_4d_bind.h"
 #include "math/vector_4d.h"
 #include "nodes/camera_4d.h"
+#include "nodes/marker_4d.h"
 #include "nodes/node_4d.h"
 #include "nodes/quad_split_container.h"
 
@@ -163,6 +164,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_CLASS(WireMeshBuilder4D);
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
+		// Depends on mesh.
+		GDREGISTER_CLASS(Marker4D);
 		// Physics.
 		GDREGISTER_CLASS(Area4D);
 		GDREGISTER_CLASS(BoxShape4D);
