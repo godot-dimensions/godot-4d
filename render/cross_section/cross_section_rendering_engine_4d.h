@@ -1,12 +1,15 @@
 #pragma once
 
-#include "../rendering_engine_4d.h"
 #include <vector>
 
+#include "../rendering_engine_4d.h"
+
 #if GDEXTENSION
-#include <godot_cpp/variant/typed_array.hpp>
+#include <godot_cpp/classes/world3d.hpp>
+#include <godot_cpp/variant/rid.hpp>
 #elif GODOT_MODULE
-#include "core/variant/typed_array.h"
+#include "core/templates/rid.h"
+#include "scene/resources/3d/world_3d.h"
 #endif
 
 class CrossSectionRenderingEngine4D : public RenderingEngine4D {
@@ -15,9 +18,10 @@ class CrossSectionRenderingEngine4D : public RenderingEngine4D {
 private:
 	std::vector<RID> _instances_3d;
 	RID _cross_section_camera;
+	Ref<World3D> _cross_section_world_3d;
 
 	void update_camera();
-	bool cull_mesh(const MeshInstance4D &mesh, Projection basis, Vector4 position) const;
+	RID create_instance();
 
 protected:
 	static void _bind_methods() {}

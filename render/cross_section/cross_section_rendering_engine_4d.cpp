@@ -9,19 +9,6 @@
 #include "servers/rendering_server.h"
 #endif
 
-RID create_instance(const Viewport &viewport) {
-	ERR_FAIL_NULL_V(RenderingServer::get_singleton(), RID());
-	RID instance = RenderingServer::get_singleton()->instance_create();
-	// Vertex data on the mesh is wack. Culling will not work.
-	RenderingServer::get_singleton()->instance_set_ignore_culling(instance, true);
-	Ref<World3D> world = viewport.find_world_3d();
-	if (world.is_valid()) {
-		RenderingServer::get_singleton()->instance_set_scenario(instance, world->get_scenario());
-	}
-
-	return instance;
-}
-
 void CrossSectionRenderingEngine4D::render_frame() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
 	ERR_FAIL_NULL(get_camera());
@@ -47,7 +34,7 @@ void CrossSectionRenderingEngine4D::render_frame() {
 		ERR_CONTINUE(!mesh_3d.is_valid());
 
 		while (_instances_3d.size() <= instance_index) {
-			_instances_3d.push_back(create_instance(*get_viewport()));
+			_instances_3d.push_back(create_instance());
 		}
 		RID instance_3d = _instances_3d[instance_index];
 
@@ -76,6 +63,19 @@ void CrossSectionRenderingEngine4D::render_frame() {
 		RenderingServer::get_singleton()->free_rid(instance);
 	}
 	_instances_3d.resize(instance_index);
+}
+
+RID CrossSectionRenderingEngine4D::create_instance() {
+	ERR_FAIL_NULL_V(RenderingServer::get_singleton(), RID());
+	RID instance = RenderingServer::get_singleton()->instance_create();
+	if (!_cross_section_world_3d.is_valid()) {
+		_cross_section_world_3d.instantiate();
+	}
+	RenderingServer::get_singleton()->instance_set_scenario(instance, _cross_section_world_3d->get_scenario());
+
+	// Vertex data on the mesh is wack. Culling will not work.
+	RenderingServer::get_singleton()->instance_set_ignore_culling(instance, true);
+	return instance;
 }
 
 void CrossSectionRenderingEngine4D::update_camera() {
@@ -110,17 +110,15 @@ void CrossSectionRenderingEngine4D::update_camera() {
 void CrossSectionRenderingEngine4D::setup_for_viewport() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
 	ERR_FAIL_NULL(get_viewport());
-	Ref<World3D> world = get_viewport()->find_world_3d();
-	// This will move instances between World3Ds, so adding a new viewport will remove all the instances from the previous viewport.
-	// TODO Per viewport instance cache?
-	if (world.is_valid()) {
-		RID scenario = world->get_scenario();
-		for (RID instance : _instances_3d) {
-			RenderingServer::get_singleton()->instance_set_scenario(instance, scenario);
-		}
+	if (!_cross_section_world_3d.is_valid()) {
+		_cross_section_world_3d.instantiate();
 	}
+	Viewport *viewport = get_viewport();
+	// Avoids a weird error from the current scenario on viewport not being initialized. Should ideally be handled by set_world_3d.
+	RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), _cross_section_world_3d->get_scenario());
+	viewport->set_world_3d(_cross_section_world_3d);
 	if (_cross_section_camera.is_valid()) {
-		RenderingServer::get_singleton()->viewport_attach_camera(get_viewport()->get_viewport_rid(), _cross_section_camera);
+		RenderingServer::get_singleton()->viewport_attach_camera(viewport->get_viewport_rid(), _cross_section_camera);
 	}
 }
 
