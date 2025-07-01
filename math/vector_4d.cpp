@@ -184,14 +184,6 @@ Vector4 Vector4D::random_in_range(const Vector4 &p_from, const Vector4 &p_to) {
 
 // Conversion.
 
-Vector4 Vector4D::from_3d(const Vector3 &p_vector, const real_t p_w) {
-	return Vector4(p_vector.x, p_vector.y, p_vector.z, p_w);
-}
-
-Vector3 Vector4D::to_3d(const Vector4 &p_vector) {
-	return Vector3(p_vector.x, p_vector.y, p_vector.z);
-}
-
 Array Vector4D::to_json_array(const Vector4 &p_vector) {
 	Array json_array;
 	json_array.resize(4);
@@ -238,6 +230,8 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("random_in_radius", "radius"), &Vector4D::random_in_radius, DEFVAL(1.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("random_in_range", "from", "to"), &Vector4D::random_in_range, DEFVAL(Vector4(0, 0, 0, 0)), DEFVAL(Vector4(1, 1, 1, 1)));
 	// Conversion.
+	ClassDB::bind_static_method("Vector4D", D_METHOD("from_color", "color"), &Vector4D::from_color);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("to_color", "vector"), &Vector4D::to_color);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("from_3d", "vector", "w"), &Vector4D::from_3d, DEFVAL(0.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("to_3d", "vector"), &Vector4D::to_3d);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("from_json_array", "json_array"), &Vector4D::from_json_array);

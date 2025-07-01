@@ -35,8 +35,10 @@ public:
 	static Vector4 random_in_range(const Vector4 &p_from = Vector4(0, 0, 0, 0), const Vector4 &p_to = Vector4(1, 1, 1, 1));
 
 	// Conversion.
-	static Vector4 from_3d(const Vector3 &p_vector, const real_t p_w = 0.0);
-	static Vector3 to_3d(const Vector4 &p_vector);
+	static Vector4 from_color(const Color &p_color) { return Vector4(p_color.r, p_color.g, p_color.b, p_color.a); }
+	static Color to_color(const Vector4 &p_vector) { return Color(p_vector.x, p_vector.y, p_vector.z, p_vector.w); }
+	static Vector4 from_3d(const Vector3 &p_vector, const real_t p_w = 0.0) { return Vector4(p_vector.x, p_vector.y, p_vector.z, p_w); }
+	static Vector3 to_3d(const Vector4 &p_vector) { return Vector3(p_vector.x, p_vector.y, p_vector.z); }
 	static Vector4 from_json_array(const Array &p_json_array);
 	static Array to_json_array(const Vector4 &p_vector);
 

@@ -65,6 +65,13 @@
 				Converts a [Vector3] to a [Vector4] with the W component set to [param w], or [code]0.0[/code] if not specified.
 			</description>
 		</method>
+		<method name="from_color" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="color" type="Color" />
+			<description>
+				Converts a [Color] to a [Vector4] by copying the color's RGBA components into the vector's XYZW components, respectively. This is the inverse of [method to_color].
+			</description>
+		</method>
 		<method name="from_json_array" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="json_array" type="Array" />
@@ -160,6 +167,13 @@
 			<param index="0" name="vector" type="Vector4" />
 			<description>
 				Converts a [Vector4] to a [Vector3] by discarding the W component.
+			</description>
+		</method>
+		<method name="to_color" qualifiers="static">
+			<return type="Color" />
+			<param index="0" name="vector" type="Vector4" />
+			<description>
+				Converts a [Vector4] to a [Color] by copying the vector's XYZW components into the color's RGBA components, respectively. This is the inverse of [method from_color]. The vector's components are not clamped, this is a trivial conversion that does not perform any validation.
 			</description>
 		</method>
 		<method name="to_json_array" qualifiers="static">
