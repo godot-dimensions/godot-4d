@@ -21,6 +21,8 @@ class EditorCameraSettings4D : public Object {
 	Camera4D::WFadeMode _w_fade_mode = Camera4D::W_FADE_TRANSPARENCY;
 	Color _w_fade_color_negative = Color(0.0f, 0.5f, 1.0f);
 	Color _w_fade_color_positive = Color(1.0f, 0.5f, 0.0f);
+	double _w_fade_distance = 5.0;
+	double _w_fade_slope = 1.0;
 
 	Ref<ConfigFile> _4d_editor_config_file;
 	String _4d_editor_config_file_path;
@@ -45,6 +47,12 @@ public:
 
 	Color get_w_fade_color_positive() const { return _w_fade_color_positive; }
 	void set_w_fade_color_positive(const Color &p_w_fade_color_positive);
+
+	double get_w_fade_distance() const { return _w_fade_distance; }
+	void set_w_fade_distance(const double p_w_fade_distance);
+
+	double get_w_fade_slope() const { return _w_fade_slope; }
+	void set_w_fade_slope(const double p_w_fade_slope);
 
 	// Only a setter because the source of truth for this should be the rendering engine menu.
 	void set_rendering_engine(const String &p_rendering_engine);
