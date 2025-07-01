@@ -84,17 +84,38 @@ bool RenderingEngine4D::prefers_wireframe_meshes() {
 	return prefers_wireframe;
 }
 
+String RenderingEngine4D::get_friendly_name() const {
+	String friendly_name;
+	GDVIRTUAL_CALL(_get_friendly_name, friendly_name);
+	return friendly_name;
+}
+
 void RenderingEngine4D::setup_for_viewport_if_needed(Viewport *p_for_viewport) {
 	_viewport = p_for_viewport;
 	if (_setup_viewports.has(p_for_viewport)) {
 		return;
 	}
+	p_for_viewport->set_meta("last_rendering_engine_4d", get_friendly_name());
 	_setup_viewports.append(p_for_viewport);
 	setup_for_viewport();
 }
 
 void RenderingEngine4D::setup_for_viewport() {
 	GDVIRTUAL_CALL(_setup_for_viewport);
+}
+
+void RenderingEngine4D::cleanup_for_viewport_if_needed(Viewport *p_for_viewport) {
+	_viewport = p_for_viewport;
+	if (!_setup_viewports.has(p_for_viewport)) {
+		return;
+	}
+	_setup_viewports.erase(p_for_viewport);
+	p_for_viewport->remove_meta("last_rendering_engine_4d");
+	cleanup_for_viewport();
+}
+
+void RenderingEngine4D::cleanup_for_viewport() {
+	GDVIRTUAL_CALL(_cleanup_for_viewport);
 }
 
 void RenderingEngine4D::render_frame() {
@@ -122,7 +143,9 @@ void RenderingEngine4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesh_relative_positions", "mesh_relative_positions"), &RenderingEngine4D::set_mesh_relative_positions);
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_relative_positions"), "set_mesh_relative_positions", "get_mesh_relative_positions");
 
+	GDVIRTUAL_BIND(_get_friendly_name);
 	GDVIRTUAL_BIND(_prefers_wireframe_meshes);
 	GDVIRTUAL_BIND(_setup_for_viewport);
+	GDVIRTUAL_BIND(_cleanup_for_viewport);
 	GDVIRTUAL_BIND(_render_frame);
 }

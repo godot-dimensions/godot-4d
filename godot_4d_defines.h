@@ -16,6 +16,7 @@
 
 #if GDEXTENSION
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/core/version.hpp>
 #include <godot_cpp/variant/string.hpp>
 #define EDSCALE EditorInterface::get_singleton()->get_editor_scale()
 #define GDEXTMOD_GUI_INPUT _gui_input

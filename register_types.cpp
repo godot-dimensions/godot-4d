@@ -90,6 +90,7 @@
 #include "editor/import/off/editor_import_plugin_off_tetra_4d.h"
 #include "editor/import/off/editor_import_plugin_off_wire_4d.h"
 #include "editor/viewport/editor_camera_4d.h"
+#include "editor/viewport/editor_camera_settings_4d.h"
 #include "editor/viewport/editor_input_surface_4d.h"
 #include "editor/viewport/editor_main_screen_4d.h"
 #include "editor/viewport/editor_main_viewport_4d.h"
@@ -219,12 +220,13 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		add_godot_singleton("PhysicsServer4D", physics_server);
 		// Render.
 		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
-		rendering_server->register_rendering_engine("Wireframe Canvas", memnew(WireframeCanvasRenderingEngine4D));
+		rendering_server->register_rendering_engine(memnew(WireframeCanvasRenderingEngine4D));
 		add_godot_singleton("RenderingServer4D", rendering_server);
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 #ifdef GDEXTENSION
 		GDREGISTER_CLASS(EditorCamera4D);
+		GDREGISTER_CLASS(EditorCameraSettings4D);
 		GDREGISTER_CLASS(EditorCreate4DSceneButton);
 		GDREGISTER_CLASS(EditorExportDialogG4MF4D);
 		GDREGISTER_CLASS(EditorExportSettingsG4MF4D);

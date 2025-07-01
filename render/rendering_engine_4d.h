@@ -52,11 +52,17 @@ public:
 	void set_mesh_relative_positions(PackedVector4Array p_mesh_relative_positions);
 
 	void setup_for_viewport_if_needed(Viewport *p_for_viewport);
+	void cleanup_for_viewport_if_needed(Viewport *p_for_viewport);
+
+	virtual String get_friendly_name() const;
 	virtual bool prefers_wireframe_meshes();
 	virtual void setup_for_viewport();
+	virtual void cleanup_for_viewport();
 	virtual void render_frame();
 
+	GDVIRTUAL0RC(String, _get_friendly_name);
 	GDVIRTUAL0R(bool, _prefers_wireframe_meshes);
 	GDVIRTUAL0(_setup_for_viewport);
+	GDVIRTUAL0(_cleanup_for_viewport);
 	GDVIRTUAL0(_render_frame);
 };

@@ -47,6 +47,7 @@
 #endif
 
 class EditorCamera4D;
+class EditorCameraSettings4D;
 class EditorInputSurface4D;
 class EditorMainScreen4D;
 class EditorMainViewport4D;

@@ -56,6 +56,7 @@ public:
 	void focus_selected_nodes();
 	PackedColorArray get_axis_colors() const;
 	Basis4D get_view_camera_basis() const;
+	EditorCamera4D *get_editor_camera_4d() const { return _editor_camera_4d; }
 	void navigation_freelook(const Ref<InputEventMouseMotion> &p_input_event);
 	void navigation_orbit(const Ref<InputEventMouseMotion> &p_input_event);
 	void navigation_pan(const Ref<InputEventMouseMotion> &p_input_event);

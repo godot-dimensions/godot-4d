@@ -783,6 +783,9 @@ void EditorTransformGizmo4D::set_keep_mode(const KeepMode p_mode) {
 	} else if (_is_scale_linear_enabled) {
 		_is_scale_planar_enabled = true;
 	}
+	if (_meshes[TRANSFORM_SCALE_XY] == nullptr) {
+		return; // Happens when loading editor settings before the theme updated signal reaches this gizmo.
+	}
 	const bool is_plane_visible = _is_move_planar_enabled || _is_scale_planar_enabled;
 	_meshes[TRANSFORM_SCALE_XY]->set_visible(is_plane_visible);
 	_meshes[TRANSFORM_SCALE_XZ]->set_visible(is_plane_visible);

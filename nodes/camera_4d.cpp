@@ -306,6 +306,7 @@ void Camera4D::set_w_fade_slope(const double p_w_fade_slope) {
 }
 
 void Camera4D::_bind_methods() {
+	// Be sure to keep the relevant properties in sync with EditorCameraSettings4D.
 	ClassDB::bind_method(D_METHOD("is_current"), &Camera4D::is_current);
 	ClassDB::bind_method(D_METHOD("set_current", "enabled"), &Camera4D::set_current);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "current"), "set_current", "is_current");
