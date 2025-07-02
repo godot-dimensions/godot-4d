@@ -1,5 +1,7 @@
 #include "wire_material_4d.h"
 
+#include "../../render/cross_section/wireframe_cross_section_shader.glsl.gen.h"
+
 Material4D::ColorSourceFlags WireMaterial4D::_wire_source_to_flags(const WireColorSource p_wire_source) {
 	switch (p_wire_source) {
 		case WireMaterial4D::WIRE_COLOR_SOURCE_SINGLE_COLOR:
@@ -56,8 +58,29 @@ void WireMaterial4D::_get_property_list(List<PropertyInfo> *p_list) const {
 	Material4D::_get_property_list(p_list);
 }
 
+void WireMaterial4D::update_cross_section_material() {
+	if (!_cross_section_material.is_valid()) {
+		return;
+	}
+	if (_cross_section_material->get_shader().is_null()) {
+		_cross_section_material->set_shader(_cross_section_shader);
+	}
+	_cross_section_material->set_shader_parameter("albedo", _albedo_color);
+}
+
 WireMaterial4D::WireMaterial4D() {
 	set_albedo_source(WIRE_COLOR_SOURCE_SINGLE_COLOR);
+}
+
+Ref<Shader> WireMaterial4D::_cross_section_shader;
+
+void WireMaterial4D::init_shaders() {
+	_cross_section_shader.instantiate();
+	_cross_section_shader->set_code(wireframe_cross_section_shader_shader_glsl);
+}
+
+void WireMaterial4D::cleanup_shaders() {
+	_cross_section_shader.unref();
 }
 
 void WireMaterial4D::_bind_methods() {

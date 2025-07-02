@@ -148,11 +148,17 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Virtual classes.
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
+		GDREGISTER_CLASS(TetraMaterial4D);
+		TetraMaterial4D::init_shaders();
+		GDREGISTER_CLASS(WireMaterial4D);
+		WireMaterial4D::init_shaders();
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
+		TetraMesh4D::init_default_material();
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
+		WireMesh4D::init_default_material();
 		// Mesh.
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
 		GDREGISTER_CLASS(ArrayWireMesh4D);
@@ -162,8 +168,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(OFFDocument4D);
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
-		GDREGISTER_CLASS(TetraMaterial4D);
-		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_CLASS(WireMeshBuilder4D);
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
 		// Depends on mesh.
@@ -276,5 +280,10 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		memdelete(RenderingServer4D::get_singleton());
 		memdelete(Vector4D::get_singleton());
 		memdelete(WireMeshBuilder4D::get_singleton());
+
+		TetraMesh4D::cleanup_default_material();
+		WireMesh4D::cleanup_default_material();
+		TetraMaterial4D::cleanup_shaders();
+		WireMaterial4D::cleanup_shaders();
 	}
 }

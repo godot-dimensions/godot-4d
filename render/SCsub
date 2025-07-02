@@ -5,7 +5,8 @@ Import("env_modules")
 
 env_4d = env_modules.Clone()
 
-env_4d.GLSL_HEADER("cross_section/cross_section_shader.glsl")
+env_4d.GLSL_HEADER("cross_section/tetra_cross_section_shader.glsl")
+env_4d.GLSL_HEADER("cross_section/wireframe_cross_section_shader.glsl")
 
 env_4d.add_source_files(env.modules_sources, "*.cpp")
 env_4d.add_source_files(env.modules_sources, "wireframe_canvas/*.cpp")

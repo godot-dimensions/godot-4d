@@ -135,7 +135,8 @@ env["BUILDERS"]["GLSL_HEADER"] = Builder(
     suffix="glsl.gen.h",
 )
 
-env.GLSL_HEADER("../../render/cross_section/cross_section_shader.glsl")
+env.GLSL_HEADER("../../render/cross_section/tetra_cross_section_shader.glsl")
+env.GLSL_HEADER("../../render/cross_section/wireframe_cross_section_shader.glsl")
 
 target_file_path = "../../editor/icons/editor_4d_icons.gen.h"
 icon_sources = Glob("icons/4D.svg") + Glob("icons/Node4D.svg")

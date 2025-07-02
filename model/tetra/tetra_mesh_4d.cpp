@@ -69,6 +69,20 @@ void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) 
 	Mesh4D::validate_material_for_mesh(p_material);
 }
 
+Ref<TetraMaterial4D> TetraMesh4D::_default_material;
+
+Ref<Material4D> TetraMesh4D::get_default_material() {
+	return _default_material;
+}
+
+void TetraMesh4D::init_default_material() {
+	_default_material.instantiate();
+}
+
+void TetraMesh4D::cleanup_default_material() {
+	_default_material.unref();
+}
+
 Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	Ref<ArrayTetraMesh4D> array_mesh;
 	array_mesh.instantiate();
