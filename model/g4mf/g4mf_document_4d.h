@@ -2,6 +2,11 @@
 
 #include "g4mf_state_4d.h"
 
+// Stupid Windows macro.
+#ifdef COMPRESSION_FORMAT_NONE
+#undef COMPRESSION_FORMAT_NONE
+#endif // COMPRESSION_FORMAT_NONE
+
 class G4MFDocument4D : public Resource {
 	GDCLASS(G4MFDocument4D, Resource);
 

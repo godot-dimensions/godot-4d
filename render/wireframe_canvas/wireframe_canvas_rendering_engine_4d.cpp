@@ -111,7 +111,7 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 				}
 			}
 			if (camera->get_depth_fade()) {
-				const real_t depth = abs((a_vert_4d.length() + b_vert_4d.length()) * 0.5);
+				const real_t depth = Math::abs((a_vert_4d.length() + b_vert_4d.length()) * 0.5f);
 				real_t alpha = 1.0;
 
 				if (depth > camera_clip_depth_far) {
