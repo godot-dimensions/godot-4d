@@ -38,6 +38,9 @@ void EditorMainScreen4D::_apply_4d_editor_settings() {
 	// This function handles everything except for what's handled in `EditorCameraSettings4D::setup()`.
 	_on_layout_menu_id_pressed(_4d_editor_config_file->get_value("viewport", "layout", LAYOUT_ITEM_1_VIEWPORT));
 	_on_transform_settings_menu_id_pressed(_4d_editor_config_file->get_value("transform", "keep_mode", TRANSFORM_SETTING_KEEP_FREEFORM));
+	const bool transform_use_local_rotation = _4d_editor_config_file->get_value("transform", "use_local_rotation", false);
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_pressed(transform_use_local_rotation);
+	_transform_gizmo_4d->set_use_local_rotation(transform_use_local_rotation);
 	const bool viewport_show_origin_marker = _4d_editor_config_file->get_value("viewport", "show_origin_marker", true);
 	_view_menu->get_popup()->set_item_checked(VIEW_ITEM_SHOW_ORIGIN_MARKER, viewport_show_origin_marker);
 	_origin_marker->set_visible(viewport_show_origin_marker);
@@ -250,7 +253,16 @@ void EditorMainScreen4D::press_menu_item(const int p_option) {
 			_transform_gizmo_4d->set_gizmo_mode(EditorTransformGizmo4D::GizmoMode(p_option));
 		} break;
 		case TOOLBAR_BUTTON_USE_LOCAL_ROTATION: {
-			_transform_gizmo_4d->set_use_local_rotation(_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->is_pressed());
+			const bool use_local_rotation = _toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->is_pressed();
+			_transform_gizmo_4d->set_use_local_rotation(use_local_rotation);
+			if (!use_local_rotation) {
+				if (_4d_editor_config_file->has_section_key("transform", "use_local_rotation")) {
+					_4d_editor_config_file->erase_section_key("transform", "use_local_rotation");
+				}
+			} else {
+				_4d_editor_config_file->set_value("transform", "use_local_rotation", use_local_rotation);
+			}
+			_4d_editor_config_file->save(_4d_editor_config_file_path);
 		} break;
 	}
 }
