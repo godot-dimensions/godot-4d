@@ -165,9 +165,7 @@ void EditorMainScreen4D::_on_view_menu_id_pressed(const int p_id) {
 			_4d_editor_config_file->save(_4d_editor_config_file_path);
 		} break;
 		case VIEW_ITEM_CAMERA_SETTINGS: {
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
 			_camera_settings_dialog->popup_centered(Size2(400, 300) * EDSCALE);
-#endif
 		} break;
 	}
 }
@@ -428,8 +426,6 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 
 	_camera_settings = memnew(EditorCameraSettings4D);
 	_camera_settings->setup(this, _4d_editor_config_file, _4d_editor_config_file_path);
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
-	// Set up the camera settings dialog as long as this is Godot >= 4.4.
 	_camera_settings_dialog = memnew(ConfirmationDialog);
 	_camera_settings_dialog->set_name(StringName("CameraSettingsDialog"));
 	_camera_settings_dialog->set_title(TTR("Editor Camera Settings"));
@@ -437,6 +433,8 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_camera_settings_inspector->set_name(StringName("CameraSettingsInspector"));
 	_camera_settings_inspector->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
 	_camera_settings_inspector->set_custom_minimum_size(Size2(400, 200) * EDSCALE);
+#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
+	// Set up the camera settings dialog as long as this is Godot >= 4.4.
 	_camera_settings_inspector->edit(_camera_settings);
 	_camera_settings_dialog->add_child(_camera_settings_inspector);
 	add_child(_camera_settings_dialog);
@@ -454,8 +452,12 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 }
 
 EditorMainScreen4D::~EditorMainScreen4D() {
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
-	_camera_settings_inspector->edit(nullptr);
-	memdelete(_camera_settings);
+#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
+	if (_camera_settings_inspector != nullptr) {
+		_camera_settings_inspector->edit(nullptr);
+	}
 #endif
+	if (_camera_settings != nullptr) {
+		memdelete(_camera_settings);
+	}
 }

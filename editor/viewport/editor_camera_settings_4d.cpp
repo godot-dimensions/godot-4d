@@ -82,7 +82,9 @@ void EditorCameraSettings4D::setup(Node *p_ancestor_of_cameras, Ref<ConfigFile> 
 }
 
 void EditorCameraSettings4D::write_to_config_file() const {
-	_4d_editor_config_file->erase_section("camera");
+	if (_4d_editor_config_file->has_section("camera")) {
+		_4d_editor_config_file->erase_section("camera");
+	}
 	if (!Math::is_equal_approx(_clip_near, 0.05)) {
 		_4d_editor_config_file->set_value("camera", "clip_near", _clip_near);
 	}

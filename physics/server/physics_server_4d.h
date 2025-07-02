@@ -35,7 +35,8 @@ class PhysicsServer4D : public Object {
 	void _physics_process();
 
 protected:
-	static PhysicsServer4D *singleton;
+	static CollisionObject4D *_global_static_body_for_bodyless_shapes;
+	static PhysicsServer4D *_singleton;
 	static void _bind_methods();
 
 public:
@@ -62,7 +63,8 @@ public:
 	TypedArray<Area4D> get_area_nodes() const;
 	TypedArray<PhysicsBody4D> get_physics_body_nodes() const;
 
-	static PhysicsServer4D *get_singleton() { return singleton; }
-	PhysicsServer4D() { singleton = this; }
-	~PhysicsServer4D() { singleton = nullptr; }
+	static CollisionObject4D *get_or_create_global_static_body();
+	static PhysicsServer4D *get_singleton() { return _singleton; }
+	PhysicsServer4D() { _singleton = this; }
+	~PhysicsServer4D();
 };

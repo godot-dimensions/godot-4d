@@ -40,8 +40,8 @@ using namespace godot;
 #define GODOT_VERSION_PATCH VERSION_PATCH
 #endif
 
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
-// Prior to Godot 4.5, the internal API of free_rid in RenderingServer and other servers did not match the exposed API.
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
+// Prior to Godot 4.6, the internal API of free_rid in RenderingServer and other servers did not match the exposed API.
 // See https://github.com/godotengine/godot/pull/107139
 #define free_rid free
 #endif
