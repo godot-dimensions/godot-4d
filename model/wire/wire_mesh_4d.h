@@ -7,6 +7,8 @@ class WireMesh4D : public Mesh4D {
 
 protected:
 	static void _bind_methods();
+	void update_cross_section_mesh() override;
+
 	PackedVector4Array _edge_positions_cache;
 
 public:
