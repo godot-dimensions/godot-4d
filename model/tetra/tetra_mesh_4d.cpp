@@ -1,13 +1,15 @@
 #include "tetra_mesh_4d.h"
 
+#include "../../math/vector_4d.h"
+#include "../material_4d.h"
 #include "array_tetra_mesh_4d.h"
 
 #if GDEXTENSION
-#include <godot_cpp/classes/mesh.hpp>
+#include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/surface_tool.hpp>
 #elif GODOT_MODULE
-#include "scene/resources/mesh.h"
+#include "scene/resources/material.h"
 #include "scene/resources/surface_tool.h"
 #endif
 
@@ -47,6 +49,7 @@ Ref<ArrayMesh> TetraMesh4D::export_uvw_map_mesh() {
 void TetraMesh4D::tetra_mesh_clear_cache() {
 	_edge_positions_cache.clear();
 	_edge_indices_cache.clear();
+	mark_cross_section_mesh_dirty();
 }
 
 void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
@@ -138,6 +141,85 @@ PackedVector4Array TetraMesh4D::get_edge_positions() {
 		}
 	}
 	return _edge_positions_cache;
+}
+
+void TetraMesh4D::update_cross_section_mesh() {
+	ERR_FAIL_NULL(_cross_section_mesh);
+	_cross_section_mesh->clear_surfaces();
+
+	Ref<SurfaceTool> surface_tool;
+	surface_tool.instantiate();
+	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
+	surface_tool->set_smooth_group(-1);
+
+	PackedVector4Array vertices = get_vertices();
+	PackedInt32Array cell_indices = get_cell_indices();
+	PackedVector3Array cell_uvws = get_cell_uvw_map();
+	PackedVector4Array cell_normals = get_cell_normals();
+	Ref<Material4D> material = get_material();
+	if (material.is_valid()) {
+		surface_tool->set_material(material->get_cross_section_material());
+	}
+	surface_tool->set_custom_format(0, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	surface_tool->set_custom_format(1, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	surface_tool->set_custom_format(2, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	surface_tool->set_custom_format(3, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	for (int i = 0; i < cell_indices.size(); i += 4) {
+		// Cramming a bunch of data where it fits. Each cell's cross section can be 0-2 triangles. We create two triangles for each cell
+		// with all the info about the cell and figure everything out in the vertex shader after transforms have been applied.
+		// As of 4.4.1, available slots are:
+		// - Vertex position (3)
+		// - Custom 0-3 (4 * 4)
+		// - UV1 and UV2 (2 * 2)
+		// - Normal (3), gets normalized so ~2 slots for arbitrary floats
+		// - Tangent (3), also gets normalized
+		// - Color (4), gets clamped to [0, 1]
+		// Slots that don't work:
+		// - Bone weights: get truncated, sorted, and normalized automatically
+		// - Binormal: available in shader, but computed in SurfaceTool from normal/tangent
+		//
+		// Some alternative strategies:
+		// - ImmediateMesh to compute cross-section on the CPU every frame, but that's likely slower.
+		// - Some kind of compute shader or custom render pipeline, but that's not supported on the Compatibility renderer.
+
+		//// Shared attrs for both triangles:
+
+		// Cell vertex positions: Using custom because there are conveniently four of them and they each take a vector4.
+		surface_tool->set_custom(0, Vector4D::to_color(vertices[cell_indices[i]]));
+		surface_tool->set_custom(1, Vector4D::to_color(vertices[cell_indices[i + 1]]));
+		surface_tool->set_custom(2, Vector4D::to_color(vertices[cell_indices[i + 2]]));
+		surface_tool->set_custom(3, Vector4D::to_color(vertices[cell_indices[i + 3]]));
+
+		// UVW texture coords, need 4*3 float slots.  Using UV, UV2, Normal, Color, vertex.y, and vertex.z.
+		// Normal gets normalized somewhere in the pipeline, so last coord of 1.0 will get set to whatever we need to divide by to get
+		// to get the original coords.
+		Vector3 uvw1 = cell_uvws[i];
+		Vector3 uvw2 = cell_uvws[i + 1];
+		Vector3 uvw3 = cell_uvws[i + 2];
+		Vector3 uvw4 = cell_uvws[i + 3];
+		surface_tool->set_uv(Vector2(uvw1.x, uvw1.y));
+		surface_tool->set_uv2(Vector2(uvw2.x, uvw2.y));
+		surface_tool->set_normal(Vector3(uvw3.x, uvw3.y, 1.0));
+		// This one gets clamped to [0,1], which should be fine for texture coords.
+		surface_tool->set_color(Color(uvw4.x, uvw4.y, uvw4.z, uvw1.z));
+
+		// Not enough slots left for normals. Also interpolating the 4D normals gives weird results, needs more experimentation.
+		// Currently flat normals are computed in the vertex shader.
+
+		//// Vertices:
+
+		// Not storing actual position data in the vertex positions, x is an index, y is UVW data, z is unused.
+		surface_tool->add_vertex(Vector3(0.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(1.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(2.0, uvw2.z, uvw3.z));
+
+		surface_tool->add_vertex(Vector3(3.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(4.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(5.0, uvw2.z, uvw3.z));
+	}
+	surface_tool->commit(_cross_section_mesh);
+
+	// TODO Second surface for 4D "shadow" effect.
 }
 
 void TetraMesh4D::_bind_methods() {

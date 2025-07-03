@@ -112,6 +112,7 @@ Material4D::ColorSourceFlags Material4D::get_albedo_source_flags() const {
 
 void Material4D::set_albedo_source_flags(const ColorSourceFlags p_albedo_source_flags) {
 	_albedo_source_flags = p_albedo_source_flags;
+	update_cross_section_material();
 }
 
 Color Material4D::get_albedo_color() const {
@@ -120,6 +121,7 @@ Color Material4D::get_albedo_color() const {
 
 void Material4D::set_albedo_color(const Color &p_albedo_color) {
 	_albedo_color = p_albedo_color;
+	update_cross_section_material();
 }
 
 PackedColorArray Material4D::get_albedo_color_array() const {
@@ -128,10 +130,12 @@ PackedColorArray Material4D::get_albedo_color_array() const {
 
 void Material4D::set_albedo_color_array(const PackedColorArray &p_albedo_color_array) {
 	_albedo_color_array = p_albedo_color_array;
+	update_cross_section_material();
 }
 
 void Material4D::append_albedo_color(const Color &p_albedo_color) {
 	_albedo_color_array.push_back(p_albedo_color);
+	update_cross_section_material();
 }
 
 void Material4D::resize_albedo_color_array(const int64_t p_size, const Color &p_fill_color) {
@@ -140,6 +144,18 @@ void Material4D::resize_albedo_color_array(const int64_t p_size, const Color &p_
 	for (int64_t i = existing_size; i < p_size; i++) {
 		_albedo_color_array.set(i, p_fill_color);
 	}
+	update_cross_section_material();
+}
+
+Ref<ShaderMaterial> Material4D::get_cross_section_material() {
+	if (_cross_section_material.is_null()) {
+		_cross_section_material.instantiate();
+		update_cross_section_material();
+	}
+	return _cross_section_material;
+}
+
+void Material4D::update_cross_section_material() {
 }
 
 void Material4D::_bind_methods() {
@@ -157,6 +173,8 @@ void Material4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_albedo_color_array", "albedo_color_array"), &Material4D::set_albedo_color_array);
 	ClassDB::bind_method(D_METHOD("append_albedo_color", "albedo_color"), &Material4D::append_albedo_color);
 	ClassDB::bind_method(D_METHOD("resize_albedo_color_array", "size", "fill_color"), &Material4D::resize_albedo_color_array, DEFVAL(Color(1, 1, 1, 1)));
+
+	ClassDB::bind_method(D_METHOD("get_cross_section_material"), &Material4D::get_cross_section_material);
 
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_SINGLE_COLOR);
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_PER_VERT);

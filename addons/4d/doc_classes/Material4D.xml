@@ -44,6 +44,12 @@
 				[b]Note:[/b] When making materials, use the high-level properties from the derived classes instead, such as [member WireMaterial4D.albedo_source] or [member TetraMaterial4D.albedo_source].
 			</description>
 		</method>
+		<method name="get_cross_section_material">
+			<return type="ShaderMaterial" />
+			<description>
+				Returns a 3D material to be used by the cross-section renderer. The returned material is automatically updated to match the properties of this material.
+			</description>
+		</method>
 		<method name="is_default_material" qualifiers="const">
 			<return type="bool" />
 			<description>
