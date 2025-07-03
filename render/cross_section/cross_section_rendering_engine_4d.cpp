@@ -18,10 +18,11 @@ void CrossSectionRenderingEngine4D::render_frame() {
 	TypedArray<MeshInstance4D> mesh_instances = get_mesh_instances();
 	TypedArray<Projection> modelview_basises = get_mesh_relative_basises();
 	PackedVector4Array modelview_origins = get_mesh_relative_positions();
-	size_t instance_index = 0;
-	if (mesh_instances.size() > _instances_3d.size()) {
-		_instances_3d.reserve(mesh_instances.size() - _instances_3d.size());
+	int64_t instances_allocated = _instances_3d.size();
+	if (mesh_instances.size() > instances_allocated) {
+		_instances_3d.resize(mesh_instances.size());
 	}
+	int64_t instance_index = 0;
 	for (int mesh_index = 0; mesh_index < mesh_instances.size(); mesh_index++) {
 		MeshInstance4D *mesh_instance = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
 		ERR_CONTINUE(mesh_instance == nullptr);
@@ -33,8 +34,8 @@ void CrossSectionRenderingEngine4D::render_frame() {
 		Ref<Mesh> mesh_3d = mesh->get_cross_section_mesh();
 		ERR_CONTINUE(!mesh_3d.is_valid());
 
-		while (_instances_3d.size() <= instance_index) {
-			_instances_3d.push_back(create_instance());
+		if (instances_allocated <= instance_index) {
+			_instances_3d.set(instances_allocated++, create_instance());
 		}
 		RID instance_3d = _instances_3d[instance_index];
 

@@ -144,7 +144,7 @@ PackedVector4Array TetraMesh4D::get_edge_positions() {
 }
 
 void TetraMesh4D::update_cross_section_mesh() {
-	ERR_FAIL_NULL(_cross_section_mesh);
+	ERR_FAIL_COND(_cross_section_mesh.is_null());
 	_cross_section_mesh->clear_surfaces();
 
 	Ref<SurfaceTool> surface_tool;
