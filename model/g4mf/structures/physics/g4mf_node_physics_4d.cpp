@@ -144,11 +144,14 @@ Ref<G4MFNodePhysics4D> G4MFNodePhysics4D::from_collision_object_4d(const Collisi
 }
 
 Ref<G4MFNodePhysics4D> G4MFNodePhysics4D::from_collision_shape_4d(const Ref<G4MFState4D> &p_g4mf_state, const CollisionShape4D *p_collision_shape) {
-	// Put the shape into the state's shapes array.
-	int shape_index = G4MFShape4D::convert_shape_into_state(p_g4mf_state, p_collision_shape->get_shape());
-	// Reference the shape in this node's physics properties. But which one? We need to check the collision object type.
 	Ref<G4MFNodePhysics4D> node_physics;
 	node_physics.instantiate();
+	ERR_FAIL_COND_V_MSG(p_collision_shape == nullptr, node_physics, "The given CollisionShape4D was null, cannot convert to G4MFNodePhysics4D.");
+	Ref<Shape4D> shape = p_collision_shape->get_shape();
+	ERR_FAIL_COND_V_MSG(shape.is_null(), node_physics, "The CollisionShape4D's shape was null, cannot convert to G4MFNodePhysics4D.");
+	// Put the shape into the state's shapes array.
+	int shape_index = G4MFShape4D::convert_shape_into_state(p_g4mf_state, shape);
+	// Reference the shape in this node's physics properties. But which one? We need to check the collision object type.
 	const CollisionObject4D *col_obj = _get_ancestor_collision_object(p_collision_shape);
 	if (Object::cast_to<Area4D>(col_obj) == nullptr) {
 		node_physics->set_collider_shape_index(shape_index);

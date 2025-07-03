@@ -432,6 +432,7 @@ Projection godot_4d_bind::Transform4D::proj_from_array_basis(const PackedRealArr
 }
 
 Vector4 godot_4d_bind::Transform4D::proj_from_array_origin(const PackedRealArray &p_from_array) {
+	ERR_FAIL_COND_V_MSG(p_from_array.size() < 20, Vector4(), "PackedRealArray does not have enough numbers to represent a Transform4D's origin. It must have at least 20 elements.");
 	return Vector4(p_from_array[16], p_from_array[17], p_from_array[18], p_from_array[19]);
 }
 

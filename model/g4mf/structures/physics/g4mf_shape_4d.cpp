@@ -177,6 +177,7 @@ Ref<Shape4D> G4MFShape4D::generate_shape(const Ref<G4MFState4D> &p_g4mf_state) c
 Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const Ref<Shape4D> &p_shape, const bool p_deduplicate) {
 	Ref<G4MFShape4D> ret;
 	ret.instantiate();
+	ERR_FAIL_COND_V_MSG(p_shape.is_null(), ret, "The given Shape4D was null, cannot convert to G4MFShape4D.");
 	ret->set_name(p_shape->get_name());
 	const Ref<BoxShape4D> box_shape = p_shape;
 	if (box_shape.is_valid()) {
@@ -300,7 +301,6 @@ int G4MFShape4D::convert_shape_into_state(Ref<G4MFState4D> p_g4mf_state, const R
 			}
 		}
 	}
-	g4mf_shape->set_name(p_shape->get_name());
 	state_shapes.append(g4mf_shape);
 	p_g4mf_state->set_g4mf_shapes(state_shapes);
 	return state_shape_count;
