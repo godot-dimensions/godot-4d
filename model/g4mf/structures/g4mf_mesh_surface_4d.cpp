@@ -14,14 +14,14 @@ PackedInt32Array G4MFMeshSurface4D::load_cell_indices(const Ref<G4MFState4D> &p_
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
 	ERR_FAIL_INDEX_V(_cells_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_cells_accessor_index];
-	return accessor->decode_int32s_from_primitives(p_g4mf_state);
+	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 PackedInt32Array G4MFMeshSurface4D::load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
 	ERR_FAIL_INDEX_V(_edges_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_edges_accessor_index];
-	return accessor->decode_int32s_from_primitives(p_g4mf_state);
+	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 PackedVector4Array G4MFMeshSurface4D::load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const {
@@ -29,7 +29,7 @@ PackedVector4Array G4MFMeshSurface4D::load_vertices(const Ref<G4MFState4D> &p_g4
 	ERR_FAIL_INDEX_V(_vertices_accessor_index, state_accessors.size(), PackedVector4Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_vertices_accessor_index];
 	ERR_FAIL_COND_V(accessor.is_null(), PackedVector4Array());
-	Array variants = accessor->decode_accessor_as_variants(p_g4mf_state, Variant::VECTOR4);
+	Array variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::VECTOR4);
 	const int variants_size = variants.size();
 	PackedVector4Array vertices;
 	vertices.resize(variants_size);
@@ -98,7 +98,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 		vertices_variants[i] = vertices[i];
 	}
 	const String vert_prim_type = G4MFAccessor4D::minimal_primitive_type_for_vector4s(vertices);
-	const int vertices_accessor = G4MFAccessor4D::encode_new_accessor_into_state(p_g4mf_state, vertices_variants, vert_prim_type, 4, p_deduplicate);
+	const int vertices_accessor = G4MFAccessor4D::encode_new_accessor_from_variants(p_g4mf_state, vertices_variants, vert_prim_type, 4, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(vertices_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode vertices into G4MFState4D.");
 	surface->set_vertices_accessor_index(vertices_accessor);
 	// Convert the material.
@@ -120,7 +120,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 				cell_indices_variants[i] = cell_indices[i];
 			}
 			const String cell_prim_type = G4MFAccessor4D::minimal_primitive_type_for_int32s(cell_indices);
-			const int cells_accessor = G4MFAccessor4D::encode_new_accessor_into_state(p_g4mf_state, cell_indices_variants, cell_prim_type, 4, p_deduplicate);
+			const int cells_accessor = G4MFAccessor4D::encode_new_accessor_from_variants(p_g4mf_state, cell_indices_variants, cell_prim_type, 4, p_deduplicate);
 			ERR_FAIL_COND_V_MSG(cells_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode cells into G4MFState4D.");
 			surface->set_cells_accessor_index(cells_accessor);
 		}
@@ -143,7 +143,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 		edge_indices_variants[i] = edge_indices[i];
 	}
 	const String edge_prim_type = G4MFAccessor4D::minimal_primitive_type_for_int32s(edge_indices);
-	const int edges_accessor = G4MFAccessor4D::encode_new_accessor_into_state(p_g4mf_state, edge_indices_variants, edge_prim_type, 2, p_deduplicate);
+	const int edges_accessor = G4MFAccessor4D::encode_new_accessor_from_variants(p_g4mf_state, edge_indices_variants, edge_prim_type, 2, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(edges_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode edges into G4MFState4D.");
 	surface->set_edges_accessor_index(edges_accessor);
 	return surface;

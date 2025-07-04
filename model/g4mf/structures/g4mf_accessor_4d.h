@@ -30,7 +30,7 @@ class G4MFAccessor4D : public G4MFItem4D {
 	Array _decode_ints_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
 	Array _decode_uints_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
 
-	// Private encode functions. Use `encode_accessor_from_variants` publicly.
+	// Private encode functions. Use `encode_variants_as_bytes` publicly.
 	PackedFloat64Array _encode_variants_as_floats(const Array &p_input_data) const;
 	PackedInt64Array _encode_variants_as_ints(const Array &p_input_data) const;
 	Vector<uint64_t> _encode_variants_as_uints(const Array &p_input_data) const;
@@ -63,22 +63,25 @@ public:
 
 	// Decode functions.
 	PackedByteArray load_bytes_from_buffer_view(const Ref<G4MFState4D> &p_g4mf_state) const;
-	PackedFloat64Array decode_floats_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const;
-	PackedInt32Array decode_int32s_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const;
-	PackedInt64Array decode_ints_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Vector<uint64_t> decode_uints_from_primitives(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Array decode_accessor_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
+	PackedFloat64Array decode_floats_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedInt32Array decode_int32s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedInt64Array decode_ints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Vector<uint64_t> decode_uints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Array decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
 
-	// Encode functions.
-	PackedByteArray encode_floats_as_primitives(const PackedFloat64Array &p_input_numbers) const;
-	PackedByteArray encode_ints_as_primitives(const PackedInt64Array &p_input_numbers) const;
-	PackedByteArray encode_uints_as_primitives(const Vector<uint64_t> &p_input_numbers) const;
-	PackedByteArray encode_accessor_from_variants(const Array &p_input_data) const;
-	static int encode_new_accessor_into_state(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_primitive_type, const int p_vector_size = 1, const bool p_deduplicate = true);
+	// Low-level accessor encode functions.
+	PackedByteArray encode_floats_as_bytes(const PackedFloat64Array &p_input_numbers) const;
+	PackedByteArray encode_ints_as_bytes(const PackedInt64Array &p_input_numbers) const;
+	PackedByteArray encode_uints_as_bytes(const Vector<uint64_t> &p_input_numbers) const;
+	PackedByteArray encode_variants_as_bytes(const Array &p_input_data) const;
 
 	int store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data_bytes, const bool p_deduplicate = true);
 	static Ref<G4MFAccessor4D> make_new_accessor_without_data(const String &p_primitive_type, const int p_vector_size = 1);
 
+	// High-level accessor encode functions.
+	static int encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_primitive_type, const int p_vector_size = 1, const bool p_deduplicate = true);
+
+	// Dictionary conversion.
 	static Ref<G4MFAccessor4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;
 };

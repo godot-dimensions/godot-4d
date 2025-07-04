@@ -103,7 +103,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 			}
 		}
 		const String base_color_prim_type = G4MFAccessor4D::minimal_primitive_type_for_colors(albedlo_colors);
-		const int base_color_accessor_index = G4MFAccessor4D::encode_new_accessor_into_state(
+		const int base_color_accessor_index = G4MFAccessor4D::encode_new_accessor_from_variants(
 				p_g4mf_state, base_color_variants, base_color_prim_type, use_alpha ? 4 : 3, p_deduplicate);
 		Ref<G4MFMaterialChannel4D> base_color_channel;
 		base_color_channel.instantiate();

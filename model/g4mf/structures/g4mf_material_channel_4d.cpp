@@ -28,7 +28,7 @@ PackedColorArray G4MFMaterialChannel4D::load_cell_colors(const Ref<G4MFState4D> 
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
 	ERR_FAIL_INDEX_V(_cell_colors_accessor_index, state_accessors.size(), PackedColorArray());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_cell_colors_accessor_index];
-	Array color_variants = accessor->decode_accessor_as_variants(p_g4mf_state, Variant::COLOR);
+	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);
 	const int color_variants_size = color_variants.size();
 	PackedColorArray packed_colors;
 	packed_colors.resize(color_variants_size);
@@ -42,7 +42,7 @@ PackedColorArray G4MFMaterialChannel4D::load_edge_colors(const Ref<G4MFState4D> 
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
 	ERR_FAIL_INDEX_V(_edge_colors_accessor_index, state_accessors.size(), PackedColorArray());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_edge_colors_accessor_index];
-	Array color_variants = accessor->decode_accessor_as_variants(p_g4mf_state, Variant::COLOR);
+	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);
 	const int color_variants_size = color_variants.size();
 	PackedColorArray packed_colors;
 	packed_colors.resize(color_variants_size);
@@ -56,7 +56,7 @@ PackedColorArray G4MFMaterialChannel4D::load_vertex_colors(const Ref<G4MFState4D
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
 	ERR_FAIL_INDEX_V(_vertex_colors_accessor_index, state_accessors.size(), PackedColorArray());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_vertex_colors_accessor_index];
-	Array color_variants = accessor->decode_accessor_as_variants(p_g4mf_state, Variant::COLOR);
+	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);
 	const int color_variants_size = color_variants.size();
 	PackedColorArray packed_colors;
 	packed_colors.resize(color_variants_size);

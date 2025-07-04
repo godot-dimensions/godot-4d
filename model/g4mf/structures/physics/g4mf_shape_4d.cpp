@@ -51,7 +51,7 @@ PackedFloat64Array G4MFShape4D::load_heights(const Ref<G4MFState4D> &p_g4mf_stat
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
 	ERR_FAIL_INDEX_V(_heights_accessor_index, state_accessors.size(), PackedFloat64Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_heights_accessor_index];
-	return accessor->decode_floats_from_primitives(p_g4mf_state);
+	return accessor->decode_floats_from_bytes(p_g4mf_state);
 }
 
 Ref<Shape4D> G4MFShape4D::_generate_shape_from_general() const {
@@ -202,7 +202,7 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 		const PackedFloat64Array heightmap_data = heightmap_shape->get_height_data();
 		const String prim_type = G4MFAccessor4D::minimal_primitive_type_for_floats(heightmap_shape->get_height_data());
 		Ref<G4MFAccessor4D> accessor = G4MFAccessor4D::make_new_accessor_without_data(prim_type);
-		const PackedByteArray encoded_heightmap_data = accessor->encode_floats_as_primitives(heightmap_data);
+		const PackedByteArray encoded_heightmap_data = accessor->encode_floats_as_bytes(heightmap_data);
 		int heights_accessor_index = accessor->store_accessor_data_into_state(p_g4mf_state, encoded_heightmap_data, p_deduplicate);
 		ret->set_heights_accessor_index(heights_accessor_index);
 		return ret;
