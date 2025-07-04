@@ -42,7 +42,7 @@
 			<return type="void" />
 			<param index="0" name="dict" type="Dictionary" />
 			<description>
-				Reads general G4MF item properties from the given [Dictionary] and apply it to this item. This only considers the [code]"name"[/code] and [code]"extras"[/code] keys. The [code]"name"[/code] is set as the [member name] of the item. The [code]"extras"[/code] key is copied to the [Object] metadata, which can be retrieved with [code].get_meta("extras")[/code].
+				Reads general G4MF item properties from the given [Dictionary] and apply it to this item. This only considers the [code]"name"[/code] and [code]"extras"[/code] keys. The [code]"name"[/code] is set as the [member item_name] of the item. The [code]"extras"[/code] key is copied to the [Object] metadata, which can be retrieved with [code].get_meta("extras")[/code].
 			</description>
 		</method>
 		<method name="set_additional_data">
@@ -62,7 +62,7 @@
 	</methods>
 	<members>
 		<member name="item_name" type="String" setter="set_item_name" getter="get_item_name" default="&quot;&quot;">
-			The name of the G4MF item. This is the same as [member Resource.resource_name]. If non-empty, this MUST be unique within the G4MF file.
+			The name of the G4MF item, stored in the JSON as [code]"name"[/code]. This is the same as [member Resource.resource_name]. If non-empty, this MUST be unique within the G4MF file.
 		</member>
 	</members>
 </class>
