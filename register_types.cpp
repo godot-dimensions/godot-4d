@@ -163,7 +163,9 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
 		GDREGISTER_CLASS(TetraMaterial4D);
+		TetraMaterial4D::init_shaders();
 		GDREGISTER_CLASS(WireMaterial4D);
+		WireMaterial4D::init_shaders();
 		GDREGISTER_CLASS(WireMeshBuilder4D);
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
 		// Depends on mesh.
@@ -276,5 +278,8 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		memdelete(RenderingServer4D::get_singleton());
 		memdelete(Vector4D::get_singleton());
 		memdelete(WireMeshBuilder4D::get_singleton());
+
+		TetraMaterial4D::cleanup_shaders();
+		WireMaterial4D::cleanup_shaders();
 	}
 }

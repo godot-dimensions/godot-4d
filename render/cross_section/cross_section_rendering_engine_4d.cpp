@@ -50,6 +50,7 @@ void CrossSectionRenderingEngine4D::render_frame() {
 
 		Projection modelview_basis = modelview_basises[mesh_index];
 		Vector4 modelview_origin = modelview_origins[mesh_index];
+		// TODO Need to split out view matrix to support multiple viewports, currently the same for all viewports. Either instance per viewport or pack view matrix in camera attributes.
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_origin", modelview_origin);
 		// Can't pass a mat4 through instance uniforms, need to break up into columns.
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_x", modelview_basis.columns[0]);

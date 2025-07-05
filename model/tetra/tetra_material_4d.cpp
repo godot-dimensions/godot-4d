@@ -1,6 +1,6 @@
 #include "tetra_material_4d.h"
 
-#include "../../render/cross_section/cross_section_shader.glsl.gen.h"
+#include "../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
 
 Material4D::ColorSourceFlags TetraMaterial4D::_tetra_source_to_flags(const TetraColorSource p_tetra_source) {
@@ -140,11 +140,7 @@ void TetraMaterial4D::update_cross_section_material() {
 		return;
 	}
 	if (_cross_section_material->get_shader().is_null()) {
-		// TODO this re-compiles the shader for every material, should cache the Shader object somewhere.
-		Ref<Shader> cross_section_shader;
-		cross_section_shader.instantiate();
-		cross_section_shader->set_code(cross_section_shader_shader_glsl);
-		_cross_section_material->set_shader(cross_section_shader);
+		_cross_section_material->set_shader(_cross_section_shader);
 	}
 	Color albedo;
 	Variant texture;
@@ -184,6 +180,17 @@ void TetraMaterial4D::_get_property_list(List<PropertyInfo> *p_list) const {
 
 TetraMaterial4D::TetraMaterial4D() {
 	set_albedo_source(TETRA_COLOR_SOURCE_SINGLE_COLOR);
+}
+
+Ref<Shader> TetraMaterial4D::_cross_section_shader;
+
+void TetraMaterial4D::init_shaders() {
+	_cross_section_shader.instantiate();
+	_cross_section_shader->set_code(tetra_cross_section_shader_shader_glsl);
+}
+
+void TetraMaterial4D::cleanup_shaders() {
+	_cross_section_shader.unref();
 }
 
 void TetraMaterial4D::_bind_methods() {
