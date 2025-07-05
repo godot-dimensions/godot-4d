@@ -266,18 +266,18 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 	ERR_FAIL_COND_V_MSG(prims_per_variant < 1, m_values, "G4MF import: The Variant type '" + Variant::get_type_name(p_variant_type) + "' is not supported. Returning an empty array.");           \
 	const int64_t prims_to_read = MIN(_vector_size, prims_per_variant);                                                                                                                           \
 	m_values.resize(values_size);                                                                                                                                                                 \
-	for (int64_t i = 0; i < values_size; i++) {                                                                                                                                                   \
-		const int64_t prim_offset = i * _vector_size;                                                                                                                                             \
+	for (int64_t value_index = 0; value_index < values_size; value_index++) {                                                                                                                     \
+		const int64_t prim_offset = value_index * _vector_size;                                                                                                                                   \
 		ERR_FAIL_COND_V_MSG(prim_offset + prims_to_read > m_primitives.size(), m_values, "G4MF import: The primitive size was not a multiple of the vector size. Returning an empty array.");     \
 		switch (p_variant_type) {                                                                                                                                                                 \
 			case Variant::BOOL: {                                                                                                                                                                 \
-				m_values[i] = m_primitives[prim_offset] != 0.0;                                                                                                                                   \
+				m_values[value_index] = m_primitives[prim_offset] != 0.0;                                                                                                                         \
 			} break;                                                                                                                                                                              \
 			case Variant::INT: {                                                                                                                                                                  \
-				m_values[i] = m_primitives[prim_offset];                                                                                                                                          \
+				m_values[value_index] = m_primitives[prim_offset];                                                                                                                                \
 			} break;                                                                                                                                                                              \
 			case Variant::FLOAT: {                                                                                                                                                                \
-				m_values[i] = m_primitives[prim_offset];                                                                                                                                          \
+				m_values[value_index] = m_primitives[prim_offset];                                                                                                                                \
 			} break;                                                                                                                                                                              \
 			case Variant::VECTOR2:                                                                                                                                                                \
 			case Variant::RECT2:                                                                                                                                                                  \
@@ -304,7 +304,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 				/* Evil hack that relies on the structure of Variant, but it's the */                                                                                                             \
 				/* only way to accomplish this without a ton of code duplication. */                                                                                                              \
 				*(Variant::Type *)&v = p_variant_type;                                                                                                                                            \
-				m_values[i] = v;                                                                                                                                                                  \
+				m_values[value_index] = v;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::VECTOR2I:                                                                                                                                                               \
 			case Variant::RECT2I:                                                                                                                                                                 \
@@ -329,7 +329,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 				/* Evil hack that relies on the structure of Variant, but it's the */                                                                                                             \
 				/* only way to accomplish this without a ton of code duplication. */                                                                                                              \
 				*(Variant::Type *)&v = p_variant_type;                                                                                                                                            \
-				m_values[i] = v;                                                                                                                                                                  \
+				m_values[value_index] = v;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			/* No more generalized hacks, each of the below types needs a lot of repetitive code. */                                                                                              \
 			case Variant::COLOR: {                                                                                                                                                                \
@@ -348,7 +348,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						v = Color(m_primitives[prim_offset], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                                        \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
-				m_values[i] = v;                                                                                                                                                                  \
+				m_values[value_index] = v;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::TRANSFORM2D: {                                                                                                                                                          \
 				Transform2D t;                                                                                                                                                                    \
@@ -357,10 +357,20 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
 						t.columns[1] = Vector2(m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                                                                                     \
 					} break;                                                                                                                                                                      \
+					case 6: {                                                                                                                                                                     \
+						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
+						t.columns[1] = Vector2(m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                                                                                     \
+						t.columns[2] = Vector2(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5]);                                                                                     \
+					} break;                                                                                                                                                                      \
 					case 9: {                                                                                                                                                                     \
 						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
 						t.columns[1] = Vector2(m_primitives[prim_offset + 3], m_primitives[prim_offset + 4]);                                                                                     \
 						t.columns[2] = Vector2(m_primitives[prim_offset + 6], m_primitives[prim_offset + 7]);                                                                                     \
+					} break;                                                                                                                                                                      \
+					case 12: {                                                                                                                                                                    \
+						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
+						t.columns[1] = Vector2(m_primitives[prim_offset + 3], m_primitives[prim_offset + 4]);                                                                                     \
+						t.columns[2] = Vector2(m_primitives[prim_offset + 9], m_primitives[prim_offset + 10]);                                                                                    \
 					} break;                                                                                                                                                                      \
 					case 16: {                                                                                                                                                                    \
 						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
@@ -368,7 +378,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						t.columns[2] = Vector2(m_primitives[prim_offset + 12], m_primitives[prim_offset + 13]);                                                                                   \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
-				m_values[i] = t;                                                                                                                                                                  \
+				m_values[value_index] = t;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::BASIS: {                                                                                                                                                                \
 				Basis b;                                                                                                                                                                          \
@@ -377,7 +387,12 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						b.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 2], 0.0f);                                                                                  \
 						b.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 3], 0.0f);                                                                                  \
 					} break;                                                                                                                                                                      \
-					case 9: {                                                                                                                                                                     \
+					case 6: {                                                                                                                                                                     \
+						b.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 2], m_primitives[prim_offset + 4]);                                                         \
+						b.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 3], m_primitives[prim_offset + 5]);                                                         \
+					} break;                                                                                                                                                                      \
+					case 9:                                                                                                                                                                       \
+					case 12: {                                                                                                                                                                    \
 						b.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 3], m_primitives[prim_offset + 6]);                                                         \
 						b.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 4], m_primitives[prim_offset + 7]);                                                         \
 						b.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 5], m_primitives[prim_offset + 8]);                                                         \
@@ -388,7 +403,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						b.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 6], m_primitives[prim_offset + 10]);                                                        \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
-				m_values[i] = b;                                                                                                                                                                  \
+				m_values[value_index] = b;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::TRANSFORM3D: {                                                                                                                                                          \
 				Transform3D t;                                                                                                                                                                    \
@@ -397,10 +412,21 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 2], 0.0f);                                                                            \
 						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 3], 0.0f);                                                                            \
 					} break;                                                                                                                                                                      \
+					case 6: {                                                                                                                                                                     \
+						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 2], 0.0f);                                                                            \
+						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 3], 0.0f);                                                                            \
+						t.origin = Vector3(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f);                                                                                   \
+					} break;                                                                                                                                                                      \
 					case 9: {                                                                                                                                                                     \
 						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 3], m_primitives[prim_offset + 6]);                                                   \
 						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 4], m_primitives[prim_offset + 7]);                                                   \
 						t.basis.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 5], m_primitives[prim_offset + 8]);                                                   \
+					} break;                                                                                                                                                                      \
+					case 12: {                                                                                                                                                                    \
+						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 3], m_primitives[prim_offset + 6]);                                                   \
+						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 4], m_primitives[prim_offset + 7]);                                                   \
+						t.basis.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 5], m_primitives[prim_offset + 8]);                                                   \
+						t.origin = Vector3(m_primitives[prim_offset + 9], m_primitives[prim_offset + 10], m_primitives[prim_offset + 11]);                                                        \
 					} break;                                                                                                                                                                      \
 					case 16: {                                                                                                                                                                    \
 						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 4], m_primitives[prim_offset + 8]);                                                   \
@@ -409,20 +435,31 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						t.origin = Vector3(m_primitives[prim_offset + 12], m_primitives[prim_offset + 13], m_primitives[prim_offset + 14]);                                                       \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
-				m_values[i] = t;                                                                                                                                                                  \
+				m_values[value_index] = t;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::PROJECTION: {                                                                                                                                                           \
 				Projection p;                                                                                                                                                                     \
 				switch (prims_to_read) {                                                                                                                                                          \
 					case 4: {                                                                                                                                                                     \
 						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], 0.0f, 0.0f);                                                                         \
-						p.columns[1] = Vector4(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f, 0.0f);                                                                         \
+						p.columns[1] = Vector4(m_primitives[prim_offset + 2], m_primitives[prim_offset + 3], 0.0f, 0.0f);                                                                         \
+					} break;                                                                                                                                                                      \
+					case 6: {                                                                                                                                                                     \
+						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], 0.0f, 0.0f);                                                                         \
+						p.columns[1] = Vector4(m_primitives[prim_offset + 2], m_primitives[prim_offset + 3], 0.0f, 0.0f);                                                                         \
+						p.columns[3] = Vector4(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f, 0.0f);                                                                         \
 					} break;                                                                                                                                                                      \
 					case 9: {                                                                                                                                                                     \
 						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], 0.0f);                                                \
-						p.columns[1] = Vector4(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], m_primitives[prim_offset + 6], 0.0f);                                                \
-						p.columns[2] = Vector4(m_primitives[prim_offset + 8], m_primitives[prim_offset + 9], m_primitives[prim_offset + 10], 0.0f);                                               \
+						p.columns[1] = Vector4(m_primitives[prim_offset + 3], m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f);                                                \
+						p.columns[2] = Vector4(m_primitives[prim_offset + 6], m_primitives[prim_offset + 7], m_primitives[prim_offset + 8], 0.0f);                                                \
 					} break;                                                                                                                                                                      \
+					case 12: {                                                                                                                                                                    \
+						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], 0.0f);                                                \
+						p.columns[1] = Vector4(m_primitives[prim_offset + 3], m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f);                                                \
+						p.columns[2] = Vector4(m_primitives[prim_offset + 6], m_primitives[prim_offset + 7], m_primitives[prim_offset + 8], 0.0f);                                                \
+						p.columns[3] = Vector4(m_primitives[prim_offset + 9], m_primitives[prim_offset + 10], m_primitives[prim_offset + 11], 0.0f);                                              \
+					}                                                                                                                                                                             \
 					case 16: {                                                                                                                                                                    \
 						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                       \
 						p.columns[1] = Vector4(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], m_primitives[prim_offset + 6], m_primitives[prim_offset + 7]);                       \
@@ -430,41 +467,41 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						p.columns[3] = Vector4(m_primitives[prim_offset + 12], m_primitives[prim_offset + 13], m_primitives[prim_offset + 14], m_primitives[prim_offset + 15]);                   \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
-				m_values[i] = p;                                                                                                                                                                  \
+				m_values[value_index] = p;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_BYTE_ARRAY: {                                                                                                                                                    \
 				PackedByteArray packed_array;                                                                                                                                                     \
 				packed_array.resize(prims_per_variant);                                                                                                                                           \
 				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(i, m_primitives[prim_offset + j]);                                                                                                                           \
+					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT32_ARRAY: {                                                                                                                                                   \
 				PackedInt32Array packed_array;                                                                                                                                                    \
 				packed_array.resize(prims_per_variant);                                                                                                                                           \
 				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(i, m_primitives[prim_offset + j]);                                                                                                                           \
+					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT64_ARRAY: {                                                                                                                                                   \
 				PackedInt64Array packed_array;                                                                                                                                                    \
 				packed_array.resize(prims_per_variant);                                                                                                                                           \
 				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(i, m_primitives[prim_offset + j]);                                                                                                                           \
+					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT32_ARRAY: {                                                                                                                                                 \
 				PackedFloat32Array packed_array;                                                                                                                                                  \
 				packed_array.resize(prims_per_variant);                                                                                                                                           \
 				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(i, m_primitives[prim_offset + j]);                                                                                                                           \
+					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT64_ARRAY: {                                                                                                                                                 \
 				PackedFloat64Array packed_array;                                                                                                                                                  \
 				packed_array.resize(prims_per_variant);                                                                                                                                           \
 				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(i, m_primitives[prim_offset + j]);                                                                                                                           \
+					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			default: {                                                                                                                                                                            \
@@ -841,6 +878,7 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_bytes(const Vector<uint64_t> &p_
 	/* However, when the inputs are scalars, it's usually expected to just write those all together. */                                                                                           \
 	/* Ex: If the G4MF is supposed to contain an integer Vector2 array, but Godot doesn't have PackedVector2iArray, */                                                                            \
 	/* we would use PackedInt32Array in Godot as a substitute, so the encoding needs to handle this. */                                                                                           \
+	/* This means that if we have scalar values and are told to encode a vector size of 2/3/4/etc... don't pad it. */                                                                             \
 	const int64_t vector_size = prim_per_variant == 1 ? 1 : _vector_size;                                                                                                                         \
 	const int64_t input_size = m_input_data.size();                                                                                                                                               \
 	m_numbers.resize(input_size *vector_size);                                                                                                                                                    \
@@ -875,7 +913,7 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_bytes(const Vector<uint64_t> &p_
 				}                                                                                                                                                                                 \
 				if (unlikely(vector_size > 4)) {                                                                                                                                                  \
 					for (int64_t i = 4; i < vector_size; i++) {                                                                                                                                   \
-						numbers.set(vector_offset + i, 0.0);                                                                                                                                      \
+						numbers.set(vector_offset + i, 0);                                                                                                                                        \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
@@ -893,17 +931,18 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_bytes(const Vector<uint64_t> &p_
 				}                                                                                                                                                                                 \
 				if (unlikely(vector_size > 4)) {                                                                                                                                                  \
 					for (int64_t i = 4; i < vector_size; i++) {                                                                                                                                   \
-						numbers.set(vector_offset + i, 0.0);                                                                                                                                      \
+						numbers.set(vector_offset + i, 0);                                                                                                                                        \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::COLOR: {                                                                                                                                                                \
 				Color c = variant;                                                                                                                                                                \
 				for (int64_t i = 0; i < vector_size; i++) {                                                                                                                                       \
-					if (i < prim_per_variant) {                                                                                                                                                   \
-						m_numbers.set(vector_offset + i, c[i]);                                                                                                                                   \
-					} else {                                                                                                                                                                      \
-						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
+					numbers.set(vector_offset + i, c[i]);                                                                                                                                         \
+				}                                                                                                                                                                                 \
+				if (unlikely(vector_size > 4)) {                                                                                                                                                  \
+					for (int64_t i = 4; i < vector_size; i++) {                                                                                                                                   \
+						numbers.set(vector_offset + i, 0);                                                                                                                                        \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
@@ -913,62 +952,118 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_bytes(const Vector<uint64_t> &p_
 			case Variant::PROJECTION: {                                                                                                                                                           \
 				/* Variant can handle converting Transform2D/Transform3D/Basis to Projection for us. */                                                                                           \
 				Projection p = variant;                                                                                                                                                           \
-				real_t *proj_numbers = (real_t *)&p;                                                                                                                                              \
-				for (int64_t i = 0; i < vector_size; i++) {                                                                                                                                       \
-					if (i < 16) {                                                                                                                                                                 \
-						m_numbers.set(vector_offset + i, proj_numbers[i]);                                                                                                                        \
-					} else {                                                                                                                                                                      \
-						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
+				/* It's possible that one of these types was used to encode a 2x2 matrix, 3x3 matrix, etc. */                                                                                     \
+				/* We should check if we have one of those vector sizes and handle those specially. */                                                                                            \
+				if (unlikely(vector_size == 4)) {                                                                                                                                                 \
+					/* 2x2 matrix has 4 numbers. */                                                                                                                                               \
+					numbers.set(vector_offset, p[0][0]);                                                                                                                                          \
+					numbers.set(vector_offset + 1, p[0][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 2, p[1][0]);                                                                                                                                      \
+					numbers.set(vector_offset + 3, p[1][1]);                                                                                                                                      \
+				} else if (unlikely(vector_size == 6)) {                                                                                                                                          \
+					/* 2 row 3 column matrix has 6 numbers. */                                                                                                                                    \
+					numbers.set(vector_offset, p[0][0]);                                                                                                                                          \
+					numbers.set(vector_offset + 1, p[0][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 2, p[1][0]);                                                                                                                                      \
+					numbers.set(vector_offset + 3, p[1][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 4, p[3][0]);                                                                                                                                      \
+					numbers.set(vector_offset + 5, p[3][1]);                                                                                                                                      \
+				} else if (unlikely(vector_size == 9)) {                                                                                                                                          \
+					/* 3x3 matrix has 9 numbers. */                                                                                                                                               \
+					numbers.set(vector_offset, p[0][0]);                                                                                                                                          \
+					numbers.set(vector_offset + 1, p[0][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 2, p[0][2]);                                                                                                                                      \
+					numbers.set(vector_offset + 3, p[1][0]);                                                                                                                                      \
+					numbers.set(vector_offset + 4, p[1][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 5, p[1][2]);                                                                                                                                      \
+					numbers.set(vector_offset + 6, p[2][0]);                                                                                                                                      \
+					numbers.set(vector_offset + 7, p[2][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 8, p[2][2]);                                                                                                                                      \
+				} else if (unlikely(vector_size == 12)) {                                                                                                                                         \
+					/* 3 row 4 column matrix has 12 numbers. */                                                                                                                                   \
+					numbers.set(vector_offset, p[0][0]);                                                                                                                                          \
+					numbers.set(vector_offset + 1, p[0][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 2, p[0][2]);                                                                                                                                      \
+					numbers.set(vector_offset + 3, p[1][0]);                                                                                                                                      \
+					numbers.set(vector_offset + 4, p[1][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 5, p[1][2]);                                                                                                                                      \
+					numbers.set(vector_offset + 6, p[2][0]);                                                                                                                                      \
+					numbers.set(vector_offset + 7, p[2][1]);                                                                                                                                      \
+					numbers.set(vector_offset + 8, p[2][2]);                                                                                                                                      \
+					numbers.set(vector_offset + 9, p[3][0]);                                                                                                                                      \
+					numbers.set(vector_offset + 10, p[3][1]);                                                                                                                                     \
+					numbers.set(vector_offset + 11, p[3][2]);                                                                                                                                     \
+				} else {                                                                                                                                                                          \
+					/* For 4x4 matrices, and as fallback for other sizes, just read in all the numbers. */                                                                                        \
+					/* This is arguably suboptimal for 5x5 matrices etc, but you shouldn't be encoding 5x5 matrices in these types anyway. */                                                     \
+					real_t *proj_numbers = (real_t *)&p;                                                                                                                                          \
+					for (int64_t i = 0; i < vector_size; i++) {                                                                                                                                   \
+						numbers.set(vector_offset + i, proj_numbers[i]);                                                                                                                          \
+					}                                                                                                                                                                             \
+					if (unlikely(vector_size > 16)) {                                                                                                                                             \
+						for (int64_t i = 16; i < vector_size; i++) {                                                                                                                              \
+							numbers.set(vector_offset + i, 0);                                                                                                                                    \
+						}                                                                                                                                                                         \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_BYTE_ARRAY: {                                                                                                                                                    \
 				PackedByteArray packed_array = variant;                                                                                                                                           \
-				for (int64_t i = 0; i < vector_size; i++) {                                                                                                                                       \
-					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
-					} else {                                                                                                                                                                      \
-						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
+				const int64_t packed_arr_size = packed_array.size();                                                                                                                              \
+				for (int64_t i = 0; i < packed_arr_size; i++) {                                                                                                                                   \
+					numbers.set(vector_offset + i, packed_array[i]);                                                                                                                              \
+				}                                                                                                                                                                                 \
+				if (unlikely(vector_size > packed_arr_size)) {                                                                                                                                    \
+					for (int64_t i = packed_arr_size; i < vector_size; i++) {                                                                                                                     \
+						numbers.set(vector_offset + i, 0);                                                                                                                                        \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT32_ARRAY: {                                                                                                                                                   \
 				PackedInt32Array packed_array = variant;                                                                                                                                          \
-				for (int64_t i = 0; i < vector_size; i++) {                                                                                                                                       \
-					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
-					} else {                                                                                                                                                                      \
-						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
+				const int64_t packed_arr_size = packed_array.size();                                                                                                                              \
+				for (int64_t i = 0; i < packed_arr_size; i++) {                                                                                                                                   \
+					numbers.set(vector_offset + i, packed_array[i]);                                                                                                                              \
+				}                                                                                                                                                                                 \
+				if (unlikely(vector_size > packed_arr_size)) {                                                                                                                                    \
+					for (int64_t i = packed_arr_size; i < vector_size; i++) {                                                                                                                     \
+						numbers.set(vector_offset + i, 0);                                                                                                                                        \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT64_ARRAY: {                                                                                                                                                   \
 				PackedInt64Array packed_array = variant;                                                                                                                                          \
-				for (int64_t i = 0; i < vector_size; i++) {                                                                                                                                       \
-					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
-					} else {                                                                                                                                                                      \
-						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
+				const int64_t packed_arr_size = packed_array.size();                                                                                                                              \
+				for (int64_t i = 0; i < packed_arr_size; i++) {                                                                                                                                   \
+					numbers.set(vector_offset + i, packed_array[i]);                                                                                                                              \
+				}                                                                                                                                                                                 \
+				if (unlikely(vector_size > packed_arr_size)) {                                                                                                                                    \
+					for (int64_t i = packed_arr_size; i < vector_size; i++) {                                                                                                                     \
+						numbers.set(vector_offset + i, 0);                                                                                                                                        \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT32_ARRAY: {                                                                                                                                                 \
 				PackedFloat32Array packed_array = variant;                                                                                                                                        \
-				for (int64_t i = 0; i < vector_size; i++) {                                                                                                                                       \
-					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
-					} else {                                                                                                                                                                      \
-						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
+				const int64_t packed_arr_size = packed_array.size();                                                                                                                              \
+				for (int64_t i = 0; i < packed_arr_size; i++) {                                                                                                                                   \
+					numbers.set(vector_offset + i, packed_array[i]);                                                                                                                              \
+				}                                                                                                                                                                                 \
+				if (unlikely(vector_size > packed_arr_size)) {                                                                                                                                    \
+					for (int64_t i = packed_arr_size; i < vector_size; i++) {                                                                                                                     \
+						numbers.set(vector_offset + i, 0);                                                                                                                                        \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT64_ARRAY: {                                                                                                                                                 \
 				PackedFloat64Array packed_array = variant;                                                                                                                                        \
-				for (int64_t i = 0; i < vector_size; i++) {                                                                                                                                       \
-					if (i < packed_array.size()) {                                                                                                                                                \
-						m_numbers.set(vector_offset + i, packed_array[i]);                                                                                                                        \
-					} else {                                                                                                                                                                      \
-						m_numbers.set(vector_offset + i, 0);                                                                                                                                      \
+				const int64_t packed_arr_size = packed_array.size();                                                                                                                              \
+				for (int64_t i = 0; i < packed_arr_size; i++) {                                                                                                                                   \
+					numbers.set(vector_offset + i, packed_array[i]);                                                                                                                              \
+				}                                                                                                                                                                                 \
+				if (unlikely(vector_size > packed_arr_size)) {                                                                                                                                    \
+					for (int64_t i = packed_arr_size; i < vector_size; i++) {                                                                                                                     \
+						numbers.set(vector_offset + i, 0);                                                                                                                                        \
 					}                                                                                                                                                                             \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
