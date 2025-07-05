@@ -12,7 +12,11 @@
 #include <godot_cpp/classes/spin_box.hpp>
 #elif GODOT_MODULE
 #include "core/io/config_file.h"
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
 #include "editor/editor_inspector.h"
+#else
+#include "editor/inspector/editor_inspector.h"
+#endif
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/dialogs.h"

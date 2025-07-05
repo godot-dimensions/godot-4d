@@ -15,7 +15,11 @@
 #include <godot_cpp/classes/editor_inspector.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
 #include "editor/editor_inspector.h"
+#else
+#include "editor/inspector/editor_inspector.h"
+#endif
 #include "editor/editor_interface.h"
 #endif
 

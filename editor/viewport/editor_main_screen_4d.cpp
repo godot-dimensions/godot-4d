@@ -23,7 +23,11 @@
 #elif GODOT_MODULE
 #include "editor/editor_data.h"
 #include "editor/editor_interface.h"
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
 #include "editor/editor_paths.h"
+#else
+#include "editor/file_system/editor_paths.h"
+#endif
 #include "scene/gui/popup_menu.h"
 #include "scene/gui/separator.h"
 

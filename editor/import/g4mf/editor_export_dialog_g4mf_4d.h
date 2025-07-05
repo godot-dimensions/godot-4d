@@ -9,7 +9,11 @@
 #include <godot_cpp/classes/editor_inspector.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
 #elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
 #include "editor/editor_inspector.h"
+#else
+#include "editor/inspector/editor_inspector.h"
+#endif
 #include "editor/gui/editor_file_dialog.h"
 #include "scene/gui/popup_menu.h"
 #endif
