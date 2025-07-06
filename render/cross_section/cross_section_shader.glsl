@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode skip_vertex_transform;
+render_mode skip_vertex_transform, unshaded;
 
 // World space
 // Not allowed to pass matrices through instance uniforms, so have to unpack into vectors.
@@ -115,6 +115,6 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = albedo.rgb * texture(albedo_texture, uvw).rgb;
 	NORMAL = normalize(NORMAL);
+	ALBEDO = albedo.rgb * texture(albedo_texture, uvw).rgb * ((dot((vec4(NORMAL, 0.0) * INV_VIEW_MATRIX).xyz, vec3(0.0, 1.0, 0.0)) / 2.0) + 0.5);
 }
