@@ -62,6 +62,7 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 void OrthoplexTetraMesh4D::_clear_caches() {
 	_cell_positions_cache.clear();
 	_vertices_cache.clear();
+	tetra_mesh_clear_cache();
 }
 
 Vector4 OrthoplexTetraMesh4D::get_half_extents() const {
