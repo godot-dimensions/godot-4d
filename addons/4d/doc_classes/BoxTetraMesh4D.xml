@@ -24,6 +24,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="cell_texture_map" type="int" setter="set_cell_texture_map" getter="get_cell_texture_map" enum="BoxTetraMesh4D.BoxCellTextureMap" default="0">
+			The type of texture map used for the texture space of the box mesh cells. Along with [member tetra_decomp], this determines the cell UVW texture map returned by [method get_cell_uvw_map]. Different options have different impacts on texture density, visual intuitiveness, and texture bleeding. See [enum BoxCellTextureMap] for possible values.
+		</member>
 		<member name="half_extents" type="Vector4" setter="set_half_extents" getter="get_half_extents">
 			The half-extents of the box mesh in meters, also known as just "extents". This is the "radius" of the box. This is a wrapper around [member size] for situations where you want to use the extents instead of size. Since the box is centered at the origin, one vertex is located at the half-extents, and the rest have some of the components negated.
 		</member>
@@ -43,6 +46,15 @@
 		</constant>
 		<constant name="BOX_TETRA_DECOMP_48_CELL_POLYTOPE" value="2" enum="BoxTetraDecomp">
 			Generate box meshes with 48-cell tetrahedra, where each side of the 8 sides of the box is a cube decomposed into 6 tetrahedra. 48-cell has more symmetry than 40-cell, since each cell in the 48-cell is the same size and shape. Both the 40-cell and 48-cell have the same UVW mapping, allowing the same textures to be used for both. This "Polytope" option affects wireframe rendering, since it only includes the outer edges of the box, as opposed to including all edges of the tetrahedra. This "Polytope" option will also include edge indices and enable the `"polytopeCells"` property when exporting to G4MF.
+		</constant>
+		<constant name="BOX_CELL_TEXTURE_MAP_CROSS_ISLAND" value="0" enum="BoxCellTextureMap">
+			Use a cell UVW texture map in the shape of a cross and island. The +W side is the middle of the cross, while the +/- X/Y/Z sides form the arms of the cross. The -W side is an island, separated from the cross. This texture map is visually intuitive, and has space between disconnected cells to avoid texture bleeding issues, but it is not as compact as possible. If used with a 128x128x128 texture, each side will be 40x40x40 pixels.
+		</constant>
+		<constant name="BOX_CELL_TEXTURE_MAP_FILL_EACH_SIDE" value="1" enum="BoxCellTextureMap">
+			Use a cell UVW texture map that fills each side with the same texture. This means that all sides overlap each other in texture space. This can be used for boxes where all sides have the same texture, such as a Minecraft cobblestone block. If used with a 128x128x128 texture, each side will be 128x128x128 pixels.
+		</constant>
+		<constant name="BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID" value="2" enum="BoxCellTextureMap">
+			Use a cell UVW texture map where all 8 sides are arranged in a compact 2x2x2 grid, densely filling the entire texture space. This is the most compact texture map, but it is not as visually intuitive as the cross-and-island map, and is prone to texture bleeding. This is a better option for pixel art textures, or other textures where filtering is not desired or bleeding is not an issue. If used with a 128x128x128 texture, each side will be 64x64x64 pixels.
 		</constant>
 	</constants>
 </class>

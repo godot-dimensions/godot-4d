@@ -52,114 +52,335 @@
 	 8, 10, 14, 15,  8, 14, 12, 15,  8, 12, 13, 15,  8, 13,  9, 15,  8,  9, 11, 15,  8, 11, 10, 15, /* +W */ \
 }
 
-#define BOX_40_CELL_UVW_MAP PackedVector3Array { \
+// C++ hex floating point literals suck, but this means that each side is 5/16ths of the texture in size.
+#define BOX_40_CELL_TEXTURE_MAP_CROSS_ISLAND PackedVector3Array { \
 	/* -X */ \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.0, 0.3, 0.6), Vector3(0.3, 0.6, 0.6), Vector3(0.0, 0.6, 0.3), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.3), Vector3(0.0, 0.6, 0.3), Vector3(0.3, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.0, 0.3, 0.3), Vector3(0.0, 0.3, 0.6), Vector3(0.0, 0.6, 0.3), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.3, 0.6), Vector3(0.3, 0.6, 0.6), Vector3(0.0, 0.3, 0.6), \
-	Vector3(0.0, 0.6, 0.6), Vector3(0.0, 0.3, 0.6), Vector3(0.0, 0.6, 0.3), Vector3(0.3, 0.6, 0.6), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.5p0, 0x0.Ap0), \
+	Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), \
 	/* +X */ \
-	Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.3, 0.6), Vector3(0.9, 0.3, 0.3), Vector3(0.9, 0.6, 0.6), \
-	Vector3(0.6, 0.6, 0.3), Vector3(0.9, 0.6, 0.3), Vector3(0.9, 0.6, 0.6), Vector3(0.9, 0.3, 0.3), \
-	Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.9, 0.6, 0.6), \
-	Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.3, 0.3), Vector3(0.9, 0.3, 0.3), Vector3(0.6, 0.3, 0.6), \
-	Vector3(0.9, 0.3, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.9, 0.6, 0.6), Vector3(0.9, 0.3, 0.3), \
+	Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), \
+	Vector3(0x0.Fp0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.5p0), \
 	/* -Y */ \
-	Vector3(0.3, 0.0, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.0, 0.3), Vector3(0.3, 0.3, 0.3), \
-	Vector3(0.3, 0.0, 0.6), Vector3(0.3, 0.0, 0.3), Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.0, 0.3), \
-	Vector3(0.3, 0.0, 0.6), Vector3(0.3, 0.3, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.3, 0.3, 0.3), \
-	Vector3(0.3, 0.0, 0.6), Vector3(0.6, 0.0, 0.6), Vector3(0.6, 0.0, 0.3), Vector3(0.6, 0.3, 0.6), \
-	Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.3, 0.6), Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.0, 0.3), \
+	Vector3(0x0.5p0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.0p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.0p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.0p0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.0p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.0p0, 0x0.5p0), \
 	/* +Y */ \
-	Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.9, 0.6), Vector3(0.6, 0.6, 0.3), Vector3(0.3, 0.9, 0.3), \
-	Vector3(0.3, 0.6, 0.6), Vector3(0.3, 0.6, 0.3), Vector3(0.3, 0.9, 0.3), Vector3(0.6, 0.6, 0.3), \
-	Vector3(0.3, 0.6, 0.6), Vector3(0.3, 0.9, 0.6), Vector3(0.6, 0.9, 0.6), Vector3(0.3, 0.9, 0.3), \
-	Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.9, 0.6), \
-	Vector3(0.6, 0.9, 0.3), Vector3(0.6, 0.9, 0.6), Vector3(0.3, 0.9, 0.3), Vector3(0.6, 0.6, 0.3), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.Fp0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
 	/* -Z */ \
-	Vector3(0.6, 0.3, 0.0), Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.3, 0.6, 0.0), \
-	Vector3(0.6, 0.3, 0.0), Vector3(0.6, 0.6, 0.0), Vector3(0.3, 0.6, 0.0), Vector3(0.6, 0.6, 0.3), \
-	Vector3(0.6, 0.3, 0.0), Vector3(0.3, 0.3, 0.0), Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.0), \
-	Vector3(0.6, 0.3, 0.0), Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.3, 0.3, 0.3), \
-	Vector3(0.3, 0.6, 0.3), Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.0), Vector3(0.6, 0.6, 0.3), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.0p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.0p0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.0p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.0p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.0p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.0p0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
 	/* +Z */ \
-	Vector3(0.6, 0.3, 0.6), Vector3(0.3, 0.3, 0.9), Vector3(0.6, 0.6, 0.9), Vector3(0.3, 0.6, 0.6), \
-	Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.6, 0.6), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.6, 0.9), \
-	Vector3(0.6, 0.3, 0.6), Vector3(0.3, 0.3, 0.6), Vector3(0.3, 0.3, 0.9), Vector3(0.3, 0.6, 0.6), \
-	Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.3, 0.9), Vector3(0.6, 0.6, 0.9), Vector3(0.3, 0.3, 0.9), \
-	Vector3(0.3, 0.6, 0.9), Vector3(0.3, 0.3, 0.9), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.6, 0.9), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Fp0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.Fp0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), \
 	/* -W */ \
-	Vector3(0.7, 0.7, 0.7), Vector3(0.7, 1.0, 1.0), Vector3(1.0, 0.7, 1.0), Vector3(1.0, 1.0, 0.7), \
-	Vector3(0.7, 0.7, 0.7), Vector3(1.0, 0.7, 0.7), Vector3(1.0, 1.0, 0.7), Vector3(1.0, 0.7, 1.0), \
-	Vector3(0.7, 0.7, 0.7), Vector3(0.7, 1.0, 0.7), Vector3(0.7, 1.0, 1.0), Vector3(1.0, 1.0, 0.7), \
-	Vector3(0.7, 0.7, 0.7), Vector3(0.7, 0.7, 1.0), Vector3(1.0, 0.7, 1.0), Vector3(0.7, 1.0, 1.0), \
-	Vector3(1.0, 1.0, 1.0), Vector3(0.7, 1.0, 1.0), Vector3(1.0, 1.0, 0.7), Vector3(1.0, 0.7, 1.0), \
+	Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), Vector3(0x0.Bp0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x0.Bp0, 0x1.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.Bp0), \
+	Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), Vector3(0x1.0p0, 0x0.Bp0, 0x0.Bp0), Vector3(0x1.0p0, 0x1.0p0, 0x0.Bp0), Vector3(0x1.0p0, 0x0.Bp0, 0x1.0p0), \
+	Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), Vector3(0x0.Bp0, 0x1.0p0, 0x0.Bp0), Vector3(0x0.Bp0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.Bp0), \
+	Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), Vector3(0x0.Bp0, 0x0.Bp0, 0x1.0p0), Vector3(0x1.0p0, 0x0.Bp0, 0x1.0p0), Vector3(0x0.Bp0, 0x1.0p0, 0x1.0p0), \
+	Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.Bp0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.Bp0), Vector3(0x1.0p0, 0x0.Bp0, 0x1.0p0), \
 	/* +W */ \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.6, 0.3), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.3, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.3), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.6, 0.3), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.3, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.3, 0.6, 0.6), \
-	Vector3(0.6, 0.6, 0.6), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.3, 0.6), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), \
 }
 
-#define BOX_48_CELL_UVW_MAP PackedVector3Array { \
+#define BOX_40_CELL_TEXTURE_MAP_FILL_EACH_SIDE PackedVector3Array { \
 	/* -X */ \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.0, 0.3, 0.3), Vector3(0.0, 0.3, 0.6), Vector3(0.0, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.0, 0.3, 0.6), Vector3(0.3, 0.3, 0.6), Vector3(0.0, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.3, 0.6), Vector3(0.3, 0.6, 0.6), Vector3(0.0, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.6), Vector3(0.3, 0.6, 0.3), Vector3(0.0, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.3), Vector3(0.0, 0.6, 0.3), Vector3(0.0, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.0, 0.6, 0.3), Vector3(0.0, 0.3, 0.3), Vector3(0.0, 0.6, 0.6), \
+	Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), \
+	Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
 	/* +X */ \
-	Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.6, 0.6), Vector3(0.9, 0.6, 0.6), \
-	Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.9, 0.6, 0.6), \
-	Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.3, 0.6), Vector3(0.9, 0.3, 0.6), Vector3(0.9, 0.6, 0.6), \
-	Vector3(0.6, 0.3, 0.3), Vector3(0.9, 0.3, 0.6), Vector3(0.9, 0.3, 0.3), Vector3(0.9, 0.6, 0.6), \
-	Vector3(0.6, 0.3, 0.3), Vector3(0.9, 0.3, 0.3), Vector3(0.9, 0.6, 0.3), Vector3(0.9, 0.6, 0.6), \
-	Vector3(0.6, 0.3, 0.3), Vector3(0.9, 0.6, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.9, 0.6, 0.6), \
+	Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.0, 0.0), \
+	Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), \
+	Vector3(1.0, 0.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.0, 0.0), \
 	/* -Y */ \
-	Vector3(0.6, 0.0, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.3, 0.3), Vector3(0.3, 0.3, 0.3), \
-	Vector3(0.6, 0.0, 0.6), Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.0, 0.3), Vector3(0.3, 0.3, 0.3), \
-	Vector3(0.6, 0.0, 0.6), Vector3(0.6, 0.0, 0.3), Vector3(0.3, 0.0, 0.3), Vector3(0.3, 0.3, 0.3), \
-	Vector3(0.6, 0.0, 0.6), Vector3(0.3, 0.0, 0.3), Vector3(0.3, 0.0, 0.6), Vector3(0.3, 0.3, 0.3), \
-	Vector3(0.6, 0.0, 0.6), Vector3(0.3, 0.0, 0.6), Vector3(0.3, 0.3, 0.6), Vector3(0.3, 0.3, 0.3), \
-	Vector3(0.6, 0.0, 0.6), Vector3(0.3, 0.3, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.3, 0.3, 0.3), \
+	Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 0.0, 0.0), \
+	Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(1.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 0.0, 0.0), \
 	/* +Y */ \
-	Vector3(0.3, 0.6, 0.3), Vector3(0.3, 0.9, 0.3), Vector3(0.3, 0.9, 0.6), Vector3(0.6, 0.9, 0.6), \
-	Vector3(0.3, 0.6, 0.3), Vector3(0.3, 0.9, 0.6), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.9, 0.6), \
-	Vector3(0.3, 0.6, 0.3), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.9, 0.6), \
-	Vector3(0.3, 0.6, 0.3), Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.9, 0.6), \
-	Vector3(0.3, 0.6, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.9, 0.3), Vector3(0.6, 0.9, 0.6), \
-	Vector3(0.3, 0.6, 0.3), Vector3(0.6, 0.9, 0.3), Vector3(0.3, 0.9, 0.3), Vector3(0.6, 0.9, 0.6), \
+	Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 0.0, 0.0), \
+	Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(1.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 0.0, 0.0), \
 	/* -Z */ \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.3, 0.0), Vector3(0.3, 0.6, 0.0), Vector3(0.6, 0.6, 0.0), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.0), Vector3(0.3, 0.6, 0.3), Vector3(0.6, 0.6, 0.0), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.6, 0.0), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.6, 0.0), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.3, 0.0), Vector3(0.6, 0.6, 0.0), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.3, 0.0), Vector3(0.3, 0.3, 0.0), Vector3(0.6, 0.6, 0.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), \
+	Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
 	/* +Z */ \
-	Vector3(0.3, 0.3, 0.6), Vector3(0.3, 0.6, 0.6), Vector3(0.3, 0.6, 0.9), Vector3(0.6, 0.6, 0.9), \
-	Vector3(0.3, 0.3, 0.6), Vector3(0.3, 0.6, 0.9), Vector3(0.3, 0.3, 0.9), Vector3(0.6, 0.6, 0.9), \
-	Vector3(0.3, 0.3, 0.6), Vector3(0.3, 0.3, 0.9), Vector3(0.6, 0.3, 0.9), Vector3(0.6, 0.6, 0.9), \
-	Vector3(0.3, 0.3, 0.6), Vector3(0.6, 0.3, 0.9), Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.6, 0.9), \
-	Vector3(0.3, 0.3, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.6, 0.9), \
-	Vector3(0.3, 0.3, 0.6), Vector3(0.6, 0.6, 0.6), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.6, 0.9), \
+	Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(1.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), \
+	Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
 	/* -W */ \
-	Vector3(1.0, 1.0, 1.0), Vector3(0.7, 1.0, 1.0), Vector3(0.7, 1.0, 0.7), Vector3(0.7, 0.7, 0.7), \
-	Vector3(1.0, 1.0, 1.0), Vector3(0.7, 0.7, 1.0), Vector3(0.7, 1.0, 1.0), Vector3(0.7, 0.7, 0.7), \
-	Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.7, 1.0), Vector3(0.7, 0.7, 1.0), Vector3(0.7, 0.7, 0.7), \
-	Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.7, 0.7), Vector3(1.0, 0.7, 1.0), Vector3(0.7, 0.7, 0.7), \
-	Vector3(1.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.7), Vector3(1.0, 0.7, 0.7), Vector3(0.7, 0.7, 0.7), \
-	Vector3(1.0, 1.0, 1.0), Vector3(0.7, 1.0, 0.7), Vector3(1.0, 1.0, 0.7), Vector3(0.7, 0.7, 0.7), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 0.0), \
+	Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.0, 1.0), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), \
+	Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.0, 1.0), \
 	/* +W */ \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.3), Vector3(0.3, 0.6, 0.6), Vector3(0.6, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.6, 0.6), Vector3(0.3, 0.3, 0.6), Vector3(0.6, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.3, 0.3, 0.6), Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.3, 0.6), Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.6, 0.6, 0.6), \
-	Vector3(0.3, 0.3, 0.3), Vector3(0.6, 0.6, 0.3), Vector3(0.3, 0.6, 0.3), Vector3(0.6, 0.6, 0.6), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 0.0), \
+	Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.0, 1.0), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), \
+	Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.0, 1.0) \
+}
+
+#define BOX_40_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID PackedVector3Array { \
+	/* -X */ \
+	Vector3(0.0, 1.0, 1.0), Vector3(0.5, 1.0, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), \
+	Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.5, 1.0), Vector3(0.5, 0.5, 1.0), Vector3(0.0, 0.5, 0.5), \
+	Vector3(0.0, 1.0, 1.0), Vector3(0.5, 1.0, 1.0), Vector3(0.5, 1.0, 0.5), Vector3(0.5, 0.5, 1.0), \
+	Vector3(0.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 1.0, 0.5), \
+	Vector3(0.5, 0.5, 0.5), Vector3(0.5, 1.0, 0.5), Vector3(0.5, 0.5, 1.0), Vector3(0.0, 0.5, 0.5), \
+	/* +X */ \
+	Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.0, 0.5), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 0.5, 0.0), Vector3(1.0, 0.5, 0.0), Vector3(1.0, 0.5, 0.5), Vector3(1.0, 0.0, 0.0), \
+	Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(0.5, 0.0, 0.5), \
+	Vector3(1.0, 0.0, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(1.0, 0.5, 0.5), Vector3(1.0, 0.0, 0.0), \
+	/* -Y */ \
+	Vector3(1.0, 0.5, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.5, 1.0), Vector3(1.0, 0.0, 1.0), \
+	Vector3(1.0, 0.5, 0.5), Vector3(1.0, 0.5, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(0.5, 0.5, 1.0), \
+	Vector3(1.0, 0.5, 0.5), Vector3(1.0, 0.0, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(1.0, 0.0, 1.0), \
+	Vector3(1.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), Vector3(0.5, 0.0, 0.5), \
+	Vector3(0.5, 0.0, 1.0), Vector3(0.5, 0.0, 0.5), Vector3(1.0, 0.0, 1.0), Vector3(0.5, 0.5, 1.0), \
+	/* +Y */ \
+	Vector3(0.0, 0.5, 0.5), Vector3(0.5, 1.0, 0.5), Vector3(0.5, 0.5, 0.0), Vector3(0.0, 1.0, 0.0), \
+	Vector3(0.0, 0.5, 0.5), Vector3(0.0, 0.5, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.5, 0.5, 0.0), \
+	Vector3(0.0, 0.5, 0.5), Vector3(0.0, 1.0, 0.5), Vector3(0.5, 1.0, 0.5), Vector3(0.0, 1.0, 0.0), \
+	Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 1.0, 0.5), \
+	Vector3(0.5, 1.0, 0.0), Vector3(0.5, 1.0, 0.5), Vector3(0.0, 1.0, 0.0), Vector3(0.5, 0.5, 0.0), \
+	/* -Z */ \
+	Vector3(0.5, 1.0, 0.5), Vector3(1.0, 1.0, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 1.0, 0.5), Vector3(0.5, 0.5, 0.5), Vector3(1.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.0), \
+	Vector3(0.5, 1.0, 0.5), Vector3(1.0, 1.0, 0.5), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 1.0, 0.5), Vector3(0.5, 1.0, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(1.0, 1.0, 0.0), \
+	Vector3(1.0, 0.5, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.0), \
+	/* +Z */ \
+	Vector3(0.5, 0.0, 0.5), Vector3(0.0, 0.0, 1.0), Vector3(0.5, 0.5, 1.0), Vector3(0.0, 0.5, 0.5), \
+	Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.5, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), \
+	Vector3(0.5, 0.0, 0.5), Vector3(0.0, 0.0, 0.5), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.5, 0.5), \
+	Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.0, 1.0), Vector3(0.5, 0.5, 1.0), Vector3(0.0, 0.0, 1.0), \
+	Vector3(0.0, 0.5, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), \
+	/* -W */ \
+	Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.5, 0.5), Vector3(0.5, 1.0, 0.5), Vector3(0.5, 0.5, 1.0), \
+	Vector3(1.0, 1.0, 1.0), Vector3(0.5, 1.0, 1.0), Vector3(0.5, 0.5, 1.0), Vector3(0.5, 1.0, 0.5), \
+	Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.5, 1.0), Vector3(1.0, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), \
+	Vector3(1.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.5), Vector3(0.5, 1.0, 0.5), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 0.5, 0.5), Vector3(1.0, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), Vector3(0.5, 1.0, 0.5), \
+	/* +W */ \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.5, 0.0), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.5, 0.0, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.0, 0.5), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.5, 0.0), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.0), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(0.0, 0.5, 0.5), \
+	Vector3(0.5, 0.5, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.0, 0.5) \
+}
+
+#define BOX_48_CELL_TEXTURE_MAP_CROSS_ISLAND PackedVector3Array { \
+	/* -X */ \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), \
+	/* +X */ \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), \
+	/* -Y */ \
+	Vector3(0x0.Ap0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.Ap0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.0p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.Ap0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.0p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.0p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.Ap0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.0p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.Ap0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	Vector3(0x0.Ap0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), \
+	/* +Y */ \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Fp0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), \
+	/* -Z */ \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.0p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.0p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.0p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.0p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.0p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.0p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.0p0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.0p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.0p0), \
+	/* +Z */ \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Fp0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Fp0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), \
+	/* -W */ \
+	Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.Bp0, 0x1.0p0, 0x1.0p0), Vector3(0x0.Bp0, 0x1.0p0, 0x0.Bp0), Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), \
+	Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.Bp0, 0x0.Bp0, 0x1.0p0), Vector3(0x0.Bp0, 0x1.0p0, 0x1.0p0), Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), \
+	Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x0.Bp0, 0x1.0p0), Vector3(0x0.Bp0, 0x0.Bp0, 0x1.0p0), Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), \
+	Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x0.Bp0, 0x0.Bp0), Vector3(0x1.0p0, 0x0.Bp0, 0x1.0p0), Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), \
+	Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.Bp0), Vector3(0x1.0p0, 0x0.Bp0, 0x0.Bp0), Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), \
+	Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.Bp0, 0x1.0p0, 0x0.Bp0), Vector3(0x1.0p0, 0x1.0p0, 0x0.Bp0), Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), \
+	/* +W */ \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), \
+	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), \
+}
+
+#define BOX_48_CELL_TEXTURE_MAP_FILL_EACH_SIDE PackedVector3Array { \
+    /* -X */ \
+    Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), \
+    Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), \
+    Vector3(1.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 1.0), \
+    Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), \
+    Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), \
+    Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 1.0), \
+    /* +X */ \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    /* -Y */ \
+    Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), \
+    Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), \
+    Vector3(1.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), \
+    Vector3(1.0, 0.0, 1.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+    Vector3(1.0, 0.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+    Vector3(1.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), \
+    /* +Y */ \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    /* -Z */ \
+    Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 0.0), \
+    Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), \
+    Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), \
+    Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 0.0), \
+    Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), \
+    Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), \
+    /* +Z */ \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    /* -W */ \
+    Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 0.0), \
+    Vector3(1.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 0.0), \
+    Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, 0.0), \
+    Vector3(1.0, 1.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(0.0, 0.0, 0.0), \
+    Vector3(1.0, 1.0, 1.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), \
+    Vector3(1.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 0.0, 0.0), \
+    /* +W */ \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0), \
+    Vector3(0.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(1.0, 1.0, 1.0) \
+}
+
+#define BOX_48_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID PackedVector3Array { \
+    /* -X */ \
+    Vector3(0.0, 1.0, 1.0), Vector3(0.5, 1.0, 1.0), Vector3(0.5, 1.0, 0.5), Vector3(0.5, 0.5, 0.5), \
+    Vector3(0.0, 1.0, 1.0), Vector3(0.5, 1.0, 0.5), Vector3(0.0, 1.0, 0.5), Vector3(0.5, 0.5, 0.5), \
+    Vector3(0.0, 1.0, 1.0), Vector3(0.0, 1.0, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.5), \
+    Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.5, 0.5), Vector3(0.0, 0.5, 1.0), Vector3(0.5, 0.5, 0.5), \
+    Vector3(0.0, 1.0, 1.0), Vector3(0.0, 0.5, 1.0), Vector3(0.5, 0.5, 1.0), Vector3(0.5, 0.5, 0.5), \
+    Vector3(0.0, 1.0, 1.0), Vector3(0.5, 0.5, 1.0), Vector3(0.5, 1.0, 1.0), Vector3(0.5, 0.5, 0.5), \
+	/* +X */ \
+	Vector3(0.5, 0.0, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.5, 0.5), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 0.0, 0.0), Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 0.0, 0.0), Vector3(0.5, 0.0, 0.5), Vector3(1.0, 0.0, 0.5), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 0.0, 0.0), Vector3(1.0, 0.0, 0.5), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(1.0, 0.5, 0.0), Vector3(1.0, 0.5, 0.5), \
+	Vector3(0.5, 0.0, 0.0), Vector3(1.0, 0.5, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(1.0, 0.5, 0.5), \
+	/* -Y */ \
+	Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.0, 1.0), Vector3(1.0, 0.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.0, 1.0), Vector3(0.5, 0.5, 1.0), Vector3(1.0, 0.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), Vector3(1.0, 0.5, 1.0), Vector3(1.0, 0.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(1.0, 0.5, 1.0), Vector3(1.0, 0.5, 0.5), Vector3(1.0, 0.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(1.0, 0.5, 0.5), Vector3(1.0, 0.0, 0.5), Vector3(1.0, 0.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(1.0, 0.0, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(1.0, 0.0, 1.0), \
+	/* +Y */ \
+	Vector3(0.0, 0.5, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 1.0, 0.5), Vector3(0.5, 1.0, 0.5), \
+	Vector3(0.0, 0.5, 0.0), Vector3(0.0, 1.0, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 1.0, 0.5), \
+	Vector3(0.0, 0.5, 0.0), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.5), Vector3(0.5, 1.0, 0.5), \
+	Vector3(0.0, 0.5, 0.0), Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 1.0, 0.5), \
+	Vector3(0.0, 0.5, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 1.0, 0.0), Vector3(0.5, 1.0, 0.5), \
+	Vector3(0.0, 0.5, 0.0), Vector3(0.5, 1.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.5, 1.0, 0.5), \
+	/* -Z */ \
+	Vector3(1.0, 1.0, 0.0), Vector3(1.0, 1.0, 0.5), Vector3(1.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.5), \
+	Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.5, 0.5), Vector3(1.0, 0.5, 0.0), Vector3(0.5, 0.5, 0.5), \
+	Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.5, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.5, 0.5), \
+	Vector3(1.0, 1.0, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 1.0, 0.0), Vector3(0.5, 0.5, 0.5), \
+	Vector3(1.0, 1.0, 0.0), Vector3(0.5, 1.0, 0.0), Vector3(0.5, 1.0, 0.5), Vector3(0.5, 0.5, 0.5), \
+	Vector3(1.0, 1.0, 0.0), Vector3(0.5, 1.0, 0.5), Vector3(1.0, 1.0, 0.5), Vector3(0.5, 0.5, 0.5), \
+	/* +Z */ \
+	Vector3(0.0, 0.0, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.0, 0.5, 1.0), Vector3(0.5, 0.5, 1.0), \
+	Vector3(0.0, 0.0, 0.5), Vector3(0.0, 0.5, 1.0), Vector3(0.0, 0.0, 1.0), Vector3(0.5, 0.5, 1.0), \
+	Vector3(0.0, 0.0, 0.5), Vector3(0.0, 0.0, 1.0), Vector3(0.5, 0.0, 1.0), Vector3(0.5, 0.5, 1.0), \
+	Vector3(0.0, 0.0, 0.5), Vector3(0.5, 0.0, 1.0), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.5, 1.0), \
+	Vector3(0.0, 0.0, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), \
+	Vector3(0.0, 0.0, 0.5), Vector3(0.5, 0.5, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), \
+	/* -W */ \
+	Vector3(0.5, 0.5, 0.5), Vector3(1.0, 0.5, 0.5), Vector3(1.0, 0.5, 1.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(1.0, 1.0, 0.5), Vector3(1.0, 0.5, 0.5), Vector3(1.0, 1.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(0.5, 1.0, 0.5), Vector3(1.0, 1.0, 0.5), Vector3(1.0, 1.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(0.5, 1.0, 1.0), Vector3(0.5, 1.0, 0.5), Vector3(1.0, 1.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(0.5, 0.5, 1.0), Vector3(0.5, 1.0, 1.0), Vector3(1.0, 1.0, 1.0), \
+	Vector3(0.5, 0.5, 0.5), Vector3(1.0, 0.5, 1.0), Vector3(0.5, 0.5, 1.0), Vector3(1.0, 1.0, 1.0), \
+	/* +W */ \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.5, 0.0), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.5), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.5, 0.5), Vector3(0.0, 0.0, 0.5), Vector3(0.5, 0.5, 0.5), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.5, 0.5), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.0, 0.0), Vector3(0.5, 0.5, 0.5), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.5, 0.0, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.5, 0.5), \
+	Vector3(0.0, 0.0, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(0.0, 0.5, 0.0), Vector3(0.5, 0.5, 0.5) \
 }
 
 #define BOX_48_CELL_POLYTOPE_EDGE_INDICES PackedInt32Array { \
@@ -203,6 +424,29 @@ void BoxTetraMesh4D::set_tetra_decomp(const BoxTetraDecomp p_decomp) {
 	_clear_caches();
 }
 
+void BoxTetraMesh4D::set_cell_texture_map(const BoxCellTextureMap p_map) {
+	_cell_texture_map = p_map;
+	// Most of the caches can be kept, but the cross section mesh needs to be rebuilt.
+	mark_cross_section_mesh_dirty();
+}
+
+Ref<ArrayMesh> BoxTetraMesh4D::export_uvw_map_mesh() {
+	PackedVector3Array texture_map = get_cell_uvw_map();
+	if (_cell_texture_map == BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID) {
+		// Special case: For 3D rendering of the resulting mesh, flip the normals of the negative sides.
+		const int64_t map_size = texture_map.size();
+		const int64_t side_size = map_size / 8;
+		for (int64_t side_offset = 0; side_offset < map_size; side_offset += map_size / 4) {
+			for (int64_t i = 1; i < side_size; i += 4) {
+				const Vector3 temp = texture_map[side_offset + i];
+				texture_map.set(side_offset + i, texture_map[side_offset + i + 1]);
+				texture_map.set(side_offset + i + 1, temp);
+			}
+		}
+	}
+	return convert_texture_map_to_mesh(texture_map);
+}
+
 PackedInt32Array BoxTetraMesh4D::get_cell_indices() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_INDICES : BOX_48_CELL_INDICES;
 }
@@ -222,7 +466,17 @@ PackedVector4Array BoxTetraMesh4D::get_cell_normals() {
 }
 
 PackedVector3Array BoxTetraMesh4D::get_cell_uvw_map() {
-	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_UVW_MAP : BOX_48_CELL_UVW_MAP;
+	switch (_cell_texture_map) {
+		case BOX_CELL_TEXTURE_MAP_CROSS_ISLAND: {
+			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_CROSS_ISLAND : BOX_48_CELL_TEXTURE_MAP_CROSS_ISLAND;
+		} break;
+		case BOX_CELL_TEXTURE_MAP_FILL_EACH_SIDE: {
+			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_FILL_EACH_SIDE : BOX_48_CELL_TEXTURE_MAP_FILL_EACH_SIDE;
+		} break;
+		case BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID: {
+			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID : BOX_48_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID;
+		} break;
+	}
 }
 
 PackedInt32Array BoxTetraMesh4D::get_edge_indices() {
@@ -288,10 +542,18 @@ void BoxTetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_tetra_decomp", "decomp"), &BoxTetraMesh4D::set_tetra_decomp);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "tetra_decomp", PROPERTY_HINT_ENUM, "40 Cell,48 Cell,48 Cell Polytope"), "set_tetra_decomp", "get_tetra_decomp");
 
+	ClassDB::bind_method(D_METHOD("get_cell_texture_map"), &BoxTetraMesh4D::get_cell_texture_map);
+	ClassDB::bind_method(D_METHOD("set_cell_texture_map", "texture_map"), &BoxTetraMesh4D::set_cell_texture_map);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_texture_map", PROPERTY_HINT_ENUM, "Cross and Island,Fill Each Side,Compact 2x2x2 Grid"), "set_cell_texture_map", "get_cell_texture_map");
+
 	ClassDB::bind_static_method("BoxTetraMesh4D", D_METHOD("from_box_wire_mesh", "wire_mesh"), &BoxTetraMesh4D::from_box_wire_mesh);
 	ClassDB::bind_method(D_METHOD("to_box_wire_mesh"), &BoxTetraMesh4D::to_box_wire_mesh);
 
 	BIND_ENUM_CONSTANT(BOX_TETRA_DECOMP_40_CELL);
 	BIND_ENUM_CONSTANT(BOX_TETRA_DECOMP_48_CELL);
 	BIND_ENUM_CONSTANT(BOX_TETRA_DECOMP_48_CELL_POLYTOPE);
+
+	BIND_ENUM_CONSTANT(BOX_CELL_TEXTURE_MAP_CROSS_ISLAND);
+	BIND_ENUM_CONSTANT(BOX_CELL_TEXTURE_MAP_FILL_EACH_SIDE);
+	BIND_ENUM_CONSTANT(BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID);
 }

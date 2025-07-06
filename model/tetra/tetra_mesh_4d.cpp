@@ -13,8 +13,7 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
-Ref<ArrayMesh> TetraMesh4D::export_uvw_map_mesh() {
-	const PackedVector3Array uvw_map = get_cell_uvw_map();
+Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map) {
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
 	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
@@ -23,27 +22,32 @@ Ref<ArrayMesh> TetraMesh4D::export_uvw_map_mesh() {
 	material.instantiate();
 	material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 	surface_tool->set_material(material);
-	const int size = uvw_map.size();
+	const int size = p_texture_map.size();
 	float hue = 0.0f;
 	for (int i = 0; i < size - 3; i += 4) {
 		surface_tool->set_color(Color::from_hsv(hue, 1.0f, 1.0f));
-		surface_tool->add_vertex(uvw_map[i]);
-		surface_tool->add_vertex(uvw_map[i + 1]);
-		surface_tool->add_vertex(uvw_map[i + 2]);
-		surface_tool->add_vertex(uvw_map[i]);
-		surface_tool->add_vertex(uvw_map[i + 2]);
-		surface_tool->add_vertex(uvw_map[i + 3]);
-		surface_tool->add_vertex(uvw_map[i]);
-		surface_tool->add_vertex(uvw_map[i + 3]);
-		surface_tool->add_vertex(uvw_map[i + 1]);
-		surface_tool->add_vertex(uvw_map[i + 1]);
-		surface_tool->add_vertex(uvw_map[i + 3]);
-		surface_tool->add_vertex(uvw_map[i + 2]);
+		surface_tool->add_vertex(p_texture_map[i]);
+		surface_tool->add_vertex(p_texture_map[i + 1]);
+		surface_tool->add_vertex(p_texture_map[i + 2]);
+		surface_tool->add_vertex(p_texture_map[i]);
+		surface_tool->add_vertex(p_texture_map[i + 2]);
+		surface_tool->add_vertex(p_texture_map[i + 3]);
+		surface_tool->add_vertex(p_texture_map[i]);
+		surface_tool->add_vertex(p_texture_map[i + 3]);
+		surface_tool->add_vertex(p_texture_map[i + 1]);
+		surface_tool->add_vertex(p_texture_map[i + 1]);
+		surface_tool->add_vertex(p_texture_map[i + 3]);
+		surface_tool->add_vertex(p_texture_map[i + 2]);
 		// Any irrational number will do here.
 		hue += 0.045f * Math_E;
 	}
 	surface_tool->generate_normals();
 	return surface_tool->commit();
+}
+
+Ref<ArrayMesh> TetraMesh4D::export_uvw_map_mesh() {
+	const PackedVector3Array texture_map = get_cell_uvw_map();
+	return convert_texture_map_to_mesh(texture_map);
 }
 
 void TetraMesh4D::tetra_mesh_clear_cache() {
