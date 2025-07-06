@@ -11,18 +11,18 @@ Material4D::ColorSourceFlags TetraMaterial4D::_tetra_source_to_flags(const Tetra
 			return Material4D::COLOR_SOURCE_FLAG_PER_VERT;
 		case TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_ONLY:
 			return Material4D::COLOR_SOURCE_FLAG_PER_CELL;
-		case TetraMaterial4D::TETRA_COLOR_SOURCE_CELL_UVW_ONLY:
-			return Material4D::COLOR_SOURCE_FLAG_CELL_UVW;
-		case TetraMaterial4D::TETRA_COLOR_SOURCE_TEXTURE4D_ONLY:
-			return Material4D::COLOR_SOURCE_FLAG_TEXTURE4D;
+		case TetraMaterial4D::TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY:
+			return Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW;
+		case TetraMaterial4D::TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_ONLY:
+			return Material4D::COLOR_SOURCE_FLAG_TEXTURE4D_DIRECT;
 		case TetraMaterial4D::TETRA_COLOR_SOURCE_PER_VERT_AND_SINGLE:
 			return Material4D::ColorSourceFlags(Material4D::COLOR_SOURCE_FLAG_PER_VERT | Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR);
 		case TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE:
 			return Material4D::ColorSourceFlags(Material4D::COLOR_SOURCE_FLAG_PER_CELL | Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR);
-		case TetraMaterial4D::TETRA_COLOR_SOURCE_CELL_UVW_AND_SINGLE:
-			return Material4D::ColorSourceFlags(Material4D::COLOR_SOURCE_FLAG_CELL_UVW | Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR);
-		case TetraMaterial4D::TETRA_COLOR_SOURCE_TEXTURE4D_AND_SINGLE:
-			return Material4D::ColorSourceFlags(Material4D::COLOR_SOURCE_FLAG_TEXTURE4D | Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR);
+		case TetraMaterial4D::TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE:
+			return Material4D::ColorSourceFlags(Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW | Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR);
+		case TetraMaterial4D::TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_AND_SINGLE:
+			return Material4D::ColorSourceFlags(Material4D::COLOR_SOURCE_FLAG_TEXTURE4D_DIRECT | Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR);
 	}
 	return Material4D::COLOR_SOURCE_FLAG_NONE;
 }
@@ -97,10 +97,10 @@ void TetraMaterial4D::merge_with(const Ref<Material4D> &p_material, const int p_
 			set_albedo_source(TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
 		} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_VERT) {
 			set_albedo_source(TETRA_COLOR_SOURCE_PER_VERT_AND_SINGLE);
-		} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_CELL_UVW) {
-			set_albedo_source(TETRA_COLOR_SOURCE_CELL_UVW_AND_SINGLE);
-		} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE4D) {
-			set_albedo_source(TETRA_COLOR_SOURCE_TEXTURE4D_AND_SINGLE);
+		} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW) {
+			set_albedo_source(TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE);
+		} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE4D_DIRECT) {
+			set_albedo_source(TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_AND_SINGLE);
 		} else {
 			set_albedo_source(TETRA_COLOR_SOURCE_SINGLE_COLOR);
 		}
@@ -108,10 +108,10 @@ void TetraMaterial4D::merge_with(const Ref<Material4D> &p_material, const int p_
 		set_albedo_source(TETRA_COLOR_SOURCE_PER_CELL_ONLY);
 	} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_VERT) {
 		set_albedo_source(TETRA_COLOR_SOURCE_PER_VERT_ONLY);
-	} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_CELL_UVW) {
-		set_albedo_source(TETRA_COLOR_SOURCE_CELL_UVW_ONLY);
-	} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE4D) {
-		set_albedo_source(TETRA_COLOR_SOURCE_TEXTURE4D_ONLY);
+	} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW) {
+		set_albedo_source(TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY);
+	} else if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE4D_DIRECT) {
+		set_albedo_source(TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_ONLY);
 	}
 }
 
@@ -126,12 +126,12 @@ void TetraMaterial4D::set_albedo_source(const TetraColorSource p_albedo_source) 
 	update_cross_section_material();
 }
 
-Ref<Texture3D> TetraMaterial4D::get_texture() const {
-	return _texture;
+Ref<Texture3D> TetraMaterial4D::get_albedo_texture_3d() const {
+	return _albedo_texture_3d;
 }
 
-void TetraMaterial4D::set_texture(const Ref<Texture3D> &p_texture) {
-	_texture = p_texture;
+void TetraMaterial4D::set_albedo_texture_3d(const Ref<Texture3D> &p_albedo_texture_3d) {
+	_albedo_texture_3d = p_albedo_texture_3d;
 	update_cross_section_material();
 }
 
@@ -146,39 +146,21 @@ void TetraMaterial4D::update_cross_section_material() {
 		cross_section_shader->set_code(cross_section_shader_shader_glsl);
 		_cross_section_material->set_shader(cross_section_shader);
 	}
-	Color albedo;
-	Variant texture;
-	switch (_albedo_source) {
-		case TETRA_COLOR_SOURCE_SINGLE_COLOR:
-			albedo = _albedo_color;
-			// Setting to a Nil variant resets to the default texture, which is white.
-			texture = Variant();
-			break;
-		case TETRA_COLOR_SOURCE_CELL_UVW_ONLY:
-			albedo = Color(1.0, 1.0, 1.0);
-			texture = _texture;
-			break;
-		case TETRA_COLOR_SOURCE_CELL_UVW_AND_SINGLE:
-			albedo = _albedo_color;
-			texture = _texture;
-			break;
-		default:
-			albedo = Color(1.0, 1.0, 1.0);
-			texture = Variant();
-			break;
-	}
+	const ColorSourceFlags flags = get_albedo_source_flags();
+	const Color albedo = (flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) ? _albedo_color : Color(1.0, 1.0, 1.0);
+	// Setting to a Nil variant resets to the default texture, which is white.
+	const Variant albedo_texture = (flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW) ? Variant(_albedo_texture_3d) : Variant();
 	_cross_section_material->set_shader_parameter("albedo", albedo);
-	_cross_section_material->set_shader_parameter("albedo_texture", texture);
+	_cross_section_material->set_shader_parameter("albedo_texture", albedo_texture);
 }
 
-void TetraMaterial4D::_get_property_list(List<PropertyInfo> *p_list) const {
-	for (List<PropertyInfo>::Element *E = p_list->front(); E; E = E->next()) {
-		PropertyInfo &prop = E->get();
-		if (prop.name == StringName("albedo_color")) {
-			prop.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
-		} else if (prop.name == StringName("albedo_color_array")) {
-			prop.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
-		}
+void TetraMaterial4D::_validate_property(PropertyInfo &p_property) const {
+	if (p_property.name == StringName("albedo_color")) {
+		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+	} else if (p_property.name == StringName("albedo_color_array")) {
+		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+	} else if (p_property.name == StringName("albedo_texture_3d")) {
+		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_TEXTURE_3D) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	}
 }
 
@@ -189,22 +171,22 @@ TetraMaterial4D::TetraMaterial4D() {
 void TetraMaterial4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_albedo_source"), &TetraMaterial4D::get_albedo_source);
 	ClassDB::bind_method(D_METHOD("set_albedo_source", "albedo_source"), &TetraMaterial4D::set_albedo_source);
-	ClassDB::bind_method(D_METHOD("get_texture"), &TetraMaterial4D::get_texture);
-	ClassDB::bind_method(D_METHOD("set_texture", "texture"), &TetraMaterial4D::set_texture);
+	ClassDB::bind_method(D_METHOD("get_albedo_texture_3d"), &TetraMaterial4D::get_albedo_texture_3d);
+	ClassDB::bind_method(D_METHOD("set_albedo_texture_3d", "texture"), &TetraMaterial4D::set_albedo_texture_3d);
 
 	//ADD_GROUP("Albedo", "albedo_");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "albedo_source", PROPERTY_HINT_ENUM, "Single Color,Per Vertex Only,Per Cell Only,Cell UVW Only,Texture4D Only,Per Vertex and Single Color,Per Cell and Single Color,Cell UVW and Single Color,Texture4D and Single Color"), "set_albedo_source", "get_albedo_source");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "albedo_source", PROPERTY_HINT_ENUM, "Single Color,Per Vertex Only,Per Cell Only,Texture3D Only,Texture4D Only,Per Vertex and Single Color,Per Cell and Single Color,Texture3D and Single Color,Texture4D and Single Color"), "set_albedo_source", "get_albedo_source");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "albedo_color"), "set_albedo_color", "get_albedo_color");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "albedo_color_array"), "set_albedo_color_array", "get_albedo_color_array");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture3D"), "set_texture", "get_texture");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "albedo_texture_3d", PROPERTY_HINT_RESOURCE_TYPE, "Texture3D"), "set_albedo_texture_3d", "get_albedo_texture_3d");
 
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_SINGLE_COLOR);
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_PER_VERT_ONLY);
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_PER_CELL_ONLY);
-	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_CELL_UVW_ONLY);
-	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_TEXTURE4D_ONLY);
+	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY);
+	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_ONLY);
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_PER_VERT_AND_SINGLE);
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
-	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_CELL_UVW_AND_SINGLE);
-	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_TEXTURE4D_AND_SINGLE);
+	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE);
+	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_AND_SINGLE);
 }

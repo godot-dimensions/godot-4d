@@ -16,23 +16,23 @@ public:
 		TETRA_COLOR_SOURCE_SINGLE_COLOR,
 		TETRA_COLOR_SOURCE_PER_VERT_ONLY,
 		TETRA_COLOR_SOURCE_PER_CELL_ONLY,
-		TETRA_COLOR_SOURCE_CELL_UVW_ONLY,
-		TETRA_COLOR_SOURCE_TEXTURE4D_ONLY,
+		TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY,
+		TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_ONLY,
 		TETRA_COLOR_SOURCE_PER_VERT_AND_SINGLE,
 		TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE,
-		TETRA_COLOR_SOURCE_CELL_UVW_AND_SINGLE,
-		TETRA_COLOR_SOURCE_TEXTURE4D_AND_SINGLE,
+		TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE,
+		TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_AND_SINGLE,
 	};
 
 private:
 	TetraColorSource _albedo_source = TETRA_COLOR_SOURCE_SINGLE_COLOR;
-	Ref<Texture3D> _texture;
+	Ref<Texture3D> _albedo_texture_3d;
 
 	static Material4D::ColorSourceFlags _tetra_source_to_flags(const TetraColorSource p_tetra_source);
 
 protected:
 	static void _bind_methods();
-	void _get_property_list(List<PropertyInfo> *p_list) const;
+	void _validate_property(PropertyInfo &p_property) const;
 
 	void update_cross_section_material() override;
 
@@ -43,8 +43,8 @@ public:
 	TetraColorSource get_albedo_source() const;
 	void set_albedo_source(const TetraColorSource p_albedo_source);
 
-	Ref<Texture3D> get_texture() const;
-	void set_texture(const Ref<Texture3D> &p_texture);
+	Ref<Texture3D> get_albedo_texture_3d() const;
+	void set_albedo_texture_3d(const Ref<Texture3D> &p_albedo_texture_3d);
 
 	TetraMaterial4D();
 };

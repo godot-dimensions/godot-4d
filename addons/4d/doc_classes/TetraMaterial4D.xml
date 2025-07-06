@@ -19,8 +19,8 @@
 		<member name="albedo_source" type="int" setter="set_albedo_source" getter="get_albedo_source" enum="TetraMaterial4D.TetraColorSource" default="0">
 			The albedo source of the material, an enum specific to tetrahedral meshes. Can be a single color, per-vertex, per-cell, per-cell UVW coordinates, 4D texture, or a combination of single color and the other color sources.
 		</member>
-		<member name="texture" type="Texture3D" setter="set_texture" getter="get_texture">
-			The albedo texture of the material as a Texture3D. Used by the cross-section renderer. Used when albedo_source is [constant TETRA_COLOR_SOURCE_CELL_UVW_ONLY] or [constant TETRA_COLOR_SOURCE_CELL_UVW_AND_SINGLE].
+		<member name="albedo_texture_3d" type="Texture3D" setter="set_albedo_texture_3d" getter="get_albedo_texture_3d">
+			The albedo texture of the material as a Texture3D. Used by the cross-section renderer. Used when [member albedo_source] is [constant TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY] or [constant TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE].
 		</member>
 	</members>
 	<constants>
@@ -33,10 +33,10 @@
 		<constant name="TETRA_COLOR_SOURCE_PER_CELL_ONLY" value="2" enum="TetraColorSource">
 			Indicates the color source is the color array where each item is used for a cell.
 		</constant>
-		<constant name="TETRA_COLOR_SOURCE_CELL_UVW_ONLY" value="3" enum="TetraColorSource">
+		<constant name="TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY" value="3" enum="TetraColorSource">
 			Indicates the color source is a 3D texture which cells read based on their UVW coordinates.
 		</constant>
-		<constant name="TETRA_COLOR_SOURCE_TEXTURE4D_ONLY" value="4" enum="TetraColorSource">
+		<constant name="TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_ONLY" value="4" enum="TetraColorSource">
 			Indicates the color source is a 4D texture which cells read based on their local space 4D coordinates.
 		</constant>
 		<constant name="TETRA_COLOR_SOURCE_PER_VERT_AND_SINGLE" value="5" enum="TetraColorSource">
@@ -45,10 +45,10 @@
 		<constant name="TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE" value="6" enum="TetraColorSource">
 			Indicates the color source is the color array where each item is used for a cell, modulated by a single color.
 		</constant>
-		<constant name="TETRA_COLOR_SOURCE_CELL_UVW_AND_SINGLE" value="7" enum="TetraColorSource">
+		<constant name="TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE" value="7" enum="TetraColorSource">
 			Indicates the color source is a 3D texture which cells read based on their UVW coordinates, modulated by a single color.
 		</constant>
-		<constant name="TETRA_COLOR_SOURCE_TEXTURE4D_AND_SINGLE" value="8" enum="TetraColorSource">
+		<constant name="TETRA_COLOR_SOURCE_TEXTURE4D_DIRECT_AND_SINGLE" value="8" enum="TetraColorSource">
 			Indicates the color source is a 4D texture which cells read based on their local space 4D coordinates, modulated by a single color.
 		</constant>
 	</constants>

@@ -114,20 +114,20 @@
 		<constant name="COLOR_SOURCE_FLAG_PER_CELL" value="16" enum="ColorSourceFlags">
 			Flag to indicate that each item in the color array is used for a cell.
 		</constant>
-		<constant name="COLOR_SOURCE_FLAG_VERT_UVW" value="32" enum="ColorSourceFlags">
-			Flag to indicate that each vertex should be colored based on its UVW coordinates.
+		<constant name="COLOR_SOURCE_FLAG_TEXTURE3D_VERT_UVW" value="32" enum="ColorSourceFlags">
+			Flag to indicate that each vertex should be colored based on a 3D texture sampled by its UVW coordinates.
 		</constant>
-		<constant name="COLOR_SOURCE_FLAG_EDGE_UVW" value="64" enum="ColorSourceFlags">
-			Flag to indicate that each edge should be colored based on the UVW coordinates of its two vertices.
+		<constant name="COLOR_SOURCE_FLAG_TEXTURE3D_EDGE_UVW" value="64" enum="ColorSourceFlags">
+			Flag to indicate that each edge should be colored based on a 3D texture sampled by the UVW coordinates of its two vertices.
 		</constant>
-		<constant name="COLOR_SOURCE_FLAG_FACE_UVW" value="128" enum="ColorSourceFlags">
-			Flag to indicate that each face should be colored based on the UVW coordinates of its three vertices.
+		<constant name="COLOR_SOURCE_FLAG_TEXTURE3D_FACE_UVW" value="128" enum="ColorSourceFlags">
+			Flag to indicate that each face should be colored based on a 3D texture sampled by the UVW coordinates of its three vertices.
 		</constant>
-		<constant name="COLOR_SOURCE_FLAG_CELL_UVW" value="256" enum="ColorSourceFlags">
-			Flag to indicate that each cell should be colored based on the UVW coordinates of its four vertices.
+		<constant name="COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW" value="256" enum="ColorSourceFlags">
+			Flag to indicate that each cell should be colored based on a 3D texture sampled by the UVW coordinates of its four vertices.
 		</constant>
-		<constant name="COLOR_SOURCE_FLAG_TEXTURE4D" value="512" enum="ColorSourceFlags">
-			Flag to indicate that the mesh color should be sampled from a 4D texture mapped to the mesh's local space.
+		<constant name="COLOR_SOURCE_FLAG_TEXTURE4D_DIRECT" value="512" enum="ColorSourceFlags">
+			Flag to indicate that the mesh color should be sampled from a 4D texture directly mapped to the mesh's local space without using UVW coordinates.
 		</constant>
 	</constants>
 </class>
