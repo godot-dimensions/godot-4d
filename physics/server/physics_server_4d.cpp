@@ -1,5 +1,7 @@
 #include "physics_server_4d.h"
 
+#include "../bodies/static_body_4d.h"
+
 #if GDEXTENSION
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -145,7 +147,27 @@ TypedArray<PhysicsBody4D> PhysicsServer4D::get_physics_body_nodes() const {
 	return _physics_body_nodes;
 }
 
-PhysicsServer4D *PhysicsServer4D::singleton = nullptr;
+CollisionObject4D *PhysicsServer4D::get_or_create_global_static_body() {
+	if (_global_static_body_for_bodyless_shapes != nullptr) {
+		return _global_static_body_for_bodyless_shapes;
+	}
+	StaticBody4D *global_static_body = memnew(StaticBody4D);
+	global_static_body->set_name("_GlobalStaticBody4D");
+	PhysicsServer4D::get_singleton()->register_physics_body(global_static_body);
+	_global_static_body_for_bodyless_shapes = global_static_body;
+	return _global_static_body_for_bodyless_shapes;
+}
+
+CollisionObject4D *PhysicsServer4D::_global_static_body_for_bodyless_shapes = nullptr;
+PhysicsServer4D *PhysicsServer4D::_singleton = nullptr;
+
+PhysicsServer4D::~PhysicsServer4D() {
+	_singleton = nullptr;
+	if (_global_static_body_for_bodyless_shapes != nullptr) {
+		memdelete(_global_static_body_for_bodyless_shapes);
+		_global_static_body_for_bodyless_shapes = nullptr;
+	}
+}
 
 void PhysicsServer4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("register_physics_engine", "name", "engine"), &PhysicsServer4D::register_physics_engine);

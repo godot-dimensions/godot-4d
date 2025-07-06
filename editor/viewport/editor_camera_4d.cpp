@@ -69,10 +69,15 @@ void EditorCamera4D::_update_camera_auto_orthographicness() {
 	}
 	if (should_be_orthographic) {
 		_camera->set_projection_type(Camera4D::PROJECTION4D_ORTHOGRAPHIC);
+		if (_camera->get_clip_near() > 0.0) {
+			_positive_clip_near = _camera->get_clip_near();
+		}
 		_camera->set_clip_near(-_camera->get_clip_far());
 	} else {
 		_camera->set_projection_type(Camera4D::PROJECTION4D_PERSPECTIVE_4D);
-		_camera->set_clip_near(0.05);
+		if (_camera->get_clip_near() < 0.0) {
+			_camera->set_clip_near(_positive_clip_near);
+		}
 	}
 }
 
@@ -188,6 +193,9 @@ void EditorCamera4D::set_orthogonal_view_plane(const Vector4::Axis p_right, cons
 	}
 	if (_is_auto_orthographic) {
 		_camera->set_projection_type(Camera4D::PROJECTION4D_ORTHOGRAPHIC);
+		if (_camera->get_clip_near() > 0.0) {
+			_positive_clip_near = _camera->get_clip_near();
+		}
 		_camera->set_clip_near(-_camera->get_clip_far());
 	}
 	_pitch_angle = 0.0f;

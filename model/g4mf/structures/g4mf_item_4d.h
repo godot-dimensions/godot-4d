@@ -19,6 +19,9 @@ protected:
 	static void _bind_methods();
 
 public:
+	String get_item_name() const;
+	void set_item_name(const String &p_name);
+
 	Variant get_additional_data(const StringName &p_extension_name);
 	bool has_additional_data(const StringName &p_extension_name);
 	void set_additional_data(const StringName &p_extension_name, Variant p_additional_data);

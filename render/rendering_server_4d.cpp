@@ -8,14 +8,14 @@
 #include "servers/rendering_server.h"
 #endif
 
-Ref<RenderingEngine4D> RenderingServer4D::_get_rendering_engine(const String &p_name) const {
-	if (_rendering_engines.has(p_name)) {
-		return _rendering_engines[p_name];
+Ref<RenderingEngine4D> RenderingServer4D::_get_rendering_engine(const String &p_friendly_name) const {
+	if (_rendering_engines.has(p_friendly_name)) {
+		return _rendering_engines[p_friendly_name];
 	}
 	// Fallback to the first registered rendering engine. If the name is empty,
 	// treat it as "auto" and do not print a warning. Else, print a warning.
-	if (!p_name.is_empty()) {
-		WARN_PRINT("Rendering engine '" + p_name + "' not registered. Using the first registered engine.");
+	if (!p_friendly_name.is_empty()) {
+		WARN_PRINT("Rendering engine '" + p_friendly_name + "' not registered. Using the first registered engine.");
 	}
 	return _rendering_engines.begin()->value;
 }
@@ -46,8 +46,18 @@ void RenderingServer4D::_render_frame() {
 			continue; // No 4D cameras are currently rendering.
 		}
 		ERR_FAIL_COND_MSG(_rendering_engines.is_empty(), "No 4D rendering engines registered. 4D rendering will not occur.");
-		const String &rendering_engine_name = camera0->get_rendering_engine();
-		Ref<RenderingEngine4D> rendering_engine = _get_rendering_engine(rendering_engine_name);
+		Ref<RenderingEngine4D> rendering_engine = _get_rendering_engine(camera0->get_rendering_engine());
+		if (viewport->has_meta("last_rendering_engine_4d")) {
+			Variant last_rendering_engine_variant = viewport->get_meta("last_rendering_engine_4d");
+			if (last_rendering_engine_variant.get_type() == Variant::STRING) {
+				const String last_rendering_engine_name = last_rendering_engine_variant;
+				const String next_rendering_engine_name = rendering_engine->get_friendly_name();
+				if (next_rendering_engine_name != last_rendering_engine_name) {
+					Ref<RenderingEngine4D> last_rendering_engine_4d = _get_rendering_engine(last_rendering_engine_name);
+					last_rendering_engine_4d->cleanup_for_viewport_if_needed(viewport);
+				}
+			}
+		}
 		// Now that we have a rendering engine selected, set up its properties.
 		rendering_engine->setup_for_viewport_if_needed(viewport);
 		rendering_engine->set_camera(camera0);
@@ -163,15 +173,16 @@ void RenderingServer4D::unregister_mesh_instance(MeshInstance4D *p_mesh_instance
 	_mesh_instances.erase(p_mesh_instance);
 }
 
-void RenderingServer4D::register_rendering_engine(const String &p_name, const Ref<RenderingEngine4D> &p_engine) {
-	if (_rendering_engines.has(p_name)) {
-		WARN_PRINT("Rendering engine '" + p_name + "' already registered. The existing engine will be replaced.");
+void RenderingServer4D::register_rendering_engine(const Ref<RenderingEngine4D> &p_engine) {
+	const String friendly_name = p_engine->get_friendly_name();
+	if (_rendering_engines.has(friendly_name)) {
+		WARN_PRINT("Rendering engine '" + friendly_name + "' already registered. The existing engine will be replaced.");
 	}
-	_rendering_engines[p_name] = p_engine;
+	_rendering_engines[friendly_name] = p_engine;
 }
 
-void RenderingServer4D::unregister_rendering_engine(const String &p_name) {
-	_rendering_engines.erase(p_name);
+void RenderingServer4D::unregister_rendering_engine(const String &p_friendly_name) {
+	_rendering_engines.erase(p_friendly_name);
 }
 
 PackedStringArray RenderingServer4D::get_rendering_engine_names() const {
@@ -193,7 +204,7 @@ RenderingServer4D *RenderingServer4D::singleton = nullptr;
 
 void RenderingServer4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_current_camera", "viewport"), &RenderingServer4D::get_current_camera);
-	ClassDB::bind_method(D_METHOD("register_rendering_engine", "name", "engine"), &RenderingServer4D::register_rendering_engine);
+	ClassDB::bind_method(D_METHOD("register_rendering_engine", "engine"), &RenderingServer4D::register_rendering_engine);
 	ClassDB::bind_method(D_METHOD("unregister_rendering_engine", "name"), &RenderingServer4D::unregister_rendering_engine);
 	ClassDB::bind_method(D_METHOD("get_rendering_engine_names"), &RenderingServer4D::get_rendering_engine_names);
 

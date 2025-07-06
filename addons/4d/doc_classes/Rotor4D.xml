@@ -91,7 +91,7 @@
 			<return type="Rotor4D" />
 			<param index="0" name="angle" type="float" />
 			<description>
-				Create a rotor representing a rotation in the wy plane by the given angle. This is the negative of [method rotation_yw].
+				Create a rotor representing a rotation in the wy plane by the given angle. This is the negative of [method from_yw].
 			</description>
 		</method>
 		<method name="from_xw" qualifiers="static">
@@ -112,14 +112,14 @@
 			<return type="Rotor4D" />
 			<param index="0" name="angle" type="float" />
 			<description>
-				Create a rotor representing a rotation in the xz plane by the given angle. This is the negative of [method rotation_zx].
+				Create a rotor representing a rotation in the xz plane by the given angle. This is the negative of [method from_zx].
 			</description>
 		</method>
 		<method name="from_yw" qualifiers="static">
 			<return type="Rotor4D" />
 			<param index="0" name="angle" type="float" />
 			<description>
-				Create a rotor representing a rotation in the yw plane by the given angle. This is the negative of [method rotation_wy].
+				Create a rotor representing a rotation in the yw plane by the given angle. This is the negative of [method from_wy].
 			</description>
 		</method>
 		<method name="from_yz" qualifiers="static">
@@ -140,25 +140,25 @@
 			<return type="Rotor4D" />
 			<param index="0" name="angle" type="float" />
 			<description>
-				Create a rotor representing a rotation in the zx plane by the given angle. This is the negative of [method rotation_xz].
+				Create a rotor representing a rotation in the zx plane by the given angle. This is the negative of [method from_xz].
 			</description>
 		</method>
 		<method name="get_rotation_angle" qualifiers="const">
 			<return type="float" />
 			<description>
-				Returns the angle of the rotation represented by the rotor. This function, and [method get_rotation_bivector_normal], are the inverse of [method rotation_bivector_normal_angle].
+				Returns the angle of the rotation represented by the rotor. This function, and [method get_rotation_bivector_normal], are the inverse of [method get_rotation_bivector_magnitude].
 			</description>
 		</method>
 		<method name="get_rotation_bivector_magnitude" qualifiers="const">
 			<return type="AABB" />
 			<description>
-				Returns the bivector representing the rotation planes of the rotor, where the magnitude of the bivector is the angle of the rotation. This function is the inverse of [method rotation_bivector_magnitude].
+				Returns the bivector representing the rotation planes of the rotor, where the magnitude of the bivector is the angle of the rotation. This function is the inverse of [method get_rotation_bivector_magnitude].
 			</description>
 		</method>
 		<method name="get_rotation_bivector_normal" qualifiers="const">
 			<return type="AABB" />
 			<description>
-				Returns the normalized bivector representing the rotation planes of the rotor. This function, and [method get_rotation_angle], are the inverse of [method rotation_bivector_normal_angle].
+				Returns the normalized bivector representing the rotation planes of the rotor. This function, and [method get_rotation_angle], are the inverse of [method get_rotation_bivector_magnitude].
 			</description>
 		</method>
 		<method name="identity" qualifiers="static">

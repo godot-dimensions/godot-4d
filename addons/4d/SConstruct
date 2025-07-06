@@ -25,6 +25,7 @@ env.Append(
         "../../physics/shapes",
         "../../render",
         "../../render/wireframe_canvas",
+        "../../render/cross_section"
     ]
 )
 
@@ -49,7 +50,9 @@ sources = (
     + Glob("../../physics/shapes/*.cpp")
     + Glob("../../render/*.cpp")
     + Glob("../../render/wireframe_canvas/*.cpp")
+    + Glob("../../render/cross_section/*.cpp")
 )
+
 
 env.Append(CPPDEFINES=["GDEXTENSION"])
 
@@ -116,7 +119,7 @@ else:
 
 Default(library)
 
-# The rest of this file handles generating the 4D icons header file.
+# The rest of this file handles generating the 4D icons file and GLSL header files.
 import importlib.util
 import os
 import sys
@@ -127,12 +130,12 @@ header_builders = importlib.util.module_from_spec(spec)
 sys.modules["header_builders"] = header_builders
 spec.loader.exec_module(header_builders)
 
-env["BUILDERS"]["GLSL_HEADER"] = (
-    Builder(
-        action=header_builders.build_raw_headers_action,
-        suffix="glsl.gen.h",
-    ),
+env["BUILDERS"]["GLSL_HEADER"] = Builder(
+    action=header_builders.build_raw_headers_action,
+    suffix="glsl.gen.h",
 )
+
+env.GLSL_HEADER("../../render/cross_section/cross_section_shader.glsl")
 
 target_file_path = "../../editor/icons/editor_4d_icons.gen.h"
 icon_sources = Glob("icons/4D.svg") + Glob("icons/Node4D.svg")

@@ -27,6 +27,12 @@
 				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertices] for details of the returned data.
 			</description>
 		</method>
+		<method name="_update_cross_section_mesh" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Updates the 3D mesh this mesh uses for cross-section rendering. Can be called to force the cross-section mesh to be updated, but typically should only be called internally. Subclasses can override this, but most cases should be covered by the default implementation.
+			</description>
+		</method>
 		<method name="_validate_material_for_mesh" qualifiers="virtual">
 			<return type="void" />
 			<param index="0" name="material" type="Material4D" />
@@ -46,6 +52,12 @@
 			<description>
 				Static helper method for deduplicating edge indices. This method ensures that each pair of two integers in the array is unique, and that the first index is less than the second index. This is useful for optimizing wireframe meshes by removing duplicate edges and ensuring a consistent order for each edge.
 				[b]Note[/b]: This only looks at edge indices. It does not remove duplicate vertices, nor does it have access to the vertices array.
+			</description>
+		</method>
+		<method name="get_cross_section_mesh">
+			<return type="ArrayMesh" />
+			<description>
+				Returns a 3D mesh that can be used to render 3D cross-sections of this mesh in the cross-section renderer. This mesh will only render properly with the cross-section material from [method Material4D.get_cross_section_material].
 			</description>
 		</method>
 		<method name="get_edge_indices">
@@ -82,6 +94,12 @@
 				If a mesh has valid data, the result of the validation will be cached until the mesh data changes, so this method may be called multiple times without performance concerns. This also means this method should be called after generating a mesh. This especially useful when generating a mesh on a thread; calling this on the thread will avoid stalling the main thread with mesh validation during rendering.
 			</description>
 		</method>
+		<method name="mark_cross_section_mesh_dirty">
+			<return type="void" />
+			<description>
+				Marks the cross-section mesh as dirty, meaning it needs to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes.
+			</description>
+		</method>
 		<method name="reset_mesh_data_validation">
 			<return type="void" />
 			<description>
@@ -99,6 +117,12 @@
 			<return type="WireMesh4D" />
 			<description>
 				Converts this Mesh4D to a [WireMesh4D]. This method will use the best conversion available. For example, a [BoxTetraMesh4D] will be converted to a [BoxWireMesh4D]. If no specialized conversion is available, the method will return an [ArrayWireMesh4D]. See [method to_array_wire_mesh] for more details.
+			</description>
+		</method>
+		<method name="update_cross_section_mesh">
+			<return type="void" />
+			<description>
+				Updates the 3D mesh this mesh uses for cross-section rendering. Can be called to force the cross-section mesh to be updated, but typically should only be called internally.
 			</description>
 		</method>
 		<method name="validate_material_for_mesh">

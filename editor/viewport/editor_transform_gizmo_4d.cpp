@@ -15,7 +15,11 @@
 #include <godot_cpp/classes/editor_inspector.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
 #include "editor/editor_inspector.h"
+#else
+#include "editor/inspector/editor_inspector.h"
+#endif
 #include "editor/editor_interface.h"
 #endif
 
@@ -782,6 +786,9 @@ void EditorTransformGizmo4D::set_keep_mode(const KeepMode p_mode) {
 		_is_scale_planar_enabled = false;
 	} else if (_is_scale_linear_enabled) {
 		_is_scale_planar_enabled = true;
+	}
+	if (_meshes[TRANSFORM_SCALE_XY] == nullptr) {
+		return; // Happens when loading editor settings before the theme updated signal reaches this gizmo.
 	}
 	const bool is_plane_visible = _is_move_planar_enabled || _is_scale_planar_enabled;
 	_meshes[TRANSFORM_SCALE_XY]->set_visible(is_plane_visible);

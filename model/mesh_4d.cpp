@@ -58,6 +58,10 @@ bool Mesh4D::validate_mesh_data() {
 	return ret;
 }
 
+void Mesh4D::update_cross_section_mesh() {
+	GDVIRTUAL_CALL(_update_cross_section_mesh);
+}
+
 void Mesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
 	GDVIRTUAL_CALL(_validate_material_for_mesh, p_material);
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
@@ -93,6 +97,15 @@ Ref<WireMesh4D> Mesh4D::to_wire_mesh() {
 	return to_array_wire_mesh();
 }
 
+Ref<ArrayMesh> Mesh4D::get_cross_section_mesh() {
+	if (_is_cross_section_mesh_dirty || _cross_section_mesh.is_null()) {
+		_cross_section_mesh.instantiate();
+		update_cross_section_mesh();
+		_is_cross_section_mesh_dirty = false;
+	}
+	return _cross_section_mesh;
+}
+
 Ref<Material4D> Mesh4D::get_material() const {
 	return _material;
 }
@@ -126,9 +139,12 @@ void Mesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_mesh_data_valid"), &Mesh4D::is_mesh_data_valid);
 	ClassDB::bind_method(D_METHOD("reset_mesh_data_validation"), &Mesh4D::reset_mesh_data_validation);
 	ClassDB::bind_method(D_METHOD("validate_material_for_mesh", "material"), &Mesh4D::validate_material_for_mesh);
+	ClassDB::bind_method(D_METHOD("mark_cross_section_mesh_dirty"), &Mesh4D::mark_cross_section_mesh_dirty);
+	ClassDB::bind_method(D_METHOD("update_cross_section_mesh"), &Mesh4D::update_cross_section_mesh);
 
 	ClassDB::bind_method(D_METHOD("to_array_wire_mesh"), &Mesh4D::to_array_wire_mesh);
 	ClassDB::bind_method(D_METHOD("to_wire_mesh"), &Mesh4D::to_wire_mesh);
+	ClassDB::bind_method(D_METHOD("get_cross_section_mesh"), &Mesh4D::get_cross_section_mesh);
 
 	ClassDB::bind_method(D_METHOD("get_material"), &Mesh4D::get_material);
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &Mesh4D::set_material);
@@ -143,4 +159,5 @@ void Mesh4D::_bind_methods() {
 	GDVIRTUAL_BIND(_get_vertices);
 	GDVIRTUAL_BIND(_validate_material_for_mesh, "material");
 	GDVIRTUAL_BIND(_validate_mesh_data);
+	GDVIRTUAL_BIND(_update_cross_section_mesh);
 }

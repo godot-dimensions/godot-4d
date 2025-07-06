@@ -1,5 +1,13 @@
 #include "g4mf_item_4d.h"
 
+String G4MFItem4D::get_item_name() const {
+	return get_name();
+}
+
+void G4MFItem4D::set_item_name(const String &p_name) {
+	set_name(p_name);
+}
+
 Variant G4MFItem4D::get_additional_data(const StringName &p_extension_name) {
 	return _additional_data[p_extension_name];
 }
@@ -156,6 +164,9 @@ Rotor4D G4MFItem4D::json_array_to_rotor_4d(const Array &p_json_array) {
 }
 
 void G4MFItem4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_item_name"), &G4MFItem4D::get_item_name);
+	ClassDB::bind_method(D_METHOD("set_item_name", "name"), &G4MFItem4D::set_item_name);
+
 	ClassDB::bind_method(D_METHOD("get_additional_data", "extension_name"), &G4MFItem4D::get_additional_data);
 	ClassDB::bind_method(D_METHOD("has_additional_data", "extension_name"), &G4MFItem4D::has_additional_data);
 	ClassDB::bind_method(D_METHOD("set_additional_data", "extension_name", "additional_data"), &G4MFItem4D::set_additional_data);
@@ -166,5 +177,5 @@ void G4MFItem4D::_bind_methods() {
 	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("int32_array_to_json_array", "int32_array"), &G4MFItem4D::int32_array_to_json_array);
 	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("json_array_to_int32_array", "json_array"), &G4MFItem4D::json_array_to_int32_array);
 
-	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "name"), "set_name", "get_name");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "item_name"), "set_item_name", "get_item_name");
 }

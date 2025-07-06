@@ -23,7 +23,21 @@
 				Returns the amount of bytes per vector by multiplying the [method bytes_per_primitive] by the [code]vector[/code] member. For example, if the primitive type is [code]"float32"[/code] and the accessor stores Vector3, then this will return [code]4 * 3 = 12[/code] bytes.
 			</description>
 		</method>
-		<method name="decode_accessor_as_variants" qualifiers="const">
+		<method name="decode_floats_from_bytes" qualifiers="const">
+			<return type="PackedFloat64Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Decodes floats from the accessor data and returns them as a [PackedFloat64Array]. This is a low-level function that only works if the underlying data in the accessor is some kind of float. If you want to convert non-float data to floats, use [method decode_accessor_as_variants] instead.
+			</description>
+		</method>
+		<method name="decode_ints_from_bytes" qualifiers="const">
+			<return type="PackedInt64Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Decodes ints from the accessor data and returns them as a [PackedInt64Array]. This is a low-level function that only works if the underlying data in the accessor is some kind of signed integer. If you want to convert other data to signed integers, use [method decode_accessor_as_variants] instead.
+			</description>
+		</method>
+		<method name="decode_variants_from_bytes" qualifiers="const">
 			<return type="Array" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="variant_type" type="int" enum="Variant.Type" />
@@ -31,43 +45,21 @@
 				Decodes the accessor data as a [Variant] array where all elements are of the specified [param variant_type]. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String]. The possible types are for which [method primitives_per_variant] returns a value greater than [code]0[/code].
 			</description>
 		</method>
-		<method name="decode_floats_from_primitives" qualifiers="const">
-			<return type="PackedFloat64Array" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<description>
-				Decodes floats from the accessor data and returns them as a [PackedFloat64Array]. This is a low-level function that only works if the underlying data in the accessor is some kind of float. If you want to convert non-float data to floats, use [method decode_accessor_as_variants] instead.
-			</description>
-		</method>
-		<method name="decode_ints_from_primitives" qualifiers="const">
-			<return type="PackedInt64Array" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<description>
-				Decodes ints from the accessor data and returns them as a [PackedInt64Array]. This is a low-level function that only works if the underlying data in the accessor is some kind of signed integer. If you want to convert other data to signed integers, use [method decode_accessor_as_variants] instead.
-			</description>
-		</method>
-		<method name="encode_accessor_from_variants" qualifiers="const">
-			<return type="PackedByteArray" />
-			<param index="0" name="input_data" type="Array" />
-			<description>
-				Encodes the given data as a [PackedByteArray] and returns it. This function expects that all data in the array is of a homogeneous type which is compatible with the accessor's primitive type and vector size (set [member primitive_type] and [member vector_size] before calling). For example, if the array contains [Color], then the primitive type must be some kind of float type and the vector size must be either [code]3[/code] or [code]4[/code].
-				All data in the array must be of the same type as all other data in the array, since the resulting encoded accessor will be a blob of data all of the same type. If an item of a different type is encountered, the function will throw an error and return an empty array.
-			</description>
-		</method>
-		<method name="encode_floats_as_primitives" qualifiers="const">
+		<method name="encode_floats_as_bytes" qualifiers="const">
 			<return type="PackedByteArray" />
 			<param index="0" name="input_data" type="PackedFloat64Array" />
 			<description>
-				Encodes the given [PackedFloat64Array] as a [PackedByteArray] and returns it. If you want to convert other data to floats, use [method encode_accessor] instead.
+				Encodes the given [PackedFloat64Array] as a [PackedByteArray] and returns it. If you want to convert other data to floats, use [method encode_accessor_from_variants] instead.
 			</description>
 		</method>
-		<method name="encode_ints_as_primitives" qualifiers="const">
+		<method name="encode_ints_as_bytes" qualifiers="const">
 			<return type="PackedByteArray" />
 			<param index="0" name="input_data" type="PackedInt64Array" />
 			<description>
-				Encodes the given [PackedInt64Array] as a [PackedByteArray] and returns it. If you want to convert other data to signed integers, use [method encode_accessor] instead.
+				Encodes the given [PackedInt64Array] as a [PackedByteArray] and returns it. If you want to convert other data to signed integers, use [method encode_accessor_from_variants] instead.
 			</description>
 		</method>
-		<method name="encode_new_accessor_into_state" qualifiers="static">
+		<method name="encode_new_accessor_from_variants" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="input_data" type="Array" />
@@ -76,6 +68,14 @@
 			<param index="4" name="deduplicate" type="bool" default="true" />
 			<description>
 				Creates a new [G4MFAccessor4D] with the given [param primitive_type] and [param vector_size] settings and adds it to the [G4MFState4D]. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to.
+			</description>
+		</method>
+		<method name="encode_variants_as_bytes" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="input_data" type="Array" />
+			<description>
+				Encodes the given data as a [PackedByteArray] and returns it. This function expects that all data in the array is of a homogeneous type which is compatible with the accessor's primitive type and vector size (set [member primitive_type] and [member vector_size] before calling). For example, if the array contains [Color], then the primitive type must be some kind of float type and the vector size must be either [code]3[/code] or [code]4[/code].
+				All data in the array must be of the same type as all other data in the array, since the resulting encoded accessor will be a blob of data all of the same type. If an item of a different type is encountered, the function will throw an error and return an empty array.
 			</description>
 		</method>
 		<method name="from_dictionary" qualifiers="static">

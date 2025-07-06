@@ -41,8 +41,8 @@ private:
 	double _focal_length_4d = 1.0;
 	double _focal_length_3d = 1.0;
 
-	Color _w_fade_color_negative = Color(0.0f, 0.0f, 1.0f);
-	Color _w_fade_color_positive = Color(1.0f, 0.0f, 0.0f);
+	Color _w_fade_color_negative = Color(0.0f, 0.5f, 1.0f);
+	Color _w_fade_color_positive = Color(1.0f, 0.5f, 0.0f);
 	double _depth_fade_start = 25.0;
 	double _orthographic_size = 5.0;
 	double _clip_near = 0.05;

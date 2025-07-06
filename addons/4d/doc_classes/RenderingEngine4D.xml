@@ -11,6 +11,18 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_cleanup_for_viewport" qualifiers="virtual">
+			<return type="void" />
+			<description>
+				Callback method to clean up the rendering engine for a viewport. This method is called by [RenderingServer4D] once per viewport when it tries to render a frame with a different rendering engine than the one that was previously set up for that viewport. This is called before [method _setup_for_viewport] is called for the new rendering engine for that viewport.
+			</description>
+		</method>
+		<method name="_get_friendly_name" qualifiers="virtual const">
+			<return type="String" />
+			<description>
+				Returns the unique friendly name of the rendering engine. This is used by [RenderingServer4D] to identify the rendering engine for a viewport, and is displayed in the editor. It should be a short, human-readable name that describes the rendering engine. This MUST be unique across all registered rendering engines.
+			</description>
+		</method>
 		<method name="_prefers_wireframe_meshes" qualifiers="virtual">
 			<return type="bool" />
 			<description>

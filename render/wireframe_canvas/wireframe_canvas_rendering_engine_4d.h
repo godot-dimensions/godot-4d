@@ -12,7 +12,9 @@ protected:
 	static void _bind_methods() {}
 
 public:
+	virtual String get_friendly_name() const override { return "Wireframe Canvas"; }
 	virtual bool prefers_wireframe_meshes() override { return true; }
-	void setup_for_viewport() override;
-	void render_frame() override;
+	virtual void setup_for_viewport() override;
+	virtual void cleanup_for_viewport() override;
+	virtual void render_frame() override;
 };

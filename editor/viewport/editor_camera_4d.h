@@ -15,6 +15,7 @@ class EditorCamera4D : public Node4D {
 	Vector4 _target_position;
 	real_t _pitch_angle = -0.5f;
 
+	double _positive_clip_near = 0.05;
 	double _target_speed_and_zoom = 4.0;
 	int _zoom_failed_attempts_count = 0;
 	bool _is_auto_orthographic = true;

@@ -84,7 +84,7 @@
 			If multiple cameras are a descendant of the [Viewport], the cameras will try to keep at least one of them current. For example, if two [Camera4D] nodes are present in the scene and only one is current, setting one camera's [member current] to [code]false[/code] will cause the other camera to be made current. If three or more [Camera4D] nodes are present in the scene, setting [member current] to [code]false[/code] on the active camera will result in the cameras activating in a round-robin fashion. To deactivate a camera without activating another, use [method clear_current] instead.
 		</member>
 		<member name="depth_fade" type="bool" setter="set_depth_fade" getter="get_depth_fade" default="false">
-			Controls if depth fading is enabled, which means that once things get further than [member depth_fade_start] on the camera's Z axis, they start to fade until they become transparent at [member far]. This is also known as fog.
+			Controls if depth fading is enabled, which means that once things get further than [member depth_fade_start] on the camera's Z axis, they start to fade until they become transparent at [member clip_far]. This is also known as fog.
 		</member>
 		<member name="depth_fade_start" type="float" setter="set_depth_fade_start" getter="get_depth_fade_start" default="25.0">
 			How many units on the camera's Z axis away an edge has to be before it starts fading. Only applies if [member depth_fade] is [code]true[/code]. This is also known as fog.

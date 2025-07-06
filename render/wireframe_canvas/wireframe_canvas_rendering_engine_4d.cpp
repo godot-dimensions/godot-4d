@@ -16,6 +16,13 @@ void WireframeCanvasRenderingEngine4D::setup_for_viewport() {
 	get_viewport()->add_child(wire_canvas);
 }
 
+void WireframeCanvasRenderingEngine4D::cleanup_for_viewport() {
+	WireframeRenderCanvas4D *wire_canvas = GET_NODE_TYPE(get_viewport(), WireframeRenderCanvas4D, "WireframeRenderCanvas4D");
+	if (wire_canvas) {
+		wire_canvas->queue_free();
+	}
+}
+
 void WireframeCanvasRenderingEngine4D::render_frame() {
 	WireframeRenderCanvas4D *wire_canvas = GET_NODE_TYPE(get_viewport(), WireframeRenderCanvas4D, "WireframeRenderCanvas4D");
 	ERR_FAIL_NULL_MSG(wire_canvas, "WireframeCanvasRenderingEngine4D: Canvas was null.");
@@ -104,7 +111,7 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 				}
 			}
 			if (camera->get_depth_fade()) {
-				const real_t depth = abs((a_vert_4d.length() + b_vert_4d.length()) * 0.5);
+				const real_t depth = Math::abs((a_vert_4d.length() + b_vert_4d.length()) * 0.5f);
 				real_t alpha = 1.0;
 
 				if (depth > camera_clip_depth_far) {

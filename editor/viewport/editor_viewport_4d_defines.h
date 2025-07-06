@@ -19,7 +19,11 @@
 #define get_editor_theme_icon(m_name) get_theme_icon(m_name, StringName("EditorIcons"))
 #elif GODOT_MODULE
 #include "core/input/input.h"
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
 #include "editor/editor_settings.h"
+#else
+#include "editor/settings/editor_settings.h"
+#endif
 #include "editor/editor_undo_redo_manager.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/control.h"
@@ -47,6 +51,7 @@
 #endif
 
 class EditorCamera4D;
+class EditorCameraSettings4D;
 class EditorInputSurface4D;
 class EditorMainScreen4D;
 class EditorMainViewport4D;

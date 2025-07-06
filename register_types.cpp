@@ -21,6 +21,7 @@
 #include "math/transform_4d_bind.h"
 #include "math/vector_4d.h"
 #include "nodes/camera_4d.h"
+#include "nodes/marker_4d.h"
 #include "nodes/node_4d.h"
 #include "nodes/quad_split_container.h"
 
@@ -71,6 +72,7 @@
 #include "physics/shapes/sphere_shape_4d.h"
 
 // Render.
+#include "render/cross_section/cross_section_rendering_engine_4d.h"
 #include "render/rendering_engine_4d.h"
 #include "render/rendering_server_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
@@ -89,6 +91,7 @@
 #include "editor/import/off/editor_import_plugin_off_tetra_4d.h"
 #include "editor/import/off/editor_import_plugin_off_wire_4d.h"
 #include "editor/viewport/editor_camera_4d.h"
+#include "editor/viewport/editor_camera_settings_4d.h"
 #include "editor/viewport/editor_input_surface_4d.h"
 #include "editor/viewport/editor_main_screen_4d.h"
 #include "editor/viewport/editor_main_viewport_4d.h"
@@ -163,6 +166,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_CLASS(WireMeshBuilder4D);
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
+		// Depends on mesh.
+		GDREGISTER_CLASS(Marker4D);
 		// Physics.
 		GDREGISTER_CLASS(Area4D);
 		GDREGISTER_CLASS(BoxShape4D);
@@ -206,6 +211,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
 		GDREGISTER_CLASS(WireframeRenderCanvas4D);
 		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
+		GDREGISTER_CLASS(CrossSectionRenderingEngine4D);
 #endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
 #ifdef TOOLS_ENABLED
@@ -216,12 +222,14 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		add_godot_singleton("PhysicsServer4D", physics_server);
 		// Render.
 		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
-		rendering_server->register_rendering_engine("Wireframe Canvas", memnew(WireframeCanvasRenderingEngine4D));
+		rendering_server->register_rendering_engine(memnew(WireframeCanvasRenderingEngine4D));
+		rendering_server->register_rendering_engine(memnew(CrossSectionRenderingEngine4D));
 		add_godot_singleton("RenderingServer4D", rendering_server);
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 #ifdef GDEXTENSION
 		GDREGISTER_CLASS(EditorCamera4D);
+		GDREGISTER_CLASS(EditorCameraSettings4D);
 		GDREGISTER_CLASS(EditorCreate4DSceneButton);
 		GDREGISTER_CLASS(EditorExportDialogG4MF4D);
 		GDREGISTER_CLASS(EditorExportSettingsG4MF4D);

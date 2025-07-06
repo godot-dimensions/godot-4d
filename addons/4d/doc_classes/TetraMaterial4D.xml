@@ -19,6 +19,9 @@
 		<member name="albedo_source" type="int" setter="set_albedo_source" getter="get_albedo_source" enum="TetraMaterial4D.TetraColorSource" default="0">
 			The albedo source of the material, an enum specific to tetrahedral meshes. Can be a single color, per-vertex, per-cell, per-cell UVW coordinates, 4D texture, or a combination of single color and the other color sources.
 		</member>
+		<member name="texture" type="Texture3D" setter="set_texture" getter="get_texture">
+			The albedo texture of the material as a Texture3D. Used by the cross-section renderer. Used when albedo_source is [constant TETRA_COLOR_SOURCE_CELL_UVW_ONLY] or [constant TETRA_COLOR_SOURCE_CELL_UVW_AND_SINGLE].
+		</member>
 	</members>
 	<constants>
 		<constant name="TETRA_COLOR_SOURCE_SINGLE_COLOR" value="0" enum="TetraColorSource">

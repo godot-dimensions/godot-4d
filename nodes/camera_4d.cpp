@@ -111,28 +111,30 @@ bool Camera4D::is_position_behind(const Vector4 &p_global_position) const {
 }
 
 Vector4 Camera4D::viewport_to_world_ray_origin(const Vector2 &p_viewport_position) const {
-	ERR_FAIL_COND_V_MSG(!is_inside_tree(), Vector4(), "Camera4D is not inside the scene tree.");
+	Viewport *viewport = get_viewport();
+	ERR_FAIL_COND_V_MSG(viewport == nullptr, Vector4(), "Camera4D must be in the scene tree to convert viewport coordinates to world coordinates.");
 	const Transform4D global_xform = get_global_transform();
 	// Perspective cameras always have their ray origin at the camera's position.
 	if (_projection_type != PROJECTION4D_ORTHOGRAPHIC) {
 		return global_xform.origin;
 	}
 	// Orthographic cameras have ray origins offset by the orthographic size.
-	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
+	const Vector2 viewport_size = viewport->call(StringName("get_size"));
 	const double pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
 	const Vector2 scaled_position = (p_viewport_position * 2.0f - viewport_size) * (_orthographic_size / pixel_size);
 	return global_xform.origin + global_xform.basis.x * scaled_position.x + global_xform.basis.y * -scaled_position.y;
 }
 
 Vector4 Camera4D::viewport_to_world_ray_direction(const Vector2 &p_viewport_position) const {
-	ERR_FAIL_COND_V_MSG(!is_inside_tree(), Vector4(), "Camera4D is not inside the scene tree.");
+	Viewport *viewport = get_viewport();
+	ERR_FAIL_COND_V_MSG(viewport == nullptr, Vector4(), "Camera4D must be in the scene tree to convert viewport coordinates to world coordinates.");
 	const Transform4D global_xform = get_global_transform();
 	// Orthographic cameras always have their ray direction pointing straight down the negative Z-axis.
 	if (_projection_type == PROJECTION4D_ORTHOGRAPHIC) {
 		return -global_xform.basis.z;
 	}
 	// Perspective cameras have ray directions pointing more to the side when near the sides of the viewport.
-	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
+	const Vector2 viewport_size = viewport->call(StringName("get_size"));
 	const double pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
 	const double focal_length = _projection_type == PROJECTION4D_PERSPECTIVE_4D ? _focal_length_4d : _focal_length_3d;
 	const Vector2 scaled_position = (p_viewport_position * 2.0f - viewport_size) / pixel_size;
@@ -159,8 +161,10 @@ Vector2 Camera4D::world_to_viewport_local_normal(const Vector4 &p_local_position
 }
 
 Vector2 Camera4D::world_to_viewport(const Vector4 &p_global_position) const {
+	Viewport *viewport = get_viewport();
+	ERR_FAIL_COND_V_MSG(viewport == nullptr, Vector2(), "Camera4D must be in the scene tree to convert world coordinates to viewport coordinates.");
 	const Vector4 local_position = get_global_transform().xform_transposed(p_global_position);
-	const Vector2 viewport_size = get_viewport()->call(StringName("get_size"));
+	const Vector2 viewport_size = viewport->call(StringName("get_size"));
 	const double pixel_size = _keep_aspect == KEEP_WIDTH ? viewport_size.x : viewport_size.y;
 	const Vector2 projected = world_to_viewport_local_normal(local_position);
 	return (projected * pixel_size + viewport_size) * 0.5f;
@@ -306,6 +310,7 @@ void Camera4D::set_w_fade_slope(const double p_w_fade_slope) {
 }
 
 void Camera4D::_bind_methods() {
+	// Be sure to keep the relevant properties in sync with EditorCameraSettings4D.
 	ClassDB::bind_method(D_METHOD("is_current"), &Camera4D::is_current);
 	ClassDB::bind_method(D_METHOD("set_current", "enabled"), &Camera4D::set_current);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "current"), "set_current", "is_current");

@@ -8,6 +8,36 @@
 #include "core/variant/variant_utility.h"
 #endif
 
+// NOTE: Editor code grabs the colors from the Godot editor theme instead.
+// This function is for non-editor code or when the theme is not available.
+Color Vector4D::axis_color(int64_t p_axis) {
+	switch (p_axis) {
+		case Vector4::Axis::AXIS_X:
+			return Color(0.96f, 0.20f, 0.32f);
+		case Vector4::Axis::AXIS_Y:
+			return Color(0.53f, 0.84f, 0.01f);
+		case Vector4::Axis::AXIS_Z:
+			return Color(0.16f, 0.55f, 0.96f);
+		case Vector4::Axis::AXIS_W:
+			return Color(0.9f, 0.75f, 0.1f);
+	}
+	return Color(0.55f, 0.55f, 0.55f);
+}
+
+String Vector4D::axis_letter(int64_t p_axis) {
+	switch (p_axis) {
+		case Vector4::Axis::AXIS_X:
+			return "X";
+		case Vector4::Axis::AXIS_Y:
+			return "Y";
+		case Vector4::Axis::AXIS_Z:
+			return "Z";
+		case Vector4::Axis::AXIS_W:
+			return "W";
+	}
+	return "?";
+}
+
 real_t Vector4D::angle_to(const Vector4 &p_from, const Vector4 &p_to) {
 	return Math::acos(p_from.dot(p_to) / (p_from.length() * p_to.length()));
 }
@@ -154,14 +184,6 @@ Vector4 Vector4D::random_in_range(const Vector4 &p_from, const Vector4 &p_to) {
 
 // Conversion.
 
-Vector4 Vector4D::from_3d(const Vector3 &p_vector, const real_t p_w) {
-	return Vector4(p_vector.x, p_vector.y, p_vector.z, p_w);
-}
-
-Vector3 Vector4D::to_3d(const Vector4 &p_vector) {
-	return Vector3(p_vector.x, p_vector.y, p_vector.z);
-}
-
 Array Vector4D::to_json_array(const Vector4 &p_vector) {
 	Array json_array;
 	json_array.resize(4);
@@ -188,6 +210,9 @@ Vector4 Vector4D::from_json_array(const Array &p_json_array) {
 Vector4D *Vector4D::singleton = nullptr;
 
 void Vector4D::_bind_methods() {
+	// Cosmetic functions.
+	ClassDB::bind_static_method("Vector4D", D_METHOD("axis_color", "axis"), &Vector4D::axis_color);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("axis_letter", "axis"), &Vector4D::axis_letter);
 	// Vector math.
 	ClassDB::bind_static_method("Vector4D", D_METHOD("angle_to", "from", "to"), &Vector4D::angle_to);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce", "vector", "normal"), &Vector4D::bounce);
@@ -205,6 +230,8 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("random_in_radius", "radius"), &Vector4D::random_in_radius, DEFVAL(1.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("random_in_range", "from", "to"), &Vector4D::random_in_range, DEFVAL(Vector4(0, 0, 0, 0)), DEFVAL(Vector4(1, 1, 1, 1)));
 	// Conversion.
+	ClassDB::bind_static_method("Vector4D", D_METHOD("from_color", "color"), &Vector4D::from_color);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("to_color", "vector"), &Vector4D::to_color);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("from_3d", "vector", "w"), &Vector4D::from_3d, DEFVAL(0.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("to_3d", "vector"), &Vector4D::to_3d);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("from_json_array", "json_array"), &Vector4D::from_json_array);
