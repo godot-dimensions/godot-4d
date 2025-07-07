@@ -206,6 +206,62 @@
 	Vector3(0.5, 0.5, 0.5), Vector3(0.0, 0.5, 0.5), Vector3(0.5, 0.5, 0.0), Vector3(0.5, 0.0, 0.5) \
 }
 
+#define _0_3RDS 0.0
+#define _1_3RDS (1.0 / 3.0)
+#define _2_3RDS (2.0 / 3.0)
+#define _3_3RDS 1.0
+
+#define BOX_40_CELL_TEXTURE_MAP_LONG_CROSS PackedVector3Array { \
+	/* -X */ \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.0p0, _2_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.0p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.0p0, _2_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.0p0, _1_3RDS, _2_3RDS), \
+	Vector3(0x0.0p0, _2_3RDS, _2_3RDS), Vector3(0x0.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.0p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), \
+	/* +X */ \
+	Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), \
+	Vector3(0x0.Cp0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+	/* -Y */ \
+	Vector3(0x0.4p0, _0_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _0_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _0_3RDS, _2_3RDS), Vector3(0x0.4p0, _0_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _0_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _0_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _0_3RDS, _2_3RDS), Vector3(0x0.8p0, _0_3RDS, _2_3RDS), Vector3(0x0.8p0, _0_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _0_3RDS, _1_3RDS), \
+	/* +Y */ \
+	Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _3_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _3_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _3_3RDS, _2_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), Vector3(0x0.4p0, _3_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _3_3RDS, _1_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), Vector3(0x0.4p0, _3_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+	/* -Z */ \
+	Vector3(0x0.8p0, _1_3RDS, _0_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _0_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _0_3RDS), Vector3(0x0.8p0, _2_3RDS, _0_3RDS), Vector3(0x0.4p0, _2_3RDS, _0_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _0_3RDS), Vector3(0x0.4p0, _1_3RDS, _0_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _0_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _0_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _0_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+	/* +Z */ \
+	Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _3_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _3_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _3_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), Vector3(0x0.4p0, _1_3RDS, _3_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _3_3RDS), Vector3(0x0.4p0, _1_3RDS, _3_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), \
+	/* -W */ \
+	Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), Vector3(0x1.0p0, _1_3RDS, _2_3RDS), Vector3(0x1.0p0, _2_3RDS, _1_3RDS), \
+	Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x1.0p0, _1_3RDS, _1_3RDS), Vector3(0x1.0p0, _2_3RDS, _1_3RDS), Vector3(0x1.0p0, _1_3RDS, _2_3RDS), \
+	Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), Vector3(0x1.0p0, _2_3RDS, _1_3RDS), \
+	Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _1_3RDS, _2_3RDS), Vector3(0x1.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	Vector3(0x1.0p0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), Vector3(0x1.0p0, _2_3RDS, _1_3RDS), Vector3(0x1.0p0, _1_3RDS, _2_3RDS), \
+	/* +W */ \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), \
+}
+
 #define BOX_48_CELL_TEXTURE_MAP_CROSS_ISLAND PackedVector3Array { \
 	/* -X */ \
 	Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), \
@@ -383,6 +439,66 @@
 	Vector3(0.0, 0.0, 0.0), Vector3(0.5, 0.5, 0.0), Vector3(0.0, 0.5, 0.0), Vector3(0.5, 0.5, 0.5) \
 }
 
+#define BOX_48_CELL_TEXTURE_MAP_LONG_CROSS PackedVector3Array { \
+	/* -X */ \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.0p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.0p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.0p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.0p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.0p0, _2_3RDS, _1_3RDS), Vector3(0x0.0p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _2_3RDS, _1_3RDS), Vector3(0x0.0p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _2_3RDS, _2_3RDS), \
+	/* +X */ \
+	Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+	/* -Y */ \
+	Vector3(0x0.8p0, _0_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.8p0, _0_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _0_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.8p0, _0_3RDS, _2_3RDS), Vector3(0x0.8p0, _0_3RDS, _1_3RDS), Vector3(0x0.4p0, _0_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.8p0, _0_3RDS, _2_3RDS), Vector3(0x0.4p0, _0_3RDS, _1_3RDS), Vector3(0x0.4p0, _0_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.8p0, _0_3RDS, _2_3RDS), Vector3(0x0.4p0, _0_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	Vector3(0x0.8p0, _0_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _1_3RDS), \
+	/* +Y */ \
+	Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _3_3RDS, _1_3RDS), Vector3(0x0.4p0, _3_3RDS, _2_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _3_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _3_3RDS, _1_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _3_3RDS, _1_3RDS), Vector3(0x0.4p0, _3_3RDS, _1_3RDS), Vector3(0x0.8p0, _3_3RDS, _2_3RDS), \
+	/* -Z */ \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _0_3RDS), Vector3(0x0.4p0, _2_3RDS, _0_3RDS), Vector3(0x0.8p0, _2_3RDS, _0_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _0_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _0_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _0_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _0_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _0_3RDS), Vector3(0x0.8p0, _2_3RDS, _0_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _0_3RDS), Vector3(0x0.4p0, _1_3RDS, _0_3RDS), Vector3(0x0.8p0, _2_3RDS, _0_3RDS), \
+	/* +Z */ \
+	Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _3_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _3_3RDS), Vector3(0x0.4p0, _1_3RDS, _3_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _3_3RDS), Vector3(0x0.8p0, _1_3RDS, _3_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _3_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _3_3RDS), \
+	/* -W */ \
+	Vector3(0x1.0p0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _1_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+	Vector3(0x1.0p0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+	Vector3(0x1.0p0, _2_3RDS, _2_3RDS), Vector3(0x1.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+	Vector3(0x1.0p0, _2_3RDS, _2_3RDS), Vector3(0x1.0p0, _1_3RDS, _1_3RDS), Vector3(0x1.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+	Vector3(0x1.0p0, _2_3RDS, _2_3RDS), Vector3(0x1.0p0, _2_3RDS, _1_3RDS), Vector3(0x1.0p0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+	Vector3(0x1.0p0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _1_3RDS), Vector3(0x1.0p0, _2_3RDS, _1_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+	/* +W */ \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
+	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
+}
+
+
 #define BOX_48_CELL_POLYTOPE_EDGE_INDICES PackedInt32Array { \
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, /* X */ \
 	0, 2, 1, 3, 4, 6, 5, 7, 8, 10, 9, 11, 12, 14, 13, 15, /* Y */ \
@@ -476,6 +592,9 @@ PackedVector3Array BoxTetraMesh4D::get_cell_uvw_map() {
 		case BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID: {
 			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID : BOX_48_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID;
 		} break;
+		case BOX_CELL_TEXTURE_MAP_LONG_CROSS: {
+			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_LONG_CROSS : BOX_48_CELL_TEXTURE_MAP_LONG_CROSS;
+		} break;
 	}
 }
 
@@ -544,7 +663,7 @@ void BoxTetraMesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_cell_texture_map"), &BoxTetraMesh4D::get_cell_texture_map);
 	ClassDB::bind_method(D_METHOD("set_cell_texture_map", "texture_map"), &BoxTetraMesh4D::set_cell_texture_map);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_texture_map", PROPERTY_HINT_ENUM, "Cross and Island,Fill Each Side,Compact 2x2x2 Grid"), "set_cell_texture_map", "get_cell_texture_map");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_texture_map", PROPERTY_HINT_ENUM, "Cross and Island,Fill Each Side,Compact 2x2x2 Grid,Long Cross"), "set_cell_texture_map", "get_cell_texture_map");
 
 	ClassDB::bind_static_method("BoxTetraMesh4D", D_METHOD("from_box_wire_mesh", "wire_mesh"), &BoxTetraMesh4D::from_box_wire_mesh);
 	ClassDB::bind_method(D_METHOD("to_box_wire_mesh"), &BoxTetraMesh4D::to_box_wire_mesh);
@@ -556,4 +675,5 @@ void BoxTetraMesh4D::_bind_methods() {
 	BIND_ENUM_CONSTANT(BOX_CELL_TEXTURE_MAP_CROSS_ISLAND);
 	BIND_ENUM_CONSTANT(BOX_CELL_TEXTURE_MAP_FILL_EACH_SIDE);
 	BIND_ENUM_CONSTANT(BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID);
+	BIND_ENUM_CONSTANT(BOX_CELL_TEXTURE_MAP_LONG_CROSS);
 }
