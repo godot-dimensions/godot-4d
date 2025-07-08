@@ -428,6 +428,11 @@ String G4MFDocument4D::_export_pretty_print_json(const Dictionary &p_g4mf_json) 
 			}
 		} else {
 			pretty += "\t\"" + top_key + "\": " + _export_pretty_print_compact(top_value);
+			if (top_index < top_key_count - 1) {
+				pretty += ",\n";
+			} else {
+				pretty += "\n";
+			}
 		}
 	}
 	pretty += "}\n";
