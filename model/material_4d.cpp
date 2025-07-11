@@ -112,6 +112,7 @@ Material4D::ColorSourceFlags Material4D::get_albedo_source_flags() const {
 
 void Material4D::set_albedo_source_flags(const ColorSourceFlags p_albedo_source_flags) {
 	_albedo_source_flags = p_albedo_source_flags;
+	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
 }
 
@@ -121,6 +122,7 @@ Color Material4D::get_albedo_color() const {
 
 void Material4D::set_albedo_color(const Color &p_albedo_color) {
 	_albedo_color = p_albedo_color;
+	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
 }
 
@@ -130,11 +132,13 @@ PackedColorArray Material4D::get_albedo_color_array() const {
 
 void Material4D::set_albedo_color_array(const PackedColorArray &p_albedo_color_array) {
 	_albedo_color_array = p_albedo_color_array;
+	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
 }
 
 void Material4D::append_albedo_color(const Color &p_albedo_color) {
 	_albedo_color_array.push_back(p_albedo_color);
+	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
 }
 
@@ -144,6 +148,7 @@ void Material4D::resize_albedo_color_array(const int64_t p_size, const Color &p_
 	for (int64_t i = existing_size; i < p_size; i++) {
 		_albedo_color_array.set(i, p_fill_color);
 	}
+	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
 }
 

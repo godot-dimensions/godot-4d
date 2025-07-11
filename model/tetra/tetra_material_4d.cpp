@@ -121,9 +121,8 @@ TetraMaterial4D::TetraColorSource TetraMaterial4D::get_albedo_source() const {
 
 void TetraMaterial4D::set_albedo_source(const TetraColorSource p_albedo_source) {
 	_albedo_source = p_albedo_source;
-	_albedo_source_flags = _tetra_source_to_flags(_albedo_source);
+	set_albedo_source_flags(_tetra_source_to_flags(_albedo_source));
 	notify_property_list_changed();
-	update_cross_section_material();
 }
 
 Ref<Texture3D> TetraMaterial4D::get_albedo_texture_3d() const {

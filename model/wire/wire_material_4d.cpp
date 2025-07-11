@@ -32,7 +32,7 @@ WireMaterial4D::WireColorSource WireMaterial4D::get_albedo_source() const {
 
 void WireMaterial4D::set_albedo_source(const WireColorSource p_albedo_source) {
 	_albedo_source = p_albedo_source;
-	_albedo_source_flags = _wire_source_to_flags(_albedo_source);
+	set_albedo_source_flags(_wire_source_to_flags(_albedo_source));
 	notify_property_list_changed();
 }
 
