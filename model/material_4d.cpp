@@ -88,6 +88,7 @@ void Material4D::merge_with(const Ref<Material4D> &p_material, const int p_first
 		// Merge the other material's color array data.
 		if (p_material->_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) {
 			// Other has a color array, so copy it over.
+			ERR_FAIL_COND_MSG(p_material->_albedo_color_array.size() < p_second_item_count, "Material4D.merge_with: Other material's color array has fewer than the declared amount of colors.");
 			for (int i = 0; i < p_second_item_count; i++) {
 				_albedo_color_array.set(p_first_item_count + i, p_material->_albedo_color_array[i]);
 			}
