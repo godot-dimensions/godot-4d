@@ -61,6 +61,16 @@ using namespace godot;
 #error "Must build as Godot GDExtension or Godot module."
 #endif
 
+#include <limits>
+
+#ifndef Math_INF
+#define Math_INF std::numeric_limits<double>::infinity()
+#endif // Math_INF
+
+#ifndef Math_NAN
+#define Math_NAN std::numeric_limits<double>::quiet_NaN()
+#endif // Math_INF
+
 #ifndef _NO_DISCARD_
 #define _NO_DISCARD_ [[nodiscard]]
 #endif // _NO_DISCARD_

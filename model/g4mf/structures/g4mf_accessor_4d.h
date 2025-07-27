@@ -11,12 +11,6 @@ class G4MFAccessor4D : public G4MFItem4D {
 	int _buffer_view_index = -1;
 	int _vector_size = 1;
 
-	// Private general helper functions.
-	static double _float8_to_double(const uint8_t p_float8);
-	static double _float16_to_double(const uint16_t p_float16);
-	static uint8_t _double_to_float8(const double p_double);
-	static uint16_t _double_to_float16(const double p_double);
-
 	// Private functions for determining the minimal primitive type.
 	static constexpr uint32_t CANT_USE_PRIM_TYPE = 1000000; // Any very big number will do.
 	static bool _double_bits_equal(const double p_a, const double p_b);
