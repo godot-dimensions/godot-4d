@@ -85,25 +85,25 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 
 // Private decode functions. Use `decode_variants_from_bytes` publicly.
 
-#define G4MF_ACCESSOR_4D_DECODE_PRIMITIVES_AS_VARIANTS(m_primitives, m_values)                                                                                                                    \
-	ERR_FAIL_COND_V_MSG(m_primitives.size() % _vector_size != 0, m_values, "G4MF import: The primitive size was not a multiple of the vector size. Returning an empty array.");                   \
-	const int64_t values_size = m_primitives.size() / _vector_size;                                                                                                                               \
-	const int64_t prims_per_variant = primitives_per_variant(p_variant_type);                                                                                                                     \
-	ERR_FAIL_COND_V_MSG(prims_per_variant < 1, m_values, "G4MF import: The Variant type '" + Variant::get_type_name(p_variant_type) + "' is not supported. Returning an empty array.");           \
-	const int64_t prims_to_read = MIN(_vector_size, prims_per_variant);                                                                                                                           \
+#define G4MF_ACCESSOR_4D_DECODE_PRIMITIVES_AS_VARIANTS(m_numbers, m_values)                                                                                                                       \
+	ERR_FAIL_COND_V_MSG(m_numbers.size() % _vector_size != 0, m_values, "G4MF import: The primitive number size was not a multiple of the vector size. Returning an empty array.");               \
+	const int64_t values_size = m_numbers.size() / _vector_size;                                                                                                                                  \
+	const int64_t nums_per_variant = get_numbers_per_variant(p_variant_type);                                                                                                                     \
+	ERR_FAIL_COND_V_MSG(nums_per_variant < 1, m_values, "G4MF import: The Variant type '" + Variant::get_type_name(p_variant_type) + "' is not supported. Returning an empty array.");            \
+	const int64_t nums_to_read = MIN(_vector_size, nums_per_variant);                                                                                                                             \
 	m_values.resize(values_size);                                                                                                                                                                 \
 	for (int64_t value_index = 0; value_index < values_size; value_index++) {                                                                                                                     \
-		const int64_t prim_offset = value_index * _vector_size;                                                                                                                                   \
-		ERR_FAIL_COND_V_MSG(prim_offset + prims_to_read > m_primitives.size(), m_values, "G4MF import: The primitive size was not a multiple of the vector size. Returning an empty array.");     \
+		const int64_t numbers_offset = value_index * _vector_size;                                                                                                                                \
+		ERR_FAIL_COND_V_MSG(numbers_offset + nums_to_read > m_numbers.size(), m_values, "G4MF import: The primitive size was not a multiple of the vector size. Returning an empty array.");      \
 		switch (p_variant_type) {                                                                                                                                                                 \
 			case Variant::BOOL: {                                                                                                                                                                 \
-				m_values[value_index] = m_primitives[prim_offset] != 0.0;                                                                                                                         \
+				m_values[value_index] = m_numbers[numbers_offset] != 0.0;                                                                                                                         \
 			} break;                                                                                                                                                                              \
 			case Variant::INT: {                                                                                                                                                                  \
-				m_values[value_index] = m_primitives[prim_offset];                                                                                                                                \
+				m_values[value_index] = m_numbers[numbers_offset];                                                                                                                                \
 			} break;                                                                                                                                                                              \
 			case Variant::FLOAT: {                                                                                                                                                                \
-				m_values[value_index] = m_primitives[prim_offset];                                                                                                                                \
+				m_values[value_index] = m_numbers[numbers_offset];                                                                                                                                \
 			} break;                                                                                                                                                                              \
 			case Variant::VECTOR2:                                                                                                                                                                \
 			case Variant::RECT2:                                                                                                                                                                  \
@@ -113,18 +113,18 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 			case Variant::QUATERNION: {                                                                                                                                                           \
 				/* General-purpose code for importing G4MF accessor data with any primitive count into structs up to 4 `real_t`s in size. */                                                      \
 				Variant v;                                                                                                                                                                        \
-				switch (prims_to_read) {                                                                                                                                                          \
+				switch (nums_to_read) {                                                                                                                                                           \
 					case 1: {                                                                                                                                                                     \
-						v = Vector4(m_primitives[prim_offset], 0.0f, 0.0f, 0.0f);                                                                                                                 \
+						v = Vector4(m_numbers[numbers_offset], 0.0f, 0.0f, 0.0f);                                                                                                                 \
 					} break;                                                                                                                                                                      \
 					case 2: {                                                                                                                                                                     \
-						v = Vector4(m_primitives[prim_offset], m_primitives[prim_offset + 1], 0.0f, 0.0f);                                                                                        \
+						v = Vector4(m_numbers[numbers_offset], m_numbers[numbers_offset + 1], 0.0f, 0.0f);                                                                                        \
 					} break;                                                                                                                                                                      \
 					case 3: {                                                                                                                                                                     \
-						v = Vector4(m_primitives[prim_offset], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], 0.0f);                                                               \
+						v = Vector4(m_numbers[numbers_offset], m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 2], 0.0f);                                                               \
 					} break;                                                                                                                                                                      \
 					default: {                                                                                                                                                                    \
-						v = Vector4(m_primitives[prim_offset], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                                      \
+						v = Vector4(m_numbers[numbers_offset], m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 3]);                                      \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
 				/* Evil hack that relies on the structure of Variant, but it's the */                                                                                                             \
@@ -138,18 +138,18 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 			case Variant::VECTOR4I: {                                                                                                                                                             \
 				/* General-purpose code for importing G4MF accessor data with any primitive count into structs up to 4 `int32_t`s in size. */                                                     \
 				Variant v;                                                                                                                                                                        \
-				switch (prims_to_read) {                                                                                                                                                          \
+				switch (nums_to_read) {                                                                                                                                                           \
 					case 1: {                                                                                                                                                                     \
-						v = Vector4i((int32_t)m_primitives[prim_offset], 0, 0, 0);                                                                                                                \
+						v = Vector4i((int32_t)m_numbers[numbers_offset], 0, 0, 0);                                                                                                                \
 					} break;                                                                                                                                                                      \
 					case 2: {                                                                                                                                                                     \
-						v = Vector4i((int32_t)m_primitives[prim_offset], (int32_t)m_primitives[prim_offset + 1], 0, 0);                                                                           \
+						v = Vector4i((int32_t)m_numbers[numbers_offset], (int32_t)m_numbers[numbers_offset + 1], 0, 0);                                                                           \
 					} break;                                                                                                                                                                      \
 					case 3: {                                                                                                                                                                     \
-						v = Vector4i((int32_t)m_primitives[prim_offset], (int32_t)m_primitives[prim_offset + 1], (int32_t)m_primitives[prim_offset + 2], 0);                                      \
+						v = Vector4i((int32_t)m_numbers[numbers_offset], (int32_t)m_numbers[numbers_offset + 1], (int32_t)m_numbers[numbers_offset + 2], 0);                                      \
 					} break;                                                                                                                                                                      \
 					default: {                                                                                                                                                                    \
-						v = Vector4i((int32_t)m_primitives[prim_offset], (int32_t)m_primitives[prim_offset + 1], (int32_t)m_primitives[prim_offset + 2], (int32_t)m_primitives[prim_offset + 3]); \
+						v = Vector4i((int32_t)m_numbers[numbers_offset], (int32_t)m_numbers[numbers_offset + 1], (int32_t)m_numbers[numbers_offset + 2], (int32_t)m_numbers[numbers_offset + 3]); \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
 				/* Evil hack that relies on the structure of Variant, but it's the */                                                                                                             \
@@ -160,174 +160,174 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 			/* No more generalized hacks, each of the below types needs a lot of repetitive code. */                                                                                              \
 			case Variant::COLOR: {                                                                                                                                                                \
 				Variant v;                                                                                                                                                                        \
-				switch (prims_to_read) {                                                                                                                                                          \
+				switch (nums_to_read) {                                                                                                                                                           \
 					case 1: {                                                                                                                                                                     \
-						v = Color(m_primitives[prim_offset], 0.0f, 0.0f, 1.0f);                                                                                                                   \
+						v = Color(m_numbers[numbers_offset], 0.0f, 0.0f, 1.0f);                                                                                                                   \
 					} break;                                                                                                                                                                      \
 					case 2: {                                                                                                                                                                     \
-						v = Color(m_primitives[prim_offset], m_primitives[prim_offset + 1], 0.0f, 1.0f);                                                                                          \
+						v = Color(m_numbers[numbers_offset], m_numbers[numbers_offset + 1], 0.0f, 1.0f);                                                                                          \
 					} break;                                                                                                                                                                      \
 					case 3: {                                                                                                                                                                     \
-						v = Color(m_primitives[prim_offset], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], 1.0f);                                                                 \
+						v = Color(m_numbers[numbers_offset], m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 2], 1.0f);                                                                 \
 					} break;                                                                                                                                                                      \
 					default: {                                                                                                                                                                    \
-						v = Color(m_primitives[prim_offset], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                                        \
+						v = Color(m_numbers[numbers_offset], m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 3]);                                        \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
 				m_values[value_index] = v;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::TRANSFORM2D: {                                                                                                                                                          \
 				Transform2D t;                                                                                                                                                                    \
-				switch (prims_to_read) {                                                                                                                                                          \
+				switch (nums_to_read) {                                                                                                                                                           \
 					case 4: {                                                                                                                                                                     \
-						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
-						t.columns[1] = Vector2(m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                                                                                     \
+						t.columns[0] = Vector2(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1]);                                                                                     \
+						t.columns[1] = Vector2(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 3]);                                                                                     \
 					} break;                                                                                                                                                                      \
 					case 6: {                                                                                                                                                                     \
-						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
-						t.columns[1] = Vector2(m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                                                                                     \
-						t.columns[2] = Vector2(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5]);                                                                                     \
+						t.columns[0] = Vector2(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1]);                                                                                     \
+						t.columns[1] = Vector2(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 3]);                                                                                     \
+						t.columns[2] = Vector2(m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5]);                                                                                     \
 					} break;                                                                                                                                                                      \
 					case 9: {                                                                                                                                                                     \
-						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
-						t.columns[1] = Vector2(m_primitives[prim_offset + 3], m_primitives[prim_offset + 4]);                                                                                     \
-						t.columns[2] = Vector2(m_primitives[prim_offset + 6], m_primitives[prim_offset + 7]);                                                                                     \
+						t.columns[0] = Vector2(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1]);                                                                                     \
+						t.columns[1] = Vector2(m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 4]);                                                                                     \
+						t.columns[2] = Vector2(m_numbers[numbers_offset + 6], m_numbers[numbers_offset + 7]);                                                                                     \
 					} break;                                                                                                                                                                      \
 					case 12: {                                                                                                                                                                    \
-						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
-						t.columns[1] = Vector2(m_primitives[prim_offset + 3], m_primitives[prim_offset + 4]);                                                                                     \
-						t.columns[2] = Vector2(m_primitives[prim_offset + 9], m_primitives[prim_offset + 10]);                                                                                    \
+						t.columns[0] = Vector2(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1]);                                                                                     \
+						t.columns[1] = Vector2(m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 4]);                                                                                     \
+						t.columns[2] = Vector2(m_numbers[numbers_offset + 9], m_numbers[numbers_offset + 10]);                                                                                    \
 					} break;                                                                                                                                                                      \
 					case 16: {                                                                                                                                                                    \
-						t.columns[0] = Vector2(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1]);                                                                                     \
-						t.columns[1] = Vector2(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5]);                                                                                     \
-						t.columns[2] = Vector2(m_primitives[prim_offset + 12], m_primitives[prim_offset + 13]);                                                                                   \
+						t.columns[0] = Vector2(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1]);                                                                                     \
+						t.columns[1] = Vector2(m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5]);                                                                                     \
+						t.columns[2] = Vector2(m_numbers[numbers_offset + 12], m_numbers[numbers_offset + 13]);                                                                                   \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
 				m_values[value_index] = t;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::BASIS: {                                                                                                                                                                \
 				Basis b;                                                                                                                                                                          \
-				switch (prims_to_read) {                                                                                                                                                          \
+				switch (nums_to_read) {                                                                                                                                                           \
 					case 4: {                                                                                                                                                                     \
-						b.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 2], 0.0f);                                                                                  \
-						b.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 3], 0.0f);                                                                                  \
+						b.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 2], 0.0f);                                                                                  \
+						b.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 3], 0.0f);                                                                                  \
 					} break;                                                                                                                                                                      \
 					case 6: {                                                                                                                                                                     \
-						b.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 2], m_primitives[prim_offset + 4]);                                                         \
-						b.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 3], m_primitives[prim_offset + 5]);                                                         \
+						b.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 4]);                                                         \
+						b.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 5]);                                                         \
 					} break;                                                                                                                                                                      \
 					case 9:                                                                                                                                                                       \
 					case 12: {                                                                                                                                                                    \
-						b.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 3], m_primitives[prim_offset + 6]);                                                         \
-						b.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 4], m_primitives[prim_offset + 7]);                                                         \
-						b.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 5], m_primitives[prim_offset + 8]);                                                         \
+						b.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 6]);                                                         \
+						b.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 7]);                                                         \
+						b.rows[2] = Vector3(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 5], m_numbers[numbers_offset + 8]);                                                         \
 					} break;                                                                                                                                                                      \
 					case 16: {                                                                                                                                                                    \
-						b.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 4], m_primitives[prim_offset + 8]);                                                         \
-						b.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 5], m_primitives[prim_offset + 9]);                                                         \
-						b.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 6], m_primitives[prim_offset + 10]);                                                        \
+						b.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 8]);                                                         \
+						b.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 5], m_numbers[numbers_offset + 9]);                                                         \
+						b.rows[2] = Vector3(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 6], m_numbers[numbers_offset + 10]);                                                        \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
 				m_values[value_index] = b;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::TRANSFORM3D: {                                                                                                                                                          \
 				Transform3D t;                                                                                                                                                                    \
-				switch (prims_to_read) {                                                                                                                                                          \
+				switch (nums_to_read) {                                                                                                                                                           \
 					case 4: {                                                                                                                                                                     \
-						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 2], 0.0f);                                                                            \
-						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 3], 0.0f);                                                                            \
+						t.basis.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 2], 0.0f);                                                                            \
+						t.basis.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 3], 0.0f);                                                                            \
 					} break;                                                                                                                                                                      \
 					case 6: {                                                                                                                                                                     \
-						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 2], 0.0f);                                                                            \
-						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 3], 0.0f);                                                                            \
-						t.origin = Vector3(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f);                                                                                   \
+						t.basis.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 2], 0.0f);                                                                            \
+						t.basis.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 3], 0.0f);                                                                            \
+						t.origin = Vector3(m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5], 0.0f);                                                                                   \
 					} break;                                                                                                                                                                      \
 					case 9: {                                                                                                                                                                     \
-						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 3], m_primitives[prim_offset + 6]);                                                   \
-						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 4], m_primitives[prim_offset + 7]);                                                   \
-						t.basis.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 5], m_primitives[prim_offset + 8]);                                                   \
+						t.basis.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 6]);                                                   \
+						t.basis.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 7]);                                                   \
+						t.basis.rows[2] = Vector3(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 5], m_numbers[numbers_offset + 8]);                                                   \
 					} break;                                                                                                                                                                      \
 					case 12: {                                                                                                                                                                    \
-						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 3], m_primitives[prim_offset + 6]);                                                   \
-						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 4], m_primitives[prim_offset + 7]);                                                   \
-						t.basis.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 5], m_primitives[prim_offset + 8]);                                                   \
-						t.origin = Vector3(m_primitives[prim_offset + 9], m_primitives[prim_offset + 10], m_primitives[prim_offset + 11]);                                                        \
+						t.basis.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 6]);                                                   \
+						t.basis.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 7]);                                                   \
+						t.basis.rows[2] = Vector3(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 5], m_numbers[numbers_offset + 8]);                                                   \
+						t.origin = Vector3(m_numbers[numbers_offset + 9], m_numbers[numbers_offset + 10], m_numbers[numbers_offset + 11]);                                                        \
 					} break;                                                                                                                                                                      \
 					case 16: {                                                                                                                                                                    \
-						t.basis.rows[0] = Vector3(m_primitives[prim_offset + 0], m_primitives[prim_offset + 4], m_primitives[prim_offset + 8]);                                                   \
-						t.basis.rows[1] = Vector3(m_primitives[prim_offset + 1], m_primitives[prim_offset + 5], m_primitives[prim_offset + 9]);                                                   \
-						t.basis.rows[2] = Vector3(m_primitives[prim_offset + 2], m_primitives[prim_offset + 6], m_primitives[prim_offset + 10]);                                                  \
-						t.origin = Vector3(m_primitives[prim_offset + 12], m_primitives[prim_offset + 13], m_primitives[prim_offset + 14]);                                                       \
+						t.basis.rows[0] = Vector3(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 8]);                                                   \
+						t.basis.rows[1] = Vector3(m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 5], m_numbers[numbers_offset + 9]);                                                   \
+						t.basis.rows[2] = Vector3(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 6], m_numbers[numbers_offset + 10]);                                                  \
+						t.origin = Vector3(m_numbers[numbers_offset + 12], m_numbers[numbers_offset + 13], m_numbers[numbers_offset + 14]);                                                       \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
 				m_values[value_index] = t;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::PROJECTION: {                                                                                                                                                           \
 				Projection p;                                                                                                                                                                     \
-				switch (prims_to_read) {                                                                                                                                                          \
+				switch (nums_to_read) {                                                                                                                                                           \
 					case 4: {                                                                                                                                                                     \
-						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], 0.0f, 0.0f);                                                                         \
-						p.columns[1] = Vector4(m_primitives[prim_offset + 2], m_primitives[prim_offset + 3], 0.0f, 0.0f);                                                                         \
+						p.columns[0] = Vector4(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1], 0.0f, 0.0f);                                                                         \
+						p.columns[1] = Vector4(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 3], 0.0f, 0.0f);                                                                         \
 					} break;                                                                                                                                                                      \
 					case 6: {                                                                                                                                                                     \
-						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], 0.0f, 0.0f);                                                                         \
-						p.columns[1] = Vector4(m_primitives[prim_offset + 2], m_primitives[prim_offset + 3], 0.0f, 0.0f);                                                                         \
-						p.columns[3] = Vector4(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f, 0.0f);                                                                         \
+						p.columns[0] = Vector4(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1], 0.0f, 0.0f);                                                                         \
+						p.columns[1] = Vector4(m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 3], 0.0f, 0.0f);                                                                         \
+						p.columns[3] = Vector4(m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5], 0.0f, 0.0f);                                                                         \
 					} break;                                                                                                                                                                      \
 					case 9: {                                                                                                                                                                     \
-						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], 0.0f);                                                \
-						p.columns[1] = Vector4(m_primitives[prim_offset + 3], m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f);                                                \
-						p.columns[2] = Vector4(m_primitives[prim_offset + 6], m_primitives[prim_offset + 7], m_primitives[prim_offset + 8], 0.0f);                                                \
+						p.columns[0] = Vector4(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 2], 0.0f);                                                \
+						p.columns[1] = Vector4(m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5], 0.0f);                                                \
+						p.columns[2] = Vector4(m_numbers[numbers_offset + 6], m_numbers[numbers_offset + 7], m_numbers[numbers_offset + 8], 0.0f);                                                \
 					} break;                                                                                                                                                                      \
 					case 12: {                                                                                                                                                                    \
-						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], 0.0f);                                                \
-						p.columns[1] = Vector4(m_primitives[prim_offset + 3], m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], 0.0f);                                                \
-						p.columns[2] = Vector4(m_primitives[prim_offset + 6], m_primitives[prim_offset + 7], m_primitives[prim_offset + 8], 0.0f);                                                \
-						p.columns[3] = Vector4(m_primitives[prim_offset + 9], m_primitives[prim_offset + 10], m_primitives[prim_offset + 11], 0.0f);                                              \
+						p.columns[0] = Vector4(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 2], 0.0f);                                                \
+						p.columns[1] = Vector4(m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5], 0.0f);                                                \
+						p.columns[2] = Vector4(m_numbers[numbers_offset + 6], m_numbers[numbers_offset + 7], m_numbers[numbers_offset + 8], 0.0f);                                                \
+						p.columns[3] = Vector4(m_numbers[numbers_offset + 9], m_numbers[numbers_offset + 10], m_numbers[numbers_offset + 11], 0.0f);                                              \
 					}                                                                                                                                                                             \
 					case 16: {                                                                                                                                                                    \
-						p.columns[0] = Vector4(m_primitives[prim_offset + 0], m_primitives[prim_offset + 1], m_primitives[prim_offset + 2], m_primitives[prim_offset + 3]);                       \
-						p.columns[1] = Vector4(m_primitives[prim_offset + 4], m_primitives[prim_offset + 5], m_primitives[prim_offset + 6], m_primitives[prim_offset + 7]);                       \
-						p.columns[2] = Vector4(m_primitives[prim_offset + 8], m_primitives[prim_offset + 9], m_primitives[prim_offset + 10], m_primitives[prim_offset + 11]);                     \
-						p.columns[3] = Vector4(m_primitives[prim_offset + 12], m_primitives[prim_offset + 13], m_primitives[prim_offset + 14], m_primitives[prim_offset + 15]);                   \
+						p.columns[0] = Vector4(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 3]);                       \
+						p.columns[1] = Vector4(m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5], m_numbers[numbers_offset + 6], m_numbers[numbers_offset + 7]);                       \
+						p.columns[2] = Vector4(m_numbers[numbers_offset + 8], m_numbers[numbers_offset + 9], m_numbers[numbers_offset + 10], m_numbers[numbers_offset + 11]);                     \
+						p.columns[3] = Vector4(m_numbers[numbers_offset + 12], m_numbers[numbers_offset + 13], m_numbers[numbers_offset + 14], m_numbers[numbers_offset + 15]);                   \
 					} break;                                                                                                                                                                      \
 				}                                                                                                                                                                                 \
 				m_values[value_index] = p;                                                                                                                                                        \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_BYTE_ARRAY: {                                                                                                                                                    \
 				PackedByteArray packed_array;                                                                                                                                                     \
-				packed_array.resize(prims_per_variant);                                                                                                                                           \
-				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
+				packed_array.resize(nums_to_read);                                                                                                                                                \
+				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
+					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT32_ARRAY: {                                                                                                                                                   \
 				PackedInt32Array packed_array;                                                                                                                                                    \
-				packed_array.resize(prims_per_variant);                                                                                                                                           \
-				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
+				packed_array.resize(nums_to_read);                                                                                                                                                \
+				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
+					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT64_ARRAY: {                                                                                                                                                   \
 				PackedInt64Array packed_array;                                                                                                                                                    \
-				packed_array.resize(prims_per_variant);                                                                                                                                           \
-				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
+				packed_array.resize(nums_to_read);                                                                                                                                                \
+				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
+					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT32_ARRAY: {                                                                                                                                                 \
 				PackedFloat32Array packed_array;                                                                                                                                                  \
-				packed_array.resize(prims_per_variant);                                                                                                                                           \
-				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
+				packed_array.resize(nums_to_read);                                                                                                                                                \
+				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
+					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT64_ARRAY: {                                                                                                                                                 \
 				PackedFloat64Array packed_array;                                                                                                                                                  \
-				packed_array.resize(prims_per_variant);                                                                                                                                           \
-				for (int64_t j = 0; j < prims_per_variant; j++) {                                                                                                                                 \
-					packed_array.set(value_index, m_primitives[prim_offset + j]);                                                                                                                 \
+				packed_array.resize(nums_to_read);                                                                                                                                                \
+				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
+					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
 				}                                                                                                                                                                                 \
 			} break;                                                                                                                                                                              \
 			default: {                                                                                                                                                                            \
@@ -370,16 +370,16 @@ bool G4MFAccessor4D::is_equal_exact(const Ref<G4MFAccessor4D> &p_other) const {
 			_primitive_type == p_other->get_primitive_type());
 }
 
-int64_t G4MFAccessor4D::bytes_per_primitive() const {
+int64_t G4MFAccessor4D::get_bytes_per_primitive() const {
 	// The `to_int` function only looks at numeric digits, so for example, "float32" -> 32 -> 4.
 	return _primitive_type.to_int() / 8;
 }
 
-int64_t G4MFAccessor4D::bytes_per_vector() const {
-	return bytes_per_primitive() * _vector_size;
+int64_t G4MFAccessor4D::get_bytes_per_vector() const {
+	return get_bytes_per_primitive() * _vector_size;
 }
 
-int64_t G4MFAccessor4D::primitives_per_variant(const Variant::Type p_variant_type) {
+int64_t G4MFAccessor4D::get_numbers_per_variant(const Variant::Type p_variant_type) {
 	switch (p_variant_type) {
 		case Variant::NIL:
 		case Variant::STRING:
@@ -488,14 +488,14 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 	ERR_FAIL_INDEX_V_MSG(_buffer_view_index, state_buffer_views.size(), PackedByteArray(), "G4MF import: The buffer view index is out of bounds. Returning an empty byte array.");
 	const Ref<G4MFBufferView4D> buffer_view = state_buffer_views[_buffer_view_index];
 	const PackedByteArray raw_bytes = buffer_view->load_buffer_view_data(p_g4mf_state);
-	ERR_FAIL_COND_V_MSG(raw_bytes.size() % bytes_per_vector() != 0, PackedByteArray(), "G4MF import: The buffer view size was not a multiple of the vector size. Returning an empty byte array.");
+	ERR_FAIL_COND_V_MSG(raw_bytes.size() % get_bytes_per_vector() != 0, PackedByteArray(), "G4MF import: The buffer view size was not a multiple of the vector size. Returning an empty byte array.");
 	return raw_bytes;
 }
 
-#define G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(m_numbers, m_prim_type)                                                                                                         \
+#define G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(m_numbers, m_prim_type)                                                                                                            \
 	const PackedByteArray raw_bytes = load_bytes_from_buffer_view(p_g4mf_state);                                                                                                        \
 	const int64_t raw_byte_size = raw_bytes.size();                                                                                                                                     \
-	const int64_t bytes_per_prim = bytes_per_primitive();                                                                                                                               \
+	const int64_t bytes_per_prim = get_bytes_per_primitive();                                                                                                                           \
 	const int64_t prim_size = raw_byte_size / bytes_per_prim;                                                                                                                           \
 	m_numbers.resize(prim_size);                                                                                                                                                        \
 	if (_primitive_type.begins_with("uint")) {                                                                                                                                          \
@@ -569,7 +569,7 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 
 PackedFloat64Array G4MFAccessor4D::decode_floats_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedFloat64Array numbers;
-	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(numbers, double);
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, double);
 	return numbers;
 }
 
@@ -577,19 +577,19 @@ PackedFloat64Array G4MFAccessor4D::decode_floats_from_bytes(const Ref<G4MFState4
 // and needed internally let's provide a dedicated function for it.
 PackedInt32Array G4MFAccessor4D::decode_int32s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedInt32Array numbers;
-	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(numbers, int32_t);
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, int32_t);
 	return numbers;
 }
 
 PackedInt64Array G4MFAccessor4D::decode_ints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedInt64Array numbers;
-	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(numbers, int64_t);
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, int64_t);
 	return numbers;
 }
 
 Vector<uint64_t> G4MFAccessor4D::decode_uints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	Vector<uint64_t> numbers;
-	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_PRIMITIVES(numbers, uint64_t);
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, uint64_t);
 	return numbers;
 }
 
@@ -610,7 +610,7 @@ Array G4MFAccessor4D::decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_
 
 #define G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(m_input_numbers, m_ret)                                                                         \
 	const int64_t input_size = m_input_numbers.size();                                                                                                \
-	const int64_t bytes_per_prim = bytes_per_primitive();                                                                                             \
+	const int64_t bytes_per_prim = get_bytes_per_primitive();                                                                                         \
 	const int64_t raw_byte_size = bytes_per_prim * input_size;                                                                                        \
 	const bool prim_is_float = _primitive_type.begins_with("float");                                                                                  \
 	const bool prim_is_int = _primitive_type.begins_with("int");                                                                                      \
@@ -696,16 +696,16 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_bytes(const Vector<uint64_t> &p_
 	return ret;
 }
 
-#define G4MF_ACCESSOR_4D_ENCODE_VARIANTS_AS_PRIMITIVES(m_input_data, m_numbers, m_error_type)                                                                                                     \
+#define G4MF_ACCESSOR_4D_ENCODE_VARIANTS_AS_NUMBERS(m_input_data, m_numbers, m_error_type)                                                                                                        \
 	const Variant &first_element = m_input_data[0];                                                                                                                                               \
 	const Variant::Type first_type = first_element.get_type();                                                                                                                                    \
-	const int64_t prim_per_variant = primitives_per_variant(first_type);                                                                                                                          \
+	const int64_t nums_per_variant = get_numbers_per_variant(first_type);                                                                                                                         \
 	/* For the most part, use the vector size, so for example, encoding Vector2s as Vector3s leaves 0 at the end. */                                                                              \
 	/* However, when the inputs are scalars, it's usually expected to just write those all together. */                                                                                           \
 	/* Ex: If the G4MF is supposed to contain an integer Vector2 array, but Godot doesn't have PackedVector2iArray, */                                                                            \
 	/* we would use PackedInt32Array in Godot as a substitute, so the encoding needs to handle this. */                                                                                           \
 	/* This means that if we have scalar values and are told to encode a vector size of 2/3/4/etc... don't pad it. */                                                                             \
-	const int64_t vector_size = prim_per_variant == 1 ? 1 : _vector_size;                                                                                                                         \
+	const int64_t vector_size = nums_per_variant == 1 ? 1 : _vector_size;                                                                                                                         \
 	const int64_t input_size = m_input_data.size();                                                                                                                                               \
 	m_numbers.resize(input_size *vector_size);                                                                                                                                                    \
 	for (int64_t input_index = 0; input_index < input_size; input_index++) {                                                                                                                      \
@@ -901,25 +901,25 @@ PackedByteArray G4MFAccessor4D::encode_uints_as_bytes(const Vector<uint64_t> &p_
 
 PackedFloat64Array G4MFAccessor4D::_encode_variants_as_floats(const Array &p_input_data) const {
 	PackedFloat64Array numbers;
-	G4MF_ACCESSOR_4D_ENCODE_VARIANTS_AS_PRIMITIVES(p_input_data, numbers, PackedFloat64Array);
+	G4MF_ACCESSOR_4D_ENCODE_VARIANTS_AS_NUMBERS(p_input_data, numbers, PackedFloat64Array);
 	return numbers;
 }
 
 PackedInt64Array G4MFAccessor4D::_encode_variants_as_ints(const Array &p_input_data) const {
 	PackedInt64Array numbers;
-	G4MF_ACCESSOR_4D_ENCODE_VARIANTS_AS_PRIMITIVES(p_input_data, numbers, PackedInt64Array);
+	G4MF_ACCESSOR_4D_ENCODE_VARIANTS_AS_NUMBERS(p_input_data, numbers, PackedInt64Array);
 	return numbers;
 }
 
 Vector<uint64_t> G4MFAccessor4D::_encode_variants_as_uints(const Array &p_input_data) const {
 	Vector<uint64_t> numbers;
-	G4MF_ACCESSOR_4D_ENCODE_VARIANTS_AS_PRIMITIVES(p_input_data, numbers, Vector<uint64_t>);
+	G4MF_ACCESSOR_4D_ENCODE_VARIANTS_AS_NUMBERS(p_input_data, numbers, Vector<uint64_t>);
 	return numbers;
 }
 
 PackedByteArray G4MFAccessor4D::encode_variants_as_bytes(const Array &p_input_data) const {
 	ERR_FAIL_COND_V_MSG(p_input_data.is_empty(), PackedByteArray(), "G4MF export: Cannot encode an empty array.");
-	const int64_t bytes_per_vec = bytes_per_vector();
+	const int64_t bytes_per_vec = get_bytes_per_vector();
 	ERR_FAIL_COND_V_MSG(bytes_per_vec == 0, PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _primitive_type + "'.");
 	if (_primitive_type.begins_with("float")) {
 		PackedFloat64Array numbers = _encode_variants_as_floats(p_input_data);
@@ -939,7 +939,7 @@ int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4m
 	// Write the data into a new buffer view.
 	// The byte offset of an accessor's buffer view MUST be a multiple of the accessor's primitive size.
 	// https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/data.md#accessors
-	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, bytes_per_primitive(), p_deduplicate);
+	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, get_bytes_per_primitive(), p_deduplicate);
 	ERR_FAIL_COND_V_MSG(buffer_view_index == -1, -1, "G4MF export: Accessor failed to write new buffer view into G4MF state.");
 	set_buffer_view_index(buffer_view_index);
 	// Add the new accessor to the state, but check for duplicates first.
@@ -1019,9 +1019,9 @@ void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_vector_size", "vector_size"), &G4MFAccessor4D::set_vector_size);
 
 	// General helper functions.
-	ClassDB::bind_method(D_METHOD("bytes_per_primitive"), &G4MFAccessor4D::bytes_per_primitive);
-	ClassDB::bind_method(D_METHOD("bytes_per_vector"), &G4MFAccessor4D::bytes_per_vector);
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("primitives_per_variant", "variant_type"), &G4MFAccessor4D::primitives_per_variant);
+	ClassDB::bind_method(D_METHOD("get_bytes_per_primitive"), &G4MFAccessor4D::get_bytes_per_primitive);
+	ClassDB::bind_method(D_METHOD("get_bytes_per_vector"), &G4MFAccessor4D::get_bytes_per_vector);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("get_numbers_per_variant", "variant_type"), &G4MFAccessor4D::get_numbers_per_variant);
 
 	// Determine the minimal primitive type for the given data.
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_colors", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_colors);

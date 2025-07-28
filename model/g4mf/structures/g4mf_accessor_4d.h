@@ -44,9 +44,9 @@ public:
 
 	// General helper functions.
 	bool is_equal_exact(const Ref<G4MFAccessor4D> &p_other) const;
-	int64_t bytes_per_primitive() const;
-	int64_t bytes_per_vector() const;
-	static int64_t primitives_per_variant(const Variant::Type p_variant_type);
+	int64_t get_bytes_per_primitive() const;
+	int64_t get_bytes_per_vector() const;
+	static int64_t get_numbers_per_variant(const Variant::Type p_variant_type);
 
 	// Determine the minimal primitive type for the given data.
 	// Add more types only as needed otherwise this will be a mess.

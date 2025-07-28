@@ -11,18 +11,6 @@
 		<link title="G4MF Accessor Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.accessor.schema.json</link>
 	</tutorials>
 	<methods>
-		<method name="bytes_per_primitive" qualifiers="const">
-			<return type="int" />
-			<description>
-				Returns the amount of bytes per primitive by reading the primitive type. For example, if the primitive type is [code]"float32"[/code], then this will read the [code]32[/code] as bits and divide by [code]8[/code] bits per byte to return [code]4[/code] bytes.
-			</description>
-		</method>
-		<method name="bytes_per_vector" qualifiers="const">
-			<return type="int" />
-			<description>
-				Returns the amount of bytes per vector by multiplying the [method bytes_per_primitive] by the [code]vector[/code] member. For example, if the primitive type is [code]"float32"[/code] and the accessor stores Vector3, then this will return [code]4 * 3 = 12[/code] bytes.
-			</description>
-		</method>
 		<method name="decode_floats_from_bytes" qualifiers="const">
 			<return type="PackedFloat64Array" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -85,6 +73,25 @@
 				Creates a new [G4MFAccessor4D] from the given dictionary representing the JSON data of the G4MF accessor. This is used when importing the accessor from a file.
 			</description>
 		</method>
+		<method name="get_bytes_per_primitive" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the amount of bytes per primitive by reading the primitive type. For example, if the primitive type is [code]"float32"[/code], then this will read the [code]32[/code] as bits and divide by [code]8[/code] bits per byte to return [code]4[/code] bytes.
+			</description>
+		</method>
+		<method name="get_bytes_per_vector" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the amount of bytes per vector by multiplying the [method bytes_per_primitive] by the [code]vector[/code] member. For example, if the primitive type is [code]"float32"[/code] and the accessor stores Vector3, then this will return [code]4 * 3 = 12[/code] bytes.
+			</description>
+		</method>
+		<method name="get_numbers_per_variant" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="variant_type" type="int" enum="Variant.Type" />
+			<description>
+				Returns the amount of primitive numeric components in a supported Variant type, or returns [code]0[/code] if the type is not supported. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String].
+			</description>
+		</method>
 		<method name="load_bytes_from_buffer_view" qualifiers="const">
 			<return type="PackedByteArray" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -126,13 +133,6 @@
 			<param index="0" name="input_data" type="PackedVector4Array" />
 			<description>
 				Given a [PackedVector4Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only integers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains integers -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains any non-integer floating point numbers, then the minimal primitive type will be the smallest float type that can losslessly represent all of the data in the array. This can be used to determine the most efficient lossless primitive type to use when encoding the data in the accessor.
-			</description>
-		</method>
-		<method name="primitives_per_variant" qualifiers="static">
-			<return type="int" />
-			<param index="0" name="variant_type" type="int" enum="Variant.Type" />
-			<description>
-				Returns the amount of primitive numeric components in a supported Variant type, or returns [code]0[/code] if the type is not supported. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String].
 			</description>
 		</method>
 		<method name="store_accessor_data_into_state">
