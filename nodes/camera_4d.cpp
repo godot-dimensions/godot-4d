@@ -384,11 +384,11 @@ void Camera4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_distance"), &Camera4D::get_w_fade_distance);
 	ClassDB::bind_method(D_METHOD("set_w_fade_distance", "w_fade_distance"), &Camera4D::set_w_fade_distance);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_distance", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater,or_less,suffix:m"), "set_w_fade_distance", "get_w_fade_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_distance", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater,or_less,exp,suffix:m"), "set_w_fade_distance", "get_w_fade_distance");
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_slope"), &Camera4D::get_w_fade_slope);
 	ClassDB::bind_method(D_METHOD("set_w_fade_slope", "w_fade_slope"), &Camera4D::set_w_fade_slope);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.001,10,0.001,or_greater,or_less"), "set_w_fade_slope", "get_w_fade_slope");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.001,10,0.001,or_greater,or_less,exp"), "set_w_fade_slope", "get_w_fade_slope");
 
 	ClassDB::bind_method(D_METHOD("get_depth_fade"), &Camera4D::get_depth_fade);
 	ClassDB::bind_method(D_METHOD("set_depth_fade", "depth_fade"), &Camera4D::set_depth_fade);

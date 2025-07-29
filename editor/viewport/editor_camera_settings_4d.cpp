@@ -161,9 +161,9 @@ void EditorCameraSettings4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_distance"), &EditorCameraSettings4D::get_w_fade_distance);
 	ClassDB::bind_method(D_METHOD("set_w_fade_distance", "w_fade_distance"), &EditorCameraSettings4D::set_w_fade_distance);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_distance", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,exp,suffix:m"), "set_w_fade_distance", "get_w_fade_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_distance", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,or_less,exp,suffix:m"), "set_w_fade_distance", "get_w_fade_distance");
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_slope"), &EditorCameraSettings4D::get_w_fade_slope);
 	ClassDB::bind_method(D_METHOD("set_w_fade_slope", "w_fade_slope"), &EditorCameraSettings4D::set_w_fade_slope);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,exp"), "set_w_fade_slope", "get_w_fade_slope");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,or_less,exp"), "set_w_fade_slope", "get_w_fade_slope");
 }
