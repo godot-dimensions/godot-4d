@@ -27,6 +27,7 @@ public:
 private:
 	TetraColorSource _albedo_source = TETRA_COLOR_SOURCE_SINGLE_COLOR;
 	Ref<Texture3D> _albedo_texture_3d;
+	static Ref<Shader> _cross_section_shader;
 
 	static Material4D::ColorSourceFlags _tetra_source_to_flags(const TetraColorSource p_tetra_source);
 
@@ -45,6 +46,9 @@ public:
 
 	Ref<Texture3D> get_albedo_texture_3d() const;
 	void set_albedo_texture_3d(const Ref<Texture3D> &p_albedo_texture_3d);
+
+	static void init_shaders();
+	static void cleanup_shaders();
 
 	TetraMaterial4D();
 };
