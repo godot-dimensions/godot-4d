@@ -3,16 +3,16 @@
 #include "../g4mf_state_4d.h"
 
 bool G4MFMaterialChannel4D::is_equal_exact(const Ref<G4MFMaterialChannel4D> &p_other) const {
-	if (_single_color != p_other->get_single_color()) {
+	if (_factor != p_other->get_factor()) {
 		return false;
 	}
-	if (_cell_colors_accessor_index != p_other->get_cell_colors_accessor_index()) {
+	if (_per_cell_accessor_index != p_other->get_per_cell_accessor_index()) {
 		return false;
 	}
-	if (_edge_colors_accessor_index != p_other->get_edge_colors_accessor_index()) {
+	if (_per_edge_accessor_index != p_other->get_per_edge_accessor_index()) {
 		return false;
 	}
-	if (_vertex_colors_accessor_index != p_other->get_vertex_colors_accessor_index()) {
+	if (_per_vertex_accessor_index != p_other->get_per_vertex_accessor_index()) {
 		return false;
 	}
 	if (_cell_texture_map_accessor_index != p_other->get_cell_texture_map_accessor_index()) {
@@ -26,8 +26,8 @@ bool G4MFMaterialChannel4D::is_equal_exact(const Ref<G4MFMaterialChannel4D> &p_o
 
 PackedColorArray G4MFMaterialChannel4D::load_cell_colors(const Ref<G4MFState4D> &p_g4mf_state) const {
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
-	ERR_FAIL_INDEX_V(_cell_colors_accessor_index, state_accessors.size(), PackedColorArray());
-	const Ref<G4MFAccessor4D> accessor = state_accessors[_cell_colors_accessor_index];
+	ERR_FAIL_INDEX_V(_per_cell_accessor_index, state_accessors.size(), PackedColorArray());
+	const Ref<G4MFAccessor4D> accessor = state_accessors[_per_cell_accessor_index];
 	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);
 	const int color_variants_size = color_variants.size();
 	PackedColorArray packed_colors;
@@ -40,8 +40,8 @@ PackedColorArray G4MFMaterialChannel4D::load_cell_colors(const Ref<G4MFState4D> 
 
 PackedColorArray G4MFMaterialChannel4D::load_edge_colors(const Ref<G4MFState4D> &p_g4mf_state) const {
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
-	ERR_FAIL_INDEX_V(_edge_colors_accessor_index, state_accessors.size(), PackedColorArray());
-	const Ref<G4MFAccessor4D> accessor = state_accessors[_edge_colors_accessor_index];
+	ERR_FAIL_INDEX_V(_per_edge_accessor_index, state_accessors.size(), PackedColorArray());
+	const Ref<G4MFAccessor4D> accessor = state_accessors[_per_edge_accessor_index];
 	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);
 	const int color_variants_size = color_variants.size();
 	PackedColorArray packed_colors;
@@ -54,8 +54,8 @@ PackedColorArray G4MFMaterialChannel4D::load_edge_colors(const Ref<G4MFState4D> 
 
 PackedColorArray G4MFMaterialChannel4D::load_vertex_colors(const Ref<G4MFState4D> &p_g4mf_state) const {
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
-	ERR_FAIL_INDEX_V(_vertex_colors_accessor_index, state_accessors.size(), PackedColorArray());
-	const Ref<G4MFAccessor4D> accessor = state_accessors[_vertex_colors_accessor_index];
+	ERR_FAIL_INDEX_V(_per_vertex_accessor_index, state_accessors.size(), PackedColorArray());
+	const Ref<G4MFAccessor4D> accessor = state_accessors[_per_vertex_accessor_index];
 	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);
 	const int color_variants_size = color_variants.size();
 	PackedColorArray packed_colors;
@@ -70,36 +70,36 @@ Ref<G4MFMaterialChannel4D> G4MFMaterialChannel4D::from_dictionary(const Dictiona
 	Ref<G4MFMaterialChannel4D> material;
 	material.instantiate();
 	material->read_item_entries_from_dictionary(p_dict);
-	if (p_dict.has("color")) {
-		Array color_array = p_dict["color"];
-		Color color;
-		switch (color_array.size()) {
+	if (p_dict.has("factor")) {
+		Array factor_array = p_dict["factor"];
+		Color factor_color;
+		switch (factor_array.size()) {
 			case 0: {
-				color = Color(-1, -1, -1, -1);
+				factor_color = Color(-1, -1, -1, -1);
 			} break;
 			case 1: {
-				color = Color(color_array[0], color_array[0], color_array[0]);
+				factor_color = Color(factor_array[0], factor_array[0], factor_array[0]);
 			} break;
 			case 2: {
-				color = Color(color_array[0], color_array[1], 0.0, 1.0);
+				factor_color = Color(factor_array[0], factor_array[1], 0.0, 1.0);
 			} break;
 			case 3: {
-				color = Color(color_array[0], color_array[1], color_array[2], 1.0);
+				factor_color = Color(factor_array[0], factor_array[1], factor_array[2], 1.0);
 			} break;
 			default: {
-				color = Color(color_array[0], color_array[1], color_array[2], color_array[3]);
+				factor_color = Color(factor_array[0], factor_array[1], factor_array[2], factor_array[3]);
 			} break;
 		}
-		material->set_single_color(color);
+		material->set_factor(factor_color);
 	}
-	if (p_dict.has("cellColors")) {
-		material->set_cell_colors_accessor_index(p_dict["cellColors"]);
+	if (p_dict.has("perCell")) {
+		material->set_per_cell_accessor_index(p_dict["perCell"]);
 	}
-	if (p_dict.has("edgeColors")) {
-		material->set_edge_colors_accessor_index(p_dict["edgeColors"]);
+	if (p_dict.has("perEdge")) {
+		material->set_edge_colors_accessor_index(p_dict["perEdge"]);
 	}
-	if (p_dict.has("vertexColors")) {
-		material->set_vertex_colors_accessor_index(p_dict["vertexColors"]);
+	if (p_dict.has("perVertex")) {
+		material->set_per_vertex_accessor_index(p_dict["perVertex"]);
 	}
 	if (p_dict.has("cellTextureMap")) {
 		material->set_cell_texture_map_accessor_index(p_dict["cellTextureMap"]);
@@ -112,30 +112,30 @@ Ref<G4MFMaterialChannel4D> G4MFMaterialChannel4D::from_dictionary(const Dictiona
 
 Dictionary G4MFMaterialChannel4D::to_dictionary() const {
 	Dictionary dict = write_item_entries_to_dictionary();
-	if (_single_color.r > -1 && !Color(1, 1, 1, 1).is_equal_approx(_single_color)) {
-		Array color_array;
-		if (_single_color.a == 1.0) {
-			color_array.resize(3);
-			color_array[0] = _single_color.r;
-			color_array[1] = _single_color.g;
-			color_array[2] = _single_color.b;
+	if (_factor.r > -1 && !Color(1, 1, 1, 1).is_equal_approx(_factor)) {
+		Array factor_array;
+		if (_factor.a == 1.0) {
+			factor_array.resize(3);
+			factor_array[0] = _factor.r;
+			factor_array[1] = _factor.g;
+			factor_array[2] = _factor.b;
 		} else {
-			color_array.resize(4);
-			color_array[0] = _single_color.r;
-			color_array[1] = _single_color.g;
-			color_array[2] = _single_color.b;
-			color_array[3] = _single_color.a;
+			factor_array.resize(4);
+			factor_array[0] = _factor.r;
+			factor_array[1] = _factor.g;
+			factor_array[2] = _factor.b;
+			factor_array[3] = _factor.a;
 		}
-		dict["color"] = color_array;
+		dict["factor"] = factor_array;
 	}
-	if (_cell_colors_accessor_index >= 0) {
-		dict["cellColors"] = _cell_colors_accessor_index;
+	if (_per_cell_accessor_index >= 0) {
+		dict["perCell"] = _per_cell_accessor_index;
 	}
-	if (_edge_colors_accessor_index >= 0) {
-		dict["edgeColors"] = _edge_colors_accessor_index;
+	if (_per_edge_accessor_index >= 0) {
+		dict["perEdge"] = _per_edge_accessor_index;
 	}
-	if (_vertex_colors_accessor_index >= 0) {
-		dict["vertexColors"] = _vertex_colors_accessor_index;
+	if (_per_vertex_accessor_index >= 0) {
+		dict["perVertex"] = _per_vertex_accessor_index;
 	}
 	if (_cell_texture_map_accessor_index >= 0) {
 		dict["cellTextureMap"] = _cell_texture_map_accessor_index;
@@ -147,14 +147,14 @@ Dictionary G4MFMaterialChannel4D::to_dictionary() const {
 }
 
 void G4MFMaterialChannel4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_single_color"), &G4MFMaterialChannel4D::get_single_color);
-	ClassDB::bind_method(D_METHOD("set_single_color", "single_color"), &G4MFMaterialChannel4D::set_single_color);
-	ClassDB::bind_method(D_METHOD("get_cell_colors_accessor_index"), &G4MFMaterialChannel4D::get_cell_colors_accessor_index);
-	ClassDB::bind_method(D_METHOD("set_cell_colors_accessor_index", "cell_colors_accessor_index"), &G4MFMaterialChannel4D::set_cell_colors_accessor_index);
-	ClassDB::bind_method(D_METHOD("get_edge_colors_accessor_index"), &G4MFMaterialChannel4D::get_edge_colors_accessor_index);
+	ClassDB::bind_method(D_METHOD("get_factor"), &G4MFMaterialChannel4D::get_factor);
+	ClassDB::bind_method(D_METHOD("set_factor", "single_color"), &G4MFMaterialChannel4D::set_factor);
+	ClassDB::bind_method(D_METHOD("get_per_cell_accessor_index"), &G4MFMaterialChannel4D::get_per_cell_accessor_index);
+	ClassDB::bind_method(D_METHOD("set_per_cell_accessor_index", "cell_colors_accessor_index"), &G4MFMaterialChannel4D::set_per_cell_accessor_index);
+	ClassDB::bind_method(D_METHOD("get_per_edge_accessor_index"), &G4MFMaterialChannel4D::get_per_edge_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_edge_colors_accessor_index", "edge_colors_accessor_index"), &G4MFMaterialChannel4D::set_edge_colors_accessor_index);
-	ClassDB::bind_method(D_METHOD("get_vertex_colors_accessor_index"), &G4MFMaterialChannel4D::get_vertex_colors_accessor_index);
-	ClassDB::bind_method(D_METHOD("set_vertex_colors_accessor_index", "vertex_colors_accessor_index"), &G4MFMaterialChannel4D::set_vertex_colors_accessor_index);
+	ClassDB::bind_method(D_METHOD("get_per_vertex_accessor_index"), &G4MFMaterialChannel4D::get_per_vertex_accessor_index);
+	ClassDB::bind_method(D_METHOD("set_per_vertex_accessor_index", "vertex_colors_accessor_index"), &G4MFMaterialChannel4D::set_per_vertex_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_cell_texture_map_accessor_index"), &G4MFMaterialChannel4D::get_cell_texture_map_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_cell_texture_map_accessor_index", "cell_texture_map_accessor_index"), &G4MFMaterialChannel4D::set_cell_texture_map_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_cell_texture_index"), &G4MFMaterialChannel4D::get_cell_texture_index);
@@ -168,10 +168,10 @@ void G4MFMaterialChannel4D::_bind_methods() {
 	ClassDB::bind_static_method("G4MFMaterialChannel4D", D_METHOD("from_dictionary", "dict"), &G4MFMaterialChannel4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMaterialChannel4D::to_dictionary);
 
-	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "single_color", PROPERTY_HINT_COLOR_NO_ALPHA), "set_single_color", "get_single_color");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_colors_accessor_index"), "set_cell_colors_accessor_index", "get_cell_colors_accessor_index");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "edge_colors_accessor_index"), "set_edge_colors_accessor_index", "get_edge_colors_accessor_index");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "vertex_colors_accessor_index"), "set_vertex_colors_accessor_index", "get_vertex_colors_accessor_index");
+	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "factor", PROPERTY_HINT_COLOR_NO_ALPHA), "set_factor", "get_factor");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "per_cell_accessor_index"), "set_per_cell_accessor_index", "get_per_cell_accessor_index");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "per_edge_accessor_index"), "set_edge_colors_accessor_index", "get_per_edge_accessor_index");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "per_vertex_accessor_index"), "set_per_vertex_accessor_index", "get_per_vertex_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_texture_map_accessor_index"), "set_cell_texture_map_accessor_index", "get_cell_texture_map_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_texture_index"), "set_cell_texture_index", "get_cell_texture_index");
 }
