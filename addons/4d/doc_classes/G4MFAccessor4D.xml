@@ -55,7 +55,16 @@
 			<param index="3" name="vector_size" type="int" />
 			<param index="4" name="deduplicate" type="bool" default="true" />
 			<description>
-				Creates a new [G4MFAccessor4D] with the given [param primitive_type] and [param vector_size] settings and adds it to the [G4MFState4D]. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to.
+				Creates a new [G4MFAccessor4D] with the given [param primitive_type] and [param vector_size] settings. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to. The accessor will be added to the [G4MFState4D], and the index of the new accessor will be returned.
+			</description>
+		</method>
+		<method name="encode_new_accessor_from_vector4s" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="input_data" type="PackedVector4Array" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Creates a new [G4MFAccessor4D] with [member vector_size] set to [code]4[/code] and [member primitive_type] set to the best available primitive type for the data in [param input_data]. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to. The accessor will be added to the [G4MFState4D], and the index of the new accessor will be returned.
 			</description>
 		</method>
 		<method name="encode_variants_as_bytes" qualifiers="const">

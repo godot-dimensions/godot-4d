@@ -2,20 +2,20 @@
 
 #include "../g4mf_state_4d.h"
 
-Ref<ArrayTetraMesh4D> G4MFMesh4D::_generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const int p_surface) const {
+Ref<ArrayTetraMesh4D> G4MFMesh4D::_generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const {
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	ERR_FAIL_INDEX_V(p_surface, _surfaces.size(), tetra_mesh);
 	const Ref<G4MFMeshSurface4D> surface = _surfaces[p_surface];
-	return surface->generate_tetra_mesh_surface(p_g4mf_state);
+	return surface->generate_tetra_mesh_surface(p_g4mf_state, p_vertices);
 }
 
-Ref<ArrayWireMesh4D> G4MFMesh4D::_generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const int p_surface) const {
+Ref<ArrayWireMesh4D> G4MFMesh4D::_generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
 	ERR_FAIL_INDEX_V(p_surface, _surfaces.size(), wire_mesh);
 	const Ref<G4MFMeshSurface4D> surface = _surfaces[p_surface];
-	return surface->generate_wire_mesh_surface(p_g4mf_state);
+	return surface->generate_wire_mesh_surface(p_g4mf_state, p_vertices);
 }
 
 bool G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces() const {
@@ -34,6 +34,9 @@ bool G4MFMesh4D::is_equal_exact(const Ref<G4MFMesh4D> &p_other) const {
 	if (surfaces_count != other_surfaces.size()) {
 		return false;
 	}
+	if (_vertices_accessor_index != p_other->get_vertices_accessor_index()) {
+		return false;
+	}
 	for (int i = 0; i < surfaces_count; i++) {
 		const Ref<G4MFMeshSurface4D> this_surface = _surfaces[i];
 		const Ref<G4MFMeshSurface4D> other_surface = other_surfaces[i];
@@ -47,25 +50,47 @@ bool G4MFMesh4D::is_equal_exact(const Ref<G4MFMesh4D> &p_other) const {
 	return true;
 }
 
+PackedVector4Array G4MFMesh4D::load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	ERR_FAIL_INDEX_V(_vertices_accessor_index, state_accessors.size(), PackedVector4Array());
+	const Ref<G4MFAccessor4D> accessor = state_accessors[_vertices_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedVector4Array());
+	Array variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::VECTOR4);
+	const int variants_size = variants.size();
+	PackedVector4Array vertices;
+	vertices.resize(variants_size);
+	for (int i = 0; i < variants_size; i++) {
+		vertices.set(i, (Vector4)variants[i]);
+	}
+	return vertices;
+}
+
 Ref<Mesh4D> G4MFMesh4D::generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_wireframe) const {
 	const int surface_count = _surfaces.size();
 	ERR_FAIL_COND_V_MSG(surface_count == 0, Ref<Mesh4D>(), "G4MFMesh4D.generate_mesh: No surfaces defined for mesh.");
 	if (surface_count > 1) {
 		WARN_PRINT("G4MFMesh4D.generate_mesh: Godot 4D only supports one surface per mesh. These will be merged into one surface.");
 	}
+	const PackedVector4Array vertices = load_vertices(p_g4mf_state);
+	ERR_FAIL_COND_V_MSG(vertices.is_empty(), Ref<Mesh4D>(), "G4MFMesh4D.generate_mesh: No vertices found in the mesh, cannot generate mesh.");
 	const bool use_tetra_mesh = !p_force_wireframe && can_generate_tetra_meshes_for_all_surfaces();
 	if (use_tetra_mesh) {
-		Ref<ArrayTetraMesh4D> tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, 0);
+		Ref<ArrayTetraMesh4D> tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, vertices, 0);
+		ERR_FAIL_COND_V_MSG(tetra_mesh.is_null(), tetra_mesh, "G4MFMesh4D.generate_mesh: Failed to generate tetra mesh surface.");
+		// TODO: The merge_with function is not ideal for this, since it may result in duplicate vertices.
 		for (int i = 1; i < surface_count; i++) {
-			Ref<ArrayTetraMesh4D> next_tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, i);
+			Ref<ArrayTetraMesh4D> next_tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, vertices, i);
+			ERR_FAIL_COND_V_MSG(next_tetra_mesh.is_null(), tetra_mesh, "G4MFMesh4D.generate_mesh: Failed to generate tetra mesh surface for surface index " + String::num(i) + ".");
 			tetra_mesh->merge_with(next_tetra_mesh);
 		}
 		tetra_mesh->set_name(get_name());
 		return tetra_mesh;
 	}
-	Ref<ArrayWireMesh4D> wire_mesh = _generate_wire_mesh_surface(p_g4mf_state, 0);
+	Ref<ArrayWireMesh4D> wire_mesh = _generate_wire_mesh_surface(p_g4mf_state, vertices, 0);
+	ERR_FAIL_COND_V_MSG(wire_mesh.is_null(), wire_mesh, "G4MFMesh4D.generate_mesh: Failed to generate wire mesh surface.");
 	for (int i = 1; i < surface_count; i++) {
-		Ref<ArrayWireMesh4D> next_wire_mesh = _generate_wire_mesh_surface(p_g4mf_state, i);
+		Ref<ArrayWireMesh4D> next_wire_mesh = _generate_wire_mesh_surface(p_g4mf_state, vertices, i);
+		ERR_FAIL_COND_V_MSG(next_wire_mesh.is_null(), wire_mesh, "G4MFMesh4D.generate_mesh: Failed to generate wire mesh surface for surface index " + String::num(i) + ".");
 		wire_mesh->merge_with(next_wire_mesh);
 	}
 	wire_mesh->set_name(get_name());
@@ -73,14 +98,18 @@ Ref<Mesh4D> G4MFMesh4D::generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, cons
 }
 
 int G4MFMesh4D::convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const Ref<Material4D> &p_material, const bool p_deduplicate) {
+	const PackedVector4Array vertices = p_mesh->get_vertices();
+	ERR_FAIL_COND_V_MSG(vertices.is_empty(), -1, "G4MFMesh4D: Mesh4D has no vertices, cannot convert to a G4MF mesh.");
+	const int vertices_accessor = G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, vertices, p_deduplicate);
+	ERR_FAIL_COND_V_MSG(vertices_accessor < 0, -1, "G4MFMesh4D: Failed to encode vertices into G4MFState4D.");
 	Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(p_g4mf_state, p_mesh, p_material, p_deduplicate);
-	ERR_FAIL_COND_V_MSG(surface->get_vertices_accessor_index() < 0, -1, "G4MFMesh4D.convert_mesh_into_state: Failed to convert mesh surface.");
 	// Prepare a G4MFMesh4D with the surface.
 	TypedArray<G4MFMeshSurface4D> surfaces;
 	surfaces.append(surface);
 	Ref<G4MFMesh4D> g4mf_mesh;
 	g4mf_mesh.instantiate();
 	g4mf_mesh->set_surfaces(surfaces);
+	g4mf_mesh->set_vertices_accessor_index(vertices_accessor);
 	// Add the G4MFMesh4D to the G4MFState4D, but check for duplicates first.
 	TypedArray<G4MFMesh4D> state_meshes = p_g4mf_state->get_g4mf_meshes();
 	const int state_mesh_count = state_meshes.size();
@@ -113,6 +142,9 @@ Ref<G4MFMesh4D> G4MFMesh4D::from_dictionary(const Dictionary &p_dict) {
 			mesh->_surfaces[i] = surface;
 		}
 	}
+	if (p_dict.has("vertices")) {
+		mesh->set_vertices_accessor_index(p_dict["vertices"]);
+	}
 	return mesh;
 }
 
@@ -128,6 +160,9 @@ Dictionary G4MFMesh4D::to_dictionary() const {
 		}
 		dict["surfaces"] = surface_dicts;
 	}
+	if (_vertices_accessor_index >= 0) {
+		dict["vertices"] = _vertices_accessor_index;
+	}
 	return dict;
 }
 
@@ -135,9 +170,13 @@ void G4MFMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_surfaces"), &G4MFMesh4D::get_surfaces);
 	ClassDB::bind_method(D_METHOD("set_surfaces", "surfaces"), &G4MFMesh4D::set_surfaces);
 
+	ClassDB::bind_method(D_METHOD("get_vertices_accessor_index"), &G4MFMesh4D::get_vertices_accessor_index);
+	ClassDB::bind_method(D_METHOD("set_vertices_accessor_index", "vertices_accessor_index"), &G4MFMesh4D::set_vertices_accessor_index);
+
 	ClassDB::bind_method(D_METHOD("can_generate_tetra_meshes_for_all_surfaces"), &G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces);
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMesh4D::is_equal_exact);
 
+	ClassDB::bind_method(D_METHOD("load_vertices", "g4mf_state"), &G4MFMesh4D::load_vertices);
 	ClassDB::bind_method(D_METHOD("generate_mesh", "g4mf_state", "force_wireframe"), &G4MFMesh4D::generate_mesh, DEFVAL(false));
 	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("convert_mesh_into_state", "g4mf_state", "mesh", "material", "deduplicate"), &G4MFMesh4D::convert_mesh_into_state, DEFVAL(true));
 
@@ -145,4 +184,5 @@ void G4MFMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMesh4D::to_dictionary);
 
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "surfaces", PROPERTY_HINT_ARRAY_TYPE, "G4MFMeshSurface4D"), "set_surfaces", "get_surfaces");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "vertices_accessor_index"), "set_vertices_accessor_index", "get_vertices_accessor_index");
 }

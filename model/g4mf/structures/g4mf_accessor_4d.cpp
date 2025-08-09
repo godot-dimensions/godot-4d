@@ -978,6 +978,23 @@ int G4MFAccessor4D::encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
 
+int G4MFAccessor4D::encode_new_accessor_from_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_input_data, const bool p_deduplicate) {
+	const String prim_type = G4MFAccessor4D::minimal_primitive_type_for_vector4s(p_input_data);
+	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 4);
+	PackedFloat64Array numbers;
+	numbers.resize(p_input_data.size() * 4);
+	for (int64_t i = 0; i < p_input_data.size(); i++) {
+		const Vector4 &vec = p_input_data[i];
+		numbers.set(i * 4, vec.x);
+		numbers.set(i * 4 + 1, vec.y);
+		numbers.set(i * 4 + 2, vec.z);
+		numbers.set(i * 4 + 3, vec.w);
+	}
+	PackedByteArray encoded_bytes = accessor->encode_floats_as_bytes(numbers);
+	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
+	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
+}
+
 // Dictionary conversion.
 
 Ref<G4MFAccessor4D> G4MFAccessor4D::from_dictionary(const Dictionary &p_dict) {
@@ -1039,7 +1056,10 @@ void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("encode_variants_as_bytes", "input_data"), &G4MFAccessor4D::encode_variants_as_bytes);
 	ClassDB::bind_method(D_METHOD("encode_floats_as_bytes", "input_data"), &G4MFAccessor4D::encode_floats_as_bytes);
 	ClassDB::bind_method(D_METHOD("encode_ints_as_bytes", "input_data"), &G4MFAccessor4D::encode_ints_as_bytes);
+
+	// High-level encode functions.
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_variants", "g4mf_state", "input_data", "primitive_type", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_variants, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_vector4s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_vector4s, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("store_accessor_data_into_state", "g4mf_state", "data_bytes", "deduplicate"), &G4MFAccessor4D::store_accessor_data_into_state, DEFVAL(true));
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("make_new_accessor_without_data", "primitive_type", "vector_size"), &G4MFAccessor4D::make_new_accessor_without_data, DEFVAL(1));

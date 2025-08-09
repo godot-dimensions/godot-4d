@@ -74,6 +74,7 @@ public:
 
 	// High-level accessor encode functions.
 	static int encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_primitive_type, const int p_vector_size = 1, const bool p_deduplicate = true);
+	static int encode_new_accessor_from_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_input_data, const bool p_deduplicate = true);
 
 	// Dictionary conversion.
 	static Ref<G4MFAccessor4D> from_dictionary(const Dictionary &p_dict);

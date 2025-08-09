@@ -19,7 +19,6 @@ class G4MFMeshSurface4D : public G4MFItem4D {
 
 	int _cells_accessor_index = -1;
 	int _edges_accessor_index = -1;
-	int _vertices_accessor_index = -1;
 	int _material_index = -1;
 	bool _polytope_cells = false;
 
@@ -33,9 +32,6 @@ public:
 	int get_edges_accessor_index() const { return _edges_accessor_index; }
 	void set_edges_accessor_index(const int p_edges_accessor_index) { _edges_accessor_index = p_edges_accessor_index; }
 
-	int get_vertices_accessor_index() const { return _vertices_accessor_index; }
-	void set_vertices_accessor_index(const int p_vertices_accessor_index) { _vertices_accessor_index = p_vertices_accessor_index; }
-
 	int get_material_index() const { return _material_index; }
 	void set_material_index(const int p_material_index) { _material_index = p_material_index; }
 
@@ -45,10 +41,9 @@ public:
 	bool is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const;
 	PackedInt32Array load_cell_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
-	PackedVector4Array load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const;
 
-	Ref<ArrayTetraMesh4D> generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Ref<ArrayWireMesh4D> generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Ref<ArrayTetraMesh4D> generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
+	Ref<ArrayWireMesh4D> generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
 	static Ref<G4MFMeshSurface4D> convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const Ref<Material4D> &p_material, const bool p_deduplicate = true);
 
 	static Ref<G4MFMeshSurface4D> from_dictionary(const Dictionary &p_dict);
