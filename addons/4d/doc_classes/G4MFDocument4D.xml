@@ -83,6 +83,10 @@
 		<member name="compression_format" type="int" setter="set_compression_format" getter="get_compression_format" enum="G4MFDocument4D.CompressionFormat" default="0">
 			The compression format to use when exporting a binary G4MF file or byte array. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays. The [code]".g4tf"[/code] Good 4D model Text File format is always uncompressed. See [enum CompressionFormat] for the available formats. The default is [constant COMPRESSION_FORMAT_NONE], which does not compress the G4MF data.
 		</member>
+		<member name="export_nested_scenes_mode" type="int" setter="set_export_nested_scenes_mode" getter="get_export_nested_scenes_mode" enum="G4MFDocument4D.ExportNestedScenes" default="0">
+			When a Godot scene contains instances of other Godot scenes, this determines how the nested scenes are exported. The default is [constant EXPORT_NESTED_SCENES_ALLOW_NESTED_MODELS], where each Godot scene gets its own G4MF model, usually saved as its own file (see [constant G4MFState4D.EXTERNAL_DATA_MODE_SEPARATE_MODEL_FILES] for details). Alternatively, you can merge nested Godot scenes into a single G4MF model using [constant EXPORT_NESTED_SCENES_MERGE_INTO_SINGLE_MODEL], or merge into a flat hierarchy of G4MF models using [constant EXPORT_NESTED_SCENES_MERGE_INTO_FLAT_HIERARCHY].
+			[b]Note:[/b] The G4MF specification's name uniqueness guarantee does not apply to nested G4MF models. When using nested G4MF models, the names of nodes in the nested G4MF models may not be unique when considering the entire node tree of the parent G4MF model. For example, two characters may both have a node named "Hips". When merging nested scenes into a single G4MF model, the names of nodes in the nested G4MF models will be forced to be unique.
+		</member>
 		<member name="force_wireframe" type="bool" setter="set_force_wireframe" getter="get_force_wireframe" default="false">
 			Whether to force all meshes to be generated as wireframe meshes. If [code]true[/code], all meshes will be generated as wireframe meshes, and meshes without edges will have their edges calculated from the cells. If [code]false[/code] (default), meshes will be generated as tetrahedral meshes if they have cells, or as wireframe meshes if they do not have cells.
 		</member>
@@ -93,6 +97,16 @@
 		</constant>
 		<constant name="COMPRESSION_FORMAT_ZSTD" value="1" enum="CompressionFormat">
 			Compress the binary G4MF data using Zstandard compression. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays.
+		</constant>
+		<constant name="EXPORT_NESTED_SCENES_ALLOW_NESTED_MODELS" value="0" enum="ExportNestedScenes">
+			Allow Godot scenes instanced in other Godot scenes to be exported as nested G4MF files, allowing for a deep hierarchy of files used by each other.
+			If a Godot scene contains another Godot scene instanced many times, this option can result in significant file size savings, at the cost of the added complexity of multiple model files.
+		</constant>
+		<constant name="EXPORT_NESTED_SCENES_MERGE_INTO_SINGLE_MODEL" value="1" enum="ExportNestedScenes">
+			Merge nested scenes into the main G4MF model file, placing all nodes and resources into the same G4MF JSON document, and placing all nodes in the same hierarchy.
+		</constant>
+		<constant name="EXPORT_NESTED_SCENES_MERGE_INTO_FLAT_HIERARCHY" value="2" enum="ExportNestedScenes">
+			Merge nested scenes into one layer of G4MF models, meaning that the main G4MF model may contain other G4MF models, but [i]those[/i] models will not contain any other G4MF models.
 		</constant>
 	</constants>
 </class>

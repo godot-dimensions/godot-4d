@@ -16,9 +16,15 @@ public:
 		COMPRESSION_FORMAT_NONE = 0,
 		COMPRESSION_FORMAT_ZSTD = 1,
 	};
+	enum ExportNestedScenes {
+		EXPORT_NESTED_SCENES_ALLOW_NESTED_MODELS = 0,
+		EXPORT_NESTED_SCENES_MERGE_INTO_SINGLE_MODEL = 1,
+		EXPORT_NESTED_SCENES_MERGE_INTO_FLAT_HIERARCHY = 2,
+	};
 
 private:
 	CompressionFormat _compression_format = COMPRESSION_FORMAT_NONE;
+	ExportNestedScenes _export_nested_scenes = EXPORT_NESTED_SCENES_ALLOW_NESTED_MODELS;
 	bool _force_wireframe = false;
 
 	inline uint64_t _ceiling_division(uint64_t a, uint64_t b) {
@@ -79,6 +85,8 @@ public:
 	// Settings for the export process.
 	CompressionFormat get_compression_format() const { return _compression_format; }
 	void set_compression_format(const CompressionFormat p_compression_format);
+	ExportNestedScenes get_export_nested_scenes_mode() const { return _export_nested_scenes; }
+	void set_export_nested_scenes_mode(const ExportNestedScenes p_export_nested_scenes) { _export_nested_scenes = p_export_nested_scenes; }
 
 	// Settings for the import process.
 	bool get_force_wireframe() const { return _force_wireframe; }
@@ -86,3 +94,4 @@ public:
 };
 
 VARIANT_ENUM_CAST(G4MFDocument4D::CompressionFormat);
+VARIANT_ENUM_CAST(G4MFDocument4D::ExportNestedScenes);

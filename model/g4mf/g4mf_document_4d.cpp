@@ -1168,6 +1168,8 @@ void G4MFDocument4D::_bind_methods() {
 	// Settings for the export process.
 	ClassDB::bind_method(D_METHOD("get_compression_format"), &G4MFDocument4D::get_compression_format);
 	ClassDB::bind_method(D_METHOD("set_compression_format", "compression_format"), &G4MFDocument4D::set_compression_format);
+	ClassDB::bind_method(D_METHOD("get_export_nested_scenes_mode"), &G4MFDocument4D::get_export_nested_scenes_mode);
+	ClassDB::bind_method(D_METHOD("set_export_nested_scenes_mode", "export_nested_scenes_mode"), &G4MFDocument4D::set_export_nested_scenes_mode);
 
 	// Settings for the import process.
 	ClassDB::bind_method(D_METHOD("get_force_wireframe"), &G4MFDocument4D::get_force_wireframe);
@@ -1175,8 +1177,13 @@ void G4MFDocument4D::_bind_methods() {
 
 	// Properties.
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "compression_format", PROPERTY_HINT_ENUM, "None,Zstd"), "set_compression_format", "get_compression_format");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "export_nested_scenes_mode", PROPERTY_HINT_ENUM, "Allow Nested Files,Merge Into Single File,Merge Into Flat Hierarchy"), "set_export_nested_scenes_mode", "get_export_nested_scenes_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "force_wireframe"), "set_force_wireframe", "get_force_wireframe");
 
 	BIND_ENUM_CONSTANT(COMPRESSION_FORMAT_NONE);
 	BIND_ENUM_CONSTANT(COMPRESSION_FORMAT_ZSTD);
+
+	BIND_ENUM_CONSTANT(EXPORT_NESTED_SCENES_ALLOW_NESTED_MODELS);
+	BIND_ENUM_CONSTANT(EXPORT_NESTED_SCENES_MERGE_INTO_SINGLE_MODEL);
+	BIND_ENUM_CONSTANT(EXPORT_NESTED_SCENES_MERGE_INTO_FLAT_HIERARCHY);
 }
