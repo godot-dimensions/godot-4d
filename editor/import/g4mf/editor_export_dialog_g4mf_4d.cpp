@@ -52,6 +52,7 @@ void EditorExportDialogG4MF4D::_export_scene_as_g4mf(const String &p_path) {
 	ERR_FAIL_COND_SHOW_DIALOG(scene_root == nullptr, "G4MF error: Cannot export scene without a root node.");
 	Ref<G4MFState4D> g4mf_state;
 	g4mf_state.instantiate();
+	g4mf_state->set_external_data_mode(_export_settings->get_external_data_mode());
 	Error err = _g4mf_document->export_append_from_godot_scene(g4mf_state, scene_root);
 	ERR_FAIL_COND_SHOW_DIALOG(err != OK, "G4MF editor export: Error while running export_append_from_godot_scene.");
 	err = _g4mf_document->export_write_to_file(g4mf_state, p_path);

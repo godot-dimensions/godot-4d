@@ -37,6 +37,38 @@ String G4MFState4D::reserve_unique_name(const String &p_requested_name) {
 	return unique_name;
 }
 
+bool G4MFState4D::is_text_file() const {
+	// Checking `length > 3` handles "g4tf", "g4mf", "json", "g4tf.json", "g4mf.json", etc.
+	return _filename.get_extension().length() > 3;
+}
+
+bool G4MFState4D::should_separate_binary_blobs() const {
+	if (_external_data_mode == EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES || _external_data_mode == EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS) {
+		ERR_FAIL_COND_V_MSG(_base_path.is_empty(), false, "G4MF: No base path is set, cannot separate binary blob files.");
+		ERR_FAIL_COND_V_MSG(_filename.get_basename().is_empty(), false, "G4MF: No filename is set, cannot separate binary blob files.");
+		return true;
+	}
+	if (_external_data_mode == EXTERNAL_DATA_MODE_EMBED_EVERYTHING || _external_data_mode == EXTERNAL_DATA_MODE_SEPARATE_RESOURCE_FILES) {
+		return false;
+	}
+	// EXTERNAL_DATA_MODE_AUTOMATIC embeds everything for binary files (.g4b),
+	// byte arrays in memory (no extension), and when there is no base path set,
+	// but separates for text files (.g4tf) when the base path and filename are valid.
+	return is_text_file() && !_base_path.is_empty() && !_filename.get_basename().is_empty();
+}
+
+bool G4MFState4D::should_separate_resource_files() const {
+	if (_external_data_mode == EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES || _external_data_mode == EXTERNAL_DATA_MODE_SEPARATE_RESOURCE_FILES) {
+		ERR_FAIL_COND_V_MSG(_base_path.is_empty(), false, "G4MF: No base path is set, cannot separate resource files.");
+		ERR_FAIL_COND_V_MSG(_filename.get_basename().is_empty(), false, "G4MF: No filename is set, cannot separate resource files.");
+		return true;
+	}
+	if (_external_data_mode == EXTERNAL_DATA_MODE_EMBED_EVERYTHING || _external_data_mode == EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS) {
+		return false;
+	}
+	return is_text_file() && !_base_path.is_empty() && !_filename.get_basename().is_empty();
+}
+
 void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_base_path"), &G4MFState4D::get_base_path);
 	ClassDB::bind_method(D_METHOD("set_base_path", "base_path"), &G4MFState4D::set_base_path);
@@ -65,6 +97,11 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_index", "node"), &G4MFState4D::get_node_index);
 	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested"), &G4MFState4D::reserve_unique_name);
 
+	ClassDB::bind_method(D_METHOD("is_text_file"), &G4MFState4D::is_text_file);
+	ClassDB::bind_method(D_METHOD("get_external_data_mode"), &G4MFState4D::get_external_data_mode);
+	ClassDB::bind_method(D_METHOD("set_external_data_mode", "mode"), &G4MFState4D::set_external_data_mode);
+	ClassDB::bind_method(D_METHOD("should_separate_resource_files"), &G4MFState4D::should_separate_resource_files);
+
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "base_path"), "set_base_path", "get_base_path");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "buffers", PROPERTY_HINT_ARRAY_TYPE, "PackedByteArray"), "set_buffers", "get_buffers");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "filename"), "set_filename", "get_filename");
@@ -76,4 +113,12 @@ void G4MFState4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_lights", PROPERTY_HINT_ARRAY_TYPE, "G4MFLight4D"), "set_g4mf_lights", "get_g4mf_lights");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_nodes", PROPERTY_HINT_ARRAY_TYPE, "G4MFNode4D"), "set_g4mf_nodes", "get_g4mf_nodes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "godot_nodes", PROPERTY_HINT_ARRAY_TYPE, "Node4D"), "set_godot_nodes", "get_godot_nodes");
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "external_data_mode", PROPERTY_HINT_ENUM, "Automatic,Embed Everything,Separate All Files,Separate Binary Blobs,Separate Resource Files"), "set_external_data_mode", "get_external_data_mode");
+
+	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_AUTOMATIC);
+	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_EMBED_EVERYTHING);
+	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES);
+	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS);
+	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_SEPARATE_RESOURCE_FILES);
 }

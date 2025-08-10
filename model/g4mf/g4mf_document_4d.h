@@ -26,8 +26,9 @@ private:
 	}
 
 	uint32_t _compression_format_to_indicator(const CompressionFormat p_compression_format);
-	CompressionFormat _compression_indicator_to_format(const uint32_t p_magic);
-	String _uint32_to_string(uint32_t p_value);
+	CompressionFormat _compression_indicator_to_format(const uint32_t p_indicator);
+	String _uint32_to_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
+	uint32_t _string_to_uint32(const String &p_value);
 
 	// Export process.
 	Error _export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index);
@@ -40,13 +41,14 @@ private:
 	Error _export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_state);
-	static String _export_pretty_print_compact(const Variant &p_variant);
+	Error _export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_state, const bool p_should_separate_buffers_into_files);
+	static String _export_pretty_print_inline(const Variant &p_variant);
 	static String _export_pretty_print_json(const Dictionary &p_g4mf_json);
 	PackedByteArray _export_compress_buffer_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data);
 	PackedByteArray _export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state);
 
 	// Import process.
+	PackedByteArray _import_decompress_bytes(const PackedByteArray &p_raw_compressed_data, const uint32_t p_compression_indicator);
 	PackedByteArray _import_next_chunk_bytes_uncompressed(Ref<G4MFState4D> p_g4mf_state, const uint8_t *p_file_bytes, const uint64_t p_file_size, size_t &p_read_offset);
 	Error _import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);

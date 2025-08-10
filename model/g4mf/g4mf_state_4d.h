@@ -21,6 +21,17 @@
 class G4MFState4D : public G4MFItem4D {
 	GDCLASS(G4MFState4D, G4MFItem4D);
 
+public:
+	enum ExternalDataMode {
+		EXTERNAL_DATA_MODE_AUTOMATIC,
+		EXTERNAL_DATA_MODE_EMBED_EVERYTHING,
+		EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES,
+		EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS,
+		EXTERNAL_DATA_MODE_SEPARATE_RESOURCE_FILES,
+	};
+
+private:
+	// Data for the file itself.
 	TypedArray<G4MFAccessor4D> _accessors;
 	TypedArray<PackedByteArray> _buffers;
 	TypedArray<G4MFBufferView4D> _buffer_views;
@@ -35,6 +46,9 @@ class G4MFState4D : public G4MFItem4D {
 	Dictionary _g4mf_json;
 	String _base_path;
 	String _filename;
+
+	// Settings for handling the file.
+	ExternalDataMode _external_data_mode = ExternalDataMode::EXTERNAL_DATA_MODE_AUTOMATIC;
 
 protected:
 	static void _bind_methods();
@@ -82,4 +96,12 @@ public:
 	int append_g4mf_node(Ref<G4MFNode4D> p_node);
 	int get_node_index(const Node4D *p_node);
 	String reserve_unique_name(const String &p_requested_name);
+
+	ExternalDataMode get_external_data_mode() const { return _external_data_mode; }
+	void set_external_data_mode(ExternalDataMode p_external_data_mode) { _external_data_mode = p_external_data_mode; }
+	bool is_text_file() const;
+	bool should_separate_binary_blobs() const;
+	bool should_separate_resource_files() const;
 };
+
+VARIANT_ENUM_CAST(G4MFState4D::ExternalDataMode);
