@@ -110,8 +110,18 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 					edge_color.a *= 1.0f - MIN(1.0f, ABS(fade_factor));
 				}
 			}
-			if (camera->get_depth_fade()) {
-				const real_t depth = Math::abs((a_vert_4d.length() + b_vert_4d.length()) * 0.5f);
+			const Camera4D::DepthFadeMode depth_fade_mode = camera->get_depth_fade_mode();
+			if (depth_fade_mode != Camera4D::DEPTH_FADE_DISABLED) {
+				real_t depth;
+				// Add together, then multiply by 0.5, to use the midpoint of the edge.
+				if (depth_fade_mode == Camera4D::DEPTH_FADE_DISTANCE) {
+					depth = a_vert_4d.length() + b_vert_4d.length();
+				} else if (depth_fade_mode == Camera4D::DEPTH_FADE_XYZ_ONLY) {
+					depth = Vector3(a_vert_4d.x, a_vert_4d.y, a_vert_4d.z).length() + Vector3(b_vert_4d.x, b_vert_4d.y, b_vert_4d.z).length();
+				} else { //  if (depth_fade_mode == Camera4D::DEPTH_FADE_Z_ONLY)
+					depth = Math::abs(a_vert_4d.z + b_vert_4d.z);
+				}
+				depth *= 0.5f;
 				real_t alpha = 1.0;
 
 				if (depth > camera_clip_depth_far) {

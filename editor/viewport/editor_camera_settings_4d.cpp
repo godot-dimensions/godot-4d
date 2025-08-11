@@ -12,6 +12,19 @@ void EditorCameraSettings4D::set_clip_far(const double p_clip_far) {
 	write_to_config_file();
 }
 
+void EditorCameraSettings4D::set_depth_fade_mode(const Camera4D::DepthFadeMode p_depth_fade_mode) {
+	_depth_fade_mode = p_depth_fade_mode;
+	notify_property_list_changed();
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+void EditorCameraSettings4D::set_depth_fade_start(const double p_depth_fade_start) {
+	_depth_fade_start = p_depth_fade_start;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
 void EditorCameraSettings4D::set_w_fade_mode(const Camera4D::WFadeMode p_w_fade_mode) {
 	_w_fade_mode = p_w_fade_mode;
 	notify_property_list_changed();
@@ -57,6 +70,8 @@ void EditorCameraSettings4D::apply_to_cameras() const {
 		CRASH_COND(camera == nullptr);
 		camera->set_clip_near(_clip_near);
 		camera->set_clip_far(_clip_far);
+		camera->set_depth_fade_mode(_depth_fade_mode);
+		camera->set_depth_fade_start(_depth_fade_start);
 		camera->set_w_fade_mode(_w_fade_mode);
 		camera->set_w_fade_color_negative(_w_fade_color_negative);
 		camera->set_w_fade_color_positive(_w_fade_color_positive);
@@ -72,6 +87,7 @@ void EditorCameraSettings4D::setup(Node *p_ancestor_of_cameras, Ref<ConfigFile> 
 	_4d_editor_config_file_path = p_config_file_path;
 	_clip_near = p_config_file->get_value("camera", "clip_near", _clip_near);
 	_clip_far = p_config_file->get_value("camera", "clip_far", _clip_far);
+	_depth_fade_mode = (Camera4D::DepthFadeMode)(int)p_config_file->get_value("camera", "depth_fade_mode", _depth_fade_mode);
 	_w_fade_mode = (Camera4D::WFadeMode)(int)p_config_file->get_value("camera", "w_fade_mode", _w_fade_mode);
 	_w_fade_color_negative = p_config_file->get_value("camera", "w_fade_color_negative", _w_fade_color_negative);
 	_w_fade_color_positive = p_config_file->get_value("camera", "w_fade_color_positive", _w_fade_color_positive);
@@ -85,11 +101,18 @@ void EditorCameraSettings4D::write_to_config_file() const {
 	if (_4d_editor_config_file->has_section("camera")) {
 		_4d_editor_config_file->erase_section("camera");
 	}
+	// Keep these in sync with the Camera4D and EditorCameraSettings4D defaults.
 	if (!Math::is_equal_approx(_clip_near, 0.05)) {
 		_4d_editor_config_file->set_value("camera", "clip_near", _clip_near);
 	}
 	if (!Math::is_equal_approx(_clip_far, 4000.0)) {
 		_4d_editor_config_file->set_value("camera", "clip_far", _clip_far);
+	}
+	if (_depth_fade_mode != Camera4D::DEPTH_FADE_DISABLED) {
+		_4d_editor_config_file->set_value("camera", "depth_fade_mode", (int)_depth_fade_mode);
+	}
+	if (!Math::is_equal_approx(_depth_fade_start, 25.0)) {
+		_4d_editor_config_file->set_value("camera", "depth_fade_start", _depth_fade_start);
 	}
 	if (_w_fade_mode != Camera4D::W_FADE_TRANSPARENCY) {
 		_4d_editor_config_file->set_value("camera", "w_fade_mode", (int)_w_fade_mode);
@@ -114,7 +137,11 @@ void EditorCameraSettings4D::write_to_config_file() const {
 
 void EditorCameraSettings4D::_validate_property(PropertyInfo &p_property) const {
 	if (p_property.name == StringName("clip_far")) {
-		if (_rendering_engine == "Wireframe Canvas") {
+		if (_rendering_engine == "Wireframe Canvas" && _depth_fade_mode == Camera4D::DEPTH_FADE_DISABLED) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	} else if (p_property.name == StringName("depth_fade_start")) {
+		if (_depth_fade_mode == Camera4D::DEPTH_FADE_DISABLED) {
 			p_property.usage = PROPERTY_USAGE_NONE;
 		}
 	} else if (p_property.name == StringName("w_fade_color_negative")) {
@@ -146,6 +173,14 @@ void EditorCameraSettings4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_clip_far"), &EditorCameraSettings4D::get_clip_far);
 	ClassDB::bind_method(D_METHOD("set_clip_far", "clip_far"), &EditorCameraSettings4D::set_clip_far);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clip_far", PROPERTY_HINT_RANGE, "0.01,4000,0.01,or_greater,exp,suffix:m"), "set_clip_far", "get_clip_far");
+
+	ClassDB::bind_method(D_METHOD("get_depth_fade_mode"), &EditorCameraSettings4D::get_depth_fade_mode);
+	ClassDB::bind_method(D_METHOD("set_depth_fade_mode", "depth_fade_mode"), &EditorCameraSettings4D::set_depth_fade_mode);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "depth_fade_mode", PROPERTY_HINT_ENUM, "Disabled,Distance,XYZ Only,Z Only"), "set_depth_fade_mode", "get_depth_fade_mode");
+
+	ClassDB::bind_method(D_METHOD("get_depth_fade_start"), &EditorCameraSettings4D::get_depth_fade_start);
+	ClassDB::bind_method(D_METHOD("set_depth_fade_start", "depth_fade_start"), &EditorCameraSettings4D::set_depth_fade_start);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth_fade_start", PROPERTY_HINT_RANGE, "1,100,0.01,or_greater,or_less,exp,suffix:m"), "set_depth_fade_start", "get_depth_fade_start");
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_mode"), &EditorCameraSettings4D::get_w_fade_mode);
 	ClassDB::bind_method(D_METHOD("set_w_fade_mode", "w_fade_mode"), &EditorCameraSettings4D::set_w_fade_mode);
