@@ -45,6 +45,7 @@ public:
 
 	Ref<Material4D> get_material() const;
 	void set_material(const Ref<Material4D> &p_material);
+	virtual Ref<Material4D> get_default_material();
 
 	virtual PackedInt32Array get_edge_indices();
 	virtual PackedVector4Array get_edge_positions();
@@ -54,6 +55,7 @@ public:
 	GDVIRTUAL0R(PackedVector4Array, _get_edge_positions);
 	GDVIRTUAL0R(PackedVector4Array, _get_vertices);
 	GDVIRTUAL0R(bool, _validate_mesh_data);
+	GDVIRTUAL0R(Ref<Material4D>, _get_default_material)
 	GDVIRTUAL0(_update_cross_section_mesh);
 	GDVIRTUAL1(_validate_material_for_mesh, const Ref<Material4D> &);
 };
