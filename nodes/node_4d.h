@@ -4,6 +4,7 @@
 #include "../math/geometric_algebra/rotor_4d_bind.h"
 #include "../math/rect4.h"
 #include "../math/transform_4d_bind.h"
+#include "../math/vector_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/node.hpp>
@@ -56,7 +57,7 @@ public:
 	// Transform altering methods.
 	void apply_scale(const Vector4 &p_amount);
 	void translate_local(const Vector4 &p_amount);
-	void look_at(const Vector4 &p_global_target, const Vector4 &p_up = Vector4(0, 1, 0, 0), const bool p_use_model_front = false);
+	void look_at(const Vector4 &p_global_target, const Vector4 &p_up = Vector4D::DIR_UP, const bool p_use_model_front = false);
 
 	void rotate_euler(const Euler4D &p_euler);
 	void rotate_euler_bind(const AABB &p_euler);

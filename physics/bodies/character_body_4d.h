@@ -6,7 +6,7 @@ class CharacterBody4D : public PhysicsBody4D {
 	GDCLASS(CharacterBody4D, PhysicsBody4D);
 
 	Vector4 _linear_velocity = Vector4();
-	Vector4 _up_direction = Vector4(0, 1, 0, 0);
+	Vector4 _up_direction = Vector4D::DIR_UP;
 	real_t _floor_max_angle = Math_TAU / 4.0;
 	bool _is_on_ceiling = false;
 	bool _is_on_floor = false;

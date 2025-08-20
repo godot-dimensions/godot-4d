@@ -1,7 +1,6 @@
 #include "basis_4d.h"
 
 #include "geometric_algebra/rotor_4d.h"
-#include "vector_4d.h"
 
 // Misc methods.
 

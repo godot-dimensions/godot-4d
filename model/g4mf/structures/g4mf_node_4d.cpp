@@ -210,7 +210,7 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 					dict["rotor"] = rotor_4d_to_json_array(rotor);
 				}
 				Vector4 scale = _transform.basis.get_scale();
-				if (!scale.is_equal_approx(Vector4(1, 1, 1, 1))) {
+				if (!scale.is_equal_approx(Vector4D::ONE)) {
 					if (Vector4D::is_uniform(scale)) {
 						Array uniform_scale_array;
 						uniform_scale_array.push_back(scale.x);
