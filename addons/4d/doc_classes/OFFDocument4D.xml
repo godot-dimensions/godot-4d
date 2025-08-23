@@ -11,7 +11,7 @@
 		<link title="Wikipedia OFF file format">https://en.wikipedia.org/wiki/OFF_(file_format)</link>
 	</tutorials>
 	<methods>
-		<method name="convert_mesh_3d" qualifiers="static">
+		<method name="export_convert_mesh_3d" qualifiers="static">
 			<return type="OFFDocument4D" />
 			<param index="0" name="mesh" type="Mesh" />
 			<param index="1" name="deduplicate_vertices" type="bool" default="true" />
@@ -19,7 +19,7 @@
 				Converts an existing 3D [Mesh] resource to an OFFDocument4D. By default, vertices will be deduplicated, which results in a smaller file size.
 			</description>
 		</method>
-		<method name="convert_mesh_4d" qualifiers="static">
+		<method name="export_convert_mesh_4d" qualifiers="static">
 			<return type="OFFDocument4D" />
 			<param index="0" name="mesh" type="TetraMesh4D" />
 			<param index="1" name="deduplicate_faces" type="bool" default="true" />
@@ -27,14 +27,28 @@
 				Converts an existing 4D [Mesh4D] resource to an OFFDocument4D. By default, faces will be deduplicated, which results in a smaller file size. The vertices will be the same as the ones in the 4D mesh.
 			</description>
 		</method>
-		<method name="generate_mesh_3d">
+		<method name="export_save_to_file_3d">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Saves the OFF data to a file on disk, in the 3D "OFF" format (".off" file extension). If [member edge_count] is zero, the edge count will be calculated from the face data.
+			</description>
+		</method>
+		<method name="export_save_to_file_4d">
+			<return type="void" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Saves the OFF data to a file on disk, in the 4D "4OFF" format (".off" file extension). If [member edge_count] is zero, the edge count will be calculated from the face data.
+			</description>
+		</method>
+		<method name="import_generate_mesh_3d">
 			<return type="ArrayMesh" />
 			<param index="0" name="per_face_vertices" type="bool" default="true" />
 			<description>
 				Generates a 3D [ArrayMesh] resource from the OFF data, for use with [MeshInstance3D]. If [param per_face_vertices] is [code]true[/code], each face will have its own vertices, which allows preserving per-face colors. If [code]false[/code], per-face colors will be discarded, since Godot's [ArrayMesh] does not support per-face colors, only per-vertex colors or textures. Per-cell colors will always be discarded when generating a 3D mesh.
 			</description>
 		</method>
-		<method name="generate_node">
+		<method name="import_generate_node">
 			<return type="Node" />
 			<param index="0" name="deduplicate_edges" type="bool" default="true" />
 			<param index="1" name="per_face_vertices" type="bool" default="true" />
@@ -42,38 +56,31 @@
 				Generates some kind of mesh instance node best suited for the OFF data. If there are no 4D cells, a [MeshInstance3D] with an [ArrayMesh] will be returned. If there are 4D cells, a [MeshInstance4D] will be returned, with either an [ArrayTetraMesh4D] if all cells are tetrahedral, or an [ArrayWireMesh4D] if there are any non-tetrahedral cells. See [method generate_mesh_3d], [method generate_tetra_mesh_4d], and [method generate_wire_mesh_4d] for more details. The arguments are passed to the corresponding generate method.
 			</description>
 		</method>
-		<method name="generate_tetra_mesh_4d">
+		<method name="import_generate_tetra_mesh_4d">
 			<return type="ArrayTetraMesh4D" />
 			<description>
 				Generates a 4D [ArrayTetraMesh4D] resource from the OFF data, for use with [MeshInstance4D]. Per-face colors will be discarded. If there are any per-cell colors, the mesh will have a [TetraMaterial4D] with the cell colors.
 			</description>
 		</method>
-		<method name="generate_wire_mesh_4d">
+		<method name="import_generate_wire_mesh_4d">
 			<return type="ArrayWireMesh4D" />
 			<param index="0" name="deduplicate_edges" type="bool" default="true" />
 			<description>
 				Generates a 4D [ArrayWireMesh4D] resource from the OFF data, for use with [MeshInstance4D]. Per-cell colors will be discarded. If there are any per-face colors, they will be used as edge colors in a [WireMaterial4D]. If [param deduplicate_edges] is [code]true[/code], the generated wire mesh will only have one edge for each unique edge in the OFF data. Note that converting to a wireframe is a one-way operation, the resulting [ArrayWireMesh4D] cannot be converted back to OFF data.
 			</description>
 		</method>
-		<method name="load_from_file" qualifiers="static">
+		<method name="import_load_from_byte_array" qualifiers="static">
+			<return type="OFFDocument4D" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Loads an OFF file from an in-memory byte array and returns an OFFDocument4D with the data. If there is a problem with the file, at most one warning will be printed, and the code will attempt to continue loading the file anyway.
+			</description>
+		</method>
+		<method name="import_load_from_file" qualifiers="static">
 			<return type="OFFDocument4D" />
 			<param index="0" name="path" type="String" />
 			<description>
 				Loads an OFF file from disk and returns an OFFDocument4D with the data. If there is a problem with the file, at most one warning will be printed, and the code will attempt to continue loading the file anyway.
-			</description>
-		</method>
-		<method name="save_to_file_3d">
-			<return type="void" />
-			<param index="0" name="path" type="String" />
-			<description>
-				Saves the OFF data to a file on disk, in the 3D "OFF" format (".off" file extension). If [member edge_count] is zero, the edge count will be calculated from the face data.
-			</description>
-		</method>
-		<method name="save_to_file_4d">
-			<return type="void" />
-			<param index="0" name="path" type="String" />
-			<description>
-				Saves the OFF data to a file on disk, in the 4D "4OFF" format (".off" file extension). If [member edge_count] is zero, the edge count will be calculated from the face data.
 			</description>
 		</method>
 	</methods>

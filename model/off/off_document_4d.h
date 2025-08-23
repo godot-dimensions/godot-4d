@@ -31,16 +31,23 @@ class OFFDocument4D : public Resource {
 	TypedArray<PackedInt32Array> _calculate_cell_vertex_indices();
 	TypedArray<PackedInt32Array> _calculate_simplex_vertex_indices(const TypedArray<PackedInt32Array> &p_cell_vertex_indices);
 
+	static Ref<OFFDocument4D> _import_load_from_raw_text(const String &p_raw_text, const String &p_path);
+
 protected:
 	static void _bind_methods();
 
 public:
-	static Ref<OFFDocument4D> convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices = true);
-	static Ref<OFFDocument4D> convert_mesh_4d(const Ref<TetraMesh4D> &p_mesh, const bool p_deduplicate_faces = true);
-	Ref<ArrayMesh> generate_mesh_3d(const bool p_per_face_vertices = true);
-	Ref<ArrayTetraMesh4D> generate_tetra_mesh_4d();
-	Ref<ArrayWireMesh4D> generate_wire_mesh_4d(const bool p_deduplicate_edges = true);
-	Node *generate_node(const bool p_deduplicate_edges = true, const bool p_per_face_vertices = true);
+	static Ref<OFFDocument4D> export_convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices = true);
+	static Ref<OFFDocument4D> export_convert_mesh_4d(const Ref<TetraMesh4D> &p_mesh, const bool p_deduplicate_faces = true);
+	void export_save_to_file_3d(const String &p_path);
+	void export_save_to_file_4d(const String &p_path);
+
+	static Ref<OFFDocument4D> import_load_from_byte_array(const PackedByteArray &p_data);
+	static Ref<OFFDocument4D> import_load_from_file(const String &p_path);
+	Ref<ArrayMesh> import_generate_mesh_3d(const bool p_per_face_vertices = true);
+	Ref<ArrayTetraMesh4D> import_generate_tetra_mesh_4d();
+	Ref<ArrayWireMesh4D> import_generate_wire_mesh_4d(const bool p_deduplicate_edges = true);
+	Node *import_generate_node(const bool p_deduplicate_edges = true, const bool p_per_face_vertices = true);
 
 	PackedColorArray get_cell_colors() const;
 	void set_cell_colors(const PackedColorArray &p_cell_colors);
@@ -59,8 +66,4 @@ public:
 
 	PackedVector4Array get_vertices() const;
 	void set_vertices(const PackedVector4Array &p_vertices);
-
-	static Ref<OFFDocument4D> load_from_file(const String &p_path);
-	void save_to_file_3d(const String &p_path);
-	void save_to_file_4d(const String &p_path);
 };

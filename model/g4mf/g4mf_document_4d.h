@@ -71,6 +71,7 @@ public:
 	Error export_append_from_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh);
 	PackedByteArray export_write_to_byte_array(Ref<G4MFState4D> p_g4mf_state);
 	Error export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path);
+
 	Error import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_byte_array);
 	Error import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path);
 	Node4D *import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state);
