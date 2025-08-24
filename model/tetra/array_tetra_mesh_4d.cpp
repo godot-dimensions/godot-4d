@@ -56,6 +56,7 @@ int ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_dedupl
 			}
 		}
 	}
+	ERR_FAIL_COND_V(_vertices.size() > MAX_VERTICES, 2147483647);
 	_vertices.push_back(p_vertex);
 	reset_mesh_data_validation();
 	return vertex_count;
@@ -156,15 +157,6 @@ void ArrayTetraMesh4D::set_cell_indices(const PackedInt32Array &p_cell_indices) 
 	reset_mesh_data_validation();
 }
 
-PackedVector4Array ArrayTetraMesh4D::get_cell_positions() {
-	if (_cell_positions_cache.is_empty()) {
-		for (const int i : _cell_indices) {
-			_cell_positions_cache.append(_vertices[i]);
-		}
-	}
-	return _cell_positions_cache;
-}
-
 PackedVector4Array ArrayTetraMesh4D::get_cell_normals() {
 	if (_cell_normals.is_empty()) {
 		calculate_normals();
@@ -191,6 +183,7 @@ PackedVector4Array ArrayTetraMesh4D::get_vertices() {
 }
 
 void ArrayTetraMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
+	ERR_FAIL_COND(p_vertices.size() > MAX_VERTICES); // Prevent overflow.
 	_vertices = p_vertices;
 	_clear_cache();
 	reset_mesh_data_validation();

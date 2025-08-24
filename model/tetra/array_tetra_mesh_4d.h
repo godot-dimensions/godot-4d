@@ -7,7 +7,6 @@ class ArrayTetraMesh4D : public TetraMesh4D {
 	GDCLASS(ArrayTetraMesh4D, TetraMesh4D);
 
 	PackedInt32Array _cell_indices;
-	PackedVector4Array _cell_positions_cache;
 	PackedVector4Array _cell_normals;
 	PackedVector3Array _cell_uvw_map;
 	PackedVector4Array _vertices;
@@ -30,8 +29,6 @@ public:
 
 	virtual PackedInt32Array get_cell_indices() override;
 	void set_cell_indices(const PackedInt32Array &p_cell_indices);
-
-	virtual PackedVector4Array get_cell_positions() override;
 
 	virtual PackedVector4Array get_cell_normals() override;
 	void set_cell_normals(const PackedVector4Array &p_cell_normals);

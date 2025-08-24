@@ -17,6 +17,7 @@ protected:
 	static void _bind_methods();
 	PackedInt32Array _edge_indices_cache;
 	PackedVector4Array _edge_positions_cache;
+	PackedVector4Array _cell_positions_cache;
 
 	Ref<ArrayMesh> convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map);
 	virtual void update_cross_section_mesh() override;
@@ -28,16 +29,15 @@ public:
 
 	virtual Ref<ArrayMesh> export_uvw_map_mesh();
 	virtual PackedInt32Array get_cell_indices();
-	virtual PackedVector4Array get_cell_positions();
 	virtual PackedVector4Array get_cell_normals();
 	virtual PackedVector3Array get_cell_uvw_map();
+	PackedVector4Array get_cell_positions();
 
 	static PackedInt32Array calculate_edge_indices_from_cell_indices(const PackedInt32Array &p_cell_indices, const bool p_deduplicate = true);
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_edge_positions() override;
 
 	GDVIRTUAL0R(PackedInt32Array, _get_cell_indices);
-	GDVIRTUAL0R(PackedVector4Array, _get_cell_positions);
 	GDVIRTUAL0R(PackedVector4Array, _get_cell_normals);
 	GDVIRTUAL0R(PackedVector3Array, _get_cell_uvw_map);
 };

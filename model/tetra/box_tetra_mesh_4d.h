@@ -23,7 +23,6 @@ public:
 	};
 
 private:
-	PackedVector4Array _cell_positions_cache;
 	PackedVector4Array _vertices_cache;
 
 	Vector4 _size = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -51,7 +50,6 @@ public:
 
 	virtual Ref<ArrayMesh> export_uvw_map_mesh() override;
 	virtual PackedInt32Array get_cell_indices() override;
-	virtual PackedVector4Array get_cell_positions() override;
 	virtual PackedVector4Array get_cell_normals() override;
 	virtual PackedVector3Array get_cell_uvw_map() override;
 	virtual PackedInt32Array get_edge_indices() override;

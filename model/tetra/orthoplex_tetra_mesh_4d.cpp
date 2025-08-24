@@ -87,16 +87,6 @@ PackedInt32Array OrthoplexTetraMesh4D::get_cell_indices() {
 	return ORTHOPLEX_CELL_INDICES;
 }
 
-PackedVector4Array OrthoplexTetraMesh4D::get_cell_positions() {
-	if (_cell_positions_cache.is_empty()) {
-		const PackedVector4Array vertices = get_vertices();
-		for (const int i : ORTHOPLEX_CELL_INDICES) {
-			_cell_positions_cache.append(vertices[i]);
-		}
-	}
-	return _cell_positions_cache;
-}
-
 PackedVector4Array OrthoplexTetraMesh4D::get_cell_normals() {
 	return ORTHOPLEX_CELL_NORMALS;
 }

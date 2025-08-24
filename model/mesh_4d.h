@@ -19,6 +19,8 @@ class Mesh4D : public Resource {
 	bool _is_cross_section_mesh_dirty = true;
 
 protected:
+	// Slightly under the 32-bit integer limit to avoid overflows.
+	static constexpr int64_t MAX_VERTICES = 2147483640;
 	Ref<ArrayMesh> _cross_section_mesh;
 
 	static void _bind_methods();

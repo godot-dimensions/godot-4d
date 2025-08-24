@@ -40,6 +40,7 @@ int ArrayWireMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_dedupli
 			}
 		}
 	}
+	ERR_FAIL_COND_V(_vertices.size() > MAX_VERTICES, 2147483647);
 	_vertices.push_back(p_vertex);
 	reset_mesh_data_validation();
 	return vertex_count;
@@ -184,6 +185,7 @@ PackedVector4Array ArrayWireMesh4D::get_vertices() {
 }
 
 void ArrayWireMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
+	ERR_FAIL_COND(p_vertices.size() > MAX_VERTICES);
 	_vertices = p_vertices;
 	wire_mesh_clear_cache();
 	reset_mesh_data_validation();

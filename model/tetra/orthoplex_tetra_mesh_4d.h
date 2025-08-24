@@ -9,7 +9,6 @@ class OrthoplexTetraMesh4D : public TetraMesh4D {
 	GDCLASS(OrthoplexTetraMesh4D, TetraMesh4D);
 
 private:
-	PackedVector4Array _cell_positions_cache;
 	PackedVector4Array _vertices_cache;
 
 	Vector4 _size = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -28,7 +27,6 @@ public:
 	void set_size(const Vector4 &p_size);
 
 	virtual PackedInt32Array get_cell_indices() override;
-	virtual PackedVector4Array get_cell_positions() override;
 	virtual PackedVector4Array get_cell_normals() override;
 	virtual PackedVector3Array get_cell_uvw_map() override;
 	virtual PackedVector4Array get_vertices() override;

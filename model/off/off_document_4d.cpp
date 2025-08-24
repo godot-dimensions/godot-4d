@@ -333,6 +333,7 @@ Ref<ArrayWireMesh4D> OFFDocument4D::import_generate_wire_mesh_4d(const bool p_de
 }
 
 Node *OFFDocument4D::import_generate_node(const bool p_deduplicate_edges, const bool p_per_face_vertices) {
+	// If there are no cells, this isn't a 4D mesh, but instead a 3D mesh.
 	if (_cell_face_indices.is_empty()) {
 		MeshInstance3D *mesh_instance_3d = memnew(MeshInstance3D);
 		Ref<ArrayMesh> mesh_3d = import_generate_mesh_3d(p_per_face_vertices);

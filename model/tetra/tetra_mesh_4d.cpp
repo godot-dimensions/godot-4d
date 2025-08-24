@@ -86,12 +86,6 @@ PackedInt32Array TetraMesh4D::get_cell_indices() {
 	return indices;
 }
 
-PackedVector4Array TetraMesh4D::get_cell_positions() {
-	PackedVector4Array positions;
-	GDVIRTUAL_CALL(_get_cell_positions, positions);
-	return positions;
-}
-
 PackedVector4Array TetraMesh4D::get_cell_normals() {
 	PackedVector4Array normals;
 	GDVIRTUAL_CALL(_get_cell_normals, normals);
@@ -140,11 +134,26 @@ PackedVector4Array TetraMesh4D::get_edge_positions() {
 	if (_edge_positions_cache.is_empty()) {
 		const PackedInt32Array edge_indices = get_edge_indices();
 		const PackedVector4Array vertices = get_vertices();
-		for (const int edge_index : edge_indices) {
+		const int32_t vertices_count = vertices.size();
+		for (const int32_t edge_index : edge_indices) {
+			ERR_FAIL_INDEX_V(edge_index, vertices_count, _cell_positions_cache);
 			_edge_positions_cache.append(vertices[edge_index]);
 		}
 	}
 	return _edge_positions_cache;
+}
+
+PackedVector4Array TetraMesh4D::get_cell_positions() {
+	if (_cell_positions_cache.is_empty()) {
+		const PackedInt32Array cell_indices = get_cell_indices();
+		const PackedVector4Array vertices = get_vertices();
+		const int32_t vertices_count = vertices.size();
+		for (const int cell_index : cell_indices) {
+			ERR_FAIL_INDEX_V(cell_index, vertices_count, _cell_positions_cache);
+			_cell_positions_cache.append(vertices[cell_index]);
+		}
+	}
+	return _cell_positions_cache;
 }
 
 void TetraMesh4D::update_cross_section_mesh() {
@@ -156,10 +165,13 @@ void TetraMesh4D::update_cross_section_mesh() {
 	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
 	surface_tool->set_smooth_group(-1);
 
-	PackedVector4Array vertices = get_vertices();
-	PackedInt32Array cell_indices = get_cell_indices();
+	const PackedVector4Array cell_positions = get_cell_positions();
+	const PackedVector4Array cell_normals = get_cell_normals();
 	PackedVector3Array cell_uvws = get_cell_uvw_map();
-	PackedVector4Array cell_normals = get_cell_normals();
+	if (cell_uvws.size() != cell_positions.size()) {
+		ERR_PRINT("Cell UVW map size does not match cell positions size.");
+		cell_uvws.resize(cell_positions.size());
+	}
 	Ref<Material4D> material = get_material();
 	if (material.is_valid()) {
 		surface_tool->set_material(material->get_cross_section_material());
@@ -168,7 +180,7 @@ void TetraMesh4D::update_cross_section_mesh() {
 	surface_tool->set_custom_format(1, SurfaceTool::CUSTOM_RGBA_FLOAT);
 	surface_tool->set_custom_format(2, SurfaceTool::CUSTOM_RGBA_FLOAT);
 	surface_tool->set_custom_format(3, SurfaceTool::CUSTOM_RGBA_FLOAT);
-	for (int i = 0; i < cell_indices.size(); i += 4) {
+	for (int i = 0; i < cell_positions.size(); i += 4) {
 		// Cramming a bunch of data where it fits. Each cell's cross section can be 0-2 triangles. We create two triangles for each cell
 		// with all the info about the cell and figure everything out in the vertex shader after transforms have been applied.
 		// As of 4.4.1, available slots are:
@@ -189,10 +201,10 @@ void TetraMesh4D::update_cross_section_mesh() {
 		//// Shared attrs for both triangles:
 
 		// Cell vertex positions: Using custom because there are conveniently four of them and they each take a vector4.
-		surface_tool->set_custom(0, Vector4D::to_color(vertices[cell_indices[i]]));
-		surface_tool->set_custom(1, Vector4D::to_color(vertices[cell_indices[i + 1]]));
-		surface_tool->set_custom(2, Vector4D::to_color(vertices[cell_indices[i + 2]]));
-		surface_tool->set_custom(3, Vector4D::to_color(vertices[cell_indices[i + 3]]));
+		surface_tool->set_custom(0, Vector4D::to_color(cell_positions[i]));
+		surface_tool->set_custom(1, Vector4D::to_color(cell_positions[i + 1]));
+		surface_tool->set_custom(2, Vector4D::to_color(cell_positions[i + 2]));
+		surface_tool->set_custom(3, Vector4D::to_color(cell_positions[i + 3]));
 
 		// UVW texture coords, need 4*3 float slots.  Using UV, UV2, Normal, Color, vertex.y, and vertex.z.
 		// Normal gets normalized somewhere in the pipeline, so last coord of 1.0 will get set to whatever we need to divide by to get
@@ -237,7 +249,6 @@ void TetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_cell_uvw_map"), &TetraMesh4D::get_cell_uvw_map);
 
 	GDVIRTUAL_BIND(_get_cell_indices);
-	GDVIRTUAL_BIND(_get_cell_positions);
 	GDVIRTUAL_BIND(_get_cell_normals);
 	GDVIRTUAL_BIND(_get_cell_uvw_map);
 }
