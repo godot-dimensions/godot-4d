@@ -75,7 +75,7 @@ public:
 	Error import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_byte_array);
 	Error import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path);
 	Node4D *import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state);
-	Ref<Mesh4D> import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible = false);
+	Ref<Mesh4D> import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const int p_which_mesh_index = -1, const bool p_include_invisible = false);
 
 	// Settings for the export process.
 	CompressionFormat get_compression_format() const { return _compression_format; }

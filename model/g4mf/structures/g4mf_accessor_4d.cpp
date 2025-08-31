@@ -487,7 +487,7 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 	const TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_g4mf_buffer_views();
 	ERR_FAIL_INDEX_V_MSG(_buffer_view_index, state_buffer_views.size(), PackedByteArray(), "G4MF import: The buffer view index is out of bounds. Returning an empty byte array.");
 	const Ref<G4MFBufferView4D> buffer_view = state_buffer_views[_buffer_view_index];
-	const PackedByteArray raw_bytes = buffer_view->load_buffer_view_data(p_g4mf_state);
+	const PackedByteArray raw_bytes = buffer_view->read_buffer_view_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(raw_bytes.size() % get_bytes_per_vector() != 0, PackedByteArray(), "G4MF import: The buffer view size was not a multiple of the vector size. Returning an empty byte array.");
 	return raw_bytes;
 }

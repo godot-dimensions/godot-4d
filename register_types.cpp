@@ -195,6 +195,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(G4MFItem4D);
 		GDREGISTER_CLASS(G4MFBufferView4D);
 		GDREGISTER_CLASS(G4MFAccessor4D);
+		GDREGISTER_CLASS(G4MFFileReference4D);
 		GDREGISTER_CLASS(G4MFTexture4D);
 		GDREGISTER_CLASS(G4MFMaterialChannel4D);
 		GDREGISTER_CLASS(G4MFMaterial4D);

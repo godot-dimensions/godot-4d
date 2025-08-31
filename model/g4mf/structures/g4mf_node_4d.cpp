@@ -183,7 +183,7 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 	if (p_dict.has("visible")) {
 		node->_visible = p_dict["visible"];
 	}
-	// Component properties.
+	// Component properties (in alphabetical order).
 	if (p_dict.has("camera")) {
 		node->_camera = G4MFCamera4D::from_dictionary(p_dict["camera"]);
 	}
@@ -235,7 +235,7 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	if (!_visible) {
 		dict["visible"] = _visible;
 	}
-	// Component properties.
+	// Component properties (in alphabetical order).
 	if (_camera.is_valid()) {
 		dict["camera"] = _camera->to_dictionary();
 	}

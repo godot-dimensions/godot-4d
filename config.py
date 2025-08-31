@@ -71,6 +71,7 @@ def get_doc_classes():
 		"G4MFItem4D",
 		"G4MFBufferView4D",
 		"G4MFAccessor4D",
+		"G4MFFileReference4D",
 		"G4MFTexture4D",
 		"G4MFMaterialChannel4D",
 		"G4MFMaterial4D",

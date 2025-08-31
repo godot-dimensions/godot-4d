@@ -3,12 +3,12 @@
 Ref<G4MFTexture4D> G4MFTexture4D::from_dictionary(const Dictionary &p_dict) {
 	Ref<G4MFTexture4D> texture;
 	texture.instantiate();
-	texture->read_item_entries_from_dictionary(p_dict);
+	texture->read_file_reference_entries_from_dictionary(p_dict);
 	return texture;
 }
 
 Dictionary G4MFTexture4D::to_dictionary() const {
-	Dictionary dict = write_item_entries_to_dictionary();
+	Dictionary dict = write_file_reference_entries_to_dictionary();
 	return dict;
 }
 

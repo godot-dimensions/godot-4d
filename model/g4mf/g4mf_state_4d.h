@@ -109,7 +109,7 @@ public:
 	ExternalDataMode get_external_data_mode() const { return _external_data_mode; }
 	void set_external_data_mode(ExternalDataMode p_external_data_mode) { _external_data_mode = p_external_data_mode; }
 	bool is_text_file() const;
-	bool should_separate_binary_blobs() const;
+	bool should_separate_binary_blobs(const int64_t p_blob_size) const;
 	bool should_separate_resource_files() const;
 };
 

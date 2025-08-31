@@ -42,7 +42,7 @@ bool G4MFState4D::is_text_file() const {
 	return _g4mf_filename.get_extension().length() > 3;
 }
 
-bool G4MFState4D::should_separate_binary_blobs() const {
+bool G4MFState4D::should_separate_binary_blobs(const int64_t p_blob_size) const {
 	if (_external_data_mode == EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES || _external_data_mode == EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS) {
 		ERR_FAIL_COND_V_MSG(_g4mf_base_path.is_empty(), false, "G4MF: No base path is set, cannot separate binary blob files.");
 		ERR_FAIL_COND_V_MSG(_g4mf_filename.get_basename().is_empty(), false, "G4MF: No filename is set, cannot separate binary blob files.");
@@ -52,8 +52,12 @@ bool G4MFState4D::should_separate_binary_blobs() const {
 		return false;
 	}
 	// EXTERNAL_DATA_MODE_AUTOMATIC embeds everything for binary files (.g4b),
-	// byte arrays in memory (no extension), and when there is no base path set,
+	// byte arrays in memory (no extension), when there is no base path set,
+	// and when the size is below an arbitrary threshold (we'll use 2 KiB),
 	// but separates for text files (.g4tf) when the base path and filename are valid.
+	if (p_blob_size < 2048) {
+		return false;
+	}
 	return is_text_file() && !_g4mf_base_path.is_empty() && !_g4mf_filename.get_basename().is_empty();
 }
 

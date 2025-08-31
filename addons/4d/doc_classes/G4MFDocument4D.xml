@@ -49,10 +49,12 @@
 		<method name="import_generate_godot_mesh">
 			<return type="Mesh4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="include_invisible" type="bool" default="false" />
+			<param index="1" name="which_mesh_index" type="int" default="-1" />
+			<param index="2" name="include_invisible" type="bool" default="false" />
 			<description>
-				Part of the import process. Generates a Godot [Mesh4D] from the G4MF data in a [G4MFState4D]. If the G4MF data does not contain nodes, the mesh at index 0 will be generated exactly as-is, and any other meshes will be ignored.
-				If the G4MF data contains nodes, the nodes will be used to determine the transforms of the mesh instances and generate a combined mesh. The combined mesh will only be tetrahedral if every mesh in the G4MF data can be generated as a tetrahedral mesh and [member force_wireframe] is set to [code]false[/code], otherwise the combined mesh will be wireframe.
+				Part of the import process. Generates a Godot [Mesh4D] from the G4MF data in a [G4MFState4D].
+				If [param which_mesh_index] is set to -1 (default), and the G4MF data contains nodes, the nodes will be used to determine the transforms of the mesh instances and generate a combined mesh. The combined mesh will only be tetrahedral if every mesh in the G4MF data can be generated as a tetrahedral mesh and [member force_wireframe] is set to [code]false[/code], otherwise the combined mesh will be wireframe.
+				If [param which_mesh_index] is set to a valid mesh index, only that mesh will be generated exactly as-is, and any other meshes will be ignored. Otherwise, if the G4MF data does not contain nodes, the mesh at index 0 will be generated.
 			</description>
 		</method>
 		<method name="import_generate_godot_scene">

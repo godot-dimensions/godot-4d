@@ -46,12 +46,17 @@ G4MFDocument4D::CompressionFormat G4MFDocument4D::_compression_indicator_to_form
 // Export process.
 
 Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index) {
+	ERR_FAIL_NULL_V(p_current_node, ERR_INVALID_PARAMETER);
 	Ref<G4MFNode4D> g4mf_node = G4MFNode4D::from_godot_node(p_g4mf_state, p_current_node);
 	g4mf_node->set_parent_index(p_parent_index);
 	// Convert node types.
 	// Allow excluding a node from export by setting the parent index to -2.
 	if (g4mf_node->get_parent_index() < -1) {
-		return OK;
+		return ERR_SKIP;
+	}
+	if (p_parent_index == -1) {
+		// The root node MUST NOT have a transform as required by the G4MF specification.
+		g4mf_node->set_transform(Transform4D());
 	}
 	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	TypedArray<Node4D> state_godot_nodes = p_g4mf_state->get_godot_nodes();
@@ -61,12 +66,16 @@ Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, 
 	state_godot_nodes[new_node_index] = p_current_node;
 	PackedInt32Array children_indices;
 	for (int i = 0; i < p_current_node->get_child_count(); i++) {
-		children_indices.append(state_g4mf_nodes.size());
 		Node *child = p_current_node->get_child(i);
+		const int32_t child_index_if_appended = state_godot_nodes.size();
 		const Error err = _export_convert_scene_node(p_g4mf_state, child, new_node_index);
+		if (err == ERR_SKIP) {
+			continue;
+		}
 		if (err != OK) {
 			return err;
 		}
+		children_indices.append(child_index_if_appended);
 	}
 	g4mf_node->set_children_indices(children_indices);
 	return OK;
@@ -76,13 +85,14 @@ Error G4MFDocument4D::_export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state)
 	Dictionary g4mf_json;
 	p_g4mf_state->set_g4mf_json(g4mf_json);
 	_export_serialize_asset_header(p_g4mf_state, g4mf_json);
-	_export_serialize_buffers_accessors(p_g4mf_state, g4mf_json);
 	_export_serialize_textures(p_g4mf_state, g4mf_json);
 	_export_serialize_materials(p_g4mf_state, g4mf_json);
 	_export_serialize_meshes(p_g4mf_state, g4mf_json);
 	_export_serialize_shapes(p_g4mf_state, g4mf_json);
 	_export_serialize_lights(p_g4mf_state, g4mf_json);
 	_export_serialize_nodes(p_g4mf_state, g4mf_json);
+	// Serialize buffers, buffer views, and accessors last, in case any of the above added new ones.
+	_export_serialize_buffers_accessors(p_g4mf_state, g4mf_json);
 	return OK;
 }
 
@@ -484,7 +494,8 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 	// Add binary buffer chunks to the file size.
 	const TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_g4mf_buffers();
 	Vector<PackedByteArray> buffers_compressed;
-	const bool should_embed_buffers = !p_g4mf_state->should_separate_binary_blobs();
+	// "Automatic" is always embedded in this case anyway, so pass `-1` for `p_blob_size` which returns false (flipped to true here).
+	const bool should_embed_buffers = !p_g4mf_state->should_separate_binary_blobs(-1);
 	if (should_embed_buffers && !state_buffers.is_empty()) {
 		ERR_FAIL_COND_V(!g4mf_json.has("buffers"), PackedByteArray());
 		Array json_buffers = g4mf_json["buffers"];
@@ -1036,8 +1047,9 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 	p_g4mf_state->set_original_path(p_path);
 	Error err = _export_serialize_json_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF data.");
+	const int64_t buffer0_size = p_g4mf_state->get_g4mf_buffers().size() > 0 ? PackedByteArray(p_g4mf_state->get_g4mf_buffers()[0]).size() : 0;
 	const bool is_text_file = p_g4mf_state->is_text_file();
-	const bool should_separate_buffers_into_files = p_g4mf_state->should_separate_binary_blobs();
+	const bool should_separate_buffers_into_files = p_g4mf_state->should_separate_binary_blobs(buffer0_size);
 	if (is_text_file) {
 		// Write to a G4MF text file. Export the buffers either as base64 or as separate files.
 		err = _export_serialize_buffer_data(p_g4mf_state, should_separate_buffers_into_files);
@@ -1092,8 +1104,8 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF import: Failed to open file for reading.");
 	p_g4mf_state->set_g4mf_base_path(p_path.get_base_dir());
-	const String filename = p_path.get_file();
-	p_g4mf_state->set_g4mf_filename(filename);
+	p_g4mf_state->set_g4mf_filename(p_path.get_file());
+	p_g4mf_state->set_original_path(p_path);
 	ERR_FAIL_COND_V_MSG(file->get_length() < 25, ERR_INVALID_DATA, "G4MF import: File is too small to be a valid G4MF file.");
 	// Check for the magic number to allow reading G4MF files regardless of file extension.
 	const uint32_t magic_number_maybe = file->get_32();
@@ -1127,16 +1139,24 @@ Node4D *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_stat
 		}
 		return mesh_instance;
 	}
+	// Prepare the Godot nodes array to be filled during scene node generation.
 	TypedArray<Node4D> state_godot_nodes;
 	state_godot_nodes.resize(state_g4mf_nodes.size());
 	p_g4mf_state->set_godot_nodes(state_godot_nodes);
+	// Start from the root node (index 0) which has no parent. This will recursively call itself for child nodes.
 	return _import_generate_scene_node(p_g4mf_state, 0, nullptr, nullptr);
 }
 
-Ref<Mesh4D> G4MFDocument4D::import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible) {
+Ref<Mesh4D> G4MFDocument4D::import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const int p_which_mesh_index, const bool p_include_invisible) {
 	const TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
 	const int mesh_count = state_g4mf_meshes.size();
 	ERR_FAIL_COND_V_MSG(mesh_count == 0, Ref<Mesh4D>(), "G4MF import: This G4MF file has no meshes, so it cannot be imported as a mesh.");
+	if (p_which_mesh_index >= 0) {
+		ERR_FAIL_INDEX_V_MSG(p_which_mesh_index, mesh_count, Ref<Mesh4D>(), "G4MF import: Specified mesh index is out of range.");
+		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[p_which_mesh_index];
+		return g4mf_mesh->generate_mesh(p_g4mf_state, _force_wireframe);
+	}
+	// If p_which_mesh_index is negative (default), generate a combined mesh using the nodes.
 	const TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	// If there are no nodes, generate the first mesh. We can't combine
 	// in this situation because we don't know the mesh transforms.
@@ -1165,7 +1185,7 @@ void G4MFDocument4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("import_read_from_byte_array", "g4mf_state", "byte_array"), &G4MFDocument4D::import_read_from_byte_array);
 	ClassDB::bind_method(D_METHOD("import_read_from_file", "g4mf_state", "path"), &G4MFDocument4D::import_read_from_file);
 	ClassDB::bind_method(D_METHOD("import_generate_godot_scene", "g4mf_state"), &G4MFDocument4D::import_generate_godot_scene);
-	ClassDB::bind_method(D_METHOD("import_generate_godot_mesh", "g4mf_state", "include_invisible"), &G4MFDocument4D::import_generate_godot_mesh, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("import_generate_godot_mesh", "g4mf_state", "which_mesh_index", "include_invisible"), &G4MFDocument4D::import_generate_godot_mesh, DEFVAL(-1), DEFVAL(false));
 
 	// Settings for the export process.
 	ClassDB::bind_method(D_METHOD("get_compression_format"), &G4MFDocument4D::get_compression_format);
