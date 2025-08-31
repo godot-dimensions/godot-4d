@@ -57,6 +57,21 @@ Error EditorImportPluginG4MFScene4D::import(ResourceUID::ID p_source_id, const S
 	g4mf_doc->set_force_wireframe(p_options[StringName("force_wireframe")]);
 	Error err = g4mf_doc->import_read_from_file(g4mf_state, p_source_file);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "Editor: Failed to read G4MF document from file. Aborting file import.");
+#if 0
+	// Inform the editor resource importer about other resources that need to be imported.
+	TypedArray<G4MFModel4D> models = g4mf_state->get_g4mf_models();
+	for (int i = 0; i < models.size(); i++) {
+		const Ref<G4MFModel4D> model = models[i];
+		const String model_uri = model->get_uri();
+		if (!model_uri.is_empty()) {
+			// This SHOULD work but for some reason it doesn't. It prints the error:
+			// ERROR: Caller thread can't call this function in this node (/root/@EditorNode@16903/@EditorFileSystem@3). Use call_deferred() or call_thread_group() instead.
+			// The docs explicitly say that this function can be called from within `EditorImportPlugin::import()`...
+			append_import_external_resource(g4mf_state->get_g4mf_base_path().path_join(model_uri));
+		}
+	}
+#endif
+	// Generate the Godot scene and save it as a PackedScene resource.
 	Node *node = g4mf_doc->import_generate_godot_scene(g4mf_state);
 	ERR_FAIL_NULL_V_MSG(node, ERR_INVALID_DATA, "Editor: Failed to generate scene from G4MF document.");
 	Ref<PackedScene> packed_scene;

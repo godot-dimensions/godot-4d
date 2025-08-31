@@ -9,6 +9,7 @@ protected:
 	static void _bind_methods() {}
 
 public:
+	virtual bool GDEXTMOD_CAN_IMPORT_THREADED() const override { return false; }
 	virtual int GDEXTMOD_GET_IMPORT_ORDER() const override { return 200; }
 	virtual String GDEXTMOD_GET_IMPORTER_NAME() const override;
 	virtual String GDEXTMOD_GET_RESOURCE_TYPE() const override;

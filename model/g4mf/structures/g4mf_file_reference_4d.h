@@ -25,7 +25,8 @@ public:
 	void set_uri(const String &p_uri) { _uri = p_uri; }
 
 	PackedByteArray read_file_data(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Error write_file_data(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data, int64_t p_alignment = 1, bool p_deduplicate = true, int p_buffer_index = 0);
+	Error create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Error write_file_data(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data, const int64_t p_alignment = 4, const bool p_deduplicate = true, const int p_buffer_index = 0);
 
 	void read_file_reference_entries_from_dictionary(const Dictionary &p_dict);
 	Dictionary write_file_reference_entries_to_dictionary() const;

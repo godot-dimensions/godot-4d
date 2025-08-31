@@ -84,6 +84,9 @@
 		<member name="g4mf_meshes" type="G4MFMesh4D[]" setter="set_g4mf_meshes" getter="get_g4mf_meshes" default="[]">
 			The array of [G4MFMesh4D]s in this G4MF file. If empty, the G4MF file does not have any meshes. Meshes are referenced by index in [G4MFNode4D]s.
 		</member>
+		<member name="g4mf_models" type="G4MFModel4D[]" setter="set_g4mf_models" getter="get_g4mf_models" default="[]">
+			The array of [G4MFModel4D]s in this G4MF file. If empty, the G4MF file does not have any models. Models are referenced by index in [G4MFNode4D]s.
+		</member>
 		<member name="g4mf_nodes" type="G4MFNode4D[]" setter="set_g4mf_nodes" getter="get_g4mf_nodes" default="[]">
 			The array of [G4MFNode4D]s in this G4MF file. If empty, the G4MF file does not have any nodes. If non-empty, the node at index 0 is the root node.
 		</member>
@@ -102,11 +105,11 @@
 	</members>
 	<constants>
 		<constant name="EXTERNAL_DATA_MODE_AUTOMATIC" value="0" enum="ExternalDataMode">
-			When exporting a G4MF file, automatically determines if data should be embedded or separated based on the file extension used and if [member base_path] is valid. With this option, exporting a [code].g4tf[/code] file with a valid [member base_path] will behave like [constant EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES]. If exporting a [code].g4b[/code] file, exporting to an in-memory buffer, or exporting with [member base_path] set to an empty string, this will behave like [constant EXTERNAL_DATA_MODE_EMBED_EVERYTHING].
+			When exporting a G4MF file, automatically determines if data should be embedded or separated based on the file extension used and if [member base_path] is valid. With this option, exporting a [code].g4tf[/code] file with a valid [member base_path] will behave like [constant EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES]. If exporting a [code].g4b[/code] file, exporting to an in-memory buffer, or exporting with [member base_path] set to an empty string, this will behave like [constant EXTERNAL_DATA_MODE_SEPARATE_MODEL_FILES].
 			This option is suitable for most use cases. It behaves like Blender's "glTF Binary (.glb)" export option for [code].g4b[/code] files, and like Blender's "glTF Separate (.gltf + .bin + textures)" export option for [code].g4tf[/code] files.
 		</constant>
 		<constant name="EXTERNAL_DATA_MODE_EMBED_EVERYTHING" value="1" enum="ExternalDataMode">
-			When exporting a G4MF file, embeds all data in the G4MF file, including images and binary buffers. For [code].g4b[/code] files, this will use the binary blob chunks at the end of the file to store the data in buffers.
+			When exporting a G4MF file, embeds all data in the G4MF file, including images, binary buffers, and models. For [code].g4b[/code] files, this will use the binary blob chunks at the end of the file to store the data in buffers.
 			This option is useful when you want a single self-contained file. It behaves like Blender's "glTF Binary (.glb)" export option for [code].g4b[/code] files, and like Blender's "glTF Embedded (.gltf)" export option for [code].gltf[/code] files.
 		</constant>
 		<constant name="EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES" value="2" enum="ExternalDataMode">
@@ -115,13 +118,17 @@
 			Extensions should respect this setting by calling [method should_separate_resource_files] to determine if they should save their resources in separate files.
 		</constant>
 		<constant name="EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS" value="3" enum="ExternalDataMode">
-			When exporting a G4MF file, separates all raw binary blobs, such as G4MF buffers, into separate [code].bin[/code] files. Resources that can be saved in their own file formats, such as images, are embedded within G4MF buffers, and are stored in the [code].bin[/code] files.
+			When exporting a G4MF file, separates all raw binary blobs, such as G4MF buffers, into separate [code].bin[/code] files, and also separates model files. Resources that can be saved in their own file formats, such as images, are embedded within G4MF buffers, and are stored in the [code].bin[/code] files.
 			This option is useful if you need efficient storage of binary data while also keeping the number of files low. In the typical case, this option will result in only two files: the G4MF file and a single [code].bin[/code] file next to it.
 		</constant>
 		<constant name="EXTERNAL_DATA_MODE_SEPARATE_RESOURCE_FILES" value="4" enum="ExternalDataMode">
-			When exporting a G4MF file, separates all resources that can be saved in their own file formats into their own files, such as images. This option does not separate buffers, meaning that binary blob data without a file type, such as mesh data, animation data, skin/skeleton data, and so on, are still embedded in the G4MF file.
+			When exporting a G4MF file, separates all resources that can be saved in their own file formats into their own files, such as images and model files. This option does not separate buffers, meaning that binary blob data without a file type, such as mesh data, animation data, skin/skeleton data, and so on, are still embedded in the G4MF file.
 			This option is useful if the exported G4MF file is intended to be added to the project folder in a game engine, so that the game engine can import the resources files separately, and optionally use them separately. Otherwise, game engines may extract embedded resources to their own files, resulting in duplicate data in the project folder.
 			Extensions should respect this setting by calling [method should_separate_resource_files] to determine if they should save their resources in separate files.
+		</constant>
+		<constant name="EXTERNAL_DATA_MODE_SEPARATE_MODEL_FILES" value="5" enum="ExternalDataMode">
+			When exporting a G4MF file, separates all model files into their own files, meaning Godot scenes used by this Godot scene which get converted into G4MF files. Everything else is embedded in the G4MF files, including all resource files and binary blobs. This is the behavior of [constant EXTERNAL_DATA_MODE_AUTOMATIC] when exporting a [code].g4b[/code] file.
+			This enum value can be used when [i]only[/i] model files should be separated, while all other data should be embedded in the G4MF file, such as images and buffers. All options except [constant EXTERNAL_DATA_MODE_EMBED_EVERYTHING] will result in separate model files, because it is usually desired to have G4MF files used by a G4MF file available as separate files. You can also force all scenes to be merged into a single G4MF model by setting [member G4MFDocument4D.export_nested_scenes_mode] to one of the available enum values.
 		</constant>
 	</constants>
 </class>

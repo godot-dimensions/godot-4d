@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/editor_import_plugin.hpp>
 #include <godot_cpp/classes/resource_saver.hpp>
 
+#define GDEXTMOD_CAN_IMPORT_THREADED _can_import_threaded
 #define GDEXTMOD_GET_IMPORT_ORDER _get_import_order
 #define GDEXTMOD_GET_IMPORTER_NAME _get_importer_name
 #define GDEXTMOD_GET_PRESET_COUNT _get_preset_count
@@ -17,6 +18,7 @@
 #elif GODOT_MODULE
 #include "editor/import/editor_import_plugin.h"
 
+#define GDEXTMOD_CAN_IMPORT_THREADED can_import_threaded
 #define GDEXTMOD_GET_IMPORT_ORDER get_import_order
 #define GDEXTMOD_GET_IMPORTER_NAME get_importer_name
 #define GDEXTMOD_GET_PRESET_COUNT get_preset_count

@@ -1,6 +1,7 @@
 #include "g4mf_document_4d.h"
 
 #include "../mesh_instance_4d.h"
+#include "../off/off_document_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/file_access.hpp>
@@ -47,9 +48,26 @@ G4MFDocument4D::CompressionFormat G4MFDocument4D::_compression_indicator_to_form
 
 Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index) {
 	ERR_FAIL_NULL_V(p_current_node, ERR_INVALID_PARAMETER);
-	Ref<G4MFNode4D> g4mf_node = G4MFNode4D::from_godot_node(p_g4mf_state, p_current_node);
+	Ref<G4MFNode4D> g4mf_node = G4MFNode4D::from_godot_node_basic(p_g4mf_state, p_current_node);
 	g4mf_node->set_parent_index(p_parent_index);
-	// Convert node types.
+	TypedArray<Node4D> state_godot_nodes = p_g4mf_state->get_godot_nodes();
+	const int new_node_index = state_godot_nodes.size();
+	ERR_FAIL_COND_V_MSG(p_g4mf_state->get_g4mf_nodes().size() != new_node_index, ERR_BUG, "G4MFState4D's g4mf_nodes and godot_nodes arrays MUST always be the same size.");
+	// First check if this node should be packed into a model.
+	if (_max_nested_scene_depth != 0 && p_parent_index != -1 && !p_current_node->get_scene_file_path().is_empty()) {
+		const int model_index = G4MFModel4D::export_pack_nodes_into_model(this, p_g4mf_state, p_current_node, true);
+		if (model_index >= 0) {
+			g4mf_node->set_model_index(model_index);
+			// Append this one node representing the model instance, then return.
+			// Since the model packs the entire sub-scene, do not recurse into children.
+			p_g4mf_state->append_g4mf_node(g4mf_node);
+			state_godot_nodes.resize(new_node_index + 1);
+			state_godot_nodes[new_node_index] = p_current_node;
+			return OK;
+		}
+	}
+	// If it's not a model, convert the specific data from its type, like mesh, camera, physics, extensions, etc.
+	g4mf_node->from_godot_node_components(p_g4mf_state, p_current_node);
 	// Allow excluding a node from export by setting the parent index to -2.
 	if (g4mf_node->get_parent_index() < -1) {
 		return ERR_SKIP;
@@ -58,9 +76,7 @@ Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, 
 		// The root node MUST NOT have a transform as required by the G4MF specification.
 		g4mf_node->set_transform(Transform4D());
 	}
-	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
-	TypedArray<Node4D> state_godot_nodes = p_g4mf_state->get_godot_nodes();
-	const int new_node_index = state_g4mf_nodes.size();
+	// Append the node and recurse into children.
 	p_g4mf_state->append_g4mf_node(g4mf_node);
 	state_godot_nodes.resize(new_node_index + 1);
 	state_godot_nodes[new_node_index] = p_current_node;
@@ -88,6 +104,7 @@ Error G4MFDocument4D::_export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state)
 	_export_serialize_textures(p_g4mf_state, g4mf_json);
 	_export_serialize_materials(p_g4mf_state, g4mf_json);
 	_export_serialize_meshes(p_g4mf_state, g4mf_json);
+	_export_serialize_models(p_g4mf_state, g4mf_json);
 	_export_serialize_shapes(p_g4mf_state, g4mf_json);
 	_export_serialize_lights(p_g4mf_state, g4mf_json);
 	_export_serialize_nodes(p_g4mf_state, g4mf_json);
@@ -100,7 +117,12 @@ void G4MFDocument4D::_export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_stat
 	Dictionary asset_header;
 	asset_header["dimension"] = 4;
 	const String godot_version = itos(GODOT_VERSION_MAJOR) + "." + itos(GODOT_VERSION_MINOR) + "." + itos(GODOT_VERSION_PATCH);
-	asset_header["generator"] = "Godot Engine " + godot_version + " with Godot 4D";
+#if GDEXTENSION
+	const String mod_or_ext = "GDExtension";
+#elif GODOT_MODULE
+	const String mod_or_ext = "module";
+#endif
+	asset_header["generator"] = "Godot Engine " + godot_version + " with Godot 4D " + mod_or_ext;
 	p_g4mf_json["asset"] = asset_header;
 }
 
@@ -250,6 +272,28 @@ Error G4MFDocument4D::_export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Di
 	}
 	if (!serialized_meshes.is_empty()) {
 		p_g4mf_json["meshes"] = serialized_meshes;
+		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	}
+	return OK;
+}
+
+Error G4MFDocument4D::_export_serialize_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFModel4D> state_g4mf_models = p_g4mf_state->get_g4mf_models();
+	const int model_count = state_g4mf_models.size();
+	if (model_count == 0) {
+		return OK; // No models to serialize.
+	}
+	Array serialized_models;
+	serialized_models.resize(model_count);
+	for (int i = 0; i < model_count; i++) {
+		Ref<G4MFModel4D> g4mf_model = state_g4mf_models[i];
+		ERR_FAIL_COND_V(g4mf_model.is_null(), ERR_INVALID_DATA);
+		g4mf_model->export_write_model_data(p_g4mf_state);
+		Dictionary serialized_model = g4mf_model->to_dictionary();
+		serialized_models[i] = serialized_model;
+	}
+	if (!serialized_models.is_empty()) {
+		p_g4mf_json["models"] = serialized_models;
 		p_g4mf_state->set_g4mf_json(p_g4mf_json);
 	}
 	return OK;
@@ -664,6 +708,8 @@ Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dic
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse materials. Aborting file import.");
 	err = _import_parse_meshes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse meshes. Aborting file import.");
+	err = _import_parse_models(p_g4mf_state, p_g4mf_json);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse models. Aborting file import.");
 	err = _import_parse_shapes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse shapes. Aborting file import.");
 	err = _import_parse_lights(p_g4mf_state, p_g4mf_json);
@@ -841,6 +887,31 @@ Error G4MFDocument4D::_import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictio
 	return OK;
 }
 
+Error G4MFDocument4D::_import_parse_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	if (!p_g4mf_json.has("models")) {
+		return OK; // No models to parse.
+	}
+	Array json_models = p_g4mf_json["models"];
+	const int model_count = json_models.size();
+	if (model_count == 0) {
+		return OK; // No models to parse.
+	}
+	TypedArray<G4MFModel4D> g4mf_models = p_g4mf_state->get_g4mf_models();
+	g4mf_models.resize(model_count);
+	Error err;
+	for (int i = 0; i < model_count; i++) {
+		const Dictionary file_model = json_models[i];
+		Ref<G4MFModel4D> g4mf_model = G4MFModel4D::from_dictionary(file_model);
+		g4mf_model->set_model_g4mf_document(this);
+		ERR_FAIL_COND_V_MSG(g4mf_model.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse model JSON. Aborting file import.");
+		err = g4mf_model->import_preload_model_data(p_g4mf_state);
+		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to preload model data. Aborting file import.");
+		g4mf_models[i] = g4mf_model;
+	}
+	p_g4mf_state->set_g4mf_models(g4mf_models);
+	return OK;
+}
+
 Error G4MFDocument4D::_import_parse_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	if (!p_g4mf_json.has("shapes")) {
 		return OK; // No shapes to parse.
@@ -916,11 +987,11 @@ Error G4MFDocument4D::_import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Diction
 	return OK;
 }
 
-Node4D *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root) {
+Node *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root) {
 	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	ERR_FAIL_INDEX_V(p_node_index, state_g4mf_nodes.size(), nullptr);
 	Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[p_node_index];
-	Node4D *godot_node = nullptr;
+	Node *godot_node = nullptr;
 	// First, check if any extension wants to generate a node.
 	// If no extension generated a node, check the built-in types.
 	if (godot_node == nullptr) {
@@ -930,27 +1001,29 @@ Node4D *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_stat
 		}
 	}
 	// Set up the generated Godot node.
-	g4mf_node->apply_to_godot_node_4d(godot_node);
+	g4mf_node->apply_to_godot_node(godot_node);
 	TypedArray<Node4D> state_godot_nodes = p_g4mf_state->get_godot_nodes();
 	state_godot_nodes[p_node_index] = godot_node;
 	// Add the Godot node to the tree and set the owner.
 	if (p_scene_parent) {
 		p_scene_parent->add_child(godot_node);
-		Array args;
-		args.append(p_scene_root);
-		godot_node->propagate_call(StringName("set_owner"), args);
+		godot_node->set_owner(p_scene_root);
 	} else {
-		godot_node->set_transform(Transform4D());
+		Node4D *godot_node_4d = Object::cast_to<Node4D>(godot_node);
+		if (godot_node_4d != nullptr) {
+			// The root node MUST NOT have a transform as required by the G4MF specification.
+			godot_node_4d->set_transform(Transform4D());
+		}
 		p_scene_parent = godot_node;
 		p_scene_root = godot_node;
-		// If multiple nodes were generated under the root node, ensure they have the owner set.
-		if (unlikely(godot_node->get_child_count() > 0)) {
-			Array args;
-			args.append(p_scene_root);
-			for (int i = 0; i < godot_node->get_child_count(); i++) {
-				Node *child = godot_node->get_child(i);
-				child->propagate_call(StringName("set_owner"), args);
-			}
+	}
+	// If multiple nodes were generated under this node, ensure they have the owner set.
+	if (unlikely(godot_node->get_child_count() > 0 && godot_node->get_scene_file_path().is_empty())) {
+		Array args;
+		args.append(p_scene_root);
+		for (int i = 0; i < godot_node->get_child_count(); i++) {
+			Node *child = godot_node->get_child(i);
+			child->propagate_call(StringName("set_owner"), args);
 		}
 	}
 	// Generate children.
@@ -1120,7 +1193,15 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 	return _import_parse_json_data(p_g4mf_state, g4mf_json);
 }
 
-Node4D *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state) {
+Node *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state) {
+	// Ensure all models have a reference to this document (the working document may have changed).
+	TypedArray<G4MFModel4D> state_g4mf_models = p_g4mf_state->get_g4mf_models();
+	for (int i = 0; i < state_g4mf_models.size(); i++) {
+		Ref<G4MFModel4D> g4mf_model = state_g4mf_models[i];
+		ERR_FAIL_COND_V(g4mf_model.is_null(), nullptr);
+		g4mf_model->set_model_g4mf_document(this);
+	}
+	// Check how many nodes we have, and handle the case of zero nodes.
 	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	if (state_g4mf_nodes.is_empty()) {
 		// If there are no nodes, we can implicitly generate a MeshInstance4D for the first mesh.
@@ -1190,6 +1271,8 @@ void G4MFDocument4D::_bind_methods() {
 	// Settings for the export process.
 	ClassDB::bind_method(D_METHOD("get_compression_format"), &G4MFDocument4D::get_compression_format);
 	ClassDB::bind_method(D_METHOD("set_compression_format", "compression_format"), &G4MFDocument4D::set_compression_format);
+	ClassDB::bind_method(D_METHOD("get_max_nested_scene_depth"), &G4MFDocument4D::get_max_nested_scene_depth);
+	ClassDB::bind_method(D_METHOD("set_max_nested_scene_depth", "max_nested_scene_depth"), &G4MFDocument4D::set_max_nested_scene_depth);
 
 	// Settings for the import process.
 	ClassDB::bind_method(D_METHOD("get_force_wireframe"), &G4MFDocument4D::get_force_wireframe);
@@ -1197,6 +1280,7 @@ void G4MFDocument4D::_bind_methods() {
 
 	// Properties.
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "compression_format", PROPERTY_HINT_ENUM, "None,Zstd"), "set_compression_format", "get_compression_format");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_nested_scene_depth", PROPERTY_HINT_ENUM, "Allow Nested:-1,Merge into Single File:0,Merge into Flat Hierarchy:1"), "set_max_nested_scene_depth", "get_max_nested_scene_depth");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "force_wireframe"), "set_force_wireframe", "get_force_wireframe");
 
 	BIND_ENUM_CONSTANT(COMPRESSION_FORMAT_NONE);

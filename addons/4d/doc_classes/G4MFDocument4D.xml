@@ -58,7 +58,7 @@
 			</description>
 		</method>
 		<method name="import_generate_godot_scene">
-			<return type="Node4D" />
+			<return type="Node" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
 				Part of the import process. Generates a Godot scene from a [G4MFState4D]. To import a G4MF file, first call [method import_read_from_file], then call this function. The returned node can be added to the scene tree or saved as a PackedScene.
@@ -87,6 +87,14 @@
 		</member>
 		<member name="force_wireframe" type="bool" setter="set_force_wireframe" getter="get_force_wireframe" default="false">
 			Whether to force all meshes to be generated as wireframe meshes. If [code]true[/code], all meshes will be generated as wireframe meshes, and meshes without edges will have their edges calculated from the cells. If [code]false[/code] (default), meshes will be generated as tetrahedral meshes if they have cells, or as wireframe meshes if they do not have cells.
+		</member>
+		<member name="max_nested_scene_depth" type="int" setter="set_max_nested_scene_depth" getter="get_max_nested_scene_depth" default="-1">
+			How to deal with nested Godot scenes when exporting to G4MF, and how to deal with nested G4MF models when importing as a Godot scene. See the [G4MFModel4D] class for more information.
+			- The default is [code]-1[/code], which allows unlimited nested G4MF models to be created when exporting, and allows nested G4MF models to create unlimited nested Godot scenes when importing. This allows for a deep hierarchy of files used by each other, and can result in significant file size savings if a Godot scene contains another Godot scene instanced many times, at the cost of the added complexity of multiple model files.
+			- A value of [code]0[/code] will merge all nested Godot scenes into a single G4MF model when exporting, and merge all nested G4MF models into a single Godot scene when importing.
+			- A value of [code]1[/code] will merge nested Godot scenes into one layer of G4MF models when exporting, and merge nested G4MF models into one layer of Godot scenes when importing. Similarly, increasing values limit the depth of nested scenes/models to those amounts.
+			On import, the only case where a nested G4MF model will marked as an instance of separate file is when the file is in the [code]res://[/code] folder, and only during editor import. If referencing a file outside of the [code]res://[/code] folder, or embedded in the parent G4MF, or when importing a file at runtime, that file's nodes will be merged into the imported Godot scene.
+			[b]Note:[/b] The G4MF specification's name uniqueness guarantee does not apply to nested G4MF models. When using nested G4MF models, the names of nodes in the nested G4MF models may not be unique when considering the entire node tree of the parent G4MF model. For example, two characters stored in separate models may both have a node named "Hips". When merging nested scenes into a single G4MF model, the names of nodes in the nested G4MF models will be forced to be unique.
 		</member>
 	</members>
 	<constants>

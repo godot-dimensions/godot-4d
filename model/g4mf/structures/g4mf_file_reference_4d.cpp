@@ -5,7 +5,9 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #elif GODOT_MODULE
+#include "core/config/project_settings.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #endif
@@ -18,7 +20,7 @@ PackedByteArray G4MFFileReference4D::read_file_data(const Ref<G4MFState4D> &p_g4
 		if (dir.is_valid() && dir->file_exists(_uri)) {
 			return FileAccess::get_file_as_bytes(path);
 		} else {
-			ERR_FAIL_V_MSG(PackedByteArray(), vformat("G4MF import: Failed to load file data from URI '" + _uri + "' resolved to '" + path + "'. File does not exist.", path));
+			ERR_FAIL_V_MSG(PackedByteArray(), "G4MF import: Failed to load file data from URI '" + _uri + "' resolved to '" + path + "'. File does not exist.");
 		}
 	}
 	if (_buffer_view >= 0) {
@@ -31,17 +33,33 @@ PackedByteArray G4MFFileReference4D::read_file_data(const Ref<G4MFState4D> &p_g4
 	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF import: Failed to load file data, file reference does not have a valid URI or buffer view.");
 }
 
+Error G4MFFileReference4D::create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), ERR_INVALID_PARAMETER);
+	if (_uri.is_empty()) {
+		return OK; // Nothing to do.
+	}
+	const String relative_folder = _uri.get_base_dir();
+	if (!relative_folder.is_empty()) {
+		String base_path = p_g4mf_state->get_g4mf_base_path();
+		Ref<DirAccess> dir = DirAccess::open(base_path);
+		if (dir.is_null()) {
+			base_path = ProjectSettings::get_singleton()->globalize_path(base_path);
+			DirAccess::make_dir_recursive_absolute(base_path);
+			dir = DirAccess::open(base_path);
+		}
+		ERR_FAIL_COND_V(dir.is_null(), ERR_FILE_CANT_OPEN);
+		Error err = dir->make_dir_recursive(relative_folder);
+		ERR_FAIL_COND_V(err != OK && err != ERR_ALREADY_EXISTS, err);
+	}
+	return OK;
+}
+
 Error G4MFFileReference4D::write_file_data(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data, int64_t p_alignment, bool p_deduplicate, int p_buffer_index) {
 	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), ERR_INVALID_PARAMETER);
 	if (!_uri.is_empty()) {
+		Error err = create_missing_directories_if_needed(p_g4mf_state);
+		ERR_FAIL_COND_V(err != OK, err);
 		const String base_path = p_g4mf_state->get_g4mf_base_path();
-		Ref<DirAccess> dir = DirAccess::open(base_path);
-		ERR_FAIL_COND_V(dir.is_null(), ERR_FILE_CANT_OPEN);
-		const String relative_folder = _uri.get_base_dir();
-		if (!relative_folder.is_empty()) {
-			Error err = dir->make_dir_recursive(relative_folder);
-			ERR_FAIL_COND_V(err != OK && err != ERR_ALREADY_EXISTS, err);
-		}
 		Ref<FileAccess> file = FileAccess::open(base_path.path_join(_uri), FileAccess::WRITE);
 		ERR_FAIL_COND_V(file.is_null(), ERR_FILE_CANT_WRITE);
 		file->store_buffer(p_data.ptr(), p_data.size());
@@ -95,7 +113,8 @@ void G4MFFileReference4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_uri", "uri"), &G4MFFileReference4D::set_uri);
 
 	ClassDB::bind_method(D_METHOD("read_file_data", "g4mf_state"), &G4MFFileReference4D::read_file_data);
-	ClassDB::bind_method(D_METHOD("write_file_data", "g4mf_state", "data", "alignment", "deduplicate", "buffer_index"), &G4MFFileReference4D::write_file_data, DEFVAL(1), DEFVAL(true), DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("create_missing_directories_if_needed", "g4mf_state"), &G4MFFileReference4D::create_missing_directories_if_needed);
+	ClassDB::bind_method(D_METHOD("write_file_data", "g4mf_state", "data", "alignment", "deduplicate", "buffer_index"), &G4MFFileReference4D::write_file_data, DEFVAL(4), DEFVAL(true), DEFVAL(0));
 
 	ClassDB::bind_method(D_METHOD("read_file_reference_entries_from_dictionary", "dict"), &G4MFFileReference4D::read_file_reference_entries_from_dictionary);
 	ClassDB::bind_method(D_METHOD("write_file_reference_entries_to_dictionary"), &G4MFFileReference4D::write_file_reference_entries_to_dictionary);

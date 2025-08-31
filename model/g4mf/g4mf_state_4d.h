@@ -5,6 +5,7 @@
 #include "structures/g4mf_light_4d.h"
 #include "structures/g4mf_material_4d.h"
 #include "structures/g4mf_mesh_4d.h"
+#include "structures/g4mf_model_4d.h"
 #include "structures/g4mf_node_4d.h"
 #include "structures/g4mf_texture_4d.h"
 #include "structures/physics/g4mf_shape_4d.h"
@@ -28,6 +29,7 @@ public:
 		EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES,
 		EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS,
 		EXTERNAL_DATA_MODE_SEPARATE_RESOURCE_FILES,
+		EXTERNAL_DATA_MODE_SEPARATE_MODEL_FILES,
 	};
 
 private:
@@ -39,6 +41,7 @@ private:
 	TypedArray<G4MFTexture4D> _g4mf_textures;
 	TypedArray<G4MFMaterial4D> _g4mf_materials;
 	TypedArray<G4MFMesh4D> _g4mf_meshes;
+	TypedArray<G4MFModel4D> _g4mf_models;
 	TypedArray<G4MFShape4D> _g4mf_shapes;
 	TypedArray<G4MFNode4D> _g4mf_nodes;
 	TypedArray<Node4D> _godot_nodes;
@@ -79,6 +82,9 @@ public:
 	TypedArray<G4MFMesh4D> get_g4mf_meshes() const { return _g4mf_meshes; }
 	void set_g4mf_meshes(const TypedArray<G4MFMesh4D> &p_g4mf_meshes) { _g4mf_meshes = p_g4mf_meshes; }
 
+	TypedArray<G4MFModel4D> get_g4mf_models() const { return _g4mf_models; }
+	void set_g4mf_models(const TypedArray<G4MFModel4D> &p_g4mf_models) { _g4mf_models = p_g4mf_models; }
+
 	TypedArray<G4MFShape4D> get_g4mf_shapes() const { return _g4mf_shapes; }
 	void set_g4mf_shapes(const TypedArray<G4MFShape4D> &p_g4mf_shapes) { _g4mf_shapes = p_g4mf_shapes; }
 
@@ -111,6 +117,7 @@ public:
 	bool is_text_file() const;
 	bool should_separate_binary_blobs(const int64_t p_blob_size) const;
 	bool should_separate_resource_files() const;
+	bool should_separate_model_files() const;
 };
 
 VARIANT_ENUM_CAST(G4MFState4D::ExternalDataMode);

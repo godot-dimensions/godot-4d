@@ -18,6 +18,7 @@ class G4MFNode4D : public G4MFItem4D {
 	Ref<G4MFNodePhysics4D> _physics;
 	int _light_index = -1;
 	int _mesh_index = -1;
+	int _model_index = -1;
 	bool _visible = true;
 
 	NodePath _make_node_path(const Vector<StringName> &p_path) const;
@@ -68,12 +69,20 @@ public:
 	int get_mesh_index() const { return _mesh_index; }
 	void set_mesh_index(const int p_mesh_index) { _mesh_index = p_mesh_index; }
 
+	int get_model_index() const { return _model_index; }
+	void set_model_index(const int p_model_index) { _model_index = p_model_index; }
+
 	NodePath get_scene_node_path(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Transform4D get_scene_global_transform(const Ref<G4MFState4D> &p_g4mf_state) const;
 
+	// This split is needed by G4MFDocument4D for models, so we can skip the "components" for the model instance node.
+	static Ref<G4MFNode4D> from_godot_node_basic(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
+	void from_godot_node_components(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
+	// However, for the exposed version, we can just make a single function that wraps both of those.
 	static Ref<G4MFNode4D> from_godot_node(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
-	Node4D *generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, const Node *p_scene_parent, const bool p_force_wireframe = false) const;
-	void apply_to_godot_node_4d(Node4D *p_godot_node) const;
+
+	Node *generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, const Node *p_scene_parent, const bool p_force_wireframe = false) const;
+	void apply_to_godot_node(Node *p_godot_node) const;
 	static Ref<G4MFNode4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary(const bool p_prefer_basis = false) const;
 

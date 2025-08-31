@@ -19,6 +19,7 @@ public:
 
 private:
 	CompressionFormat _compression_format = COMPRESSION_FORMAT_NONE;
+	int _max_nested_scene_depth = -1; // -1 means unlimited depth.
 	bool _force_wireframe = false;
 
 	inline uint64_t _ceiling_division(uint64_t a, uint64_t b) {
@@ -38,6 +39,7 @@ private:
 	Error _export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _export_serialize_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
@@ -56,10 +58,11 @@ private:
 	Error _import_parse_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _import_parse_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Node4D *_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root);
+	Node *_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root);
 	Ref<Mesh4D> _import_generate_combined_mesh(const Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible = false);
 
 protected:
@@ -74,8 +77,12 @@ public:
 
 	Error import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_byte_array);
 	Error import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path);
-	Node4D *import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state);
+	Node *import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state);
 	Ref<Mesh4D> import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const int p_which_mesh_index = -1, const bool p_include_invisible = false);
+
+	// Settings for both import and export.
+	int get_max_nested_scene_depth() const { return _max_nested_scene_depth; }
+	void set_max_nested_scene_depth(const int p_max_nested_scene_depth) { _max_nested_scene_depth = p_max_nested_scene_depth; }
 
 	// Settings for the export process.
 	CompressionFormat get_compression_format() const { return _compression_format; }

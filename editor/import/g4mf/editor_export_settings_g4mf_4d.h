@@ -18,5 +18,8 @@ public:
 	G4MFState4D::ExternalDataMode get_external_data_mode() const { return _external_data_mode; }
 	void set_external_data_mode(const G4MFState4D::ExternalDataMode p_external_data_mode) { _external_data_mode = p_external_data_mode; }
 
+	int get_max_nested_scene_depth() const;
+	void set_max_nested_scene_depth(const int p_max_nested_scene_depth);
+
 	void setup(Ref<G4MFDocument4D> p_g4mf_document);
 };
