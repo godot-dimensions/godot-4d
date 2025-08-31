@@ -484,7 +484,7 @@ String G4MFAccessor4D::minimal_primitive_type_for_vector4s(const PackedVector4Ar
 // Decode functions.
 
 PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4D> &p_g4mf_state) const {
-	const TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_buffer_views();
+	const TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_g4mf_buffer_views();
 	ERR_FAIL_INDEX_V_MSG(_buffer_view_index, state_buffer_views.size(), PackedByteArray(), "G4MF import: The buffer view index is out of bounds. Returning an empty byte array.");
 	const Ref<G4MFBufferView4D> buffer_view = state_buffer_views[_buffer_view_index];
 	const PackedByteArray raw_bytes = buffer_view->load_buffer_view_data(p_g4mf_state);
@@ -943,7 +943,7 @@ int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4m
 	ERR_FAIL_COND_V_MSG(buffer_view_index == -1, -1, "G4MF export: Accessor failed to write new buffer view into G4MF state.");
 	set_buffer_view_index(buffer_view_index);
 	// Add the new accessor to the state, but check for duplicates first.
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	const int accessor_count = state_accessors.size();
 	if (p_deduplicate) {
 		for (int i = 0; i < accessor_count; i++) {
@@ -956,7 +956,7 @@ int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4m
 	}
 	Ref<G4MFAccessor4D> self = this;
 	state_accessors.append(self);
-	p_g4mf_state->set_accessors(state_accessors);
+	p_g4mf_state->set_g4mf_accessors(state_accessors);
 	return accessor_count;
 }
 

@@ -96,7 +96,7 @@ void G4MFDocument4D::_export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_stat
 
 Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	// Serialize buffers.
-	TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_buffers();
+	TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_g4mf_buffers();
 	const int buffer_count = state_buffers.size();
 	if (buffer_count == 0) {
 		return OK; // No buffers to serialize (implies no buffer views or accessors).
@@ -116,7 +116,7 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 		p_g4mf_json["buffers"] = serialized_buffers;
 	}
 	// Serialize buffer views (only relevant if buffers exist).
-	TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_buffer_views();
+	TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_g4mf_buffer_views();
 	const int buffer_view_count = state_buffer_views.size();
 	if (buffer_view_count == 0) {
 		return OK; // No buffer views to serialize (implies no accessors).
@@ -133,7 +133,7 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 		p_g4mf_json["bufferViews"] = serialized_buffer_views;
 	}
 	// Serialize accessors (only relevant if buffer views exist).
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	const int accessor_count = state_accessors.size();
 	if (accessor_count == 0) {
 		return OK; // No accessors to serialize.
@@ -157,16 +157,16 @@ Error G4MFDocument4D::_export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_stat
 	if (!g4mf_json.has("buffers")) {
 		return OK; // No buffers to serialize.
 	}
-	TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_buffers();
+	TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_g4mf_buffers();
 	Array json_buffers = g4mf_json["buffers"];
 	ERR_FAIL_COND_V(state_buffers.size() != json_buffers.size(), ERR_INVALID_DATA);
-	const String file_prefix = p_g4mf_state->get_filename().get_basename();
+	const String file_prefix = p_g4mf_state->get_g4mf_filename().get_basename();
 	for (int buffer_index = 0; buffer_index < state_buffers.size(); buffer_index++) {
 		Dictionary json_buffer_dict = json_buffers[buffer_index];
 		PackedByteArray compressed_buffer = _export_compress_buffer_data(p_g4mf_state, state_buffers[buffer_index]);
 		if (p_should_separate_buffers_into_files) {
 			const String buffer_rel_path = file_prefix + String("_buffer") + String::num_int64(buffer_index) + String(".bin");
-			Ref<FileAccess> file = FileAccess::open(p_g4mf_state->get_base_path().path_join(buffer_rel_path), FileAccess::WRITE);
+			Ref<FileAccess> file = FileAccess::open(p_g4mf_state->get_g4mf_base_path().path_join(buffer_rel_path), FileAccess::WRITE);
 			if (file.is_valid()) {
 				file->store_buffer(compressed_buffer);
 				file->close();
@@ -482,7 +482,7 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 	const uint64_t json_compressed_size = json_compressed.size();
 	uint64_t total_file_size = 32 + json_compressed_size;
 	// Add binary buffer chunks to the file size.
-	const TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_buffers();
+	const TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_g4mf_buffers();
 	Vector<PackedByteArray> buffers_compressed;
 	const bool should_embed_buffers = !p_g4mf_state->should_separate_binary_blobs();
 	if (should_embed_buffers && !state_buffers.is_empty()) {
@@ -689,7 +689,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 		if (buffer_count == 0) {
 			return OK; // No buffers to parse.
 		}
-		TypedArray<PackedByteArray> buffers = p_g4mf_state->get_buffers();
+		TypedArray<PackedByteArray> buffers = p_g4mf_state->get_g4mf_buffers();
 		if (buffers.size() < buffer_count) {
 			buffers.resize(buffer_count);
 		}
@@ -712,7 +712,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 				} else {
 					// Infer the external data mode on import in case the user wishes to round-trip the G4MF file back out of Godot later.
 					p_g4mf_state->set_external_data_mode(G4MFState4D::EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS);
-					const String buffer_path = p_g4mf_state->get_base_path().path_join(uri);
+					const String buffer_path = p_g4mf_state->get_g4mf_base_path().path_join(uri);
 					Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::READ);
 					if (file.is_valid()) {
 						buffer = _import_decompress_bytes(file->get_buffer(byte_length), compression_indicator);
@@ -730,7 +730,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 			buffer.resize(byte_length);
 			buffers[i] = buffer;
 		}
-		p_g4mf_state->set_buffers(buffers);
+		p_g4mf_state->set_g4mf_buffers(buffers);
 	}
 	if (p_g4mf_json.has("bufferViews")) {
 		Array json_buffer_views = p_g4mf_json["bufferViews"];
@@ -746,7 +746,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 			ERR_FAIL_COND_V_MSG(buffer_view.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse buffer view. Aborting file import.");
 			buffer_views[i] = buffer_view;
 		}
-		p_g4mf_state->set_buffer_views(buffer_views);
+		p_g4mf_state->set_g4mf_buffer_views(buffer_views);
 	}
 	if (p_g4mf_json.has("accessors")) {
 		Array json_accessors = p_g4mf_json["accessors"];
@@ -762,7 +762,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 			ERR_FAIL_COND_V_MSG(accessor.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse accessor. Aborting file import.");
 			accessors[i] = accessor;
 		}
-		p_g4mf_state->set_accessors(accessors);
+		p_g4mf_state->set_g4mf_accessors(accessors);
 	}
 	return OK;
 }
@@ -1011,6 +1011,7 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 
 Error G4MFDocument4D::export_append_from_godot_scene(Ref<G4MFState4D> p_g4mf_state, Node *p_scene_root) {
 	ERR_FAIL_COND_V_MSG(p_scene_root == nullptr, ERR_INVALID_PARAMETER, "G4MF export: Cannot export a scene without a root node.");
+	p_g4mf_state->set_original_path(p_scene_root->get_scene_file_path());
 	return _export_convert_scene_node(p_g4mf_state, p_scene_root, -1);
 }
 
@@ -1030,8 +1031,9 @@ PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4
 Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF export: Failed to open file for writing.");
-	p_g4mf_state->set_base_path(p_path.get_base_dir());
-	p_g4mf_state->set_filename(p_path.get_file());
+	p_g4mf_state->set_g4mf_base_path(p_path.get_base_dir());
+	p_g4mf_state->set_g4mf_filename(p_path.get_file());
+	p_g4mf_state->set_original_path(p_path);
 	Error err = _export_serialize_json_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF data.");
 	const bool is_text_file = p_g4mf_state->is_text_file();
@@ -1079,7 +1081,7 @@ Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state,
 		blob_chunks.append(blob_chunk);
 	}
 	// Technically, the spec allows for non-buffer chunks, but there is no harm in setting those into the buffers array here.
-	p_g4mf_state->set_buffers(blob_chunks);
+	p_g4mf_state->set_g4mf_buffers(blob_chunks);
 	// Parse the data.
 	const String json_string = String::utf8(reinterpret_cast<const char *>(json_chunk.ptr()), json_chunk.size());
 	Dictionary g4mf_json = JSON::parse_string(json_string);
@@ -1089,9 +1091,9 @@ Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state,
 Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF import: Failed to open file for reading.");
-	p_g4mf_state->set_base_path(p_path.get_base_dir());
+	p_g4mf_state->set_g4mf_base_path(p_path.get_base_dir());
 	const String filename = p_path.get_file();
-	p_g4mf_state->set_filename(filename);
+	p_g4mf_state->set_g4mf_filename(filename);
 	ERR_FAIL_COND_V_MSG(file->get_length() < 25, ERR_INVALID_DATA, "G4MF import: File is too small to be a valid G4MF file.");
 	// Check for the magic number to allow reading G4MF files regardless of file extension.
 	const uint32_t magic_number_maybe = file->get_32();
@@ -1119,7 +1121,7 @@ Node4D *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_stat
 		mesh_instance->set_mesh(g4mf_mesh->generate_mesh(p_g4mf_state, _force_wireframe));
 		const String mesh_name = g4mf_mesh->get_name();
 		if (mesh_name.is_empty()) {
-			mesh_instance->set_name(p_g4mf_state->get_filename().get_basename());
+			mesh_instance->set_name(p_g4mf_state->get_g4mf_filename().get_basename());
 		} else {
 			mesh_instance->set_name(mesh_name);
 		}

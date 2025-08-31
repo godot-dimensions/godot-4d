@@ -48,7 +48,7 @@ bool G4MFShape4D::is_equal_exact(const Ref<G4MFShape4D> &p_other) const {
 }
 
 PackedFloat64Array G4MFShape4D::load_heights(const Ref<G4MFState4D> &p_g4mf_state) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_heights_accessor_index, state_accessors.size(), PackedFloat64Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_heights_accessor_index];
 	return accessor->decode_floats_from_bytes(p_g4mf_state);

@@ -22,12 +22,6 @@
 				Callback method that should return the normals of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_normals] for details of the returned data.
 			</description>
 		</method>
-		<method name="_get_cell_positions" qualifiers="virtual">
-			<return type="PackedVector4Array" />
-			<description>
-				Callback method that should return the positions of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_positions] for details of the returned data.
-			</description>
-		</method>
 		<method name="_get_cell_uvw_map" qualifiers="virtual">
 			<return type="PackedVector3Array" />
 			<description>

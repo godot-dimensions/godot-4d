@@ -25,7 +25,7 @@ bool G4MFMaterialChannel4D::is_equal_exact(const Ref<G4MFMaterialChannel4D> &p_o
 }
 
 PackedColorArray G4MFMaterialChannel4D::load_cell_colors(const Ref<G4MFState4D> &p_g4mf_state) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_per_cell_accessor_index, state_accessors.size(), PackedColorArray());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_per_cell_accessor_index];
 	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);
@@ -39,7 +39,7 @@ PackedColorArray G4MFMaterialChannel4D::load_cell_colors(const Ref<G4MFState4D> 
 }
 
 PackedColorArray G4MFMaterialChannel4D::load_edge_colors(const Ref<G4MFState4D> &p_g4mf_state) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_per_edge_accessor_index, state_accessors.size(), PackedColorArray());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_per_edge_accessor_index];
 	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);
@@ -53,7 +53,7 @@ PackedColorArray G4MFMaterialChannel4D::load_edge_colors(const Ref<G4MFState4D> 
 }
 
 PackedColorArray G4MFMaterialChannel4D::load_vertex_colors(const Ref<G4MFState4D> &p_g4mf_state) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_per_vertex_accessor_index, state_accessors.size(), PackedColorArray());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_per_vertex_accessor_index];
 	Array color_variants = accessor->decode_variants_from_bytes(p_g4mf_state, Variant::COLOR);

@@ -51,7 +51,7 @@ bool G4MFMesh4D::is_equal_exact(const Ref<G4MFMesh4D> &p_other) const {
 }
 
 PackedVector4Array G4MFMesh4D::load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_accessors();
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_vertices_accessor_index, state_accessors.size(), PackedVector4Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_vertices_accessor_index];
 	ERR_FAIL_COND_V(accessor.is_null(), PackedVector4Array());
