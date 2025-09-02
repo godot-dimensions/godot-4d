@@ -27,18 +27,17 @@
 				Converts an existing 4D [Mesh4D] resource to an OFFDocument4D. By default, faces will be deduplicated, which results in a smaller file size. The vertices will be the same as the ones in the 4D mesh.
 			</description>
 		</method>
-		<method name="export_save_to_file_3d">
-			<return type="void" />
-			<param index="0" name="path" type="String" />
+		<method name="export_save_to_byte_array">
+			<return type="PackedByteArray" />
 			<description>
-				Saves the OFF data to a file on disk, in the 3D "OFF" format (".off" file extension). If [member edge_count] is zero, the edge count will be calculated from the face data.
+				Saves the OFF data to an in-memory byte array, in the 3D "OFF" format (".off" file extension) if [member cell_face_indices] is empty, or the 4D "4OFF" format (".off" file extension) if there are any 4D cells. If [member edge_count] is zero, the edge count will be calculated from the face data.
 			</description>
 		</method>
-		<method name="export_save_to_file_4d">
+		<method name="export_save_to_file">
 			<return type="void" />
 			<param index="0" name="path" type="String" />
 			<description>
-				Saves the OFF data to a file on disk, in the 4D "4OFF" format (".off" file extension). If [member edge_count] is zero, the edge count will be calculated from the face data.
+				Saves the OFF data to a file on disk, in the 3D "OFF" format (".off" file extension) if [member cell_face_indices] is empty, or the 4D "4OFF" format (".off" file extension) if there are any 4D cells. If [member edge_count] is zero, the edge count will be calculated from the face data.
 			</description>
 		</method>
 		<method name="import_generate_mesh_3d">

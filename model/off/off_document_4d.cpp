@@ -600,7 +600,12 @@ String _cell_or_face_to_off_string(const PackedInt32Array &p_face) {
 	return ret;
 }
 
-void OFFDocument4D::export_save_to_file_3d(const String &p_path) {
+PackedByteArray OFFDocument4D::export_save_to_byte_array() {
+	const String file_contents = _export_save_to_string();
+	return file_contents.to_utf8_buffer();
+}
+
+void OFFDocument4D::export_save_to_file(const String &p_path) {
 #if GDEXTENSION
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
 	ERR_FAIL_COND_MSG(file.is_null(), "Error: Could not open file " + p_path + " for writing.");
@@ -609,63 +614,56 @@ void OFFDocument4D::export_save_to_file_3d(const String &p_path) {
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
 	ERR_FAIL_COND_MSG(err != OK, "Error: Could not open file " + p_path + " for writing.");
 #endif
-	file->store_line("OFF");
-	file->store_line(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count));
-	file->store_line("\n# Vertices");
-	for (int i = 0; i < _vertices.size(); i++) {
-		file->store_line(_vec4_to_off_3d(_vertices[i]));
-	}
-	file->store_line("\n# Faces");
-	for (int i = 0; i < _face_vertex_indices.size(); i++) {
-		String face_str = _cell_or_face_to_off_string(_face_vertex_indices[i]);
-		if (i < _face_colors.size() && _face_colors[i] != Color(1.0f, 1.0f, 1.0f)) {
-			face_str += _color_to_off_string(_face_colors[i]);
-		}
-		file->store_line(face_str);
-	}
+	const String file_contents = _export_save_to_string();
+	file->store_string(file_contents);
+	file->close();
 }
 
-void OFFDocument4D::export_save_to_file_4d(const String &p_path) {
+String OFFDocument4D::_export_save_to_string() {
 	if (_edge_count == 0) {
 		_count_unique_edges_from_faces();
 	}
-#if GDEXTENSION
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
-	ERR_FAIL_COND_MSG(file.is_null(), "Error: Could not open file " + p_path + " for writing.");
-#elif GODOT_MODULE
-	Error err;
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
-	ERR_FAIL_COND_MSG(err != OK, "Error: Could not open file " + p_path + " for writing.");
-#endif
-	file->store_line("4OFF");
-	file->store_line(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count) + " " + String::num(_cell_face_indices.size()));
-	file->store_line("\n# Vertices");
-	for (int i = 0; i < _vertices.size(); i++) {
-		file->store_line(_vec4_to_off_4d(_vertices[i]));
+	const bool has_4d_cells = has_any_4d_cells();
+	PackedStringArray lines;
+	if (has_4d_cells) {
+		lines.append("4OFF");
+		lines.append("# Vertices, Faces, Edges, Cells");
+		lines.append(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count) + " " + String::num(_cell_face_indices.size()));
+	} else {
+		lines.append("OFF");
+		lines.append("# Vertices, Faces, Edges");
+		lines.append(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count));
 	}
-	file->store_line("\n# Faces");
+	lines.append("\n# Vertices");
+	for (int i = 0; i < _vertices.size(); i++) {
+		lines.append(_vec4_to_off_4d(_vertices[i]));
+	}
+	lines.append("\n# Faces");
 	for (int i = 0; i < _face_vertex_indices.size(); i++) {
 		String face_str = _cell_or_face_to_off_string(_face_vertex_indices[i]);
 		if (i < _face_colors.size() && !_face_colors[i].is_equal_approx(Color(1.0f, 1.0f, 1.0f))) {
 			face_str += _color_to_off_string(_face_colors[i]);
 		}
-		file->store_line(face_str);
+		lines.append(face_str);
 	}
-	file->store_line("\n# Cells");
-	for (int i = 0; i < _cell_face_indices.size(); i++) {
-		String cell_str = _cell_or_face_to_off_string(_cell_face_indices[i]);
-		if (i < _cell_colors.size() && !_cell_colors[i].is_equal_approx(Color(1.0f, 1.0f, 1.0f))) {
-			cell_str += _color_to_off_string(_cell_colors[i]);
+	if (has_4d_cells) {
+		lines.append("\n# Cells");
+		for (int i = 0; i < _cell_face_indices.size(); i++) {
+			String cell_str = _cell_or_face_to_off_string(_cell_face_indices[i]);
+			if (i < _cell_colors.size() && !_cell_colors[i].is_equal_approx(Color(1.0f, 1.0f, 1.0f))) {
+				cell_str += _color_to_off_string(_cell_colors[i]);
+			}
+			lines.append(cell_str);
 		}
-		file->store_line(cell_str);
 	}
+	return String("\n").join(lines) + String("\n");
 }
 
 void OFFDocument4D::_bind_methods() {
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("export_convert_mesh_3d", "mesh", "deduplicate_vertices"), &OFFDocument4D::export_convert_mesh_3d, DEFVAL(true));
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("export_convert_mesh_4d", "mesh", "deduplicate_faces"), &OFFDocument4D::export_convert_mesh_4d, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("export_save_to_file_3d", "path"), &OFFDocument4D::export_save_to_file_3d);
-	ClassDB::bind_method(D_METHOD("export_save_to_file_4d", "path"), &OFFDocument4D::export_save_to_file_4d);
+	ClassDB::bind_method(D_METHOD("export_save_to_byte_array"), &OFFDocument4D::export_save_to_byte_array);
+	ClassDB::bind_method(D_METHOD("export_save_to_file", "path"), &OFFDocument4D::export_save_to_file);
 
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_byte_array", "data"), &OFFDocument4D::import_load_from_byte_array);
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_file", "path"), &OFFDocument4D::import_load_from_file);

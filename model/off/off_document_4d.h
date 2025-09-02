@@ -31,6 +31,7 @@ class OFFDocument4D : public Resource {
 	TypedArray<PackedInt32Array> _calculate_cell_vertex_indices();
 	TypedArray<PackedInt32Array> _calculate_simplex_vertex_indices(const TypedArray<PackedInt32Array> &p_cell_vertex_indices);
 
+	String _export_save_to_string();
 	static Ref<OFFDocument4D> _import_load_from_raw_text(const String &p_raw_text, const String &p_path);
 
 protected:
@@ -39,8 +40,8 @@ protected:
 public:
 	static Ref<OFFDocument4D> export_convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices = true);
 	static Ref<OFFDocument4D> export_convert_mesh_4d(const Ref<TetraMesh4D> &p_mesh, const bool p_deduplicate_faces = true);
-	void export_save_to_file_3d(const String &p_path);
-	void export_save_to_file_4d(const String &p_path);
+	PackedByteArray export_save_to_byte_array();
+	void export_save_to_file(const String &p_path);
 
 	static Ref<OFFDocument4D> import_load_from_byte_array(const PackedByteArray &p_data);
 	static Ref<OFFDocument4D> import_load_from_file(const String &p_path);
@@ -54,6 +55,7 @@ public:
 
 	TypedArray<PackedInt32Array> get_cell_face_indices() const;
 	void set_cell_face_indices(const TypedArray<PackedInt32Array> &p_cell_face_indices);
+	bool has_any_4d_cells() const { return !_cell_face_indices.is_empty(); }
 
 	int get_edge_count() const;
 	void set_edge_count(const int p_edge_count);
