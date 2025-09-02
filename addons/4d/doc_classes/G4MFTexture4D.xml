@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="G4MFTexture4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="G4MFTexture4D" inherits="G4MFFileReference4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Texture for G4MF material cells.
 	</brief_description>
@@ -8,14 +8,16 @@
 		[b]Note:[/b] This class is a placeholder, and currently does not do anything.
 	</description>
 	<tutorials>
+		<link title="G4MF Texture Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/texture.md</link>
 		<link title="G4MF Texture Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.texture.schema.json</link>
+		<link title="IANA Image Media Types">https://www.iana.org/assignments/media-types/media-types.xhtml#image</link>
 	</tutorials>
 	<methods>
 		<method name="from_dictionary" qualifiers="static">
 			<return type="G4MFTexture4D" />
 			<param index="0" name="dict" type="Dictionary" />
 			<description>
-				Converts the given [Dictionary] representing the JSON of a G4MF texture to a [G4MFTexture4D]. This will set the fields of the [G4MFTexture4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+				Converts the given [Dictionary] representing the JSON of a G4MF texture to a [G4MFTexture4D]. This will set the fields of the [G4MFTexture4D], [G4MFFileReference4D], and [G4MFItem4D] classes based on the data in the [Dictionary].
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">

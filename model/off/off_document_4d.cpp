@@ -142,7 +142,7 @@ TypedArray<PackedInt32Array> OFFDocument4D::_calculate_simplex_vertex_indices(co
 	return ret;
 }
 
-Ref<OFFDocument4D> OFFDocument4D::convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices) {
+Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices) {
 	Ref<OFFDocument4D> off_document;
 	ERR_FAIL_COND_V(p_mesh.is_null(), off_document);
 	off_document.instantiate();
@@ -188,7 +188,7 @@ int OFFDocument4D::_find_or_insert_face(const int p_a, const int p_b, const int 
 	return face_count;
 }
 
-Ref<OFFDocument4D> OFFDocument4D::convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces) {
+Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces) {
 	Ref<OFFDocument4D> off_document;
 	ERR_FAIL_COND_V(p_tetra_mesh.is_null(), off_document);
 	off_document.instantiate();
@@ -213,7 +213,7 @@ Ref<OFFDocument4D> OFFDocument4D::convert_mesh_4d(const Ref<TetraMesh4D> &p_tetr
 	return off_document;
 }
 
-Ref<ArrayMesh> OFFDocument4D::generate_mesh_3d(const bool p_per_face_vertices) {
+Ref<ArrayMesh> OFFDocument4D::import_generate_mesh_3d(const bool p_per_face_vertices) {
 	PackedVector3Array vertices_3d;
 	for (int vert_index = 0; vert_index < _vertices.size(); vert_index++) {
 		vertices_3d.append(Vector3(_vertices[vert_index].x, _vertices[vert_index].y, _vertices[vert_index].z));
@@ -264,7 +264,7 @@ Ref<ArrayMesh> OFFDocument4D::generate_mesh_3d(const bool p_per_face_vertices) {
 	return array_mesh;
 }
 
-Ref<ArrayTetraMesh4D> OFFDocument4D::generate_tetra_mesh_4d() {
+Ref<ArrayTetraMesh4D> OFFDocument4D::import_generate_tetra_mesh_4d() {
 	Ref<ArrayTetraMesh4D> cell_mesh;
 	cell_mesh.instantiate();
 	cell_mesh->set_vertices(_vertices);
@@ -303,7 +303,7 @@ Ref<ArrayTetraMesh4D> OFFDocument4D::generate_tetra_mesh_4d() {
 	return cell_mesh;
 }
 
-Ref<ArrayWireMesh4D> OFFDocument4D::generate_wire_mesh_4d(const bool p_deduplicate_edges) {
+Ref<ArrayWireMesh4D> OFFDocument4D::import_generate_wire_mesh_4d(const bool p_deduplicate_edges) {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
 	wire_mesh->set_vertices(_vertices);
@@ -332,10 +332,11 @@ Ref<ArrayWireMesh4D> OFFDocument4D::generate_wire_mesh_4d(const bool p_deduplica
 	return wire_mesh;
 }
 
-Node *OFFDocument4D::generate_node(const bool p_deduplicate_edges, const bool p_per_face_vertices) {
+Node *OFFDocument4D::import_generate_node(const bool p_deduplicate_edges, const bool p_per_face_vertices) {
+	// If there are no cells, this isn't a 4D mesh, but instead a 3D mesh.
 	if (_cell_face_indices.is_empty()) {
 		MeshInstance3D *mesh_instance_3d = memnew(MeshInstance3D);
-		Ref<ArrayMesh> mesh_3d = generate_mesh_3d(p_per_face_vertices);
+		Ref<ArrayMesh> mesh_3d = import_generate_mesh_3d(p_per_face_vertices);
 		ERR_FAIL_COND_V(mesh_3d.is_null(), nullptr);
 		mesh_instance_3d->set_mesh(mesh_3d);
 		return mesh_instance_3d;
@@ -346,13 +347,13 @@ Node *OFFDocument4D::generate_node(const bool p_deduplicate_edges, const bool p_
 		PackedInt32Array cell_face_index = _cell_face_indices[i];
 		if (cell_face_index.size() > 4) {
 			// Not a tetrahedral mesh. Let's generate a wireframe instead.
-			Ref<ArrayWireMesh4D> wire_mesh = generate_wire_mesh_4d(p_deduplicate_edges);
+			Ref<ArrayWireMesh4D> wire_mesh = import_generate_wire_mesh_4d(p_deduplicate_edges);
 			mesh_instance_4d->set_mesh(wire_mesh);
 			return mesh_instance_4d;
 		}
 	}
 	// Tetrahedral mesh.
-	Ref<ArrayTetraMesh4D> tetra_mesh = generate_tetra_mesh_4d();
+	Ref<ArrayTetraMesh4D> tetra_mesh = import_generate_tetra_mesh_4d();
 	mesh_instance_4d->set_mesh(tetra_mesh);
 	return mesh_instance_4d;
 }
@@ -414,9 +415,36 @@ enum class OFFDocumentReadState {
 	READ_CELLS,
 };
 
-Ref<OFFDocument4D> OFFDocument4D::load_from_file(const String &p_path) {
+Ref<OFFDocument4D> OFFDocument4D::import_load_from_byte_array(const PackedByteArray &p_data) {
+	ERR_FAIL_COND_V_MSG(p_data.is_empty(), Ref<OFFDocument4D>(), "OFF import: Error: Given byte array is empty.");
+#if GDEXTENSION
+	const String as_string = p_data.get_string_from_utf8();
+#elif GODOT_MODULE
+	String as_string;
+	if (p_data.size() > 0) {
+		const uint8_t *r = p_data.ptr();
+		as_string.parse_utf8((const char *)r, p_data.size(), true);
+	}
+#endif
+	return OFFDocument4D::_import_load_from_raw_text(as_string, "(in-memory data)");
+}
+
+Ref<OFFDocument4D> OFFDocument4D::import_load_from_file(const String &p_path) {
+#if GDEXTENSION
+	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
+	ERR_FAIL_COND_V_MSG(file.is_null(), Ref<OFFDocument4D>(), "OFF import: Error: Could not open file " + p_path + ".");
+#elif GODOT_MODULE
+	Error err;
+	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ, &err);
+	ERR_FAIL_COND_V_MSG(err != OK, Ref<OFFDocument4D>(), "OFF import: Error: Could not open file " + p_path + ".");
+#endif
+	const String file_text = file->get_as_text();
+	return _import_load_from_raw_text(file_text, p_path);
+}
+
+Ref<OFFDocument4D> OFFDocument4D::_import_load_from_raw_text(const String &p_raw_text, const String &p_path) {
 	Ref<OFFDocument4D> off_document;
-	bool can_warn = true;
+	off_document.instantiate();
 	OFFDocumentReadState read_state = OFFDocumentReadState::READ_SIZE;
 	int cell_count = 0;
 	int face_count = 0;
@@ -424,17 +452,9 @@ Ref<OFFDocument4D> OFFDocument4D::load_from_file(const String &p_path) {
 	int current_cell_index = 0;
 	int current_face_index = 0;
 	int current_vertex_index = 0;
-#if GDEXTENSION
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
-	ERR_FAIL_COND_V_MSG(file.is_null(), off_document, "Error: Could not open file " + p_path + ".");
-#elif GODOT_MODULE
-	Error err;
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ, &err);
-	ERR_FAIL_COND_V_MSG(err != OK, off_document, "Error: Could not open file " + p_path + ".");
-#endif
-	off_document.instantiate();
-	while (!file->eof_reached()) {
-		const String line = file->get_line();
+	bool can_warn = true;
+	const PackedStringArray lines = p_raw_text.split("\n", false);
+	for (const String &line : lines) {
 		if (line.is_empty() || line.begins_with("#") || line.contains("OFF")) {
 			continue;
 		}
@@ -443,7 +463,7 @@ Ref<OFFDocument4D> OFFDocument4D::load_from_file(const String &p_path) {
 		if (item_count < 3) {
 			if (can_warn) {
 				can_warn = false;
-				WARN_PRINT("Warning: OFF file " + p_path + " contains invalid line: '" + line + "'. Skipping this line and attempting to read the rest of the file anyway.");
+				WARN_PRINT("OFF import: Warning: OFF file " + p_path + " contains invalid line: '" + line + "'. Skipping this line and attempting to read the rest of the file anyway.");
 			}
 			continue;
 		}
@@ -580,7 +600,12 @@ String _cell_or_face_to_off_string(const PackedInt32Array &p_face) {
 	return ret;
 }
 
-void OFFDocument4D::save_to_file_3d(const String &p_path) {
+PackedByteArray OFFDocument4D::export_save_to_byte_array() {
+	const String file_contents = _export_save_to_string();
+	return file_contents.to_utf8_buffer();
+}
+
+void OFFDocument4D::export_save_to_file(const String &p_path) {
 #if GDEXTENSION
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
 	ERR_FAIL_COND_MSG(file.is_null(), "Error: Could not open file " + p_path + " for writing.");
@@ -589,65 +614,63 @@ void OFFDocument4D::save_to_file_3d(const String &p_path) {
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
 	ERR_FAIL_COND_MSG(err != OK, "Error: Could not open file " + p_path + " for writing.");
 #endif
-	file->store_line("OFF");
-	file->store_line(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count));
-	file->store_line("\n# Vertices");
-	for (int i = 0; i < _vertices.size(); i++) {
-		file->store_line(_vec4_to_off_3d(_vertices[i]));
-	}
-	file->store_line("\n# Faces");
-	for (int i = 0; i < _face_vertex_indices.size(); i++) {
-		String face_str = _cell_or_face_to_off_string(_face_vertex_indices[i]);
-		if (i < _face_colors.size() && _face_colors[i] != Color(1.0f, 1.0f, 1.0f)) {
-			face_str += _color_to_off_string(_face_colors[i]);
-		}
-		file->store_line(face_str);
-	}
+	const String file_contents = _export_save_to_string();
+	file->store_string(file_contents);
+	file->close();
 }
 
-void OFFDocument4D::save_to_file_4d(const String &p_path) {
+String OFFDocument4D::_export_save_to_string() {
 	if (_edge_count == 0) {
 		_count_unique_edges_from_faces();
 	}
-#if GDEXTENSION
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
-	ERR_FAIL_COND_MSG(file.is_null(), "Error: Could not open file " + p_path + " for writing.");
-#elif GODOT_MODULE
-	Error err;
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
-	ERR_FAIL_COND_MSG(err != OK, "Error: Could not open file " + p_path + " for writing.");
-#endif
-	file->store_line("4OFF");
-	file->store_line(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count) + " " + String::num(_cell_face_indices.size()));
-	file->store_line("\n# Vertices");
-	for (int i = 0; i < _vertices.size(); i++) {
-		file->store_line(_vec4_to_off_4d(_vertices[i]));
+	const bool has_4d_cells = has_any_4d_cells();
+	PackedStringArray lines;
+	if (has_4d_cells) {
+		lines.append("4OFF");
+		lines.append("# Vertices, Faces, Edges, Cells");
+		lines.append(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count) + " " + String::num(_cell_face_indices.size()));
+	} else {
+		lines.append("OFF");
+		lines.append("# Vertices, Faces, Edges");
+		lines.append(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count));
 	}
-	file->store_line("\n# Faces");
+	lines.append("\n# Vertices");
+	for (int i = 0; i < _vertices.size(); i++) {
+		lines.append(_vec4_to_off_4d(_vertices[i]));
+	}
+	lines.append("\n# Faces");
 	for (int i = 0; i < _face_vertex_indices.size(); i++) {
 		String face_str = _cell_or_face_to_off_string(_face_vertex_indices[i]);
 		if (i < _face_colors.size() && !_face_colors[i].is_equal_approx(Color(1.0f, 1.0f, 1.0f))) {
 			face_str += _color_to_off_string(_face_colors[i]);
 		}
-		file->store_line(face_str);
+		lines.append(face_str);
 	}
-	file->store_line("\n# Cells");
-	for (int i = 0; i < _cell_face_indices.size(); i++) {
-		String cell_str = _cell_or_face_to_off_string(_cell_face_indices[i]);
-		if (i < _cell_colors.size() && !_cell_colors[i].is_equal_approx(Color(1.0f, 1.0f, 1.0f))) {
-			cell_str += _color_to_off_string(_cell_colors[i]);
+	if (has_4d_cells) {
+		lines.append("\n# Cells");
+		for (int i = 0; i < _cell_face_indices.size(); i++) {
+			String cell_str = _cell_or_face_to_off_string(_cell_face_indices[i]);
+			if (i < _cell_colors.size() && !_cell_colors[i].is_equal_approx(Color(1.0f, 1.0f, 1.0f))) {
+				cell_str += _color_to_off_string(_cell_colors[i]);
+			}
+			lines.append(cell_str);
 		}
-		file->store_line(cell_str);
 	}
+	return String("\n").join(lines) + String("\n");
 }
 
 void OFFDocument4D::_bind_methods() {
-	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("convert_mesh_3d", "mesh", "deduplicate_vertices"), &OFFDocument4D::convert_mesh_3d, DEFVAL(true));
-	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("convert_mesh_4d", "mesh", "deduplicate_faces"), &OFFDocument4D::convert_mesh_4d, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("generate_mesh_3d", "per_face_vertices"), &OFFDocument4D::generate_mesh_3d, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_4d"), &OFFDocument4D::generate_tetra_mesh_4d);
-	ClassDB::bind_method(D_METHOD("generate_wire_mesh_4d", "deduplicate_edges"), &OFFDocument4D::generate_wire_mesh_4d, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("generate_node", "deduplicate_edges", "per_face_vertices"), &OFFDocument4D::generate_node, DEFVAL(true), DEFVAL(true));
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("export_convert_mesh_3d", "mesh", "deduplicate_vertices"), &OFFDocument4D::export_convert_mesh_3d, DEFVAL(true));
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("export_convert_mesh_4d", "mesh", "deduplicate_faces"), &OFFDocument4D::export_convert_mesh_4d, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("export_save_to_byte_array"), &OFFDocument4D::export_save_to_byte_array);
+	ClassDB::bind_method(D_METHOD("export_save_to_file", "path"), &OFFDocument4D::export_save_to_file);
+
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_byte_array", "data"), &OFFDocument4D::import_load_from_byte_array);
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_file", "path"), &OFFDocument4D::import_load_from_file);
+	ClassDB::bind_method(D_METHOD("import_generate_mesh_3d", "per_face_vertices"), &OFFDocument4D::import_generate_mesh_3d, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("import_generate_tetra_mesh_4d"), &OFFDocument4D::import_generate_tetra_mesh_4d);
+	ClassDB::bind_method(D_METHOD("import_generate_wire_mesh_4d", "deduplicate_edges"), &OFFDocument4D::import_generate_wire_mesh_4d, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("import_generate_node", "deduplicate_edges", "per_face_vertices"), &OFFDocument4D::import_generate_node, DEFVAL(true), DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("get_cell_colors"), &OFFDocument4D::get_cell_colors);
 	ClassDB::bind_method(D_METHOD("set_cell_colors", "cell_colors"), &OFFDocument4D::set_cell_colors);
@@ -672,8 +695,4 @@ void OFFDocument4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_vertices"), &OFFDocument4D::get_vertices);
 	ClassDB::bind_method(D_METHOD("set_vertices", "vertices"), &OFFDocument4D::set_vertices);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertices"), "set_vertices", "get_vertices");
-
-	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("load_from_file", "path"), &OFFDocument4D::load_from_file);
-	ClassDB::bind_method(D_METHOD("save_to_file_3d", "path"), &OFFDocument4D::save_to_file_3d);
-	ClassDB::bind_method(D_METHOD("save_to_file_4d", "path"), &OFFDocument4D::save_to_file_4d);
 }

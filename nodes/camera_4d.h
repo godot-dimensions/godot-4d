@@ -23,6 +23,13 @@ public:
 		VIEW_ANGLE_FIELD_OF_VIEW = 1,
 	};
 
+	enum DepthFadeMode {
+		DEPTH_FADE_DISABLED = 0,
+		DEPTH_FADE_DISTANCE = 1,
+		DEPTH_FADE_XYZ_ONLY = 2,
+		DEPTH_FADE_Z_ONLY = 3,
+	};
+
 	enum WFadeMode {
 		W_FADE_DISABLED = 0,
 		W_FADE_TRANSPARENCY = 1,
@@ -31,10 +38,12 @@ public:
 	};
 
 private:
+	// Keep these default values in sync with the EditorCameraSettings4D defaults.
 	String _rendering_engine = "";
 	KeepAspect _keep_aspect = KEEP_HEIGHT;
 	ProjectionType4D _projection_type = PROJECTION4D_PERSPECTIVE_4D;
 	ViewAngleType _view_angle_type = VIEW_ANGLE_FOCAL_LENGTH;
+	DepthFadeMode _depth_fade_mode = DEPTH_FADE_DISABLED;
 	WFadeMode _w_fade_mode = W_FADE_TRANSPARENCY;
 
 	// These have wrappers with trig functions, so let's use double to avoid precision loss.
@@ -50,7 +59,6 @@ private:
 	double _w_fade_distance = 5.0;
 	double _w_fade_slope = 1.0;
 	bool _is_current = false;
-	bool _use_depth_fade = false;
 
 protected:
 	static void _bind_methods();
@@ -119,8 +127,8 @@ public:
 	double get_w_fade_slope() const;
 	void set_w_fade_slope(const double p_w_fade_slope);
 
-	bool get_depth_fade() const;
-	void set_depth_fade(const bool p_depth_fade);
+	DepthFadeMode get_depth_fade_mode() const { return _depth_fade_mode; }
+	void set_depth_fade_mode(const DepthFadeMode p_depth_fade_mode);
 
 	double get_depth_fade_start() const;
 	void set_depth_fade_start(const double p_depth_fade_start);
@@ -129,4 +137,5 @@ public:
 VARIANT_ENUM_CAST(Camera4D::KeepAspect);
 VARIANT_ENUM_CAST(Camera4D::ProjectionType4D);
 VARIANT_ENUM_CAST(Camera4D::ViewAngleType);
+VARIANT_ENUM_CAST(Camera4D::DepthFadeMode);
 VARIANT_ENUM_CAST(Camera4D::WFadeMode);

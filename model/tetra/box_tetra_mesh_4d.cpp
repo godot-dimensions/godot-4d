@@ -567,16 +567,6 @@ PackedInt32Array BoxTetraMesh4D::get_cell_indices() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_INDICES : BOX_48_CELL_INDICES;
 }
 
-PackedVector4Array BoxTetraMesh4D::get_cell_positions() {
-	if (_cell_positions_cache.is_empty()) {
-		const PackedVector4Array vertices = get_vertices();
-		for (const int i : (_tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_INDICES : BOX_48_CELL_INDICES)) {
-			_cell_positions_cache.append(vertices[i]);
-		}
-	}
-	return _cell_positions_cache;
-}
-
 PackedVector4Array BoxTetraMesh4D::get_cell_normals() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_NORMALS : BOX_48_CELL_NORMALS;
 }

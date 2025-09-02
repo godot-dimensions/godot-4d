@@ -29,6 +29,12 @@
 				Gets the index of the G4MF node in the state's [member g4mf_nodes] array corresponding to the given Godot node. This will return [code]-1[/code] if the node is not found. Since it is possible for a G4MF node to generate multiple Godot nodes, if this returns [code]-1[/code], you may wish to call this function again with the parent node to give it another try.
 			</description>
 		</method>
+		<method name="is_text_file" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if [member filename] indicates this is a text-based G4MF file, meaning that it has 4 or more characters (handles [code]".g4tf"[/code] and other non-recommended cases like [code]".g4tf.json"[/code]). Returns [code]false[/code] with extensions shorter than 4 characters, or for an empty filename (indicating this is a byte array in memory).
+			</description>
+		</method>
 		<method name="reserve_unique_name">
 			<return type="String" />
 			<param index="0" name="requested" type="String" />
@@ -36,16 +42,35 @@
 				Reserves a unique name based on the requested name. This allows you to create a unique name for a node or resource in the G4MF file without conflicting with other names. If the requested name is already in use, a number will be appended to the name to make it unique. The number will be incremented until a unique name is found. The returned name is guaranteed to be unique relative to already reserved names.
 			</description>
 		</method>
+		<method name="should_separate_resource_files" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if resource files, such as images, should be separated into their own files. Returns [code]false[/code] if they should be embedded in the G4MF file. This is determined by the [member external_data_mode] property.
+				Extensions should call this method to determine if they should save their resources in separate files. For example, an audio extension should use this to determine if it should save audio files in separate files such as [code].mp3[/code] files, or if it should embed them in the G4MF file in buffer views.
+			</description>
+		</method>
 	</methods>
 	<members>
-		<member name="base_path" type="String" setter="set_base_path" getter="get_base_path" default="&quot;&quot;">
+		<member name="external_data_mode" type="int" setter="set_external_data_mode" getter="get_external_data_mode" enum="G4MFState4D.ExternalDataMode" default="0">
+			When exporting a G4MF file, this determines where external data, such as images and binary buffers, should be stored.
+			The default value is [constant EXTERNAL_DATA_MODE_AUTOMATIC], which automatically determines if data should be embedded or separated based on the file extension used, embedding for [code].glb[/code] files and separating for [code].gltf[/code] files. If you want different behavior, you can set this to one of the [enum ExternalDataMode] values.
+			Saving resources like images to their own files can be useful for destinations where you need access to these files separately. For example, if the exported G4MF is added to the [code]res://[/code] folder of a Godot project, the default behavior of the Godot editor is to extract embedded images to their own files so they can be imported and compressed into GPU-optimized formats.
+			Extensions should respect this setting by calling [method should_separate_resource_files] to determine if they should save their resources in separate files.
+		</member>
+		<member name="g4mf_accessors" type="G4MFAccessor4D[]" setter="set_g4mf_accessors" getter="get_g4mf_accessors" default="[]">
+			The array of [G4MFAccessor4D]s in this G4MF file. If empty, the G4MF file does not have any accessors. Accessors are referenced by index in other structures to access data in buffer views in a typed way.
+		</member>
+		<member name="g4mf_base_path" type="String" setter="set_g4mf_base_path" getter="get_g4mf_base_path" default="&quot;&quot;">
 			The base path of the G4MF file. This is used to resolve relative paths in the G4MF file. This is set when reading a G4MF file, and is used when writing a G4MF file.
 		</member>
-		<member name="buffers" type="PackedByteArray[]" setter="set_buffers" getter="get_buffers" default="[]">
+		<member name="g4mf_buffer_views" type="G4MFBufferView4D[]" setter="set_g4mf_buffer_views" getter="get_g4mf_buffer_views" default="[]">
+			The array of [G4MFBufferView4D]s in this G4MF file. If empty, the G4MF file does not have any buffer views. Buffer views are referenced by index in [G4MFAccessor4D]s to access a slice of a buffer.
+		</member>
+		<member name="g4mf_buffers" type="PackedByteArray[]" setter="set_g4mf_buffers" getter="get_g4mf_buffers" default="[]">
 			The array of buffers in the G4MF file. This is used to store binary blobs of data, such as mesh data. Each buffer is used by a [G4MFBufferView4D] to access a slice of the buffer, which is then used by [G4MFAccessor4D] to access the data in the buffer in a typed way.
 		</member>
-		<member name="filename" type="String" setter="set_filename" getter="get_filename" default="&quot;&quot;">
-			The filename of the G4MF file, including the file extension. If it ends with [code].g4tf[/code], this is a text-based G4MF, otherwise this is a binary G4MF. This will be set during import when appending from a file, and will be set during export when writing to a file. If writing to a buffer, this will be an empty string.
+		<member name="g4mf_filename" type="String" setter="set_g4mf_filename" getter="get_g4mf_filename" default="&quot;&quot;">
+			The filename of the G4MF file, including the file extension. If it ends with [code].g4tf[/code], this is a text-based G4MF, otherwise this is a binary G4MF (use [method is_text_file] for this check). This will be set during import when appending from a file, and will be set during export when writing to a file. If writing to a buffer, this will be an empty string.
 		</member>
 		<member name="g4mf_json" type="Dictionary" setter="set_g4mf_json" getter="get_g4mf_json" default="{}">
 			The JSON data of the G4MF file. This is set when reading a G4MF file at the start of the import process before parsing, and is set when writing a G4MF file at the end of the export process after serializing.
@@ -59,6 +84,9 @@
 		<member name="g4mf_meshes" type="G4MFMesh4D[]" setter="set_g4mf_meshes" getter="get_g4mf_meshes" default="[]">
 			The array of [G4MFMesh4D]s in this G4MF file. If empty, the G4MF file does not have any meshes. Meshes are referenced by index in [G4MFNode4D]s.
 		</member>
+		<member name="g4mf_models" type="G4MFModel4D[]" setter="set_g4mf_models" getter="get_g4mf_models" default="[]">
+			The array of [G4MFModel4D]s in this G4MF file. If empty, the G4MF file does not have any models. Models are referenced by index in [G4MFNode4D]s.
+		</member>
 		<member name="g4mf_nodes" type="G4MFNode4D[]" setter="set_g4mf_nodes" getter="get_g4mf_nodes" default="[]">
 			The array of [G4MFNode4D]s in this G4MF file. If empty, the G4MF file does not have any nodes. If non-empty, the node at index 0 is the root node.
 		</member>
@@ -71,5 +99,36 @@
 		<member name="godot_nodes" type="Node4D[]" setter="set_godot_nodes" getter="get_godot_nodes" default="[]">
 			The array of Godot nodes corresponding to the G4MF nodes. This is used when importing a G4MF file and generating Godot nodes, after the nodes are generated, this array will have the same length as [member g4mf_nodes]. This is also used when converting a Godot scene to a G4MF file, after the nodes are converted, this array will have the same length as [member g4mf_nodes]. The node at each index corresponds to the G4MF node with the same index in the [member g4mf_nodes] array.
 		</member>
+		<member name="original_path" type="String" setter="set_original_path" getter="get_original_path" default="&quot;&quot;">
+			The original path of the file whose data led to populating this G4MFState4D. When importing a G4MF file, this is set to the path of the G4MF file, and is the same as the combination of [member g4mf_base_path] and [member g4mf_filename]. When exporting from a Godot scene, this is set to the path of the Godot scene file, if the root node is an instance of a Godot scene file.
+		</member>
 	</members>
+	<constants>
+		<constant name="EXTERNAL_DATA_MODE_AUTOMATIC" value="0" enum="ExternalDataMode">
+			When exporting a G4MF file, automatically determines if data should be embedded or separated based on the file extension used and if [member base_path] is valid. With this option, exporting a [code].g4tf[/code] file with a valid [member base_path] will behave like [constant EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES]. If exporting a [code].g4b[/code] file, exporting to an in-memory buffer, or exporting with [member base_path] set to an empty string, this will behave like [constant EXTERNAL_DATA_MODE_SEPARATE_MODEL_FILES].
+			This option is suitable for most use cases. It behaves like Blender's "glTF Binary (.glb)" export option for [code].g4b[/code] files, and like Blender's "glTF Separate (.gltf + .bin + textures)" export option for [code].g4tf[/code] files.
+		</constant>
+		<constant name="EXTERNAL_DATA_MODE_EMBED_EVERYTHING" value="1" enum="ExternalDataMode">
+			When exporting a G4MF file, embeds all data in the G4MF file, including images, binary buffers, and models. For [code].g4b[/code] files, this will use the binary blob chunks at the end of the file to store the data in buffers.
+			This option is useful when you want a single self-contained file. It behaves like Blender's "glTF Binary (.glb)" export option for [code].g4b[/code] files, and like Blender's "glTF Embedded (.gltf)" export option for [code].gltf[/code] files.
+		</constant>
+		<constant name="EXTERNAL_DATA_MODE_SEPARATE_ALL_FILES" value="2" enum="ExternalDataMode">
+			When exporting a G4MF file, separates all files that can be saved in their own file formats into their own files, and also save all raw binary blobs, such as G4MF buffers, into separate [code].bin[/code] files.
+			This option is useful when having the G4MF file's contents spread out over multiple files is desired, resulting in maximum human readability. It behaves like Blender's "glTF Separate (.gltf + .bin + textures)" export option.
+			Extensions should respect this setting by calling [method should_separate_resource_files] to determine if they should save their resources in separate files.
+		</constant>
+		<constant name="EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS" value="3" enum="ExternalDataMode">
+			When exporting a G4MF file, separates all raw binary blobs, such as G4MF buffers, into separate [code].bin[/code] files, and also separates model files. Resources that can be saved in their own file formats, such as images, are embedded within G4MF buffers, and are stored in the [code].bin[/code] files.
+			This option is useful if you need efficient storage of binary data while also keeping the number of files low. In the typical case, this option will result in only two files: the G4MF file and a single [code].bin[/code] file next to it.
+		</constant>
+		<constant name="EXTERNAL_DATA_MODE_SEPARATE_RESOURCE_FILES" value="4" enum="ExternalDataMode">
+			When exporting a G4MF file, separates all resources that can be saved in their own file formats into their own files, such as images and model files. This option does not separate buffers, meaning that binary blob data without a file type, such as mesh data, animation data, skin/skeleton data, and so on, are still embedded in the G4MF file.
+			This option is useful if the exported G4MF file is intended to be added to the project folder in a game engine, so that the game engine can import the resources files separately, and optionally use them separately. Otherwise, game engines may extract embedded resources to their own files, resulting in duplicate data in the project folder.
+			Extensions should respect this setting by calling [method should_separate_resource_files] to determine if they should save their resources in separate files.
+		</constant>
+		<constant name="EXTERNAL_DATA_MODE_SEPARATE_MODEL_FILES" value="5" enum="ExternalDataMode">
+			When exporting a G4MF file, separates all model files into their own files, meaning Godot scenes used by this Godot scene which get converted into G4MF files. Everything else is embedded in the G4MF files, including all resource files and binary blobs. This is the behavior of [constant EXTERNAL_DATA_MODE_AUTOMATIC] when exporting a [code].g4b[/code] file.
+			This enum value can be used when [i]only[/i] model files should be separated, while all other data should be embedded in the G4MF file, such as images and buffers. All options except [constant EXTERNAL_DATA_MODE_EMBED_EVERYTHING] will result in separate model files, because it is usually desired to have G4MF files used by a G4MF file available as separate files. You can also force all scenes to be merged into a single G4MF model by setting [member G4MFDocument4D.export_nested_scenes_mode] to one of the available enum values.
+		</constant>
+	</constants>
 </class>

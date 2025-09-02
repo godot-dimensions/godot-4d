@@ -1,7 +1,7 @@
 #include "g4mf_node_4d.h"
 
 #include "../../../math/vector_4d.h"
-#include "../../../model/mesh_instance_4d.h"
+#include "../../mesh_instance_4d.h"
 #include "../g4mf_state_4d.h"
 
 NodePath G4MFNode4D::_make_node_path(const Vector<StringName> &p_path) const {
@@ -56,27 +56,36 @@ Transform4D G4MFNode4D::get_scene_global_transform(const Ref<G4MFState4D> &p_g4m
 	return global_transform;
 }
 
-Ref<G4MFNode4D> G4MFNode4D::from_godot_node(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node) {
+Ref<G4MFNode4D> G4MFNode4D::from_godot_node_basic(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node) {
 	Ref<G4MFNode4D> g4mf_node;
 	g4mf_node.instantiate();
 	ERR_FAIL_NULL_V(p_godot_node, g4mf_node);
+	// Note: The name will be reserved as a unique name later in `G4MFState4D::append_g4mf_node()`.
 	g4mf_node->set_name(p_godot_node->get_name());
-	if (p_godot_node->has_meta(StringName("extras"))) {
-		g4mf_node->set_meta(StringName("extras"), p_godot_node->get_meta(StringName("extras")));
-	}
 	const Node4D *godot_node_4d = Object::cast_to<Node4D>(p_godot_node);
 	if (godot_node_4d) {
 		g4mf_node->set_transform(godot_node_4d->get_transform());
 		g4mf_node->set_visible(godot_node_4d->is_visible());
+	}
+	return g4mf_node;
+}
+
+void G4MFNode4D::from_godot_node_components(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node) {
+	ERR_FAIL_NULL(p_godot_node);
+	if (p_godot_node->has_meta(StringName("extras"))) {
+		set_meta(StringName("extras"), p_godot_node->get_meta(StringName("extras")));
+	}
+	const Node4D *godot_node_4d = Object::cast_to<Node4D>(p_godot_node);
+	if (godot_node_4d) {
 		const CollisionObject4D *col_obj = Object::cast_to<CollisionObject4D>(p_godot_node);
 		if (col_obj) {
-			g4mf_node->set_physics(G4MFNodePhysics4D::from_collision_object_4d(col_obj));
-			return g4mf_node;
+			set_physics(G4MFNodePhysics4D::from_collision_object_4d(col_obj));
+			return;
 		}
 		const CollisionShape4D *col_shape = Object::cast_to<CollisionShape4D>(p_godot_node);
 		if (col_shape) {
-			g4mf_node->set_physics(G4MFNodePhysics4D::from_collision_shape_4d(p_g4mf_state, col_shape));
-			return g4mf_node;
+			set_physics(G4MFNodePhysics4D::from_collision_shape_4d(p_g4mf_state, col_shape));
+			return;
 		}
 		const MeshInstance4D *mesh_instance = Object::cast_to<MeshInstance4D>(p_godot_node);
 		if (mesh_instance) {
@@ -87,22 +96,35 @@ Ref<G4MFNode4D> G4MFNode4D::from_godot_node(Ref<G4MFState4D> p_g4mf_state, const
 					material = mesh->get_material();
 				}
 				const int mesh_index = G4MFMesh4D::convert_mesh_into_state(p_g4mf_state, mesh, material, true);
-				g4mf_node->set_mesh_index(mesh_index);
+				set_mesh_index(mesh_index);
 			}
-			return g4mf_node;
+			return;
 		}
 		const Camera4D *godot_camera_4d = Object::cast_to<Camera4D>(godot_node_4d);
 		if (godot_camera_4d) {
-			g4mf_node->set_camera(G4MFCamera4D::convert_camera_4d(godot_camera_4d));
-			return g4mf_node;
+			set_camera(G4MFCamera4D::convert_camera_4d(godot_camera_4d));
+			return;
 		}
 	}
+}
+
+Ref<G4MFNode4D> G4MFNode4D::from_godot_node(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node) {
+	Ref<G4MFNode4D> g4mf_node = from_godot_node_basic(p_g4mf_state, p_godot_node);
+	g4mf_node->from_godot_node_components(p_g4mf_state, p_godot_node);
 	return g4mf_node;
 }
 
-Node4D *G4MFNode4D::generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, const Node *p_scene_parent, const bool p_force_wireframe) const {
-	Node4D *ret_node = nullptr;
+Node *G4MFNode4D::generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, const Node *p_scene_parent, const bool p_force_wireframe) const {
+	Node *ret_node = nullptr;
+	if (_model_index >= 0) {
+		TypedArray<G4MFModel4D> state_g4mf_models = p_g4mf_state->get_g4mf_models();
+		ERR_FAIL_INDEX_V(_model_index, state_g4mf_models.size(), ret_node);
+		Ref<G4MFModel4D> g4mf_model = state_g4mf_models[_model_index];
+		ERR_FAIL_COND_V(g4mf_model.is_null(), ret_node);
+		ret_node = g4mf_model->import_instantiate_model(p_g4mf_state);
+	}
 	if (_physics.is_valid()) {
+		ERR_FAIL_COND_V_MSG(ret_node != nullptr, ret_node, "G4MF import: Cannot have both physics and model on the same node.");
 		ret_node = _physics->generate_physics_node(p_g4mf_state, Ref<G4MFNode4D>(this), p_scene_parent);
 	}
 	if (_light_index >= 0) {
@@ -110,7 +132,7 @@ Node4D *G4MFNode4D::generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, co
 	}
 	if (_mesh_index >= 0) {
 		TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
-		ERR_FAIL_INDEX_V(_mesh_index, state_g4mf_meshes.size(), nullptr);
+		ERR_FAIL_INDEX_V(_mesh_index, state_g4mf_meshes.size(), ret_node);
 		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[_mesh_index];
 		Ref<Mesh4D> mesh = g4mf_mesh->generate_mesh(p_g4mf_state, p_force_wireframe);
 		if (mesh.is_valid()) {
@@ -136,15 +158,18 @@ Node4D *G4MFNode4D::generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, co
 	if (ret_node == nullptr) {
 		ret_node = memnew(Node4D);
 	}
-	apply_to_godot_node_4d(ret_node);
+	apply_to_godot_node(ret_node);
 	return ret_node;
 }
 
-void G4MFNode4D::apply_to_godot_node_4d(Node4D *p_godot_node) const {
+void G4MFNode4D::apply_to_godot_node(Node *p_godot_node) const {
 	ERR_FAIL_NULL(p_godot_node);
 	p_godot_node->set_name(get_name());
-	p_godot_node->set_transform(_transform);
-	p_godot_node->set_visible(_visible);
+	Node4D *node_4d = Object::cast_to<Node4D>(p_godot_node);
+	if (node_4d) {
+		node_4d->set_transform(_transform);
+		node_4d->set_visible(_visible);
+	}
 	if (has_meta(StringName("extras"))) {
 		p_godot_node->set_meta(StringName("extras"), get_meta(StringName("extras")));
 	}
@@ -183,7 +208,7 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 	if (p_dict.has("visible")) {
 		node->_visible = p_dict["visible"];
 	}
-	// Component properties.
+	// Component properties (in alphabetical order).
 	if (p_dict.has("camera")) {
 		node->_camera = G4MFCamera4D::from_dictionary(p_dict["camera"]);
 	}
@@ -192,6 +217,9 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 	}
 	if (p_dict.has("mesh")) {
 		node->_mesh_index = p_dict["mesh"];
+	}
+	if (p_dict.has("model")) {
+		node->_model_index = p_dict["model"];
 	}
 	if (p_dict.has("physics")) {
 		node->_physics = G4MFNodePhysics4D::from_dictionary(p_dict["physics"]);
@@ -210,7 +238,7 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 					dict["rotor"] = rotor_4d_to_json_array(rotor);
 				}
 				Vector4 scale = _transform.basis.get_scale();
-				if (!scale.is_equal_approx(Vector4(1, 1, 1, 1))) {
+				if (!scale.is_equal_approx(Vector4D::ONE)) {
 					if (Vector4D::is_uniform(scale)) {
 						Array uniform_scale_array;
 						uniform_scale_array.push_back(scale.x);
@@ -235,7 +263,7 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	if (!_visible) {
 		dict["visible"] = _visible;
 	}
-	// Component properties.
+	// Component properties (in alphabetical order).
 	if (_camera.is_valid()) {
 		dict["camera"] = _camera->to_dictionary();
 	}
@@ -244,6 +272,9 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	}
 	if (_mesh_index >= 0) {
 		dict["mesh"] = _mesh_index;
+	}
+	if (_model_index >= 0) {
+		dict["model"] = _model_index;
 	}
 	if (_physics.is_valid()) {
 		dict["physics"] = _physics->to_dictionary();
@@ -343,12 +374,14 @@ void G4MFNode4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_light_index", "light_index"), &G4MFNode4D::set_light_index);
 	ClassDB::bind_method(D_METHOD("get_mesh_index"), &G4MFNode4D::get_mesh_index);
 	ClassDB::bind_method(D_METHOD("set_mesh_index", "mesh_index"), &G4MFNode4D::set_mesh_index);
+	ClassDB::bind_method(D_METHOD("get_model_index"), &G4MFNode4D::get_model_index);
+	ClassDB::bind_method(D_METHOD("set_model_index", "model_index"), &G4MFNode4D::set_model_index);
 
 	ClassDB::bind_method(D_METHOD("get_scene_node_path", "g4mf_state"), &G4MFNode4D::get_scene_node_path);
 
 	ClassDB::bind_static_method("G4MFNode4D", D_METHOD("from_godot_node", "g4mf_state", "godot_node"), &G4MFNode4D::from_godot_node);
 	ClassDB::bind_method(D_METHOD("generate_godot_node", "g4mf_state", "scene_parent", "force_wireframe"), &G4MFNode4D::generate_godot_node);
-	ClassDB::bind_method(D_METHOD("apply_to_godot_node_4d", "node"), &G4MFNode4D::apply_to_godot_node_4d);
+	ClassDB::bind_method(D_METHOD("apply_to_godot_node", "node"), &G4MFNode4D::apply_to_godot_node);
 
 	ClassDB::bind_static_method("G4MFNode4D", D_METHOD("from_dictionary", "dict"), &G4MFNode4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary", "prefer_basis"), &G4MFNode4D::to_dictionary);
@@ -366,4 +399,5 @@ void G4MFNode4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "physics", PROPERTY_HINT_RESOURCE_TYPE, "G4MFNodePhysics4D"), "set_physics", "get_physics");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "light_index"), "set_light_index", "get_light_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_index"), "set_mesh_index", "get_mesh_index");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "model_index"), "set_model_index", "get_model_index");
 }

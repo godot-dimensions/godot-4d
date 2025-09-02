@@ -12,10 +12,10 @@ class G4MFState4D;
 class G4MFMaterialChannel4D : public G4MFItem4D {
 	GDCLASS(G4MFMaterialChannel4D, G4MFItem4D);
 
-	Color _single_color = Color(-1, -1, -1, -1);
-	int _cell_colors_accessor_index = -1;
-	int _edge_colors_accessor_index = -1;
-	int _vertex_colors_accessor_index = -1;
+	Color _factor = Color(-1, -1, -1, -1);
+	int _per_cell_accessor_index = -1;
+	int _per_edge_accessor_index = -1;
+	int _per_vertex_accessor_index = -1;
 	int _cell_texture_map_accessor_index = -1;
 	int _cell_texture_index = -1;
 
@@ -23,17 +23,17 @@ protected:
 	static void _bind_methods();
 
 public:
-	Color get_single_color() const { return _single_color; }
-	void set_single_color(const Color &p_color) { _single_color = p_color; }
+	Color get_factor() const { return _factor; }
+	void set_factor(const Color &p_color) { _factor = p_color; }
 
-	int get_cell_colors_accessor_index() const { return _cell_colors_accessor_index; }
-	void set_cell_colors_accessor_index(const int p_index) { _cell_colors_accessor_index = p_index; }
+	int get_per_cell_accessor_index() const { return _per_cell_accessor_index; }
+	void set_per_cell_accessor_index(const int p_index) { _per_cell_accessor_index = p_index; }
 
-	int get_edge_colors_accessor_index() const { return _edge_colors_accessor_index; }
-	void set_edge_colors_accessor_index(const int p_index) { _edge_colors_accessor_index = p_index; }
+	int get_per_edge_accessor_index() const { return _per_edge_accessor_index; }
+	void set_edge_colors_accessor_index(const int p_index) { _per_edge_accessor_index = p_index; }
 
-	int get_vertex_colors_accessor_index() const { return _vertex_colors_accessor_index; }
-	void set_vertex_colors_accessor_index(const int p_index) { _vertex_colors_accessor_index = p_index; }
+	int get_per_vertex_accessor_index() const { return _per_vertex_accessor_index; }
+	void set_per_vertex_accessor_index(const int p_index) { _per_vertex_accessor_index = p_index; }
 
 	int get_cell_texture_map_accessor_index() const { return _cell_texture_map_accessor_index; }
 	void set_cell_texture_map_accessor_index(const int p_index) { _cell_texture_map_accessor_index = p_index; }

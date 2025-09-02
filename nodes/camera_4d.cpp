@@ -89,12 +89,8 @@ void Camera4D::make_current() {
 	}
 }
 
-void Camera4D::set_depth_fade(const bool p_depth_fade) {
-	_use_depth_fade = p_depth_fade;
-}
-
-bool Camera4D::get_depth_fade() const {
-	return _use_depth_fade;
+void Camera4D::set_depth_fade_mode(const DepthFadeMode p_depth_fade_mode) {
+	_depth_fade_mode = p_depth_fade_mode;
 }
 
 void Camera4D::set_depth_fade_start(const double p_depth_fade_start) {
@@ -384,19 +380,19 @@ void Camera4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_distance"), &Camera4D::get_w_fade_distance);
 	ClassDB::bind_method(D_METHOD("set_w_fade_distance", "w_fade_distance"), &Camera4D::set_w_fade_distance);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_distance", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater,or_less,suffix:m"), "set_w_fade_distance", "get_w_fade_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_distance", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater,or_less,exp,suffix:m"), "set_w_fade_distance", "get_w_fade_distance");
 
 	ClassDB::bind_method(D_METHOD("get_w_fade_slope"), &Camera4D::get_w_fade_slope);
 	ClassDB::bind_method(D_METHOD("set_w_fade_slope", "w_fade_slope"), &Camera4D::set_w_fade_slope);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.001,10,0.001,or_greater,or_less"), "set_w_fade_slope", "get_w_fade_slope");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.001,10,0.001,or_greater,or_less,exp"), "set_w_fade_slope", "get_w_fade_slope");
 
-	ClassDB::bind_method(D_METHOD("get_depth_fade"), &Camera4D::get_depth_fade);
-	ClassDB::bind_method(D_METHOD("set_depth_fade", "depth_fade"), &Camera4D::set_depth_fade);
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "depth_fade"), "set_depth_fade", "get_depth_fade");
+	ClassDB::bind_method(D_METHOD("get_depth_fade_mode"), &Camera4D::get_depth_fade_mode);
+	ClassDB::bind_method(D_METHOD("set_depth_fade_mode", "depth_fade_mode"), &Camera4D::set_depth_fade_mode);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "depth_fade_mode", PROPERTY_HINT_ENUM, "Disabled,Distance,XYZ Only,Z Only"), "set_depth_fade_mode", "get_depth_fade_mode");
 
 	ClassDB::bind_method(D_METHOD("get_depth_fade_start"), &Camera4D::get_depth_fade_start);
 	ClassDB::bind_method(D_METHOD("set_depth_fade_start", "depth_fade_start"), &Camera4D::set_depth_fade_start);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth_fade_start", PROPERTY_HINT_RANGE, "5.0,100,0.01,or_greater,or_less"), "set_depth_fade_start", "get_depth_fade_start");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth_fade_start", PROPERTY_HINT_RANGE, "1,100,0.01,or_greater,or_less,exp"), "set_depth_fade_start", "get_depth_fade_start");
 
 	BIND_ENUM_CONSTANT(KEEP_WIDTH);
 	BIND_ENUM_CONSTANT(KEEP_HEIGHT);
@@ -408,6 +404,11 @@ void Camera4D::_bind_methods() {
 
 	BIND_ENUM_CONSTANT(VIEW_ANGLE_FOCAL_LENGTH);
 	BIND_ENUM_CONSTANT(VIEW_ANGLE_FIELD_OF_VIEW);
+
+	BIND_ENUM_CONSTANT(DEPTH_FADE_DISABLED);
+	BIND_ENUM_CONSTANT(DEPTH_FADE_DISTANCE);
+	BIND_ENUM_CONSTANT(DEPTH_FADE_XYZ_ONLY);
+	BIND_ENUM_CONSTANT(DEPTH_FADE_Z_ONLY);
 
 	BIND_ENUM_CONSTANT(W_FADE_DISABLED);
 	BIND_ENUM_CONSTANT(W_FADE_TRANSPARENCY);

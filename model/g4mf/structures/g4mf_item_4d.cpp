@@ -31,10 +31,10 @@ void G4MFItem4D::read_item_entries_from_dictionary(const Dictionary &p_dict) {
 
 Dictionary G4MFItem4D::write_item_entries_to_dictionary() const {
 	Dictionary dict;
-	if (!dict.has("extras") && has_meta("extras")) {
+	if (has_meta("extras")) {
 		dict["extras"] = get_meta("extras");
 	}
-	if (!dict.has("name") && !get_name().is_empty()) {
+	if (!get_name().is_empty()) {
 		dict["name"] = get_name();
 	}
 	return dict;

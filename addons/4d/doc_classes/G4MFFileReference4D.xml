@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFFileReference4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Represents a G4MF's reference to a file, which may contain data such as images, models, audio, or any other type of file.
+	</brief_description>
+	<description>
+		G4MFFileReference4D is used whenever G4MF files need to reference data that could be found in an external file, such as an image file, model file, audio file, or any other file. All file references are required to define the file's MIME type, and may refer to stored data either in a buffer view or an external file URI.
+	</description>
+	<tutorials>
+		<link title="G4MF File Reference Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/core.md#file-references</link>
+		<link title="G4MF File Reference Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf_file_ref.schema.json</link>
+		<link title="IANA Media Types">https://www.iana.org/assignments/media-types/media-types.xhtml</link>
+	</tutorials>
+	<methods>
+		<method name="create_missing_directories_if_needed" qualifiers="const">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Creates any missing directories in the filesystem needed for writing to the external file URI specified by this file reference's [member uri]. If [member uri] is an empty string, this does nothing and returns [constant @GlobalScope.OK]. If the directories already exist, this does nothing and returns [constant @GlobalScope.OK]. If the directories do not exist, it attempts to create them and returns [constant @GlobalScope.OK] on success, or an error code on failure.
+			</description>
+		</method>
+		<method name="read_file_data" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the file data referenced by this file reference, either from the buffer view or the external URI, and returns it as a [PackedByteArray]. If both a buffer view and an external URI are specified, the external URI takes precedence if the file exists. If neither is specified, or if loading fails, an error is printed and an empty [PackedByteArray] is returned.
+			</description>
+		</method>
+		<method name="read_file_reference_entries_from_dictionary">
+			<return type="void" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Reads general G4MF file reference properties from the given [Dictionary] and apply it to this file reference object. This function wraps around the [method G4MFItem4D.read_item_entries_from_dictionary] method, so it considers the [code]"name"[/code] and [code]"extras"[/code] keys, and additionally considers the [code]"bufferView"[/code], [code]"mimeType"[/code], and [code]"uri"[/code] keys.
+			</description>
+		</method>
+		<method name="write_file_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="data" type="PackedByteArray" />
+			<param index="2" name="alignment" type="int" default="4" />
+			<param index="3" name="deduplicate" type="bool" default="true" />
+			<param index="4" name="buffer_index" type="int" default="0" />
+			<description>
+				Writes the given [param data] into either the external file URI, if [member uri] is set, or into a new buffer view in the given G4MF state if [member uri] is an empty string.
+				The [param alignment], [param deduplicate], and [param buffer_index] parameters are only used when writing to a new buffer view, and are directly passed to the [method G4MFBufferView4D.write_new_buffer_view_into_state] function. They do nothing when writing to an external file URI.
+			</description>
+		</method>
+		<method name="write_file_reference_entries_to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Base function for converting file references to a [Dictionary]. This function wraps around the [method G4MFItem4D.write_item_entries_to_dictionary] method, so it handles setting the [code]"name"[/code] and [code]"extras"[/code] keys, and additionally sets the [code]"bufferView"[/code], [code]"mimeType"[/code], and [code]"uri"[/code] keys. If implementing a custom G4MF file reference in script, this can be used as the start of a [code]to_dictionary[/code] function.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="buffer_view" type="int" setter="set_buffer_view" getter="get_buffer_view" default="-1">
+			The index of the [G4MFBufferView4D] that contains the data for this file reference. If this is set to [code]-1[/code], then the file reference does not refer to a buffer view. This property is mutually exclusive with [member uri], so if this is set to a value other than [code]-1[/code], then [member uri] SHOULD be an empty string. If both are set, [member uri] takes precedence when the file exists.
+		</member>
+		<member name="mime_type" type="String" setter="set_mime_type" getter="get_mime_type" default="&quot;&quot;">
+			The MIME type of the file being referenced. This is a required property, and must be a valid MIME type string, such as [code]"image/png"[/code] for PNG images. When a file format's media type is registered with IANA, this MUST match the media type string as registered with IANA. When a file format's media type is not registered with IANA, any placeholder name may be used pending registration.
+		</member>
+		<member name="uri" type="String" setter="set_uri" getter="get_uri" default="&quot;&quot;">
+			The URI of the file relative to the G4MF file's location. If this is an empty string, then the file reference does not refer to an external file. This property is mutually exclusive with [member buffer_view], so if this is set to a non-empty string, then [member buffer_view] SHOULD be [code]-1[/code]. If both are set, [member uri] takes precedence when the file exists.
+			File names SHOULD use snake case and all lowercase letters to avoid case sensitivity issues across platforms.
+		</member>
+	</members>
+</class>

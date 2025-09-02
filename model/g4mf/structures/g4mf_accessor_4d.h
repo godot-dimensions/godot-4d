@@ -11,12 +11,6 @@ class G4MFAccessor4D : public G4MFItem4D {
 	int _buffer_view_index = -1;
 	int _vector_size = 1;
 
-	// Private general helper functions.
-	static double _float8_to_double(const uint8_t p_float8);
-	static double _float16_to_double(const uint16_t p_float16);
-	static uint8_t _double_to_float8(const double p_double);
-	static uint16_t _double_to_float16(const double p_double);
-
 	// Private functions for determining the minimal primitive type.
 	static constexpr uint32_t CANT_USE_PRIM_TYPE = 1000000; // Any very big number will do.
 	static bool _double_bits_equal(const double p_a, const double p_b);
@@ -50,9 +44,9 @@ public:
 
 	// General helper functions.
 	bool is_equal_exact(const Ref<G4MFAccessor4D> &p_other) const;
-	int64_t bytes_per_primitive() const;
-	int64_t bytes_per_vector() const;
-	static int64_t primitives_per_variant(const Variant::Type p_variant_type);
+	int64_t get_bytes_per_primitive() const;
+	int64_t get_bytes_per_vector() const;
+	static int64_t get_numbers_per_variant(const Variant::Type p_variant_type);
 
 	// Determine the minimal primitive type for the given data.
 	// Add more types only as needed otherwise this will be a mess.
@@ -80,6 +74,7 @@ public:
 
 	// High-level accessor encode functions.
 	static int encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_primitive_type, const int p_vector_size = 1, const bool p_deduplicate = true);
+	static int encode_new_accessor_from_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_input_data, const bool p_deduplicate = true);
 
 	// Dictionary conversion.
 	static Ref<G4MFAccessor4D> from_dictionary(const Dictionary &p_dict);

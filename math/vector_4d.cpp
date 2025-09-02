@@ -8,6 +8,38 @@
 #include "core/variant/variant_utility.h"
 #endif
 
+#if USE_CONST_NOT_CONSTEXPR_FOR_VECTORS
+const Vector4 Vector4D::ZERO = Vector4(0, 0, 0, 0);
+const Vector4 Vector4D::ONE = Vector4(1, 1, 1, 1);
+
+const Vector4 Vector4D::DIR_RIGHT = Vector4(1, 0, 0, 0);
+const Vector4 Vector4D::DIR_LEFT = Vector4(-1, 0, 0, 0);
+const Vector4 Vector4D::DIR_UP = Vector4(0, 1, 0, 0);
+const Vector4 Vector4D::DIR_DOWN = Vector4(0, -1, 0, 0);
+const Vector4 Vector4D::DIR_BACK = Vector4(0, 0, 1, 0);
+const Vector4 Vector4D::DIR_FORWARD = Vector4(0, 0, -1, 0);
+const Vector4 Vector4D::DIR_ANA = Vector4(0, 0, 0, 1);
+const Vector4 Vector4D::DIR_KATA = Vector4(0, 0, 0, -1);
+
+const Vector4 Vector4D::MODEL_LEFT_SIDE = Vector4(1, 0, 0, 0);
+const Vector4 Vector4D::MODEL_RIGHT_SIDE = Vector4(-1, 0, 0, 0);
+const Vector4 Vector4D::MODEL_TOP_SIDE = Vector4(0, 1, 0, 0);
+const Vector4 Vector4D::MODEL_BOTTOM_SIDE = Vector4(0, -1, 0, 0);
+const Vector4 Vector4D::MODEL_FRONT_SIDE = Vector4(0, 0, 1, 0);
+const Vector4 Vector4D::MODEL_REAR_SIDE = Vector4(0, 0, -1, 0);
+const Vector4 Vector4D::MODEL_ANA_SIDE = Vector4(0, 0, 0, 1);
+const Vector4 Vector4D::MODEL_KATA_SIDE = Vector4(0, 0, 0, -1);
+
+const Vector4 Vector4D::CARDINAL_EAST = Vector4(1, 0, 0, 0);
+const Vector4 Vector4D::CARDINAL_WEST = Vector4(-1, 0, 0, 0);
+const Vector4 Vector4D::CARDINAL_ZENITH = Vector4(0, 1, 0, 0);
+const Vector4 Vector4D::CARDINAL_NADIR = Vector4(0, -1, 0, 0);
+const Vector4 Vector4D::CARDINAL_SOUTH = Vector4(0, 0, 1, 0);
+const Vector4 Vector4D::CARDINAL_NORTH = Vector4(0, 0, -1, 0);
+const Vector4 Vector4D::CARDINAL_ANTH = Vector4(0, 0, 0, 1);
+const Vector4 Vector4D::CARDINAL_KENTH = Vector4(0, 0, 0, -1);
+#endif // USE_CONST_NOT_CONSTEXPR
+
 // NOTE: Editor code grabs the colors from the Godot editor theme instead.
 // This function is for non-editor code or when the theme is not available.
 Color Vector4D::axis_color(int64_t p_axis) {

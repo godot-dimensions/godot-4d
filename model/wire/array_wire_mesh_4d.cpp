@@ -40,6 +40,7 @@ int ArrayWireMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_dedupli
 			}
 		}
 	}
+	ERR_FAIL_COND_V(_vertices.size() > MAX_VERTICES, 2147483647);
 	_vertices.push_back(p_vertex);
 	reset_mesh_data_validation();
 	return vertex_count;
@@ -73,10 +74,10 @@ void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Tran
 	if (other_material.is_valid()) {
 		Ref<Material4D> self_material = get_material();
 		if (self_material.is_valid()) {
-			self_material->merge_with(other_material, start_vertex_count, other_vertex_count);
+			self_material->merge_with(other_material, start_edge_count / 2, other_edge_count / 2);
 		} else if (other_material->get_albedo_color_array().size() > 0) {
 			self_material.instantiate();
-			self_material->merge_with(other_material, start_vertex_count, other_vertex_count);
+			self_material->merge_with(other_material, start_edge_count / 2, other_edge_count / 2);
 			set_material(self_material);
 		} else {
 			set_material(other_material);
@@ -184,6 +185,7 @@ PackedVector4Array ArrayWireMesh4D::get_vertices() {
 }
 
 void ArrayWireMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
+	ERR_FAIL_COND(p_vertices.size() > MAX_VERTICES);
 	_vertices = p_vertices;
 	wire_mesh_clear_cache();
 	reset_mesh_data_validation();

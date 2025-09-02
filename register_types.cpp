@@ -18,6 +18,7 @@
 #include "math/euler_4d_bind.h"
 #include "math/geometric_algebra/rotor_4d_bind.h"
 #include "math/geometry_4d.h"
+#include "math/math_4d.h"
 #include "math/transform_4d_bind.h"
 #include "math/vector_4d.h"
 #include "nodes/camera_4d.h"
@@ -130,6 +131,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(godot_4d_bind::Rotor4D);
 		GDREGISTER_CLASS(godot_4d_bind::Transform4D);
 		GDREGISTER_CLASS(Geometry4D);
+		GDREGISTER_CLASS(Math4D);
 		GDREGISTER_CLASS(Vector4D);
 		// Physics.
 		GDREGISTER_VIRTUAL_CLASS(PhysicsEngine4D);
@@ -197,11 +199,13 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(G4MFItem4D);
 		GDREGISTER_CLASS(G4MFBufferView4D);
 		GDREGISTER_CLASS(G4MFAccessor4D);
+		GDREGISTER_CLASS(G4MFFileReference4D);
 		GDREGISTER_CLASS(G4MFTexture4D);
 		GDREGISTER_CLASS(G4MFMaterialChannel4D);
 		GDREGISTER_CLASS(G4MFMaterial4D);
 		GDREGISTER_CLASS(G4MFMeshSurface4D);
 		GDREGISTER_CLASS(G4MFMesh4D);
+		GDREGISTER_CLASS(G4MFModel4D);
 		GDREGISTER_CLASS(G4MFShape4D);
 		GDREGISTER_CLASS(G4MFNodePhysics4D);
 		GDREGISTER_CLASS(G4MFNodePhysicsMotion4D);

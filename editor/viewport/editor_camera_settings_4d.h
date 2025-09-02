@@ -15,8 +15,12 @@ class EditorCameraSettings4D : public Object {
 
 	Node *_ancestor_of_cameras = nullptr;
 
+	// Keep these default values in sync with the Camera4D defaults and the values in `write_to_config_file()`.
 	double _clip_near = 0.05;
 	double _clip_far = 4000.0;
+
+	Camera4D::DepthFadeMode _depth_fade_mode = Camera4D::DEPTH_FADE_DISABLED;
+	double _depth_fade_start = 25.0;
 
 	Camera4D::WFadeMode _w_fade_mode = Camera4D::W_FADE_TRANSPARENCY;
 	Color _w_fade_color_negative = Color(0.0f, 0.5f, 1.0f);
@@ -38,6 +42,12 @@ public:
 
 	double get_clip_far() const { return _clip_far; }
 	void set_clip_far(const double p_clip_far);
+
+	Camera4D::DepthFadeMode get_depth_fade_mode() const { return _depth_fade_mode; }
+	void set_depth_fade_mode(const Camera4D::DepthFadeMode p_depth_fade_mode);
+
+	double get_depth_fade_start() const { return _depth_fade_start; }
+	void set_depth_fade_start(const double p_depth_fade_start);
 
 	Camera4D::WFadeMode get_w_fade_mode() const { return _w_fade_mode; }
 	void set_w_fade_mode(const Camera4D::WFadeMode p_w_fade_mode);
