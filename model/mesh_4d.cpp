@@ -114,9 +114,9 @@ void Mesh4D::set_material(const Ref<Material4D> &p_material) {
 	_material = p_material;
 }
 
-Ref<Material4D> Mesh4D::get_default_material() {
+Ref<Material4D> Mesh4D::get_fallback_material() {
 	Ref<Material4D> material;
-	GDVIRTUAL_CALL(_get_default_material, material);
+	GDVIRTUAL_CALL(_get_fallback_material, material);
 	return material;
 }
 
@@ -163,7 +163,7 @@ void Mesh4D::_bind_methods() {
 	GDVIRTUAL_BIND(_get_edge_indices);
 	GDVIRTUAL_BIND(_get_edge_positions);
 	GDVIRTUAL_BIND(_get_vertices);
-	GDVIRTUAL_BIND(_get_default_material);
+	GDVIRTUAL_BIND(_get_fallback_material);
 	GDVIRTUAL_BIND(_validate_material_for_mesh, "material");
 	GDVIRTUAL_BIND(_validate_mesh_data);
 	GDVIRTUAL_BIND(_update_cross_section_mesh);

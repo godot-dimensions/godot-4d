@@ -43,7 +43,7 @@ void CrossSectionRenderingEngine4D::render_frame() {
 
 		Ref<Material4D> material_4d = mesh_instance->get_active_material();
 		if (!material_4d.is_valid()) {
-			material_4d = mesh->get_default_material();
+			material_4d = mesh->get_fallback_material();
 		}
 		if (material_4d.is_valid()) {
 			Ref<Material> override_material_3d = material_4d->get_cross_section_material();

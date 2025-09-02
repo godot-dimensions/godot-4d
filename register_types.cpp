@@ -158,9 +158,9 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
-		TetraMesh4D::init_default_material();
+		TetraMesh4D::init_fallback_material();
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
-		WireMesh4D::init_default_material();
+		WireMesh4D::init_fallback_material();
 		// Mesh.
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
 		GDREGISTER_CLASS(ArrayWireMesh4D);
@@ -285,8 +285,8 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		memdelete(Vector4D::get_singleton());
 		memdelete(WireMeshBuilder4D::get_singleton());
 
-		TetraMesh4D::cleanup_default_material();
-		WireMesh4D::cleanup_default_material();
+		TetraMesh4D::cleanup_fallback_material();
+		WireMesh4D::cleanup_fallback_material();
 		TetraMaterial4D::cleanup_shaders();
 		WireMaterial4D::cleanup_shaders();
 	}

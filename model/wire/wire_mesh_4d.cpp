@@ -25,18 +25,18 @@ PackedVector4Array WireMesh4D::get_edge_positions() {
 	return _edge_positions_cache;
 }
 
-Ref<WireMaterial4D> WireMesh4D::_default_material;
+Ref<WireMaterial4D> WireMesh4D::_fallback_material;
 
-Ref<Material4D> WireMesh4D::get_default_material() {
-	return _default_material;
+Ref<Material4D> WireMesh4D::get_fallback_material() {
+	return _fallback_material;
 }
 
-void WireMesh4D::init_default_material() {
-	_default_material.instantiate();
+void WireMesh4D::init_fallback_material() {
+	_fallback_material.instantiate();
 }
 
-void WireMesh4D::cleanup_default_material() {
-	_default_material.unref();
+void WireMesh4D::cleanup_fallback_material() {
+	_fallback_material.unref();
 }
 
 void WireMesh4D::update_cross_section_mesh() {
