@@ -285,7 +285,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 						p.columns[1] = Vector4(m_numbers[numbers_offset + 3], m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5], 0.0f);                                                \
 						p.columns[2] = Vector4(m_numbers[numbers_offset + 6], m_numbers[numbers_offset + 7], m_numbers[numbers_offset + 8], 0.0f);                                                \
 						p.columns[3] = Vector4(m_numbers[numbers_offset + 9], m_numbers[numbers_offset + 10], m_numbers[numbers_offset + 11], 0.0f);                                              \
-					}                                                                                                                                                                             \
+					} break;                                                                                                                                                                      \
 					case 16: {                                                                                                                                                                    \
 						p.columns[0] = Vector4(m_numbers[numbers_offset + 0], m_numbers[numbers_offset + 1], m_numbers[numbers_offset + 2], m_numbers[numbers_offset + 3]);                       \
 						p.columns[1] = Vector4(m_numbers[numbers_offset + 4], m_numbers[numbers_offset + 5], m_numbers[numbers_offset + 6], m_numbers[numbers_offset + 7]);                       \

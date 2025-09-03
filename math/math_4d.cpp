@@ -9,30 +9,33 @@ double Math4D::float4_to_double(const uint4_t p_float4) {
 	// Since float4 is so small, it's faster to just use a switch statement than fiddle with bits.
 	double value;
 	switch (f4_main) {
-		case uint4_t(0b000):
+		case uint4_t(0b000): {
 			value = 0.0;
-			break;
-		case uint4_t(0b001):
+		} break;
+		case uint4_t(0b001): {
 			value = 0.5;
-			break;
-		case uint4_t(0b010):
+		} break;
+		case uint4_t(0b010): {
 			value = 1.0;
-			break;
-		case uint4_t(0b011):
+		} break;
+		case uint4_t(0b011): {
 			value = 1.5;
-			break;
-		case uint4_t(0b100):
+		} break;
+		case uint4_t(0b100): {
 			value = 2.0;
-			break;
-		case uint4_t(0b101):
+		} break;
+		case uint4_t(0b101): {
 			value = 3.0;
-			break;
-		case uint4_t(0b110):
+		} break;
+		case uint4_t(0b110): {
 			value = Math_INF;
-			break;
-		case uint4_t(0b111):
+		} break;
+		case uint4_t(0b111): {
 			value = Math_NAN;
-			break;
+		} break;
+		default: {
+			value = Math_NAN; // Impossible, but MSVC complains without this.
+		} break;
 	}
 	// This works correctly for all values including negative zero and negative NaN.
 	return (f4_sign == 0) ? value : -value;

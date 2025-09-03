@@ -586,6 +586,7 @@ PackedVector3Array BoxTetraMesh4D::get_cell_uvw_map() {
 			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_LONG_CROSS : BOX_48_CELL_TEXTURE_MAP_LONG_CROSS;
 		} break;
 	}
+	ERR_FAIL_V_MSG(PackedVector3Array(), "Invalid cell texture map type.");
 }
 
 PackedInt32Array BoxTetraMesh4D::get_edge_indices() {
