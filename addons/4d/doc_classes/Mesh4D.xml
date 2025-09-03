@@ -24,6 +24,7 @@
 		<method name="_get_fallback_material" qualifiers="virtual">
 			<return type="Material4D" />
 			<description>
+				Callback method that should return a fallback [Material4D] for the mesh. This is used when neither the [MeshInstance4D] nor the [Mesh4D] itself have a material defined. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. This is only needed when creating a completely custom [Mesh4D] type; built-in types such as [TetraMesh4D] and [WireMesh4D] already define a fallback material, and overriding this function does nothing for them.
 			</description>
 		</method>
 		<method name="_get_vertices" qualifiers="virtual">
