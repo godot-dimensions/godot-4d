@@ -40,7 +40,7 @@ void WireMesh4D::cleanup_fallback_material() {
 }
 
 void WireMesh4D::update_cross_section_mesh() {
-	ERR_FAIL_NULL(_cross_section_mesh);
+	ERR_FAIL_COND(_cross_section_mesh.is_null());
 	_cross_section_mesh->clear_surfaces();
 
 	Ref<SurfaceTool> surface_tool;
