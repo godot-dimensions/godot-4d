@@ -41,15 +41,19 @@ void CrossSectionRenderingEngine4D::render_frame() {
 
 		RenderingServer::get_singleton()->instance_set_base(instance_3d, mesh_3d->get_rid());
 
-		Ref<Material4D> override_material = mesh_instance->get_material_override();
-		if (override_material.is_valid()) {
-			Ref<Material> override_material_3d = override_material->get_cross_section_material();
+		Ref<Material4D> material_4d = mesh_instance->get_active_material();
+		if (!material_4d.is_valid()) {
+			material_4d = mesh->get_fallback_material();
+		}
+		if (material_4d.is_valid()) {
+			Ref<Material> override_material_3d = material_4d->get_cross_section_material();
 			ERR_CONTINUE(!override_material_3d.is_valid());
 			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d, 0, override_material_3d->get_rid());
 		}
 
 		Projection modelview_basis = modelview_basises[mesh_index];
 		Vector4 modelview_origin = modelview_origins[mesh_index];
+		// TODO Need to split out view matrix to support multiple viewports, currently the same for all viewports. Either instance per viewport or pack view matrix in camera attributes.
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_origin", modelview_origin);
 		// Can't pass a mat4 through instance uniforms, need to break up into columns.
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_x", modelview_basis.columns[0]);

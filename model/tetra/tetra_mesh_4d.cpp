@@ -69,6 +69,20 @@ void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) 
 	Mesh4D::validate_material_for_mesh(p_material);
 }
 
+Ref<TetraMaterial4D> TetraMesh4D::_fallback_material;
+
+Ref<Material4D> TetraMesh4D::get_fallback_material() {
+	return _fallback_material;
+}
+
+void TetraMesh4D::init_fallback_material() {
+	_fallback_material.instantiate();
+}
+
+void TetraMesh4D::cleanup_fallback_material() {
+	_fallback_material.unref();
+}
+
 Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	Ref<ArrayTetraMesh4D> array_mesh;
 	array_mesh.instantiate();

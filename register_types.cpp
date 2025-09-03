@@ -150,11 +150,20 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Virtual classes.
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
+		GDREGISTER_CLASS(TetraMaterial4D);
+		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
+		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
+		TetraMaterial4D::init_shaders();
+		WireMaterial4D::init_shaders();
+#endif
+		TetraMesh4D::init_fallback_material();
+		WireMesh4D::init_fallback_material();
 		// Mesh.
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
 		GDREGISTER_CLASS(ArrayWireMesh4D);
@@ -164,8 +173,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(OFFDocument4D);
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
-		GDREGISTER_CLASS(TetraMaterial4D);
-		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_CLASS(WireMeshBuilder4D);
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
 		// Depends on mesh.
@@ -280,5 +287,10 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		memdelete(RenderingServer4D::get_singleton());
 		memdelete(Vector4D::get_singleton());
 		memdelete(WireMeshBuilder4D::get_singleton());
+
+		TetraMesh4D::cleanup_fallback_material();
+		WireMesh4D::cleanup_fallback_material();
+		TetraMaterial4D::cleanup_shaders();
+		WireMaterial4D::cleanup_shaders();
 	}
 }

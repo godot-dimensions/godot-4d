@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../mesh_4d.h"
+#include "tetra_material_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/array_mesh.hpp>
@@ -37,7 +38,14 @@ public:
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_edge_positions() override;
 
+	Ref<Material4D> get_fallback_material() override;
+	static void init_fallback_material();
+	static void cleanup_fallback_material();
+
 	GDVIRTUAL0R(PackedInt32Array, _get_cell_indices);
 	GDVIRTUAL0R(PackedVector4Array, _get_cell_normals);
 	GDVIRTUAL0R(PackedVector3Array, _get_cell_uvw_map);
+
+private:
+	static Ref<TetraMaterial4D> _fallback_material;
 };
