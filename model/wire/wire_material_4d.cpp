@@ -2,6 +2,14 @@
 
 #include "../../render/cross_section/wireframe_cross_section_shader.glsl.gen.h"
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
+#if GDEXTENSION
+#include <godot_cpp/classes/project_settings.hpp>
+#elif GODOT_MODULE
+#include "core/config/project_settings.h"
+#endif
+#endif
+
 Material4D::ColorSourceFlags WireMaterial4D::_wire_source_to_flags(const WireColorSource p_wire_source) {
 	switch (p_wire_source) {
 		case WireMaterial4D::WIRE_COLOR_SOURCE_SINGLE_COLOR:
@@ -63,6 +71,16 @@ void WireMaterial4D::update_cross_section_material() {
 		return;
 	}
 	if (_cross_section_material->get_shader().is_null()) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
+		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
+		if (_cross_section_shader.is_null()) {
+			const String rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
+			if (rendering_method == "gl_compatibility") {
+				ERR_FAIL_MSG("4D cross-section rendering is not supported in Godot 4.3 in the compatibility renderer. Please upgrade to Godot 4.4 or later, or switch to a Vulkan-based rendering method to use 4D cross-section rendering.");
+			}
+			init_shaders();
+		}
+#endif
 		_cross_section_material->set_shader(_cross_section_shader);
 	}
 	_cross_section_material->set_shader_parameter("albedo", _albedo_color);

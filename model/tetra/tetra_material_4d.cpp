@@ -3,6 +3,14 @@
 #include "../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
+#if GDEXTENSION
+#include <godot_cpp/classes/project_settings.hpp>
+#elif GODOT_MODULE
+#include "core/config/project_settings.h"
+#endif
+#endif
+
 Material4D::ColorSourceFlags TetraMaterial4D::_tetra_source_to_flags(const TetraColorSource p_tetra_source) {
 	switch (p_tetra_source) {
 		case TetraMaterial4D::TETRA_COLOR_SOURCE_SINGLE_COLOR:
@@ -139,6 +147,16 @@ void TetraMaterial4D::update_cross_section_material() {
 		return;
 	}
 	if (_cross_section_material->get_shader().is_null()) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
+		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
+		if (_cross_section_shader.is_null()) {
+			const String rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
+			if (rendering_method == "gl_compatibility") {
+				ERR_FAIL_MSG("4D cross-section rendering is not supported in Godot 4.3 in the compatibility renderer. Please upgrade to Godot 4.4 or later, or switch to a Vulkan-based rendering method to use 4D cross-section rendering.");
+			}
+			init_shaders();
+		}
+#endif
 		_cross_section_material->set_shader(_cross_section_shader);
 	}
 	const ColorSourceFlags flags = get_albedo_source_flags();

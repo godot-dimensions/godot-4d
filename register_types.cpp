@@ -151,15 +151,18 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
 		GDREGISTER_CLASS(TetraMaterial4D);
-		TetraMaterial4D::init_shaders();
 		GDREGISTER_CLASS(WireMaterial4D);
-		WireMaterial4D::init_shaders();
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
-		TetraMesh4D::init_fallback_material();
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
+		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
+		TetraMaterial4D::init_shaders();
+		WireMaterial4D::init_shaders();
+#endif
+		TetraMesh4D::init_fallback_material();
 		WireMesh4D::init_fallback_material();
 		// Mesh.
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
