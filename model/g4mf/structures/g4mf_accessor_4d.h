@@ -7,7 +7,7 @@ class G4MFState4D;
 class G4MFAccessor4D : public G4MFItem4D {
 	GDCLASS(G4MFAccessor4D, G4MFItem4D);
 
-	String _primitive_type;
+	String _primitive_type = ""; // No default, must be explicitly set.
 	int _buffer_view_index = -1;
 	int _vector_size = 1;
 

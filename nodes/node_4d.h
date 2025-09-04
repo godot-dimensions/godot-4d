@@ -33,11 +33,11 @@ public:
 
 private:
 	// Transform private fields.
-	Transform4D _transform;
+	Transform4D _transform = Transform4D();
 	RotationEditMode _rotation_edit_mode = ROTATION_EDIT_MODE_EULER4D;
 #ifdef CACHE_ROTATION_AND_SCALE
-	Euler4D _euler_cache;
-	Vector4 _scale_cache;
+	Euler4D _euler_cache = Euler4D();
+	Vector4 _scale_cache = Vector4(1, 1, 1, 1);
 	bool _euler_cache_dirty = true;
 	bool _scale_cache_dirty = true;
 #endif // CACHE_ROTATION_AND_SCALE

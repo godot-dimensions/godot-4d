@@ -29,7 +29,7 @@ class EditorCameraSettings4D : public Object {
 	double _w_fade_slope = 1.0;
 
 	Ref<ConfigFile> _4d_editor_config_file;
-	String _4d_editor_config_file_path;
+	String _4d_editor_config_file_path = "";
 	String _rendering_engine = "";
 
 protected:

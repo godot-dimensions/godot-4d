@@ -19,7 +19,7 @@ struct GeneralShapeCurveTaperPoint4D {
 class GeneralShapeCurve4D : public Resource {
 	GDCLASS(GeneralShapeCurve4D, Resource);
 
-	Vector4 _radii;
+	Vector4 _radii = Vector4();
 	Vector<GeneralShapeCurveTaperPoint4D> _taper;
 	double _exponent = 2.0;
 

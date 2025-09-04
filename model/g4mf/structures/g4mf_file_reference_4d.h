@@ -8,8 +8,8 @@ class G4MFFileReference4D : public G4MFItem4D {
 	GDCLASS(G4MFFileReference4D, G4MFItem4D);
 
 	int _buffer_view = -1;
-	String _mime_type;
-	String _uri;
+	String _mime_type = "";
+	String _uri = "";
 
 protected:
 	static void _bind_methods();

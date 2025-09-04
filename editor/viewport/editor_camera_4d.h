@@ -11,8 +11,8 @@ class EditorCamera4D : public Node4D {
 	GDCLASS(EditorCamera4D, Node4D);
 
 	Camera4D *_camera = nullptr;
-	Basis4D _ground_basis;
-	Vector4 _target_position;
+	Basis4D _ground_basis = Basis4D();
+	Vector4 _target_position = Vector4();
 	real_t _pitch_angle = -0.5f;
 
 	double _positive_clip_near = 0.05;

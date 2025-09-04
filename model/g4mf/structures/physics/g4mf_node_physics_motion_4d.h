@@ -11,9 +11,9 @@ class G4MFNodePhysicsMotion4D : public G4MFItem4D {
 	GDCLASS(G4MFNodePhysicsMotion4D, G4MFItem4D);
 
 	Rotor4D _inertia_orientation = Rotor4D::identity();
-	Bivector4D _inertia_diagonal;
-	Bivector4D _angular_velocity;
-	Vector4 _linear_velocity;
+	Bivector4D _inertia_diagonal = Bivector4D();
+	Bivector4D _angular_velocity = Bivector4D();
+	Vector4 _linear_velocity = Vector4();
 	String _motion_type = "dynamic";
 	double _mass = 1.0;
 	double _gravity_factor = 1.0;

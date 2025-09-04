@@ -15,7 +15,7 @@ class Transform4D;
 class Euler4D : public RefCounted {
 	GDCLASS(Euler4D, RefCounted);
 
-	::Euler4D euler;
+	::Euler4D euler = ::Euler4D();
 
 protected:
 	static void _bind_methods();

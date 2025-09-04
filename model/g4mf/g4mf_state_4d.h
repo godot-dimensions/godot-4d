@@ -49,9 +49,9 @@ private:
 	Dictionary _g4mf_json;
 
 	// Path data for the file.
-	String _g4mf_base_path;
-	String _g4mf_filename;
-	String _original_path;
+	String _g4mf_base_path = "";
+	String _g4mf_filename = "";
+	String _original_path = "";
 
 	// Settings for handling the file.
 	ExternalDataMode _external_data_mode = ExternalDataMode::EXTERNAL_DATA_MODE_AUTOMATIC;

@@ -42,6 +42,7 @@ protected:
 
 class Godot4DEditorPlugin : public EditorPlugin {
 	GDCLASS(Godot4DEditorPlugin, EditorPlugin);
+
 	Ref<EditorImportPluginG4MFMesh4D> _g4mf_mesh_4d_importer;
 	Ref<EditorImportPluginG4MFScene4D> _g4mf_scene_4d_importer;
 	Ref<EditorImportPluginOFFMesh3D> _off_mesh_3d_importer;

@@ -14,11 +14,11 @@ class PhysicsBody4D;
 class KinematicCollision4D : public RefCounted {
 	GDCLASS(KinematicCollision4D, RefCounted);
 
-	CollisionShape4D *_moving_shape_node;
-	CollisionShape4D *_obstacle_shape_node;
-	Vector4 _normal;
-	Vector4 _relative_velocity;
-	real_t _travel_ratio;
+	CollisionShape4D *_moving_shape_node = nullptr;
+	CollisionShape4D *_obstacle_shape_node = nullptr;
+	Vector4 _normal = Vector4();
+	Vector4 _relative_velocity = Vector4();
+	real_t _travel_ratio = 0.0f;
 
 protected:
 	static void _bind_methods();

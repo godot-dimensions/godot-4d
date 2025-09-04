@@ -91,7 +91,7 @@ private:
 	EditorTransformGizmo4D *_transform_gizmo_4d = nullptr;
 	Marker4D *_origin_marker = nullptr;
 	Ref<ConfigFile> _4d_editor_config_file;
-	String _4d_editor_config_file_path;
+	String _4d_editor_config_file_path = "";
 
 	double _information_label_auto_hide_time = 0.0;
 

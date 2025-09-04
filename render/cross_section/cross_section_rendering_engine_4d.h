@@ -15,7 +15,7 @@ class CrossSectionRenderingEngine4D : public RenderingEngine4D {
 
 private:
 	Vector<RID> _instances_3d;
-	RID _cross_section_camera;
+	RID _cross_section_camera = RID();
 	Ref<World3D> _cross_section_world_3d;
 
 	void update_camera();

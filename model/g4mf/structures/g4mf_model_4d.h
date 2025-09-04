@@ -23,14 +23,14 @@ class G4MFModel4D : public G4MFFileReference4D {
 	// Optional. If provided, use this document for import settings.
 	// This needs to be a Variant to avoid circular dependency issues.
 	// This is a limitation of C++, forward declarations don't work here.
-	Variant _model_g4mf_document;
+	Variant _model_g4mf_document = Variant();
 	Ref<G4MFState4D> _model_g4mf_state;
 	Ref<OFFDocument4D> _model_off_document;
 #ifdef MODULE_GLTF_ENABLED
 	Ref<GLTFDocument> _model_gltf_document;
 	Ref<GLTFState> _model_gltf_state;
 #endif
-	String _model_file_uri_path;
+	String _model_file_uri_path = "";
 
 	static String _get_relative_path_without_updir_dots(const String &p_original_path, const String &p_relative_to);
 

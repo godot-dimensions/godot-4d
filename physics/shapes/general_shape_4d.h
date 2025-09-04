@@ -13,7 +13,7 @@
 class GeneralShape4D : public Shape4D {
 	GDCLASS(GeneralShape4D, Shape4D);
 
-	Vector4 _base_size;
+	Vector4 _base_size = Vector4();
 	TypedArray<GeneralShapeCurve4D> _curves;
 	static bool _warnings_enabled;
 
