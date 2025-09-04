@@ -556,7 +556,7 @@ Ref<OFFDocument4D> OFFDocument4D::_import_load_from_raw_text(const String &p_raw
 	return off_document;
 }
 
-String _vec4_to_off_3d(const Vector4 &p_vertex) {
+String OFFDocument4D::_vector4_to_off_3d(const Vector4 &p_vertex) {
 	String ret = String::num(p_vertex.x);
 	if (p_vertex.x == (real_t)(int64_t)p_vertex.x) {
 		ret += String(".0");
@@ -572,7 +572,7 @@ String _vec4_to_off_3d(const Vector4 &p_vertex) {
 	return ret;
 }
 
-String _vec4_to_off_4d(const Vector4 &p_vertex) {
+String OFFDocument4D::_vector4_to_off_4d(const Vector4 &p_vertex) {
 	String ret = String::num(p_vertex.x);
 	if (p_vertex.x == (real_t)(int64_t)p_vertex.x) {
 		ret += String(".0");
@@ -592,11 +592,11 @@ String _vec4_to_off_4d(const Vector4 &p_vertex) {
 	return ret;
 }
 
-String _color_to_off_string(const Color &p_color) {
+String OFFDocument4D::_color_to_off_string(const Color &p_color) {
 	return " " + String::num_int64(p_color.r * 255.0f) + " " + String::num_int64(p_color.g * 255.0f) + " " + String::num_int64(p_color.b * 255.0f);
 }
 
-String _cell_or_face_to_off_string(const PackedInt32Array &p_face) {
+String OFFDocument4D::_cell_or_face_to_off_string(const PackedInt32Array &p_face) {
 	String ret = String::num(p_face.size());
 	for (int i = 0; i < p_face.size(); i++) {
 		ret += String(" ") + String::num_int64(p_face[i]);
@@ -640,7 +640,7 @@ String OFFDocument4D::_export_save_to_string() {
 	}
 	lines.append("\n# Vertices");
 	for (int i = 0; i < _vertices.size(); i++) {
-		lines.append(_vec4_to_off_4d(_vertices[i]));
+		lines.append(has_4d_cells ? _vector4_to_off_4d(_vertices[i]) : _vector4_to_off_3d(_vertices[i]));
 	}
 	lines.append("\n# Faces");
 	for (int i = 0; i < _face_vertex_indices.size(); i++) {

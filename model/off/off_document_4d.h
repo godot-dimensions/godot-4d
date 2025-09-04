@@ -25,6 +25,11 @@ class OFFDocument4D : public Resource {
 	bool _has_any_face_colors = false;
 	bool _has_any_cell_colors = false;
 
+	static String _vector4_to_off_3d(const Vector4 &p_vertex);
+	static String _vector4_to_off_4d(const Vector4 &p_vertex);
+	static String _color_to_off_string(const Color &p_color);
+	static String _cell_or_face_to_off_string(const PackedInt32Array &p_face);
+
 	void _count_unique_edges_from_faces();
 	int _find_or_insert_face(const int p_a, const int p_b, const int p_c, const bool p_deduplicate_faces = true);
 	int _find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
