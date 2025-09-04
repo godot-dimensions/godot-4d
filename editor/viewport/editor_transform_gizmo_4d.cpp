@@ -792,7 +792,11 @@ void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origi
 	// The above position changes happen relative to the visual gizmo mesh holder, but
 	// we want them relative to the gizmo itself. Scale/rotation should not be adjusted.
 	transform_change.origin = _old_mesh_holder_transform * transform_change.origin;
-	Transform4D new_transform = _old_gizmo_transform * transform_change;
+	Transform4D new_transform = _snap_settings->snap_transform_change(_old_gizmo_transform, transform_change);
+	// Special case: Only in move mode, ignore any snapping that happened to the basis.
+	if (_current_transformation >= TRANSFORM_MOVE_X && _current_transformation <= TRANSFORM_MOVE_ZW) {
+		new_transform.basis = _old_gizmo_transform.basis;
+	}
 	set_transform(new_transform);
 	// We want the global diff so we can apply it from the left on the global transform of all selected nodes.
 	// Without this, the transforms would be relative to each node (ex: moving on X moves on each node's X axis).
@@ -801,6 +805,11 @@ void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origi
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
 			node_4d->set_global_transform(transform_change * _selected_top_node_old_transforms[i]);
+			if (_snap_settings->get_snap_final_values()) {
+				node_4d->set_transform(_snap_settings->snap_single_transform(node_4d->get_transform()));
+			}
+			// Note: The keep mode takes priority over snapping, so we apply it after snapping.
+			// In most cases these won't conflict, but in an edge case where they do, keep mode wins.
 			switch (_keep_mode) {
 				case KeepMode::FREEFORM: {
 					// Do nothing.
@@ -961,6 +970,7 @@ bool EditorTransformGizmo4D::_gizmo_mouse_raycast(const Ref<InputEventMouse> &p_
 			_current_transformation = _check_for_best_hit(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
 			if (_current_transformation != TRANSFORM_NONE) {
 				_begin_transformation(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
+				_snap_settings->set_camera_distance(_old_gizmo_transform.origin.distance_to(p_camera->get_global_position()));
 			}
 		} else if (!mouse_button->is_pressed() && _current_transformation != TRANSFORM_NONE) {
 			// If we are transforming something and the user releases the click, end the transformation.
@@ -1005,10 +1015,17 @@ void EditorTransformGizmo4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_mesh_holder = memnew(Node4D);
 	_mesh_holder->set_name(StringName("GizmoMeshHolder4D"));
 	add_child(_mesh_holder);
+	_snap_settings = memnew(EditorTransformSnapSettings4D);
 	RenderingServer4D::get_singleton()->connect(StringName("pre_render"), callable_mp(this, &EditorTransformGizmo4D::_on_rendering_server_pre_render));
 	EditorInterface::get_singleton()->get_inspector()->connect(StringName("property_edited"), callable_mp(this, &EditorTransformGizmo4D::_on_editor_inspector_property_edited));
 
 	// Set up things with the arguments (not constructor things).
 	_undo_redo = p_undo_redo_manager;
 	p_undo_redo_manager->connect(StringName("version_changed"), callable_mp(this, &EditorTransformGizmo4D::_on_undo_redo_version_changed));
+}
+
+EditorTransformGizmo4D::~EditorTransformGizmo4D() {
+	if (_snap_settings != nullptr) {
+		memdelete(_snap_settings);
+	}
 }

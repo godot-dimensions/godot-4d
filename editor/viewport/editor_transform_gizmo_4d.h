@@ -2,6 +2,8 @@
 
 #include "editor_viewport_4d_defines.h"
 
+#include "editor_transform_snap_settings_4d.h"
+
 #include "../../math/rect4.h"
 #include "../../model/mesh_instance_4d.h"
 
@@ -72,6 +74,7 @@ private:
 
 	Node4D *_mesh_holder = nullptr;
 	MeshInstance4D *_meshes[TRANSFORM_MAX] = { nullptr };
+	EditorTransformSnapSettings4D *_snap_settings = nullptr;
 	EditorUndoRedoManager *_undo_redo = nullptr;
 
 	KeepMode _keep_mode = KeepMode::FREEFORM;
@@ -122,6 +125,7 @@ protected:
 	static void _bind_methods() {}
 
 public:
+	EditorTransformSnapSettings4D *get_snap_settings() const { return _snap_settings; }
 	void selected_nodes_changed(const TypedArray<Node> &p_top_nodes);
 	void theme_changed(const PackedColorArray &p_axis_colors);
 	void set_keep_mode(const KeepMode p_mode);
@@ -132,4 +136,5 @@ public:
 	void set_use_local_rotation(const bool p_use_local_transform);
 
 	void setup(EditorUndoRedoManager *p_undo_redo_manager);
+	~EditorTransformGizmo4D();
 };
