@@ -97,12 +97,14 @@ private:
 	void _generate_gizmo_meshes(const PackedColorArray &p_axis_colors);
 
 	// Misc internal functions.
+	bool _gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera, const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_perp_direction);
 	void _on_rendering_server_pre_render(Camera4D *p_camera, Viewport *p_viewport, RenderingEngine4D *p_rendering_engine);
 	void _on_editor_inspector_property_edited(const String &p_prop);
 	void _on_undo_redo_version_changed();
 	void _update_gizmo_transform();
 	void _update_gizmo_mesh_transform(const Camera4D *p_camera);
 	Rect4 _get_rect_bounds_of_selection(const Transform4D &p_inv_relative_to) const;
+	static String _get_transform_part_simple_action_name(const TransformPart p_part);
 
 	// Highlighting functions, used when not transforming.
 	TransformPart _check_for_best_hit(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) const;
@@ -124,7 +126,6 @@ public:
 	void set_keep_mode(const KeepMode p_mode);
 	void set_gizmo_mode(const GizmoMode p_mode);
 	bool gizmo_mouse_input(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera);
-	bool gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_perp_direction);
 
 	bool get_use_local_rotation() const;
 	void set_use_local_rotation(const bool p_use_local_transform);

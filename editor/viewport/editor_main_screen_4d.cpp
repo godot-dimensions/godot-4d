@@ -360,6 +360,7 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	// All viewports share one gizmo and origin marker.
 	_transform_gizmo_4d = memnew(EditorTransformGizmo4D);
 	add_child(_transform_gizmo_4d);
+	_transform_gizmo_4d->setup(p_undo_redo_manager);
 
 	_origin_marker = memnew(Marker4D);
 	_origin_marker->set_name(StringName("OriginMarker4D"));
@@ -453,9 +454,6 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 #endif
 
 	EditorInterface::get_singleton()->get_selection()->connect(StringName("selection_changed"), callable_mp(this, &EditorMainScreen4D::_on_selection_changed));
-
-	// Set up things with the arguments (not constructor things).
-	_transform_gizmo_4d->setup(p_undo_redo_manager);
 
 	_apply_4d_editor_settings();
 }

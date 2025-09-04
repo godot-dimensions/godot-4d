@@ -338,6 +338,60 @@ Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p
 	return bounds;
 }
 
+String EditorTransformGizmo4D::_get_transform_part_simple_action_name(const TransformPart p_part) {
+	switch (p_part) {
+		case TRANSFORM_NONE: {
+			return "Transform";
+		} break;
+		case TRANSFORM_MOVE_X:
+		case TRANSFORM_MOVE_Y:
+		case TRANSFORM_MOVE_Z:
+		case TRANSFORM_MOVE_W:
+		case TRANSFORM_MOVE_XY:
+		case TRANSFORM_MOVE_XZ:
+		case TRANSFORM_MOVE_XW:
+		case TRANSFORM_MOVE_YZ:
+		case TRANSFORM_MOVE_YW:
+		case TRANSFORM_MOVE_ZW: {
+			return "Move";
+		} break;
+		case TRANSFORM_ROTATE_XY:
+		case TRANSFORM_ROTATE_XZ:
+		case TRANSFORM_ROTATE_XW:
+		case TRANSFORM_ROTATE_YZ:
+		case TRANSFORM_ROTATE_YW:
+		case TRANSFORM_ROTATE_ZW: {
+			return "Rotate";
+		} break;
+		case TRANSFORM_SCALE_X:
+		case TRANSFORM_SCALE_Y:
+		case TRANSFORM_SCALE_Z:
+		case TRANSFORM_SCALE_W:
+		case TRANSFORM_SCALE_XY:
+		case TRANSFORM_SCALE_XZ:
+		case TRANSFORM_SCALE_XW:
+		case TRANSFORM_SCALE_YZ:
+		case TRANSFORM_SCALE_YW:
+		case TRANSFORM_SCALE_ZW: {
+			return "Scale";
+		} break;
+		case TRANSFORM_STRETCH_POS_X:
+		case TRANSFORM_STRETCH_NEG_X:
+		case TRANSFORM_STRETCH_POS_Y:
+		case TRANSFORM_STRETCH_NEG_Y:
+		case TRANSFORM_STRETCH_POS_Z:
+		case TRANSFORM_STRETCH_NEG_Z:
+		case TRANSFORM_STRETCH_POS_W:
+		case TRANSFORM_STRETCH_NEG_W: {
+			return "Stretch";
+		} break;
+		case TRANSFORM_MAX: {
+			return "Transform";
+		} break;
+	}
+	return "Transform";
+}
+
 Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp, const bool correct_for_ring) {
 	const Vector4 axis1_slid = Vector4D::slide(p_axis1, p_perp).normalized();
 	if (axis1_slid == Vector4()) {
@@ -563,18 +617,16 @@ void EditorTransformGizmo4D::_end_transformation() {
 		return;
 	}
 	// Create an undo/redo action for the transformation.
-	const bool is_move_only = _current_transformation >= TRANSFORM_MOVE_X && _current_transformation <= TRANSFORM_MOVE_ZW;
-	_undo_redo->create_action(is_move_only ? String("Move 4D nodes with gizmo") : String("Transform 4D nodes with gizmo"));
+	const String action = _get_transform_part_simple_action_name(_current_transformation);
+	_undo_redo->create_action(action + String(" 4D nodes with gizmo"));
 	const int size = _selected_top_nodes.size();
 	for (int i = 0; i < size; i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
 			_undo_redo->add_do_property(node_4d, StringName("global_position"), node_4d->get_global_position());
 			_undo_redo->add_undo_property(node_4d, StringName("global_position"), _selected_top_node_old_transforms[i].origin);
-			if (!is_move_only) {
-				_undo_redo->add_do_property(node_4d, StringName("global_basis"), (Projection)node_4d->get_global_basis());
-				_undo_redo->add_undo_property(node_4d, StringName("global_basis"), (Projection)_selected_top_node_old_transforms[i].basis);
-			}
+			_undo_redo->add_do_property(node_4d, StringName("global_basis"), (Projection)node_4d->get_global_basis());
+			_undo_redo->add_undo_property(node_4d, StringName("global_basis"), (Projection)_selected_top_node_old_transforms[i].basis);
 		}
 	}
 	_undo_redo->commit_action(false);
@@ -891,10 +943,10 @@ bool EditorTransformGizmo4D::gizmo_mouse_input(const Ref<InputEventMouse> &p_mou
 	const Vector4 local_perp_direction = global_to_local.basis.xform(perpendicular_direction).normalized();
 	const Vector4 local_ray_origin = Vector4D::slide(global_to_local.xform(ray_origin), local_perp_direction);
 	const Vector4 local_ray_direction = Vector4D::slide(global_to_local.basis.xform(ray_direction), local_perp_direction);
-	return gizmo_mouse_raycast(p_mouse_event, local_ray_origin, local_ray_direction, local_perp_direction);
+	return _gizmo_mouse_raycast(p_mouse_event, p_camera, local_ray_origin, local_ray_direction, local_perp_direction);
 }
 
-bool EditorTransformGizmo4D::gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
+bool EditorTransformGizmo4D::_gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera, const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
 	Ref<InputEventMouseButton> mouse_button = p_mouse_event;
 	if (mouse_button.is_valid()) {
 		if (mouse_button->get_button_index() != MOUSE_BUTTON_LEFT) {
