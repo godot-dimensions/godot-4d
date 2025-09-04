@@ -153,8 +153,7 @@ Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
 }
 
 Ref<ArrayWireMesh4D> _make_stretch_triplane_wire_mesh_4d() {
-	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::create_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
-	return mesh;
+	return WireMeshBuilder4D::create_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
 }
 
 MeshInstance4D *EditorTransformGizmo4D::_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material) {
@@ -296,34 +295,35 @@ void EditorTransformGizmo4D::_update_gizmo_transform() {
 		set_visible(false);
 	} else {
 		set_visible(true);
-		set_transform(sum_transform / real_t(transform_count));
+		sum_transform /= (real_t)transform_count;
+		if (!_is_use_local_rotation) {
+			sum_transform.basis = Basis4D::from_scale(sum_transform.basis.get_global_scale_abs());
+		}
+		set_transform(sum_transform);
 	}
 }
 
 void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_camera) {
 	// We want to keep the gizmo the same size on the screen regardless of the camera's position.
 	const Transform4D camera_transform = p_camera->get_global_transform();
-	Vector4 global_position = get_position();
-	Basis4D global_basis;
-	if (_is_use_local_rotation) {
-		global_basis = get_basis().normalized();
-	}
+	Transform4D gizmo_transform = get_transform();
+	const Vector4 gizmo_scale_abs = gizmo_transform.basis.get_scale_abs();
 	if (_is_stretch_enabled) {
-		const Rect4 bounds = _get_rect_bounds_of_selection(Transform4D(global_basis, global_position).inverse());
-		global_position += global_basis * bounds.get_center();
-		global_basis.scale_local(bounds.size * 0.5f);
+		const Rect4 bounds = _get_rect_bounds_of_selection(gizmo_transform.inverse());
+		gizmo_transform.origin += gizmo_transform.basis * bounds.get_center();
+		gizmo_transform.basis.scale_local(bounds.size * 0.5f);
 		const real_t determinant = bounds.size.x * bounds.size.y * bounds.size.z * bounds.size.w;
 		set_visible(!Math::is_zero_approx(determinant));
-	} else {
-		real_t scale;
-		if (p_camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
-			scale = p_camera->get_orthographic_size() * 0.4f;
-		} else {
-			scale = global_position.distance_to(camera_transform.origin) * 0.4f;
-		}
-		global_basis *= scale;
+		_mesh_holder->set_global_transform(gizmo_transform);
+		return;
 	}
-	_mesh_holder->set_global_transform(Transform4D(global_basis, global_position));
+	real_t scale;
+	if (p_camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
+		scale = p_camera->get_orthographic_size() * 0.4f;
+	} else {
+		scale = gizmo_transform.origin.distance_to(camera_transform.origin) * 0.4f;
+	}
+	_mesh_holder->set_basis(Basis4D::from_scale(Vector4(scale, scale, scale, scale) / gizmo_scale_abs));
 }
 
 Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p_inv_relative_to) const {
@@ -601,7 +601,8 @@ Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_lo
 }
 
 void EditorTransformGizmo4D::_begin_transformation(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
-	_old_transform = _mesh_holder->get_global_transform();
+	_old_gizmo_transform = get_transform();
+	_old_mesh_holder_transform = _mesh_holder->get_transform();
 	_transform_reference_value = _get_transform_raycast_value(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
 	_selected_top_node_old_transforms.resize(_selected_top_nodes.size());
 	for (int i = 0; i < _selected_top_nodes.size(); i++) {
@@ -631,7 +632,6 @@ void EditorTransformGizmo4D::_end_transformation() {
 	}
 	_undo_redo->commit_action(false);
 	// Clear out the transformation data and mark the scene as unsaved.
-	_old_transform = Transform4D();
 	_transform_reference_value = Variant();
 	_current_transformation = TRANSFORM_NONE;
 	EditorInterface::get_singleton()->mark_scene_as_unsaved();
@@ -789,11 +789,14 @@ void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origi
 			} break;
 		}
 	}
-	Transform4D new_transform = _old_transform * transform_change;
+	// The above position changes happen relative to the visual gizmo mesh holder, but
+	// we want them relative to the gizmo itself. Scale/rotation should not be adjusted.
+	transform_change.origin = _old_mesh_holder_transform * transform_change.origin;
+	Transform4D new_transform = _old_gizmo_transform * transform_change;
 	set_transform(new_transform);
 	// We want the global diff so we can apply it from the left on the global transform of all selected nodes.
 	// Without this, the transforms would be relative to each node (ex: moving on X moves on each node's X axis).
-	transform_change = _old_transform.transform_to(new_transform);
+	transform_change = _old_gizmo_transform.transform_to(new_transform);
 	for (int i = 0; i < _selected_top_nodes.size(); i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
@@ -937,9 +940,10 @@ bool EditorTransformGizmo4D::gizmo_mouse_input(const Ref<InputEventMouse> &p_mou
 	const Vector4 ray_direction = p_camera->viewport_to_world_ray_direction(mouse_position);
 	const Vector4 perpendicular_direction = p_camera->get_global_basis().w;
 	if (_current_transformation == TRANSFORM_NONE) {
-		_old_transform = _mesh_holder->get_global_transform();
+		_old_gizmo_transform = get_transform();
+		_old_mesh_holder_transform = _mesh_holder->get_transform();
 	}
-	const Transform4D global_to_local = _old_transform.inverse();
+	const Transform4D global_to_local = (_old_gizmo_transform * _old_mesh_holder_transform).inverse();
 	const Vector4 local_perp_direction = global_to_local.basis.xform(perpendicular_direction).normalized();
 	const Vector4 local_ray_origin = Vector4D::slide(global_to_local.xform(ray_origin), local_perp_direction);
 	const Vector4 local_ray_direction = Vector4D::slide(global_to_local.basis.xform(ray_direction), local_perp_direction);

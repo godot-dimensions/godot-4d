@@ -78,7 +78,8 @@ private:
 	TransformPart _current_transformation = TRANSFORM_NONE;
 	TransformPart _highlighted_transformation = TRANSFORM_NONE;
 
-	Transform4D _old_transform = Transform4D();
+	Transform4D _old_gizmo_transform = Transform4D();
+	Transform4D _old_mesh_holder_transform = Transform4D();
 	Variant _transform_reference_value = Variant();
 	TypedArray<Node> _selected_top_nodes;
 	Vector<Transform4D> _selected_top_node_old_transforms;
