@@ -82,6 +82,8 @@ struct _NO_DISCARD_ Transform4D {
 	// Validation methods.
 	void conformalize();
 	Transform4D conformalized() const;
+	void normalize();
+	Transform4D normalized() const;
 	void orthonormalize();
 	Transform4D orthonormalized() const;
 	void orthogonalize();

@@ -57,6 +57,7 @@ struct _NO_DISCARD_ Basis4D {
 	Basis4D scaled_local(const Vector4 &p_scale) const;
 	void scale_uniform(const real_t p_scale);
 	Basis4D scaled_uniform(const real_t p_scale) const;
+	Vector4 get_global_scale_abs() const;
 	Vector4 get_scale() const;
 	Vector4 get_scale_abs() const;
 	void set_scale(const Vector4 &p_scale);

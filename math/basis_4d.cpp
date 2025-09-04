@@ -205,6 +205,14 @@ void Basis4D::scale_uniform(const real_t p_scale) {
 	w *= p_scale;
 }
 
+Vector4 Basis4D::get_global_scale_abs() const {
+	return Vector4(
+			get_row(0).length(),
+			get_row(1).length(),
+			get_row(2).length(),
+			get_row(3).length());
+}
+
 Vector4 Basis4D::get_scale() const {
 	Vector4 scale = get_scale_abs();
 	if (determinant() < 0.0f) {

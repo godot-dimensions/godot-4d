@@ -42,6 +42,10 @@ Ref<godot_4d_bind::Euler4D> godot_4d_bind::Euler4D::rotation_to(const Ref<godot_
 	EULER4D_BIND_RETURN_REF(euler.rotation_to(p_to->get_euler()));
 }
 
+Ref<godot_4d_bind::Euler4D> godot_4d_bind::Euler4D::snapped(const double p_step) const {
+	EULER4D_BIND_RETURN_REF(euler.snapped(p_step));
+}
+
 Ref<godot_4d_bind::Euler4D> godot_4d_bind::Euler4D::wrapped() const {
 	EULER4D_BIND_RETURN_REF(euler.wrapped());
 }
@@ -162,6 +166,10 @@ AABB godot_4d_bind::Euler4D::aabb_rotation_to(const AABB &p_from, const AABB &p_
 	return ::Euler4D(p_from).rotation_to(::Euler4D(p_to));
 }
 
+AABB godot_4d_bind::Euler4D::aabb_snapped(const AABB &p_euler_4d, const real_t p_step) {
+	return ::Euler4D(p_euler_4d).snapped(p_step);
+}
+
 AABB godot_4d_bind::Euler4D::aabb_wrapped(const AABB &p_euler_4d) {
 	return ::Euler4D(p_euler_4d).wrapped();
 }
@@ -276,6 +284,7 @@ void godot_4d_bind::Euler4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("rotate_basis", "basis"), &godot_4d_bind::Euler4D::rotate_basis);
 	ClassDB::bind_method(D_METHOD("rotate_point", "point"), &godot_4d_bind::Euler4D::rotate_point);
 	ClassDB::bind_method(D_METHOD("rotation_to", "to"), &godot_4d_bind::Euler4D::rotation_to);
+	ClassDB::bind_method(D_METHOD("snapped", "step"), &godot_4d_bind::Euler4D::snapped);
 	ClassDB::bind_method(D_METHOD("wrapped"), &godot_4d_bind::Euler4D::wrapped);
 	// Radians/degrees.
 	ClassDB::bind_method(D_METHOD("deg_to_rad"), &godot_4d_bind::Euler4D::deg_to_rad);
@@ -326,6 +335,7 @@ void godot_4d_bind::Euler4D::_bind_methods() {
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_rotate_basis", "euler_4d", "basis"), &godot_4d_bind::Euler4D::aabb_rotate_basis);
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_rotate_point", "euler_4d", "point"), &godot_4d_bind::Euler4D::aabb_rotate_point);
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_rotation_to", "from", "to"), &godot_4d_bind::Euler4D::aabb_rotation_to);
+	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_snapped", "euler", "step"), &godot_4d_bind::Euler4D::aabb_snapped);
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_wrapped", "euler"), &godot_4d_bind::Euler4D::aabb_wrapped);
 	// Radians/degrees.
 	ClassDB::bind_static_method("Euler4D", D_METHOD("aabb_deg_to_rad", "euler"), &godot_4d_bind::Euler4D::aabb_deg_to_rad);
