@@ -21,15 +21,18 @@ Vector4 EditorTransformSnapSettings4D::_snap_position(const Vector4 &p_position,
 	double active_snap_dist = _position_snap_distance_meters;
 	if (_position_snap_camera_distance_mode) {
 		const double cam_dist_clamped = MAX(Math::abs(_camera_distance), 0.000001);
-		const double snap_log_ten = std::log10(MAX(Math::abs(active_snap_dist), 0.000001));
-		// If the snap is a power of ten, use powers of ten for the dynamic snap.
-		if (Math::is_equal_approx(Math::round(snap_log_ten), snap_log_ten)) {
-			const double dist_log_ten = std::log10(cam_dist_clamped);
-			active_snap_dist *= Math::pow(10.0, Math::floor(dist_log_ten));
-		} else {
-			// Otherwise, use powers of two for the dynamic snap.
-			const double dist_log_two = std::log2(cam_dist_clamped);
-			active_snap_dist *= Math::pow(2.0, Math::floor(dist_log_two));
+		switch (_position_snap_camera_distance_mode) {
+			case CAM_DIST_CONSTANT: {
+				// Do nothing, already set above.
+			} break;
+			case CAM_DIST_DYNAMIC_POWER_OF_TEN: {
+				const double dist_log_ten = std::log10(cam_dist_clamped);
+				active_snap_dist *= Math::pow(10.0, Math::floor(dist_log_ten));
+			} break;
+			case CAM_DIST_DYNAMIC_POWER_OF_TWO: {
+				const double dist_log_two = std::log2(cam_dist_clamped);
+				active_snap_dist *= Math::pow(2.0, Math::floor(dist_log_two));
+			} break;
 		}
 	}
 	return p_position.snappedf(active_snap_dist);
