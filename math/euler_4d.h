@@ -9,7 +9,7 @@
 #endif
 
 // The conventions for which rotations are Yaw/Pitch/Roll assumes you are
-// using X=left/right, Y=up/down, Z=forward/back, and W=wint/zant.
+// using X=left/right, Y=up/down, Z=forward/back, and W=ana/kata.
 // Whether +Z or -Z is forward does not matter for the rotation names.
 struct _NO_DISCARD_ Euler4D {
 	union {

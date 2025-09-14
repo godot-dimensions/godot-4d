@@ -941,6 +941,10 @@ void EditorTransformGizmo4D::set_gizmo_mode(const GizmoMode p_mode) {
 
 bool EditorTransformGizmo4D::gizmo_mouse_input(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera) {
 	_update_gizmo_mesh_transform(p_camera);
+	if (_selected_top_nodes.is_empty()) {
+		set_visible(false);
+		return false;
+	}
 	if (!is_visible()) {
 		return false;
 	}
