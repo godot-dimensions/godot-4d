@@ -268,7 +268,10 @@ Ref<ArrayTetraMesh4D> OFFDocument4D::import_generate_tetra_mesh_4d() {
 	Ref<ArrayTetraMesh4D> cell_mesh;
 	cell_mesh.instantiate();
 	cell_mesh->set_vertices(_vertices);
-	ERR_FAIL_COND_V_MSG(_cell_face_indices.is_empty(), cell_mesh, "OFFDocument4D: This OFF document does not contain any cells, so it cannot be converted to a tetrahedral cell mesh. Perhaps this is a 3D OFF file?");
+	if (_cell_face_indices.is_empty()) {
+		ERR_FAIL_COND_V_MSG(_face_vertex_indices.is_empty(), cell_mesh, "OFFDocument4D: This OFF document does not contain any cells or faces, so it cannot be converted to a tetrahedral cell mesh. Perhaps this is a vertex-only OFF file, or a 0D or 1D OFF file?");
+		ERR_FAIL_V_MSG(cell_mesh, "OFFDocument4D: This OFF document does not contain any cells, so it cannot be converted to a tetrahedral cell mesh. Perhaps this is a 2D or 3D OFF file?");
+	}
 	const TypedArray<PackedInt32Array> cell_vertex_indices = _calculate_cell_vertex_indices();
 	const TypedArray<PackedInt32Array> simplex_vertex_indices = _calculate_simplex_vertex_indices(cell_vertex_indices);
 	const int64_t simplex_vertex_indices_size = simplex_vertex_indices.size();
@@ -313,7 +316,8 @@ Ref<ArrayWireMesh4D> OFFDocument4D::import_generate_wire_mesh_4d(const bool p_de
 		wire_material->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
 		wire_mesh->set_material(wire_material);
 	}
-	for (int face_number = 0; face_number < _face_vertex_indices.size(); face_number++) {
+	const int face_count = _face_vertex_indices.size();
+	for (int face_number = 0; face_number < face_count; face_number++) {
 		PackedInt32Array face_indices = _face_vertex_indices[face_number];
 		const int face_size = face_indices.size();
 		for (int face_index = 0; face_index < face_size; face_index++) {
@@ -328,6 +332,10 @@ Ref<ArrayWireMesh4D> OFFDocument4D::import_generate_wire_mesh_4d(const bool p_de
 				wire_material->append_albedo_color(_face_colors[face_number]);
 			}
 		}
+	}
+	if (face_count == 0 && _vertices.size() == 2) {
+		// Special case: OFF file with just two vertices and one implicit edge (such as a 1D OFF file).
+		wire_mesh->append_edge_indices(0, 1);
 	}
 	return wire_mesh;
 }
@@ -389,7 +397,7 @@ PackedColorArray OFFDocument4D::get_face_colors() const {
 
 void OFFDocument4D::set_face_colors(const PackedColorArray &p_face_colors) {
 	_face_colors = p_face_colors;
-	_has_any_face_colors = true;
+	_has_any_face_colors = !p_face_colors.is_empty();
 }
 
 TypedArray<PackedInt32Array> OFFDocument4D::get_face_vertex_indices() const {
@@ -456,15 +464,26 @@ Ref<OFFDocument4D> OFFDocument4D::_import_load_from_raw_text(const String &p_raw
 	int current_cell_index = 0;
 	int current_face_index = 0;
 	int current_vertex_index = 0;
+	int min_items_per_line = 3;
 	bool can_warn = true;
 	const PackedStringArray lines = p_raw_text.split("\n", false);
 	for (const String &line : lines) {
-		if (line.is_empty() || line.begins_with("#") || line.contains("OFF")) {
+		if (line.is_empty() || line.begins_with("#")) {
+			continue;
+		}
+		if (line.contains("OFF")) {
+			// "OFF" by itself is 3D OFF.
+			if (line != "OFF") {
+				const int declared_dimension = line.to_int();
+				if (declared_dimension < 3) {
+					min_items_per_line = declared_dimension;
+				}
+			}
 			continue;
 		}
 		PackedStringArray items = line.split(" ", false);
 		const int item_count = items.size();
-		if (item_count < 3) {
+		if (item_count < min_items_per_line) {
 			if (can_warn) {
 				can_warn = false;
 				WARN_PRINT("OFF import: Warning: OFF file " + p_path + " contains invalid line: '" + line + "'. Skipping this line and attempting to read the rest of the file anyway.");
@@ -475,25 +494,33 @@ Ref<OFFDocument4D> OFFDocument4D::_import_load_from_raw_text(const String &p_raw
 			case OFFDocumentReadState::READ_SIZE: {
 				vertex_count = items[0].to_int();
 				off_document->_vertices.resize(vertex_count);
-				face_count = items[1].to_int();
-				off_document->_face_vertex_indices.resize(face_count);
-				off_document->_face_colors.resize(face_count);
-				off_document->_edge_count = items[2].to_int();
-				if (item_count > 3) {
-					cell_count = items[3].to_int();
-					off_document->_cell_face_indices.resize(cell_count);
-					off_document->_cell_colors.resize(cell_count);
+				if (item_count > 1) {
+					face_count = items[1].to_int();
+					off_document->_face_vertex_indices.resize(face_count);
+					off_document->_face_colors.resize(face_count);
+					if (item_count > 2) {
+						off_document->_edge_count = items[2].to_int();
+						if (item_count > 3) {
+							cell_count = items[3].to_int();
+							off_document->_cell_face_indices.resize(cell_count);
+							off_document->_cell_colors.resize(cell_count);
+						}
+					}
 				}
 				read_state = OFFDocumentReadState::READ_VERTICES;
 			} break;
 			case OFFDocumentReadState::READ_VERTICES: {
-				if (can_warn) {
+				if (can_warn && item_count >= 3) {
 					if (!items[0].contains(".") || !items[1].contains(".") || !items[2].contains(".")) {
 						can_warn = false;
 						//WARN_PRINT("Warning: OFF file " + p_path + " contains invalid vertex line: '" + line + "'. Every number in a vertex should be a floating-point number, whole numbers should end with '.0'. Reading this as a vertex anyway.");
 					}
 				}
-				if (item_count == 3) {
+				if (item_count == 1) {
+					off_document->_vertices.set(current_vertex_index, Vector4(items[0].to_float(), 0.0, 0.0, 0.0));
+				} else if (item_count == 2) {
+					off_document->_vertices.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), 0.0, 0.0));
+				} else if (item_count == 3) {
 					off_document->_vertices.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), items[2].to_float(), 0.0));
 				} else {
 					if (can_warn) {
