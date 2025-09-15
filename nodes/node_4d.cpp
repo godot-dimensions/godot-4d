@@ -397,7 +397,7 @@ void Node4D::set_rotor_split_complex_bind(const Vector2 &p_split) {
 // Global transform and basis.
 
 Transform4D Node4D::get_global_transform() const {
-	Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
+	const Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
 	if (node_4d_parent) {
 		return node_4d_parent->get_global_transform() * _transform;
 	} else {
@@ -434,7 +434,7 @@ void Node4D::set_global_transform_bind(const Ref<godot_4d_bind::Transform4D> &p_
 }
 
 Basis4D Node4D::get_global_basis() const {
-	Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
+	const Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
 	if (node_4d_parent) {
 		return node_4d_parent->get_global_basis() * _transform.basis;
 	} else {

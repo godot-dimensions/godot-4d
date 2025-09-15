@@ -73,6 +73,7 @@ private:
 	};
 
 	Node4D *_mesh_holder = nullptr;
+	Node4D *_mesh_keep_conformal[4] = { nullptr };
 	MeshInstance4D *_meshes[TRANSFORM_MAX] = { nullptr };
 	EditorTransformSnapSettings4D *_snap_settings = nullptr;
 	EditorUndoRedoManager *_undo_redo = nullptr;
@@ -97,7 +98,7 @@ private:
 	bool _are_generated_meshes_wireframes = false;
 
 	// Setup functions.
-	MeshInstance4D *_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material);
+	MeshInstance4D *_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material, Node4D *p_parent);
 	void _generate_gizmo_meshes(const PackedColorArray &p_axis_colors);
 
 	// Misc internal functions.
