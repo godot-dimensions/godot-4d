@@ -322,13 +322,13 @@ void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_came
 		_mesh_holder->set_global_transform(gizmo_transform);
 		return;
 	}
-	real_t scale;
+	real_t scale_dist_number;
 	if (p_camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
-		scale = p_camera->get_orthographic_size() * 0.4f;
+		scale_dist_number = p_camera->get_orthographic_size() * 0.4f;
 	} else {
-		scale = gizmo_transform.origin.distance_to(camera_transform.origin) * 0.4f;
+		scale_dist_number = gizmo_transform.origin.distance_to(camera_transform.origin) * 0.4f;
 	}
-	const Vector4 scale_vec = Vector4(scale, scale, scale, scale);
+	const Vector4 scale_vec = Vector4(scale_dist_number, scale_dist_number, scale_dist_number, scale_dist_number);
 	if (_is_use_local_rotation) {
 		_mesh_holder->set_basis(Basis4D::from_scale(scale_vec / gizmo_scale_abs));
 	} else {
@@ -339,7 +339,7 @@ void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_came
 	for (int i0 = 0; i0 < 4; i0++) {
 		_mesh_keep_conformal[i0]->set_basis(Basis4D());
 		Basis4D basis = _mesh_keep_conformal[i0]->get_global_basis();
-		const real_t scale = basis[i0].length();
+		const real_t basis_i0_scale = basis[i0].length();
 		// Gram-Schmidt process, prioritizing the axis with index i0.
 		basis[i0] = basis[i0].normalized();
 		const int i1 = (i0 + 1) % 4;
@@ -348,7 +348,7 @@ void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_came
 		basis[i2] = (basis[i2] - basis[i0] * basis[i0].dot(basis[i2]) - basis[i1] * basis[i1].dot(basis[i2])).normalized();
 		const int i3 = (i0 + 3) % 4;
 		basis[i3] = (basis[i3] - basis[i0] * basis[i0].dot(basis[i3]) - basis[i1] * basis[i1].dot(basis[i3]) - basis[i2] * basis[i2].dot(basis[i3])).normalized();
-		basis *= scale;
+		basis *= basis_i0_scale;
 		_mesh_keep_conformal[i0]->set_global_basis(basis);
 	}
 }
