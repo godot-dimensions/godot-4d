@@ -29,6 +29,13 @@
 				Gets the index of the G4MF node in the state's [member g4mf_nodes] array corresponding to the given Godot node. This will return [code]-1[/code] if the node is not found. Since it is possible for a G4MF node to generate multiple Godot nodes, if this returns [code]-1[/code], you may wish to call this function again with the parent node to give it another try.
 			</description>
 		</method>
+		<method name="has_unique_name" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Returns [code]true[/code] if the given [param name] has already been reserved by a previous call to [method reserve_unique_name]. This can be used to check if a name is already in use before attempting to reserve it.
+			</description>
+		</method>
 		<method name="is_text_file" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -37,7 +44,7 @@
 		</method>
 		<method name="reserve_unique_name">
 			<return type="String" />
-			<param index="0" name="requested" type="String" />
+			<param index="0" name="requested_name" type="String" />
 			<description>
 				Reserves a unique name based on the requested name. This allows you to create a unique name for a node or resource in the G4MF file without conflicting with other names. If the requested name is already in use, a number will be appended to the name to make it unique. The number will be incremented until a unique name is found. The returned name is guaranteed to be unique relative to already reserved names.
 			</description>
@@ -47,6 +54,13 @@
 			<description>
 				Returns [code]true[/code] if resource files, such as images, should be separated into their own files. Returns [code]false[/code] if they should be embedded in the G4MF file. This is determined by the [member external_data_mode] property.
 				Extensions should call this method to determine if they should save their resources in separate files. For example, an audio extension should use this to determine if it should save audio files in separate files such as [code].mp3[/code] files, or if it should embed them in the G4MF file in buffer views.
+			</description>
+		</method>
+		<method name="unreserve_unique_name">
+			<return type="bool" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Unreserves a unique name previously reserved by a call to [method reserve_unique_name]. This allows you to free up a name when deleting data from a [G4MFState4D]. Returns [code]true[/code] if the name was successfully unreserved, or [code]false[/code] if the name was not found in the reserved names.
 			</description>
 		</method>
 	</methods>

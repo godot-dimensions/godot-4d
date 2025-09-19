@@ -37,6 +37,10 @@ String G4MFState4D::reserve_unique_name(const String &p_requested_name) {
 	return unique_name;
 }
 
+bool G4MFState4D::unreserve_unique_name(const String &p_name) {
+	return _unique_names.erase(p_name);
+}
+
 bool G4MFState4D::is_text_file() const {
 	// Checking `length > 3` handles "g4tf", "g4mf", "json", "g4tf.json", "g4mf.json", etc.
 	return _g4mf_filename.get_extension().length() > 3;
@@ -111,7 +115,9 @@ void G4MFState4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("append_g4mf_node", "node"), &G4MFState4D::append_g4mf_node);
 	ClassDB::bind_method(D_METHOD("get_node_index", "node"), &G4MFState4D::get_node_index);
-	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested"), &G4MFState4D::reserve_unique_name);
+	ClassDB::bind_method(D_METHOD("has_unique_name", "name"), &G4MFState4D::has_unique_name);
+	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested_name"), &G4MFState4D::reserve_unique_name);
+	ClassDB::bind_method(D_METHOD("unreserve_unique_name", "name"), &G4MFState4D::unreserve_unique_name);
 
 	// Path data for the file.
 	ClassDB::bind_method(D_METHOD("get_g4mf_base_path"), &G4MFState4D::get_g4mf_base_path);

@@ -99,7 +99,9 @@ public:
 
 	int append_g4mf_node(Ref<G4MFNode4D> p_node);
 	int get_node_index(const Node4D *p_node);
+	bool has_unique_name(const String &p_name) const { return _unique_names.has(p_name); }
 	String reserve_unique_name(const String &p_requested_name);
+	bool unreserve_unique_name(const String &p_name);
 
 	// Path data for the file.
 	String get_g4mf_base_path() const { return _g4mf_base_path; }
