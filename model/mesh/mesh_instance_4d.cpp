@@ -1,6 +1,6 @@
 #include "mesh_instance_4d.h"
 
-#include "../render/rendering_server_4d.h"
+#include "../../render/rendering_server_4d.h"
 
 void MeshInstance4D::_notification(int p_what) {
 	switch (p_what) {

@@ -11,9 +11,9 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
-#include "../mesh_instance_4d.h"
-#include "../tetra/tetra_material_4d.h"
-#include "../wire/wire_material_4d.h"
+#include "../mesh/mesh_instance_4d.h"
+#include "../mesh/tetra/tetra_material_4d.h"
+#include "../mesh/wire/wire_material_4d.h"
 
 void OFFDocument4D::_count_unique_edges_from_faces() {
 	_edge_count = 0;

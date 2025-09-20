@@ -1,5 +1,5 @@
 #include "wire_mesh_4d.h"
-#include "../../math/vector_4d.h"
+#include "../../../math/vector_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/surface_tool.hpp>

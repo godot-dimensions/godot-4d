@@ -1,17 +1,7 @@
 #include "orthoplex_wire_mesh_4d.h"
 
+#include "../orthoplex_mesh_data.inc"
 #include "../tetra/orthoplex_tetra_mesh_4d.h"
-
-/* clang-format off */
-#define ORTHOPLEX_EDGE_INDICES PackedInt32Array { \
-	0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, /* -X connecting to YZW */ \
-	1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, /* +X connecting to YZW */ \
-	2, 4, 2, 5, 2, 6, 2, 7, /* -Y connecting to ZW */ \
-	3, 4, 3, 5, 3, 6, 3, 7, /* +Y connecting to ZW */ \
-	4, 6, 4, 7, /* -Z connecting to W */ \
-	5, 6, 5, 7, /* +Z connecting to W */ \
-}
-/* clang-format on */
 
 Vector4 OrthoplexWireMesh4D::get_half_extents() const {
 	return _size * 0.5f;

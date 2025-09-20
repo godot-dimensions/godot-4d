@@ -1,6 +1,6 @@
 #include "g4mf_model_4d.h"
 
-#include "../../mesh_instance_4d.h"
+#include "../../mesh/mesh_instance_4d.h"
 #include "../g4mf_document_4d.h"
 
 #if GDEXTENSION

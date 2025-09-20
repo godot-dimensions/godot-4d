@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../nodes/node_4d.h"
+#include "../../nodes/node_4d.h"
 #include "mesh_4d.h"
 
 class MeshInstance4D : public Node4D {

@@ -1,6 +1,6 @@
 #include "ray_shape_4d.h"
 
-#include "../../model/wire/array_wire_mesh_4d.h"
+#include "../../model/mesh/wire/array_wire_mesh_4d.h"
 
 Rect4 RayShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	Rect4 rect_bounds = Rect4(p_to_target.origin, Vector4(0, 0, 0, 0));

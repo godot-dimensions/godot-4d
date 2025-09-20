@@ -11,8 +11,8 @@
 
 #include "../../math/rect4.h"
 #include "../../math/transform_4d.h"
-#include "../../model/tetra/tetra_mesh_4d.h"
-#include "../../model/wire/wire_mesh_4d.h"
+#include "../../model/mesh/tetra/tetra_mesh_4d.h"
+#include "../../model/mesh/wire/wire_mesh_4d.h"
 
 class Shape4D : public Resource {
 	GDCLASS(Shape4D, Resource);

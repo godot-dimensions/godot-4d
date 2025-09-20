@@ -1,6 +1,6 @@
 #include "wireframe_canvas_rendering_engine_4d.h"
 
-#include "../../model/wire/wire_material_4d.h"
+#include "../../model/mesh/wire/wire_material_4d.h"
 #include "wireframe_render_canvas_4d.h"
 
 Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index) {

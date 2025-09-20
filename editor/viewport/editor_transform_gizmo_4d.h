@@ -5,7 +5,7 @@
 #include "editor_transform_snap_settings_4d.h"
 
 #include "../../math/rect4.h"
-#include "../../model/mesh_instance_4d.h"
+#include "../../model/mesh/mesh_instance_4d.h"
 
 class Camera4D;
 class RenderingEngine4D;

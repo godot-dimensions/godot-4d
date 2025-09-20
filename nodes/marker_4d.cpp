@@ -1,8 +1,8 @@
 #include "marker_4d.h"
 
 #include "../math/vector_4d.h"
-#include "../model/wire/array_wire_mesh_4d.h"
-#include "../model/wire/wire_material_4d.h"
+#include "../model/mesh/wire/array_wire_mesh_4d.h"
+#include "../model/mesh/wire/wire_material_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/engine.hpp>

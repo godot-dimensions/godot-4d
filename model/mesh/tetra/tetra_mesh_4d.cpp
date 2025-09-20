@@ -1,6 +1,6 @@
 #include "tetra_mesh_4d.h"
 
-#include "../../math/vector_4d.h"
+#include "../../../math/vector_4d.h"
 #include "../material_4d.h"
 #include "array_tetra_mesh_4d.h"
 
@@ -54,6 +54,29 @@ void TetraMesh4D::tetra_mesh_clear_cache() {
 	_edge_positions_cache.clear();
 	_edge_indices_cache.clear();
 	mark_cross_section_mesh_dirty();
+}
+
+bool TetraMesh4D::validate_mesh_data() {
+	const PackedInt32Array cell_indices = get_cell_indices();
+	const int64_t cell_indices_count = cell_indices.size();
+	if (cell_indices_count % 4 != 0) {
+		return false; // Must be a multiple of 4.
+	}
+	const int64_t cell_uvw_map_count = get_cell_uvw_map().size();
+	if (cell_uvw_map_count > 0 && cell_uvw_map_count != cell_indices_count) {
+		return false; // Must be the same size as the cell indices if UVW map is present.
+	}
+	const int64_t cell_normals_count = get_cell_normals().size();
+	if (cell_normals_count > 0 && cell_normals_count * 4 != cell_indices_count) {
+		return false; // Must be have one normal per cell (4 indices) if normals are present.
+	}
+	const int64_t vertex_count = get_vertices().size();
+	for (int32_t cell_index : cell_indices) {
+		if (cell_index < 0 || cell_index >= vertex_count) {
+			return false; // Cells must reference valid vertices.
+		}
+	}
+	return true;
 }
 
 void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {

@@ -1,6 +1,6 @@
 #include "plane_shape_4d.h"
 
-#include "../../model/wire/wire_mesh_builder_4d.h"
+#include "../../model/mesh/wire/wire_mesh_builder_4d.h"
 
 Rect4 PlaneShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	const Vector4 normal = p_to_target.basis.y.normalized();

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../math/transform_4d.h"
+#include "../../../math/transform_4d.h"
 #include "tetra_mesh_4d.h"
 
 class ArrayTetraMesh4D : public TetraMesh4D {

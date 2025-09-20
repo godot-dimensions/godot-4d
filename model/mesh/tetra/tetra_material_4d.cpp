@@ -1,6 +1,6 @@
 #include "tetra_material_4d.h"
 
-#include "../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
+#include "../../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4

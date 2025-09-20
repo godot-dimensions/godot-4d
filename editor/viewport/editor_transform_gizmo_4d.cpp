@@ -5,10 +5,10 @@
 #include "../../math/geometry_4d.h"
 #include "../../math/plane_4d.h"
 #include "../../math/vector_4d.h"
-#include "../../model/wire/array_wire_mesh_4d.h"
-#include "../../model/wire/box_wire_mesh_4d.h"
-#include "../../model/wire/wire_material_4d.h"
-#include "../../model/wire/wire_mesh_builder_4d.h"
+#include "../../model/mesh/wire/array_wire_mesh_4d.h"
+#include "../../model/mesh/wire/box_wire_mesh_4d.h"
+#include "../../model/mesh/wire/wire_material_4d.h"
+#include "../../model/mesh/wire/wire_mesh_builder_4d.h"
 #include "../../render/rendering_server_4d.h"
 
 #if GDEXTENSION

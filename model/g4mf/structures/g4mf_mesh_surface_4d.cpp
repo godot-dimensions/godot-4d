@@ -1,6 +1,6 @@
 #include "g4mf_mesh_surface_4d.h"
 
-#include "../../tetra/box_tetra_mesh_4d.h"
+#include "../../mesh/tetra/box_tetra_mesh_4d.h"
 #include "../g4mf_state_4d.h"
 
 bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const {

@@ -2,8 +2,8 @@
 
 #include "g4mf_item_4d.h"
 
-#include "../../tetra/array_tetra_mesh_4d.h"
-#include "../../wire/array_wire_mesh_4d.h"
+#include "../../mesh/tetra/array_tetra_mesh_4d.h"
+#include "../../mesh/wire/array_wire_mesh_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_set.hpp>

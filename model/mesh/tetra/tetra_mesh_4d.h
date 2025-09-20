@@ -25,6 +25,7 @@ protected:
 
 public:
 	void tetra_mesh_clear_cache();
+	virtual bool validate_mesh_data() override;
 	virtual void validate_material_for_mesh(const Ref<Material4D> &p_material) override;
 	Ref<ArrayTetraMesh4D> to_array_tetra_mesh();
 

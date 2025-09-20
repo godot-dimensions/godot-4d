@@ -1,6 +1,6 @@
 #include "cross_section_rendering_engine_4d.h"
 
-#include "../../model/mesh_instance_4d.h"
+#include "../../model/mesh/mesh_instance_4d.h"
 #include "../../nodes/camera_4d.h"
 
 #if GDEXTENSION

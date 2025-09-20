@@ -1,6 +1,6 @@
 #include "array_tetra_mesh_4d.h"
 
-#include "../../math/vector_4d.h"
+#include "../../../math/vector_4d.h"
 
 void ArrayTetraMesh4D::_clear_cache() {
 	_cell_positions_cache.clear();
