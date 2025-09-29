@@ -66,7 +66,7 @@ bool TetraMesh4D::validate_mesh_data() {
 	if (cell_uvw_map_count > 0 && cell_uvw_map_count != cell_indices_count) {
 		return false; // Must be the same size as the cell indices if UVW map is present.
 	}
-	const int64_t cell_normals_count = get_cell_normals().size();
+	const int64_t cell_normals_count = get_cell_face_normals().size();
 	if (cell_normals_count > 0 && cell_normals_count * 4 != cell_indices_count) {
 		return false; // Must be have one normal per cell (4 indices) if normals are present.
 	}
@@ -111,7 +111,8 @@ Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	array_mesh.instantiate();
 	array_mesh->set_vertices(get_vertices());
 	array_mesh->set_cell_indices(get_cell_indices());
-	array_mesh->set_cell_normals(get_cell_normals());
+	array_mesh->set_cell_face_normals(get_cell_face_normals());
+	array_mesh->set_cell_vertex_normals(get_cell_vertex_normals());
 	array_mesh->set_cell_uvw_map(get_cell_uvw_map());
 	array_mesh->set_material(get_material());
 	return array_mesh;
@@ -123,10 +124,16 @@ PackedInt32Array TetraMesh4D::get_cell_indices() {
 	return indices;
 }
 
-PackedVector4Array TetraMesh4D::get_cell_normals() {
-	PackedVector4Array normals;
-	GDVIRTUAL_CALL(_get_cell_normals, normals);
-	return normals;
+PackedVector4Array TetraMesh4D::get_cell_face_normals() {
+	PackedVector4Array face_normals;
+	GDVIRTUAL_CALL(_get_cell_face_normals, face_normals);
+	return face_normals;
+}
+
+PackedVector4Array TetraMesh4D::get_cell_vertex_normals() {
+	PackedVector4Array vertex_normals;
+	GDVIRTUAL_CALL(_get_cell_vertex_normals, vertex_normals);
+	return vertex_normals;
 }
 
 PackedVector3Array TetraMesh4D::get_cell_uvw_map() {
@@ -203,7 +210,7 @@ void TetraMesh4D::update_cross_section_mesh() {
 	surface_tool->set_smooth_group(-1);
 
 	const PackedVector4Array cell_positions = get_cell_positions();
-	const PackedVector4Array cell_normals = get_cell_normals();
+	const PackedVector4Array cell_normals = get_cell_face_normals();
 	PackedVector3Array cell_uvws = get_cell_uvw_map();
 	if (cell_uvws.size() != cell_positions.size()) {
 		ERR_PRINT("Cell UVW map size does not match cell positions size.");
@@ -282,10 +289,12 @@ void TetraMesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_cell_indices"), &TetraMesh4D::get_cell_indices);
 	ClassDB::bind_method(D_METHOD("get_cell_positions"), &TetraMesh4D::get_cell_positions);
-	ClassDB::bind_method(D_METHOD("get_cell_normals"), &TetraMesh4D::get_cell_normals);
+	ClassDB::bind_method(D_METHOD("get_cell_face_normals"), &TetraMesh4D::get_cell_face_normals);
+	ClassDB::bind_method(D_METHOD("get_cell_vertex_normals"), &TetraMesh4D::get_cell_vertex_normals);
 	ClassDB::bind_method(D_METHOD("get_cell_uvw_map"), &TetraMesh4D::get_cell_uvw_map);
 
 	GDVIRTUAL_BIND(_get_cell_indices);
-	GDVIRTUAL_BIND(_get_cell_normals);
+	GDVIRTUAL_BIND(_get_cell_face_normals);
+	GDVIRTUAL_BIND(_get_cell_vertex_normals);
 	GDVIRTUAL_BIND(_get_cell_uvw_map);
 }

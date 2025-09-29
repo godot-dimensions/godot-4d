@@ -17,6 +17,13 @@
 				Returns the unsigned minimum angle between the given vectors, in radians.
 			</description>
 		</method>
+		<method name="average" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vectors" type="PackedVector4Array" />
+			<description>
+				Returns the average of all the vectors in the given array. If the array is empty, a zero vector is returned.
+			</description>
+		</method>
 		<method name="axis_color" qualifiers="static">
 			<return type="Color" />
 			<param index="0" name="axis" type="int" />

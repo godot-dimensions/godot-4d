@@ -16,9 +16,13 @@ bool ArrayTetraMesh4D::validate_mesh_data() {
 	if (cell_uvw_map_count > 0 && cell_uvw_map_count != cell_indices_count) {
 		return false; // Must be the same size as the cell indices.
 	}
-	const int64_t cell_normals_count = _cell_normals.size();
-	if (cell_normals_count > 0 && cell_normals_count * 4 != cell_indices_count) {
-		return false; // Must be have one normal per cell (4 indices).
+	const int64_t cell_face_normals_count = _cell_face_normals.size();
+	if (cell_face_normals_count > 0 && cell_face_normals_count * 4 != cell_indices_count) {
+		return false; // Must have one normal per cell (4 indices).
+	}
+	const int64_t cell_vertex_normals_count = _cell_vertex_normals.size();
+	if (cell_face_normals_count > 0 && cell_vertex_normals_count != cell_indices_count) {
+		return false; // Must have one normal per cell vertex instance (1 per index).
 	}
 	const int64_t vertex_count = _vertices.size();
 	for (int32_t cell_index : _cell_indices) {
@@ -73,9 +77,9 @@ PackedInt32Array ArrayTetraMesh4D::append_vertices(const PackedVector4Array &p_v
 
 void ArrayTetraMesh4D::calculate_normals(const bool p_keep_existing) {
 	const int cell_count = _cell_indices.size() / 4;
-	_cell_normals.resize(cell_count);
+	_cell_face_normals.resize(cell_count);
 	for (int i = 0; i < cell_count; i++) {
-		if (p_keep_existing && _cell_normals[i] != Vector4()) {
+		if (p_keep_existing && _cell_face_normals[i] != Vector4()) {
 			continue;
 		}
 		const Vector4 pivot = _vertices[_cell_indices[i * 4]];
@@ -83,46 +87,76 @@ void ArrayTetraMesh4D::calculate_normals(const bool p_keep_existing) {
 		const Vector4 b = _vertices[_cell_indices[2 + i * 4]];
 		const Vector4 c = _vertices[_cell_indices[3 + i * 4]];
 		const Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
-		_cell_normals.set(i, perp.normalized());
+		_cell_face_normals.set(i, perp.normalized());
+	}
+}
+
+void ArrayTetraMesh4D::set_flat_shading_normals(const bool p_realign_face_normals) {
+	_cell_vertex_normals.clear();
+	if (p_realign_face_normals) {
+		calculate_normals();
+	}
+	const PackedVector4Array cell_face_normals = get_cell_face_normals();
+	const int64_t cell_face_normal_count = cell_face_normals.size();
+	CRASH_COND(cell_face_normal_count * 4 != _cell_indices.size());
+	_cell_vertex_normals.resize(cell_face_normal_count * 4);
+	for (int64_t cell_index = 0; cell_index < cell_face_normal_count; cell_index++) {
+		const Vector4 &face_normal = cell_face_normals[cell_index];
+		_cell_vertex_normals.set(cell_index * 4 + 0, face_normal);
+		_cell_vertex_normals.set(cell_index * 4 + 1, face_normal);
+		_cell_vertex_normals.set(cell_index * 4 + 2, face_normal);
+		_cell_vertex_normals.set(cell_index * 4 + 3, face_normal);
 	}
 }
 
 void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Transform4D &p_transform) {
-	const int start_cell_index_count = _cell_indices.size();
-	const int start_cell_normal_count = _cell_normals.size();
-	const int start_cell_uvw_map_count = _cell_uvw_map.size();
-	const int start_vertex_count = _vertices.size();
-	const int other_cell_index_count = p_other->_cell_indices.size();
-	const int other_cell_normal_count = p_other->_cell_normals.size();
-	const int other_cell_uvw_map_count = p_other->_cell_uvw_map.size();
-	const int other_vertex_count = p_other->_vertices.size();
-	const int end_cell_index_count = start_cell_index_count + other_cell_index_count;
-	const int end_vertex_count = start_vertex_count + other_vertex_count;
+	const int64_t start_cell_index_count = _cell_indices.size();
+	const int64_t start_cell_face_normal_count = _cell_face_normals.size();
+	const int64_t start_cell_vertex_normal_count = _cell_vertex_normals.size();
+	const int64_t start_cell_uvw_map_count = _cell_uvw_map.size();
+	const int64_t start_vertex_count = _vertices.size();
+	const int64_t other_cell_index_count = p_other->_cell_indices.size();
+	const int64_t other_cell_face_normal_count = p_other->_cell_face_normals.size();
+	const int64_t other_cell_vertex_normal_count = p_other->_cell_vertex_normals.size();
+	const int64_t other_cell_uvw_map_count = p_other->_cell_uvw_map.size();
+	const int64_t other_vertex_count = p_other->_vertices.size();
+	const int64_t end_cell_index_count = start_cell_index_count + other_cell_index_count;
+	const int64_t end_vertex_count = start_vertex_count + other_vertex_count;
 	_cell_indices.resize(end_cell_index_count);
 	_vertices.resize(end_vertex_count);
-	for (int i = 0; i < other_cell_index_count; i++) {
+	for (int64_t i = 0; i < other_cell_index_count; i++) {
 		_cell_indices.set(start_cell_index_count + i, p_other->_cell_indices[i] + start_vertex_count);
 	}
-	for (int i = 0; i < other_vertex_count; i++) {
+	for (int64_t i = 0; i < other_vertex_count; i++) {
 		_vertices.set(start_vertex_count + i, p_transform * p_other->_vertices[i]);
 	}
 	// Can't simply add these together in case the first mesh has no normals or UVW maps.
-	if (start_cell_normal_count > 0 || other_cell_normal_count > 0) {
-		const int end_cell_normal_count = end_cell_index_count / 4;
-		_cell_normals.resize(end_cell_normal_count);
-		if (other_cell_normal_count > 0) {
-			const int cell_normal_write_offset = end_cell_normal_count - other_cell_normal_count;
-			for (int i = 0; i < other_cell_normal_count; i++) {
-				_cell_normals.set(cell_normal_write_offset + i, p_transform.basis * p_other->_cell_normals[i]);
+	if (start_cell_face_normal_count > 0 || other_cell_face_normal_count > 0) {
+		const int64_t end_cell_normal_count = end_cell_index_count / 4;
+		_cell_face_normals.resize(end_cell_normal_count);
+		if (other_cell_face_normal_count > 0) {
+			const int64_t cell_normal_write_offset = end_cell_normal_count - other_cell_face_normal_count;
+			for (int64_t i = 0; i < other_cell_face_normal_count; i++) {
+				_cell_face_normals.set(cell_normal_write_offset + i, p_transform.basis * p_other->_cell_face_normals[i]);
+			}
+		}
+	}
+	if (start_cell_vertex_normal_count > 0 || other_cell_vertex_normal_count > 0) {
+		const int64_t end_cell_vertex_normal_count = end_cell_index_count;
+		_cell_vertex_normals.resize(end_cell_vertex_normal_count);
+		if (other_cell_vertex_normal_count > 0) {
+			const int64_t cell_vertex_normal_write_offset = end_cell_vertex_normal_count - other_cell_vertex_normal_count;
+			for (int64_t i = 0; i < other_cell_vertex_normal_count; i++) {
+				_cell_vertex_normals.set(cell_vertex_normal_write_offset + i, p_transform.basis * p_other->_cell_vertex_normals[i]);
 			}
 		}
 	}
 	if (start_cell_uvw_map_count > 0 || other_cell_uvw_map_count > 0) {
-		const int end_cell_uvw_map_count = end_cell_index_count / 4;
+		const int64_t end_cell_uvw_map_count = end_cell_index_count / 4;
 		_cell_uvw_map.resize(end_cell_uvw_map_count);
 		if (other_cell_uvw_map_count > 0) {
-			const int cell_uvw_map_write_offset = end_cell_uvw_map_count - other_cell_uvw_map_count;
-			for (int i = 0; i < other_cell_uvw_map_count; i++) {
+			const int64_t cell_uvw_map_write_offset = end_cell_uvw_map_count - other_cell_uvw_map_count;
+			for (int64_t i = 0; i < other_cell_uvw_map_count; i++) {
 				_cell_uvw_map.set(cell_uvw_map_write_offset + i, p_other->_cell_uvw_map[i]);
 			}
 		}
@@ -157,15 +191,27 @@ void ArrayTetraMesh4D::set_cell_indices(const PackedInt32Array &p_cell_indices) 
 	reset_mesh_data_validation();
 }
 
-PackedVector4Array ArrayTetraMesh4D::get_cell_normals() {
-	if (_cell_normals.is_empty()) {
+PackedVector4Array ArrayTetraMesh4D::get_cell_face_normals() {
+	if (_cell_face_normals.is_empty()) {
 		calculate_normals();
 	}
-	return _cell_normals;
+	return _cell_face_normals;
 }
 
-void ArrayTetraMesh4D::set_cell_normals(const PackedVector4Array &p_cell_normals) {
-	_cell_normals = p_cell_normals;
+void ArrayTetraMesh4D::set_cell_face_normals(const PackedVector4Array &p_cell_face_normals) {
+	_cell_face_normals = p_cell_face_normals;
+	reset_mesh_data_validation();
+}
+
+PackedVector4Array ArrayTetraMesh4D::get_cell_vertex_normals() {
+	if (_cell_vertex_normals.is_empty()) {
+		calculate_normals();
+	}
+	return _cell_vertex_normals;
+}
+
+void ArrayTetraMesh4D::set_cell_vertex_normals(const PackedVector4Array &p_cell_vertex_normals) {
+	_cell_vertex_normals = p_cell_vertex_normals;
 	reset_mesh_data_validation();
 }
 
@@ -202,8 +248,11 @@ void ArrayTetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_cell_indices", "cell_indices"), &ArrayTetraMesh4D::set_cell_indices);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "cell_indices"), "set_cell_indices", "get_cell_indices");
 
-	ClassDB::bind_method(D_METHOD("set_cell_normals", "cell_normals"), &ArrayTetraMesh4D::set_cell_normals);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "cell_normals"), "set_cell_normals", "get_cell_normals");
+	ClassDB::bind_method(D_METHOD("set_cell_face_normals", "cell_face_normals"), &ArrayTetraMesh4D::set_cell_face_normals);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "cell_face_normals"), "set_cell_face_normals", "get_cell_face_normals");
+
+	ClassDB::bind_method(D_METHOD("set_cell_vertex_normals", "cell_vertex_normals"), &ArrayTetraMesh4D::set_cell_vertex_normals);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "cell_vertex_normals"), "set_cell_vertex_normals", "get_cell_vertex_normals");
 
 	ClassDB::bind_method(D_METHOD("set_cell_uvw_map", "cell_uvw_map"), &ArrayTetraMesh4D::set_cell_uvw_map);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR3_ARRAY, "cell_uvw_map"), "set_cell_uvw_map", "get_cell_uvw_map");

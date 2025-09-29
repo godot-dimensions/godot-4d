@@ -10,15 +10,16 @@
 	</tutorials>
 	<methods>
 		<method name="append_edge_indices">
-			<return type="void" />
+			<return type="int" />
 			<param index="0" name="index_a" type="int" />
 			<param index="1" name="index_b" type="int" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
 			<description>
 				Append an edge to the wireframe mesh, given indices of existing vertices in the [member vertices] array. The indices should point to vertices in the [member vertices] array. The indices should not exceed the length of the vertices array, or else the mesh is invalid.
 			</description>
 		</method>
 		<method name="append_edge_points">
-			<return type="void" />
+			<return type="int" />
 			<param index="0" name="point_a" type="Vector4" />
 			<param index="1" name="point_b" type="Vector4" />
 			<param index="2" name="deduplicate" type="bool" default="true" />

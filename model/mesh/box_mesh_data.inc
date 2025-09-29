@@ -8,7 +8,7 @@
 // manual alignment, so disable clang-format just for this file.
 /* clang-format off */
 #define REPEAT_FIVE_TIMES(m) m, m, m, m, m
-#define BOX_40_CELL_NORMALS PackedVector4Array { \
+#define BOX_40_CELL_FACE_NORMALS PackedVector4Array { \
 	REPEAT_FIVE_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)), /* -X */ \
 	REPEAT_FIVE_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)), /* +X */ \
 	REPEAT_FIVE_TIMES(Vector4(0.0f, -1.0f, 0.0f, 0.0f)), /* -Y */ \
@@ -20,7 +20,7 @@
 }
 
 #define REPEAT_SIX_TIMES(m) m, m, m, m, m, m
-#define BOX_48_CELL_NORMALS PackedVector4Array { \
+#define BOX_48_CELL_FACE_NORMALS PackedVector4Array { \
 	REPEAT_SIX_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)), /* -X */ \
 	REPEAT_SIX_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)), /* +X */ \
 	REPEAT_SIX_TIMES(Vector4(0.0f, -1.0f, 0.0f, 0.0f)), /* -Y */ \
@@ -29,6 +29,30 @@
 	REPEAT_SIX_TIMES(Vector4(0.0f, 0.0f, +1.0f, 0.0f)), /* +Z */ \
 	REPEAT_SIX_TIMES(Vector4(0.0f, 0.0f, 0.0f, -1.0f)), /* -W */ \
 	REPEAT_SIX_TIMES(Vector4(0.0f, 0.0f, 0.0f, +1.0f)), /* +W */ \
+}
+
+#define REPEAT_TWENTY_TIMES(m) m, m, m, m, m
+#define BOX_40_CELL_VERTEX_NORMALS PackedVector4Array { \
+	REPEAT_TWENTY_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)), /* -X */ \
+	REPEAT_TWENTY_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)), /* +X */ \
+	REPEAT_TWENTY_TIMES(Vector4(0.0f, -1.0f, 0.0f, 0.0f)), /* -Y */ \
+	REPEAT_TWENTY_TIMES(Vector4(0.0f, +1.0f, 0.0f, 0.0f)), /* +Y */ \
+	REPEAT_TWENTY_TIMES(Vector4(0.0f, 0.0f, -1.0f, 0.0f)), /* -Z */ \
+	REPEAT_TWENTY_TIMES(Vector4(0.0f, 0.0f, +1.0f, 0.0f)), /* +Z */ \
+	REPEAT_TWENTY_TIMES(Vector4(0.0f, 0.0f, 0.0f, -1.0f)), /* -W */ \
+	REPEAT_TWENTY_TIMES(Vector4(0.0f, 0.0f, 0.0f, +1.0f)), /* +W */ \
+}
+
+#define REPEAT_TWENTY_FOUR_TIMES(m) m, m, m, m, m, m
+#define BOX_48_CELL_VERTEX_NORMALS PackedVector4Array { \
+	REPEAT_TWENTY_FOUR_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)), /* -X */ \
+	REPEAT_TWENTY_FOUR_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)), /* +X */ \
+	REPEAT_TWENTY_FOUR_TIMES(Vector4(0.0f, -1.0f, 0.0f, 0.0f)), /* -Y */ \
+	REPEAT_TWENTY_FOUR_TIMES(Vector4(0.0f, +1.0f, 0.0f, 0.0f)), /* +Y */ \
+	REPEAT_TWENTY_FOUR_TIMES(Vector4(0.0f, 0.0f, -1.0f, 0.0f)), /* -Z */ \
+	REPEAT_TWENTY_FOUR_TIMES(Vector4(0.0f, 0.0f, +1.0f, 0.0f)), /* +Z */ \
+	REPEAT_TWENTY_FOUR_TIMES(Vector4(0.0f, 0.0f, 0.0f, -1.0f)), /* -W */ \
+	REPEAT_TWENTY_FOUR_TIMES(Vector4(0.0f, 0.0f, 0.0f, +1.0f)), /* +W */ \
 }
 
 #define BOX_40_CELL_INDICES PackedInt32Array { \

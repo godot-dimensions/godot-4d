@@ -35,10 +35,10 @@ void OFFDocument4D::_count_unique_edges_from_faces() {
 	}
 }
 
-int OFFDocument4D::_find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
-	const int vertex_count = _vertices.size();
+int64_t OFFDocument4D::_find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
+	const int64_t vertex_count = _vertices.size();
 	if (p_deduplicate_vertices) {
-		for (int vertex_number = 0; vertex_number < vertex_count; vertex_number++) {
+		for (int64_t vertex_number = 0; vertex_number < vertex_count; vertex_number++) {
 			if (_vertices[vertex_number] == p_vertex) {
 				return vertex_number;
 			}
@@ -174,11 +174,11 @@ bool _do_triangle_faces_match(const PackedInt32Array &p_face_a, const PackedInt3
 			(p_face_a[0] == p_face_b[2] && p_face_a[1] == p_face_b[1] && p_face_a[2] == p_face_b[0]));
 }
 
-int OFFDocument4D::_find_or_insert_face(const int p_a, const int p_b, const int p_c, const bool p_deduplicate_faces) {
-	PackedInt32Array face = PackedInt32Array{ p_a, p_b, p_c };
-	const int face_count = _face_vertex_indices.size();
+int64_t OFFDocument4D::_find_or_insert_face(const int32_t p_a, const int32_t p_b, const int32_t p_c, const bool p_deduplicate_faces) {
+	const PackedInt32Array face = PackedInt32Array{ p_a, p_b, p_c };
+	const int64_t face_count = _face_vertex_indices.size();
 	if (p_deduplicate_faces) {
-		for (int face_number = 0; face_number < face_count; face_number++) {
+		for (int64_t face_number = 0; face_number < face_count; face_number++) {
 			if (_do_triangle_faces_match(_face_vertex_indices[face_number], face)) {
 				return face_number;
 			}

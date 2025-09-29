@@ -68,14 +68,17 @@
 		</method>
 	</methods>
 	<members>
+		<member name="cell_face_normals" type="PackedVector4Array" setter="set_cell_face_normals" getter="get_cell_face_normals" default="PackedVector4Array()">
+			The normals of the tetrahedral cells. Face normals define which side of the cell is the front side, and therefore should be drawn. Face normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [member cell_indices] array, or empty for no normals, or else the mesh is invalid.
+		</member>
 		<member name="cell_indices" type="PackedInt32Array" setter="set_cell_indices" getter="get_cell_indices" default="PackedInt32Array()">
 			The indices of the tetrahedral cells. Every 4 integers defines a tetrahedral cell. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
 		</member>
-		<member name="cell_normals" type="PackedVector4Array" setter="set_cell_normals" getter="get_cell_normals" default="PackedVector4Array()">
-			The normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn, and how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [member cell_indices] array, or empty for no normals, or else the mesh is invalid.
-		</member>
 		<member name="cell_uvw_map" type="PackedVector3Array" setter="set_cell_uvw_map" getter="get_cell_uvw_map" default="PackedVector3Array()">
 			The UVW mapping of the tetrahedral cells. Each Vector3 in this array is the texture space mapping for the cell vertex in the [member cell_indices] array with the same index. This array should either be the same length as the [member cell_indices] array, or empty for no UVW mapping, or else the mesh is invalid.
+		</member>
+		<member name="cell_vertex_normals" type="PackedVector4Array" setter="set_cell_vertex_normals" getter="get_cell_vertex_normals" default="PackedVector4Array()">
+			The normals of the vertex indices of tetrahedral cells. Vertex normals define how lighting angles are calculated for the cell. Each Vector4 in this array is for one vertex instance in a tetrahedral cell, meaning 4 per cell, and each should be normalized. This array should either be the same length as the [member cell_indices] array, or empty for no normals, or else the mesh is invalid.
 		</member>
 		<member name="vertices" type="PackedVector4Array" setter="set_vertices" getter="get_vertices" default="PackedVector4Array()">
 			The vertices of the tetrahedral mesh. Each Vector4 in this array is a vertex defined as a position in meters in 4D space. The items in this array are referenced by the [member cell_indices] array.

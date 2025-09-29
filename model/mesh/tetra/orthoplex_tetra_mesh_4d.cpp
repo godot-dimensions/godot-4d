@@ -31,8 +31,12 @@ PackedInt32Array OrthoplexTetraMesh4D::get_cell_indices() {
 	return ORTHOPLEX_CELL_INDICES;
 }
 
-PackedVector4Array OrthoplexTetraMesh4D::get_cell_normals() {
-	return ORTHOPLEX_CELL_NORMALS;
+PackedVector4Array OrthoplexTetraMesh4D::get_cell_face_normals() {
+	return ORTHOPLEX_CELL_FACE_NORMALS;
+}
+
+PackedVector4Array OrthoplexTetraMesh4D::get_cell_vertex_normals() {
+	return ORTHOPLEX_CELL_VERTEX_NORMALS;
 }
 
 PackedVector3Array OrthoplexTetraMesh4D::get_cell_uvw_map() {

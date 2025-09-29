@@ -81,6 +81,7 @@ public:
 
 	// Vector math.
 	static real_t angle_to(const Vector4 &p_from, const Vector4 &p_to);
+	static Vector4 average(const PackedVector4Array &p_vectors);
 	static Vector4 bounce(const Vector4 &p_vector, const Vector4 &p_normal);
 	static Vector4 bounce_ratio(const Vector4 &p_vector, const Vector4 &p_normal, const real_t p_bounce_ratio);
 	static real_t cross(const Vector4 &p_a, const Vector4 &p_b);

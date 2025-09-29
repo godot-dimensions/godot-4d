@@ -3,3 +3,8 @@ line-length = 160
 
 [tool.ruff.format]
 indent-style = "tab"
+
+[tool.codespell]
+ignore-words-list = [
+	"ND",
+]

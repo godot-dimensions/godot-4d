@@ -14,21 +14,29 @@ bool ArrayWireMesh4D::validate_mesh_data() {
 	return true;
 }
 
-void ArrayWireMesh4D::append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate_vertices) {
-	int index_a = append_vertex(p_point_a, p_deduplicate_vertices);
-	int index_b = append_vertex(p_point_b, p_deduplicate_vertices);
-	append_edge_indices(index_a, index_b);
-	reset_mesh_data_validation();
+int32_t ArrayWireMesh4D::append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate) {
+	const int32_t index_a = append_vertex(p_point_a, p_deduplicate);
+	const int32_t index_b = append_vertex(p_point_b, p_deduplicate);
+	return append_edge_indices(index_a, index_b, p_deduplicate);
 }
 
-void ArrayWireMesh4D::append_edge_indices(int p_index_a, int p_index_b) {
+int32_t ArrayWireMesh4D::append_edge_indices(int p_index_a, int p_index_b, const bool p_deduplicate) {
+	const int64_t edge_count = _edge_indices.size() / 2;
 	if (p_index_a > p_index_b) {
 		SWAP(p_index_a, p_index_b);
+	}
+	if (p_deduplicate) {
+		for (int64_t i = 0; i < edge_count; i++) {
+			if (_edge_indices[i * 2] == p_index_a && _edge_indices[i * 2 + 1] == p_index_b) {
+				return i;
+			}
+		}
 	}
 	_edge_indices.append(p_index_a);
 	_edge_indices.append(p_index_b);
 	wire_mesh_clear_cache();
 	reset_mesh_data_validation();
+	return edge_count;
 }
 
 int ArrayWireMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
@@ -193,7 +201,7 @@ void ArrayWireMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
 
 void ArrayWireMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_edge_points", "point_a", "point_b", "deduplicate"), &ArrayWireMesh4D::append_edge_points, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("append_edge_indices", "index_a", "index_b"), &ArrayWireMesh4D::append_edge_indices);
+	ClassDB::bind_method(D_METHOD("append_edge_indices", "index_a", "index_b", "deduplicate"), &ArrayWireMesh4D::append_edge_indices, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate"), &ArrayWireMesh4D::append_vertex, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate"), &ArrayWireMesh4D::append_vertices, DEFVAL(true));
 

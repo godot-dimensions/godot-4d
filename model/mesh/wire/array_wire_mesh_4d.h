@@ -14,8 +14,8 @@ protected:
 	virtual bool validate_mesh_data() override;
 
 public:
-	void append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate_vertices = true);
-	void append_edge_indices(int p_index_a, int p_index_b);
+	int32_t append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate = true);
+	int32_t append_edge_indices(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate = true);
 	int append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 

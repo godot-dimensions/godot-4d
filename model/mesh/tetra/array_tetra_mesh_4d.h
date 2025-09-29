@@ -7,7 +7,8 @@ class ArrayTetraMesh4D : public TetraMesh4D {
 	GDCLASS(ArrayTetraMesh4D, TetraMesh4D);
 
 	PackedInt32Array _cell_indices;
-	PackedVector4Array _cell_normals;
+	PackedVector4Array _cell_face_normals;
+	PackedVector4Array _cell_vertex_normals;
 	PackedVector3Array _cell_uvw_map;
 	PackedVector4Array _vertices;
 
@@ -24,14 +25,18 @@ public:
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 
 	void calculate_normals(const bool p_keep_existing = false);
+	void set_flat_shading_normals(const bool p_realign_face_normals = false);
 	void merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
 	void merge_with_bind(const Ref<ArrayTetraMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 
 	virtual PackedInt32Array get_cell_indices() override;
 	void set_cell_indices(const PackedInt32Array &p_cell_indices);
 
-	virtual PackedVector4Array get_cell_normals() override;
-	void set_cell_normals(const PackedVector4Array &p_cell_normals);
+	virtual PackedVector4Array get_cell_face_normals() override;
+	void set_cell_face_normals(const PackedVector4Array &p_cell_face_normals);
+
+	virtual PackedVector4Array get_cell_vertex_normals() override;
+	void set_cell_vertex_normals(const PackedVector4Array &p_cell_vertex_normals);
 
 	virtual PackedVector3Array get_cell_uvw_map() override;
 	void set_cell_uvw_map(const PackedVector3Array &p_cell_uvw_map);

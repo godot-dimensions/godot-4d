@@ -10,16 +10,16 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_get_cell_face_normals" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the face normals of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_face_normals] for details of the returned data.
+			</description>
+		</method>
 		<method name="_get_cell_indices" qualifiers="virtual">
 			<return type="PackedInt32Array" />
 			<description>
 				Callback method that should return the cell indices of a tetrahedral mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_indices] for details of the returned data.
-			</description>
-		</method>
-		<method name="_get_cell_normals" qualifiers="virtual">
-			<return type="PackedVector4Array" />
-			<description>
-				Callback method that should return the normals of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_normals] for details of the returned data.
 			</description>
 		</method>
 		<method name="_get_cell_uvw_map" qualifiers="virtual">
@@ -28,22 +28,28 @@
 				Callback method that should return the UVW mapping of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_uvw_map] for details of the returned data.
 			</description>
 		</method>
+		<method name="_get_cell_vertex_normals" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the vertex normals of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_vertex_normals] for details of the returned data.
+			</description>
+		</method>
 		<method name="export_uvw_map_mesh">
 			<return type="ArrayMesh" />
 			<description>
 				Exports the tetrahedral mesh's UVW mapping as an [ArrayMesh]. This can help with visualizing the 3D texture space of the mesh, allowing you to create textures that can be applied to the mesh.
 			</description>
 		</method>
+		<method name="get_cell_face_normals">
+			<return type="PackedVector4Array" />
+			<description>
+				Gets the face normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn. Face normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [method get_cell_indices] array, or empty for no normals, or else the mesh is invalid.
+			</description>
+		</method>
 		<method name="get_cell_indices">
 			<return type="PackedInt32Array" />
 			<description>
 				Gets the cell indices of the tetrahedral mesh. Each set of 4 integers represents the indices of the vertices that make up a tetrahedron. The vertices can be obtained using [method Mesh4D.get_vertices], or using the [method get_cell_positions] method. Integers in this array should not exceed the length of the vertices array.
-			</description>
-		</method>
-		<method name="get_cell_normals">
-			<return type="PackedVector4Array" />
-			<description>
-				Gets the normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn, and how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [method get_cell_indices] array, or empty for no normals, or else the mesh is invalid.
 			</description>
 		</method>
 		<method name="get_cell_positions">
@@ -56,6 +62,12 @@
 			<return type="PackedVector3Array" />
 			<description>
 				Gets the UVW mapping of the tetrahedral cells. Each Vector3 in this array is the texture space mapping for the vertex in the [method Mesh4D.get_vertices] array with the same index. This array should either be the same length as the [method Mesh4D.get_vertices] array, or empty for no UVW mapping, or else the mesh is invalid.
+			</description>
+		</method>
+		<method name="get_cell_vertex_normals">
+			<return type="PackedVector4Array" />
+			<description>
+				Gets the vertex normals of the tetrahedral cells. Vertex normals define how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be the same length as the [method get_cell_indices] array, or empty for no normals, or else the mesh is invalid.
 			</description>
 		</method>
 		<method name="tetra_mesh_clear_cache">

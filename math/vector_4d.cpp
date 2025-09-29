@@ -74,6 +74,17 @@ real_t Vector4D::angle_to(const Vector4 &p_from, const Vector4 &p_to) {
 	return Math::acos(p_from.dot(p_to) / (p_from.length() * p_to.length()));
 }
 
+Vector4 Vector4D::average(const PackedVector4Array &p_vectors) {
+	if (p_vectors.is_empty()) {
+		return Vector4();
+	}
+	Vector4 sum = Vector4();
+	for (const Vector4 &v : p_vectors) {
+		sum += v;
+	}
+	return sum / (real_t)p_vectors.size();
+}
+
 Vector4 Vector4D::bounce(const Vector4 &p_vector, const Vector4 &p_normal) {
 	return p_vector + (-2.0f) * p_vector.dot(p_normal) * p_normal;
 }
@@ -247,6 +258,7 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("axis_letter", "axis"), &Vector4D::axis_letter);
 	// Vector math.
 	ClassDB::bind_static_method("Vector4D", D_METHOD("angle_to", "from", "to"), &Vector4D::angle_to);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("average", "vectors"), &Vector4D::average);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce", "vector", "normal"), &Vector4D::bounce);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce_ratio", "vector", "normal", "bounce_ratio"), &Vector4D::bounce_ratio);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("cross", "a", "b"), &Vector4D::cross);

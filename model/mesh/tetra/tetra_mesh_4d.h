@@ -31,7 +31,8 @@ public:
 
 	virtual Ref<ArrayMesh> export_uvw_map_mesh();
 	virtual PackedInt32Array get_cell_indices();
-	virtual PackedVector4Array get_cell_normals();
+	virtual PackedVector4Array get_cell_face_normals();
+	virtual PackedVector4Array get_cell_vertex_normals();
 	virtual PackedVector3Array get_cell_uvw_map();
 	PackedVector4Array get_cell_positions();
 
@@ -44,7 +45,8 @@ public:
 	static void cleanup_fallback_material();
 
 	GDVIRTUAL0R(PackedInt32Array, _get_cell_indices);
-	GDVIRTUAL0R(PackedVector4Array, _get_cell_normals);
+	GDVIRTUAL0R(PackedVector4Array, _get_cell_face_normals);
+	GDVIRTUAL0R(PackedVector4Array, _get_cell_vertex_normals);
 	GDVIRTUAL0R(PackedVector3Array, _get_cell_uvw_map);
 
 private:

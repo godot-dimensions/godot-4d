@@ -50,7 +50,8 @@ public:
 
 	virtual Ref<ArrayMesh> export_uvw_map_mesh() override;
 	virtual PackedInt32Array get_cell_indices() override;
-	virtual PackedVector4Array get_cell_normals() override;
+	virtual PackedVector4Array get_cell_face_normals() override;
+	virtual PackedVector4Array get_cell_vertex_normals() override;
 	virtual PackedVector3Array get_cell_uvw_map() override;
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_vertices() override;

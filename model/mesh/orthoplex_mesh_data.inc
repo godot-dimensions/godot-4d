@@ -10,7 +10,7 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 // This code is much harder to read when clang-format messes with the
 // manual alignment, so disable clang-format just for this file.
 /* clang-format off */
-#define ORTHOPLEX_CELL_NORMALS PackedVector4Array { \
+#define ORTHOPLEX_CELL_FACE_NORMALS PackedVector4Array { \
 	Vector4(-0.5f, -0.5f, -0.5f, -0.5f), \
 	Vector4(+0.5f, -0.5f, -0.5f, -0.5f), \
 	Vector4(+0.5f, +0.5f, -0.5f, -0.5f), \
@@ -27,6 +27,26 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 	Vector4(+0.5f, +0.5f, -0.5f, +0.5f), \
 	Vector4(+0.5f, -0.5f, -0.5f, +0.5f), \
 	Vector4(-0.5f, -0.5f, -0.5f, +0.5f), \
+}
+
+#define REPEAT_FOUR_TIMES(m) m, m, m, m
+#define ORTHOPLEX_CELL_VERTEX_NORMALS PackedVector4Array { \
+	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, -0.5f, -0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, -0.5f, -0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, -0.5f, -0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, -0.5f, -0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, +0.5f, -0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, +0.5f, -0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, +0.5f, -0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, +0.5f, -0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, +0.5f, +0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, +0.5f, +0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, +0.5f, +0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, +0.5f, +0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, -0.5f, +0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, -0.5f, +0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, -0.5f, +0.5f)), \
+	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, -0.5f, +0.5f)), \
 }
 
 #define ORTHOPLEX_CELL_INDICES PackedInt32Array { \
