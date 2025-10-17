@@ -89,6 +89,7 @@ public:
 	static Vector4 limit_length(const Vector4 &p_vector, const real_t p_len = 1.0);
 	static Vector4 limit_length_taxicab(const Vector4 &p_vector, const real_t p_len = 1.0);
 	static Vector4 move_toward(const Vector4 &p_from, const Vector4 &p_to, const real_t p_delta);
+	static Vector4 orthogonal_from_two(const Vector4 &p_what, Vector4 p_a, Vector4 p_b);
 	static Vector4 perpendicular(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c);
 	static Vector4 project(const Vector4 &p_vector, const Vector4 &p_on_normal);
 	static Vector4 reflect(const Vector4 &p_vector, const Vector4 &p_normal);

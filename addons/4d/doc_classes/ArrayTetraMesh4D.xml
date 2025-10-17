@@ -35,7 +35,7 @@
 			<param index="0" name="vertex" type="Vector4" />
 			<param index="1" name="deduplicate_vertices" type="bool" default="true" />
 			<description>
-				Append a vertex to the tetrahedral mesh. If [param deduplicate_vertices] is [code]true[/code], the method will check if the vertex already exists in the [member vertices] array and return the index of the existing vertex. If the vertex does not exist, it will be appended to the vertices array and its index will be returned. In both cases, the returned index points to a vertex identical to the input vertex.
+				Append a vertex to the tetrahedral mesh. If [param deduplicate_vertices] is [code]true[/code] (default), the method will check if the vertex already exists in the [member vertices] array and return the index of the existing vertex. If the vertex does not exist, it will be appended to the vertices array and its index will be returned. In both cases, the returned index points to a vertex identical to the input vertex.
 			</description>
 		</method>
 		<method name="append_vertices">
@@ -46,11 +46,11 @@
 				Append an array of vertices to the tetrahedral mesh, by calling [method append_vertex] for each vertex in the input array. The method will return an array of indices, where each index points to a vertex identical to the corresponding vertex in the input array.
 			</description>
 		</method>
-		<method name="calculate_normals">
+		<method name="calculate_boundary_normals">
 			<return type="void" />
 			<param index="0" name="keep_existing" type="bool" default="false" />
 			<description>
-				Calculates the normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn, and how lighting angles are calculated for the cell.
+				Calculates the normals of the tetrahedral cells. Boundary normals define which side of the cell is the front side, and therefore should be drawn. Boundary normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell.
 				If [param keep_existing] is [code]true[/code], existing normals are preserved when present, and new normals are only calculated for cells without normals or when the normal vector is zero. If [param keep_existing] is [code]false[/code], all normals are recalculated. It is recommended to keep existing normals when adding new cells to the mesh, and to recalculate all normals when modifying vertex positions or altering the cells.
 				[b]Note:[/b] In 3D, normals are determined by the triangle vertex winding order, but in 4D, there is no direct equivalent. Instead, orientation is determined by the positions of the tetrahedra vertices. This method assumes that the normal should point away from the origin, which works well for convex objects, such as primitive shapes with the origin inside them. If you are calculating normals for an object with an interior space, you may need to flip the normals for the interior cells.
 				[b]Caution:[/b] This method may not work correctly for tetrahedra whose span contains the origin. In such cases, it is analogous to a 3D triangle lying flat in the XY plane, where a vector pointing away from the origin would also lie in the XY plane, making it impossible to determine a unique Z direction.
@@ -66,10 +66,18 @@
 				This method will also attempt to merge the materials of the two meshes, by calling [method Material4D.merge_with] on this mesh's material and passing the other mesh's material as an argument. See [method Material4D.merge_with] for more information.
 			</description>
 		</method>
+		<method name="set_flat_shading_normals">
+			<return type="void" />
+			<param index="0" name="recalculate_boundary_normals" type="bool" default="false" />
+			<description>
+				Sets the tetrahedral mesh to use flat shading by setting all vertex instance normals to match their corresponding boundary cell normal. This gives the mesh a faceted appearance, where each tetrahedral cell is shaded uniformly.
+				If [param recalculate_boundary_normals] is [code]true[/code], the method will first recalculate the boundary normals using [method calculate_boundary_normals] before setting the vertex instance normals.
+			</description>
+		</method>
 	</methods>
 	<members>
-		<member name="cell_face_normals" type="PackedVector4Array" setter="set_cell_face_normals" getter="get_cell_face_normals" default="PackedVector4Array()">
-			The normals of the tetrahedral cells. Face normals define which side of the cell is the front side, and therefore should be drawn. Face normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [member cell_indices] array, or empty for no normals, or else the mesh is invalid.
+		<member name="cell_boundary_normals" type="PackedVector4Array" setter="set_cell_boundary_normals" getter="get_cell_boundary_normals" default="PackedVector4Array()">
+			The normals of the tetrahedral cells. Boundary normals define which side of the cell is the front side, and therefore should be drawn. Boundary normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [member cell_indices] array, or empty for no normals, or else the mesh is invalid.
 		</member>
 		<member name="cell_indices" type="PackedInt32Array" setter="set_cell_indices" getter="get_cell_indices" default="PackedInt32Array()">
 			The indices of the tetrahedral cells. Every 4 integers defines a tetrahedral cell. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.

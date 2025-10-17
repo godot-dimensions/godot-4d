@@ -159,6 +159,7 @@ struct _NO_DISCARD_ Basis4D {
 	static Basis4D from_scale(const Vector4 &p_scale);
 	static Basis4D from_scale(const real_t p_x, const real_t p_y, const real_t p_z, const real_t p_w);
 	static Basis4D from_scale_uniform(const real_t p_scale);
+	static Basis4D from_xyz(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z);
 	static Basis4D from_yz(const real_t p_yz);
 	static Basis4D from_zx(const real_t p_zx);
 	static Basis4D from_xy(const real_t p_xy);

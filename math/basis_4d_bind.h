@@ -87,6 +87,7 @@ public:
 	// Constructors.
 	static Projection from_scale(const Vector4 &p_scale);
 	static Projection from_scale_uniform(const real_t p_scale);
+	static Projection from_xyz(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z);
 	static Projection from_yz(const real_t p_yz);
 	static Projection from_zx(const real_t p_zx);
 	static Projection from_xy(const real_t p_xy);

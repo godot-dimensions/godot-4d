@@ -197,6 +197,10 @@ Projection godot_4d_bind::Basis4D::from_scale_uniform(const real_t p_scale) {
 	return ::Basis4D::from_scale_uniform(p_scale);
 }
 
+Projection godot_4d_bind::Basis4D::from_xyz(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z) {
+	return ::Basis4D::from_xyz(p_x, p_y, p_z);
+}
+
 Projection godot_4d_bind::Basis4D::from_yz(const real_t p_yz) {
 	return ::Basis4D::from_yz(p_yz);
 }
@@ -288,6 +292,7 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	// Constructors.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_scale", "scale"), &godot_4d_bind::Basis4D::from_scale);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_scale_uniform", "scale"), &godot_4d_bind::Basis4D::from_scale_uniform);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("from_xyz", "x", "y", "z"), &godot_4d_bind::Basis4D::from_xyz);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_yz", "yz"), &godot_4d_bind::Basis4D::from_yz);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_zx", "zx"), &godot_4d_bind::Basis4D::from_zx);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_xy", "xy"), &godot_4d_bind::Basis4D::from_xy);

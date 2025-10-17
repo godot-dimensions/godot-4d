@@ -577,6 +577,10 @@ Basis4D Basis4D::from_scale_uniform(const real_t p_scale) {
 			Vector4(0, 0, 0, p_scale));
 }
 
+Basis4D Basis4D::from_xyz(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z) {
+	return Basis4D(p_x, p_y, p_z, Vector4D::perpendicular(p_x, p_y, p_z));
+}
+
 #define FROM_SINGLE_ANGLE(a, b)                                   \
 	Basis4D Basis4D::from_##a##b(const real_t p_##a##b##_angle) { \
 		real_t sin_angle = Math::sin(p_##a##b##_angle);           \

@@ -5,15 +5,15 @@
 	</brief_description>
 	<description>
 		TetraMesh4D is the base class for all 4D tetrahedral meshes. Tetrahedral meshes are defined using vertices and tetrahedra, where each tetrahedron is defined by four vertices. Tetrahedral meshes are used to represent rendered 4D objects similar to how 3D objects are represented using triangles.
-		To make a TetraMesh4D, use one of the descendant classes, such as [ArrayTetraMesh4D] or [BoxTetraMesh4D]. Advanced users can create custom wireframe mesh classes by extending WireMesh4D.
+		To make a TetraMesh4D, use one of the descendant classes, such as [ArrayTetraMesh4D] or [BoxTetraMesh4D]. Advanced users can create custom tetrahedral mesh classes by extending TetraMesh4D.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="_get_cell_face_normals" qualifiers="virtual">
+		<method name="_get_cell_boundary_normals" qualifiers="virtual">
 			<return type="PackedVector4Array" />
 			<description>
-				Callback method that should return the face normals of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_face_normals] for details of the returned data.
+				Callback method that should return the face normals of the tetrahedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_cell_boundary_normals] for details of the returned data.
 			</description>
 		</method>
 		<method name="_get_cell_indices" qualifiers="virtual">
@@ -37,10 +37,10 @@
 		<method name="export_uvw_map_mesh">
 			<return type="ArrayMesh" />
 			<description>
-				Exports the tetrahedral mesh's UVW mapping as an [ArrayMesh]. This can help with visualizing the 3D texture space of the mesh, allowing you to create textures that can be applied to the mesh.
+				Exports the tetrahedral mesh's UVW texture mapping as an [ArrayMesh]. This can help with visualizing the 3D texture space of the mesh, allowing you to create textures that can be applied to the mesh.
 			</description>
 		</method>
-		<method name="get_cell_face_normals">
+		<method name="get_cell_boundary_normals">
 			<return type="PackedVector4Array" />
 			<description>
 				Gets the face normals of the tetrahedral cells. Normals define which side of the cell is the front side, and therefore should be drawn. Face normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [method get_cell_indices] array, or empty for no normals, or else the mesh is invalid.

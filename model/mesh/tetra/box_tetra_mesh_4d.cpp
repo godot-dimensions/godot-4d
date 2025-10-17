@@ -63,8 +63,8 @@ PackedInt32Array BoxTetraMesh4D::get_cell_indices() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_INDICES : BOX_48_CELL_INDICES;
 }
 
-PackedVector4Array BoxTetraMesh4D::get_cell_face_normals() {
-	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_FACE_NORMALS : BOX_48_CELL_FACE_NORMALS;
+PackedVector4Array BoxTetraMesh4D::get_cell_boundary_normals() {
+	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_BOUNDARY_NORMALS : BOX_48_CELL_BOUNDARY_NORMALS;
 }
 
 PackedVector4Array BoxTetraMesh4D::get_cell_vertex_normals() {

@@ -29,7 +29,7 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 	tetra_mesh->set_vertices(p_vertices);
 	if (_cells_accessor_index >= 0) {
 		tetra_mesh->set_cell_indices(load_cell_indices(p_g4mf_state));
-		tetra_mesh->calculate_normals();
+		tetra_mesh->calculate_boundary_normals();
 	}
 	const bool is_valid = tetra_mesh->is_mesh_data_valid();
 	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");

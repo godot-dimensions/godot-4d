@@ -8,7 +8,7 @@
 // manual alignment, so disable clang-format just for this file.
 /* clang-format off */
 #define REPEAT_FIVE_TIMES(m) m, m, m, m, m
-#define BOX_40_CELL_FACE_NORMALS PackedVector4Array { \
+#define BOX_40_CELL_BOUNDARY_NORMALS PackedVector4Array { \
 	REPEAT_FIVE_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)), /* -X */ \
 	REPEAT_FIVE_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)), /* +X */ \
 	REPEAT_FIVE_TIMES(Vector4(0.0f, -1.0f, 0.0f, 0.0f)), /* -Y */ \
@@ -20,7 +20,7 @@
 }
 
 #define REPEAT_SIX_TIMES(m) m, m, m, m, m, m
-#define BOX_48_CELL_FACE_NORMALS PackedVector4Array { \
+#define BOX_48_CELL_BOUNDARY_NORMALS PackedVector4Array { \
 	REPEAT_SIX_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)), /* -X */ \
 	REPEAT_SIX_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)), /* +X */ \
 	REPEAT_SIX_TIMES(Vector4(0.0f, -1.0f, 0.0f, 0.0f)), /* -Y */ \

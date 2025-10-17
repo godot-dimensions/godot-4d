@@ -6,7 +6,7 @@
 class ArrayWireMesh4D : public WireMesh4D {
 	GDCLASS(ArrayWireMesh4D, WireMesh4D);
 
-	PackedInt32Array _edge_indices;
+	PackedInt32Array _edge_vertex_indices;
 	PackedVector4Array _vertices;
 
 protected:

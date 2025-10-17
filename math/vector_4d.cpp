@@ -158,6 +158,15 @@ Vector4 Vector4D::move_toward(const Vector4 &p_from, const Vector4 &p_to, const 
 	return len <= p_delta || len < (real_t)CMP_EPSILON ? p_to : p_from + offset / len * p_delta;
 }
 
+Vector4 Vector4D::orthogonal_from_two(const Vector4 &p_what, Vector4 p_a, Vector4 p_b) {
+	// Gram-Schmidt Process, now in 4D.
+	// https://en.wikipedia.org/wiki/Gram-Schmidt_process
+	p_a.normalize();
+	p_b = p_b - p_a * p_a.dot(p_b);
+	p_b.normalize();
+	return p_what - p_a * p_a.dot(p_what) - p_b * p_b.dot(p_what);
+}
+
 Vector4 Vector4D::perpendicular(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c) {
 	Vector4 perp;
 	/* clang-format off */
@@ -264,7 +273,9 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("cross", "a", "b"), &Vector4D::cross);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("is_uniform", "vector"), &Vector4D::is_uniform);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("limit_length", "vector", "length"), &Vector4D::limit_length, DEFVAL(1.0));
+	ClassDB::bind_static_method("Vector4D", D_METHOD("limit_length_taxicab", "vector", "length"), &Vector4D::limit_length_taxicab, DEFVAL(1.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("move_toward", "from", "to", "delta"), &Vector4D::move_toward);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("orthogonal_from_two", "what", "a", "b"), &Vector4D::orthogonal_from_two);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("perpendicular", "a", "b", "c"), &Vector4D::perpendicular);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("project", "vector", "on_normal"), &Vector4D::project);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("reflect", "vector", "normal"), &Vector4D::reflect);

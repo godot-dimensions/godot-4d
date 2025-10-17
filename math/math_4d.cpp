@@ -262,6 +262,21 @@ uint16_t Math4D::double_to_float16(const double p_double) {
 	return f16_sign | uint16_t(f16_exponent << 10) | uint16_t(f16_mantissa_bits);
 }
 
+int32_t Math4D::find_common_int32(const PackedInt32Array &p_a, const PackedInt32Array &p_b, int64_t &r_a_index, int64_t &r_b_index) {
+	for (int64_t a_index = 0; a_index < p_a.size(); a_index++) {
+		const int32_t a_item = p_a[a_index];
+		for (int64_t b_index = 0; b_index < p_b.size(); b_index++) {
+			const int32_t b_item = p_b[b_index];
+			if (a_item == b_item) {
+				r_a_index = a_index;
+				r_b_index = b_index;
+				return a_item;
+			}
+		}
+	}
+	return INT32_MIN;
+}
+
 Math4D *Math4D::singleton = nullptr;
 
 void Math4D::_bind_methods() {

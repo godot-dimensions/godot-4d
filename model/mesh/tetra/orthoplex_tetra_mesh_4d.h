@@ -27,7 +27,7 @@ public:
 	void set_size(const Vector4 &p_size);
 
 	virtual PackedInt32Array get_cell_indices() override;
-	virtual PackedVector4Array get_cell_face_normals() override;
+	virtual PackedVector4Array get_cell_boundary_normals() override;
 	virtual PackedVector4Array get_cell_vertex_normals() override;
 	virtual PackedVector3Array get_cell_uvw_map() override;
 	virtual PackedVector4Array get_vertices() override;

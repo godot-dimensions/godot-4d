@@ -101,6 +101,14 @@
 				Returns [param vector] with a maximum length by limiting its length to [param length].
 			</description>
 		</method>
+		<method name="limit_length_taxicab" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="vector" type="Vector4" />
+			<param index="1" name="length" type="float" default="1.0" />
+			<description>
+				Returns [param vector] with a maximum length by limiting its length to [param length] using the taxicab distance metric instead of the Euclidean distance metric. The taxicab length is the sum of the absolute values of each component, also known as Manhattan length or L1 norm, which provides the distance when only axis-aligned movement is allowed.
+			</description>
+		</method>
 		<method name="move_toward" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="from" type="Vector4" />
@@ -108,6 +116,15 @@
 			<param index="2" name="delta" type="float" />
 			<description>
 				Returns [param from] moved toward [param to] by the fixed [param delta] amount. Will not go past the final value.
+			</description>
+		</method>
+		<method name="orthogonal_from_two" qualifiers="static">
+			<return type="Vector4" />
+			<param index="0" name="what" type="Vector4" />
+			<param index="1" name="a" type="Vector4" />
+			<param index="2" name="b" type="Vector4" />
+			<description>
+				Returns the closest vector to [param what] that is orthogonal to the other two input vectors. If being orthogonal to just one vector is required, use [method slide]. If being orthogonal to three vectors is required, consider orthogonalizing a [Basis4D]. If you instead need a vector perpendicular to three inputs, use [method perpendicular].
 			</description>
 		</method>
 		<method name="perpendicular" qualifiers="static">

@@ -10,7 +10,7 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 // This code is much harder to read when clang-format messes with the
 // manual alignment, so disable clang-format just for this file.
 /* clang-format off */
-#define ORTHOPLEX_CELL_FACE_NORMALS PackedVector4Array { \
+#define ORTHOPLEX_CELL_BOUNDARY_NORMALS PackedVector4Array { \
 	Vector4(-0.5f, -0.5f, -0.5f, -0.5f), \
 	Vector4(+0.5f, -0.5f, -0.5f, -0.5f), \
 	Vector4(+0.5f, +0.5f, -0.5f, -0.5f), \
