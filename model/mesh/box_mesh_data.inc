@@ -523,6 +523,278 @@
 	Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
 }
 
+#define BOX_POLY_CELL_INDICES Vector<Vector<PackedInt32Array>> { \
+	Vector<PackedInt32Array> { \
+		/* The order within MUST form a continuous closed loop of edges. */ \
+		/* XY faces */ \
+		PackedInt32Array { 0,  8,  1,  9}, PackedInt32Array { 2, 11,  3, 10}, \
+		PackedInt32Array { 4, 12,  5, 13}, PackedInt32Array { 6, 15,  7, 14}, \
+		/* XZ faces */ \
+		PackedInt32Array { 0, 17,  2, 16}, PackedInt32Array { 1, 18,  3, 19}, \
+		PackedInt32Array { 4, 21,  6, 20}, PackedInt32Array { 5, 22,  7, 23}, \
+		/* YZ faces */ \
+		PackedInt32Array { 8, 16, 10, 18}, PackedInt32Array { 9, 19, 11, 17}, \
+		PackedInt32Array {12, 20, 14, 22}, PackedInt32Array {13, 23, 15, 21}, \
+		/* XW faces */ \
+		PackedInt32Array { 0, 24,  4, 25}, PackedInt32Array {28,  2, 29,  6}, \
+		PackedInt32Array { 1, 26,  5, 27}, PackedInt32Array {30,  3, 31,  7}, \
+		/* YW faces */ \
+		PackedInt32Array {24,  8, 26, 12}, PackedInt32Array {10, 28, 14, 30}, \
+		PackedInt32Array {25,  9, 27, 13}, PackedInt32Array {11, 29, 15, 31}, \
+		/* ZW faces */ \
+		PackedInt32Array {24, 16, 28, 20}, PackedInt32Array {17, 25, 21, 29}, \
+		PackedInt32Array {26, 18, 30, 22}, PackedInt32Array {19, 27, 23, 31}, \
+	}, \
+	Vector<PackedInt32Array> { \
+		/* The first two need to be connected, the order within determines */ \
+		/* orientation, and the order without determines tetrahedralization. */ \
+		PackedInt32Array {0,  5,  1,  4,  8,  9}, /* XYZ cell facing -W */ \
+		PackedInt32Array {6, 12,  4, 13, 20, 21}, /* XZW cell facing -Y */ \
+		PackedInt32Array {0, 12,  2, 14, 16, 18}, /* XYW cell facing -Z */ \
+		PackedInt32Array {1, 13,  3, 15, 17, 19}, /* XYW cell facing +Z */ \
+		PackedInt32Array {9, 19, 11, 18, 21, 23}, /* YZW cell facing +X */ \
+		PackedInt32Array {8, 16, 10, 17, 20, 22}, /* YZW cell facing -X */ \
+		PackedInt32Array {7, 15,  5, 14, 22, 23}, /* XZW cell facing +Y */ \
+		PackedInt32Array {2,  6,  3,  7, 10, 11}, /* XYZ cell facing +W */ \
+	}, \
+	Vector<PackedInt32Array> { \
+		/* The first two need to be connected, otherwise the order does not matter. */ \
+		PackedInt32Array {0, 1, 2, 3, 4, 5, 6, 7} /* XYZW hyper-cell */ \
+	} \
+}
+
+// The order of these needs to match the data in BOX_POLY_CELL_INDICES.
+#define BOX_POLY_CELL_BOUNDARY_NORMALS PackedVector4Array { \
+	Vector4(0.0f, 0.0f, 0.0f, -1.0f), /* -W */ \
+	Vector4(0.0f, -1.0f, 0.0f, 0.0f), /* -Y */ \
+	Vector4(0.0f, 0.0f, -1.0f, 0.0f), /* -Z */ \
+	Vector4(0.0f, 0.0f, +1.0f, 0.0f), /* +Z */ \
+	Vector4(+1.0f, 0.0f, 0.0f, 0.0f), /* +X */ \
+	Vector4(-1.0f, 0.0f, 0.0f, 0.0f), /* -X */ \
+	Vector4(0.0f, +1.0f, 0.0f, 0.0f), /* +Y */ \
+	Vector4(0.0f, 0.0f, 0.0f, +1.0f), /* +W */ \
+}
+
+#define REPEAT_EIGHT_TIMES(m) m, m, m, m, m, m, m, m
+#define BOX_POLY_CELL_VERTEX_NORMALS Vector<PackedVector4Array> { \
+	PackedVector4Array { REPEAT_EIGHT_TIMES(Vector4(0.0f, 0.0f, 0.0f, -1.0f)) }, /* -W */ \
+	PackedVector4Array { REPEAT_EIGHT_TIMES(Vector4(0.0f, -1.0f, 0.0f, 0.0f)) }, /* -Y */ \
+	PackedVector4Array { REPEAT_EIGHT_TIMES(Vector4(0.0f, 0.0f, -1.0f, 0.0f)) }, /* -Z */ \
+	PackedVector4Array { REPEAT_EIGHT_TIMES(Vector4(0.0f, 0.0f, +1.0f, 0.0f)) }, /* +Z */ \
+	PackedVector4Array { REPEAT_EIGHT_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)) }, /* +X */ \
+	PackedVector4Array { REPEAT_EIGHT_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)) }, /* -X */ \
+	PackedVector4Array { REPEAT_EIGHT_TIMES(Vector4(0.0f, +1.0f, 0.0f, 0.0f)) }, /* +Y */ \
+	PackedVector4Array { REPEAT_EIGHT_TIMES(Vector4(0.0f, 0.0f, 0.0f, +1.0f)) }, /* +W */ \
+}
+
+// The order of these needs to match the data in BOX_POLY_CELL_INDICES.
+#define BOX_POLY_CELL_POLY_TEXTURE_MAP_CROSS_ISLAND Vector<PackedVector3Array> { \
+	PackedVector3Array { /* -W */ \
+		Vector3(0x1.0p0, 0x0.Bp0, 0x0.Bp0), Vector3(0x0.Bp0, 0x0.Bp0, 0x0.Bp0), \
+		Vector3(0x1.0p0, 0x1.0p0, 0x0.Bp0), Vector3(0x0.Bp0, 0x1.0p0, 0x0.Bp0), \
+		Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.Bp0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x1.0p0, 0x0.Bp0, 0x1.0p0), Vector3(0x0.Bp0, 0x0.Bp0, 0x1.0p0), \
+	}, \
+	PackedVector3Array { /* -Y */ \
+		Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), \
+		Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), \
+		Vector3(0x0.5p0, 0x0.0p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.0p0, 0x0.5p0), \
+		Vector3(0x0.Ap0, 0x0.0p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.0p0, 0x0.Ap0), \
+	}, \
+	PackedVector3Array { /* -Z */ \
+		Vector3(0x0.5p0, 0x0.5p0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.0p0), \
+		Vector3(0x0.5p0, 0x0.Ap0, 0x0.0p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.0p0), \
+		Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), \
+		Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
+	}, \
+	PackedVector3Array { /* +Z */ \
+		Vector3(0x0.5p0, 0x0.5p0, 0x0.Fp0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Fp0), \
+		Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Fp0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Fp0), \
+		Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), \
+		Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), \
+	}, \
+	PackedVector3Array { /* +X */ \
+		Vector3(0x0.Fp0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Fp0, 0x0.Ap0, 0x0.5p0), \
+		Vector3(0x0.Fp0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Fp0, 0x0.5p0, 0x0.Ap0), \
+		Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), \
+		Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
+	}, \
+	PackedVector3Array { /* -X */ \
+		Vector3(0x0.0p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.5p0), \
+		Vector3(0x0.0p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.0p0, 0x0.Ap0, 0x0.Ap0), \
+		Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), \
+		Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), \
+	}, \
+	PackedVector3Array { /* +Y */ \
+		Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
+		Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), \
+		Vector3(0x0.5p0, 0x0.Fp0, 0x0.Ap0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.Ap0), \
+		Vector3(0x0.5p0, 0x0.Fp0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Fp0, 0x0.5p0), \
+	}, \
+	PackedVector3Array { /* +W */ \
+		Vector3(0x0.5p0, 0x0.5p0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.5p0, 0x0.5p0), \
+		Vector3(0x0.5p0, 0x0.Ap0, 0x0.5p0), Vector3(0x0.Ap0, 0x0.Ap0, 0x0.5p0), \
+		Vector3(0x0.Ap0, 0x0.5p0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.5p0, 0x0.Ap0), \
+		Vector3(0x0.Ap0, 0x0.Ap0, 0x0.Ap0), Vector3(0x0.5p0, 0x0.Ap0, 0x0.Ap0), \
+	}, \
+}
+
+#define BOX_POLY_CELL_POLY_TEXTURE_MAP_FILL_EACH_SIDE Vector<PackedVector3Array> { \
+	PackedVector3Array { /* -W */ \
+		Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), \
+		Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), \
+		Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), \
+	}, \
+	PackedVector3Array { /* -Y */ \
+		Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), \
+		Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), \
+		Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), \
+	}, \
+	PackedVector3Array { /* -Z */ \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), \
+		Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), \
+		Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), \
+	}, \
+	PackedVector3Array { /* +Z */ \
+		Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), \
+		Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), \
+		Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), \
+	}, \
+	PackedVector3Array { /* +X */ \
+		Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), \
+		Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), \
+	}, \
+	PackedVector3Array { /* -X */ \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), \
+		Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), \
+		Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), \
+	}, \
+	PackedVector3Array { /* +Y */ \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), \
+		Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), \
+	}, \
+	PackedVector3Array { /* +W */ \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), \
+		Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), \
+		Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), \
+		Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), \
+	}, \
+}
+
+
+#define BOX_POLY_CELL_POLY_TEXTURE_MAP_COMPACT_2X2X2_GRID Vector<PackedVector3Array> { \
+	PackedVector3Array { /* -W */ \
+		Vector3(0x0.8p0, 0x0.8p0, 0x0.8p0), Vector3(0x1.0p0, 0x0.8p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x1.0p0, 0x0.8p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x1.0p0, 0x1.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x0.8p0, 0x0.8p0, 0x1.0p0), Vector3(0x1.0p0, 0x0.8p0, 0x1.0p0), \
+	}, \
+	PackedVector3Array { /* -Y */ \
+		Vector3(0x0.8p0, 0x0.0p0, 0x0.8p0), Vector3(0x1.0p0, 0x0.0p0, 0x0.8p0), \
+		Vector3(0x1.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x0.8p0, 0x0.0p0, 0x1.0p0), \
+		Vector3(0x0.8p0, 0x0.8p0, 0x0.8p0), Vector3(0x1.0p0, 0x0.8p0, 0x0.8p0), \
+		Vector3(0x1.0p0, 0x0.8p0, 0x1.0p0), Vector3(0x0.8p0, 0x0.8p0, 0x1.0p0), \
+	}, \
+	PackedVector3Array { /* -Z */ \
+		Vector3(0x0.8p0, 0x0.8p0, 0x0.8p0), Vector3(0x1.0p0, 0x0.8p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x1.0p0, 0x0.8p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x0.8p0, 0x0.0p0), Vector3(0x1.0p0, 0x0.8p0, 0x0.0p0), \
+		Vector3(0x0.8p0, 0x1.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x1.0p0, 0x0.0p0), \
+	}, \
+	PackedVector3Array { /* +Z */ \
+		Vector3(0x0.0p0, 0x0.0p0, 0x1.0p0), Vector3(0x0.8p0, 0x0.0p0, 0x1.0p0), \
+		Vector3(0x0.8p0, 0x0.8p0, 0x1.0p0), Vector3(0x0.0p0, 0x0.8p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.8p0), Vector3(0x0.8p0, 0x0.0p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x0.8p0, 0x0.8p0), Vector3(0x0.0p0, 0x0.8p0, 0x0.8p0), \
+	}, \
+	PackedVector3Array { /* +X */ \
+		Vector3(0x1.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x1.0p0, 0x0.8p0, 0x0.0p0), \
+		Vector3(0x1.0p0, 0x0.8p0, 0x0.8p0), Vector3(0x1.0p0, 0x0.0p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x0.0p0, 0x0.8p0), Vector3(0x0.8p0, 0x0.8p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x0.0p0, 0x0.0p0), Vector3(0x0.8p0, 0x0.8p0, 0x0.0p0), \
+	}, \
+	PackedVector3Array { /* -X */ \
+		Vector3(0x0.8p0, 0x0.8p0, 0x0.8p0), Vector3(0x0.8p0, 0x1.0p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x0.8p0, 0x1.0p0), Vector3(0x0.8p0, 0x1.0p0, 0x1.0p0), \
+		Vector3(0x0.0p0, 0x0.8p0, 0x0.8p0), Vector3(0x0.0p0, 0x1.0p0, 0x0.8p0), \
+		Vector3(0x0.0p0, 0x0.8p0, 0x1.0p0), Vector3(0x0.0p0, 0x1.0p0, 0x1.0p0), \
+	}, \
+	PackedVector3Array { /* +Y */ \
+		Vector3(0x0.0p0, 0x0.8p0, 0x0.0p0), Vector3(0x0.8p0, 0x0.8p0, 0x0.0p0), \
+		Vector3(0x0.0p0, 0x0.8p0, 0x0.8p0), Vector3(0x0.8p0, 0x0.8p0, 0x0.8p0), \
+		Vector3(0x0.0p0, 0x1.0p0, 0x0.8p0), Vector3(0x0.8p0, 0x1.0p0, 0x0.8p0), \
+		Vector3(0x0.0p0, 0x1.0p0, 0x0.0p0), Vector3(0x0.8p0, 0x1.0p0, 0x0.0p0), \
+	}, \
+	PackedVector3Array { /* +W */ \
+		Vector3(0x0.0p0, 0x0.0p0, 0x0.0p0), Vector3(0x0.8p0, 0x0.0p0, 0x0.0p0), \
+		Vector3(0x0.0p0, 0x0.8p0, 0x0.0p0), Vector3(0x0.8p0, 0x0.8p0, 0x0.0p0), \
+		Vector3(0x0.8p0, 0x0.0p0, 0x0.8p0), Vector3(0x0.0p0, 0x0.0p0, 0x0.8p0), \
+		Vector3(0x0.8p0, 0x0.8p0, 0x0.8p0), Vector3(0x0.0p0, 0x0.8p0, 0x0.8p0), \
+	}, \
+}
+
+// Generated from island order: [7, 4, 5, 6, 1, 3, 2, 0]
+#define BOX_POLY_CELL_POLY_TEXTURE_MAP_LONG_CROSS Vector<PackedVector3Array> { \
+	PackedVector3Array { /* -W */ \
+		Vector3(0x1.0p0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), \
+		Vector3(0x1.0p0, _2_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _1_3RDS), \
+		Vector3(0x1.0p0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), \
+		Vector3(0x1.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _2_3RDS), \
+	}, \
+	PackedVector3Array { /* -Y */ \
+		Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), \
+		Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), \
+		Vector3(0x0.4p0, 0x0.0p0, _1_3RDS), Vector3(0x0.8p0, 0x0.0p0, _1_3RDS), \
+		Vector3(0x0.8p0, 0x0.0p0, _2_3RDS), Vector3(0x0.4p0, 0x0.0p0, _2_3RDS), \
+	}, \
+	PackedVector3Array { /* -Z */ \
+		Vector3(0x0.4p0, _1_3RDS, 0x0.0p0), Vector3(0x0.8p0, _1_3RDS, 0x0.0p0), \
+		Vector3(0x0.4p0, _2_3RDS, 0x0.0p0), Vector3(0x0.8p0, _2_3RDS, 0x0.0p0), \
+		Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), \
+		Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+	}, \
+	PackedVector3Array { /* +Z */ \
+		Vector3(0x0.4p0, _1_3RDS, 0x1.0p0), Vector3(0x0.8p0, _1_3RDS, 0x1.0p0), \
+		Vector3(0x0.8p0, _2_3RDS, 0x1.0p0), Vector3(0x0.4p0, _2_3RDS, 0x1.0p0), \
+		Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _1_3RDS, _2_3RDS), \
+		Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), \
+	}, \
+	PackedVector3Array { /* +X */ \
+		Vector3(0x0.Cp0, _1_3RDS, _1_3RDS), Vector3(0x0.Cp0, _2_3RDS, _1_3RDS), \
+		Vector3(0x0.Cp0, _2_3RDS, _2_3RDS), Vector3(0x0.Cp0, _1_3RDS, _2_3RDS), \
+		Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
+		Vector3(0x0.8p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+	}, \
+	PackedVector3Array { /* -X */ \
+		Vector3(0x0.0p0, _1_3RDS, _1_3RDS), Vector3(0x0.0p0, _2_3RDS, _1_3RDS), \
+		Vector3(0x0.0p0, _1_3RDS, _2_3RDS), Vector3(0x0.0p0, _2_3RDS, _2_3RDS), \
+		Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.4p0, _2_3RDS, _1_3RDS), \
+		Vector3(0x0.4p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), \
+	}, \
+	PackedVector3Array { /* +Y */ \
+		Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+		Vector3(0x0.4p0, _2_3RDS, _2_3RDS), Vector3(0x0.8p0, _2_3RDS, _2_3RDS), \
+		Vector3(0x0.4p0, 0x1.0p0, _2_3RDS), Vector3(0x0.8p0, 0x1.0p0, _2_3RDS), \
+		Vector3(0x0.4p0, 0x1.0p0, _1_3RDS), Vector3(0x0.8p0, 0x1.0p0, _1_3RDS), \
+	}, \
+	PackedVector3Array { /* +W */ \
+		Vector3(0x0.4p0, _1_3RDS, _1_3RDS), Vector3(0x0.8p0, _1_3RDS, _1_3RDS), \
+		Vector3(0x0.4p0, _2_3RDS, _1_3RDS), Vector3(0x0.8p0, _2_3RDS, _1_3RDS), \
+		Vector3(0x0.8p0, _1_3RDS, _2_3RDS), Vector3(0x0.4p0, _1_3RDS, _2_3RDS), \
+		Vector3(0x0.8p0, _2_3RDS, _2_3RDS), Vector3(0x0.4p0, _2_3RDS, _2_3RDS), \
+	}, \
+}
+
+// These are the same for all box types: poly, tetra, wire.
 #define BOX_EDGE_INDICES PackedInt32Array { \
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, /* X */ \
 	0, 2, 1, 3, 4, 6, 5, 7, 8, 10, 9, 11, 12, 14, 13, 15, /* Y */ \

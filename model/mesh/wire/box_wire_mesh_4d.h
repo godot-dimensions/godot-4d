@@ -26,7 +26,7 @@ public:
 	virtual PackedVector4Array get_vertices() override;
 
 	Ref<ArrayWireMesh4D> subdivide_box(const Vector4i &p_subdivision_segments, const bool p_fill_cells = false, const bool p_breakup_edges = false) const;
-	static Ref<BoxWireMesh4D> from_tetra_mesh(const Ref<BoxTetraMesh4D> &p_tetra_mesh);
-	Ref<BoxTetraMesh4D> to_tetra_mesh() const;
+	static Ref<BoxWireMesh4D> from_box_tetra_mesh(const Ref<BoxTetraMesh4D> &p_box_tetra_mesh);
+	Ref<BoxTetraMesh4D> to_box_tetra_mesh() const;
 	virtual Ref<WireMesh4D> to_wire_mesh() override;
 };

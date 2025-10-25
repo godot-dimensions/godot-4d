@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PolyMesh4D" inherits="TetraMesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for 4D polyhedral meshes.
+	</brief_description>
+	<description>
+		PolyMesh4D is the base class for all 4D polyhedral meshes. Polyhedral meshes are defined using a hierarchy of geometric data, each level used by the next level. Each edge is made of 2 vertices, each face is made of edges, each cell is made of faces, and optionally, each hypervolume is made of cells, mimicking the structure of OFF files, except for faces referencing edges instead of vertices directly.
+		Polyhedral meshes inherit [TetraMesh4D], and can be used anywhere a TetraMesh4D is expected. However, they are much slower than other types of tetra meshes, such as [ArrayTetraMesh4D]. Polyhedral meshes are useful when high-level editing of the mesh is needed, for the same reasons that N-gon meshes are useful in 3D modeling applications such as Blender.
+		To make a PolyMesh4D, use one of the descendant classes, such as [ArrayPolyMesh4D] or [BoxPolyMesh4D]. Advanced users can create custom polyhedral mesh classes by extending PolyMesh4D.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_poly_cell_boundary_normals" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the boundary normals of the 3D polyhedral cells, one per cell. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_boundary_normals] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_poly_cell_indices" qualifiers="virtual">
+			<return type="Array[]" />
+			<description>
+				Callback method that should return the cell indices of a polyhedral mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_indices] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_poly_cell_texture_map" qualifiers="virtual">
+			<return type="PackedVector3Array[]" />
+			<description>
+				Callback method that should return the UVW texture mapping of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_texture_map] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_poly_cell_vertex_normals" qualifiers="virtual">
+			<return type="PackedVector4Array[]" />
+			<description>
+				Callback method that should return the vertex normals of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_vertex_normals] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_poly_cell_vertices" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the vertices of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_vertices] for details of the returned data.
+			</description>
+		</method>
+		<method name="get_all_cell_vertex_indices">
+			<return type="PackedInt32Array[]" />
+			<param index="0" name="start_with_canonical_span" type="bool" />
+			<description>
+				Returns the vertex indices of each cell in the form of an array of [PackedInt32Array]s, by drilling down through the polyhedral hierarchy.
+				[b]Note:[/b] This is not a trivial operation, consider caching the result if you need the same data multiple times.
+			</description>
+		</method>
+		<method name="get_all_face_vertex_indices">
+			<return type="PackedInt32Array[]" />
+			<description>
+				Returns the vertex indices of each face in the form of an array of [PackedInt32Array]s, by drilling down through the polyhedral hierarchy.
+				[b]Note:[/b] This is not a trivial operation, consider caching the result if you need the same data multiple times.
+			</description>
+		</method>
+		<method name="get_poly_cell_boundary_normals">
+			<return type="PackedVector4Array" />
+			<description>
+				Returns the boundary normals of the 3D polyhedral cells, one per cell.
+			</description>
+		</method>
+		<method name="get_poly_cell_indices">
+			<return type="Array[]" />
+			<description>
+				Returns the hierarchical polyhedral cell indices in the form of an array of arrays of [PackedInt32Array]s. This is the foundational data structure of [PolyMesh4D]. The top level array usually has 2 or 3 items:
+				- The first item is an array of 2D faces. It is an array of [PackedInt32Array]s, where each [PackedInt32Array] contains the 1D edge indices that make up one 2D face.
+				- The second item is an array of 3D cells. It is an array of [PackedInt32Array]s, where each [PackedInt32Array] contains the 2D face indices that make up one 3D cell.
+				- The optional third item is an array of 4D hypervolumes. It is an array of [PackedInt32Array]s, where each [PackedInt32Array] contains the 3D cell indices that make up one 4D hypervolume.
+				Since edges are always made of exactly 2 vertices, they are not included in this array. Edges use a simpler data structure where all edges are stored in a single [PackedInt32Array], and every 2 items represent one edge. See [method Mesh4D.get_edge_indices].
+			</description>
+		</method>
+		<method name="get_poly_cell_texture_map">
+			<return type="PackedVector3Array[]" />
+			<description>
+				Returns the UVW texture mapping of the polyhedral cells. Each item in this array is a [PackedVector3Array] containing the texture space mapping for the vertex instances of the corresponding cell in the [method get_poly_cell_indices] array. Each Vector3 in these arrays defines the UVW texture coordinates for the corresponding vertex instance in the cell, and is usually on the range from (0, 0, 0) to (1, 1, 1).
+			</description>
+		</method>
+		<method name="get_poly_cell_vertex_normals">
+			<return type="PackedVector4Array[]" />
+			<description>
+				Returns the normals of the vertex instances for each polyhedral cell. Each item in this array is a [PackedVector4Array] containing the normals for each vertex instance in the corresponding cell in the [method get_poly_cell_indices] array. Each Vector4 in these arrays should be normalized.
+			</description>
+		</method>
+		<method name="get_poly_cell_vertices">
+			<return type="PackedVector4Array" />
+			<description>
+				Returns the vertex positions of the polyhedral mesh. Each Vector4 in the array is a position in meters in 4D space. The items in this array are referenced by the [method get_edge_indices] array.
+				[b]Note:[/b] The vertices returned by [method get_vertices] may be longer than this array. This is because [method get_vertices] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method get_vertices] will always match this array, such that it is either a superset of this array, or identical to it.
+			</description>
+		</method>
+		<method name="poly_mesh_clear_cache">
+			<return type="void" />
+			<param index="0" name="normals_only" type="bool" default="false" />
+			<description>
+				Clears any cached data used by the polyhedral mesh, such as a cached tetrahedralization and its corresponding simplex normals and simplex texture map.
+			</description>
+		</method>
+		<method name="to_array_poly_mesh">
+			<return type="ArrayPolyMesh4D" />
+			<description>
+				Converts this polyhedral mesh into an [ArrayPolyMesh4D], copying all mesh data into the new mesh. This is useful for converting specific polyhedral mesh types into a standard array-based representation for easier processing and manipulation. This performs a deep copy of all mesh data, except for the material, which is shared by default.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -58,6 +58,7 @@ public:
 
 	static Ref<BoxTetraMesh4D> from_box_wire_mesh(const Ref<BoxWireMesh4D> &p_wire_mesh);
 	Ref<BoxWireMesh4D> to_box_wire_mesh() const;
+	virtual Ref<TetraMesh4D> to_tetra_mesh() override;
 	virtual Ref<WireMesh4D> to_wire_mesh() override;
 };
 

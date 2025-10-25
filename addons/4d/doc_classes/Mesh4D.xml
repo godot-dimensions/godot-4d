@@ -122,7 +122,7 @@
 		<method name="to_wire_mesh">
 			<return type="WireMesh4D" />
 			<description>
-				Converts this Mesh4D to a [WireMesh4D]. This method will use the best conversion available. For example, a [BoxTetraMesh4D] will be converted to a [BoxWireMesh4D]. If no specialized conversion is available, the method will return an [ArrayWireMesh4D]. See [method to_array_wire_mesh] for more details.
+				Converts this Mesh4D to a [WireMesh4D]. This method will use the best conversion available. For example, a [BoxTetraMesh4D] will be converted to a [BoxWireMesh4D]. If no specialized conversion is available, the method will return an [ArrayWireMesh4D]. See [method to_array_wire_mesh] for more details. The new mesh will have the same vertices, edges, and material as this mesh. The material will be shared between the two meshes, but everything else will be a copy.
 			</description>
 		</method>
 		<method name="update_cross_section_mesh">

@@ -9,6 +9,7 @@
 	</description>
 	<tutorials>
 		<link title="Wikipedia 16-cell / 4D Orthoplex">https://en.wikipedia.org/wiki/16-cell</link>
+		<link title="Polytope Wiki Hexadecachoron">https://polytope.miraheze.org/wiki/Hexadecachoron</link>
 	</tutorials>
 	<methods>
 		<method name="from_tetra_mesh" qualifiers="static">

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="OrthoplexTetraMesh4D" inherits="TetraMesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="OrthoplexPolyMesh4D" inherits="PolyMesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		A 4D tetrahedral mesh representing an orthoplex (16-cell).
+		A 4D polyhedral mesh representing an orthoplex (16-cell).
 	</brief_description>
 	<description>
-		OrthoplexTetraMesh4D is a class for generating tetrahedral meshes representing orthoplexes, also known as the 16-cell, hexadecachoron, or 4D cross-polytope. A 4D orthoplex is composed of 8 vertices, plus or minus on each axis (-X, +X, -Y, +Y, -Z, +Z, -W, +W), and 16 tetrahedral cells.
+		OrthoplexPolyMesh4D is a class for generating polyhedral meshes representing orthoplexes, also known as the 16-cell, hexadecachoron, or 4D cross-polytope. A 4D orthoplex is composed of 8 vertices, plus or minus on each axis (-X, +X, -Y, +Y, -Z, +Z, -W, +W), and 16 polyhedral cells.
 		The 3D version of an orthoplex is the octahedron, which has 6 vertices (-X, +X, -Y, +Y, -Z, +Z) and 8 triangular faces in each octant. The 2D version is a diamond (square rotated 45 degrees), which has 4 vertices (-X, +X, -Y, +Y) and 4 edges in each quadrant. Orthoplexes exist in all dimensions, and are the dual of boxes (square/cube/hypercube).
 	</description>
 	<tutorials>
@@ -12,17 +12,30 @@
 		<link title="Polytope Wiki Hexadecachoron">https://polytope.miraheze.org/wiki/Hexadecachoron</link>
 	</tutorials>
 	<methods>
+		<method name="from_orthoplex_tetra_mesh" qualifiers="static">
+			<return type="OrthoplexPolyMesh4D" />
+			<param index="0" name="tetra_mesh" type="OrthoplexTetraMesh4D" />
+			<description>
+				Creates an orthoplex polyhedral mesh from [OrthoplexTetraMesh4D]. The orthoplex polyhedral mesh will have the same size and material as the tetrahedral mesh.
+			</description>
+		</method>
 		<method name="from_orthoplex_wire_mesh" qualifiers="static">
-			<return type="OrthoplexTetraMesh4D" />
+			<return type="OrthoplexPolyMesh4D" />
 			<param index="0" name="wire_mesh" type="OrthoplexWireMesh4D" />
 			<description>
-				Creates an orthoplex tetrahedral mesh from [OrthoplexWireMesh4D]. The orthoplex tetrahedral mesh will have the same size and material as the wireframe mesh.
+				Creates an orthoplex polyhedral mesh from [OrthoplexWireMesh4D]. The orthoplex tetrahpolyhedraledral mesh will have the same size and material as the wireframe mesh.
+			</description>
+		</method>
+		<method name="to_orthoplex_tetra_mesh" qualifiers="const">
+			<return type="OrthoplexTetraMesh4D" />
+			<description>
+				Converts this orthoplex polyhedral mesh to a [OrthoplexTetraMesh4D]. The tetrahedral mesh will have the same size and material as the tetrahedral mesh.
 			</description>
 		</method>
 		<method name="to_orthoplex_wire_mesh" qualifiers="const">
 			<return type="OrthoplexWireMesh4D" />
 			<description>
-				Converts this orthoplex tetrahedral mesh to a [OrthoplexWireMesh4D]. The wireframe mesh will have the same size and material as the tetrahedral mesh.
+				Converts this orthoplex polyhedral mesh to a [OrthoplexWireMesh4D]. The wireframe mesh will have the same size and material as the polyhedral mesh.
 			</description>
 		</method>
 	</methods>

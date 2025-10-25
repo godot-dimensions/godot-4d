@@ -7,11 +7,13 @@
 		BoxWireMesh4D is a 4D wireframe mesh representing a box. The box is centered at the origin and is axis-aligned by default. The box is defined by the [member size] property, which is the "diameter" size of the box in meters in 4D space.
 	</description>
 	<tutorials>
+		<link title="Wikipedia Hypercube">https://en.wikipedia.org/wiki/Hypercube</link>
+		<link title="Polytope Wiki Tesseract">https://polytope.miraheze.org/wiki/Tesseract</link>
 	</tutorials>
 	<methods>
-		<method name="from_tetra_mesh" qualifiers="static">
+		<method name="from_box_tetra_mesh" qualifiers="static">
 			<return type="BoxWireMesh4D" />
-			<param index="0" name="tetra_mesh" type="BoxTetraMesh4D" />
+			<param index="0" name="box_tetra_mesh" type="BoxTetraMesh4D" />
 			<description>
 				Creates a box wireframe mesh from a [BoxTetraMesh4D]. The box wireframe mesh will have the same size and material as the tetrahedral mesh.
 			</description>
@@ -28,7 +30,7 @@
 				Returns an [ArrayWireMesh4D] object representing the subdivided wireframe mesh. If the original box has a material, this will not be automatically copied.
 			</description>
 		</method>
-		<method name="to_tetra_mesh" qualifiers="const">
+		<method name="to_box_tetra_mesh" qualifiers="const">
 			<return type="BoxTetraMesh4D" />
 			<description>
 				Converts this box wireframe mesh to a [BoxTetraMesh4D]. The tetrahedral mesh will have the same vertices and material as the wireframe mesh.

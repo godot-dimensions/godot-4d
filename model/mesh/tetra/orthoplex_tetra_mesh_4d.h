@@ -34,5 +34,6 @@ public:
 
 	static Ref<OrthoplexTetraMesh4D> from_orthoplex_wire_mesh(const Ref<OrthoplexWireMesh4D> &p_wire_mesh);
 	Ref<OrthoplexWireMesh4D> to_orthoplex_wire_mesh() const;
+	virtual Ref<TetraMesh4D> to_tetra_mesh() override;
 	virtual Ref<WireMesh4D> to_wire_mesh() override;
 };

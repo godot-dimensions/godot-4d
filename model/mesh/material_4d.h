@@ -55,7 +55,7 @@ protected:
 public:
 	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh);
 	virtual bool is_default_material() const;
-	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_edge_count, const int p_second_edge_count);
+	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_item_count, const int p_second_item_count);
 
 	ColorSourceFlags get_albedo_source_flags() const;
 	void set_albedo_source_flags(const ColorSourceFlags p_albedo_source_flags);

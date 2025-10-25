@@ -145,15 +145,15 @@ Ref<ArrayWireMesh4D> BoxWireMesh4D::subdivide_box(const Vector4i &p_subdivision_
 	return wire_mesh;
 }
 
-Ref<BoxWireMesh4D> BoxWireMesh4D::from_tetra_mesh(const Ref<BoxTetraMesh4D> &p_tetra_mesh) {
+Ref<BoxWireMesh4D> BoxWireMesh4D::from_box_tetra_mesh(const Ref<BoxTetraMesh4D> &p_box_tetra_mesh) {
 	Ref<BoxWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
-	wire_mesh->set_size(p_tetra_mesh->get_size());
-	wire_mesh->set_material(p_tetra_mesh->get_material());
+	wire_mesh->set_size(p_box_tetra_mesh->get_size());
+	wire_mesh->set_material(p_box_tetra_mesh->get_material());
 	return wire_mesh;
 }
 
-Ref<BoxTetraMesh4D> BoxWireMesh4D::to_tetra_mesh() const {
+Ref<BoxTetraMesh4D> BoxWireMesh4D::to_box_tetra_mesh() const {
 	Ref<BoxTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	tetra_mesh->set_size(_size);
@@ -180,6 +180,6 @@ void BoxWireMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_size", "size"), &BoxWireMesh4D::set_size);
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "size", PROPERTY_HINT_NONE, "suffix:m"), "set_size", "get_size");
 
-	ClassDB::bind_static_method("BoxWireMesh4D", D_METHOD("from_tetra_mesh", "tetra_mesh"), &BoxWireMesh4D::from_tetra_mesh);
-	ClassDB::bind_method(D_METHOD("to_tetra_mesh"), &BoxWireMesh4D::to_tetra_mesh);
+	ClassDB::bind_static_method("BoxWireMesh4D", D_METHOD("from_box_tetra_mesh", "box_tetra_mesh"), &BoxWireMesh4D::from_box_tetra_mesh);
+	ClassDB::bind_method(D_METHOD("to_box_tetra_mesh"), &BoxWireMesh4D::to_box_tetra_mesh);
 }

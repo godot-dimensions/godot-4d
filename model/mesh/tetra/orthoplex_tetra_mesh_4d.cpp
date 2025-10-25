@@ -74,6 +74,14 @@ Ref<OrthoplexWireMesh4D> OrthoplexTetraMesh4D::to_orthoplex_wire_mesh() const {
 	return wire_mesh;
 }
 
+Ref<TetraMesh4D> OrthoplexTetraMesh4D::to_tetra_mesh() {
+	Ref<OrthoplexTetraMesh4D> tetra_mesh;
+	tetra_mesh.instantiate();
+	tetra_mesh->set_size(_size);
+	tetra_mesh->set_material(get_material());
+	return tetra_mesh;
+}
+
 Ref<WireMesh4D> OrthoplexTetraMesh4D::to_wire_mesh() {
 	return to_orthoplex_wire_mesh();
 }

@@ -17,6 +17,7 @@ env.Append(
         "../../model/g4mf/structures",
         "../../model/g4mf/structures/physics",
         "../../model/mesh",
+        "../../model/mesh/poly",
         "../../model/mesh/tetra",
         "../../model/mesh/wire",
         "../../model/off",
@@ -43,6 +44,7 @@ sources = (
     + Glob("../../model/g4mf/structures/*.cpp")
     + Glob("../../model/g4mf/structures/physics/*.cpp")
     + Glob("../../model/mesh/*.cpp")
+    + Glob("../../model/mesh/poly/*.cpp")
     + Glob("../../model/mesh/tetra/*.cpp")
     + Glob("../../model/mesh/wire/*.cpp")
     + Glob("../../model/off/*.cpp")

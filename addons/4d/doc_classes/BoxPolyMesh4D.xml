@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BoxPolyMesh4D" inherits="PolyMesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D polyhedral mesh representing a box.
+	</brief_description>
+	<description>
+		BoxPolyMesh4D is a class for generating polyhedral meshes representing boxes. The box is centered at the origin, and is axis-aligned by default; if you want a box facing a different direction, you can rotate the [MeshInstance4D] node the box is attached to.
+	</description>
+	<tutorials>
+		<link title="Wikipedia Hypercube">https://en.wikipedia.org/wiki/Hypercube</link>
+		<link title="Polytope Wiki Tesseract">https://polytope.miraheze.org/wiki/Tesseract</link>
+	</tutorials>
+	<methods>
+		<method name="from_box_tetra_mesh" qualifiers="static">
+			<return type="BoxPolyMesh4D" />
+			<param index="0" name="tetra_mesh" type="BoxTetraMesh4D" />
+			<description>
+				Creates a box polyhedral mesh from a [BoxTetraMesh4D]. The box polyhedral mesh will have the same size and material as the tetrahedral mesh.
+			</description>
+		</method>
+		<method name="from_box_wire_mesh" qualifiers="static">
+			<return type="BoxPolyMesh4D" />
+			<param index="0" name="wire_mesh" type="BoxWireMesh4D" />
+			<description>
+				Creates a box polyhedral mesh from a [BoxWireMesh4D]. The box polyhedral mesh will have the same size and material as the wireframe mesh.
+			</description>
+		</method>
+		<method name="to_box_tetra_mesh" qualifiers="const">
+			<return type="BoxTetraMesh4D" />
+			<description>
+				Converts this box polyhedral mesh to a [BoxTetraMesh4D]. The tetrahedral mesh will have the same size and material as the polyhedral mesh.
+			</description>
+		</method>
+		<method name="to_box_wire_mesh" qualifiers="const">
+			<return type="BoxWireMesh4D" />
+			<description>
+				Converts this box polyhedral mesh to a [BoxWireMesh4D]. The wireframe mesh will have the same size and material as the polyhedral mesh.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="half_extents" type="Vector4" setter="set_half_extents" getter="get_half_extents">
+			The half-extents of the box mesh in meters, also known as just "extents". This is the "radius" of the box. This is a wrapper around [member size] for situations where you want to use the extents instead of size. Since the box is centered at the origin, one vertex is located at the half-extents, and the rest have some of the components negated.
+		</member>
+		<member name="poly_texture_map" type="int" setter="set_poly_texture_map" getter="get_poly_texture_map" enum="BoxPolyMesh4D.BoxPolyTextureMap" default="0">
+			The type of texture map used for the cell UVW texture space of the box mesh cells. This determines the cell UVW texture map returned by [method get_cell_uvw_map]. Different options have different impacts on texture density, visual intuitiveness, and texture bleeding. See [enum BoxPolyTextureMap] for possible values.
+		</member>
+		<member name="size" type="Vector4" setter="set_size" getter="get_size" default="Vector4(1, 1, 1, 1)">
+			The size of the box mesh in meters. This is the "diameter" size of the box in 4D space, where each component is the size of the box in one of the 4 dimensions. This is the value that is stored internally.
+		</member>
+	</members>
+	<constants>
+		<constant name="BOX_POLY_TEXTURE_MAP_CROSS_ISLAND" value="0" enum="BoxPolyTextureMap">
+			Use a cell UVW texture map in the shape of a cross and island. The +W side is the middle of the cross, while the +/- X/Y/Z sides form the arms of the cross. The -W side is an island, separated from the cross. This texture map is visually intuitive, and has space between disconnected cells to avoid texture bleeding issues, but it is not as compact as possible. If used with a 128x128x128 texture, each side will be 40x40x40 pixels.
+		</constant>
+		<constant name="BOX_POLY_TEXTURE_MAP_FILL_EACH_SIDE" value="1" enum="BoxPolyTextureMap">
+			Use a cell UVW texture map that fills each side with the same texture. This means that all sides overlap each other in texture space. This can be used for boxes where all sides have the same texture, such as a Minecraft cobblestone block. If used with a 128x128x128 texture, each side will be 128x128x128 pixels.
+		</constant>
+		<constant name="BOX_POLY_TEXTURE_MAP_COMPACT_2X2X2_GRID" value="2" enum="BoxPolyTextureMap">
+			Use a cell UVW texture map where all 8 sides are arranged in a compact 2x2x2 grid, densely filling the entire texture space. This is the most compact texture map, but it is not as visually intuitive as the cross-and-island map, and is prone to texture bleeding. This is a better option for pixel art textures, or other textures where filtering is not desired or bleeding is not an issue. If used with a 128x128x128 texture, each side will be 64x64x64 pixels.
+		</constant>
+		<constant name="BOX_POLY_TEXTURE_MAP_LONG_CROSS" value="3" enum="BoxPolyTextureMap">
+			Use a cell UVW texture map in the shape of a long cross. The +W side is the middle of the cross, while the +/- X/Y/Z sides form the arms of the cross. The -W side is bolted onto the +X side in the +X direction. This texture map is visually intuitive, but is very sparse, and only works correctly for textures with a 4x3x3 aspect ratio. If used with a 128x96x96 texture, each side will be 32x32x32 pixels.
+		</constant>
+	</constants>
+</class>

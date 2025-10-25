@@ -22,22 +22,43 @@ Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array
 	material.instantiate();
 	material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 	surface_tool->set_material(material);
-	const int size = p_texture_map.size();
+	const int64_t size = p_texture_map.size();
 	float hue = 0.0f;
-	for (int i = 0; i < size - 3; i += 4) {
+	for (int64_t i = 0; i < size - 3; i += 4) {
 		surface_tool->set_color(Color::from_hsv(hue, 1.0f, 1.0f));
-		surface_tool->add_vertex(p_texture_map[i]);
-		surface_tool->add_vertex(p_texture_map[i + 1]);
-		surface_tool->add_vertex(p_texture_map[i + 2]);
-		surface_tool->add_vertex(p_texture_map[i]);
-		surface_tool->add_vertex(p_texture_map[i + 2]);
-		surface_tool->add_vertex(p_texture_map[i + 3]);
-		surface_tool->add_vertex(p_texture_map[i]);
-		surface_tool->add_vertex(p_texture_map[i + 3]);
-		surface_tool->add_vertex(p_texture_map[i + 1]);
-		surface_tool->add_vertex(p_texture_map[i + 1]);
-		surface_tool->add_vertex(p_texture_map[i + 3]);
-		surface_tool->add_vertex(p_texture_map[i + 2]);
+		// Fix for meshes having inverted faces.
+		const Vector3 average = (p_texture_map[i] + p_texture_map[i + 1] + p_texture_map[i + 2] + p_texture_map[i + 3]) / 4.0f;
+		const Vector3 first_cross = (p_texture_map[i + 1] - p_texture_map[i]).cross(p_texture_map[i + 2] - p_texture_map[i]);
+		const real_t dot = first_cross.dot(average - p_texture_map[i]);
+		if (dot == 0.0f) {
+			continue; // Degenerate tetrahedron.
+		} else if (dot > 0.0f) {
+			surface_tool->add_vertex(p_texture_map[i]);
+			surface_tool->add_vertex(p_texture_map[i + 1]);
+			surface_tool->add_vertex(p_texture_map[i + 2]);
+			surface_tool->add_vertex(p_texture_map[i]);
+			surface_tool->add_vertex(p_texture_map[i + 2]);
+			surface_tool->add_vertex(p_texture_map[i + 3]);
+			surface_tool->add_vertex(p_texture_map[i]);
+			surface_tool->add_vertex(p_texture_map[i + 3]);
+			surface_tool->add_vertex(p_texture_map[i + 1]);
+			surface_tool->add_vertex(p_texture_map[i + 1]);
+			surface_tool->add_vertex(p_texture_map[i + 3]);
+			surface_tool->add_vertex(p_texture_map[i + 2]);
+		} else { // dot < 0.0f
+			surface_tool->add_vertex(p_texture_map[i + 2]);
+			surface_tool->add_vertex(p_texture_map[i + 1]);
+			surface_tool->add_vertex(p_texture_map[i]);
+			surface_tool->add_vertex(p_texture_map[i + 3]);
+			surface_tool->add_vertex(p_texture_map[i + 2]);
+			surface_tool->add_vertex(p_texture_map[i]);
+			surface_tool->add_vertex(p_texture_map[i + 1]);
+			surface_tool->add_vertex(p_texture_map[i + 3]);
+			surface_tool->add_vertex(p_texture_map[i]);
+			surface_tool->add_vertex(p_texture_map[i + 2]);
+			surface_tool->add_vertex(p_texture_map[i + 3]);
+			surface_tool->add_vertex(p_texture_map[i + 1]);
+		}
 		// Any irrational number will do here.
 		hue += 0.045f * Math_E;
 	}
@@ -46,11 +67,21 @@ Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array
 }
 
 Ref<ArrayMesh> TetraMesh4D::export_uvw_map_mesh() {
-	const PackedVector3Array texture_map = get_cell_uvw_map();
+	PackedVector3Array texture_map = get_cell_uvw_map();
+	// Remove any degenerate entries created by cells without UVW maps.
+	for (int64_t i = texture_map.size() - 4; i >= 0; i -= 4) {
+		if (unlikely(texture_map[i] == texture_map[i + 1])) {
+			texture_map.remove_at(i + 3);
+			texture_map.remove_at(i + 2);
+			texture_map.remove_at(i + 1);
+			texture_map.remove_at(i);
+		}
+	}
 	return convert_texture_map_to_mesh(texture_map);
 }
 
 void TetraMesh4D::tetra_mesh_clear_cache() {
+	_cell_positions_cache.clear();
 	_edge_positions_cache.clear();
 	_edge_indices_cache.clear();
 	mark_cross_section_mesh_dirty();
@@ -116,6 +147,10 @@ Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	array_mesh->set_cell_uvw_map(get_cell_uvw_map());
 	array_mesh->set_material(get_material());
 	return array_mesh;
+}
+
+Ref<TetraMesh4D> TetraMesh4D::to_tetra_mesh() {
+	return to_array_tetra_mesh();
 }
 
 PackedInt32Array TetraMesh4D::get_cell_indices() {
@@ -213,7 +248,7 @@ void TetraMesh4D::update_cross_section_mesh() {
 	const PackedVector4Array cell_normals = get_cell_boundary_normals();
 	PackedVector3Array cell_uvws = get_cell_uvw_map();
 	if (cell_uvws.size() != cell_positions.size()) {
-		ERR_PRINT("Cell UVW map size does not match cell positions size.");
+		ERR_PRINT("Cell UVW map size (" + itos(cell_uvws.size()) + ") does not match cell positions size (" + itos(cell_positions.size()) + ").");
 		cell_uvws.resize(cell_positions.size());
 	}
 	Ref<Material4D> material = get_material();
@@ -286,6 +321,7 @@ void TetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("export_uvw_map_mesh"), &TetraMesh4D::export_uvw_map_mesh);
 	ClassDB::bind_method(D_METHOD("tetra_mesh_clear_cache"), &TetraMesh4D::tetra_mesh_clear_cache);
 	ClassDB::bind_method(D_METHOD("to_array_tetra_mesh"), &TetraMesh4D::to_array_tetra_mesh);
+	ClassDB::bind_method(D_METHOD("to_tetra_mesh"), &TetraMesh4D::to_tetra_mesh);
 
 	ClassDB::bind_method(D_METHOD("get_cell_indices"), &TetraMesh4D::get_cell_indices);
 	ClassDB::bind_method(D_METHOD("get_cell_positions"), &TetraMesh4D::get_cell_positions);

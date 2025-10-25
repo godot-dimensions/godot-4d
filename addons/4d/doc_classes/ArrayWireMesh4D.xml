@@ -71,7 +71,7 @@
 	</methods>
 	<members>
 		<member name="edge_indices" type="PackedInt32Array" setter="set_edge_indices" getter="get_edge_indices" default="PackedInt32Array()">
-			The indices of the edges. Every 2 integers defines an edge. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
+			The flat array of edge indices. Every 2 integers defines an edge. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
 		</member>
 		<member name="vertices" type="PackedVector4Array" setter="set_vertices" getter="get_vertices" default="PackedVector4Array()">
 			The vertices of the wireframe mesh. Each Vector4 in this array is a vertex defined as a position in meters in 4D space. The items in this array are referenced by the [member edge_indices] array.

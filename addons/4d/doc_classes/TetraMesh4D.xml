@@ -79,7 +79,13 @@
 		<method name="to_array_tetra_mesh">
 			<return type="ArrayTetraMesh4D" />
 			<description>
-				Converts this TetraMesh4D to an [ArrayTetraMesh4D]. If the mesh is already an [ArrayTetraMesh4D], this method will make a copy, but this method is intended for converting subtypes such as [BoxTetraMesh4D]. The array mesh will have the same vertices, cells, and material as this mesh. Converting a non-array mesh to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or cells.
+				Converts this TetraMesh4D to an [ArrayTetraMesh4D]. Even if the mesh is already an [ArrayTetraMesh4D], this method will make a copy, but this method is intended for converting subtypes such as [BoxTetraMesh4D]. The array mesh will have the same vertices, cells, and material as this mesh. The material will be shared between the two meshes, but everything else will be a copy. Converting a non-array mesh to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or cells.
+			</description>
+		</method>
+		<method name="to_tetra_mesh">
+			<return type="TetraMesh4D" />
+			<description>
+				Converts this TetraMesh4D to a new TetraMesh4D that is not a [PolyMesh4D]. This method will use the best conversion available. For example, a [BoxPolyMesh4D] will be converted to a [BoxTetraMesh4D]. If no specialized conversion is available, the method will return an [ArrayTetraMesh4D]. Even if the mesh is already a non-poly TetraMesh4D, this method will make a copy, but this method is intended for converting subtypes such as [BoxTetraMesh4D], [OrthoplexTetraMesh4D], or [PolyMesh4D]-derived classes. The new mesh will have the same vertices, cells, and material as this mesh. The material will be shared between the two meshes, but everything else will be a copy.
 			</description>
 		</method>
 	</methods>
