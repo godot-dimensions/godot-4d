@@ -84,9 +84,11 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obs
 					const Rect4 &obstacle_shape_rect = obstacle_shape_rects[obstacle_shape_index];
 					// The CCD function operates with a relative velocity, so we can check for rigid bodies and use their velocity.
 					const Vector4 relative_motion = obstacle_rigid_body ? (p_motion - obstacle_rigid_body->get_linear_velocity() * _physics_delta_time) : p_motion;
-					const real_t this_ratio = moving_shape_rect.continuous_collision_depth(relative_motion, obstacle_shape_rect, &r_out_normal);
+					Vector4 this_normal;
+					const real_t this_ratio = moving_shape_rect.continuous_collision_depth(relative_motion, obstacle_shape_rect, &this_normal);
 					if (this_ratio < travel_ratio) {
 						travel_ratio = this_ratio;
+						r_out_normal = this_normal; // We remember the normal only from the nearest collision.
 						ret->set_moving_shape_node(moving_shape);
 						ret->set_obstacle_shape_node(obstacle_shape);
 						ret->set_relative_velocity(relative_motion / _physics_delta_time);
