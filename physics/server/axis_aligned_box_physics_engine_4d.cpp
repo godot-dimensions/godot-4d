@@ -87,11 +87,11 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obs
 					Vector4 this_normal;
 					const real_t this_ratio = moving_shape_rect.continuous_collision_depth(relative_motion, obstacle_shape_rect, &this_normal);
 					if (this_ratio < travel_ratio) {
-    					travel_ratio = this_ratio;
-    					r_out_normal = this_normal;  // We remember the normal only from the nearest collision
-    					ret->set_moving_shape_node(moving_shape);
-    					ret->set_obstacle_shape_node(obstacle_shape);
-    					ret->set_relative_velocity(relative_motion / _physics_delta_time);
+						travel_ratio = this_ratio;
+						r_out_normal = this_normal; // We remember the normal only from the nearest collision.
+						ret->set_moving_shape_node(moving_shape);
+						ret->set_obstacle_shape_node(obstacle_shape);
+						ret->set_relative_velocity(relative_motion / _physics_delta_time);
 					}
 				}
 			}
