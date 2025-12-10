@@ -253,6 +253,7 @@ PackedInt32Array PolyMesh4D::_get_face_edge_3_vertex_index_sequence(const int32_
 		return PackedInt32Array{ p_edge1_a, p_edge1_b, p_edge2_a };
 	}
 	CRASH_NOW_MSG("PolyMesh4D: Edges do not share a vertex, this face's initial 2 edges are invalid.");
+	return PackedInt32Array();
 }
 
 PackedInt32Array PolyMesh4D::_get_edges_of_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell) {
