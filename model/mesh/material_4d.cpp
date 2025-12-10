@@ -10,9 +10,12 @@ Color Material4D::get_albedo_color_of_edge(const int64_t p_edge_index, const Ref
 		}
 		return Color(1, 1, 1, 1);
 	}
+	// If the above if statement was not hit, then we are using the albedo color array.
+	// Check if we have already cached the per-edge albedo colors.
 	if (p_edge_index < _edge_albedo_color_cache.size()) {
 		return _edge_albedo_color_cache[p_edge_index];
 	}
+	// If not, we need to compute and cache them depending on the source flags.
 	ERR_FAIL_COND_V_MSG(p_for_mesh.is_null(), _albedo_color, "Material4D: Mesh is null.");
 	const PackedInt32Array edge_indices = p_for_mesh->get_edge_indices();
 	const int64_t edge_count = edge_indices.size() / 2;
@@ -48,7 +51,8 @@ Color Material4D::get_albedo_color_of_edge(const int64_t p_edge_index, const Ref
 		_edge_albedo_color_cache.resize(edge_count);
 		_edge_albedo_color_cache.fill(Color(1, 1, 1, 1));
 	}
-	return _albedo_color;
+	// Now that we have cached the per-edge albedo colors, return the requested one.
+	return _edge_albedo_color_cache[p_edge_index];
 }
 
 bool Material4D::is_default_material() const {
