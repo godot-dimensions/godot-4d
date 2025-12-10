@@ -69,6 +69,19 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 			const int b_index = edge_indices[edge_index * 2 + 1];
 			const Vector4 a_vert_4d = camera_relative_vertices[a_index];
 			const Vector4 b_vert_4d = camera_relative_vertices[b_index];
+			
+			if (camera_has_w_fading) {
+				real_t fade_denom = camera_w_fade_distance;
+				if (camera_has_perspective) {
+					fade_denom += camera_w_fade_slope * -0.5f * (a_vert_4d.z + b_vert_4d.z);
+				}
+				
+				if (abs((a_vert_4d.w + b_vert_4d.w) / 2.0) > fade_denom) {
+					// The edge is too far in the w axis from the camera, so we can skip this edge.
+					continue;
+				}
+			}
+			
 			if (a_vert_4d.z > negative_camera_clip_depth_near) {
 				if (b_vert_4d.z > negative_camera_clip_depth_near) {
 					// Both points are behind the camera, so we skip this edge.
