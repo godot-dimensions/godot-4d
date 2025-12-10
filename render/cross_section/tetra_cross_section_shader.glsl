@@ -83,7 +83,7 @@ void vertex() {
 	int face = get_face_lookup_index(verts[0].w, verts[1].w, verts[2].w, verts[3].w, vertex_id);
 	if (CROSS_SECTION_LOOKUP[face] == -1) {
 		// This vertex is unused, cull
-		POSITION = vec4(0.0, 0.0, CLIP_SPACE_FAR, 1.0);
+		POSITION = vec4(0.0, 0.0, 0.0, 1.0);
 	} else {
 		int position_edge = CROSS_SECTION_LOOKUP[face + (vertex_id % 3)];
 		int edge_vert1 = TETRAHEDRON_EDGE_TO_VERTEX_MAP[position_edge * 2];
