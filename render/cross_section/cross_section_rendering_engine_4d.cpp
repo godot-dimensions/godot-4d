@@ -1,7 +1,6 @@
 #include "cross_section_rendering_engine_4d.h"
 
 #include "../../model/mesh/mesh_instance_4d.h"
-#include "../../model/mesh/poly/poly_material_4d.h"
 #include "../../nodes/camera_4d.h"
 
 #if GDEXTENSION
@@ -47,13 +46,6 @@ void CrossSectionRenderingEngine4D::render_frame() {
 			material_4d = mesh_4d->get_fallback_material();
 		}
 		if (material_4d.is_valid()) {
-			Ref<PolyMaterial4D> poly_material_4d = material_4d;
-			if (poly_material_4d.is_valid()) {
-				Ref<TetraMesh4D> poly_mesh_4d_or_poly_derived_tetra_mesh_4d = mesh_4d;
-				if (poly_mesh_4d_or_poly_derived_tetra_mesh_4d.is_valid()) {
-					poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
-				}
-			}
 			Ref<Material> override_material_3d = material_4d->get_cross_section_material();
 			ERR_CONTINUE(!override_material_3d.is_valid());
 			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d, 0, override_material_3d->get_rid());

@@ -29,7 +29,6 @@
 // Virtual classes.
 #include "model/mesh/material_4d.h"
 #include "model/mesh/mesh_4d.h"
-#include "model/mesh/poly/poly_mesh_4d.h"
 #include "model/mesh/tetra/tetra_mesh_4d.h"
 #include "model/mesh/wire/wire_mesh_4d.h"
 #include "physics/shapes/shape_4d.h"
@@ -37,9 +36,6 @@
 // Model.
 #include "model/g4mf/g4mf_document_4d.h"
 #include "model/mesh/mesh_instance_4d.h"
-#include "model/mesh/poly/array_poly_mesh_4d.h"
-#include "model/mesh/poly/box_poly_mesh_4d.h"
-#include "model/mesh/poly/orthoplex_poly_mesh_4d.h"
 #include "model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "model/mesh/tetra/box_tetra_mesh_4d.h"
 #include "model/mesh/tetra/orthoplex_tetra_mesh_4d.h"
@@ -160,7 +156,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
-		GDREGISTER_VIRTUAL_CLASS(PolyMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
 #if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
 		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
@@ -170,15 +165,12 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		TetraMesh4D::init_fallback_material();
 		WireMesh4D::init_fallback_material();
 		// Mesh.
-		GDREGISTER_CLASS(ArrayPolyMesh4D);
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
 		GDREGISTER_CLASS(ArrayWireMesh4D);
-		GDREGISTER_CLASS(BoxPolyMesh4D);
 		GDREGISTER_CLASS(BoxTetraMesh4D);
 		GDREGISTER_CLASS(BoxWireMesh4D);
 		GDREGISTER_CLASS(MeshInstance4D);
 		GDREGISTER_CLASS(OFFDocument4D);
-		GDREGISTER_CLASS(OrthoplexPolyMesh4D);
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
 		GDREGISTER_CLASS(WireMeshBuilder4D);
