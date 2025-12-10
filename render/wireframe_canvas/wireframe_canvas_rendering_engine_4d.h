@@ -8,6 +8,8 @@
 class WireframeCanvasRenderingEngine4D : public RenderingEngine4D {
 	GDCLASS(WireframeCanvasRenderingEngine4D, RenderingEngine4D);
 
+Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index);
+
 protected:
 	static void _bind_methods() {}
 

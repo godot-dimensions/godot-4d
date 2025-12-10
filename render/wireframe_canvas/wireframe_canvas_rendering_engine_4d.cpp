@@ -3,7 +3,7 @@
 #include "../../model/mesh/wire/wire_material_4d.h"
 #include "wireframe_render_canvas_4d.h"
 
-Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index) {
+Color WireframeCanvasRenderingEngine4D::_get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index) {
 	if (p_material.is_null()) {
 		return Color(1.0f, 1.0f, 1.0f);
 	}
@@ -46,7 +46,7 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 	for (int mesh_index = 0; mesh_index < mesh_instances.size(); mesh_index++) {
 		MeshInstance4D *mesh_inst = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
 		ERR_CONTINUE(mesh_inst == nullptr);
-		Ref<Material4D> material = mesh_inst->get_active_material();
+		const Ref<Material4D> material = mesh_inst->get_active_material();
 		Projection mesh_relative_basis = mesh_relative_basises[mesh_index];
 		Vector4 mesh_relative_position = mesh_relative_positions[mesh_index];
 		const PackedVector4Array camera_relative_vertices = Transform4D(mesh_relative_basis, mesh_relative_position).xform_many(mesh_inst->get_mesh()->get_vertices());
@@ -156,7 +156,7 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 			continue;
 		}
 		edge_colors_to_draw.push_back(edge_colors);
-		Ref<WireMaterial4D> wire_material = material;
+		const Ref<WireMaterial4D> wire_material = material;
 		if (wire_material.is_valid()) {
 			edge_thicknesses_to_draw.push_back(wire_material->get_line_thickness() > 0.0f ? wire_material->get_line_thickness() : -1.0f);
 		} else {
