@@ -122,6 +122,15 @@ love them so much? In fact, why not invent a special 3D door that
 won't hit you on the butt on the way out because you are fired!
 Yes, you. Box your 3D stuff. Out the front door.
 
+## Projects Made With This
+
+Do YOU think this engine is just a toy? A proof of concept?! Well you'd be wrong!
+There's been 2 (that we know of) published projects with this, both by Tessimal.
+
+The first is an outdoor musuem simulator, where you can hang out with your friends in 4D: https://tessimal.itch.io/lobby-4d
+
+The second is an actual game, it's an arcade game about fighting four dimensional robots: https://tessimal.itch.io/arena4d
+
 ## Versions
 
 This repo can be compiled either as an engine module or a GDExtension.
