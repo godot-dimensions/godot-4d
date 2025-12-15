@@ -12,7 +12,7 @@ exist, just download and compile this module, and you can make 4D games in Godot
 ## Installation
 
 First, have all the Godot dependencies installed on your computer as per the
-[official instructions](https://docs.godotengine.org/en/stable/contributing/development/compiling/index.html).
+[official instructions](https://docs.godotengine.org/en/stable/engine_details/development/compiling/index.html).
 
 If you want all of the Godot Dimensions modules at once, you can grab a
 branch of [our Godot fork](https://github.com/godot-dimensions/godot/tree/dimensions-latest).
