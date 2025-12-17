@@ -32,6 +32,7 @@
 		<method name="generate_tetra_mesh_surface" qualifiers="const">
 			<return type="ArrayTetraMesh4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="vertices" type="PackedVector4Array" />
 			<description>
 				Generates an [ArrayTetraMesh4D] from the G4MF mesh surface data inside of the [G4MFState4D]. This is used for importing a mesh from G4MF. This function will only work properly if the surface has cell indices defined.
 			</description>
@@ -39,6 +40,7 @@
 		<method name="generate_wire_mesh_surface" qualifiers="const">
 			<return type="ArrayWireMesh4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="vertices" type="PackedVector4Array" />
 			<description>
 				Generates an [ArrayWireMesh4D] from the G4MF mesh surface data inside of the [G4MFState4D]. This is used for importing a mesh from G4MF. If the mesh surface does not have edge indices but does have cell indices, edges will be calculated from the cells.
 			</description>
@@ -64,13 +66,6 @@
 				Loads the edge indices from the [G4MFAccessor4D] at [member edges_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid edge indices.
 			</description>
 		</method>
-		<method name="load_vertices" qualifiers="const">
-			<return type="PackedVector4Array" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<description>
-				Loads the vertices from the [G4MFAccessor4D] at [member vertices_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid vertex data.
-			</description>
-		</method>
 		<method name="to_dictionary" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
@@ -80,19 +75,16 @@
 	</methods>
 	<members>
 		<member name="cells_accessor_index" type="int" setter="set_cells_accessor_index" getter="get_cells_accessor_index" default="-1">
-			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the cell indices for this surface. Each integer in the array is an index of a vertex in the vertices array, and MUST NOT exceed the bounds of the vertices array. If not defined, the surface does not have explicit cells, and may be a wireframe-only surface.
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the cell indices for this surface. Each integer in the array is an index of a vertex in the mesh's vertices array, and MUST NOT exceed the bounds of the mesh's vertices array. If not defined, the surface does not have explicit cells, and may be a wireframe-only surface.
 		</member>
 		<member name="edges_accessor_index" type="int" setter="set_edges_accessor_index" getter="get_edges_accessor_index" default="-1">
-			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the edge indices for this surface. Each integer in the array is an index of a vertex in the vertices array, and MUST NOT exceed the bounds of the vertices array. If not defined, the surface does not have explicit edges, but edges may be calculated from the cells if needed.
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the edge indices for this surface. Each integer in the array is an index of a vertex in the mesh's vertices array, and MUST NOT exceed the bounds of the mesh's vertices array. If not defined, the surface does not have explicit edges, but edges may be calculated from the cells if needed.
 		</member>
 		<member name="material_index" type="int" setter="set_material_index" getter="get_material_index" default="-1">
 			The index of the [G4MFMaterial4D] in the [G4MFState4D]'s materials array that contains the material for this surface. This is used to define the appearance of the surface. If not defined, the surface should render with a default white material.
 		</member>
 		<member name="polytope_cells" type="bool" setter="set_polytope_cells" getter="get_polytope_cells" default="false">
 			If [code]true[/code], allow treating the tetrahedral cells as part of a larger polytope instead of just simplexes. Each polytope is defined by a set of consecutive cells that share the same starting vertex. This is not used by Godot 4D when importing the mesh.
-		</member>
-		<member name="vertices_accessor_index" type="int" setter="set_vertices_accessor_index" getter="get_vertices_accessor_index" default="-1">
-			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the vertex data for this surface. Each vertex is a 4D vector. Vertices are required for all mesh surfaces.
 		</member>
 	</members>
 </class>

@@ -4,8 +4,20 @@
 #include "../../../model/g4mf/g4mf_state_4d.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/editor_file_system.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
+#define GDEXTMOD_GET_RESOURCE_FILESYSTEM get_resource_filesystem
 #elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
+#include "editor/editor_file_system.h"
+#else
+#include "editor/file_system/editor_file_system.h"
+#endif
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
+#define GDEXTMOD_GET_RESOURCE_FILESYSTEM get_resource_file_system
+#else
+#define GDEXTMOD_GET_RESOURCE_FILESYSTEM get_resource_filesystem
+#endif
 #include "editor/editor_interface.h"
 #include "editor/editor_node.h"
 #include "editor/themes/editor_scale.h"
@@ -52,10 +64,15 @@ void EditorExportDialogG4MF4D::_export_scene_as_g4mf(const String &p_path) {
 	ERR_FAIL_COND_SHOW_DIALOG(scene_root == nullptr, "G4MF error: Cannot export scene without a root node.");
 	Ref<G4MFState4D> g4mf_state;
 	g4mf_state.instantiate();
+	g4mf_state->set_external_data_mode(_export_settings->get_external_data_mode());
 	Error err = _g4mf_document->export_append_from_godot_scene(g4mf_state, scene_root);
 	ERR_FAIL_COND_SHOW_DIALOG(err != OK, "G4MF editor export: Error while running export_append_from_godot_scene.");
 	err = _g4mf_document->export_write_to_file(g4mf_state, p_path);
 	ERR_FAIL_COND_SHOW_DIALOG(err != OK, "G4MF editor export: Error while running export_write_to_file.");
+	// Refresh the editor file system to inform it of the new file.
+	EditorFileSystem *efs = editor_interface->GDEXTMOD_GET_RESOURCE_FILESYSTEM();
+	ERR_FAIL_NULL(efs);
+	efs->scan();
 }
 
 void EditorExportDialogG4MF4D::setup(PopupMenu *p_export_menu) {

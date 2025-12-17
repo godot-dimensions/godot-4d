@@ -5,10 +5,10 @@
 #include "../../math/geometry_4d.h"
 #include "../../math/plane_4d.h"
 #include "../../math/vector_4d.h"
-#include "../../model/wire/array_wire_mesh_4d.h"
-#include "../../model/wire/box_wire_mesh_4d.h"
-#include "../../model/wire/wire_material_4d.h"
-#include "../../model/wire/wire_mesh_builder_4d.h"
+#include "../../model/mesh/wire/array_wire_mesh_4d.h"
+#include "../../model/mesh/wire/box_wire_mesh_4d.h"
+#include "../../model/mesh/wire/wire_material_4d.h"
+#include "../../model/mesh/wire/wire_mesh_builder_4d.h"
 #include "../../render/rendering_server_4d.h"
 
 #if GDEXTENSION
@@ -153,17 +153,16 @@ Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
 }
 
 Ref<ArrayWireMesh4D> _make_stretch_triplane_wire_mesh_4d() {
-	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::create_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
-	return mesh;
+	return WireMeshBuilder4D::create_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
 }
 
-MeshInstance4D *EditorTransformGizmo4D::_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material) {
+MeshInstance4D *EditorTransformGizmo4D::_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material, Node4D *p_parent) {
 	MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
 	mesh_instance->set_name(p_name);
 	mesh_instance->set_mesh(p_mesh);
 	mesh_instance->set_material_override(p_material);
 	mesh_instance->set_meta(StringName("original_material"), p_material);
-	_mesh_holder->add_child(mesh_instance);
+	p_parent->add_child(mesh_instance);
 	return mesh_instance;
 }
 
@@ -176,61 +175,61 @@ void EditorTransformGizmo4D::_generate_gizmo_meshes(const PackedColorArray &p_ax
 	Ref<WireMaterial4D> w_material = _make_single_color_wire_material_4d(p_axis_colors[3]);
 	// Create the move arrow meshes.
 	Ref<ArrayWireMesh4D> move_arrow_mesh = _make_move_arrow_wire_mesh_4d();
-	_meshes[TRANSFORM_MOVE_X] = _make_mesh_instance_4d(StringName("MoveArrowX"), move_arrow_mesh, x_material);
+	_meshes[TRANSFORM_MOVE_X] = _make_mesh_instance_4d(StringName("MoveArrowX"), move_arrow_mesh, x_material, _mesh_keep_conformal[0]);
 	_meshes[TRANSFORM_MOVE_X]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_X]->set_position(Vector4(1.0, 0.0, 0.0, 0.0));
-	_meshes[TRANSFORM_MOVE_Y] = _make_mesh_instance_4d(StringName("MoveArrowY"), move_arrow_mesh, y_material);
+	_meshes[TRANSFORM_MOVE_Y] = _make_mesh_instance_4d(StringName("MoveArrowY"), move_arrow_mesh, y_material, _mesh_keep_conformal[1]);
 	_meshes[TRANSFORM_MOVE_Y]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_Y]->set_position(Vector4(0.0, 1.0, 0.0, 0.0));
-	_meshes[TRANSFORM_MOVE_Z] = _make_mesh_instance_4d(StringName("MoveArrowZ"), move_arrow_mesh, z_material);
+	_meshes[TRANSFORM_MOVE_Z] = _make_mesh_instance_4d(StringName("MoveArrowZ"), move_arrow_mesh, z_material, _mesh_keep_conformal[2]);
 	_meshes[TRANSFORM_MOVE_Z]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_Z]->set_position(Vector4(0.0, 0.0, 1.0, 0.0));
-	_meshes[TRANSFORM_MOVE_W] = _make_mesh_instance_4d(StringName("MoveArrowW"), move_arrow_mesh, w_material);
+	_meshes[TRANSFORM_MOVE_W] = _make_mesh_instance_4d(StringName("MoveArrowW"), move_arrow_mesh, w_material, _mesh_keep_conformal[3]);
 	_meshes[TRANSFORM_MOVE_W]->set_position(Vector4(0.0, 0.0, 0.0, 1.0));
 	// Create the plane meshes.
 	Ref<ArrayWireMesh4D> plane_mesh = _make_plane_wire_mesh_4d();
-	_meshes[TRANSFORM_MOVE_XY] = _make_mesh_instance_4d(StringName("PlaneXY"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[1]));
+	_meshes[TRANSFORM_MOVE_XY] = _make_mesh_instance_4d(StringName("PlaneXY"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[1]), _mesh_holder);
 	_meshes[TRANSFORM_MOVE_XY]->set_position(Vector4(PLANE_OFFSET_4D, PLANE_OFFSET_4D, 0.0, 0.0));
-	_meshes[TRANSFORM_MOVE_XZ] = _make_mesh_instance_4d(StringName("PlaneXZ"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[2]));
+	_meshes[TRANSFORM_MOVE_XZ] = _make_mesh_instance_4d(StringName("PlaneXZ"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[2]), _mesh_holder);
 	_meshes[TRANSFORM_MOVE_XZ]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, -1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0)));
 	_meshes[TRANSFORM_MOVE_XZ]->set_position(Vector4(PLANE_OFFSET_4D, 0.0, PLANE_OFFSET_4D, 0.0));
-	_meshes[TRANSFORM_MOVE_XW] = _make_mesh_instance_4d(StringName("PlaneXW"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[3]));
+	_meshes[TRANSFORM_MOVE_XW] = _make_mesh_instance_4d(StringName("PlaneXW"), plane_mesh, _make_plane_material_4d(p_axis_colors[0], p_axis_colors[3]), _mesh_holder);
 	_meshes[TRANSFORM_MOVE_XW]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, -1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_XW]->set_position(Vector4(PLANE_OFFSET_4D, 0.0, 0.0, PLANE_OFFSET_4D));
-	_meshes[TRANSFORM_MOVE_YZ] = _make_mesh_instance_4d(StringName("PlaneYZ"), plane_mesh, _make_plane_material_4d(p_axis_colors[2], p_axis_colors[1]));
+	_meshes[TRANSFORM_MOVE_YZ] = _make_mesh_instance_4d(StringName("PlaneYZ"), plane_mesh, _make_plane_material_4d(p_axis_colors[2], p_axis_colors[1]), _mesh_holder);
 	_meshes[TRANSFORM_MOVE_YZ]->set_basis(Basis4D(Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(-1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0)));
 	_meshes[TRANSFORM_MOVE_YZ]->set_position(Vector4(0.0, PLANE_OFFSET_4D, PLANE_OFFSET_4D, 0.0));
-	_meshes[TRANSFORM_MOVE_YW] = _make_mesh_instance_4d(StringName("PlaneYW"), plane_mesh, _make_plane_material_4d(p_axis_colors[3], p_axis_colors[1]));
+	_meshes[TRANSFORM_MOVE_YW] = _make_mesh_instance_4d(StringName("PlaneYW"), plane_mesh, _make_plane_material_4d(p_axis_colors[3], p_axis_colors[1]), _mesh_holder);
 	_meshes[TRANSFORM_MOVE_YW]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(-1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_YW]->set_position(Vector4(0.0, PLANE_OFFSET_4D, 0.0, PLANE_OFFSET_4D));
-	_meshes[TRANSFORM_MOVE_ZW] = _make_mesh_instance_4d(StringName("PlaneZW"), plane_mesh, _make_plane_material_4d(p_axis_colors[2], p_axis_colors[3]));
+	_meshes[TRANSFORM_MOVE_ZW] = _make_mesh_instance_4d(StringName("PlaneZW"), plane_mesh, _make_plane_material_4d(p_axis_colors[2], p_axis_colors[3]), _mesh_holder);
 	_meshes[TRANSFORM_MOVE_ZW]->set_basis(Basis4D(Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_MOVE_ZW]->set_position(Vector4(0.0, 0.0, PLANE_OFFSET_4D, PLANE_OFFSET_4D));
 	// Create the rotation ring meshes.
 	Ref<ArrayWireMesh4D> rotation_ring_mesh = _make_rotation_ring_wire_mesh_4d();
-	_meshes[TRANSFORM_ROTATE_XY] = _make_mesh_instance_4d(StringName("RotationRingXY"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[0]));
-	_meshes[TRANSFORM_ROTATE_XZ] = _make_mesh_instance_4d(StringName("RotationRingXZ"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[2], p_axis_colors[0]));
+	_meshes[TRANSFORM_ROTATE_XY] = _make_mesh_instance_4d(StringName("RotationRingXY"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[0]), _mesh_holder);
+	_meshes[TRANSFORM_ROTATE_XZ] = _make_mesh_instance_4d(StringName("RotationRingXZ"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[2], p_axis_colors[0]), _mesh_holder);
 	_meshes[TRANSFORM_ROTATE_XZ]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, -1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0)));
-	_meshes[TRANSFORM_ROTATE_XW] = _make_mesh_instance_4d(StringName("RotationRingXW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[3], p_axis_colors[0]));
+	_meshes[TRANSFORM_ROTATE_XW] = _make_mesh_instance_4d(StringName("RotationRingXW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[3], p_axis_colors[0]), _mesh_holder);
 	_meshes[TRANSFORM_ROTATE_XW]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, -1.0, 0.0, 0.0)));
-	_meshes[TRANSFORM_ROTATE_YZ] = _make_mesh_instance_4d(StringName("RotationRingYZ"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[2]));
+	_meshes[TRANSFORM_ROTATE_YZ] = _make_mesh_instance_4d(StringName("RotationRingYZ"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[2]), _mesh_holder);
 	_meshes[TRANSFORM_ROTATE_YZ]->set_basis(Basis4D(Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(-1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0)));
-	_meshes[TRANSFORM_ROTATE_YW] = _make_mesh_instance_4d(StringName("RotationRingYW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[3]));
+	_meshes[TRANSFORM_ROTATE_YW] = _make_mesh_instance_4d(StringName("RotationRingYW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[1], p_axis_colors[3]), _mesh_holder);
 	_meshes[TRANSFORM_ROTATE_YW]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(-1.0, 0.0, 0.0, 0.0)));
-	_meshes[TRANSFORM_ROTATE_ZW] = _make_mesh_instance_4d(StringName("RotationRingZW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[3], p_axis_colors[2]));
+	_meshes[TRANSFORM_ROTATE_ZW] = _make_mesh_instance_4d(StringName("RotationRingZW"), rotation_ring_mesh, _make_rotation_ring_material_4d(p_axis_colors[3], p_axis_colors[2]), _mesh_holder);
 	_meshes[TRANSFORM_ROTATE_ZW]->set_basis(Basis4D(Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	// Create the scale box meshes.
 	Ref<ArrayWireMesh4D> scale_box_mesh = _make_scale_box_wire_mesh_4d();
-	_meshes[TRANSFORM_SCALE_X] = _make_mesh_instance_4d(StringName("ScaleBoxX"), scale_box_mesh, x_material);
+	_meshes[TRANSFORM_SCALE_X] = _make_mesh_instance_4d(StringName("ScaleBoxX"), scale_box_mesh, x_material, _mesh_keep_conformal[0]);
 	_meshes[TRANSFORM_SCALE_X]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_SCALE_X]->set_position(Vector4(1.0, 0.0, 0.0, 0.0));
-	_meshes[TRANSFORM_SCALE_Y] = _make_mesh_instance_4d(StringName("ScaleBoxY"), scale_box_mesh, y_material);
+	_meshes[TRANSFORM_SCALE_Y] = _make_mesh_instance_4d(StringName("ScaleBoxY"), scale_box_mesh, y_material, _mesh_keep_conformal[1]);
 	_meshes[TRANSFORM_SCALE_Y]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_SCALE_Y]->set_position(Vector4(0.0, 1.0, 0.0, 0.0));
-	_meshes[TRANSFORM_SCALE_Z] = _make_mesh_instance_4d(StringName("ScaleBoxZ"), scale_box_mesh, z_material);
+	_meshes[TRANSFORM_SCALE_Z] = _make_mesh_instance_4d(StringName("ScaleBoxZ"), scale_box_mesh, z_material, _mesh_keep_conformal[2]);
 	_meshes[TRANSFORM_SCALE_Z]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0)));
 	_meshes[TRANSFORM_SCALE_Z]->set_position(Vector4(0.0, 0.0, 1.0, 0.0));
-	_meshes[TRANSFORM_SCALE_W] = _make_mesh_instance_4d(StringName("ScaleBoxW"), scale_box_mesh, w_material);
+	_meshes[TRANSFORM_SCALE_W] = _make_mesh_instance_4d(StringName("ScaleBoxW"), scale_box_mesh, w_material, _mesh_keep_conformal[3]);
 	_meshes[TRANSFORM_SCALE_W]->set_position(Vector4(0.0, 0.0, 0.0, 1.0));
 	// The scale plane meshes are the same as the move plane meshes.
 	_meshes[TRANSFORM_SCALE_XY] = _meshes[TRANSFORM_MOVE_XY];
@@ -241,27 +240,27 @@ void EditorTransformGizmo4D::_generate_gizmo_meshes(const PackedColorArray &p_ax
 	_meshes[TRANSFORM_SCALE_ZW] = _meshes[TRANSFORM_MOVE_ZW];
 	// Create the stretch triplane meshes.
 	Ref<ArrayWireMesh4D> stretch_triplane_mesh = _make_stretch_triplane_wire_mesh_4d();
-	_meshes[TRANSFORM_STRETCH_POS_X] = _make_mesh_instance_4d(StringName("StretchTriplanePosX"), stretch_triplane_mesh, x_material);
+	_meshes[TRANSFORM_STRETCH_POS_X] = _make_mesh_instance_4d(StringName("StretchTriplanePosX"), stretch_triplane_mesh, x_material, _mesh_holder);
 	_meshes[TRANSFORM_STRETCH_POS_X]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_POS_X]->set_position(Vector4(1.0, 0.0, 0.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_NEG_X] = _make_mesh_instance_4d(StringName("StretchTriplaneNegX"), stretch_triplane_mesh, x_material);
+	_meshes[TRANSFORM_STRETCH_NEG_X] = _make_mesh_instance_4d(StringName("StretchTriplaneNegX"), stretch_triplane_mesh, x_material, _mesh_holder);
 	_meshes[TRANSFORM_STRETCH_NEG_X]->set_basis(Basis4D(Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_NEG_X]->set_position(Vector4(-1.0, 0.0, 0.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_POS_Y] = _make_mesh_instance_4d(StringName("StretchTriplanePosY"), stretch_triplane_mesh, y_material);
+	_meshes[TRANSFORM_STRETCH_POS_Y] = _make_mesh_instance_4d(StringName("StretchTriplanePosY"), stretch_triplane_mesh, y_material, _mesh_holder);
 	_meshes[TRANSFORM_STRETCH_POS_Y]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_POS_Y]->set_position(Vector4(0.0, 1.0, 0.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_NEG_Y] = _make_mesh_instance_4d(StringName("StretchTriplaneNegY"), stretch_triplane_mesh, y_material);
+	_meshes[TRANSFORM_STRETCH_NEG_Y] = _make_mesh_instance_4d(StringName("StretchTriplaneNegY"), stretch_triplane_mesh, y_material, _mesh_holder);
 	_meshes[TRANSFORM_STRETCH_NEG_Y]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_NEG_Y]->set_position(Vector4(0.0, -1.0, 0.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_POS_Z] = _make_mesh_instance_4d(StringName("StretchTriplanePosZ"), stretch_triplane_mesh, z_material);
+	_meshes[TRANSFORM_STRETCH_POS_Z] = _make_mesh_instance_4d(StringName("StretchTriplanePosZ"), stretch_triplane_mesh, z_material, _mesh_holder);
 	_meshes[TRANSFORM_STRETCH_POS_Z]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_POS_Z]->set_position(Vector4(0.0, 0.0, 1.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_NEG_Z] = _make_mesh_instance_4d(StringName("StretchTriplaneNegZ"), stretch_triplane_mesh, z_material);
+	_meshes[TRANSFORM_STRETCH_NEG_Z] = _make_mesh_instance_4d(StringName("StretchTriplaneNegZ"), stretch_triplane_mesh, z_material, _mesh_holder);
 	_meshes[TRANSFORM_STRETCH_NEG_Z]->set_basis(Basis4D(Vector4(1.0, 0.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0), Vector4(0.0, 0.0, 1.0, 0.0)));
 	_meshes[TRANSFORM_STRETCH_NEG_Z]->set_position(Vector4(0.0, 0.0, -1.0, 0.0));
-	_meshes[TRANSFORM_STRETCH_POS_W] = _make_mesh_instance_4d(StringName("StretchTriplanePosW"), stretch_triplane_mesh, w_material);
+	_meshes[TRANSFORM_STRETCH_POS_W] = _make_mesh_instance_4d(StringName("StretchTriplanePosW"), stretch_triplane_mesh, w_material, _mesh_holder);
 	_meshes[TRANSFORM_STRETCH_POS_W]->set_position(Vector4(0.0, 0.0, 0.0, 1.0));
-	_meshes[TRANSFORM_STRETCH_NEG_W] = _make_mesh_instance_4d(StringName("StretchTriplaneNegW"), stretch_triplane_mesh, w_material);
+	_meshes[TRANSFORM_STRETCH_NEG_W] = _make_mesh_instance_4d(StringName("StretchTriplaneNegW"), stretch_triplane_mesh, w_material, _mesh_holder);
 	_meshes[TRANSFORM_STRETCH_NEG_W]->set_position(Vector4(0.0, 0.0, 0.0, -1.0));
 	// Set the gizmo mode to set the visibility of these new meshes.
 	set_gizmo_mode(GizmoMode::SELECT);
@@ -296,34 +295,62 @@ void EditorTransformGizmo4D::_update_gizmo_transform() {
 		set_visible(false);
 	} else {
 		set_visible(true);
-		set_transform(sum_transform / real_t(transform_count));
+		sum_transform /= (real_t)transform_count;
+		if (_is_use_local_rotation) {
+			if (_meshes[TRANSFORM_ROTATE_XY]->is_visible()) {
+				// Scale/shear/skew can mess with the rotation gizmo, so get rid of it.
+				sum_transform.basis.orthonormalize();
+			}
+		} else {
+			sum_transform.basis = Basis4D::from_scale(sum_transform.basis.get_global_scale_abs());
+		}
+		set_transform(sum_transform);
 	}
 }
 
 void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_camera) {
 	// We want to keep the gizmo the same size on the screen regardless of the camera's position.
 	const Transform4D camera_transform = p_camera->get_global_transform();
-	Vector4 global_position = get_position();
-	Basis4D global_basis;
-	if (_is_use_local_rotation) {
-		global_basis = get_basis().normalized();
-	}
+	Transform4D gizmo_transform = get_transform();
+	const Vector4 gizmo_scale_abs = gizmo_transform.basis.get_scale_abs();
 	if (_is_stretch_enabled) {
-		const Rect4 bounds = _get_rect_bounds_of_selection(Transform4D(global_basis, global_position).inverse());
-		global_position += global_basis * bounds.get_center();
-		global_basis.scale_local(bounds.size * 0.5f);
+		const Rect4 bounds = _get_rect_bounds_of_selection(gizmo_transform.inverse());
+		gizmo_transform.origin += gizmo_transform.basis * bounds.get_center();
+		gizmo_transform.basis.scale_local(bounds.size * 0.5f);
 		const real_t determinant = bounds.size.x * bounds.size.y * bounds.size.z * bounds.size.w;
 		set_visible(!Math::is_zero_approx(determinant));
-	} else {
-		real_t scale;
-		if (p_camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
-			scale = p_camera->get_orthographic_size() * 0.4f;
-		} else {
-			scale = global_position.distance_to(camera_transform.origin) * 0.4f;
-		}
-		global_basis *= scale;
+		_mesh_holder->set_global_transform(gizmo_transform);
+		return;
 	}
-	_mesh_holder->set_global_transform(Transform4D(global_basis, global_position));
+	real_t scale_dist_number;
+	if (p_camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
+		scale_dist_number = p_camera->get_orthographic_size() * 0.4f;
+	} else {
+		scale_dist_number = gizmo_transform.origin.distance_to(camera_transform.origin) * 0.4f;
+	}
+	const Vector4 scale_vec = Vector4(scale_dist_number, scale_dist_number, scale_dist_number, scale_dist_number);
+	if (_is_use_local_rotation) {
+		_mesh_holder->set_basis(Basis4D::from_scale(scale_vec / gizmo_scale_abs));
+	} else {
+		_mesh_holder->set_global_basis(Basis4D::from_scale(scale_vec));
+	}
+	// Now that the main mesh holder has the correct transform, conformalize the keep-conformal holders.
+	// While the mesh holder affects mouse input, this adjustment is purely a visual effect.
+	for (int i0 = 0; i0 < 4; i0++) {
+		_mesh_keep_conformal[i0]->set_basis(Basis4D());
+		Basis4D basis = _mesh_keep_conformal[i0]->get_global_basis();
+		const real_t basis_i0_scale = basis[i0].length();
+		// Gram-Schmidt process, prioritizing the axis with index i0.
+		basis[i0] = basis[i0].normalized();
+		const int i1 = (i0 + 1) % 4;
+		basis[i1] = (basis[i1] - basis[i0] * basis[i0].dot(basis[i1])).normalized();
+		const int i2 = (i0 + 2) % 4;
+		basis[i2] = (basis[i2] - basis[i0] * basis[i0].dot(basis[i2]) - basis[i1] * basis[i1].dot(basis[i2])).normalized();
+		const int i3 = (i0 + 3) % 4;
+		basis[i3] = (basis[i3] - basis[i0] * basis[i0].dot(basis[i3]) - basis[i1] * basis[i1].dot(basis[i3]) - basis[i2] * basis[i2].dot(basis[i3])).normalized();
+		basis *= basis_i0_scale;
+		_mesh_keep_conformal[i0]->set_global_basis(basis);
+	}
 }
 
 Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p_inv_relative_to) const {
@@ -336,6 +363,60 @@ Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p
 		}
 	}
 	return bounds;
+}
+
+String EditorTransformGizmo4D::_get_transform_part_simple_action_name(const TransformPart p_part) {
+	switch (p_part) {
+		case TRANSFORM_NONE: {
+			return "Transform";
+		} break;
+		case TRANSFORM_MOVE_X:
+		case TRANSFORM_MOVE_Y:
+		case TRANSFORM_MOVE_Z:
+		case TRANSFORM_MOVE_W:
+		case TRANSFORM_MOVE_XY:
+		case TRANSFORM_MOVE_XZ:
+		case TRANSFORM_MOVE_XW:
+		case TRANSFORM_MOVE_YZ:
+		case TRANSFORM_MOVE_YW:
+		case TRANSFORM_MOVE_ZW: {
+			return "Move";
+		} break;
+		case TRANSFORM_ROTATE_XY:
+		case TRANSFORM_ROTATE_XZ:
+		case TRANSFORM_ROTATE_XW:
+		case TRANSFORM_ROTATE_YZ:
+		case TRANSFORM_ROTATE_YW:
+		case TRANSFORM_ROTATE_ZW: {
+			return "Rotate";
+		} break;
+		case TRANSFORM_SCALE_X:
+		case TRANSFORM_SCALE_Y:
+		case TRANSFORM_SCALE_Z:
+		case TRANSFORM_SCALE_W:
+		case TRANSFORM_SCALE_XY:
+		case TRANSFORM_SCALE_XZ:
+		case TRANSFORM_SCALE_XW:
+		case TRANSFORM_SCALE_YZ:
+		case TRANSFORM_SCALE_YW:
+		case TRANSFORM_SCALE_ZW: {
+			return "Scale";
+		} break;
+		case TRANSFORM_STRETCH_POS_X:
+		case TRANSFORM_STRETCH_NEG_X:
+		case TRANSFORM_STRETCH_POS_Y:
+		case TRANSFORM_STRETCH_NEG_Y:
+		case TRANSFORM_STRETCH_POS_Z:
+		case TRANSFORM_STRETCH_NEG_Z:
+		case TRANSFORM_STRETCH_POS_W:
+		case TRANSFORM_STRETCH_NEG_W: {
+			return "Stretch";
+		} break;
+		case TRANSFORM_MAX: {
+			return "Transform";
+		} break;
+	}
+	return "Transform";
 }
 
 Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp, const bool correct_for_ring) {
@@ -547,7 +628,8 @@ Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_lo
 }
 
 void EditorTransformGizmo4D::_begin_transformation(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
-	_old_transform = _mesh_holder->get_global_transform();
+	_old_gizmo_transform = get_transform();
+	_old_mesh_holder_transform = _mesh_holder->get_transform();
 	_transform_reference_value = _get_transform_raycast_value(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
 	_selected_top_node_old_transforms.resize(_selected_top_nodes.size());
 	for (int i = 0; i < _selected_top_nodes.size(); i++) {
@@ -563,23 +645,20 @@ void EditorTransformGizmo4D::_end_transformation() {
 		return;
 	}
 	// Create an undo/redo action for the transformation.
-	const bool is_move_only = _current_transformation >= TRANSFORM_MOVE_X && _current_transformation <= TRANSFORM_MOVE_ZW;
-	_undo_redo->create_action(is_move_only ? String("Move 4D nodes with gizmo") : String("Transform 4D nodes with gizmo"));
+	const String action = _get_transform_part_simple_action_name(_current_transformation);
+	_undo_redo->create_action(action + String(" 4D nodes with gizmo"));
 	const int size = _selected_top_nodes.size();
 	for (int i = 0; i < size; i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
 			_undo_redo->add_do_property(node_4d, StringName("global_position"), node_4d->get_global_position());
 			_undo_redo->add_undo_property(node_4d, StringName("global_position"), _selected_top_node_old_transforms[i].origin);
-			if (!is_move_only) {
-				_undo_redo->add_do_property(node_4d, StringName("global_basis"), (Projection)node_4d->get_global_basis());
-				_undo_redo->add_undo_property(node_4d, StringName("global_basis"), (Projection)_selected_top_node_old_transforms[i].basis);
-			}
+			_undo_redo->add_do_property(node_4d, StringName("global_basis"), (Projection)node_4d->get_global_basis());
+			_undo_redo->add_undo_property(node_4d, StringName("global_basis"), (Projection)_selected_top_node_old_transforms[i].basis);
 		}
 	}
 	_undo_redo->commit_action(false);
 	// Clear out the transformation data and mark the scene as unsaved.
-	_old_transform = Transform4D();
 	_transform_reference_value = Variant();
 	_current_transformation = TRANSFORM_NONE;
 	EditorInterface::get_singleton()->mark_scene_as_unsaved();
@@ -737,15 +816,27 @@ void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origi
 			} break;
 		}
 	}
-	Transform4D new_transform = _old_transform * transform_change;
+	// The above position changes happen relative to the visual gizmo mesh holder, but
+	// we want them relative to the gizmo itself. Scale/rotation should not be adjusted.
+	transform_change.origin = _old_mesh_holder_transform * transform_change.origin;
+	Transform4D new_transform = _snap_settings->snap_transform_change(_old_gizmo_transform, transform_change);
+	// Special case: Only in move mode, ignore any snapping that happened to the basis.
+	if (_current_transformation >= TRANSFORM_MOVE_X && _current_transformation <= TRANSFORM_MOVE_ZW) {
+		new_transform.basis = _old_gizmo_transform.basis;
+	}
 	set_transform(new_transform);
 	// We want the global diff so we can apply it from the left on the global transform of all selected nodes.
 	// Without this, the transforms would be relative to each node (ex: moving on X moves on each node's X axis).
-	transform_change = _old_transform.transform_to(new_transform);
+	transform_change = _old_gizmo_transform.transform_to(new_transform);
 	for (int i = 0; i < _selected_top_nodes.size(); i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
 			node_4d->set_global_transform(transform_change * _selected_top_node_old_transforms[i]);
+			if (_snap_settings->get_snap_final_values()) {
+				node_4d->set_transform(_snap_settings->snap_single_transform(node_4d->get_transform()));
+			}
+			// Note: The keep mode takes priority over snapping, so we apply it after snapping.
+			// In most cases these won't conflict, but in an edge case where they do, keep mode wins.
 			switch (_keep_mode) {
 				case KeepMode::FREEFORM: {
 					// Do nothing.
@@ -872,11 +963,15 @@ void EditorTransformGizmo4D::set_gizmo_mode(const GizmoMode p_mode) {
 	_meshes[TRANSFORM_MOVE_YZ]->set_visible(is_plane_visible);
 	_meshes[TRANSFORM_MOVE_YW]->set_visible(is_plane_visible);
 	_meshes[TRANSFORM_MOVE_ZW]->set_visible(is_plane_visible);
-	set_visible(true);
+	_update_gizmo_transform();
 }
 
 bool EditorTransformGizmo4D::gizmo_mouse_input(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera) {
 	_update_gizmo_mesh_transform(p_camera);
+	if (_selected_top_nodes.is_empty()) {
+		set_visible(false);
+		return false;
+	}
 	if (!is_visible()) {
 		return false;
 	}
@@ -885,16 +980,17 @@ bool EditorTransformGizmo4D::gizmo_mouse_input(const Ref<InputEventMouse> &p_mou
 	const Vector4 ray_direction = p_camera->viewport_to_world_ray_direction(mouse_position);
 	const Vector4 perpendicular_direction = p_camera->get_global_basis().w;
 	if (_current_transformation == TRANSFORM_NONE) {
-		_old_transform = _mesh_holder->get_global_transform();
+		_old_gizmo_transform = get_transform();
+		_old_mesh_holder_transform = _mesh_holder->get_transform();
 	}
-	const Transform4D global_to_local = _old_transform.inverse();
+	const Transform4D global_to_local = (_old_gizmo_transform * _old_mesh_holder_transform).inverse();
 	const Vector4 local_perp_direction = global_to_local.basis.xform(perpendicular_direction).normalized();
 	const Vector4 local_ray_origin = Vector4D::slide(global_to_local.xform(ray_origin), local_perp_direction);
 	const Vector4 local_ray_direction = Vector4D::slide(global_to_local.basis.xform(ray_direction), local_perp_direction);
-	return gizmo_mouse_raycast(p_mouse_event, local_ray_origin, local_ray_direction, local_perp_direction);
+	return _gizmo_mouse_raycast(p_mouse_event, p_camera, local_ray_origin, local_ray_direction, local_perp_direction);
 }
 
-bool EditorTransformGizmo4D::gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
+bool EditorTransformGizmo4D::_gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera, const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
 	Ref<InputEventMouseButton> mouse_button = p_mouse_event;
 	if (mouse_button.is_valid()) {
 		if (mouse_button->get_button_index() != MOUSE_BUTTON_LEFT) {
@@ -905,6 +1001,7 @@ bool EditorTransformGizmo4D::gizmo_mouse_raycast(const Ref<InputEventMouse> &p_m
 			_current_transformation = _check_for_best_hit(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
 			if (_current_transformation != TRANSFORM_NONE) {
 				_begin_transformation(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
+				_snap_settings->set_camera_distance(_old_gizmo_transform.origin.distance_to(p_camera->get_global_position()));
 			}
 		} else if (!mouse_button->is_pressed() && _current_transformation != TRANSFORM_NONE) {
 			// If we are transforming something and the user releases the click, end the transformation.
@@ -949,10 +1046,29 @@ void EditorTransformGizmo4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_mesh_holder = memnew(Node4D);
 	_mesh_holder->set_name(StringName("GizmoMeshHolder4D"));
 	add_child(_mesh_holder);
+	_mesh_keep_conformal[0] = memnew(Node4D);
+	_mesh_keep_conformal[0]->set_name(StringName("KeepConformalX"));
+	_mesh_holder->add_child(_mesh_keep_conformal[0]);
+	_mesh_keep_conformal[1] = memnew(Node4D);
+	_mesh_keep_conformal[1]->set_name(StringName("KeepConformalY"));
+	_mesh_holder->add_child(_mesh_keep_conformal[1]);
+	_mesh_keep_conformal[2] = memnew(Node4D);
+	_mesh_keep_conformal[2]->set_name(StringName("KeepConformalZ"));
+	_mesh_holder->add_child(_mesh_keep_conformal[2]);
+	_mesh_keep_conformal[3] = memnew(Node4D);
+	_mesh_keep_conformal[3]->set_name(StringName("KeepConformalW"));
+	_mesh_holder->add_child(_mesh_keep_conformal[3]);
+	_snap_settings = memnew(EditorTransformSnapSettings4D);
 	RenderingServer4D::get_singleton()->connect(StringName("pre_render"), callable_mp(this, &EditorTransformGizmo4D::_on_rendering_server_pre_render));
 	EditorInterface::get_singleton()->get_inspector()->connect(StringName("property_edited"), callable_mp(this, &EditorTransformGizmo4D::_on_editor_inspector_property_edited));
 
 	// Set up things with the arguments (not constructor things).
 	_undo_redo = p_undo_redo_manager;
 	p_undo_redo_manager->connect(StringName("version_changed"), callable_mp(this, &EditorTransformGizmo4D::_on_undo_redo_version_changed));
+}
+
+EditorTransformGizmo4D::~EditorTransformGizmo4D() {
+	if (_snap_settings != nullptr) {
+		memdelete(_snap_settings);
+	}
 }

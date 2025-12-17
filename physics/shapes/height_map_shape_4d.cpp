@@ -1,6 +1,6 @@
 #include "height_map_shape_4d.h"
 
-#include "../../model/wire/array_wire_mesh_4d.h"
+#include "../../model/mesh/wire/array_wire_mesh_4d.h"
 
 void HeightMapShape4D::set_height_data(const PackedFloat64Array &p_height_data) {
 	const int64_t old_size = _height_data.size();

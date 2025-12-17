@@ -1,7 +1,7 @@
 #include "convex_hull_shape_4d.h"
 
-#include "../../model/tetra/array_tetra_mesh_4d.h"
-#include "../../model/wire/array_wire_mesh_4d.h"
+#include "../../model/mesh/tetra/array_tetra_mesh_4d.h"
+#include "../../model/mesh/wire/array_wire_mesh_4d.h"
 
 void ConvexHullShape4D::set_points(const PackedVector4Array &p_points) {
 	_points = p_points;

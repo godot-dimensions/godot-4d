@@ -2,8 +2,10 @@
 
 #include "editor_viewport_4d_defines.h"
 
+#include "editor_transform_snap_settings_4d.h"
+
 #include "../../math/rect4.h"
-#include "../../model/mesh_instance_4d.h"
+#include "../../model/mesh/mesh_instance_4d.h"
 
 class Camera4D;
 class RenderingEngine4D;
@@ -71,15 +73,18 @@ private:
 	};
 
 	Node4D *_mesh_holder = nullptr;
+	Node4D *_mesh_keep_conformal[4] = { nullptr };
 	MeshInstance4D *_meshes[TRANSFORM_MAX] = { nullptr };
+	EditorTransformSnapSettings4D *_snap_settings = nullptr;
 	EditorUndoRedoManager *_undo_redo = nullptr;
 
 	KeepMode _keep_mode = KeepMode::FREEFORM;
 	TransformPart _current_transformation = TRANSFORM_NONE;
 	TransformPart _highlighted_transformation = TRANSFORM_NONE;
 
-	Transform4D _old_transform;
-	Variant _transform_reference_value;
+	Transform4D _old_gizmo_transform = Transform4D();
+	Transform4D _old_mesh_holder_transform = Transform4D();
+	Variant _transform_reference_value = Variant();
 	TypedArray<Node> _selected_top_nodes;
 	Vector<Transform4D> _selected_top_node_old_transforms;
 
@@ -93,16 +98,18 @@ private:
 	bool _are_generated_meshes_wireframes = false;
 
 	// Setup functions.
-	MeshInstance4D *_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material);
+	MeshInstance4D *_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material, Node4D *p_parent);
 	void _generate_gizmo_meshes(const PackedColorArray &p_axis_colors);
 
 	// Misc internal functions.
+	bool _gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera, const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_perp_direction);
 	void _on_rendering_server_pre_render(Camera4D *p_camera, Viewport *p_viewport, RenderingEngine4D *p_rendering_engine);
 	void _on_editor_inspector_property_edited(const String &p_prop);
 	void _on_undo_redo_version_changed();
 	void _update_gizmo_transform();
 	void _update_gizmo_mesh_transform(const Camera4D *p_camera);
 	Rect4 _get_rect_bounds_of_selection(const Transform4D &p_inv_relative_to) const;
+	static String _get_transform_part_simple_action_name(const TransformPart p_part);
 
 	// Highlighting functions, used when not transforming.
 	TransformPart _check_for_best_hit(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) const;
@@ -119,15 +126,16 @@ protected:
 	static void _bind_methods() {}
 
 public:
+	EditorTransformSnapSettings4D *get_snap_settings() const { return _snap_settings; }
 	void selected_nodes_changed(const TypedArray<Node> &p_top_nodes);
 	void theme_changed(const PackedColorArray &p_axis_colors);
 	void set_keep_mode(const KeepMode p_mode);
 	void set_gizmo_mode(const GizmoMode p_mode);
 	bool gizmo_mouse_input(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera);
-	bool gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_perp_direction);
 
 	bool get_use_local_rotation() const;
 	void set_use_local_rotation(const bool p_use_local_transform);
 
 	void setup(EditorUndoRedoManager *p_undo_redo_manager);
+	~EditorTransformGizmo4D();
 };

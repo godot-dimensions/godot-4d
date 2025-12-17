@@ -38,7 +38,7 @@
 		</method>
 	</methods>
 	<members>
-		<member name="floor_max_angle" type="float" setter="set_floor_max_angle" getter="get_floor_max_angle" default="1.5708">
+		<member name="floor_max_angle" type="float" setter="set_floor_max_angle" getter="get_floor_max_angle" default="1.5707964">
 			Maximum angle (in radians) where a slope is considered a floor (or a ceiling), rather than a wall, when calling [method move_and_slide]. The default value equals 45 degrees.
 		</member>
 		<member name="linear_velocity" type="Vector4" setter="set_linear_velocity" getter="get_linear_velocity" default="Vector4(0, 0, 0, 0)">

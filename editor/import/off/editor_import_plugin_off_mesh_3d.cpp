@@ -26,9 +26,9 @@ TypedArray<Dictionary> EditorImportPluginOFFMesh3D::_get_import_options(const St
 }
 
 Error EditorImportPluginOFFMesh3D::_import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const {
-	Ref<OFFDocument4D> off_doc = OFFDocument4D::load_from_file(p_source_file);
+	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_load_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
-	Ref<ArrayMesh> mesh_3d = off_doc->generate_mesh_3d(p_options[StringName("per_face_vertices")]);
+	Ref<ArrayMesh> mesh_3d = off_doc->import_generate_mesh_3d(p_options[StringName("per_face_vertices")]);
 	ERR_FAIL_COND_V(mesh_3d.is_null(), ERR_FILE_CORRUPT);
 	mesh_3d->set_name(p_source_file.get_file());
 	Error err = ResourceSaver::get_singleton()->save(mesh_3d, p_save_path + String(".res"));
@@ -45,9 +45,9 @@ Error EditorImportPluginOFFMesh3D::import(const String &p_source_file, const Str
 Error EditorImportPluginOFFMesh3D::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
 #endif
 {
-	Ref<OFFDocument4D> off_doc = OFFDocument4D::load_from_file(p_source_file);
+	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_load_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
-	Ref<ArrayMesh> mesh_3d = off_doc->generate_mesh_3d(p_options[StringName("per_face_vertices")]);
+	Ref<ArrayMesh> mesh_3d = off_doc->import_generate_mesh_3d(p_options[StringName("per_face_vertices")]);
 	ERR_FAIL_COND_V(mesh_3d.is_null(), ERR_FILE_CORRUPT);
 	mesh_3d->set_name(p_source_file.get_file());
 	Error err = ResourceSaver::save(mesh_3d, p_save_path + String(".res"));

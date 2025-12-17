@@ -108,6 +108,15 @@
 				Constructs a [Basis4D] matrix from a rotation in the XY plane (5th rotation, Roll 1, Yaw2-perpendicular). Positive rotations are from X to Y.
 			</description>
 		</method>
+		<method name="from_xyz" qualifiers="static">
+			<return type="Projection" />
+			<param index="0" name="x" type="Vector4" />
+			<param index="1" name="y" type="Vector4" />
+			<param index="2" name="z" type="Vector4" />
+			<description>
+				Constructs a [Basis4D] matrix from the given 3 basis vectors, with W perpendicular to all three. See [method Vector4D.perpendicular] for more information.
+			</description>
+		</method>
 		<method name="from_yz" qualifiers="static">
 			<return type="Projection" />
 			<param index="0" name="yz" type="float" />

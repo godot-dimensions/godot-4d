@@ -54,9 +54,6 @@
 		</method>
 	</methods>
 	<members>
-		<member name="cell_colors_accessor_index" type="int" setter="set_cell_colors_accessor_index" getter="get_cell_colors_accessor_index" default="-1">
-			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-cell color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the cells. If not defined, the surface does not have per-cell colors. If defined (set to a valid index), the amount of cell colors MUST match or exceed the amount of cells in the surface.
-		</member>
 		<member name="cell_texture_index" type="int" setter="set_cell_texture_index" getter="get_cell_texture_index" default="-1">
 			The index of the [G4MFTexture4D] in the [G4MFState4D]'s textures array that contains the texture for this surface. This is per-component multiplied with the [member single_color] and the cell colors to get the final color of the cells. If not defined, the surface does not have a texture.
 			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
@@ -65,13 +62,16 @@
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-cell texture map data for this surface, also known as a UV map or UVW map. This is used to map the texture to the surface cells. If not defined (set to a negative index), the surface does not have a texture map. If defined, the amount of texture map data MUST match or exceed the amount of cells in the surface.
 			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
 		</member>
-		<member name="edge_colors_accessor_index" type="int" setter="set_edge_colors_accessor_index" getter="get_edge_colors_accessor_index" default="-1">
+		<member name="factor" type="Color" setter="set_factor" getter="get_factor" default="Color(-1, -1, -1, -1)">
+			The modulate factor of the surface, also known as the value or single base color. If non-negative, this is per-component multiplied with other properties to get the final color of the cells and edges, or if no other properties are defined, this is the only color used.
+		</member>
+		<member name="per_cell_accessor_index" type="int" setter="set_per_cell_accessor_index" getter="get_per_cell_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-cell color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the cells. If not defined, the surface does not have per-cell colors. If defined (set to a valid index), the amount of cell colors MUST match or exceed the amount of cells in the surface.
+		</member>
+		<member name="per_edge_accessor_index" type="int" setter="set_edge_colors_accessor_index" getter="get_per_edge_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-edge color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the edges. If not defined, the surface does not have per-edge colors. If defined (set to a valid index), the amount of edge colors MUST match or exceed the amount of edges in the surface.
 		</member>
-		<member name="single_color" type="Color" setter="set_single_color" getter="get_single_color" default="Color(-1, -1, -1, -1)">
-			The single color of the surface. If non-negative, this is per-component multiplied with other properties to get the final color of the cells and edges, or if no other properties are defined, this is the only color used.
-		</member>
-		<member name="vertex_colors_accessor_index" type="int" setter="set_vertex_colors_accessor_index" getter="get_vertex_colors_accessor_index" default="-1">
+		<member name="per_vertex_accessor_index" type="int" setter="set_per_vertex_accessor_index" getter="get_per_vertex_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-vertex color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the vertices. If not defined, the surface does not have per-vertex colors. If defined (set to a valid index), the amount of vertex colors MUST match or exceed the amount of vertices in the surface.
 			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
 		</member>

@@ -156,6 +156,14 @@
 				Returns the rotation between [param from] and [param to] as an [Euler4D] (exposed as an [AABB]). The rotation will be the shortest possible, and will be in the direction of [param to] from [param from].
 			</description>
 		</method>
+		<method name="aabb_snapped" qualifiers="static">
+			<return type="AABB" />
+			<param index="0" name="euler" type="AABB" />
+			<param index="1" name="step" type="float" />
+			<description>
+				Returns a copy of the [param euler] [Euler4D] with all angles snapped to the nearest multiple of [param step], by calling [method @GlobalScope.snapped] on each component.
+			</description>
+		</method>
 		<method name="aabb_to_3d" qualifiers="static">
 			<return type="Vector3" />
 			<param index="0" name="from_euler_4d" type="AABB" />
@@ -347,6 +355,13 @@
 			<param index="0" name="to" type="Euler4D" />
 			<description>
 				Returns the rotation between this [Euler4D] and [param to]. The rotation will be the shortest possible, and will be in the direction from this [Euler4D] to the [param to] parameter.
+			</description>
+		</method>
+		<method name="snapped" qualifiers="const">
+			<return type="Euler4D" />
+			<param index="0" name="step" type="float" />
+			<description>
+				Returns a copy of this [Euler4D] with all angles snapped to the nearest multiple of [param step], by calling [method @GlobalScope.snapped] on each component.
 			</description>
 		</method>
 		<method name="to_3d" qualifiers="const">

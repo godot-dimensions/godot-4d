@@ -18,6 +18,7 @@
 #include "math/euler_4d_bind.h"
 #include "math/geometric_algebra/rotor_4d_bind.h"
 #include "math/geometry_4d.h"
+#include "math/math_4d.h"
 #include "math/transform_4d_bind.h"
 #include "math/vector_4d.h"
 #include "nodes/camera_4d.h"
@@ -26,25 +27,29 @@
 #include "nodes/quad_split_container.h"
 
 // Virtual classes.
-#include "model/material_4d.h"
-#include "model/mesh_4d.h"
-#include "model/tetra/tetra_mesh_4d.h"
-#include "model/wire/wire_mesh_4d.h"
+#include "model/mesh/material_4d.h"
+#include "model/mesh/mesh_4d.h"
+#include "model/mesh/poly/poly_mesh_4d.h"
+#include "model/mesh/tetra/tetra_mesh_4d.h"
+#include "model/mesh/wire/wire_mesh_4d.h"
 #include "physics/shapes/shape_4d.h"
 
 // Model.
 #include "model/g4mf/g4mf_document_4d.h"
-#include "model/mesh_instance_4d.h"
+#include "model/mesh/mesh_instance_4d.h"
+#include "model/mesh/poly/array_poly_mesh_4d.h"
+#include "model/mesh/poly/box_poly_mesh_4d.h"
+#include "model/mesh/poly/orthoplex_poly_mesh_4d.h"
+#include "model/mesh/tetra/array_tetra_mesh_4d.h"
+#include "model/mesh/tetra/box_tetra_mesh_4d.h"
+#include "model/mesh/tetra/orthoplex_tetra_mesh_4d.h"
+#include "model/mesh/tetra/tetra_material_4d.h"
+#include "model/mesh/wire/array_wire_mesh_4d.h"
+#include "model/mesh/wire/box_wire_mesh_4d.h"
+#include "model/mesh/wire/orthoplex_wire_mesh_4d.h"
+#include "model/mesh/wire/wire_material_4d.h"
+#include "model/mesh/wire/wire_mesh_builder_4d.h"
 #include "model/off/off_document_4d.h"
-#include "model/tetra/array_tetra_mesh_4d.h"
-#include "model/tetra/box_tetra_mesh_4d.h"
-#include "model/tetra/orthoplex_tetra_mesh_4d.h"
-#include "model/tetra/tetra_material_4d.h"
-#include "model/wire/array_wire_mesh_4d.h"
-#include "model/wire/box_wire_mesh_4d.h"
-#include "model/wire/orthoplex_wire_mesh_4d.h"
-#include "model/wire/wire_material_4d.h"
-#include "model/wire/wire_mesh_builder_4d.h"
 
 // Physics.
 #include "physics/bodies/area_4d.h"
@@ -130,6 +135,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(godot_4d_bind::Rotor4D);
 		GDREGISTER_CLASS(godot_4d_bind::Transform4D);
 		GDREGISTER_CLASS(Geometry4D);
+		GDREGISTER_CLASS(Math4D);
 		GDREGISTER_CLASS(Vector4D);
 		// Physics.
 		GDREGISTER_VIRTUAL_CLASS(PhysicsEngine4D);
@@ -148,22 +154,33 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Virtual classes.
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
+		GDREGISTER_CLASS(TetraMaterial4D);
+		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
+		GDREGISTER_VIRTUAL_CLASS(PolyMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
+		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
+		TetraMaterial4D::init_shaders();
+		WireMaterial4D::init_shaders();
+#endif
+		TetraMesh4D::init_fallback_material();
+		WireMesh4D::init_fallback_material();
 		// Mesh.
+		GDREGISTER_CLASS(ArrayPolyMesh4D);
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
 		GDREGISTER_CLASS(ArrayWireMesh4D);
+		GDREGISTER_CLASS(BoxPolyMesh4D);
 		GDREGISTER_CLASS(BoxTetraMesh4D);
 		GDREGISTER_CLASS(BoxWireMesh4D);
 		GDREGISTER_CLASS(MeshInstance4D);
 		GDREGISTER_CLASS(OFFDocument4D);
+		GDREGISTER_CLASS(OrthoplexPolyMesh4D);
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
-		GDREGISTER_CLASS(TetraMaterial4D);
-		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_CLASS(WireMeshBuilder4D);
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
 		// Depends on mesh.
@@ -193,11 +210,13 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(G4MFItem4D);
 		GDREGISTER_CLASS(G4MFBufferView4D);
 		GDREGISTER_CLASS(G4MFAccessor4D);
+		GDREGISTER_CLASS(G4MFFileReference4D);
 		GDREGISTER_CLASS(G4MFTexture4D);
 		GDREGISTER_CLASS(G4MFMaterialChannel4D);
 		GDREGISTER_CLASS(G4MFMaterial4D);
 		GDREGISTER_CLASS(G4MFMeshSurface4D);
 		GDREGISTER_CLASS(G4MFMesh4D);
+		GDREGISTER_CLASS(G4MFModel4D);
 		GDREGISTER_CLASS(G4MFShape4D);
 		GDREGISTER_CLASS(G4MFNodePhysics4D);
 		GDREGISTER_CLASS(G4MFNodePhysicsMotion4D);
@@ -276,5 +295,10 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		memdelete(RenderingServer4D::get_singleton());
 		memdelete(Vector4D::get_singleton());
 		memdelete(WireMeshBuilder4D::get_singleton());
+
+		TetraMesh4D::cleanup_fallback_material();
+		WireMesh4D::cleanup_fallback_material();
+		TetraMaterial4D::cleanup_shaders();
+		WireMaterial4D::cleanup_shaders();
 	}
 }

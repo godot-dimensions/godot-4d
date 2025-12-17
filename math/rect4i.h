@@ -3,8 +3,8 @@
 #include "../godot_4d_defines.h"
 
 struct _NO_DISCARD_ Rect4i {
-	Vector4i position;
-	Vector4i size;
+	Vector4i position = Vector4i();
+	Vector4i size = Vector4i();
 
 	// Property getters and setters.
 	const Vector4i &get_position() const { return position; }

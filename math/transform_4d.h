@@ -12,8 +12,8 @@
 #endif
 
 struct _NO_DISCARD_ Transform4D {
-	Basis4D basis;
-	Vector4 origin;
+	Basis4D basis = Basis4D();
+	Vector4 origin = Vector4();
 
 	// Misc methods.
 	real_t determinant() const;
@@ -82,6 +82,8 @@ struct _NO_DISCARD_ Transform4D {
 	// Validation methods.
 	void conformalize();
 	Transform4D conformalized() const;
+	void normalize();
+	Transform4D normalized() const;
 	void orthonormalize();
 	Transform4D orthonormalized() const;
 	void orthogonalize();

@@ -9,7 +9,7 @@
 #endif
 
 // The conventions for which rotations are Yaw/Pitch/Roll assumes you are
-// using X=left/right, Y=up/down, Z=forward/back, and W=wint/zant.
+// using X=left/right, Y=up/down, Z=forward/back, and W=ana/kata.
 // Whether +Z or -Z is forward does not matter for the rotation names.
 struct _NO_DISCARD_ Euler4D {
 	union {
@@ -37,6 +37,7 @@ struct _NO_DISCARD_ Euler4D {
 	Basis4D rotate_basis(const Basis4D &p_basis) const;
 	Vector4 rotate_point(const Vector4 &p_point) const;
 	Euler4D rotation_to(const Euler4D &p_to) const;
+	Euler4D snapped(const double p_step) const;
 	Euler4D wrapped() const;
 
 	// Radians/degrees.

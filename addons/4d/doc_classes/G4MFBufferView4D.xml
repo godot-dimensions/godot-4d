@@ -18,11 +18,11 @@
 				Creates a new [G4MFBufferView4D] from the given dictionary representing the JSON data of the G4MF buffer view. This is used when importing the buffer view from a file.
 			</description>
 		</method>
-		<method name="load_buffer_view_data" qualifiers="const">
+		<method name="read_buffer_view_data" qualifiers="const">
 			<return type="PackedByteArray" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Loads the slice of data this buffer view points to from the corresponding G4MF buffer into a [PackedByteArray].
+				Reads the slice of data this buffer view points to from the corresponding G4MF buffer into a [PackedByteArray].
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">

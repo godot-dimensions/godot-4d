@@ -83,11 +83,11 @@
 			If [code]true[/code], the ancestor [Viewport] is currently using this camera. Only one [Camera4D] node can be current at a time for each [Viewport].
 			If multiple cameras are a descendant of the [Viewport], the cameras will try to keep at least one of them current. For example, if two [Camera4D] nodes are present in the scene and only one is current, setting one camera's [member current] to [code]false[/code] will cause the other camera to be made current. If three or more [Camera4D] nodes are present in the scene, setting [member current] to [code]false[/code] on the active camera will result in the cameras activating in a round-robin fashion. To deactivate a camera without activating another, use [method clear_current] instead.
 		</member>
-		<member name="depth_fade" type="bool" setter="set_depth_fade" getter="get_depth_fade" default="false">
-			Controls if depth fading is enabled, which means that once things get further than [member depth_fade_start] on the camera's Z axis, they start to fade until they become transparent at [member clip_far]. This is also known as fog.
+		<member name="depth_fade_mode" type="int" setter="set_depth_fade_mode" getter="get_depth_fade_mode" enum="Camera4D.DepthFadeMode" default="0">
+			Controls if depth fading is enabled, which means that once things get further than [member depth_fade_start] on the selected local axes, they start to fade until they become transparent at [member clip_far]. This is also known as fog. See [enum DepthFadeMode] for options.
 		</member>
 		<member name="depth_fade_start" type="float" setter="set_depth_fade_start" getter="get_depth_fade_start" default="25.0">
-			How many units on the camera's Z axis away an edge has to be before it starts fading. Only applies if [member depth_fade] is [code]true[/code]. This is also known as fog.
+			How many units on the camera's selected local axes away an edge has to be before it starts fading. Only applies if [member depth_fade] is [code]true[/code]. This is also known as fog.
 		</member>
 		<member name="field_of_view_3d" type="float" setter="set_field_of_view_3d" getter="get_field_of_view_3d">
 			The field of view of the camera when projecting from 3D to 2D. This value is in radians, but is displayed as degrees in the inspector. The field of view must be between 0 and TAU / 2 radians (0 and 180 degrees), exclusive. The default field of view is TAU / 4 radians, or 90 degrees. This is only used when [member projection_type] is set to [constant PROJECTION4D_PERSPECTIVE_3D] and [member view_angle_type] is set to [constant VIEW_ANGLE_FIELD_OF_VIEW].
@@ -158,6 +158,18 @@
 		</constant>
 		<constant name="VIEW_ANGLE_FIELD_OF_VIEW" value="1" enum="ViewAngleType">
 			Use field of view to control the view angle. This is only used in the inspector, not at runtime.
+		</constant>
+		<constant name="DEPTH_FADE_DISABLED" value="0" enum="DepthFadeMode">
+			Depth fading is disabled. Objects will not fade out as they move farther away from the camera.
+		</constant>
+		<constant name="DEPTH_FADE_DISTANCE" value="1" enum="DepthFadeMode">
+			Objects will fade out as they move farther away from the camera in all directions, like a fog.
+		</constant>
+		<constant name="DEPTH_FADE_XYZ_ONLY" value="2" enum="DepthFadeMode">
+			Objects will fade out as they move farther away from the camera in the local X, Y, and Z axes only. This is useful for creating a fog effect that does not affect the W axis, allowing the W axis to be controlled separately with [member w_fade_mode].
+		</constant>
+		<constant name="DEPTH_FADE_Z_ONLY" value="3" enum="DepthFadeMode">
+			Objects will fade out as they move farther away from the camera in the local Z axis only, which means that only screen space depth is considered.
 		</constant>
 		<constant name="W_FADE_DISABLED" value="0" enum="WFadeMode">
 			Objects will not fade out as they move farther away from the camera in the local W axis.

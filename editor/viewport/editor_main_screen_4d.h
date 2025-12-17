@@ -57,6 +57,7 @@ public:
 		TRANSFORM_SETTING_KEEP_CONFORMAL, // 2
 		TRANSFORM_SETTING_KEEP_ORTHONORMAL, // 3
 		TRANSFORM_SETTING_KEEP_MAX, // 4
+		TRANSFORM_SETTING_CONFIGURE_SNAP = TRANSFORM_SETTING_KEEP_MAX, // Still 4
 	};
 
 	enum LayoutItem {
@@ -82,6 +83,8 @@ private:
 	MenuButton *_layout_menu = nullptr;
 	MenuButton *_view_menu = nullptr;
 	PopupMenu *_rendering_engine_menu_popup = nullptr;
+	ConfirmationDialog *_snap_settings_dialog = nullptr;
+	EditorInspector *_snap_settings_inspector = nullptr;
 	ConfirmationDialog *_camera_settings_dialog = nullptr;
 	EditorInspector *_camera_settings_inspector = nullptr;
 	EditorCameraSettings4D *_camera_settings = nullptr;
@@ -91,7 +94,7 @@ private:
 	EditorTransformGizmo4D *_transform_gizmo_4d = nullptr;
 	Marker4D *_origin_marker = nullptr;
 	Ref<ConfigFile> _4d_editor_config_file;
-	String _4d_editor_config_file_path;
+	String _4d_editor_config_file_path = "";
 
 	double _information_label_auto_hide_time = 0.0;
 

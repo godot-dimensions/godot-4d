@@ -7,13 +7,15 @@
 		BoxTetraMesh4D is a class for generating tetrahedral meshes representing boxes. The box is centered at the origin, and is axis-aligned by default; if you want a box facing a different direction, you can rotate the [MeshInstance4D] node the box is attached to.
 	</description>
 	<tutorials>
+		<link title="Wikipedia Hypercube">https://en.wikipedia.org/wiki/Hypercube</link>
+		<link title="Polytope Wiki Tesseract">https://polytope.miraheze.org/wiki/Tesseract</link>
 	</tutorials>
 	<methods>
 		<method name="from_box_wire_mesh" qualifiers="static">
 			<return type="BoxTetraMesh4D" />
 			<param index="0" name="wire_mesh" type="BoxWireMesh4D" />
 			<description>
-				Creates a box tetrahedral mesh from [BoxWireMesh4D]. The box tetrahedral mesh will have the same size and material as the wireframe mesh.
+				Creates a box tetrahedral mesh from a [BoxWireMesh4D]. The box tetrahedral mesh will have the same size and material as the wireframe mesh.
 			</description>
 		</method>
 		<method name="to_box_wire_mesh" qualifiers="const">

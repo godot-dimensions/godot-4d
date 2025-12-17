@@ -51,6 +51,13 @@
 				Checks if the [G4MFMesh4D] is equal to another [G4MFMesh4D] exactly by checking if the surface count is the same and all surfaces have the same exact data and refer to the same accessors. If a surface refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the mesh is not checked, and any metadata is ignored.
 			</description>
 		</method>
+		<method name="load_vertices" qualifiers="const">
+			<return type="PackedVector4Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the vertices from the [G4MFAccessor4D] at [member vertices_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid vertex data.
+			</description>
+		</method>
 		<method name="to_dictionary" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
@@ -61,6 +68,9 @@
 	<members>
 		<member name="surfaces" type="G4MFMeshSurface4D[]" setter="set_surfaces" getter="get_surfaces" default="[]">
 			An array of [G4MFMeshSurface4D]s that define the geometry of the mesh. Each surface may have a material.
+		</member>
+		<member name="vertices_accessor_index" type="int" setter="set_vertices_accessor_index" getter="get_vertices_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the vertex data for this mesh. Each vertex is a 4D vector. Vertices are shared between all mesh surfaces.
 		</member>
 	</members>
 </class>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFModel4D" inherits="G4MFFileReference4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Models are references to other self-contained files that can be used in the scene graph.
+	</brief_description>
+	<description>
+		G4MFModel4D represents a reference to another self-contained model file that can be used in the scene graph, such as other G4MF files, OFF files, glTF™ files, OCIF files, or any other format. These models are then used by nodes, where each node using the model becomes a new instance of the model's tree of nodes, and the host G4MF's node properties override the properties of the instantiated model's root node. This allows for modularity and reusability of models across different scenes and applications.
+	</description>
+	<tutorials>
+		<link title="G4MF Model Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/model.md</link>
+		<link title="G4MF File Reference Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf_file_ref.schema.json</link>
+		<link title="IANA Model Media Types">https://www.iana.org/assignments/media-types/media-types.xhtml#model</link>
+	</tutorials>
+	<methods>
+		<method name="export_pack_nodes_into_model" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="g4mf_document" type="Variant" />
+			<param index="1" name="g4mf_state" type="G4MFState4D" />
+			<param index="2" name="node" type="Node" />
+			<param index="3" name="deduplicate" type="bool" default="true" />
+			<description>
+				Pack the given tree of nodes into a new G4MF model, and add it to the given [G4MFState4D]'s list of models. This function MUST be ran before calling [method export_write_model_data] on the new model, or else the export will fail.
+				The root node of the given tree will become the root node of the new model, and all child nodes will be included in the model as well. If [code]deduplicate[/code] is true, the model will be compared against existing models in the [G4MFState4D] and reused if a model with an identical URI already exists. Returns the index of the new or existing model in the [G4MFState4D]'s list of models, or [code]-1[/code] on failure.
+				The given [G4MFDocument4D] will be set as [member model_g4mf_document] on the new model, and will be used for processing the file. The [param g4mf_document] parameter is a [Variant] for technical reasons, to avoid circular dependency issues in C++. This parameter only supports being given a [G4MFDocument4D] or [code]null[/code].
+			</description>
+		</method>
+		<method name="export_write_model_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="deduplicate" type="bool" default="true" />
+			<param index="2" name="buffer_index" type="int" default="0" />
+			<description>
+				Write the model data to the file if [member uri] is set to a non-empty value, or to a buffer view if [member uri] is empty. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. The [method import_preload_model_data] function MUST be ran before calling this function or else the export will fail.
+				The [param deduplicate] and [param buffer_index] parameters are only used when writing to a new buffer view, and are directly passed to the [method G4MFBufferView4D.write_new_buffer_view_into_state] function. They do nothing when writing to an external file URI. When written to a buffer view, model data is always aligned to a multiple of 16 bytes within the buffer.
+			</description>
+		</method>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFModel4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF model to a [G4MFModel4D]. This will set the fields of the [G4MFModel4D], [G4MFFileReference4D], and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="import_instantiate_model" qualifiers="const">
+			<return type="Node" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Creates a new instance of the model's node tree, using the model data preloaded into memory. This function MUST be called after running [method import_preload_model_data], or else it will fail. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. Returns the root node of the instantiated model on success, or [code]null[/code] on failure.
+			</description>
+		</method>
+		<method name="import_preload_model_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Preloads the model data from the file or buffer view into memory, and prepares it for instantiation. This function MUST be ran before calling [method import_instantiate_model]. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. Returns [constant @GlobalScope.OK] on success, or an error code on failure.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF model to a [Dictionary]. This is used for serializing the G4MF model as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="model_g4mf_document" type="Variant" setter="set_model_g4mf_document" getter="get_model_g4mf_document" default="null">
+			The [G4MFDocument4D] used for processing nested 4D G4MF models. This should be set to the same document used to process the parent G4MF file, to preserve settings. If this is not set to a valid value, a new [G4MFDocument4D] will be created with default settings when importing a 4D G4MF file.
+			[b]Note:[/b] This is a [Variant] for technical reasons, to avoid circular dependency issues in C++. This property only supports being set to a [G4MFDocument4D] or [code]null[/code].
+		</member>
+	</members>
+</class>

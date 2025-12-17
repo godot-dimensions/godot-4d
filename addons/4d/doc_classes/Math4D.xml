@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Math4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		General math functions for the 4D module.
+	</brief_description>
+	<description>
+		Math4D is a class that provides general math functions for the 4D module. Whenever possible, math functions are placed in more specific classes like Geometry4D, Vector4D, and so on. However, some functions are general enough that they don't fit in any of those classes, such as float conversion functions which aren't even specific to 4D.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="double_to_float4" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="double" type="float" />
+			<description>
+				Converts a double (GDScript [float]) to a compact 4-bit float representation. This format has 1 sign bit, 2 exponent bits, and 1 mantissa bits. The only representable values are [code]0.0[/code], [code]0.5[/code], [code]1.0[/code], [code]1.5[/code], [code]2.0[/code], [code]3.0[/code], [constant @GDScript.INF], [constant @GDScript.NAN], and the negative versions of those values. All other inputs will be rounded to the nearest representable value. Values greater than or equal to 3.5 will become [constant @GDScript.INF], and values less than or equal to -3.5 will become [code]-INF[/code].
+				[b]Note:[/b] 4-bit floats are not a part of the IEEE 754 standard. However, this format follows the same principles as standardized IEEE 754 floats, matching the IEEE 754 behavior but at a lower precision. See [url=https://en.wikipedia.org/wiki/Minifloat]"Minifloat" on Wikipedia[/url] for more information.
+			</description>
+		</method>
+		<method name="double_to_float8" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="double" type="float" />
+			<description>
+				Converts a double (GDScript [float]) to a compact 8-bit float representation. This format has 1 sign bit, 4 exponent bits, 3 mantissa bits, maximum finite value [code]240.0[/code], and minimum positive value [code]0.001953125[/code]. All inputs will be rounded to the nearest representable value. Values greater than or equal to 248 will become [constant @GDScript.INF], and values less than or equal to -248 will become [code]-INF[/code].
+				[b]Note:[/b] 8-bit floats are not a part of the IEEE 754 standard. However, this format follows the same principles as standardized IEEE 754 floats, matching the IEEE 754 behavior but at a lower precision. See [url=https://en.wikipedia.org/wiki/Minifloat]"Minifloat" on Wikipedia[/url] for more information.
+			</description>
+		</method>
+		<method name="double_to_float16" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="double" type="float" />
+			<description>
+				Converts a double (GDScript [float]) to a compact 16-bit float representation, standardized as IEEE 754 half-precision. This format has 1 sign bit, 5 exponent bits, 10 mantissa bits, max finite value [code]65504.0[/code], minimum positive value [code]0.000000059604644775390625[/code]. All inputs will be rounded to the nearest representable value. Values greater than or equal to 65520 will become [constant @GDScript.INF], and values less than or equal to -65520 will become [code]-INF[/code].
+				See [url=https://en.wikipedia.org/wiki/Half-precision_floating-point_format]"Half-precision floating-point format" on Wikipedia[/url] for more information.
+			</description>
+		</method>
+		<method name="float4_to_double" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="float4" type="int" />
+			<description>
+				Converts a compact 4-bit float to a double (GDScript [float]). This format has 1 sign bit, 2 exponent bits, and 1 mantissa bits. Only the least significant 4 bits of the input integer are considered, the rest are ignored. The only possible output values are [code]0.0[/code], [code]0.5[/code], [code]1.0[/code], [code]1.5[/code], [code]2.0[/code], [code]3.0[/code], [constant @GDScript.INF], [constant @GDScript.NAN], and the negative versions of those values.
+				[b]Note:[/b] 4-bit floats are not a part of the IEEE 754 standard. However, this format follows the same principles as standardized IEEE 754 floats, matching the IEEE 754 behavior but at a lower precision. See [url=https://en.wikipedia.org/wiki/Minifloat]"Minifloat" on Wikipedia[/url] for more information.
+			</description>
+		</method>
+		<method name="float8_to_double" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="float8" type="int" />
+			<description>
+				Converts a compact 8-bit float to a double (GDScript [float]). This format has 1 sign bit, 4 exponent bits, and 3 mantissa bits. Only the least significant 8 bits of the input integer are considered, the rest are ignored. The only possible output values are on the range of [code]0.001953125[/code] to [code]240.0[/code], as well as [constant @GDScript.INF], [constant @GDScript.NAN], and the negative versions of those values.
+				[b]Note:[/b] 8-bit floats are not a part of the IEEE 754 standard. However, this format follows the same principles as standardized IEEE 754 floats, matching the IEEE 754 behavior but at a lower precision. See [url=https://en.wikipedia.org/wiki/Minifloat]"Minifloat" on Wikipedia[/url] for more information.
+			</description>
+		</method>
+		<method name="float16_to_double" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="float16" type="int" />
+			<description>
+				Converts a compact 16-bit float to a double (GDScript [float]). This format has 1 sign bit, 5 exponent bits, and 10 mantissa bits. Only the least significant 16 bits of the input integer are considered, the rest are ignored. The only possible output values are on the range of [code]0.000000059604644775390625[/code] to [code]65504.0[/code], as well as [constant @GDScript.INF], [constant @GDScript.NAN], and the negative versions of those values.
+				See [url=https://en.wikipedia.org/wiki/Half-precision_floating-point_format]"Half-precision floating-point format" on Wikipedia[/url] for more information.
+			</description>
+		</method>
+	</methods>
+</class>

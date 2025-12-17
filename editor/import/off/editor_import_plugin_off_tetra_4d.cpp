@@ -21,9 +21,9 @@ TypedArray<Dictionary> EditorImportPluginOFFTetra4D::_get_import_options(const S
 }
 
 Error EditorImportPluginOFFTetra4D::_import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const {
-	Ref<OFFDocument4D> off_doc = OFFDocument4D::load_from_file(p_source_file);
+	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_load_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
-	Ref<ArrayTetraMesh4D> tetra_mesh = off_doc->generate_tetra_mesh_4d();
+	Ref<ArrayTetraMesh4D> tetra_mesh = off_doc->import_generate_tetra_mesh_4d();
 	ERR_FAIL_COND_V(tetra_mesh.is_null(), ERR_FILE_CORRUPT);
 	tetra_mesh->set_name(p_source_file.get_file());
 	Error err = ResourceSaver::get_singleton()->save(tetra_mesh, p_save_path + String(".res"));
@@ -40,9 +40,9 @@ Error EditorImportPluginOFFTetra4D::import(const String &p_source_file, const St
 Error EditorImportPluginOFFTetra4D::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
 #endif
 {
-	Ref<OFFDocument4D> off_doc = OFFDocument4D::load_from_file(p_source_file);
+	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_load_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
-	Ref<ArrayTetraMesh4D> tetra_mesh = off_doc->generate_tetra_mesh_4d();
+	Ref<ArrayTetraMesh4D> tetra_mesh = off_doc->import_generate_tetra_mesh_4d();
 	ERR_FAIL_COND_V(tetra_mesh.is_null(), ERR_FILE_CORRUPT);
 	tetra_mesh->set_name(p_source_file.get_file());
 	Error err = ResourceSaver::save(tetra_mesh, p_save_path + String(".res"));

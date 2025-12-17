@@ -112,6 +112,16 @@ Euler4D Euler4D::rotation_to(const Euler4D &p_to) const {
 	return from_basis(to_basis().inverse() * p_to.to_basis());
 }
 
+Euler4D Euler4D::snapped(const double p_step) const {
+	return Euler4D(
+			Math::snapped((double)yz, p_step),
+			Math::snapped((double)zx, p_step),
+			Math::snapped((double)xy, p_step),
+			Math::snapped((double)xw, p_step),
+			Math::snapped((double)wy, p_step),
+			Math::snapped((double)zw, p_step));
+}
+
 Euler4D Euler4D::wrapped() const {
 	return Euler4D(
 			Math::wrapf(yz, (real_t)-Math_PI, (real_t)Math_PI),

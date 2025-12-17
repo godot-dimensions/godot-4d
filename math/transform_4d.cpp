@@ -283,6 +283,14 @@ Transform4D Transform4D::conformalized() const {
 	return Transform4D(basis.conformalized(), origin);
 }
 
+void Transform4D::normalize() {
+	basis.normalize();
+}
+
+Transform4D Transform4D::normalized() const {
+	return Transform4D(basis.normalized(), origin);
+}
+
 void Transform4D::orthonormalize() {
 	basis.orthonormalize();
 }

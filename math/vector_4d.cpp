@@ -8,6 +8,38 @@
 #include "core/variant/variant_utility.h"
 #endif
 
+#if USE_CONST_NOT_CONSTEXPR_FOR_VECTORS
+const Vector4 Vector4D::ZERO = Vector4(0, 0, 0, 0);
+const Vector4 Vector4D::ONE = Vector4(1, 1, 1, 1);
+
+const Vector4 Vector4D::DIR_RIGHT = Vector4(1, 0, 0, 0);
+const Vector4 Vector4D::DIR_LEFT = Vector4(-1, 0, 0, 0);
+const Vector4 Vector4D::DIR_UP = Vector4(0, 1, 0, 0);
+const Vector4 Vector4D::DIR_DOWN = Vector4(0, -1, 0, 0);
+const Vector4 Vector4D::DIR_BACK = Vector4(0, 0, 1, 0);
+const Vector4 Vector4D::DIR_FORWARD = Vector4(0, 0, -1, 0);
+const Vector4 Vector4D::DIR_ANA = Vector4(0, 0, 0, 1);
+const Vector4 Vector4D::DIR_KATA = Vector4(0, 0, 0, -1);
+
+const Vector4 Vector4D::MODEL_LEFT_SIDE = Vector4(1, 0, 0, 0);
+const Vector4 Vector4D::MODEL_RIGHT_SIDE = Vector4(-1, 0, 0, 0);
+const Vector4 Vector4D::MODEL_TOP_SIDE = Vector4(0, 1, 0, 0);
+const Vector4 Vector4D::MODEL_BOTTOM_SIDE = Vector4(0, -1, 0, 0);
+const Vector4 Vector4D::MODEL_FRONT_SIDE = Vector4(0, 0, 1, 0);
+const Vector4 Vector4D::MODEL_REAR_SIDE = Vector4(0, 0, -1, 0);
+const Vector4 Vector4D::MODEL_ANA_SIDE = Vector4(0, 0, 0, 1);
+const Vector4 Vector4D::MODEL_KATA_SIDE = Vector4(0, 0, 0, -1);
+
+const Vector4 Vector4D::CARDINAL_EAST = Vector4(1, 0, 0, 0);
+const Vector4 Vector4D::CARDINAL_WEST = Vector4(-1, 0, 0, 0);
+const Vector4 Vector4D::CARDINAL_ZENITH = Vector4(0, 1, 0, 0);
+const Vector4 Vector4D::CARDINAL_NADIR = Vector4(0, -1, 0, 0);
+const Vector4 Vector4D::CARDINAL_SOUTH = Vector4(0, 0, 1, 0);
+const Vector4 Vector4D::CARDINAL_NORTH = Vector4(0, 0, -1, 0);
+const Vector4 Vector4D::CARDINAL_ANTH = Vector4(0, 0, 0, 1);
+const Vector4 Vector4D::CARDINAL_KENTH = Vector4(0, 0, 0, -1);
+#endif // USE_CONST_NOT_CONSTEXPR
+
 // NOTE: Editor code grabs the colors from the Godot editor theme instead.
 // This function is for non-editor code or when the theme is not available.
 Color Vector4D::axis_color(int64_t p_axis) {
@@ -40,6 +72,17 @@ String Vector4D::axis_letter(int64_t p_axis) {
 
 real_t Vector4D::angle_to(const Vector4 &p_from, const Vector4 &p_to) {
 	return Math::acos(p_from.dot(p_to) / (p_from.length() * p_to.length()));
+}
+
+Vector4 Vector4D::average(const PackedVector4Array &p_vectors) {
+	if (p_vectors.is_empty()) {
+		return Vector4();
+	}
+	Vector4 sum = Vector4();
+	for (const Vector4 &v : p_vectors) {
+		sum += v;
+	}
+	return sum / (real_t)p_vectors.size();
 }
 
 Vector4 Vector4D::bounce(const Vector4 &p_vector, const Vector4 &p_normal) {
@@ -113,6 +156,15 @@ Vector4 Vector4D::move_toward(const Vector4 &p_from, const Vector4 &p_to, const 
 	const Vector4 offset = p_to - p_from;
 	const real_t len = offset.length();
 	return len <= p_delta || len < (real_t)CMP_EPSILON ? p_to : p_from + offset / len * p_delta;
+}
+
+Vector4 Vector4D::orthogonal_from_two(const Vector4 &p_what, Vector4 p_a, Vector4 p_b) {
+	// Gram-Schmidt Process, now in 4D.
+	// https://en.wikipedia.org/wiki/Gram-Schmidt_process
+	p_a.normalize();
+	p_b = p_b - p_a * p_a.dot(p_b);
+	p_b.normalize();
+	return p_what - p_a * p_a.dot(p_what) - p_b * p_b.dot(p_what);
 }
 
 Vector4 Vector4D::perpendicular(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c) {
@@ -215,12 +267,15 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("axis_letter", "axis"), &Vector4D::axis_letter);
 	// Vector math.
 	ClassDB::bind_static_method("Vector4D", D_METHOD("angle_to", "from", "to"), &Vector4D::angle_to);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("average", "vectors"), &Vector4D::average);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce", "vector", "normal"), &Vector4D::bounce);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("bounce_ratio", "vector", "normal", "bounce_ratio"), &Vector4D::bounce_ratio);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("cross", "a", "b"), &Vector4D::cross);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("is_uniform", "vector"), &Vector4D::is_uniform);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("limit_length", "vector", "length"), &Vector4D::limit_length, DEFVAL(1.0));
+	ClassDB::bind_static_method("Vector4D", D_METHOD("limit_length_taxicab", "vector", "length"), &Vector4D::limit_length_taxicab, DEFVAL(1.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("move_toward", "from", "to", "delta"), &Vector4D::move_toward);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("orthogonal_from_two", "what", "a", "b"), &Vector4D::orthogonal_from_two);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("perpendicular", "a", "b", "c"), &Vector4D::perpendicular);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("project", "vector", "on_normal"), &Vector4D::project);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("reflect", "vector", "normal"), &Vector4D::reflect);

@@ -16,7 +16,7 @@ protected:
 	static void _bind_methods() {}
 
 public:
-	static Plane4D get_plane_4d() { return Plane4D(Vector4(0, 1, 0, 0), 0); }
+	static Plane4D get_plane_4d() { return Plane4D(Vector4(0, 1, 0, 0), 0.0f); }
 
 	virtual real_t get_hypervolume() const override { return INFINITY; }
 	virtual real_t get_surface_volume() const override { return INFINITY; }

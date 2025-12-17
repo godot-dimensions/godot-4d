@@ -12,7 +12,7 @@ exist, just download and compile this module, and you can make 4D games in Godot
 ## Installation
 
 First, have all the Godot dependencies installed on your computer as per the
-[official instructions](https://docs.godotengine.org/en/stable/contributing/development/compiling/index.html).
+[official instructions](https://docs.godotengine.org/en/stable/engine_details/development/compiling/index.html).
 
 If you want all of the Godot Dimensions modules at once, you can grab a
 branch of [our Godot fork](https://github.com/godot-dimensions/godot/tree/dimensions-latest).
@@ -43,11 +43,12 @@ scons
 
 It should now be successfully compiled, and you can run the executable in the `bin` folder.
 
-Alternatively, Godot 4D can be compiled as a GDExtension. The module approach
-is recommended, but GDExtension allows you to avoid recompiling Godot.
+Alternatively, Godot 4D can be compiled as a GDExtension. The GDExtension
+approach allows you to avoid recompiling Godot, but we recommend using
+the module approach for the best experience.
 To compile as a GDExtension, clone this repository anywhere, with submodules,
 and run `scons target=editor`. You can open the repository's `project.godot`
-in Godot to test the GDExtension, and copy the `addons/4d` to your own project.
+in Godot to test the GDExtension, and copy the `addons/4d` folder to your own project.
 
 ## Nodes
 
@@ -89,7 +90,8 @@ Note: The indent level does not indicate inheritance.
 
 -   `editor/`: All editor-related classes including the 4D viewport main screen tab, and OFF editor import plugins.
 -   `math/`: All math-related classes including linear algebra and geometric algebra.
--   `mesh/`: All mesh-related classes including nodes and resources. Two types of meshes are supported, tetrahedral and wireframe.
+-   `model/`: All model-related classes including meshes and import/export of 4D file formats.
+-   `model/mesh/`: All mesh-related classes including nodes and resources. Three types of meshes are supported: polyhedral, tetrahedral, and wireframe.
 -   `nodes/`: Any nodes that do not fit into other categories. Node4D, Camera4D, and QuadSplitContainer.
 -   `physics/`: All physics-related classes including bodies, shapes, server, and engines. Currently 2 physics engines are included, AxisAlignedBox (AABBs, everything is boxes, does not support angular velocity) and Ghost (objects do not collide, but correctly calculates forces, torque, rotation, etc).
 -   `render/`: All rendering-related classes including server and engines.
@@ -119,6 +121,15 @@ these nodes 4 dimensional? Why not marry <= 3 dimensional nodes if you
 love them so much? In fact, why not invent a special 3D door that
 won't hit you on the butt on the way out because you are fired!
 Yes, you. Box your 3D stuff. Out the front door.
+
+## Projects Made With This
+
+Do YOU think this engine is just a toy? A proof of concept?! Well you'd be wrong!
+There's been 2 (that we know of) published projects with this, both by Tessimal.
+
+The first is an outdoor musuem simulator, where you can hang out with your friends in 4D: https://tessimal.itch.io/lobby-4d
+
+The second is an actual game, it's an arcade game about fighting four dimensional robots: https://tessimal.itch.io/arena4d
 
 ## Versions
 

@@ -11,9 +11,9 @@
 		<link title="G4MF Node Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.node.schema.json</link>
 	</tutorials>
 	<methods>
-		<method name="apply_to_godot_node_4d" qualifiers="const">
+		<method name="apply_to_godot_node" qualifiers="const">
 			<return type="void" />
-			<param index="0" name="node" type="Node4D" />
+			<param index="0" name="node" type="Node" />
 			<description>
 				Sets the name, transform, visibility, and extras of the given [Node4D] to match this [G4MFNode4D].
 			</description>
@@ -34,7 +34,7 @@
 			</description>
 		</method>
 		<method name="generate_godot_node" qualifiers="const">
-			<return type="Node4D" />
+			<return type="Node" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="scene_parent" type="Node" />
 			<param index="2" name="force_wireframe" type="bool" />
@@ -73,6 +73,9 @@
 		</member>
 		<member name="mesh_index" type="int" setter="set_mesh_index" getter="get_mesh_index" default="-1">
 			The index of the mesh of this [G4MFNode4D]. This is the index of a [G4MFMesh4D] in the [member G4MFState4D.g4mf_meshes] array. If this node does not have a mesh, this is [code]-1[/code].
+		</member>
+		<member name="model_index" type="int" setter="set_model_index" getter="get_model_index" default="-1">
+			The index of the model instantiated by this [G4MFNode4D], allowing this node to reference an external model file. This is the index of a [G4MFModel4D] in the [member G4MFState4D.g4mf_models] array.
 		</member>
 		<member name="parent_index" type="int" setter="set_parent_index" getter="get_parent_index" default="-1">
 			The index of the parent node of this [G4MFNode4D]. This is the index of a [G4MFNode4D] in the [member G4MFState4D.g4mf_nodes] array. If this is the root node, this is [code]-1[/code].

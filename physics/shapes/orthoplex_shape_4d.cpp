@@ -1,8 +1,8 @@
 #include "orthoplex_shape_4d.h"
 
 #include "../../math/vector_4d.h"
-#include "../../model/tetra/orthoplex_tetra_mesh_4d.h"
-#include "../../model/wire/orthoplex_wire_mesh_4d.h"
+#include "../../model/mesh/tetra/orthoplex_tetra_mesh_4d.h"
+#include "../../model/mesh/wire/orthoplex_wire_mesh_4d.h"
 
 Vector4 OrthoplexShape4D::get_half_extents() const {
 	return _size * 0.5f;

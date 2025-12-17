@@ -18,8 +18,8 @@
 class QuadSplitContainer : public Container {
 	GDCLASS(QuadSplitContainer, Container);
 
-	Vector2 _drag_begin_pos;
-	Vector2 _drag_begin_ratio;
+	Vector2 _drag_begin_pos = Vector2();
+	Vector2 _drag_begin_ratio = Vector2();
 	real_t _ratio_h = 0.5f;
 	real_t _ratio_v = 0.5f;
 	Side _dominant_side = SIDE_TOP;

@@ -1,6 +1,7 @@
 #include "cross_section_rendering_engine_4d.h"
 
-#include "../../model/mesh_instance_4d.h"
+#include "../../model/mesh/mesh_instance_4d.h"
+#include "../../model/mesh/poly/poly_material_4d.h"
 #include "../../nodes/camera_4d.h"
 
 #if GDEXTENSION
@@ -27,11 +28,11 @@ void CrossSectionRenderingEngine4D::render_frame() {
 		MeshInstance4D *mesh_instance = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
 		ERR_CONTINUE(mesh_instance == nullptr);
 
-		Ref<Mesh4D> mesh = mesh_instance->get_mesh();
-		if (!mesh.is_valid()) {
+		Ref<Mesh4D> mesh_4d = mesh_instance->get_mesh();
+		if (!mesh_4d.is_valid()) {
 			continue;
 		}
-		Ref<Mesh> mesh_3d = mesh->get_cross_section_mesh();
+		Ref<Mesh> mesh_3d = mesh_4d->get_cross_section_mesh();
 		ERR_CONTINUE(!mesh_3d.is_valid());
 
 		if (instances_allocated <= instance_index) {
@@ -41,15 +42,26 @@ void CrossSectionRenderingEngine4D::render_frame() {
 
 		RenderingServer::get_singleton()->instance_set_base(instance_3d, mesh_3d->get_rid());
 
-		Ref<Material4D> override_material = mesh_instance->get_material_override();
-		if (override_material.is_valid()) {
-			Ref<Material> override_material_3d = override_material->get_cross_section_material();
+		Ref<Material4D> material_4d = mesh_instance->get_active_material();
+		if (!material_4d.is_valid()) {
+			material_4d = mesh_4d->get_fallback_material();
+		}
+		if (material_4d.is_valid()) {
+			Ref<PolyMaterial4D> poly_material_4d = material_4d;
+			if (poly_material_4d.is_valid()) {
+				Ref<TetraMesh4D> poly_mesh_4d_or_poly_derived_tetra_mesh_4d = mesh_4d;
+				if (poly_mesh_4d_or_poly_derived_tetra_mesh_4d.is_valid()) {
+					poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
+				}
+			}
+			Ref<Material> override_material_3d = material_4d->get_cross_section_material();
 			ERR_CONTINUE(!override_material_3d.is_valid());
 			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d, 0, override_material_3d->get_rid());
 		}
 
 		Projection modelview_basis = modelview_basises[mesh_index];
 		Vector4 modelview_origin = modelview_origins[mesh_index];
+		// TODO Need to split out view matrix to support multiple viewports, currently the same for all viewports. Either instance per viewport or pack view matrix in camera attributes.
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_origin", modelview_origin);
 		// Can't pass a mat4 through instance uniforms, need to break up into columns.
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_x", modelview_basis.columns[0]);

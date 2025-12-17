@@ -1,8 +1,8 @@
 #include "concave_mesh_shape_4d.h"
 
 #include "../../math/vector_4d.h"
-#include "../../model/tetra/array_tetra_mesh_4d.h"
-#include "../../model/wire/array_wire_mesh_4d.h"
+#include "../../model/mesh/tetra/array_tetra_mesh_4d.h"
+#include "../../model/mesh/wire/array_wire_mesh_4d.h"
 
 void ConcaveMeshShape4D::_calculate_normals() {
 	const int64_t normal_count = _cells.size() / 4;

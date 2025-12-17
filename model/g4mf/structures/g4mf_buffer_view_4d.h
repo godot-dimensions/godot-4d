@@ -24,7 +24,7 @@ public:
 	int64_t get_byte_length() const { return _byte_length; }
 	void set_byte_length(const int64_t p_byte_length);
 
-	PackedByteArray load_buffer_view_data(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedByteArray read_buffer_view_data(const Ref<G4MFState4D> &p_g4mf_state) const;
 	static int write_new_buffer_view_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_input_data, const int64_t p_alignment = 1, const bool p_deduplicate = true, const int p_buffer_index = 0);
 
 	static Ref<G4MFBufferView4D> from_dictionary(const Dictionary &p_dict);

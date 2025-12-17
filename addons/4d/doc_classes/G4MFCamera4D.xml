@@ -42,10 +42,10 @@
 		<member name="clip_far" type="float" setter="set_clip_far" getter="get_clip_far" default="inf">
 			The distance to the far clipping plane in meters. If not defined, the camera does not have an explicitly defined far clipping plane.
 		</member>
-		<member name="clip_near" type="float" setter="set_clip_near" getter="get_clip_near" default="inf_neg">
+		<member name="clip_near" type="float" setter="set_clip_near" getter="get_clip_near" default="-inf">
 			The distance to the near clipping plane in meters. If not defined, the camera does not have an explicitly defined near clipping plane. For perspective cameras, this value MUST be positive.
 		</member>
-		<member name="fov_radians" type="float" setter="set_fov_radians" getter="get_fov_radians" default="1.5708">
+		<member name="fov_radians" type="float" setter="set_fov_radians" getter="get_fov_radians" default="1.5707964">
 			The field of view of the perspective camera in radians. If not defined, the default is [code]1.5707963267948966[/code] radians (90 degrees).
 		</member>
 		<member name="keep_aspect" type="int" setter="set_keep_aspect" getter="get_keep_aspect" default="1">

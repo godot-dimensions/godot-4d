@@ -4,7 +4,7 @@
 
 // Represents a triplane, a 4D hyperplane, whose surface is 3-dimensional.
 struct _NO_DISCARD_ Plane4D {
-	Vector4 normal;
+	Vector4 normal = Vector4(0, 1, 0, 0);
 	real_t distance = 0.0f;
 
 	real_t get_distance() const { return distance; }

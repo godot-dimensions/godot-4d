@@ -29,12 +29,12 @@ Ref<TetraMaterial4D> G4MFMaterial4D::generate_tetra_material(const Ref<G4MFState
 	tetra_material.instantiate();
 	tetra_material->set_name(get_name());
 	if (_base_color_channel.is_valid()) {
-		const Color single_base_color = _base_color_channel->get_single_color();
+		const Color single_base_color = _base_color_channel->get_factor();
 		const bool has_single_base_color = single_base_color.r > -1 && !Color(1, 1, 1, 1).is_equal_approx(single_base_color);
 		if (has_single_base_color) {
 			tetra_material->set_albedo_color(single_base_color);
 		}
-		if (_base_color_channel->get_cell_colors_accessor_index() >= 0) {
+		if (_base_color_channel->get_per_cell_accessor_index() >= 0) {
 			tetra_material->set_albedo_color_array(_base_color_channel->load_cell_colors(p_g4mf_state));
 			if (has_single_base_color) {
 				tetra_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
@@ -60,12 +60,12 @@ Ref<WireMaterial4D> G4MFMaterial4D::generate_wire_material(const Ref<G4MFState4D
 	wire_material.instantiate();
 	wire_material->set_name(get_name());
 	if (_base_color_channel.is_valid()) {
-		const Color single_base_color = _base_color_channel->get_single_color();
+		const Color single_base_color = _base_color_channel->get_factor();
 		const bool has_single_base_color = single_base_color.r > -1 && !Color(1, 1, 1, 1).is_equal_approx(single_base_color);
 		if (has_single_base_color) {
 			wire_material->set_albedo_color(single_base_color);
 		}
-		if (_base_color_channel->get_edge_colors_accessor_index() >= 0) {
+		if (_base_color_channel->get_per_edge_accessor_index() >= 0) {
 			wire_material->set_albedo_color_array(_base_color_channel->load_edge_colors(p_g4mf_state));
 			if (has_single_base_color) {
 				wire_material->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE);
@@ -108,14 +108,14 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 		Ref<G4MFMaterialChannel4D> base_color_channel;
 		base_color_channel.instantiate();
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
-			base_color_channel->set_cell_colors_accessor_index(base_color_accessor_index);
+			base_color_channel->set_per_cell_accessor_index(base_color_accessor_index);
 		} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
 			base_color_channel->set_edge_colors_accessor_index(base_color_accessor_index);
 		} else {
 			ERR_PRINT("G4MFMaterial4D.convert_material_into_state: Unhandled albedo source flag.");
 		}
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) {
-			base_color_channel->set_single_color(p_material->get_albedo_color());
+			base_color_channel->set_factor(p_material->get_albedo_color());
 		}
 		g4mf_material->set_base_color_channel(base_color_channel);
 	} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) {
@@ -123,7 +123,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 		if (!Color(1, 1, 1, 1).is_equal_approx(base_color)) {
 			Ref<G4MFMaterialChannel4D> base_color_channel;
 			base_color_channel.instantiate();
-			base_color_channel->set_single_color(base_color);
+			base_color_channel->set_factor(base_color);
 			g4mf_material->set_base_color_channel(base_color_channel);
 		}
 	}

@@ -3,6 +3,7 @@
 #include "../godot_4d_defines.h"
 
 #include "geometric_algebra/bivector_4d.h"
+#include "vector_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/variant/projection.hpp>
@@ -56,6 +57,7 @@ struct _NO_DISCARD_ Basis4D {
 	Basis4D scaled_local(const Vector4 &p_scale) const;
 	void scale_uniform(const real_t p_scale);
 	Basis4D scaled_uniform(const real_t p_scale) const;
+	Vector4 get_global_scale_abs() const;
 	Vector4 get_scale() const;
 	Vector4 get_scale_abs() const;
 	void set_scale(const Vector4 &p_scale);
@@ -157,6 +159,7 @@ struct _NO_DISCARD_ Basis4D {
 	static Basis4D from_scale(const Vector4 &p_scale);
 	static Basis4D from_scale(const real_t p_x, const real_t p_y, const real_t p_z, const real_t p_w);
 	static Basis4D from_scale_uniform(const real_t p_scale);
+	static Basis4D from_xyz(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z);
 	static Basis4D from_yz(const real_t p_yz);
 	static Basis4D from_zx(const real_t p_zx);
 	static Basis4D from_xy(const real_t p_xy);
@@ -164,7 +167,7 @@ struct _NO_DISCARD_ Basis4D {
 	static Basis4D from_wy(const real_t p_wy);
 	static Basis4D from_zw(const real_t p_zw);
 	static Basis4D from_swap_rotation(const int p_rot_from, const int p_rot_to);
-	static Basis4D looking_at(const Vector4 &p_target, const Vector4 &p_perp = Vector4(0, 0, 0, 1), const Vector4 &p_up = Vector4(0, 1, 0, 0), bool p_use_model_front = false);
+	static Basis4D looking_at(const Vector4 &p_target, const Vector4 &p_perp = Vector4D::DIR_ANA, const Vector4 &p_up = Vector4D::DIR_UP, bool p_use_model_front = false);
 
 	_FORCE_INLINE_ Basis4D() {}
 	_FORCE_INLINE_ Basis4D(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z, const Vector4 &p_w) {

@@ -12,9 +12,9 @@ void G4MFBufferView4D::set_byte_length(const int64_t p_byte_length) {
 	_byte_length = p_byte_length;
 }
 
-PackedByteArray G4MFBufferView4D::load_buffer_view_data(const Ref<G4MFState4D> &p_g4mf_state) const {
+PackedByteArray G4MFBufferView4D::read_buffer_view_data(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedByteArray ret;
-	const TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_buffers();
+	const TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_g4mf_buffers();
 	ERR_FAIL_INDEX_V(_buffer_index, state_buffers.size(), ret);
 	const PackedByteArray buffer = state_buffers[_buffer_index];
 	const int64_t buffer_size = buffer.size();
@@ -27,13 +27,13 @@ PackedByteArray G4MFBufferView4D::load_buffer_view_data(const Ref<G4MFState4D> &
 int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_input_data, const int64_t p_alignment, const bool p_deduplicate, const int p_buffer_index) {
 	ERR_FAIL_COND_V_MSG(p_buffer_index < 0, -1, "Buffer index must be greater than or equal to zero.");
 	// Check for duplicate buffer views before adding a new one.
-	TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_buffer_views();
+	TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_g4mf_buffer_views();
 	const int buffer_view_index = state_buffer_views.size();
 	if (p_deduplicate) {
 		for (int i = 0; i < buffer_view_index; i++) {
 			const Ref<G4MFBufferView4D> existing_buffer_view = state_buffer_views[i];
 			if (existing_buffer_view->get_byte_offset() % p_alignment == 0) {
-				if (existing_buffer_view->load_buffer_view_data(p_g4mf_state) == p_input_data) {
+				if (existing_buffer_view->read_buffer_view_data(p_g4mf_state) == p_input_data) {
 					// Duplicate found, return the index of the existing buffer view.
 					return i;
 				}
@@ -41,7 +41,7 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 		}
 	}
 	// Write the data into the buffer at the specified index.
-	TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_buffers();
+	TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_g4mf_buffers();
 	if (state_buffers.size() <= p_buffer_index) {
 		state_buffers.resize(p_buffer_index + 1);
 	}
@@ -57,7 +57,7 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 	uint8_t *buffer_ptr = state_buffer.ptrw();
 	memcpy(buffer_ptr + byte_offset, p_input_data.ptr(), input_data_size);
 	state_buffers[p_buffer_index] = state_buffer;
-	p_g4mf_state->set_buffers(state_buffers);
+	p_g4mf_state->set_g4mf_buffers(state_buffers);
 	// Create a new G4MFBufferView4D that references the new buffer.
 	Ref<G4MFBufferView4D> buffer_view;
 	buffer_view.instantiate();
@@ -66,7 +66,7 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 	buffer_view->set_byte_length(input_data_size);
 	// Add the new buffer view to the state.
 	state_buffer_views.append(buffer_view);
-	p_g4mf_state->set_buffer_views(state_buffer_views);
+	p_g4mf_state->set_g4mf_buffer_views(state_buffer_views);
 	return buffer_view_index;
 }
 
@@ -105,7 +105,7 @@ void G4MFBufferView4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_byte_length", "byte_length"), &G4MFBufferView4D::set_byte_length);
 	ClassDB::bind_method(D_METHOD("get_byte_length"), &G4MFBufferView4D::get_byte_length);
 
-	ClassDB::bind_method(D_METHOD("load_buffer_view_data", "g4mf_state"), &G4MFBufferView4D::load_buffer_view_data);
+	ClassDB::bind_method(D_METHOD("read_buffer_view_data", "g4mf_state"), &G4MFBufferView4D::read_buffer_view_data);
 	ClassDB::bind_static_method("G4MFBufferView4D", D_METHOD("write_new_buffer_view_into_state", "g4mf_state", "input_data", "alignment", "deduplicate", "buffer_index"), &G4MFBufferView4D::write_new_buffer_view_into_state, DEFVAL(1), DEFVAL(true), DEFVAL(0));
 
 	ClassDB::bind_static_method("G4MFBufferView4D", D_METHOD("from_dictionary", "dict"), &G4MFBufferView4D::from_dictionary);

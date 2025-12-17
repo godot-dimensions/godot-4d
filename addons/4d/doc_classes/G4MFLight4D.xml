@@ -32,7 +32,7 @@
 		<member name="cone_inner_angle" type="float" setter="set_cone_inner_angle" getter="get_cone_inner_angle" default="0.0">
 			The inner angle radius of the light cone in radians. This property is only used for spot lights. Inside the cone inner angle, the intensity of the light is maximal. Between the cone inner angle and the cone outer angle, the intensity of the light is interpolated.
 		</member>
-		<member name="cone_outer_angle" type="float" setter="set_cone_outer_angle" getter="get_cone_outer_angle" default="0.785398">
+		<member name="cone_outer_angle" type="float" setter="set_cone_outer_angle" getter="get_cone_outer_angle" default="0.7853982">
 			The outer angle radius of the light cone in radians. This property is only used for spot lights. Beyond the cone outer angle, the intensity of the light is zero. Between the cone inner angle and the cone outer angle, the intensity of the light is interpolated.
 		</member>
 		<member name="intensity" type="float" setter="set_intensity" getter="get_intensity" default="1.0">

@@ -1,7 +1,6 @@
 #include "basis_4d.h"
 
 #include "geometric_algebra/rotor_4d.h"
-#include "vector_4d.h"
 
 // Misc methods.
 
@@ -204,6 +203,14 @@ void Basis4D::scale_uniform(const real_t p_scale) {
 	y *= p_scale;
 	z *= p_scale;
 	w *= p_scale;
+}
+
+Vector4 Basis4D::get_global_scale_abs() const {
+	return Vector4(
+			get_row(0).length(),
+			get_row(1).length(),
+			get_row(2).length(),
+			get_row(3).length());
 }
 
 Vector4 Basis4D::get_scale() const {
@@ -568,6 +575,10 @@ Basis4D Basis4D::from_scale_uniform(const real_t p_scale) {
 			Vector4(0, p_scale, 0, 0),
 			Vector4(0, 0, p_scale, 0),
 			Vector4(0, 0, 0, p_scale));
+}
+
+Basis4D Basis4D::from_xyz(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z) {
+	return Basis4D(p_x, p_y, p_z, Vector4D::perpendicular(p_x, p_y, p_z));
 }
 
 #define FROM_SINGLE_ANGLE(a, b)                                   \

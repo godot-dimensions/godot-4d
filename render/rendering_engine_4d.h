@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../model/mesh_instance_4d.h"
+#include "../model/mesh/mesh_instance_4d.h"
 #include "../nodes/camera_4d.h"
 
 #if GDEXTENSION
