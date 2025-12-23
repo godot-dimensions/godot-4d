@@ -89,7 +89,9 @@ Ref<G4MFBufferView4D> G4MFBufferView4D::from_dictionary(const Dictionary &p_dict
 Dictionary G4MFBufferView4D::to_dictionary() const {
 	Dictionary dict = write_item_entries_to_dictionary();
 	ERR_FAIL_COND_V_MSG(_buffer_index == -1, dict, "Buffer index must be set to a valid buffer before converting to Dictionary.");
-	dict["buffer"] = _buffer_index;
+	if (_buffer_index != 0) {
+		dict["buffer"] = _buffer_index;
+	}
 	dict["byteLength"] = _byte_length;
 	if (_byte_offset != 0) {
 		dict["byteOffset"] = _byte_offset;
