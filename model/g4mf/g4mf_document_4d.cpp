@@ -123,6 +123,7 @@ void G4MFDocument4D::_export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_stat
 	const String mod_or_ext = "module";
 #endif
 	asset_header["generator"] = "Godot Engine " + godot_version + " with Godot 4D " + mod_or_ext;
+	asset_header["specification"] = "https://github.com/godot-dimensions/g4mf";
 	p_g4mf_json["asset"] = asset_header;
 }
 
