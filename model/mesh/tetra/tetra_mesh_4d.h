@@ -18,7 +18,7 @@ protected:
 	static void _bind_methods();
 	PackedInt32Array _edge_indices_cache;
 	PackedVector4Array _edge_positions_cache;
-	PackedVector4Array _cell_positions_cache;
+	PackedVector4Array _simplex_positions_cache;
 
 	Ref<ArrayMesh> convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map);
 	virtual void update_cross_section_mesh() override;
@@ -30,14 +30,14 @@ public:
 	Ref<ArrayTetraMesh4D> to_array_tetra_mesh();
 	virtual Ref<TetraMesh4D> to_tetra_mesh();
 
-	virtual Ref<ArrayMesh> export_uvw_map_mesh();
-	virtual PackedInt32Array get_cell_indices();
-	virtual PackedVector4Array get_cell_boundary_normals();
-	virtual PackedVector4Array get_cell_vertex_normals();
-	virtual PackedVector3Array get_cell_uvw_map();
-	PackedVector4Array get_cell_positions();
+	virtual Ref<ArrayMesh> export_texture_map_mesh();
+	virtual PackedInt32Array get_simplex_cell_indices();
+	virtual PackedVector4Array get_simplex_cell_boundary_normals();
+	virtual PackedVector4Array get_simplex_cell_vertex_normals();
+	virtual PackedVector3Array get_simplex_cell_texture_map();
+	PackedVector4Array get_simplex_cell_positions();
 
-	static PackedInt32Array calculate_edge_indices_from_cell_indices(const PackedInt32Array &p_cell_indices, const bool p_deduplicate = true);
+	static PackedInt32Array calculate_edge_indices_from_simplex_cell_indices(const PackedInt32Array &p_simplex_cell_indices, const bool p_deduplicate = true);
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_edge_positions() override;
 
@@ -45,10 +45,10 @@ public:
 	static void init_fallback_material();
 	static void cleanup_fallback_material();
 
-	GDVIRTUAL0R(PackedInt32Array, _get_cell_indices);
-	GDVIRTUAL0R(PackedVector4Array, _get_cell_boundary_normals);
-	GDVIRTUAL0R(PackedVector4Array, _get_cell_vertex_normals);
-	GDVIRTUAL0R(PackedVector3Array, _get_cell_uvw_map);
+	GDVIRTUAL0R(PackedInt32Array, _get_simplex_cell_indices);
+	GDVIRTUAL0R(PackedVector4Array, _get_simplex_cell_boundary_normals);
+	GDVIRTUAL0R(PackedVector4Array, _get_simplex_cell_vertex_normals);
+	GDVIRTUAL0R(PackedVector3Array, _get_simplex_cell_texture_map);
 
 private:
 	static Ref<TetraMaterial4D> _fallback_material;

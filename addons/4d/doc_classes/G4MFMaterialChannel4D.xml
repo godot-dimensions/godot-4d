@@ -25,25 +25,25 @@
 				Checks if the [G4MFMaterialChannel4D] is equal to another [G4MFMaterialChannel4D] exactly by checking if the properties are equal and all accessor indices refer to the same accessors. If a material channel refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the material channel is not checked, and any metadata is ignored.
 			</description>
 		</method>
-		<method name="load_cell_colors" qualifiers="const">
-			<return type="PackedColorArray" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<description>
-				Loads the cell colors from the [G4MFAccessor4D] at [member cell_colors_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
-			</description>
-		</method>
 		<method name="load_edge_colors" qualifiers="const">
 			<return type="PackedColorArray" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Loads the edge colors from the [G4MFAccessor4D] at [member edge_colors_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
+				Loads the edge colors from the [G4MFAccessor4D] at [member per_edge_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
+			</description>
+		</method>
+		<method name="load_simplex_colors" qualifiers="const">
+			<return type="PackedColorArray" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the simplex cell colors from the [G4MFAccessor4D] at [member per_simplex_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
 			</description>
 		</method>
 		<method name="load_vertex_colors" qualifiers="const">
 			<return type="PackedColorArray" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Loads the vertex colors from the [G4MFAccessor4D] at [member vertex_colors_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
+				Loads the vertex colors from the [G4MFAccessor4D] at [member per_vertex_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid color data.
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">
@@ -54,25 +54,29 @@
 		</method>
 	</methods>
 	<members>
-		<member name="cell_texture_index" type="int" setter="set_cell_texture_index" getter="get_cell_texture_index" default="-1">
-			The index of the [G4MFTexture4D] in the [G4MFState4D]'s textures array that contains the texture for this surface. This is per-component multiplied with the [member single_color] and the cell colors to get the final color of the cells. If not defined, the surface does not have a texture.
-			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
-		</member>
-		<member name="cell_texture_map_accessor_index" type="int" setter="set_cell_texture_map_accessor_index" getter="get_cell_texture_map_accessor_index" default="-1">
-			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-cell texture map data for this surface, also known as a UV map or UVW map. This is used to map the texture to the surface cells. If not defined (set to a negative index), the surface does not have a texture map. If defined, the amount of texture map data MUST match or exceed the amount of cells in the surface.
-			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
-		</member>
 		<member name="factor" type="Color" setter="set_factor" getter="get_factor" default="Color(-1, -1, -1, -1)">
 			The modulate factor of the surface, also known as the value or single base color. If non-negative, this is per-component multiplied with other properties to get the final color of the cells and edges, or if no other properties are defined, this is the only color used.
-		</member>
-		<member name="per_cell_accessor_index" type="int" setter="set_per_cell_accessor_index" getter="get_per_cell_accessor_index" default="-1">
-			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-cell color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the cells. If not defined, the surface does not have per-cell colors. If defined (set to a valid index), the amount of cell colors MUST match or exceed the amount of cells in the surface.
 		</member>
 		<member name="per_edge_accessor_index" type="int" setter="set_edge_colors_accessor_index" getter="get_per_edge_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-edge color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the edges. If not defined, the surface does not have per-edge colors. If defined (set to a valid index), the amount of edge colors MUST match or exceed the amount of edges in the surface.
 		</member>
+		<member name="per_simplex_accessor_index" type="int" setter="set_per_simplex_accessor_index" getter="get_per_simplex_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-simplex color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the simplex cells. If not defined, the surface does not have per-simplex colors. If defined (set to a valid index), the amount of simplex colors MUST match or exceed the amount of simplex cells in the surface.
+		</member>
 		<member name="per_vertex_accessor_index" type="int" setter="set_per_vertex_accessor_index" getter="get_per_vertex_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-vertex color data for this surface. These may be per-component multiplied with the [member single_color] to get the final color of the vertices. If not defined, the surface does not have per-vertex colors. If defined (set to a valid index), the amount of vertex colors MUST match or exceed the amount of vertices in the surface.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+		<member name="texture_index" type="int" setter="set_texture_index" getter="get_texture_index" default="-1">
+			The index of the [G4MFTexture4D] in the [G4MFState4D]'s textures array that contains the texture for this surface. This is per-component multiplied with the [member single_color] and the cell colors to get the final color of the cells. If not defined, the surface does not have a texture.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+		<member name="texture_map_accessor_index" type="int" setter="set_texture_map_accessor_index" getter="get_texture_map_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-vertex-instance texture map data for this surface, also known as a UV map or UVW map. This is used to map the texture to the surface vertex instances, such as simplex cells or edges. If not defined (set to a negative index), the surface does not have a texture map. If defined, the amount of texture map data MUST match or exceed the amount of vertex instances in the surface.
+			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
+		</member>
+		<member name="topology_texture_map_accessor_index" type="int" setter="set_topology_texture_map_accessor_index" getter="get_topology_texture_map_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the per-topology-vertex-instance texture map data for this surface, also known as a UV map or UVW map. This is used to map the texture to the surface topology vertex instances, such as polytope cells. If not defined (set to a negative index), the surface does not have a texture map. If defined, the amount of texture map data MUST match or exceed the amount of topology vertex instances in the surface.
 			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
 		</member>
 	</members>

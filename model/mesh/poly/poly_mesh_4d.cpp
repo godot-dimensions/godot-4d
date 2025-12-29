@@ -195,8 +195,8 @@ PackedInt32Array PolyMesh4D::_get_canonical_span_vertex_index_sequence(const Vec
 		return _get_cell_face_4_vertex_index_sequence(p_all_edge_indices, low_dim[indices[0]], low_dim[indices[1]]);
 	}
 	// General recursive case: Given a 4+ dimensional cell (dim index N>1) made of cells of dim N-1, get the vertex indices that make up those cells.
-	const PackedInt32Array first_edges = _get_edges_of_cell(p_poly_cell_indices, prev_dim_index, indices[0]);
-	const PackedInt32Array second_edges = _get_edges_of_cell(p_poly_cell_indices, prev_dim_index, indices[1]);
+	const PackedInt32Array first_edges = _get_edges_of_poly_cell(p_poly_cell_indices, prev_dim_index, indices[0]);
+	const PackedInt32Array second_edges = _get_edges_of_poly_cell(p_poly_cell_indices, prev_dim_index, indices[1]);
 	PackedInt32Array ret = _get_canonical_span_vertex_index_sequence(p_poly_cell_indices, p_all_edge_indices, prev_dim_index, indices[0]);
 	// We need to add one vertex only from the second cell that extends the span.
 	for (const int32_t second_edge : second_edges) {
@@ -256,7 +256,7 @@ PackedInt32Array PolyMesh4D::_get_face_edge_3_vertex_index_sequence(const int32_
 	return PackedInt32Array();
 }
 
-PackedInt32Array PolyMesh4D::_get_edges_of_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell) {
+PackedInt32Array PolyMesh4D::_get_edges_of_poly_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell) {
 	const PackedInt32Array cell_indices = p_poly_cell_indices[p_cell_dim_index][p_which_cell];
 	if (p_cell_dim_index == 0) {
 		// Given a 2D face (dim index 0) made of edges, it's already a list of edges.
@@ -265,7 +265,7 @@ PackedInt32Array PolyMesh4D::_get_edges_of_cell(const Vector<Vector<PackedInt32A
 	// Given a 3D cell (dim index 1) or higher, run this function recursively.
 	PackedInt32Array ret;
 	for (int64_t i = 0; i < cell_indices.size(); i++) {
-		PackedInt32Array face_edges = _get_edges_of_cell(p_poly_cell_indices, p_cell_dim_index - 1, cell_indices[i]);
+		PackedInt32Array face_edges = _get_edges_of_poly_cell(p_poly_cell_indices, p_cell_dim_index - 1, cell_indices[i]);
 		if (i == 0) {
 			ret = face_edges;
 			continue;
@@ -279,8 +279,8 @@ PackedInt32Array PolyMesh4D::_get_edges_of_cell(const Vector<Vector<PackedInt32A
 	return ret;
 }
 
-PackedInt32Array PolyMesh4D::_get_vertex_indices_of_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const bool p_start_with_canonical_span) {
-	const PackedInt32Array cell_edges = _get_edges_of_cell(p_poly_cell_indices, p_cell_dim_index, p_which_cell);
+PackedInt32Array PolyMesh4D::_get_vertex_indices_of_poly_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const bool p_start_with_canonical_span) {
+	const PackedInt32Array cell_edges = _get_edges_of_poly_cell(p_poly_cell_indices, p_cell_dim_index, p_which_cell);
 	PackedInt32Array ret;
 	if (p_start_with_canonical_span) {
 		ret = _get_canonical_span_vertex_index_sequence(p_poly_cell_indices, p_all_edge_indices, p_cell_dim_index, p_which_cell);
@@ -534,7 +534,7 @@ Vector<PackedInt32Array> PolyMesh4D::_get_vertex_indices_of_boundary_cells(const
 	const int64_t boundary_cell_count = p_poly_cell_indices[1].size();
 	cell_vertex_indices.resize(boundary_cell_count);
 	for (int64_t cell_index = 0; cell_index < boundary_cell_count; cell_index++) {
-		cell_vertex_indices.set(cell_index, _get_vertex_indices_of_cell(p_poly_cell_indices, p_all_edge_indices, 1, cell_index, p_start_with_canonical_span));
+		cell_vertex_indices.set(cell_index, _get_vertex_indices_of_poly_cell(p_poly_cell_indices, p_all_edge_indices, 1, cell_index, p_start_with_canonical_span));
 	}
 	return cell_vertex_indices;
 }
@@ -740,14 +740,14 @@ TypedArray<PackedVector3Array> PolyMesh4D::get_poly_cell_texture_map_bind() {
 	return uvw_texture_map_bind;
 }
 
-PackedInt32Array PolyMesh4D::get_cell_indices() {
+PackedInt32Array PolyMesh4D::get_simplex_cell_indices() {
 	if (_simplex_cell_indices_cache.is_empty()) {
 		_decompose_boundary_cells_into_simplexes(true);
 	}
 	return _simplex_cell_indices_cache;
 }
 
-PackedVector4Array PolyMesh4D::get_cell_boundary_normals() {
+PackedVector4Array PolyMesh4D::get_simplex_cell_boundary_normals() {
 	if (_simplex_cell_normals_cache.is_empty()) {
 		if (_simplex_cell_indices_cache.is_empty()) {
 			_decompose_boundary_cells_into_simplexes(true);
@@ -770,7 +770,7 @@ PackedVector4Array PolyMesh4D::get_cell_boundary_normals() {
 	return _simplex_cell_normals_cache;
 }
 
-PackedVector3Array PolyMesh4D::get_cell_uvw_map() {
+PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 	if (_simplex_cell_uvw_texture_map_cache.is_empty()) {
 		const Vector<PackedVector3Array> poly_cell_texture_map = get_poly_cell_texture_map();
 		if (poly_cell_texture_map.is_empty()) {

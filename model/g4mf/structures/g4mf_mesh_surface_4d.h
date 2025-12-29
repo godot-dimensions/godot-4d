@@ -17,17 +17,17 @@ class G4MFState4D;
 class G4MFMeshSurface4D : public G4MFItem4D {
 	GDCLASS(G4MFMeshSurface4D, G4MFItem4D);
 
-	int _cells_accessor_index = -1;
+	int _simplexes_accessor_index = -1;
 	int _edges_accessor_index = -1;
 	int _material_index = -1;
-	bool _polytope_cells = false;
+	bool _polytope_simplexes = false;
 
 protected:
 	static void _bind_methods();
 
 public:
-	int get_cells_accessor_index() const { return _cells_accessor_index; }
-	void set_cells_accessor_index(const int p_cells_accessor_index) { _cells_accessor_index = p_cells_accessor_index; }
+	int get_simplexes_accessor_index() const { return _simplexes_accessor_index; }
+	void set_simplexes_accessor_index(const int p_simplexes_accessor_index) { _simplexes_accessor_index = p_simplexes_accessor_index; }
 
 	int get_edges_accessor_index() const { return _edges_accessor_index; }
 	void set_edges_accessor_index(const int p_edges_accessor_index) { _edges_accessor_index = p_edges_accessor_index; }
@@ -35,11 +35,11 @@ public:
 	int get_material_index() const { return _material_index; }
 	void set_material_index(const int p_material_index) { _material_index = p_material_index; }
 
-	bool get_polytope_cells() const { return _polytope_cells; }
-	void set_polytope_cells(const bool p_polytope_cells) { _polytope_cells = p_polytope_cells; }
+	bool get_polytope_simplexes() const { return _polytope_simplexes; }
+	void set_polytope_simplexes(const bool p_polytope_simplexes) { _polytope_simplexes = p_polytope_simplexes; }
 
 	bool is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const;
-	PackedInt32Array load_cell_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedInt32Array load_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	Ref<ArrayTetraMesh4D> generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;

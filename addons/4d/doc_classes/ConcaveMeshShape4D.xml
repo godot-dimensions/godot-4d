@@ -19,8 +19,8 @@
 		</method>
 	</methods>
 	<members>
-		<member name="cells" type="PackedVector4Array" setter="set_cells" getter="get_cells" default="PackedVector4Array()">
-			The cells that define the concave mesh shape. Every vector defines the position of a vertex, and every 4 vertices defines a tetrahedral cell, similar to how in 3D every 3 vertices define a triangular face. The size of this array MUST be a multiple of 4. Unlike the data in a [TetraMesh4D], the vertices are not deduplicated, so if multiple cells share a vertex, the vertex is repeated in the array.
+		<member name="simplex_cells" type="PackedVector4Array" setter="set_simplex_cells" getter="get_simplex_cells" default="PackedVector4Array()">
+			The simplex cells that define the concave mesh shape. Every vector defines the position of a vertex, and every 4 vertices defines a tetrahedral simplex cell, similar to how in 3D every 3 vertices define a triangular simplex face. The size of this array MUST be a multiple of 4. Unlike the data in a [TetraMesh4D], the vertices are not deduplicated, so if multiple simplex cells share a vertex, the vertex is repeated in the array.
 		</member>
 	</members>
 </class>

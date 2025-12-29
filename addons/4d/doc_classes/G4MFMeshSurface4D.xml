@@ -52,18 +52,18 @@
 				Checks if the [G4MFMeshSurface4D] is equal to another [G4MFMeshSurface4D] exactly by checking if the properties are equal and all accessor indices refer to the same accessors. If a mesh surface refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the mesh surface is not checked, and any metadata is ignored.
 			</description>
 		</method>
-		<method name="load_cell_indices" qualifiers="const">
-			<return type="PackedInt32Array" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<description>
-				Loads the cell indices from the [G4MFAccessor4D] at [member cells_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid cell indices.
-			</description>
-		</method>
 		<method name="load_edge_indices" qualifiers="const">
 			<return type="PackedInt32Array" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
 				Loads the edge indices from the [G4MFAccessor4D] at [member edges_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid edge indices.
+			</description>
+		</method>
+		<method name="load_simplex_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the simplex cell indices from the [G4MFAccessor4D] at [member simplexes_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid cell indices.
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">
@@ -74,17 +74,17 @@
 		</method>
 	</methods>
 	<members>
-		<member name="cells_accessor_index" type="int" setter="set_cells_accessor_index" getter="get_cells_accessor_index" default="-1">
-			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the cell indices for this surface. Each integer in the array is an index of a vertex in the mesh's vertices array, and MUST NOT exceed the bounds of the mesh's vertices array. If not defined, the surface does not have explicit cells, and may be a wireframe-only surface.
-		</member>
 		<member name="edges_accessor_index" type="int" setter="set_edges_accessor_index" getter="get_edges_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the edge indices for this surface. Each integer in the array is an index of a vertex in the mesh's vertices array, and MUST NOT exceed the bounds of the mesh's vertices array. If not defined, the surface does not have explicit edges, but edges may be calculated from the cells if needed.
 		</member>
 		<member name="material_index" type="int" setter="set_material_index" getter="get_material_index" default="-1">
 			The index of the [G4MFMaterial4D] in the [G4MFState4D]'s materials array that contains the material for this surface. This is used to define the appearance of the surface. If not defined, the surface should render with a default white material.
 		</member>
-		<member name="polytope_cells" type="bool" setter="set_polytope_cells" getter="get_polytope_cells" default="false">
-			If [code]true[/code], allow treating the tetrahedral cells as part of a larger polytope instead of just simplexes. Each polytope is defined by a set of consecutive cells that share the same starting vertex. This is not used by Godot 4D when importing the mesh.
+		<member name="polytope_simplexes" type="bool" setter="set_polytope_simplexes" getter="get_polytope_simplexes" default="false">
+			If [code]true[/code], allow treating the tetrahedral cells as part of a larger polytope instead of just simplexes. Each polytope is defined by a set of consecutive simplex cells that share the same starting vertex. This is not used by Godot 4D when importing the mesh.
+		</member>
+		<member name="simplexes_accessor_index" type="int" setter="set_simplexes_accessor_index" getter="get_simplexes_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the simplex cell indices for this surface. Each integer in the array is an index of a vertex in the mesh's vertices array, and MUST NOT exceed the bounds of the mesh's vertices array. If not defined, the surface does not have explicit simplexes, and may be a wireframe-only surface.
 		</member>
 	</members>
 </class>

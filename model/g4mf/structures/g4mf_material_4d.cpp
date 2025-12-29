@@ -34,8 +34,8 @@ Ref<TetraMaterial4D> G4MFMaterial4D::generate_tetra_material(const Ref<G4MFState
 		if (has_single_base_color) {
 			tetra_material->set_albedo_color(single_base_color);
 		}
-		if (_base_color_channel->get_per_cell_accessor_index() >= 0) {
-			tetra_material->set_albedo_color_array(_base_color_channel->load_cell_colors(p_g4mf_state));
+		if (_base_color_channel->get_per_simplex_accessor_index() >= 0) {
+			tetra_material->set_albedo_color_array(_base_color_channel->load_simplex_colors(p_g4mf_state));
 			if (has_single_base_color) {
 				tetra_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
 			} else {
@@ -108,7 +108,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 		Ref<G4MFMaterialChannel4D> base_color_channel;
 		base_color_channel.instantiate();
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
-			base_color_channel->set_per_cell_accessor_index(base_color_accessor_index);
+			base_color_channel->set_per_simplex_accessor_index(base_color_accessor_index);
 		} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
 			base_color_channel->set_edge_colors_accessor_index(base_color_accessor_index);
 		} else {

@@ -21,7 +21,7 @@ Ref<ArrayWireMesh4D> G4MFMesh4D::_generate_wire_mesh_surface(const Ref<G4MFState
 bool G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces() const {
 	for (int i = 0; i < _surfaces.size(); i++) {
 		const Ref<G4MFMeshSurface4D> surface = _surfaces[i];
-		if (surface->get_cells_accessor_index() < 0) {
+		if (surface->get_simplexes_accessor_index() < 0) {
 			return false;
 		}
 	}

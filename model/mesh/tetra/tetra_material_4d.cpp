@@ -54,7 +54,7 @@ Color TetraMaterial4D::get_albedo_color_of_edge(const int64_t p_edge_index, cons
 		Ref<TetraMesh4D> cell_mesh = p_for_mesh;
 		ERR_FAIL_COND_V_MSG(cell_mesh.is_null(), _albedo_color, "TetraMaterial4D: Mesh with per-cell colors is not a tetra cell mesh.");
 		_edge_albedo_color_cache.resize(edge_count);
-		const PackedInt32Array cell_indices = cell_mesh->get_cell_indices();
+		const PackedInt32Array cell_indices = cell_mesh->get_simplex_cell_indices();
 		constexpr int64_t vertices_per_cell = 4;
 		for (int64_t i = 0; i < edge_count; i++) {
 			const int32_t first_vertex_index = edge_indices[i * 2];

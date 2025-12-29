@@ -193,7 +193,7 @@ Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> 
 	ERR_FAIL_COND_V(p_tetra_mesh.is_null(), off_document);
 	off_document.instantiate();
 	off_document->_vertices = p_tetra_mesh->get_vertices();
-	const PackedInt32Array cell_indices = p_tetra_mesh->get_cell_indices();
+	const PackedInt32Array cell_indices = p_tetra_mesh->get_simplex_cell_indices();
 	// TetraMesh4D references cells by their vertex indices, but OFF files reference them by their face indices.
 	for (int i = 0; i < cell_indices.size(); i += 4) {
 		const int a = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 1], cell_indices[i + 2], p_deduplicate_faces);
@@ -294,7 +294,7 @@ Ref<ArrayTetraMesh4D> OFFDocument4D::import_generate_tetra_mesh_4d() {
 			}
 		}
 	}
-	cell_mesh->set_cell_indices(packed_cell_indices);
+	cell_mesh->set_simplex_cell_indices(packed_cell_indices);
 	if (_has_any_cell_colors) {
 		Ref<TetraMaterial4D> cell_material;
 		cell_material.instantiate();

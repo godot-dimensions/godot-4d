@@ -4,7 +4,7 @@
 #include "../wire/box_wire_mesh_4d.h"
 
 void BoxTetraMesh4D::_clear_caches() {
-	_cell_positions_cache.clear();
+	_simplex_positions_cache.clear();
 	_vertices_cache.clear();
 	tetra_mesh_clear_cache();
 }
@@ -42,8 +42,8 @@ void BoxTetraMesh4D::set_cell_texture_map(const BoxCellTextureMap p_map) {
 	mark_cross_section_mesh_dirty();
 }
 
-Ref<ArrayMesh> BoxTetraMesh4D::export_uvw_map_mesh() {
-	PackedVector3Array texture_map = get_cell_uvw_map();
+Ref<ArrayMesh> BoxTetraMesh4D::export_texture_map_mesh() {
+	PackedVector3Array texture_map = get_simplex_cell_texture_map();
 	if (_cell_texture_map == BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID) {
 		// Special case: For 3D rendering of the resulting mesh, flip the normals of the negative sides.
 		const int64_t map_size = texture_map.size();
@@ -59,19 +59,19 @@ Ref<ArrayMesh> BoxTetraMesh4D::export_uvw_map_mesh() {
 	return convert_texture_map_to_mesh(texture_map);
 }
 
-PackedInt32Array BoxTetraMesh4D::get_cell_indices() {
+PackedInt32Array BoxTetraMesh4D::get_simplex_cell_indices() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_INDICES : BOX_48_CELL_INDICES;
 }
 
-PackedVector4Array BoxTetraMesh4D::get_cell_boundary_normals() {
+PackedVector4Array BoxTetraMesh4D::get_simplex_cell_boundary_normals() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_BOUNDARY_NORMALS : BOX_48_CELL_BOUNDARY_NORMALS;
 }
 
-PackedVector4Array BoxTetraMesh4D::get_cell_vertex_normals() {
+PackedVector4Array BoxTetraMesh4D::get_simplex_cell_vertex_normals() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_VERTEX_NORMALS : BOX_48_CELL_VERTEX_NORMALS;
 }
 
-PackedVector3Array BoxTetraMesh4D::get_cell_uvw_map() {
+PackedVector3Array BoxTetraMesh4D::get_simplex_cell_texture_map() {
 	switch (_cell_texture_map) {
 		case BOX_CELL_TEXTURE_MAP_CROSS_ISLAND: {
 			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_CROSS_ISLAND : BOX_48_CELL_TEXTURE_MAP_CROSS_ISLAND;

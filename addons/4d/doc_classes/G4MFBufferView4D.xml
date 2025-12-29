@@ -44,7 +44,7 @@
 		</method>
 	</methods>
 	<members>
-		<member name="buffer_index" type="int" setter="set_buffer_index" getter="get_buffer_index" default="-1">
+		<member name="buffer_index" type="int" setter="set_buffer_index" getter="get_buffer_index" default="0">
 			The index of the buffer this buffer view points to. This is the index of the buffer in the G4MF buffers array.
 		</member>
 		<member name="byte_length" type="int" setter="set_byte_length" getter="get_byte_length" default="0">

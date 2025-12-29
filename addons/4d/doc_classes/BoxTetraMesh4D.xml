@@ -27,7 +27,7 @@
 	</methods>
 	<members>
 		<member name="cell_texture_map" type="int" setter="set_cell_texture_map" getter="get_cell_texture_map" enum="BoxTetraMesh4D.BoxCellTextureMap" default="0">
-			The type of texture map used for the cell UVW texture space of the box mesh cells. Along with [member tetra_decomp], this determines the cell UVW texture map returned by [method get_cell_uvw_map]. Different options have different impacts on texture density, visual intuitiveness, and texture bleeding. See [enum BoxCellTextureMap] for possible values.
+			The type of texture map used for the cell UVW texture space of the box mesh cells. Along with [member tetra_decomp], this determines the cell UVW texture map returned by [method get_simplex_cell_texture_map]. Different options have different impacts on texture density, visual intuitiveness, and texture bleeding. See [enum BoxCellTextureMap] for possible values.
 		</member>
 		<member name="half_extents" type="Vector4" setter="set_half_extents" getter="get_half_extents">
 			The half-extents of the box mesh in meters, also known as just "extents". This is the "radius" of the box. This is a wrapper around [member size] for situations where you want to use the extents instead of size. Since the box is centered at the origin, one vertex is located at the half-extents, and the rest have some of the components negated.

@@ -32,8 +32,8 @@ class PolyMesh4D : public TetraMesh4D {
 	static PackedInt32Array _get_canonical_span_vertex_index_sequence(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_indices_dim_index, const int64_t p_which_cell);
 	static PackedInt32Array _get_cell_face_4_vertex_index_sequence(const PackedInt32Array &p_all_edge_indices, const PackedInt32Array &p_face1_edge_indices, const PackedInt32Array &p_face2_edge_indices);
 	static PackedInt32Array _get_face_edge_3_vertex_index_sequence(const int32_t p_edge1_a, const int32_t p_edge1_b, const int32_t p_edge2_a, const int32_t p_edge2_b);
-	static PackedInt32Array _get_edges_of_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell);
-	static PackedInt32Array _get_vertex_indices_of_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const bool p_start_with_canonical_span);
+	static PackedInt32Array _get_edges_of_poly_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell);
+	static PackedInt32Array _get_vertex_indices_of_poly_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const bool p_start_with_canonical_span);
 	static PackedInt32Array _get_vertex_indices_of_face(const PackedInt32Array &p_all_edge_indices, const PackedInt32Array &p_face_edge_indices);
 	static PackedInt32Array _triangulate_face_vertex_indices(const PackedInt32Array &p_face_vertex_indices, const int32_t p_pivot_attempt);
 	void _decompose_boundary_cells_into_simplexes(const bool p_force_align_triangulations);
@@ -69,9 +69,9 @@ public:
 	TypedArray<PackedVector4Array> get_poly_cell_vertex_normals_bind();
 	TypedArray<PackedVector3Array> get_poly_cell_texture_map_bind();
 
-	virtual PackedInt32Array get_cell_indices() override;
-	virtual PackedVector4Array get_cell_boundary_normals() override;
-	virtual PackedVector3Array get_cell_uvw_map() override;
+	virtual PackedInt32Array get_simplex_cell_indices() override;
+	virtual PackedVector4Array get_simplex_cell_boundary_normals() override;
+	virtual PackedVector3Array get_simplex_cell_texture_map() override;
 	virtual PackedVector4Array get_vertices() override;
 
 	GDVIRTUAL0R(TypedArray<Array>, _get_poly_cell_indices);
