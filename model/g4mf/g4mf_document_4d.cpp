@@ -724,6 +724,7 @@ Error G4MFDocument4D::_import_parse_asset_header(Ref<G4MFState4D> p_g4mf_state, 
 	const Dictionary asset_header = p_g4mf_json["asset"];
 	ERR_FAIL_COND_V_MSG(!asset_header.has("dimension"), ERR_INVALID_DATA, "G4MF import: Missing required asset header field 'dimension'. Aborting file import.");
 	int dimension = asset_header["dimension"];
+	p_g4mf_state->set_declared_dimension(dimension);
 	if (dimension != 4) {
 #if GDEXTENSION
 		const bool can_import_nd = ClassDBSingleton::get_singleton()->class_exists("NodeND");

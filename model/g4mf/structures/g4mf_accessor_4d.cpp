@@ -3,7 +3,7 @@
 #include "../../../math/math_4d.h"
 #include "../g4mf_state_4d.h"
 
-// Private functions for determining the minimal primitive type.
+// Private functions for determining the minimal component type.
 
 bool G4MFAccessor4D::_double_bits_equal(const double p_a, const double p_b) {
 	union {
@@ -13,7 +13,7 @@ bool G4MFAccessor4D::_double_bits_equal(const double p_a, const double p_b) {
 	return a.bits == b.bits;
 }
 
-void G4MFAccessor4D::_minimal_primitive_bits_for_double_only(const double p_value, uint32_t &r_float_bits) {
+void G4MFAccessor4D::_minimal_component_bits_for_double_only(const double p_value, uint32_t &r_float_bits) {
 	if (r_float_bits == 8 && !_double_bits_equal(Math4D::float8_to_double(Math4D::double_to_float8(p_value)), p_value)) {
 		r_float_bits = 16;
 	}
@@ -25,7 +25,7 @@ void G4MFAccessor4D::_minimal_primitive_bits_for_double_only(const double p_valu
 	}
 }
 
-void G4MFAccessor4D::_minimal_primitive_bits_for_double(const double p_value, uint32_t &r_float_bits, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
+void G4MFAccessor4D::_minimal_component_bits_for_double(const double p_value, uint32_t &r_float_bits, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
 	if (r_float_bits == 8 && !_double_bits_equal(Math4D::float8_to_double(Math4D::double_to_float8(p_value)), p_value)) {
 		r_float_bits = 16;
 	}
@@ -38,14 +38,14 @@ void G4MFAccessor4D::_minimal_primitive_bits_for_double(const double p_value, ui
 	const int64_t as_int = (int64_t)p_value;
 	if (p_value != (double)as_int) {
 		// Can't be represented as an int, so just set these to a very big number.
-		r_int_bits = CANT_USE_PRIM_TYPE;
-		r_uint_bits = CANT_USE_PRIM_TYPE;
+		r_int_bits = CANT_USE_COMP_TYPE;
+		r_uint_bits = CANT_USE_COMP_TYPE;
 		return;
 	}
-	_minimal_primitive_bits_for_int64(as_int, r_int_bits, r_uint_bits);
+	_minimal_component_bits_for_int64(as_int, r_int_bits, r_uint_bits);
 }
 
-void G4MFAccessor4D::_minimal_primitive_bits_for_int64(const int64_t p_value, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
+void G4MFAccessor4D::_minimal_component_bits_for_int64(const int64_t p_value, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
 	if (r_int_bits == 8 && !(p_value >= INT8_MIN && p_value <= INT8_MAX)) {
 		r_int_bits = 16;
 	}
@@ -57,7 +57,7 @@ void G4MFAccessor4D::_minimal_primitive_bits_for_int64(const int64_t p_value, ui
 	}
 	if (p_value < 0) {
 		// Can't be represented as an unsigned int, so just set this to a very big number.
-		r_uint_bits = CANT_USE_PRIM_TYPE;
+		r_uint_bits = CANT_USE_COMP_TYPE;
 		return;
 	}
 	if (r_uint_bits == 8 && p_value > UINT8_MAX) {
@@ -71,7 +71,7 @@ void G4MFAccessor4D::_minimal_primitive_bits_for_int64(const int64_t p_value, ui
 	}
 }
 
-String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float_bits, const uint32_t p_int_bits, const uint32_t p_uint_bits) {
+String G4MFAccessor4D::_minimal_component_type_given_bits(const uint32_t p_float_bits, const uint32_t p_int_bits, const uint32_t p_uint_bits) {
 	// Only use floats if they are more efficient than integers.
 	if (p_float_bits < p_int_bits && p_float_bits < p_uint_bits) {
 		return String("float") + String::num_uint64(p_float_bits);
@@ -85,8 +85,8 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 
 // Private decode functions. Use `decode_variants_from_bytes` publicly.
 
-#define G4MF_ACCESSOR_4D_DECODE_PRIMITIVES_AS_VARIANTS(m_numbers, m_values)                                                                                                                       \
-	ERR_FAIL_COND_V_MSG(m_numbers.size() % _vector_size != 0, m_values, "G4MF import: The primitive number size was not a multiple of the vector size. Returning an empty array.");               \
+#define G4MF_ACCESSOR_4D_DECODE_COMPONENTS_AS_VARIANTS(m_numbers, m_values)                                                                                                                       \
+	ERR_FAIL_COND_V_MSG(m_numbers.size() % _vector_size != 0, m_values, "G4MF import: The primitive number component size was not a multiple of the vector size. Returning an empty array.");     \
 	const int64_t values_size = m_numbers.size() / _vector_size;                                                                                                                                  \
 	const int64_t nums_per_variant = get_numbers_per_variant(p_variant_type);                                                                                                                     \
 	ERR_FAIL_COND_V_MSG(nums_per_variant < 1, m_values, "G4MF import: The Variant type '" + Variant::get_type_name(p_variant_type) + "' is not supported. Returning an empty array.");            \
@@ -94,7 +94,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 	m_values.resize(values_size);                                                                                                                                                                 \
 	for (int64_t value_index = 0; value_index < values_size; value_index++) {                                                                                                                     \
 		const int64_t numbers_offset = value_index * _vector_size;                                                                                                                                \
-		ERR_FAIL_COND_V_MSG(numbers_offset + nums_to_read > m_numbers.size(), m_values, "G4MF import: The primitive size was not a multiple of the vector size. Returning an empty array.");      \
+		ERR_FAIL_COND_V_MSG(numbers_offset + nums_to_read > m_numbers.size(), m_values, "G4MF import: The component size was not a multiple of the vector size. Returning an empty array.");      \
 		switch (p_variant_type) {                                                                                                                                                                 \
 			case Variant::BOOL: {                                                                                                                                                                 \
 				m_values[value_index] = m_numbers[numbers_offset] != 0.0;                                                                                                                         \
@@ -111,7 +111,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 			case Variant::VECTOR4:                                                                                                                                                                \
 			case Variant::PLANE:                                                                                                                                                                  \
 			case Variant::QUATERNION: {                                                                                                                                                           \
-				/* General-purpose code for importing G4MF accessor data with any primitive count into structs up to 4 `real_t`s in size. */                                                      \
+				/* General-purpose code for importing G4MF accessor data with any component count into structs up to 4 `real_t`s in size. */                                                      \
 				Variant v;                                                                                                                                                                        \
 				switch (nums_to_read) {                                                                                                                                                           \
 					case 1: {                                                                                                                                                                     \
@@ -136,7 +136,7 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 			case Variant::RECT2I:                                                                                                                                                                 \
 			case Variant::VECTOR3I:                                                                                                                                                               \
 			case Variant::VECTOR4I: {                                                                                                                                                             \
-				/* General-purpose code for importing G4MF accessor data with any primitive count into structs up to 4 `int32_t`s in size. */                                                     \
+				/* General-purpose code for importing G4MF accessor data with any component count into structs up to 4 `int32_t`s in size. */                                                     \
 				Variant v;                                                                                                                                                                        \
 				switch (nums_to_read) {                                                                                                                                                           \
 					case 1: {                                                                                                                                                                     \
@@ -337,23 +337,23 @@ String G4MFAccessor4D::_minimal_primitive_type_given_bits(const uint32_t p_float
 	}
 
 Array G4MFAccessor4D::_decode_floats_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
-	PackedFloat64Array primitives = decode_floats_from_bytes(p_g4mf_state);
+	PackedFloat64Array numbers = decode_floats_from_bytes(p_g4mf_state);
 	Array values;
-	G4MF_ACCESSOR_4D_DECODE_PRIMITIVES_AS_VARIANTS(primitives, values);
+	G4MF_ACCESSOR_4D_DECODE_COMPONENTS_AS_VARIANTS(numbers, values);
 	return values;
 }
 
 Array G4MFAccessor4D::_decode_ints_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
-	PackedInt64Array primitives = decode_ints_from_bytes(p_g4mf_state);
+	PackedInt64Array numbers = decode_ints_from_bytes(p_g4mf_state);
 	Array values;
-	G4MF_ACCESSOR_4D_DECODE_PRIMITIVES_AS_VARIANTS(primitives, values);
+	G4MF_ACCESSOR_4D_DECODE_COMPONENTS_AS_VARIANTS(numbers, values);
 	return values;
 }
 
 Array G4MFAccessor4D::_decode_uints_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
-	Vector<uint64_t> primitives = decode_uints_from_bytes(p_g4mf_state);
+	Vector<uint64_t> numbers = decode_uints_from_bytes(p_g4mf_state);
 	Array values;
-	G4MF_ACCESSOR_4D_DECODE_PRIMITIVES_AS_VARIANTS(primitives, values);
+	G4MF_ACCESSOR_4D_DECODE_COMPONENTS_AS_VARIANTS(numbers, values);
 	return values;
 }
 
@@ -367,16 +367,16 @@ void G4MFAccessor4D::set_vector_size(const int p_vector_size) {
 bool G4MFAccessor4D::is_equal_exact(const Ref<G4MFAccessor4D> &p_other) const {
 	return (_buffer_view_index == p_other->get_buffer_view_index() &&
 			_vector_size == p_other->get_vector_size() &&
-			_primitive_type == p_other->get_primitive_type());
+			_component_type == p_other->get_component_type());
 }
 
-int64_t G4MFAccessor4D::get_bytes_per_primitive() const {
+int64_t G4MFAccessor4D::get_bytes_per_component() const {
 	// The `to_int` function only looks at numeric digits, so for example, "float32" -> 32 -> 4.
-	return _primitive_type.to_int() / 8;
+	return _component_type.to_int() / 8;
 }
 
 int64_t G4MFAccessor4D::get_bytes_per_vector() const {
-	return get_bytes_per_primitive() * _vector_size;
+	return get_bytes_per_component() * _vector_size;
 }
 
 int64_t G4MFAccessor4D::get_numbers_per_variant(const Variant::Type p_variant_type) {
@@ -435,50 +435,50 @@ int64_t G4MFAccessor4D::get_numbers_per_variant(const Variant::Type p_variant_ty
 	return 0;
 }
 
-// Determine the minimal primitive type for encoding the given data.
+// Determine the minimal component type for encoding the given data.
 // Add more types only as needed for export, otherwise this will be a mess.
 
-String G4MFAccessor4D::minimal_primitive_type_for_colors(const PackedColorArray &p_input_data) {
+String G4MFAccessor4D::minimal_component_type_for_colors(const PackedColorArray &p_input_data) {
 	uint32_t min_float_bits = 8;
 	for (const Color &color : p_input_data) {
-		_minimal_primitive_bits_for_double_only(color.r, min_float_bits);
-		_minimal_primitive_bits_for_double_only(color.g, min_float_bits);
-		_minimal_primitive_bits_for_double_only(color.b, min_float_bits);
-		_minimal_primitive_bits_for_double_only(color.a, min_float_bits);
+		_minimal_component_bits_for_double_only(color.r, min_float_bits);
+		_minimal_component_bits_for_double_only(color.g, min_float_bits);
+		_minimal_component_bits_for_double_only(color.b, min_float_bits);
+		_minimal_component_bits_for_double_only(color.a, min_float_bits);
 	}
-	return _minimal_primitive_type_given_bits(min_float_bits, CANT_USE_PRIM_TYPE, CANT_USE_PRIM_TYPE);
+	return _minimal_component_type_given_bits(min_float_bits, CANT_USE_COMP_TYPE, CANT_USE_COMP_TYPE);
 }
 
-String G4MFAccessor4D::minimal_primitive_type_for_floats(const PackedFloat64Array &p_input_data) {
+String G4MFAccessor4D::minimal_component_type_for_floats(const PackedFloat64Array &p_input_data) {
 	uint32_t min_float_bits = 8;
 	uint32_t min_int_bits = 8;
 	uint32_t min_uint_bits = 8;
 	for (const double d : p_input_data) {
-		_minimal_primitive_bits_for_double(d, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_component_bits_for_double(d, min_float_bits, min_int_bits, min_uint_bits);
 	}
-	return _minimal_primitive_type_given_bits(min_float_bits, min_int_bits, min_uint_bits);
+	return _minimal_component_type_given_bits(min_float_bits, min_int_bits, min_uint_bits);
 }
 
-String G4MFAccessor4D::minimal_primitive_type_for_int32s(const PackedInt32Array &p_input_data) {
+String G4MFAccessor4D::minimal_component_type_for_int32s(const PackedInt32Array &p_input_data) {
 	uint32_t min_int_bits = 8;
 	uint32_t min_uint_bits = 8;
 	for (const int32_t i : p_input_data) {
-		_minimal_primitive_bits_for_int64(i, min_int_bits, min_uint_bits);
+		_minimal_component_bits_for_int64(i, min_int_bits, min_uint_bits);
 	}
-	return _minimal_primitive_type_given_bits(CANT_USE_PRIM_TYPE, min_int_bits, min_uint_bits);
+	return _minimal_component_type_given_bits(CANT_USE_COMP_TYPE, min_int_bits, min_uint_bits);
 }
 
-String G4MFAccessor4D::minimal_primitive_type_for_vector4s(const PackedVector4Array &p_input_data) {
+String G4MFAccessor4D::minimal_component_type_for_vector4s(const PackedVector4Array &p_input_data) {
 	uint32_t min_float_bits = 8;
 	uint32_t min_int_bits = 8;
 	uint32_t min_uint_bits = 8;
 	for (const Vector4 &vec : p_input_data) {
-		_minimal_primitive_bits_for_double(vec.x, min_float_bits, min_int_bits, min_uint_bits);
-		_minimal_primitive_bits_for_double(vec.y, min_float_bits, min_int_bits, min_uint_bits);
-		_minimal_primitive_bits_for_double(vec.z, min_float_bits, min_int_bits, min_uint_bits);
-		_minimal_primitive_bits_for_double(vec.w, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_component_bits_for_double(vec.x, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_component_bits_for_double(vec.y, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_component_bits_for_double(vec.z, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_component_bits_for_double(vec.w, min_float_bits, min_int_bits, min_uint_bits);
 	}
-	return _minimal_primitive_type_given_bits(min_float_bits, min_int_bits, min_uint_bits);
+	return _minimal_component_type_given_bits(min_float_bits, min_int_bits, min_uint_bits);
 }
 
 // Decode functions.
@@ -495,10 +495,10 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 #define G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(m_numbers, m_prim_type)                                                                                                            \
 	const PackedByteArray raw_bytes = load_bytes_from_buffer_view(p_g4mf_state);                                                                                                        \
 	const int64_t raw_byte_size = raw_bytes.size();                                                                                                                                     \
-	const int64_t bytes_per_prim = get_bytes_per_primitive();                                                                                                                           \
+	const int64_t bytes_per_prim = get_bytes_per_component();                                                                                                                           \
 	const int64_t prim_size = raw_byte_size / bytes_per_prim;                                                                                                                           \
 	m_numbers.resize(prim_size);                                                                                                                                                        \
-	if (_primitive_type.begins_with("uint")) {                                                                                                                                          \
+	if (_component_type.begins_with("uint")) {                                                                                                                                          \
 		for (int64_t i = 0; i < prim_size; i++) {                                                                                                                                       \
 			const int64_t byte_offset = i * bytes_per_prim;                                                                                                                             \
 			switch (bytes_per_prim) {                                                                                                                                                   \
@@ -515,11 +515,11 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 					m_numbers.set(i, m_prim_type(*(const uint64_t *)&raw_bytes[byte_offset]));                                                                                          \
 				} break;                                                                                                                                                                \
 				default: {                                                                                                                                                              \
-					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor uint primitives of type '" + _primitive_type + "'. Returning an zero array."); \
+					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor uint components of type '" + _component_type + "'. Returning an zero array."); \
 				}                                                                                                                                                                       \
 			}                                                                                                                                                                           \
 		}                                                                                                                                                                               \
-	} else if (_primitive_type.begins_with("int")) {                                                                                                                                    \
+	} else if (_component_type.begins_with("int")) {                                                                                                                                    \
 		for (int64_t i = 0; i < prim_size; i++) {                                                                                                                                       \
 			const int64_t byte_offset = i * bytes_per_prim;                                                                                                                             \
 			switch (bytes_per_prim) {                                                                                                                                                   \
@@ -536,11 +536,11 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 					m_numbers.set(i, m_prim_type(*(const int64_t *)&raw_bytes[byte_offset]));                                                                                           \
 				} break;                                                                                                                                                                \
 				default: {                                                                                                                                                              \
-					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor int primitives of type '" + _primitive_type + "'. Returning an zero array.");  \
+					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor int components of type '" + _component_type + "'. Returning an zero array.");  \
 				}                                                                                                                                                                       \
 			}                                                                                                                                                                           \
 		}                                                                                                                                                                               \
-	} else if (_primitive_type.begins_with("float")) {                                                                                                                                  \
+	} else if (_component_type.begins_with("float")) {                                                                                                                                  \
 		for (int64_t i = 0; i < prim_size; i++) {                                                                                                                                       \
 			const int64_t byte_offset = i * bytes_per_prim;                                                                                                                             \
 			switch (bytes_per_prim) {                                                                                                                                                   \
@@ -559,12 +559,12 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 					m_numbers.set(i, m_prim_type(*(const double *)&raw_bytes[byte_offset]));                                                                                            \
 				} break;                                                                                                                                                                \
 				default: {                                                                                                                                                              \
-					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor primitives of type '" + _primitive_type + "'. Returning an zero array.");      \
+					ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor components of type '" + _component_type + "'. Returning an zero array.");      \
 				}                                                                                                                                                                       \
 			}                                                                                                                                                                           \
 		}                                                                                                                                                                               \
 	} else {                                                                                                                                                                            \
-		ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor primitives of type '" + _primitive_type + "'. Returning an zero array.");                  \
+		ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor components of type '" + _component_type + "'. Returning an zero array.");                  \
 	}
 
 PackedFloat64Array G4MFAccessor4D::decode_floats_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
@@ -594,27 +594,27 @@ Vector<uint64_t> G4MFAccessor4D::decode_uints_from_bytes(const Ref<G4MFState4D> 
 }
 
 Array G4MFAccessor4D::decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
-	if (_primitive_type.begins_with("float")) {
+	if (_component_type.begins_with("float")) {
 		return _decode_floats_as_variants(p_g4mf_state, p_variant_type);
-	} else if (_primitive_type.begins_with("int")) {
+	} else if (_component_type.begins_with("int")) {
 		return _decode_ints_as_variants(p_g4mf_state, p_variant_type);
-	} else if (_primitive_type.begins_with("uint")) {
+	} else if (_component_type.begins_with("uint")) {
 		return _decode_uints_as_variants(p_g4mf_state, p_variant_type);
 	} else {
-		ERR_PRINT("G4MFAccessor4D: Unknown primitive type '" + _primitive_type + "', cannot decode.");
+		ERR_PRINT("G4MFAccessor4D: Unknown component type '" + _component_type + "', cannot decode.");
 	}
 	return Array();
 }
 
 // Low-level accessor encode functions.
 
-#define G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(m_input_numbers, m_ret)                                                                         \
+#define G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(m_input_numbers, m_ret)                                                                         \
 	const int64_t input_size = m_input_numbers.size();                                                                                                \
-	const int64_t bytes_per_prim = get_bytes_per_primitive();                                                                                         \
+	const int64_t bytes_per_prim = get_bytes_per_component();                                                                                         \
 	const int64_t raw_byte_size = bytes_per_prim * input_size;                                                                                        \
-	const bool prim_is_float = _primitive_type.begins_with("float");                                                                                  \
-	const bool prim_is_int = _primitive_type.begins_with("int");                                                                                      \
-	const bool prim_is_uint = _primitive_type.begins_with("uint");                                                                                    \
+	const bool prim_is_float = _component_type.begins_with("float");                                                                                  \
+	const bool prim_is_int = _component_type.begins_with("int");                                                                                      \
+	const bool prim_is_uint = _component_type.begins_with("uint");                                                                                    \
 	m_ret.resize(raw_byte_size);                                                                                                                      \
 	uint8_t *ret_write = m_ret.ptrw();                                                                                                                \
 	for (int64_t i = 0; i < input_size; i++) {                                                                                                        \
@@ -636,7 +636,7 @@ Array G4MFAccessor4D::decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_
 					*(double *)&ret_write[byte_offset] = m_input_numbers[i];                                                                          \
 				} break;                                                                                                                              \
 				default: {                                                                                                                            \
-					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'."); \
+					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor components of type '" + _component_type + "'."); \
 				}                                                                                                                                     \
 			}                                                                                                                                         \
 		} else if (prim_is_int) {                                                                                                                     \
@@ -654,7 +654,7 @@ Array G4MFAccessor4D::decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_
 					*(int64_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                         \
 				} break;                                                                                                                              \
 				default: {                                                                                                                            \
-					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'."); \
+					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor components of type '" + _component_type + "'."); \
 				}                                                                                                                                     \
 			}                                                                                                                                         \
 		} else if (prim_is_uint) {                                                                                                                    \
@@ -672,7 +672,7 @@ Array G4MFAccessor4D::decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_
 					*(uint64_t *)&ret_write[byte_offset] = m_input_numbers[i];                                                                        \
 				} break;                                                                                                                              \
 				default: {                                                                                                                            \
-					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor primitives of type '" + _primitive_type + "'."); \
+					ERR_FAIL_V_MSG(m_ret, "G4MF export: Godot does not support writing G4MF accessor components of type '" + _component_type + "'."); \
 				}                                                                                                                                     \
 			}                                                                                                                                         \
 		}                                                                                                                                             \
@@ -680,19 +680,19 @@ Array G4MFAccessor4D::decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_
 
 PackedByteArray G4MFAccessor4D::encode_floats_as_bytes(const PackedFloat64Array &p_input_numbers) const {
 	PackedByteArray ret;
-	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(p_input_numbers, ret);
+	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(p_input_numbers, ret);
 	return ret;
 }
 
 PackedByteArray G4MFAccessor4D::encode_ints_as_bytes(const PackedInt64Array &p_input_numbers) const {
 	PackedByteArray ret;
-	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(p_input_numbers, ret);
+	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(p_input_numbers, ret);
 	return ret;
 }
 
 PackedByteArray G4MFAccessor4D::encode_uints_as_bytes(const Vector<uint64_t> &p_input_numbers) const {
 	PackedByteArray ret;
-	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_PRIMITIVES(p_input_numbers, ret);
+	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(p_input_numbers, ret);
 	return ret;
 }
 
@@ -920,26 +920,26 @@ Vector<uint64_t> G4MFAccessor4D::_encode_variants_as_uints(const Array &p_input_
 PackedByteArray G4MFAccessor4D::encode_variants_as_bytes(const Array &p_input_data) const {
 	ERR_FAIL_COND_V_MSG(p_input_data.is_empty(), PackedByteArray(), "G4MF export: Cannot encode an empty array.");
 	const int64_t bytes_per_vec = get_bytes_per_vector();
-	ERR_FAIL_COND_V_MSG(bytes_per_vec == 0, PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _primitive_type + "'.");
-	if (_primitive_type.begins_with("float")) {
+	ERR_FAIL_COND_V_MSG(bytes_per_vec == 0, PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _component_type + "'.");
+	if (_component_type.begins_with("float")) {
 		PackedFloat64Array numbers = _encode_variants_as_floats(p_input_data);
 		return encode_floats_as_bytes(numbers);
-	} else if (_primitive_type.begins_with("int")) {
+	} else if (_component_type.begins_with("int")) {
 		PackedInt64Array numbers = _encode_variants_as_ints(p_input_data);
 		return encode_ints_as_bytes(numbers);
-	} else if (_primitive_type.begins_with("uint")) {
+	} else if (_component_type.begins_with("uint")) {
 		Vector<uint64_t> numbers = _encode_variants_as_uints(p_input_data);
 		return encode_uints_as_bytes(numbers);
 	}
-	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _primitive_type + "' as a G4MF accessor.");
+	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _component_type + "' as a G4MF accessor.");
 }
 
 int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data_bytes, const bool p_deduplicate) {
 	ERR_FAIL_COND_V_MSG(p_data_bytes.is_empty(), -1, "G4MF export: Cannot store nothing.");
 	// Write the data into a new buffer view.
-	// The byte offset of an accessor's buffer view MUST be a multiple of the accessor's primitive size.
+	// The byte offset of an accessor's buffer view MUST be a multiple of the accessor's component size.
 	// https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/data.md#accessors
-	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, get_bytes_per_primitive(), p_deduplicate);
+	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, get_bytes_per_component(), p_deduplicate);
 	ERR_FAIL_COND_V_MSG(buffer_view_index == -1, -1, "G4MF export: Accessor failed to write new buffer view into G4MF state.");
 	set_buffer_view_index(buffer_view_index);
 	// Add the new accessor to the state, but check for duplicates first.
@@ -960,18 +960,18 @@ int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4m
 	return accessor_count;
 }
 
-Ref<G4MFAccessor4D> G4MFAccessor4D::make_new_accessor_without_data(const String &p_primitive_type, const int p_vector_size) {
+Ref<G4MFAccessor4D> G4MFAccessor4D::make_new_accessor_without_data(const String &p_component_type, const int p_vector_size) {
 	Ref<G4MFAccessor4D> accessor;
 	accessor.instantiate();
-	accessor->set_primitive_type(p_primitive_type);
+	accessor->set_component_type(p_component_type);
 	accessor->set_vector_size(p_vector_size);
 	return accessor;
 }
 
 // High-level accessor encode functions.
 
-int G4MFAccessor4D::encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_primitive_type, const int p_vector_size, const bool p_deduplicate) {
-	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(p_primitive_type, p_vector_size);
+int G4MFAccessor4D::encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_component_type, const int p_vector_size, const bool p_deduplicate) {
+	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(p_component_type, p_vector_size);
 	// Write the data into a new buffer view.
 	PackedByteArray encoded_bytes = accessor->encode_variants_as_bytes(p_input_data);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
@@ -979,7 +979,7 @@ int G4MFAccessor4D::encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_
 }
 
 int G4MFAccessor4D::encode_new_accessor_from_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_input_data, const bool p_deduplicate) {
-	const String prim_type = G4MFAccessor4D::minimal_primitive_type_for_vector4s(p_input_data);
+	const String prim_type = G4MFAccessor4D::minimal_component_type_for_vector4s(p_input_data);
 	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 4);
 	PackedFloat64Array numbers;
 	numbers.resize(p_input_data.size() * 4);
@@ -1004,8 +1004,8 @@ Ref<G4MFAccessor4D> G4MFAccessor4D::from_dictionary(const Dictionary &p_dict) {
 	if (p_dict.has("bufferView")) {
 		accessor->set_buffer_view_index(p_dict["bufferView"]);
 	}
-	if (p_dict.has("primitiveType")) {
-		accessor->set_primitive_type(p_dict["primitiveType"]);
+	if (p_dict.has("componentType")) {
+		accessor->set_component_type(p_dict["componentType"]);
 	}
 	if (p_dict.has("vectorSize")) {
 		accessor->set_vector_size(p_dict["vectorSize"]);
@@ -1018,8 +1018,8 @@ Dictionary G4MFAccessor4D::to_dictionary() const {
 	if (_buffer_view_index != -1) {
 		dict["bufferView"] = _buffer_view_index;
 	}
-	if (!_primitive_type.is_empty()) {
-		dict["primitiveType"] = _primitive_type;
+	if (!_component_type.is_empty()) {
+		dict["componentType"] = _component_type;
 	}
 	if (_vector_size > 1) {
 		dict["vectorSize"] = _vector_size;
@@ -1030,21 +1030,21 @@ Dictionary G4MFAccessor4D::to_dictionary() const {
 void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_buffer_view_index"), &G4MFAccessor4D::get_buffer_view_index);
 	ClassDB::bind_method(D_METHOD("set_buffer_view_index", "buffer_view_index"), &G4MFAccessor4D::set_buffer_view_index);
-	ClassDB::bind_method(D_METHOD("get_primitive_type"), &G4MFAccessor4D::get_primitive_type);
-	ClassDB::bind_method(D_METHOD("set_primitive_type", "primitive_type"), &G4MFAccessor4D::set_primitive_type);
+	ClassDB::bind_method(D_METHOD("get_component_type"), &G4MFAccessor4D::get_component_type);
+	ClassDB::bind_method(D_METHOD("set_component_type", "component_type"), &G4MFAccessor4D::set_component_type);
 	ClassDB::bind_method(D_METHOD("get_vector_size"), &G4MFAccessor4D::get_vector_size);
 	ClassDB::bind_method(D_METHOD("set_vector_size", "vector_size"), &G4MFAccessor4D::set_vector_size);
 
 	// General helper functions.
-	ClassDB::bind_method(D_METHOD("get_bytes_per_primitive"), &G4MFAccessor4D::get_bytes_per_primitive);
+	ClassDB::bind_method(D_METHOD("get_bytes_per_component"), &G4MFAccessor4D::get_bytes_per_component);
 	ClassDB::bind_method(D_METHOD("get_bytes_per_vector"), &G4MFAccessor4D::get_bytes_per_vector);
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("get_numbers_per_variant", "variant_type"), &G4MFAccessor4D::get_numbers_per_variant);
 
-	// Determine the minimal primitive type for the given data.
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_colors", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_colors);
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_floats", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_floats);
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_int32s", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_int32s);
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_primitive_type_for_vector4s", "input_data"), &G4MFAccessor4D::minimal_primitive_type_for_vector4s);
+	// Determine the minimal component type for the given data.
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_colors", "input_data"), &G4MFAccessor4D::minimal_component_type_for_colors);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_floats", "input_data"), &G4MFAccessor4D::minimal_component_type_for_floats);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_int32s", "input_data"), &G4MFAccessor4D::minimal_component_type_for_int32s);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_vector4s", "input_data"), &G4MFAccessor4D::minimal_component_type_for_vector4s);
 
 	// Decode functions.
 	ClassDB::bind_method(D_METHOD("decode_variants_from_bytes", "g4mf_state", "variant_type"), &G4MFAccessor4D::decode_variants_from_bytes);
@@ -1058,16 +1058,16 @@ void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("encode_ints_as_bytes", "input_data"), &G4MFAccessor4D::encode_ints_as_bytes);
 
 	// High-level encode functions.
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_variants", "g4mf_state", "input_data", "primitive_type", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_variants, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_variants", "g4mf_state", "input_data", "component_type", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_variants, DEFVAL(true));
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_vector4s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_vector4s, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("store_accessor_data_into_state", "g4mf_state", "data_bytes", "deduplicate"), &G4MFAccessor4D::store_accessor_data_into_state, DEFVAL(true));
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("make_new_accessor_without_data", "primitive_type", "vector_size"), &G4MFAccessor4D::make_new_accessor_without_data, DEFVAL(1));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("make_new_accessor_without_data", "component_type", "vector_size"), &G4MFAccessor4D::make_new_accessor_without_data, DEFVAL(1));
 
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("from_dictionary", "dict"), &G4MFAccessor4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFAccessor4D::to_dictionary);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "buffer_view_index"), "set_buffer_view_index", "get_buffer_view_index");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "primitive_type"), "set_primitive_type", "get_primitive_type");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "component_type"), "set_component_type", "get_component_type");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "vector_size"), "set_vector_size", "get_vector_size");
 }

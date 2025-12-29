@@ -22,6 +22,12 @@
 				Appends a [G4MFNode4D] to the G4MF state. This will add the node to the [member g4mf_nodes] array, and ensure its name is unique. Other data in the node is expected to be handled elsewhere. Returns the index of the newly inserted node in the [member g4mf_nodes] array.
 			</description>
 		</method>
+		<method name="get_declared_dimension" qualifiers="const">
+			<return type="int" />
+			<description>
+				The declared dimension of the G4MF file, as specified in the asset header. This will be 4 for 4D G4MF files, but may be different when attempting to import non-4D G4MF files into a Godot 4D scene.
+			</description>
+		</method>
 		<method name="get_node_index">
 			<return type="int" />
 			<param index="0" name="node" type="Node4D" />

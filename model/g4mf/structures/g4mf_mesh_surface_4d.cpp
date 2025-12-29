@@ -90,7 +90,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 			for (int i = 0; i < simplex_indices.size(); i++) {
 				simplex_indices_variants[i] = simplex_indices[i];
 			}
-			const String simplex_prim_type = G4MFAccessor4D::minimal_primitive_type_for_int32s(simplex_indices);
+			const String simplex_prim_type = G4MFAccessor4D::minimal_component_type_for_int32s(simplex_indices);
 			const int simplexes_accessor = G4MFAccessor4D::encode_new_accessor_from_variants(p_g4mf_state, simplex_indices_variants, simplex_prim_type, 4, p_deduplicate);
 			ERR_FAIL_COND_V_MSG(simplexes_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode simplex cells into G4MFState4D.");
 			surface->set_simplexes_accessor_index(simplexes_accessor);
@@ -113,7 +113,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 	for (int i = 0; i < edge_indices.size(); i++) {
 		edge_indices_variants[i] = edge_indices[i];
 	}
-	const String edge_prim_type = G4MFAccessor4D::minimal_primitive_type_for_int32s(edge_indices);
+	const String edge_prim_type = G4MFAccessor4D::minimal_component_type_for_int32s(edge_indices);
 	const int edges_accessor = G4MFAccessor4D::encode_new_accessor_from_variants(p_g4mf_state, edge_indices_variants, edge_prim_type, 2, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(edges_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode edges into G4MFState4D.");
 	surface->set_edges_accessor_index(edges_accessor);

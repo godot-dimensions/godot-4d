@@ -119,6 +119,8 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested_name"), &G4MFState4D::reserve_unique_name);
 	ClassDB::bind_method(D_METHOD("unreserve_unique_name", "name"), &G4MFState4D::unreserve_unique_name);
 
+	ClassDB::bind_method(D_METHOD("get_declared_dimension"), &G4MFState4D::get_declared_dimension);
+
 	// Path data for the file.
 	ClassDB::bind_method(D_METHOD("get_g4mf_base_path"), &G4MFState4D::get_g4mf_base_path);
 	ClassDB::bind_method(D_METHOD("set_g4mf_base_path", "g4mf_base_path"), &G4MFState4D::set_g4mf_base_path);

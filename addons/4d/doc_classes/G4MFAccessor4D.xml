@@ -30,7 +30,7 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="variant_type" type="int" enum="Variant.Type" />
 			<description>
-				Decodes the accessor data as a [Variant] array where all elements are of the specified [param variant_type]. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String]. The possible types are for which [method primitives_per_variant] returns a value greater than [code]0[/code].
+				Decodes the accessor data as a [Variant] array where all elements are of the specified [param variant_type]. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String]. The possible types are for which [method components_per_variant] returns a value greater than [code]0[/code].
 			</description>
 		</method>
 		<method name="encode_floats_as_bytes" qualifiers="const">
@@ -51,11 +51,11 @@
 			<return type="int" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="input_data" type="Array" />
-			<param index="2" name="primitive_type" type="String" />
+			<param index="2" name="component_type" type="String" />
 			<param index="3" name="vector_size" type="int" />
 			<param index="4" name="deduplicate" type="bool" default="true" />
 			<description>
-				Creates a new [G4MFAccessor4D] with the given [param primitive_type] and [param vector_size] settings. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to. The accessor will be added to the [G4MFState4D], and the index of the new accessor will be returned.
+				Creates a new [G4MFAccessor4D] with the given [param component_type] and [param vector_size] settings. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to. The accessor will be added to the [G4MFState4D], and the index of the new accessor will be returned.
 			</description>
 		</method>
 		<method name="encode_new_accessor_from_vector4s" qualifiers="static">
@@ -64,14 +64,14 @@
 			<param index="1" name="input_data" type="PackedVector4Array" />
 			<param index="2" name="deduplicate" type="bool" default="true" />
 			<description>
-				Creates a new [G4MFAccessor4D] with [member vector_size] set to [code]4[/code] and [member primitive_type] set to the best available primitive type for the data in [param input_data]. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to. The accessor will be added to the [G4MFState4D], and the index of the new accessor will be returned.
+				Creates a new [G4MFAccessor4D] with [member vector_size] set to [code]4[/code] and [member component_type] set to the best available component type for the data in [param input_data]. The [param input_data] will be encoded with these settings and stored in a new [G4MFBufferView] that the accessor points to. The accessor will be added to the [G4MFState4D], and the index of the new accessor will be returned.
 			</description>
 		</method>
 		<method name="encode_variants_as_bytes" qualifiers="const">
 			<return type="PackedByteArray" />
 			<param index="0" name="input_data" type="Array" />
 			<description>
-				Encodes the given data as a [PackedByteArray] and returns it. This function expects that all data in the array is of a homogeneous type which is compatible with the accessor's primitive type and vector size (set [member primitive_type] and [member vector_size] before calling). For example, if the array contains [Color], then the primitive type must be some kind of float type and the vector size must be either [code]3[/code] or [code]4[/code].
+				Encodes the given data as a [PackedByteArray] and returns it. This function expects that all data in the array is of a homogeneous type which is compatible with the accessor's component type and vector size (set [member component_type] and [member vector_size] before calling). For example, if the array contains [Color], then the component type must be some kind of float type and the vector size must be either [code]3[/code] or [code]4[/code].
 				All data in the array must be of the same type as all other data in the array, since the resulting encoded accessor will be a blob of data all of the same type. If an item of a different type is encountered, the function will throw an error and return an empty array.
 			</description>
 		</method>
@@ -82,23 +82,23 @@
 				Creates a new [G4MFAccessor4D] from the given dictionary representing the JSON data of the G4MF accessor. This is used when importing the accessor from a file.
 			</description>
 		</method>
-		<method name="get_bytes_per_primitive" qualifiers="const">
+		<method name="get_bytes_per_component" qualifiers="const">
 			<return type="int" />
 			<description>
-				Returns the amount of bytes per primitive by reading the primitive type. For example, if the primitive type is [code]"float32"[/code], then this will read the [code]32[/code] as bits and divide by [code]8[/code] bits per byte to return [code]4[/code] bytes.
+				Returns the amount of bytes per component by reading the component type. For example, if the component type is [code]"float32"[/code], then this will read the [code]32[/code] as bits and divide by [code]8[/code] bits per byte to return [code]4[/code] bytes.
 			</description>
 		</method>
 		<method name="get_bytes_per_vector" qualifiers="const">
 			<return type="int" />
 			<description>
-				Returns the amount of bytes per vector by multiplying the [method bytes_per_primitive] by the [code]vector[/code] member. For example, if the primitive type is [code]"float32"[/code] and the accessor stores Vector3, then this will return [code]4 * 3 = 12[/code] bytes.
+				Returns the amount of bytes per vector by multiplying the [method bytes_per_component] by the [code]vector[/code] member. For example, if the component type is [code]"float32"[/code] and the accessor stores Vector3, then this will return [code]4 * 3 = 12[/code] bytes.
 			</description>
 		</method>
 		<method name="get_numbers_per_variant" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="variant_type" type="int" enum="Variant.Type" />
 			<description>
-				Returns the amount of primitive numeric components in a supported Variant type, or returns [code]0[/code] if the type is not supported. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String].
+				Returns the amount of component numeric components in a supported Variant type, or returns [code]0[/code] if the type is not supported. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String].
 			</description>
 		</method>
 		<method name="load_bytes_from_buffer_view" qualifiers="const">
@@ -110,38 +110,38 @@
 		</method>
 		<method name="make_new_accessor_without_data" qualifiers="static">
 			<return type="G4MFAccessor4D" />
-			<param index="0" name="primitive_type" type="String" />
+			<param index="0" name="component_type" type="String" />
 			<param index="1" name="vector_size" type="int" default="1" />
 			<description>
-				Creates a new [G4MFAccessor4D] with the given [param primitive_type] and [param vector_size] settings. This accessor will not have any data in it. Consider using [method encode_new_accessor_into_state] instead, which will create a new accessor with data in it and insert it into the [G4MFState4D].
+				Creates a new [G4MFAccessor4D] with the given [param component_type] and [param vector_size] settings. This accessor will not have any data in it. Consider using [method encode_new_accessor_into_state] instead, which will create a new accessor with data in it and insert it into the [G4MFState4D].
 			</description>
 		</method>
-		<method name="minimal_primitive_type_for_colors" qualifiers="static">
+		<method name="minimal_component_type_for_colors" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="input_data" type="PackedColorArray" />
 			<description>
-				Given a [PackedColorArray], returns the minimal primitive type that can be used to store all of the data in the array. This function will only consider floating point types as available options, up to the 32-bit size of Color data, meaning that the result will only ever be [code]"float8"[/code], [code]"float16"[/code], or [code]"float32"[/code].
+				Given a [PackedColorArray], returns the minimal component type that can be used to store all of the data in the array. This function will only consider floating point types as available options, up to the 32-bit size of Color data, meaning that the result will only ever be [code]"float8"[/code], [code]"float16"[/code], or [code]"float32"[/code].
 			</description>
 		</method>
-		<method name="minimal_primitive_type_for_floats" qualifiers="static">
+		<method name="minimal_component_type_for_floats" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="input_data" type="PackedFloat64Array" />
 			<description>
-				Given a [PackedFloat64Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only integers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains integers -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains any non-integer floating point numbers, then the minimal primitive type will be the smallest float type that can losslessly represent all of the data in the array. This can be used to determine the most efficient lossless primitive type to use when encoding the data in the accessor.
+				Given a [PackedFloat64Array], returns the minimal component type that can be used to store all of the data in the array. For example, if the array contains only integers 0 to 10, then the minimal component type is [code]"uint8"[/code]. If the array contains integers -20 to 20, then the minimal component type is [code]"int8"[/code]. If the array contains any non-integer floating point numbers, then the minimal component type will be the smallest float type that can losslessly represent all of the data in the array. This can be used to determine the most efficient lossless component type to use when encoding the data in the accessor.
 			</description>
 		</method>
-		<method name="minimal_primitive_type_for_int32s" qualifiers="static">
+		<method name="minimal_component_type_for_int32s" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="input_data" type="PackedInt32Array" />
 			<description>
-				Given a [PackedInt32Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only numbers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains 0 to 500, then the minimal primitive type is [code]"uint16"[/code]. This can be used to determine the most efficient lossless primitive type to use when encoding the data in the accessor.
+				Given a [PackedInt32Array], returns the minimal component type that can be used to store all of the data in the array. For example, if the array contains only numbers 0 to 10, then the minimal component type is [code]"uint8"[/code]. If the array contains -20 to 20, then the minimal component type is [code]"int8"[/code]. If the array contains 0 to 500, then the minimal component type is [code]"uint16"[/code]. This can be used to determine the most efficient lossless component type to use when encoding the data in the accessor.
 			</description>
 		</method>
-		<method name="minimal_primitive_type_for_vector4s" qualifiers="static">
+		<method name="minimal_component_type_for_vector4s" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="input_data" type="PackedVector4Array" />
 			<description>
-				Given a [PackedVector4Array], returns the minimal primitive type that can be used to store all of the data in the array. For example, if the array contains only integers 0 to 10, then the minimal primitive type is [code]"uint8"[/code]. If the array contains integers -20 to 20, then the minimal primitive type is [code]"int8"[/code]. If the array contains any non-integer floating point numbers, then the minimal primitive type will be the smallest float type that can losslessly represent all of the data in the array. This can be used to determine the most efficient lossless primitive type to use when encoding the data in the accessor.
+				Given a [PackedVector4Array], returns the minimal component type that can be used to store all of the data in the array. For example, if the array contains only integers 0 to 10, then the minimal component type is [code]"uint8"[/code]. If the array contains integers -20 to 20, then the minimal component type is [code]"int8"[/code]. If the array contains any non-integer floating point numbers, then the minimal component type will be the smallest float type that can losslessly represent all of the data in the array. This can be used to determine the most efficient lossless component type to use when encoding the data in the accessor.
 			</description>
 		</method>
 		<method name="store_accessor_data_into_state">
@@ -165,8 +165,8 @@
 		<member name="buffer_view_index" type="int" setter="set_buffer_view_index" getter="get_buffer_view_index" default="-1">
 			The index of the [G4MFBufferView4D] in the [G4MFState4D]'s array of buffer views this accessor is pointing to. This is used to load the data from the buffer view.
 		</member>
-		<member name="primitive_type" type="String" setter="set_primitive_type" getter="get_primitive_type" default="&quot;&quot;">
-			The primitive type of the data in the accessor. This is used to determine how to decode the data in the accessor. The primitive type is a string that can be one of the following: [code]float8[/code], [code]float16[/code], [code]float32[/code], [code]float64[/code], [code]int8[/code], [code]int16[/code], [code]int32[/code], [code]int64[/code], [code]uint8[/code], [code]uint16[/code], [code]uint32[/code], or [code]uint64[/code]. The primitive type is used to determine how to decode the data in the accessor.
+		<member name="component_type" type="String" setter="set_component_type" getter="get_component_type" default="&quot;&quot;">
+			The primitive number component type of the data in the accessor. This is used to determine how to encode or decode the data in the accessor. The component type is a string that can be one of the following: [code]float8[/code], [code]float16[/code], [code]float32[/code], [code]float64[/code], [code]int8[/code], [code]int16[/code], [code]int32[/code], [code]int64[/code], [code]uint8[/code], [code]uint16[/code], [code]uint32[/code], or [code]uint64[/code].
 		</member>
 		<member name="vector_size" type="int" setter="set_vector_size" getter="get_vector_size" default="1">
 			The size of the vector in the accessor. This is used to determine how to decode the data in the accessor. This must be a positive integer. A scalar is represented as [code]1[/code], a Vector4 is [code]4[/code], a 4D basis is [code]16[/code], and so on.
