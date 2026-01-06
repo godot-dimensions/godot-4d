@@ -354,7 +354,8 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	_simplex_cell_vertices_cache = get_poly_cell_vertices();
 	const PackedInt32Array all_edge_indices = get_edge_indices();
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
-	ERR_FAIL_COND_MSG(poly_cell_indices.size() < 2, "PolyMesh4D: Cannot decompose boundary cells into simplexes because there are no boundary cells.");
+	if (poly_cell_indices.size() < 2)
+		return;
 	const Vector<PackedInt32Array> &faces = poly_cell_indices[0];
 	const Vector<PackedInt32Array> &boundary_cells = poly_cell_indices[1];
 	const int64_t boundary_cell_count = boundary_cells.size();

@@ -1037,6 +1037,7 @@ void ArrayPolyMesh4D::set_poly_cell_indices_bind(const TypedArray<Array> &p_poly
 		dim_vector.resize(dim_array.size());
 		for (int j = 0; j < dim_array.size(); j++) {
 			const Variant &cell_indices_variant = dim_array[j];
+			if (!_manually_entering_data)
 			ERR_FAIL_COND_MSG(IS_NOT_INDICES_ARRAY(cell_indices_variant),
 					"ArrayPolyMesh4D: Poly cell indices must be an array of polytope dimensions, "
 					"containing an array of cells, each of which contains indices. For example, "
@@ -1130,6 +1131,14 @@ void ArrayPolyMesh4D::set_poly_cell_vertices(const PackedVector4Array &p_poly_ce
 	reset_poly_mesh_data_validation();
 }
 
+bool ArrayPolyMesh4D::is_manually_entering_data() const {
+	return _manually_entering_data;
+}
+
+void ArrayPolyMesh4D::set_manually_entering_data(const bool manually_entering_data) {
+	_manually_entering_data = manually_entering_data;
+}
+
 void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertex, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertices, DEFVAL(true));
@@ -1167,6 +1176,10 @@ void ArrayPolyMesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_edge_indices", "edge_indices"), &ArrayPolyMesh4D::set_edge_vertex_indices);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "edge_indices"), "set_edge_indices", "get_edge_indices");
+
+	ClassDB::bind_method(D_METHOD("set_manually_entering_data", "manually_entering_data"), &ArrayPolyMesh4D::set_manually_entering_data);
+	ClassDB::bind_method(D_METHOD("is_manually_entering_data"), &ArrayPolyMesh4D::is_manually_entering_data);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "manually_entering_data"), "set_manually_entering_data", "is_manually_entering_data");
 
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_FORCE_OUTWARD_OVERRIDE_CELL_ORIENTATION);

@@ -17,6 +17,7 @@ env.Append(
         "../../model/g4mf/structures",
         "../../model/g4mf/structures/physics",
         "../../model/mesh",
+        "../../model/mesh/face",
         "../../model/mesh/poly",
         "../../model/mesh/tetra",
         "../../model/mesh/wire",
@@ -27,7 +28,8 @@ env.Append(
         "../../physics/shapes",
         "../../render",
         "../../render/wireframe_canvas",
-        "../../render/cross_section"
+        "../../render/cross_section",
+        "../../render/cross_section/face"
     ]
 )
 
@@ -44,6 +46,7 @@ sources = (
     + Glob("../../model/g4mf/structures/*.cpp")
     + Glob("../../model/g4mf/structures/physics/*.cpp")
     + Glob("../../model/mesh/*.cpp")
+    + Glob("../../model/mesh/face/*.cpp")
     + Glob("../../model/mesh/poly/*.cpp")
     + Glob("../../model/mesh/tetra/*.cpp")
     + Glob("../../model/mesh/wire/*.cpp")
@@ -55,6 +58,7 @@ sources = (
     + Glob("../../render/*.cpp")
     + Glob("../../render/wireframe_canvas/*.cpp")
     + Glob("../../render/cross_section/*.cpp")
+    + Glob("../../render/cross_section/face/*.cpp")
 )
 
 
@@ -141,6 +145,7 @@ env["BUILDERS"]["GLSL_HEADER"] = Builder(
 
 env.GLSL_HEADER("../../render/cross_section/tetra_cross_section_shader.glsl")
 env.GLSL_HEADER("../../render/cross_section/wireframe_cross_section_shader.glsl")
+env.GLSL_HEADER("../../render/cross_section/face/base_face_shader.glsl")
 
 target_file_path = "../../editor/icons/editor_4d_icons.gen.h"
 icon_sources = Glob("icons/4D.svg") + Glob("icons/Node4D.svg")

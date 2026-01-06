@@ -25,6 +25,7 @@ private:
 	// 1: Each 3D cell made up of 2D face indices (each 3D cell makes up the boundary/surface of the 4D mesh).
 	// 2: Each 4D cell made up of 3D cell indices (optional, for encoding hypervolumes).
 	Vector<Vector<PackedInt32Array>> _poly_cell_indices;
+	bool _manually_entering_data;
 	PackedVector4Array _poly_cell_vertices;
 	// Normals and UVW map always refer to 3D cells (the boundary/surface of the 4D mesh).
 	PackedVector4Array _poly_cell_boundary_normals;
@@ -99,6 +100,9 @@ public:
 
 	virtual PackedVector4Array get_poly_cell_vertices() override;
 	void set_poly_cell_vertices(const PackedVector4Array &p_vertices);
+
+ 	bool is_manually_entering_data() const;
+	void set_manually_entering_data(const bool manually_entering_data);
 };
 
 VARIANT_ENUM_CAST(ArrayPolyMesh4D::ComputeNormalsMode);

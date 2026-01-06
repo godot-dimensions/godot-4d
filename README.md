@@ -31,6 +31,7 @@ scons
 
 Alternatively, if you only want 4D, you can start with any clone
 of Godot Engine and add this module to it:
+(MY CHANGES HAVE EXCEEDED THE WINDOWS COMMAND LINE LENGTH LIMIT. You will need to compile with MinGW.)
 
 ```shell
 cd modules

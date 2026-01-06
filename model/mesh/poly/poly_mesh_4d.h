@@ -34,8 +34,6 @@ class PolyMesh4D : public TetraMesh4D {
 	static PackedInt32Array _get_face_edge_3_vertex_index_sequence(const int32_t p_edge1_a, const int32_t p_edge1_b, const int32_t p_edge2_a, const int32_t p_edge2_b);
 	static PackedInt32Array _get_edges_of_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell);
 	static PackedInt32Array _get_vertex_indices_of_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const bool p_start_with_canonical_span);
-	static PackedInt32Array _get_vertex_indices_of_face(const PackedInt32Array &p_all_edge_indices, const PackedInt32Array &p_face_edge_indices);
-	static PackedInt32Array _triangulate_face_vertex_indices(const PackedInt32Array &p_face_vertex_indices, const int32_t p_pivot_attempt);
 	void _decompose_boundary_cells_into_simplexes(const bool p_force_align_triangulations);
 
 protected:
@@ -52,11 +50,16 @@ protected:
 	Vector<PackedInt32Array> _get_vertex_indices_of_boundary_cells(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const bool p_start_with_canonical_span);
 	PackedVector4Array _compute_boundary_normals_based_on_cell_orientation(const Vector<PackedInt32Array> &p_boundary_cell_vertex_indices, const bool p_keep_existing);
 
+	// Methods now used by ArrayFaceMesh4D
+	static PackedInt32Array _get_vertex_indices_of_face(const PackedInt32Array &p_all_edge_indices, const PackedInt32Array &p_face_edge_indices);
+	static PackedInt32Array _triangulate_face_vertex_indices(const PackedInt32Array &p_face_vertex_indices, const int32_t p_pivot_attempt);
+
 public:
 	Vector<PackedInt32Array> get_all_face_vertex_indices();
 	TypedArray<PackedInt32Array> get_all_face_vertex_indices_bind();
 	TypedArray<PackedInt32Array> get_all_cell_vertex_indices_bind(const bool p_start_with_canonical_span);
-	void poly_mesh_clear_cache(const bool p_normals_only = false);
+	// Now virtual to support additional clearing in ArrayFaceMesh4D
+	virtual void poly_mesh_clear_cache(const bool p_normals_only = false);
 	Ref<ArrayPolyMesh4D> to_array_poly_mesh();
 
 	virtual Vector<Vector<PackedInt32Array>> get_poly_cell_indices();

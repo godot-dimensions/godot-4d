@@ -37,6 +37,8 @@
 // Model.
 #include "model/g4mf/g4mf_document_4d.h"
 #include "model/mesh/mesh_instance_4d.h"
+#include "model/mesh/face/array_face_mesh_4d.h"
+#include "model/mesh/face/base_face_material_4d.h"
 #include "model/mesh/poly/array_poly_mesh_4d.h"
 #include "model/mesh/poly/box_poly_mesh_4d.h"
 #include "model/mesh/poly/orthoplex_poly_mesh_4d.h"
@@ -156,6 +158,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
 		GDREGISTER_CLASS(TetraMaterial4D);
 		GDREGISTER_CLASS(WireMaterial4D);
+		GDREGISTER_CLASS(BaseFaceMaterial4D);
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
@@ -166,10 +169,12 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
 		TetraMaterial4D::init_shaders();
 		WireMaterial4D::init_shaders();
+		BaseFaceMaterial4D::init_shaders();
 #endif
 		TetraMesh4D::init_fallback_material();
 		WireMesh4D::init_fallback_material();
 		// Mesh.
+		GDREGISTER_CLASS(ArrayFaceMesh4D);
 		GDREGISTER_CLASS(ArrayPolyMesh4D);
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
 		GDREGISTER_CLASS(ArrayWireMesh4D);
