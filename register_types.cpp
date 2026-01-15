@@ -215,6 +215,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(G4MFMaterialChannel4D);
 		GDREGISTER_CLASS(G4MFMaterial4D);
 		GDREGISTER_CLASS(G4MFMeshSurface4D);
+		GDREGISTER_CLASS(G4MFMeshSurfaceBinding4D);
+		GDREGISTER_CLASS(G4MFMeshSurfaceBindingGeometry4D);
 		GDREGISTER_CLASS(G4MFMesh4D);
 		GDREGISTER_CLASS(G4MFModel4D);
 		GDREGISTER_CLASS(G4MFShape4D);

@@ -80,11 +80,17 @@
 		<member name="material_index" type="int" setter="set_material_index" getter="get_material_index" default="-1">
 			The index of the [G4MFMaterial4D] in the [G4MFState4D]'s materials array that contains the material for this surface. This is used to define the appearance of the surface. If not defined, the surface should render with a default white material.
 		</member>
+		<member name="normals_binding" type="G4MFMeshSurfaceBinding4D" setter="set_normals_binding" getter="get_normals_binding">
+			The binding that defines the vertex normals for this mesh surface. If not defined, the surface implicitly uses flat shading.
+		</member>
 		<member name="polytope_simplexes" type="bool" setter="set_polytope_simplexes" getter="get_polytope_simplexes" default="false">
 			If [code]true[/code], allow treating the tetrahedral cells as part of a larger polytope instead of just simplexes. Each polytope is defined by a set of consecutive simplex cells that share the same starting vertex. This is not used by Godot 4D when importing the mesh.
 		</member>
 		<member name="simplexes_accessor_index" type="int" setter="set_simplexes_accessor_index" getter="get_simplexes_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the simplex cell indices for this surface. Each integer in the array is an index of a vertex in the mesh's vertices array, and MUST NOT exceed the bounds of the mesh's vertices array. If not defined, the surface does not have explicit simplexes, and may be a wireframe-only surface.
+		</member>
+		<member name="texture_map_binding" type="G4MFMeshSurfaceBinding4D" setter="set_texture_map_binding" getter="get_texture_map_binding">
+			The binding that defines the texture map coordinates for this mesh surface. If not defined, the surface does not have texture mapping.
 		</member>
 	</members>
 </class>

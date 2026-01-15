@@ -34,12 +34,24 @@ Ref<TetraMaterial4D> G4MFMaterial4D::generate_tetra_material(const Ref<G4MFState
 		if (has_single_base_color) {
 			tetra_material->set_albedo_color(single_base_color);
 		}
-		if (_base_color_channel->get_per_simplex_accessor_index() >= 0) {
-			tetra_material->set_albedo_color_array(_base_color_channel->load_simplex_colors(p_g4mf_state));
-			if (has_single_base_color) {
-				tetra_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
-			} else {
-				tetra_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_ONLY);
+		const Ref<G4MFMeshSurfaceBinding4D> base_color_binding = _base_color_channel->get_element_map_binding();
+		if (base_color_binding.is_valid()) {
+			const PackedColorArray original_colors = base_color_binding->load_values_as_colors(p_g4mf_state);
+			if (base_color_binding->get_per_simplex_accessor_index() != 0) {
+				PackedInt32Array simplex_indices = base_color_binding->load_per_simplex_indices(p_g4mf_state);
+				PackedColorArray simplex_colors;
+				simplex_colors.resize(simplex_indices.size());
+				for (int i = 0; i < simplex_indices.size(); i++) {
+					const int color_index = simplex_indices[i];
+					ERR_FAIL_INDEX_V(color_index, original_colors.size(), tetra_material);
+					simplex_colors.set(i, original_colors[color_index]);
+				}
+				tetra_material->set_albedo_color_array(simplex_colors);
+				if (has_single_base_color) {
+					tetra_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
+				} else {
+					tetra_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_ONLY);
+				}
 			}
 		}
 	}
@@ -65,12 +77,24 @@ Ref<WireMaterial4D> G4MFMaterial4D::generate_wire_material(const Ref<G4MFState4D
 		if (has_single_base_color) {
 			wire_material->set_albedo_color(single_base_color);
 		}
-		if (_base_color_channel->get_per_edge_accessor_index() >= 0) {
-			wire_material->set_albedo_color_array(_base_color_channel->load_edge_colors(p_g4mf_state));
-			if (has_single_base_color) {
-				wire_material->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE);
-			} else {
-				wire_material->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
+		const Ref<G4MFMeshSurfaceBinding4D> base_color_binding = _base_color_channel->get_element_map_binding();
+		if (base_color_binding.is_valid()) {
+			const PackedColorArray original_colors = base_color_binding->load_values_as_colors(p_g4mf_state);
+			if (base_color_binding->get_per_edge_accessor_index() != 0) {
+				PackedInt32Array edge_indices = base_color_binding->load_edge_indices(p_g4mf_state);
+				PackedColorArray edge_colors;
+				edge_colors.resize(edge_indices.size());
+				for (int i = 0; i < edge_indices.size(); i++) {
+					const int color_index = edge_indices[i];
+					ERR_FAIL_INDEX_V(color_index, original_colors.size(), wire_material);
+					edge_colors.set(i, original_colors[color_index]);
+				}
+				wire_material->set_albedo_color_array(edge_colors);
+				if (has_single_base_color) {
+					wire_material->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE);
+				} else {
+					wire_material->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
+				}
 			}
 		}
 	}
@@ -91,26 +115,33 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 	g4mf_material.instantiate();
 	g4mf_material->set_name(p_material->get_name());
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
-	const PackedColorArray albedlo_colors = p_material->get_albedo_color_array();
-	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY && albedlo_colors.size() > 0) {
-		Array base_color_variants;
-		base_color_variants.resize(albedlo_colors.size());
-		bool use_alpha = false;
-		for (int i = 0; i < albedlo_colors.size(); i++) {
-			base_color_variants[i] = albedlo_colors[i];
-			if (!use_alpha && albedlo_colors[i].a != 1.0) {
-				use_alpha = true;
+	const PackedColorArray albedo_colors = p_material->get_albedo_color_array();
+	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY && albedo_colors.size() > 0) {
+		PackedColorArray deduplicated_colors;
+		PackedInt64Array deduplicated_indices;
+		deduplicated_indices.resize(albedo_colors.size());
+		HashMap<Color, int> color_to_index_map;
+		for (int i = 0; i < albedo_colors.size(); i++) {
+			const Color color = albedo_colors[i];
+			if (color_to_index_map.has(color)) {
+				deduplicated_indices.set(i, color_to_index_map[color]);
+			} else {
+				const int new_index = deduplicated_colors.size();
+				deduplicated_colors.append(color);
+				color_to_index_map[color] = new_index;
+				deduplicated_indices.set(i, new_index);
 			}
 		}
-		const String base_color_prim_type = G4MFAccessor4D::minimal_component_type_for_colors(albedlo_colors);
-		const int base_color_accessor_index = G4MFAccessor4D::encode_new_accessor_from_variants(
-				p_g4mf_state, base_color_variants, base_color_prim_type, use_alpha ? 4 : 3, p_deduplicate);
 		Ref<G4MFMaterialChannel4D> base_color_channel;
 		base_color_channel.instantiate();
+		Ref<G4MFMeshSurfaceBinding4D> element_map_binding;
+		element_map_binding.instantiate();
+		element_map_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_colors(p_g4mf_state, deduplicated_colors, p_deduplicate));
+		int indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, deduplicated_indices, p_deduplicate);
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
-			base_color_channel->set_per_simplex_accessor_index(base_color_accessor_index);
+			element_map_binding->set_per_simplex_accessor_index(indices_accessor_index);
 		} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
-			base_color_channel->set_edge_colors_accessor_index(base_color_accessor_index);
+			element_map_binding->set_per_edge_accessor_index(indices_accessor_index);
 		} else {
 			ERR_PRINT("G4MFMaterial4D.convert_material_into_state: Unhandled albedo source flag.");
 		}

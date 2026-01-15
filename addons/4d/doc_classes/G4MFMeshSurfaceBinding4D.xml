@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFMeshSurfaceBinding4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Bindings for data added to mesh surface elements.
+	</brief_description>
+	<description>
+		Mesh surface bindings define how data is associated with mesh elements such as vertices, edges, and simplexes. For example, the tetrahedra of a 4D mesh surface may have texture map coordinates, normals, colors, or other data associated with each corner of the tetrahedra. Bindings define an array of data, and indices which sample that data for specific mesh elements.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFMeshSurfaceBinding4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF mesh surface binding to a [G4MFMeshSurfaceBinding4D]. This will set the fields of the [G4MFMeshSurfaceBinding4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="is_equal_exact" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="G4MFMeshSurfaceBinding4D" />
+			<description>
+				Checks if the [G4MFMeshSurfaceBinding4D] is equal to another [G4MFMeshSurfaceBinding4D] exactly by checking if the properties are equal and all accessor indices refer to the same accessors. If a mesh surface binding refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the mesh surface binding is not checked, and any metadata is ignored.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the [G4MFMeshSurfaceBinding4D] into a [Dictionary] representing the JSON of a G4MF mesh surface binding.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="edges_accessor_index" type="int" setter="set_edges_accessor_index" getter="get_edges_accessor_index" default="-1">
+			The index of the accessor that contains indices into this binding's values corresponding to the edges of the mesh surface (see [member G4MFMeshSurface4D.edges_accessor_index]). If defined, this MUST point to a valid accessor, which MUST have an integer [member G4MFAccessor4D.component_type], MUST have a [member G4MFAccessor4D.vector_size] of 2 (matching the mesh surface's edges accessor), and MUST have the same number of elements as the mesh surface's edges accessor. Each component in the accessor is an index into this binding's values array. This property is only valid if the mesh surface defines edges.
+		</member>
+		<member name="geometry_decompositions" type="G4MFMeshSurfaceBindingGeometry4D[]" setter="set_geometry_decompositions" getter="get_geometry_decompositions" default="[]">
+			An array of geometry decomposition objects that define how binding values are associated with specific geometry's decomposed polytope elements of the mesh surface. Usually, this will have one item referring to vertex instances of boundary geometry items, meaning for a 3D mesh surface, `index` will be set to 0 (the 2D faces), and for a 4D mesh surface, `index` will be set to 1 (the 3D cells).
+		</member>
+		<member name="per_edge_accessor_index" type="int" setter="set_per_edge_accessor_index" getter="get_per_edge_accessor_index" default="-1">
+			The index of the accessor that contains indices into this binding's values corresponding to each edge of the mesh surface (see [member G4MFMeshSurface4D.edges_accessor_index]). If defined, this MUST point to a valid accessor, which MUST have an integer [member G4MFAccessor4D.component_type], MUST have a [member G4MFAccessor4D.vector_size] of 1, and MUST have the same number of elements as the mesh surface's edges accessor (half the number of component indices). Each component in the accessor is an index into this binding's values array. This property is only valid if the mesh surface defines edges.
+		</member>
+		<member name="per_simplex_accessor_index" type="int" setter="set_per_simplex_accessor_index" getter="get_per_simplex_accessor_index" default="-1">
+			The index of the accessor that contains indices into this binding's values corresponding to each simplex cell of the mesh surface (see [member G4MFMeshSurface4D.simplexes_accessor_index]). If defined, this MUST point to a valid accessor, which MUST have an integer [member G4MFAccessor4D.component_type], MUST have a [member G4MFAccessor4D.vector_size] of 1, and MUST have the same number of elements as the mesh surface's simplexes accessor (the number of simplex cells). Each component in the accessor is an index into this binding's values array. This property is only valid if the mesh surface defines simplexes.
+		</member>
+		<member name="simplexes_accessor_index" type="int" setter="set_simplexes_accessor_index" getter="get_simplexes_accessor_index" default="-1">
+			The index of the accessor that contains indices into this binding's values corresponding to the simplexes of the mesh surface (see [member G4MFMeshSurface4D.simplexes_accessor_index]). If defined, this MUST point to a valid accessor, which MUST have an integer [member G4MFAccessor4D.component_type], MUST have a [member G4MFAccessor4D.vector_size] matching the mesh surface's simplexes accessor (3 for the triangles of a 3D mesh, 4 for the tetrahedra of a 4D mesh, and so on), and MUST have the same number of elements as the mesh surface's simplexes accessor. Each component in the accessor is an index into this binding's values array. This property is only valid if the mesh surface defines simplexes.
+		</member>
+		<member name="values_accessor_index" type="int" setter="set_values_accessor_index" getter="get_values_accessor_index" default="-1">
+			The index of the accessor that contains the values associated with this binding. The type and structure of the values depend on the specific use case of the binding. For example, the texture mapping of a 3D mesh surface would typically use a floating-point accessor with a [member G4MFAccessor4D.vector_size] of 2 or 3, the texture mapping of a 4D mesh surface would typically use a floating-point accessor with a [member G4MFAccessor4D.vector_size] of 3 or 4, the vertex normals of a 5D mesh would use a floating-point accessor with a [member G4MFAccessor4D.vector_size] of 5, and so on.
+		</member>
+		<member name="vertices_accessor_index" type="int" setter="set_vertices_accessor_index" getter="get_vertices_accessor_index" default="-1">
+			The index of the accessor that contains indices into this binding's values corresponding to the vertices shared between all mesh surfaces (see [member G4MFMesh4D.vertices_accessor_index]). If defined, this MUST point to a valid accessor, which MUST have an integer [member G4MFAccessor4D.component_type], MUST have a [member G4MFAccessor4D.vector_size] of 1, and MUST have the same number of elements as the mesh's vertices accessor. Each component in the accessor is an index into this binding's values array. This property is always valid because the `vertices` property of the mesh is required.
+		</member>
+	</members>
+</class>

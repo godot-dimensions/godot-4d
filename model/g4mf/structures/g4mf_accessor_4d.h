@@ -53,6 +53,7 @@ public:
 	static String minimal_component_type_for_colors(const PackedColorArray &p_input_data);
 	static String minimal_component_type_for_floats(const PackedFloat64Array &p_input_data);
 	static String minimal_component_type_for_int32s(const PackedInt32Array &p_input_data);
+	static String minimal_component_type_for_int64s(const PackedInt64Array &p_input_data);
 	static String minimal_component_type_for_vector4s(const PackedVector4Array &p_input_data);
 
 	// Decode functions.
@@ -61,7 +62,9 @@ public:
 	PackedInt32Array decode_int32s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt64Array decode_ints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Vector<uint64_t> decode_uints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
+
 	Array decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
+	PackedColorArray decode_colors_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	// Low-level accessor encode functions.
 	PackedByteArray encode_floats_as_bytes(const PackedFloat64Array &p_input_numbers) const;
@@ -74,6 +77,8 @@ public:
 
 	// High-level accessor encode functions.
 	static int encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_component_type, const int p_vector_size = 1, const bool p_deduplicate = true);
+	static int encode_new_accessor_from_colors(const Ref<G4MFState4D> &p_g4mf_state, const PackedColorArray &p_input_data, const bool p_deduplicate = true);
+	static int encode_new_accessor_from_int64s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt64Array &p_input_data, const bool p_deduplicate = true);
 	static int encode_new_accessor_from_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_input_data, const bool p_deduplicate = true);
 
 	// Dictionary conversion.

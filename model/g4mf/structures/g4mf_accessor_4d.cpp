@@ -468,6 +468,15 @@ String G4MFAccessor4D::minimal_component_type_for_int32s(const PackedInt32Array 
 	return _minimal_component_type_given_bits(CANT_USE_COMP_TYPE, min_int_bits, min_uint_bits);
 }
 
+String G4MFAccessor4D::minimal_component_type_for_int64s(const PackedInt64Array &p_input_data) {
+	uint32_t min_int_bits = 8;
+	uint32_t min_uint_bits = 8;
+	for (const int64_t i : p_input_data) {
+		_minimal_component_bits_for_int64(i, min_int_bits, min_uint_bits);
+	}
+	return _minimal_component_type_given_bits(CANT_USE_COMP_TYPE, min_int_bits, min_uint_bits);
+}
+
 String G4MFAccessor4D::minimal_component_type_for_vector4s(const PackedVector4Array &p_input_data) {
 	uint32_t min_float_bits = 8;
 	uint32_t min_int_bits = 8;
@@ -604,6 +613,36 @@ Array G4MFAccessor4D::decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_
 		ERR_PRINT("G4MFAccessor4D: Unknown component type '" + _component_type + "', cannot decode.");
 	}
 	return Array();
+}
+
+PackedColorArray G4MFAccessor4D::decode_colors_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
+	PackedFloat64Array numbers = decode_floats_from_bytes(p_g4mf_state);
+	PackedColorArray colors;
+	if (_vector_size == 1) {
+		const int64_t color_count = numbers.size();
+		colors.resize(color_count);
+		for (int64_t i = 0; i < color_count; i++) {
+			const float gray = numbers[i]; // Colors are always 32-bit floats.
+			colors.set(i, Color(gray, gray, gray, 1.0));
+		}
+	} else if (_vector_size == 3) {
+		const int64_t color_count = numbers.size() / 3;
+		colors.resize(color_count);
+		for (int64_t i = 0; i < color_count; i++) {
+			const int64_t num_offset = i * 3;
+			colors.set(i, Color(numbers[num_offset + 0], numbers[num_offset + 1], numbers[num_offset + 2], 1.0));
+		}
+	} else if (_vector_size == 4) {
+		const int64_t color_count = numbers.size() / 4;
+		colors.resize(color_count);
+		for (int64_t i = 0; i < color_count; i++) {
+			const int64_t num_offset = i * 4;
+			colors.set(i, Color(numbers[num_offset + 0], numbers[num_offset + 1], numbers[num_offset + 2], numbers[num_offset + 3]));
+		}
+	} else {
+		ERR_PRINT("G4MFAccessor4D: Cannot decode colors from accessor with vector size " + itos(_vector_size) + ". Returning an empty array.");
+	}
+	return colors;
 }
 
 // Low-level accessor encode functions.
@@ -974,6 +1013,40 @@ int G4MFAccessor4D::encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_
 	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(p_component_type, p_vector_size);
 	// Write the data into a new buffer view.
 	PackedByteArray encoded_bytes = accessor->encode_variants_as_bytes(p_input_data);
+	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
+	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
+}
+
+int G4MFAccessor4D::encode_new_accessor_from_colors(const Ref<G4MFState4D> &p_g4mf_state, const PackedColorArray &p_input_data, const bool p_deduplicate) {
+	const String prim_type = G4MFAccessor4D::minimal_component_type_for_colors(p_input_data);
+	int vector_size = 3;
+	for (int i = 0; i < p_input_data.size(); i++) {
+		if (p_input_data[i].a != 1.0) {
+			vector_size = 4; // Need to store alpha channel.
+			break;
+		}
+	}
+	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, vector_size);
+	PackedFloat64Array numbers;
+	numbers.resize(p_input_data.size() * vector_size);
+	for (int64_t i = 0; i < p_input_data.size(); i++) {
+		const Color &col = p_input_data[i];
+		numbers.set(i * vector_size, col.r);
+		numbers.set(i * vector_size + 1, col.g);
+		numbers.set(i * vector_size + 2, col.b);
+		if (vector_size == 4) {
+			numbers.set(i * vector_size + 3, col.a);
+		}
+	}
+	PackedByteArray encoded_bytes = accessor->encode_floats_as_bytes(numbers);
+	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
+	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
+}
+
+int G4MFAccessor4D::encode_new_accessor_from_int64s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt64Array &p_input_data, const bool p_deduplicate) {
+	const String prim_type = G4MFAccessor4D::minimal_component_type_for_int64s(p_input_data);
+	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 1);
+	PackedByteArray encoded_bytes = accessor->encode_ints_as_bytes(p_input_data);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
