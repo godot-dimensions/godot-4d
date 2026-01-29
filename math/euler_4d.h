@@ -16,7 +16,7 @@ struct _NO_DISCARD_ Euler4D {
 		struct {
 			// YZ, ZX, and XY are analogous to 3D (X, Y, and Z resp), but
 			// XW, WY, and ZW are not (they are perpendicular to YZ, ZX, XY).
-			// We'll put the 3D-like ones first, on top, in YZ-ZX-ZY order.
+			// We'll put the 3D-like ones first, on top, in YZ-ZX-XY order.
 			// For UX reasons, we want the 3D-like ones to be first.
 			// Yes I'm aware of the irony of trying to have good UX
 			// for 4D, which is inherently complex regardless.
