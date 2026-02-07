@@ -419,7 +419,7 @@ String EditorTransformGizmo4D::_get_transform_part_simple_action_name(const Tran
 	return "Transform";
 }
 
-Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp, const bool correct_for_ring) {
+Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp) {
 	const Vector4 axis1_slid = Vector4D::slide(p_axis1, p_perp).normalized();
 	if (axis1_slid == Vector4()) {
 		return Vector4();
@@ -440,6 +440,40 @@ Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const 
 		return intersection;
 	}
 	return Vector4();
+}
+
+Vector4 _origin_axis_aligned_bivector_ring_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp) {
+	Vector4 plane_normal = Vector4D::perpendicular(p_axis1, p_axis2, p_perp);
+	if (plane_normal.length_squared() < CMP_EPSILON) {
+		return Vector4();
+	}
+	plane_normal = plane_normal.normalized();
+	const real_t denominator = plane_normal.dot(p_ray_direction);
+	if (Math::is_zero_approx(denominator)) {
+		return Vector4();
+	}
+	const real_t factor = -plane_normal.dot(p_ray_origin) / denominator;
+	if (factor < 0.0) {
+		return Vector4(); // Gizmo is behind the camera.
+	}
+	const Vector4 point_on_plane = p_ray_origin + p_ray_direction * factor;
+	// The visible ring is an ellipse due to foreshortening along p_perp.
+	// To unsquash: solve the 2x2 Gram matrix system for the slid (projected) axes.
+	// This handles cross-coupling when p_perp has components along both ring axes.
+	const real_t axis1_dot_perp = p_axis1.dot(p_perp);
+	const real_t axis2_dot_perp = p_axis2.dot(p_perp);
+	const real_t det = 1.0 - axis1_dot_perp * axis1_dot_perp - axis2_dot_perp * axis2_dot_perp;
+	if (Math::is_zero_approx(det)) {
+		return Vector4(); // Ring is nearly edge-on to the camera.
+	}
+	// Project the hit point onto each slid axis to get its apparent (foreshortened) coordinates.
+	const real_t point_on_plane_dot_perp = point_on_plane.dot(p_perp);
+	const real_t apparent_axis1 = point_on_plane.dot(p_axis1) - point_on_plane_dot_perp * axis1_dot_perp;
+	const real_t apparent_axis2 = point_on_plane.dot(p_axis2) - point_on_plane_dot_perp * axis2_dot_perp;
+	// Solve the 2x2 system via Cramer's rule.
+	const real_t proj_axis1 = (apparent_axis1 * (1.0 - axis2_dot_perp * axis2_dot_perp) + apparent_axis2 * axis1_dot_perp * axis2_dot_perp) / det;
+	const real_t proj_axis2 = (apparent_axis2 * (1.0 - axis1_dot_perp * axis1_dot_perp) + apparent_axis1 * axis1_dot_perp * axis2_dot_perp) / det;
+	return p_axis1 * proj_axis1 + p_axis2 * proj_axis2;
 }
 
 EditorTransformGizmo4D::TransformPart EditorTransformGizmo4D::_check_for_best_hit(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) const {
@@ -497,7 +531,7 @@ EditorTransformGizmo4D::TransformPart EditorTransformGizmo4D::_check_for_best_hi
 	// Check rotation rings.
 	if (_is_rotation_enabled) {
 #define CHECK_RING(m_axis1, m_axis2, m_part)                                                                                                         \
-	current_point = _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, m_axis1, m_axis2, p_local_perp_direction, true); \
+	current_point = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, m_axis1, m_axis2, p_local_perp_direction); \
 	current_distance = Math::abs(current_point.length() - 1.0);                                                                                      \
 	if (current_distance < closest_distance) {                                                                                                       \
 		closest_distance = current_distance;                                                                                                         \
@@ -574,50 +608,50 @@ Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_lo
 		} break;
 		case TRANSFORM_MOVE_XY:
 		case TRANSFORM_SCALE_XY: {
-			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), p_local_perp_direction, false);
+			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), p_local_perp_direction);
 		} break;
 		case TRANSFORM_MOVE_XZ:
 		case TRANSFORM_SCALE_XZ: {
-			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction, false);
+			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction);
 		} break;
 		case TRANSFORM_MOVE_XW:
 		case TRANSFORM_SCALE_XW: {
-			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction, false);
+			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction);
 		} break;
 		case TRANSFORM_MOVE_YZ:
 		case TRANSFORM_SCALE_YZ: {
-			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction, false);
+			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction);
 		} break;
 		case TRANSFORM_MOVE_YW:
 		case TRANSFORM_SCALE_YW: {
-			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction, false);
+			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction);
 		} break;
 		case TRANSFORM_MOVE_ZW:
 		case TRANSFORM_SCALE_ZW: {
-			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1), p_local_perp_direction, false);
+			return _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1), p_local_perp_direction);
 		} break;
 		case TRANSFORM_ROTATE_XY: {
-			Vector4 casted = _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), p_local_perp_direction, true);
+			Vector4 casted = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), p_local_perp_direction);
 			return Math::atan2(casted.y, casted.x);
 		} break;
 		case TRANSFORM_ROTATE_XZ: {
-			Vector4 casted = _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction, true);
+			Vector4 casted = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction);
 			return Math::atan2(casted.x, casted.z);
 		} break;
 		case TRANSFORM_ROTATE_XW: {
-			Vector4 casted = _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction, true);
+			Vector4 casted = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction);
 			return Math::atan2(casted.w, casted.x);
 		} break;
 		case TRANSFORM_ROTATE_YZ: {
-			Vector4 casted = _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction, true);
+			Vector4 casted = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction);
 			return Math::atan2(casted.z, casted.y);
 		} break;
 		case TRANSFORM_ROTATE_YW: {
-			Vector4 casted = _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction, true);
+			Vector4 casted = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction);
 			return Math::atan2(casted.y, casted.w);
 		} break;
 		case TRANSFORM_ROTATE_ZW: {
-			Vector4 casted = _origin_axis_aligned_biplane_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1), p_local_perp_direction, true);
+			Vector4 casted = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1), p_local_perp_direction);
 			return Math::atan2(casted.w, casted.z);
 		} break;
 		case TRANSFORM_MAX: {
