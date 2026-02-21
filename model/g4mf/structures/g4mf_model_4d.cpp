@@ -282,10 +282,10 @@ Error G4MFModel4D::export_write_model_data(const Ref<G4MFState4D> &p_g4mf_state,
 }
 
 Ref<G4MFModel4D> G4MFModel4D::from_dictionary(const Dictionary &p_dict) {
-	Ref<G4MFModel4D> texture;
-	texture.instantiate();
-	texture->read_file_reference_entries_from_dictionary(p_dict);
-	return texture;
+	Ref<G4MFModel4D> model;
+	model.instantiate();
+	model->read_file_reference_entries_from_dictionary(p_dict);
+	return model;
 }
 
 Dictionary G4MFModel4D::to_dictionary() const {
