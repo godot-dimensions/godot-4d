@@ -20,7 +20,7 @@
 			<param index="3" name="deduplicate" type="bool" default="true" />
 			<description>
 				Pack the given tree of nodes into a new G4MF model, and add it to the given [G4MFState4D]'s list of models. This function MUST be ran before calling [method export_write_model_data] on the new model, or else the export will fail.
-				The root node of the given tree will become the root node of the new model, and all child nodes will be included in the model as well. If [code]deduplicate[/code] is true, the model will be compared against existing models in the [G4MFState4D] and reused if a model with an identical URI already exists. Returns the index of the new or existing model in the [G4MFState4D]'s list of models, or [code]-1[/code] on failure.
+				The root node of the given tree will become the root node of the new model, and all child nodes will be included in the model as well. If [param deduplicate] is [code]true[/code], the model will be compared against existing models in the [G4MFState4D] and reused if a model with an identical URI already exists. Returns the index of the new or existing model in the [G4MFState4D]'s list of models, or [code]-1[/code] on failure.
 				The given [G4MFDocument4D] will be set as [member model_g4mf_document] on the new model, and will be used for processing the file. The [param g4mf_document] parameter is a [Variant] for technical reasons, to avoid circular dependency issues in C++. This parameter only supports being given a [G4MFDocument4D] or [code]null[/code].
 			</description>
 		</method>
@@ -30,7 +30,7 @@
 			<param index="1" name="deduplicate" type="bool" default="true" />
 			<param index="2" name="buffer_index" type="int" default="0" />
 			<description>
-				Write the model data to the file if [member uri] is set to a non-empty value, or to a buffer view if [member uri] is empty. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. The [method import_preload_model_data] function MUST be ran before calling this function or else the export will fail.
+				Write the model data to the file if [member G4MFFileReference4D.file_uri] is set to a non-empty value, or to a buffer view if [member G4MFFileReference4D.file_uri] is empty. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. The [method import_preload_model_data] function MUST be ran before calling this function or else the export will fail.
 				The [param deduplicate] and [param buffer_index] parameters are only used when writing to a new buffer view, and are directly passed to the [method G4MFBufferView4D.write_new_buffer_view_into_state] function. They do nothing when writing to an external file URI. When written to a buffer view, model data is always aligned to a multiple of 16 bytes within the buffer.
 			</description>
 		</method>

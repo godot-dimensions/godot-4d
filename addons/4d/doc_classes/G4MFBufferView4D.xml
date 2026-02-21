@@ -39,7 +39,7 @@
 			<param index="3" name="deduplicate" type="bool" default="true" />
 			<param index="4" name="buffer_index" type="int" default="0" />
 			<description>
-				Writes the given [param input_data] into a buffer view in the given G4MF state with its start byte offset aligned to a multiple of [param alignment]. This is usually a new buffer view, but may refer to an existing buffer view if an identical buffer view already exists and [param deduplicate] is [code]true[/code] (default). When a new buffer view is created, [param buffer_index] determines which buffer the new buffer view will point to, which is buffer 0 by default.
+				Writes the given [param input_data] into a buffer view in the given [G4MFState4D] with its start byte offset aligned to a multiple of [param alignment]. This is usually a new buffer view, but may refer to an existing buffer view if an identical buffer view already exists and [param deduplicate] is [code]true[/code] (default). When a new buffer view is created, [param buffer_index] determines which buffer the new buffer view will point to, which is buffer 0 by default.
 			</description>
 		</method>
 	</methods>

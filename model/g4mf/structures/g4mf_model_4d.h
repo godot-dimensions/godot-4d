@@ -22,7 +22,7 @@ class G4MFModel4D : public G4MFFileReference4D {
 
 	// Optional. If provided, use this document for import settings.
 	// This needs to be a Variant to avoid circular dependency issues.
-	// This is a limitation of C++, forward declarations don't work here.
+	// This is a limitation of GDExtension C++, forward declarations don't work here.
 	Variant _model_g4mf_document = Variant();
 	Ref<G4MFState4D> _model_g4mf_state;
 	Ref<OFFDocument4D> _model_off_document;

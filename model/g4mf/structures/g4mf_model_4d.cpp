@@ -53,7 +53,7 @@ Error G4MFModel4D::import_preload_model_data(const Ref<G4MFState4D> &p_g4mf_stat
 	const PackedByteArray file_data = read_file_data(p_g4mf_state);
 	ERR_FAIL_COND_V(file_data.is_empty(), ERR_CANT_OPEN);
 	const String main_base_path = p_g4mf_state->get_g4mf_base_path();
-	const String file_uri_only = get_uri();
+	const String file_uri_only = get_file_uri();
 	if (!file_uri_only.is_empty()) {
 		_model_file_uri_path = main_base_path.path_join(file_uri_only);
 	}
@@ -163,7 +163,7 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	if (p_deduplicate && !target_uri_without_extension.is_empty()) {
 		for (int i = 0; i < g4mf_models.size(); i++) {
 			Ref<G4MFModel4D> g4mf_model = g4mf_models[i];
-			if (g4mf_model.is_valid() && g4mf_model->get_uri() == target_uri_without_extension) {
+			if (g4mf_model.is_valid() && g4mf_model->get_file_uri() == target_uri_without_extension) {
 				return i;
 			}
 		}
@@ -177,7 +177,7 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	Ref<G4MFModel4D> g4mf_model;
 	g4mf_model.instantiate();
 	g4mf_model->set_model_g4mf_document(model_g4mf_document);
-	g4mf_model->set_uri(target_uri_without_extension);
+	g4mf_model->set_file_uri(target_uri_without_extension);
 	// Fill the G4MFModel4D with the model data.
 #ifdef MODULE_GLTF_ENABLED
 	if (Object::cast_to<Node3D>(p_node) != nullptr) {
@@ -236,14 +236,14 @@ Error G4MFModel4D::export_write_model_data(const Ref<G4MFState4D> &p_g4mf_state,
 	}
 	// Use the MIME type determined above as-is, and use the file extension to determine the path and name.
 	set_mime_type(mime_type);
-	const String target_uri = get_uri() + file_extension;
+	const String target_uri = get_file_uri() + file_extension;
 	const String file_path = p_g4mf_state->get_g4mf_base_path().path_join(target_uri);
 	if (!should_separate_model_files || target_uri.contains("/")) {
 		set_item_name(p_g4mf_state->reserve_unique_name(target_uri.get_file()));
 	}
 	// If we are writing to a separate model file, set the URI and write to that location.
 	if (should_separate_model_files) {
-		set_uri(target_uri);
+		set_file_uri(target_uri);
 		create_missing_directories_if_needed(p_g4mf_state);
 		if (_model_g4mf_state.is_valid()) {
 			return model_g4mf_document->export_write_to_file(_model_g4mf_state, file_path);
@@ -259,7 +259,7 @@ Error G4MFModel4D::export_write_model_data(const Ref<G4MFState4D> &p_g4mf_state,
 		}
 	}
 	// Embed the model data into a buffer view. The URI must be empty in this case.
-	set_uri("");
+	set_file_uri("");
 	PackedByteArray model_bytes;
 	if (_model_g4mf_state.is_valid()) {
 		model_bytes = model_g4mf_document->export_write_to_byte_array(_model_g4mf_state);
@@ -277,7 +277,7 @@ Error G4MFModel4D::export_write_model_data(const Ref<G4MFState4D> &p_g4mf_state,
 	// Always use 16-byte alignment for models to allow 16-byte headers to be aligned.
 	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, model_bytes, 16, p_deduplicate, p_buffer_index);
 	ERR_FAIL_COND_V(buffer_view_index < 0, ERR_CANT_CREATE);
-	set_buffer_view(buffer_view_index);
+	set_buffer_view_index(buffer_view_index);
 	return OK;
 }
 

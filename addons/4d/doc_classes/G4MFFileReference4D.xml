@@ -16,7 +16,7 @@
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Creates any missing directories in the filesystem needed for writing to the external file URI specified by this file reference's [member uri]. If [member uri] is an empty string, this does nothing and returns [constant @GlobalScope.OK]. If the directories already exist, this does nothing and returns [constant @GlobalScope.OK]. If the directories do not exist, it attempts to create them and returns [constant @GlobalScope.OK] on success, or an error code on failure.
+				Creates any missing directories in the filesystem needed for writing to the external file URI specified by this file reference's [member file_uri]. If [member file_uri] is an empty string, this does nothing and returns [constant @GlobalScope.OK]. If the directories already exist, this does nothing and returns [constant @GlobalScope.OK]. If the directories do not exist, it attempts to create them and returns [constant @GlobalScope.OK] on success, or an error code on failure.
 			</description>
 		</method>
 		<method name="read_file_data" qualifiers="const">
@@ -41,7 +41,7 @@
 			<param index="3" name="deduplicate" type="bool" default="true" />
 			<param index="4" name="buffer_index" type="int" default="0" />
 			<description>
-				Writes the given [param data] into either the external file URI, if [member uri] is set, or into a new buffer view in the given G4MF state if [member uri] is an empty string.
+				Writes the given [param data] into either the external file URI, if [member file_uri] is set, or into a new buffer view in the given [G4MFState4D] if [member file_uri] is an empty string.
 				The [param alignment], [param deduplicate], and [param buffer_index] parameters are only used when writing to a new buffer view, and are directly passed to the [method G4MFBufferView4D.write_new_buffer_view_into_state] function. They do nothing when writing to an external file URI.
 			</description>
 		</method>
@@ -53,15 +53,15 @@
 		</method>
 	</methods>
 	<members>
-		<member name="buffer_view" type="int" setter="set_buffer_view" getter="get_buffer_view" default="-1">
-			The index of the [G4MFBufferView4D] that contains the data for this file reference. If this is set to [code]-1[/code], then the file reference does not refer to a buffer view. This property is mutually exclusive with [member uri], so if this is set to a value other than [code]-1[/code], then [member uri] SHOULD be an empty string. If both are set, [member uri] takes precedence when the file exists.
+		<member name="buffer_view_index" type="int" setter="set_buffer_view_index" getter="get_buffer_view_index" default="-1">
+			The index of the [G4MFBufferView4D] that contains the data for this file reference. If this is set to [code]-1[/code], then the file reference does not refer to a buffer view. This property is mutually exclusive with [member file_uri], so if this is set to a value other than [code]-1[/code], then [member file_uri] SHOULD be an empty string. If both are set, [member file_uri] takes precedence when the file exists.
+		</member>
+		<member name="file_uri" type="String" setter="set_file_uri" getter="get_file_uri" default="&quot;&quot;">
+			The URI of the file relative to the G4MF file's location. If this is an empty string, then the file reference does not refer to an external file. This property is mutually exclusive with [member buffer_view_index], so if this is set to a non-empty string, then [member buffer_view_index] SHOULD be [code]-1[/code]. If both are set, [member file_uri] takes precedence when the file exists.
+			File names SHOULD use snake case and all lowercase letters to avoid case sensitivity issues across platforms.
 		</member>
 		<member name="mime_type" type="String" setter="set_mime_type" getter="get_mime_type" default="&quot;&quot;">
 			The MIME type of the file being referenced. This is a required property, and must be a valid MIME type string, such as [code]"image/png"[/code] for PNG images. When a file format's media type is registered with IANA, this MUST match the media type string as registered with IANA. When a file format's media type is not registered with IANA, any placeholder name may be used pending registration.
-		</member>
-		<member name="uri" type="String" setter="set_uri" getter="get_uri" default="&quot;&quot;">
-			The URI of the file relative to the G4MF file's location. If this is an empty string, then the file reference does not refer to an external file. This property is mutually exclusive with [member buffer_view], so if this is set to a non-empty string, then [member buffer_view] SHOULD be [code]-1[/code]. If both are set, [member uri] takes precedence when the file exists.
-			File names SHOULD use snake case and all lowercase letters to avoid case sensitivity issues across platforms.
 		</member>
 	</members>
 </class>
