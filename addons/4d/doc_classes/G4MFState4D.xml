@@ -95,9 +95,6 @@
 		<member name="g4mf_json" type="Dictionary" setter="set_g4mf_json" getter="get_g4mf_json" default="{}">
 			The JSON data of the G4MF file. This is set when reading a G4MF file at the start of the import process before parsing, and is set when writing a G4MF file at the end of the export process after serializing.
 		</member>
-		<member name="g4mf_lights" type="G4MFLight4D[]" setter="set_g4mf_lights" getter="get_g4mf_lights" default="[]">
-			The array of [G4MFLight4D]s in this G4MF file. If empty, the G4MF file does not have any lights. Lights are referenced by index in [G4MFNode4D]s.
-		</member>
 		<member name="g4mf_materials" type="G4MFMaterial4D[]" setter="set_g4mf_materials" getter="get_g4mf_materials" default="[]">
 			The array of [G4MFMaterial4D]s in this G4MF file. If empty, the G4MF file does not have any materials. Materials are referenced by index in [G4MFMeshSurface4D]s which are used in [G4MFMesh4D]s.
 		</member>

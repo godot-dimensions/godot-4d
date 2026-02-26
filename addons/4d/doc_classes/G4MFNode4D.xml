@@ -68,8 +68,8 @@
 		<member name="children_indices" type="PackedInt32Array" setter="set_children_indices" getter="get_children_indices" default="PackedInt32Array()">
 			The indices of the child nodes of this [G4MFNode4D]. Each index refers to the index of a [G4MFNode4D] in the [member G4MFState4D.g4mf_nodes] array.
 		</member>
-		<member name="light_index" type="int" setter="set_light_index" getter="get_light_index" default="-1">
-			The index of the light of this [G4MFNode4D]. This is the index of a [G4MFLight4D] in the [member G4MFState4D.g4mf_lights] array. If this node does not have a light, this is [code]-1[/code].
+		<member name="light" type="G4MFLight4D" setter="set_light" getter="get_light">
+			The light of this [G4MFNode4D]. If this node is not a light, this is [code]null[/code].
 		</member>
 		<member name="mesh_index" type="int" setter="set_mesh_index" getter="get_mesh_index" default="-1">
 			The index of the mesh of this [G4MFNode4D]. This is the index of a [G4MFMesh4D] in the [member G4MFState4D.g4mf_meshes] array. If this node does not have a mesh, this is [code]-1[/code].

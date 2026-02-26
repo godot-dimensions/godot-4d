@@ -127,7 +127,7 @@ Node *G4MFNode4D::generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, cons
 		ERR_FAIL_COND_V_MSG(ret_node != nullptr, ret_node, "G4MF import: Cannot have both physics and model on the same node.");
 		ret_node = _physics->generate_physics_node(p_g4mf_state, Ref<G4MFNode4D>(this), p_scene_parent);
 	}
-	if (_light_index >= 0) {
+	if (_light.is_valid()) {
 		ERR_PRINT("G4MFNode4D.generate_godot_node: Light import not yet implemented.");
 	}
 	if (_mesh_index >= 0) {
@@ -213,7 +213,7 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 		node->_camera = G4MFCamera4D::from_dictionary(p_dict["camera"]);
 	}
 	if (p_dict.has("light")) {
-		node->_light_index = p_dict["light"];
+		node->_light = G4MFLight4D::from_dictionary(p_dict["light"]);
 	}
 	if (p_dict.has("mesh")) {
 		node->_mesh_index = p_dict["mesh"];
@@ -267,8 +267,8 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	if (_camera.is_valid()) {
 		dict["camera"] = _camera->to_dictionary();
 	}
-	if (_light_index >= 0) {
-		dict["light"] = _light_index;
+	if (_light.is_valid()) {
+		dict["light"] = _light->to_dictionary();
 	}
 	if (_mesh_index >= 0) {
 		dict["mesh"] = _mesh_index;
@@ -368,10 +368,10 @@ void G4MFNode4D::_bind_methods() {
 	// Component properties.
 	ClassDB::bind_method(D_METHOD("get_camera"), &G4MFNode4D::get_camera);
 	ClassDB::bind_method(D_METHOD("set_camera", "camera"), &G4MFNode4D::set_camera);
+	ClassDB::bind_method(D_METHOD("get_light"), &G4MFNode4D::get_light);
+	ClassDB::bind_method(D_METHOD("set_light", "light"), &G4MFNode4D::set_light);
 	ClassDB::bind_method(D_METHOD("get_physics"), &G4MFNode4D::get_physics);
 	ClassDB::bind_method(D_METHOD("set_physics", "physics"), &G4MFNode4D::set_physics);
-	ClassDB::bind_method(D_METHOD("get_light_index"), &G4MFNode4D::get_light_index);
-	ClassDB::bind_method(D_METHOD("set_light_index", "light_index"), &G4MFNode4D::set_light_index);
 	ClassDB::bind_method(D_METHOD("get_mesh_index"), &G4MFNode4D::get_mesh_index);
 	ClassDB::bind_method(D_METHOD("set_mesh_index", "mesh_index"), &G4MFNode4D::set_mesh_index);
 	ClassDB::bind_method(D_METHOD("get_model_index"), &G4MFNode4D::get_model_index);
@@ -396,8 +396,8 @@ void G4MFNode4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_scale", "get_scale");
 	// Component properties.
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "camera", PROPERTY_HINT_RESOURCE_TYPE, "G4MFCamera4D"), "set_camera", "get_camera");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "light", PROPERTY_HINT_RESOURCE_TYPE, "G4MFLight4D"), "set_light", "get_light");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "physics", PROPERTY_HINT_RESOURCE_TYPE, "G4MFNodePhysics4D"), "set_physics", "get_physics");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "light_index"), "set_light_index", "get_light_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_index"), "set_mesh_index", "get_mesh_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "model_index"), "set_model_index", "get_model_index");
 }

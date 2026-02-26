@@ -41,7 +41,6 @@ private:
 	Error _export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_state, const bool p_should_separate_buffers_into_files);
 	static String _export_pretty_print_inline(const Variant &p_variant);
@@ -60,7 +59,6 @@ private:
 	Error _import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _import_parse_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Node *_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root);
 	Ref<Mesh4D> _import_generate_combined_mesh(const Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible = false);

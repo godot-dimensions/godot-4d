@@ -1,6 +1,7 @@
 #pragma once
 
 #include "g4mf_camera_4d.h"
+#include "g4mf_light_4d.h"
 #include "physics/g4mf_node_physics_4d.h"
 
 #include "../../../nodes/node_4d.h"
@@ -16,7 +17,7 @@ class G4MFNode4D : public G4MFItem4D {
 
 	Ref<G4MFCamera4D> _camera;
 	Ref<G4MFNodePhysics4D> _physics;
-	int _light_index = -1;
+	Ref<G4MFLight4D> _light;
 	int _mesh_index = -1;
 	int _model_index = -1;
 	bool _visible = true;
@@ -60,11 +61,11 @@ public:
 	Ref<G4MFCamera4D> get_camera() const { return _camera; }
 	void set_camera(const Ref<G4MFCamera4D> &p_camera) { _camera = p_camera; }
 
+	Ref<G4MFLight4D> get_light() const { return _light; }
+	void set_light(const Ref<G4MFLight4D> &p_light) { _light = p_light; }
+
 	Ref<G4MFNodePhysics4D> get_physics() const { return _physics; }
 	void set_physics(const Ref<G4MFNodePhysics4D> &p_physics) { _physics = p_physics; }
-
-	int get_light_index() const { return _light_index; }
-	void set_light_index(const int p_light_index) { _light_index = p_light_index; }
 
 	int get_mesh_index() const { return _mesh_index; }
 	void set_mesh_index(const int p_mesh_index) { _mesh_index = p_mesh_index; }

@@ -106,8 +106,6 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_g4mf_models", "g4mf_models"), &G4MFState4D::set_g4mf_models);
 	ClassDB::bind_method(D_METHOD("get_g4mf_shapes"), &G4MFState4D::get_g4mf_shapes);
 	ClassDB::bind_method(D_METHOD("set_g4mf_shapes", "g4mf_shapes"), &G4MFState4D::set_g4mf_shapes);
-	ClassDB::bind_method(D_METHOD("get_g4mf_lights"), &G4MFState4D::get_g4mf_lights);
-	ClassDB::bind_method(D_METHOD("set_g4mf_lights", "g4mf_lights"), &G4MFState4D::set_g4mf_lights);
 	ClassDB::bind_method(D_METHOD("get_g4mf_nodes"), &G4MFState4D::get_g4mf_nodes);
 	ClassDB::bind_method(D_METHOD("set_g4mf_nodes", "g4mf_nodes"), &G4MFState4D::set_g4mf_nodes);
 	ClassDB::bind_method(D_METHOD("get_godot_nodes"), &G4MFState4D::get_godot_nodes);
@@ -145,7 +143,6 @@ void G4MFState4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_meshes", PROPERTY_HINT_ARRAY_TYPE, "G4MFMesh4D"), "set_g4mf_meshes", "get_g4mf_meshes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_models", PROPERTY_HINT_ARRAY_TYPE, "G4MFModel4D"), "set_g4mf_models", "get_g4mf_models");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_shapes", PROPERTY_HINT_ARRAY_TYPE, "G4MFShape4D"), "set_g4mf_shapes", "get_g4mf_shapes");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_lights", PROPERTY_HINT_ARRAY_TYPE, "G4MFLight4D"), "set_g4mf_lights", "get_g4mf_lights");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_nodes", PROPERTY_HINT_ARRAY_TYPE, "G4MFNode4D"), "set_g4mf_nodes", "get_g4mf_nodes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "godot_nodes", PROPERTY_HINT_ARRAY_TYPE, "Node4D"), "set_godot_nodes", "get_godot_nodes");
 
