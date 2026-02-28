@@ -21,7 +21,7 @@ bool ArrayTetraMesh4D::validate_mesh_data() {
 		return false; // Must have one normal per cell (4 indices).
 	}
 	const int64_t cell_vertex_normals_count = _simplex_cell_vertex_normals.size();
-	if (cell_boundary_normals_count > 0 && cell_vertex_normals_count != cell_indices_count) {
+	if (cell_vertex_normals_count > 0 && cell_vertex_normals_count != cell_indices_count) {
 		return false; // Must have one normal per cell vertex instance (1 per index).
 	}
 	const int64_t vertex_count = _vertices.size();

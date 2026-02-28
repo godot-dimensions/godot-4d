@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFModelInstance4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Instance of a [G4MFModel4D] on a [G4MFNode4D].
+	</brief_description>
+	<description>
+		G4MFModelInstance4D represents an instance of a [G4MFModel4D] on a [G4MFNode4D]. This is used to instantiate an entire model hierarchy, such as from an embedded G4MF file. The [G4MFModelInstance4D] contains the index of the referenced [G4MFModel4D] in the [member G4MFState4D.g4mf_models] array, and may contain overrides for the nodes in the model, as well as additional children to add to the root of the instantiated model.
+	</description>
+	<tutorials>
+		<link title="G4MF Node Model Instance Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/model/node_model_instance.md</link>
+		<link title="G4MF Node Model Instance Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.node.model_instance.schema.json</link>
+	</tutorials>
+	<methods>
+		<method name="export_pack_nodes_into_model_instance" qualifiers="static">
+			<return type="G4MFModelInstance4D" />
+			<param index="0" name="g4mf_document" type="Variant" />
+			<param index="1" name="g4mf_state" type="G4MFState4D" />
+			<param index="2" name="node" type="Node" />
+			<param index="3" name="deduplicate" type="bool" default="true" />
+			<description>
+				Pack the given tree of nodes into a new G4MF model, add it to the given [G4MFState4D]'s list of models, and read any overrides. This function is a wrapper around [method G4MFModel4D.export_pack_nodes_into_model], which does the actual packing of the nodes into a model. The [param g4mf_document] parameter MUST be a [G4MFDocument4D] but is bound as a [Variant] due to GDExtension C++ limitations; it provides export settings, so it can be the same. The [param g4mf_state] parameter is the state of the host/parent G4MF file.
+			</description>
+		</method>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFModelInstance4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF model instance to a [G4MFModelInstance4D]. This will set the fields of the [G4MFModelInstance4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="import_instantiate_model" qualifiers="const">
+			<return type="Node" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Creates a new instance of the model's node tree, using the model data preloaded into memory. This function wraps around [method G4MFModel4D.import_instantiate_model], and also applies any node overrides and adds any additional children specified in this model instance to the instantiated model's nodes. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. Returns the root node of the instantiated model on success, or [code]null[/code] on failure.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF model instance to a [Dictionary]. This is used for serializing the G4MF model instance as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="model_index" type="int" setter="set_model_index" getter="get_model_index" default="-1">
+			The index of the [G4MFModel4D] in the [member G4MFState4D.g4mf_models] array. If this is not a valid index, this model instance does not reference any model.
+		</member>
+		<member name="node_additional_children" type="Dictionary" setter="set_node_additional_children" getter="get_node_additional_children" default="{}">
+			Additional children from the host G4MF file to add to the nodes of the instantiated model. The keys of the dictionary are the file-unique names of the nodes in the instantiated model, and the values are [PackedInt32Array]s of indices of additional child nodes to add to the corresponding instantiated model node, where the indices point to the nodes in the host G4MF file's [member G4MFState4D.g4mf_nodes] array. This allows for adding additional children to the instantiated model nodes without modifying the model file itself.
+		</member>
+		<member name="node_overrides" type="Dictionary" setter="set_node_overrides" getter="get_node_overrides" default="{}">
+			Overrides for the nodes of the instantiated model. The keys of the dictionary are the file-unique names of the nodes in the instantiated model, and the values are [Dictionary] objects representing the JSON of a [G4MFNode4D], which will be used to override the properties of the corresponding instantiated model node. This allows for overriding properties such as transform and visibility on the instantiated model nodes without modifying the model file itself.
+		</member>
+	</members>
+</class>

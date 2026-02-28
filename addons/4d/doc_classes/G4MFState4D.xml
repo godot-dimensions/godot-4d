@@ -77,6 +77,9 @@
 			Saving resources like images to their own files can be useful for destinations where you need access to these files separately. For example, if the exported G4MF is added to the [code]res://[/code] folder of a Godot project, the default behavior of the Godot editor is to extract embedded images to their own files so they can be imported and compressed into GPU-optimized formats.
 			Extensions should respect this setting by calling [method should_separate_resource_files] to determine if they should save their resources in separate files.
 		</member>
+		<member name="force_wireframe" type="bool" setter="set_force_wireframe" getter="get_force_wireframe" default="false">
+			Whether to force all meshes to be generated as wireframe meshes. If [code]true[/code], all meshes will be generated as wireframe meshes, and meshes without edges will have their edges calculated from the cells. If [code]false[/code] (default), meshes will be generated as tetrahedral meshes if they have cells, or as wireframe meshes if they do not have cells.
+		</member>
 		<member name="g4mf_accessors" type="G4MFAccessor4D[]" setter="set_g4mf_accessors" getter="get_g4mf_accessors" default="[]">
 			The array of [G4MFAccessor4D]s in this G4MF file. If empty, the G4MF file does not have any accessors. Accessors are referenced by index in other structures to access data in buffer views in a typed way.
 		</member>

@@ -32,7 +32,7 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 		tetra_mesh->calculate_boundary_normals();
 	}
 	const bool is_valid = tetra_mesh->is_mesh_data_valid();
-	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");
+	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D.generate_tetra_mesh_surface: The mesh data is not valid. Returning an empty mesh instead.");
 	if (_material_index >= 0) {
 		const TypedArray<G4MFMaterial4D> materials = p_g4mf_state->get_g4mf_materials();
 		ERR_FAIL_INDEX_V(_material_index, materials.size(), tetra_mesh);
@@ -57,7 +57,7 @@ Ref<ArrayWireMesh4D> G4MFMeshSurface4D::generate_wire_mesh_surface(const Ref<G4M
 		wire_mesh->set_edge_indices(edge_indices);
 	}
 	const bool is_valid = wire_mesh->is_mesh_data_valid();
-	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");
+	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D.generate_wire_mesh_surface: The mesh data is not valid. Returning an empty mesh instead.");
 	if (_material_index >= 0) {
 		const TypedArray<G4MFMaterial4D> materials = p_g4mf_state->get_g4mf_materials();
 		ERR_FAIL_INDEX_V(_material_index, materials.size(), wire_mesh);
@@ -69,12 +69,13 @@ Ref<ArrayWireMesh4D> G4MFMeshSurface4D::generate_wire_mesh_surface(const Ref<G4M
 	return wire_mesh;
 }
 
-Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const Ref<Material4D> &p_material, const bool p_deduplicate) {
+Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate) {
 	Ref<G4MFMeshSurface4D> surface;
 	surface.instantiate();
 	// Convert the material.
-	if (p_material.is_valid() && !p_material->is_default_material()) {
-		const int material_index = G4MFMaterial4D::convert_material_into_state(p_g4mf_state, p_material, p_deduplicate);
+	const Ref<Material4D> material = p_mesh->get_material();
+	if (material.is_valid() && !material->is_default_material()) {
+		const int material_index = G4MFMaterial4D::convert_material_into_state(p_g4mf_state, material, p_deduplicate);
 		surface->set_material_index(material_index);
 		if (material_index < 0) {
 			ERR_PRINT("G4MFMeshSurface4D: Failed to encode material into G4MFState4D.");
@@ -175,7 +176,7 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_edge_indices", "g4mf_state"), &G4MFMeshSurface4D::load_edge_indices);
 	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::generate_tetra_mesh_surface);
 	ClassDB::bind_method(D_METHOD("generate_wire_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::generate_wire_mesh_surface);
-	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("convert_mesh_surface_for_state", "g4mf_state", "mesh", "material", "deduplicate"), &G4MFMeshSurface4D::convert_mesh_surface_for_state, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("convert_mesh_surface_for_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMeshSurface4D::convert_mesh_surface_for_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("from_dictionary", "dict"), &G4MFMeshSurface4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurface4D::to_dictionary);

@@ -2,6 +2,8 @@
 
 #include "g4mf_camera_4d.h"
 #include "g4mf_light_4d.h"
+#include "g4mf_mesh_instance_4d.h"
+#include "g4mf_model_instance_4d.h"
 #include "physics/g4mf_node_physics_4d.h"
 
 #include "../../../nodes/node_4d.h"
@@ -18,8 +20,8 @@ class G4MFNode4D : public G4MFItem4D {
 	Ref<G4MFCamera4D> _camera;
 	Ref<G4MFNodePhysics4D> _physics;
 	Ref<G4MFLight4D> _light;
-	int _mesh_index = -1;
-	int _model_index = -1;
+	Ref<G4MFMeshInstance4D> _mesh_instance;
+	Ref<G4MFModelInstance4D> _model_instance;
 	bool _visible = true;
 
 	NodePath _make_node_path(const Vector<StringName> &p_path) const;
@@ -67,11 +69,11 @@ public:
 	Ref<G4MFNodePhysics4D> get_physics() const { return _physics; }
 	void set_physics(const Ref<G4MFNodePhysics4D> &p_physics) { _physics = p_physics; }
 
-	int get_mesh_index() const { return _mesh_index; }
-	void set_mesh_index(const int p_mesh_index) { _mesh_index = p_mesh_index; }
+	Ref<G4MFMeshInstance4D> get_mesh_instance() const { return _mesh_instance; }
+	void set_mesh_instance(const Ref<G4MFMeshInstance4D> &p_mesh_instance) { _mesh_instance = p_mesh_instance; }
 
-	int get_model_index() const { return _model_index; }
-	void set_model_index(const int p_model_index) { _model_index = p_model_index; }
+	Ref<G4MFModelInstance4D> get_model_instance() const { return _model_instance; }
+	void set_model_instance(const Ref<G4MFModelInstance4D> &p_model_instance) { _model_instance = p_model_instance; }
 
 	NodePath get_scene_node_path(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Transform4D get_scene_global_transform(const Ref<G4MFState4D> &p_g4mf_state) const;
@@ -82,7 +84,7 @@ public:
 	// However, for the exposed version, we can just make a single function that wraps both of those.
 	static Ref<G4MFNode4D> from_godot_node(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
 
-	Node *generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, const Node *p_scene_parent, const bool p_force_wireframe = false) const;
+	Node *import_generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, const Node *p_scene_parent) const;
 	void apply_to_godot_node(Node *p_godot_node) const;
 	static Ref<G4MFNode4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary(const bool p_prefer_basis = false) const;

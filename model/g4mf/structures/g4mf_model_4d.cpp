@@ -124,7 +124,7 @@ Node *G4MFModel4D::import_instantiate_model(const Ref<G4MFState4D> &p_g4mf_state
 	} else if (mime_type == "model/off") {
 		// OFF files are simple meshes, so we need to create a mesh instance node to hold the mesh.
 		ERR_FAIL_COND_V_MSG(_model_off_document.is_null(), ret, "G4MF import: G4MFModel4D: Failed to instantiate OFF model without preloaded data.");
-		if (model_g4mf_document.is_valid() && model_g4mf_document->get_force_wireframe()) {
+		if (_model_g4mf_state.is_valid() && _model_g4mf_state->get_force_wireframe()) {
 			MeshInstance4D *mesh_instance_4d = memnew(MeshInstance4D);
 			Ref<ArrayWireMesh4D> wire_mesh = _model_off_document->import_generate_wire_mesh_4d(true);
 			mesh_instance_4d->set_mesh(wire_mesh);
@@ -211,7 +211,7 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	return model_index;
 }
 
-Error G4MFModel4D::export_write_model_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, int p_buffer_index) {
+Error G4MFModel4D::export_write_model_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
 	const Ref<G4MFDocument4D> model_g4mf_document = _model_g4mf_document;
 	ERR_FAIL_COND_V(model_g4mf_document.is_null(), ERR_INVALID_DATA);

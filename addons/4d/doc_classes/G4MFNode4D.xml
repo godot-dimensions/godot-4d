@@ -33,16 +33,6 @@
 				Converts the given [Node] into a [G4MFNode4D]. This will set the fields of the [G4MFNode4D] based on the data in the [Node] for physics nodes, mesh instance nodes, and camera nodes. For all 4D nodes, this will set the transform and visibility. For all nodes, this will set the name and extras as handled by [G4MFItem4D].
 			</description>
 		</method>
-		<method name="generate_godot_node" qualifiers="const">
-			<return type="Node" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="scene_parent" type="Node" />
-			<param index="2" name="force_wireframe" type="bool" />
-			<description>
-				Generates a [Node4D] from the G4MF node data. This will consider all fields of the [G4MFNode4D] except for the [member children_indices] and [member parent_index] properties, since this does not traverse the G4MF hierarchy to generate descendant nodes. This function also does not consider any additional data provided by extensions, only the base G4MF node data. To generate a full scene and handle extensions, use [G4MFDocument4D.import_generate_godot_scene] to generate a complete scene from the [G4MFState] data.
-				The [param g4mf_state] parameter is used to access [G4MFShape4D] objects when generating physics shapes, and to access [G4MFMesh4D] and [G4MFMaterial4D] objects when generating meshes. The [param p_scene_parent] parameter is only used when generating physics nodes. The [param force_wireframe] parameter is only used when generating meshes.
-			</description>
-		</method>
 		<method name="get_scene_node_path" qualifiers="const">
 			<return type="NodePath" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -50,9 +40,18 @@
 				Returns the [NodePath] that will correspond to the generated [Node4D] in the Godot scene tree that this [G4MFNode4D] will generate.
 			</description>
 		</method>
+		<method name="import_generate_godot_node" qualifiers="const">
+			<return type="Node" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="scene_parent" type="Node" />
+			<description>
+				Generates a [Node4D] from the G4MF node data. This will consider all fields of the [G4MFNode4D] except for the [member children_indices] and [member parent_index] properties, since this does not traverse the G4MF hierarchy to generate descendant nodes. This function also does not consider any additional data provided by extensions, only the base G4MF node data. To generate a full scene and handle extensions, use [G4MFDocument4D.import_generate_godot_scene] to generate a complete scene from the [G4MFState] data.
+				The [param g4mf_state] parameter is used to access [G4MFShape4D] objects when generating physics shapes, and to access [G4MFMesh4D] and [G4MFMaterial4D] objects when generating meshes. The [param p_scene_parent] parameter is only used when generating physics nodes.
+			</description>
+		</method>
 		<method name="to_dictionary" qualifiers="const">
 			<return type="Dictionary" />
-			<param index="0" name="prefer_basis" type="bool" />
+			<param index="0" name="prefer_basis" type="bool" default="false" />
 			<description>
 				Converts the G4MF node to a [Dictionary]. This is used for serializing the G4MF node as JSON.
 			</description>
@@ -71,11 +70,11 @@
 		<member name="light" type="G4MFLight4D" setter="set_light" getter="get_light">
 			The light of this [G4MFNode4D]. If this node is not a light, this is [code]null[/code].
 		</member>
-		<member name="mesh_index" type="int" setter="set_mesh_index" getter="get_mesh_index" default="-1">
-			The index of the mesh of this [G4MFNode4D]. This is the index of a [G4MFMesh4D] in the [member G4MFState4D.g4mf_meshes] array. If this node does not have a mesh, this is [code]-1[/code].
+		<member name="mesh_instance" type="G4MFMeshInstance4D" setter="set_mesh_instance" getter="get_mesh_instance">
+			The mesh instance of this [G4MFNode4D]. If this node is not a mesh instance, this is [code]null[/code]. If this node is a mesh instance, this will be a valid [G4MFMeshInstance4D] which references a valid [G4MFMesh4D] in the [G4MFState4D] and may reference a [G4MFMaterial4D] as well.
 		</member>
-		<member name="model_index" type="int" setter="set_model_index" getter="get_model_index" default="-1">
-			The index of the model instantiated by this [G4MFNode4D], allowing this node to reference an external model file. This is the index of a [G4MFModel4D] in the [member G4MFState4D.g4mf_models] array.
+		<member name="model_instance" type="G4MFModelInstance4D" setter="set_model_instance" getter="get_model_instance">
+			The model instance of this [G4MFNode4D]. If this node is not a model instance, this is [code]null[/code]. If this node is a model instance, this will be a valid [G4MFModelInstance4D] which references a valid [G4MFModel4D] in the [G4MFState4D]. Model instances are used to create entire hierarchies of nodes, such as from an embedded G4MF file.
 		</member>
 		<member name="parent_index" type="int" setter="set_parent_index" getter="get_parent_index" default="-1">
 			The index of the parent node of this [G4MFNode4D]. This is the index of a [G4MFNode4D] in the [member G4MFState4D.g4mf_nodes] array. If this is the root node, this is [code]-1[/code].

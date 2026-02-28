@@ -20,7 +20,6 @@ public:
 private:
 	CompressionFormat _compression_format = COMPRESSION_FORMAT_NONE;
 	int _max_nested_scene_depth = -1; // -1 means unlimited depth.
-	bool _force_wireframe = false;
 
 	inline uint64_t _ceiling_division(uint64_t a, uint64_t b) {
 		return (a + b - 1) / b;
@@ -28,8 +27,8 @@ private:
 
 	uint32_t _compression_format_to_indicator(const CompressionFormat p_compression_format);
 	CompressionFormat _compression_indicator_to_format(const uint32_t p_indicator);
-	String _uint32_to_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
-	uint32_t _string_to_uint32(const String &p_value);
+	String _uint32_to_ascii_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
+	uint32_t _ascii_string_to_uint32(const String &p_value);
 
 	// Export process.
 	Error _export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index);
@@ -85,10 +84,6 @@ public:
 	// Settings for the export process.
 	CompressionFormat get_compression_format() const { return _compression_format; }
 	void set_compression_format(const CompressionFormat p_compression_format);
-
-	// Settings for the import process.
-	bool get_force_wireframe() const { return _force_wireframe; }
-	void set_force_wireframe(const bool p_force_wireframe) { _force_wireframe = p_force_wireframe; }
 };
 
 VARIANT_ENUM_CAST(G4MFDocument4D::CompressionFormat);

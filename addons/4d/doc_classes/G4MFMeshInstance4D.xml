@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFMeshInstance4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Instance of a [G4MFMesh4D] on a [G4MFNode4D].
+	</brief_description>
+	<description>
+		G4MFMeshInstance4D represents an instance of a [G4MFMesh4D] on a [G4MFNode4D]. This is used to instantiate a mesh on a node, which allows the mesh to be rendered in the Godot scene at the node's transform.
+	</description>
+	<tutorials>
+		<link title="G4MF Node Mesh Instance Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/mesh/node_mesh_instance.md</link>
+		<link title="G4MF Node Mesh Instance Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/mesh/g4mf.node.mesh_instance.schema.json</link>
+	</tutorials>
+	<methods>
+		<method name="export_convert_mesh_instance" qualifiers="static">
+			<return type="G4MFMeshInstance4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="mesh_instance" type="MeshInstance4D" />
+			<description>
+				Converts the given [MeshInstance4D] into a [G4MFMeshInstance4D] which can be used on a [G4MFNode4D]. This function wraps around [method G4MFMesh4D.export_convert_mesh_into_state] to convert the mesh of the [MeshInstance4D] into a [G4MFMesh4D] in the [G4MFState4D], and then includes material overrides if the [MeshInstance4D] has a material override. This is used for exporting the mesh to G4MF, and is the inverse of [method import_generate_mesh_instance]. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the index of the new mesh will be returned, which may be used on nodes or anything else. If this function fails, it will return [code]-1[/code].
+			</description>
+		</method>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFMeshInstance4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF mesh instance to a [G4MFMeshInstance4D]. This will set the fields of the [G4MFMeshInstance4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="import_generate_mesh_instance" qualifiers="const">
+			<return type="MeshInstance4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Generates a [MeshInstance4D] node with a generated [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. This function wraps around [method G4MFMesh4D.import_generate_mesh] to generate the mesh, and then creates a [MeshInstance4D] with the generated mesh. This is used for importing a mesh from G4MF, and is the inverse of [method export_convert_mesh_instance].
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the G4MF mesh instance to a [Dictionary]. This is used for serializing the G4MF mesh instance as JSON.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="material_indices" type="PackedInt32Array" setter="set_material_indices" getter="get_material_indices" default="PackedInt32Array()">
+			The indices of material overrides for the surfaces of the mesh referenced to by this mesh instance. Each index is the index of a [G4MFMaterial4D] in the [member G4MFState4D.g4mf_materials] array. If this array is empty or not present, no material overrides are applied. If some items are [code]-1[/code], the corresponding surface will not have a material override, and will use the material defined on the mesh itself instead.
+		</member>
+		<member name="mesh_index" type="int" setter="set_mesh_index" getter="get_mesh_index" default="-1">
+			The index of the [G4MFMesh4D] in the [member G4MFState4D.g4mf_meshes] array that this mesh instance references. If this is not a valid index, this mesh instance does not reference any mesh.
+		</member>
+	</members>
+</class>

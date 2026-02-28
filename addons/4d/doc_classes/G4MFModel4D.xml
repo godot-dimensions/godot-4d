@@ -4,7 +4,7 @@
 		Models are references to other self-contained files that can be used in the scene graph.
 	</brief_description>
 	<description>
-		G4MFModel4D represents a reference to another self-contained model file that can be used in the scene graph, such as other G4MF files, OFF files, glTF™ files, OCIF files, or any other format. These models are then used by nodes, where each node using the model becomes a new instance of the model's tree of nodes, and the host G4MF's node properties override the properties of the instantiated model's root node. This allows for modularity and reusability of models across different scenes and applications.
+		G4MFModel4D represents a reference to another self-contained model file that can be used in the scene graph, such as other G4MF files, OFF files, glTF™ files, OCIF files, or any other format. These models are then used by nodes via [G4MFModelInstance4D], where each node using the model becomes a new instance of the model's tree of nodes, and the host G4MF's node properties override the properties of the instantiated model's root node. This allows for modularity and reusability of models across different scenes and applications.
 	</description>
 	<tutorials>
 		<link title="G4MF Model Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/model.md</link>

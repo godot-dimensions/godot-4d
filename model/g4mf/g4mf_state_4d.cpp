@@ -133,6 +133,9 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_external_data_mode", "mode"), &G4MFState4D::set_external_data_mode);
 	ClassDB::bind_method(D_METHOD("should_separate_resource_files"), &G4MFState4D::should_separate_resource_files);
 
+	ClassDB::bind_method(D_METHOD("get_force_wireframe"), &G4MFState4D::get_force_wireframe);
+	ClassDB::bind_method(D_METHOD("set_force_wireframe", "force_wireframe"), &G4MFState4D::set_force_wireframe);
+
 	// Data for the contents of the file.
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "g4mf_json"), "set_g4mf_json", "get_g4mf_json");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_accessors", PROPERTY_HINT_ARRAY_TYPE, "G4MFAccessor4D"), "set_g4mf_accessors", "get_g4mf_accessors");
@@ -153,6 +156,7 @@ void G4MFState4D::_bind_methods() {
 
 	// Settings for handling the file.
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "external_data_mode", PROPERTY_HINT_ENUM, "Automatic,Embed Everything,Separate All Files,Separate Binary Blobs,Separate Resource Files"), "set_external_data_mode", "get_external_data_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "force_wireframe"), "set_force_wireframe", "get_force_wireframe");
 
 	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_AUTOMATIC);
 	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_EMBED_EVERYTHING);

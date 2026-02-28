@@ -53,7 +53,7 @@
 			<param index="2" name="include_invisible" type="bool" default="false" />
 			<description>
 				Part of the import process. Generates a Godot [Mesh4D] from the G4MF data in a [G4MFState4D].
-				If [param which_mesh_index] is set to -1 (default), and the G4MF data contains nodes, the nodes will be used to determine the transforms of the mesh instances and generate a combined mesh. The combined mesh will only be tetrahedral if every mesh in the G4MF data can be generated as a tetrahedral mesh and [member force_wireframe] is set to [code]false[/code], otherwise the combined mesh will be wireframe.
+				If [param which_mesh_index] is set to -1 (default), and the G4MF data contains nodes, the nodes will be used to determine the transforms of the mesh instances and generate a combined mesh. The combined mesh will only be tetrahedral if every mesh in the G4MF data can be generated as a tetrahedral mesh and [member G4MFState4D.force_wireframe] is set to [code]false[/code], otherwise the combined mesh will be wireframe.
 				If [param which_mesh_index] is set to a valid mesh index, only that mesh will be generated exactly as-is, and any other meshes will be ignored. Otherwise, if the G4MF data does not contain nodes, the mesh at index 0 will be generated.
 			</description>
 		</method>
@@ -84,9 +84,6 @@
 	<members>
 		<member name="compression_format" type="int" setter="set_compression_format" getter="get_compression_format" enum="G4MFDocument4D.CompressionFormat" default="0">
 			The compression format to use when exporting a binary G4MF file or byte array. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays. The [code]".g4tf"[/code] Good 4D model Text File format is always uncompressed. See [enum CompressionFormat] for the available formats. The default is [constant COMPRESSION_FORMAT_NONE], which does not compress the G4MF data.
-		</member>
-		<member name="force_wireframe" type="bool" setter="set_force_wireframe" getter="get_force_wireframe" default="false">
-			Whether to force all meshes to be generated as wireframe meshes. If [code]true[/code], all meshes will be generated as wireframe meshes, and meshes without edges will have their edges calculated from the cells. If [code]false[/code] (default), meshes will be generated as tetrahedral meshes if they have cells, or as wireframe meshes if they do not have cells.
 		</member>
 		<member name="max_nested_scene_depth" type="int" setter="set_max_nested_scene_depth" getter="get_max_nested_scene_depth" default="-1">
 			How to deal with nested Godot scenes when exporting to G4MF, and how to deal with nested G4MF models when importing as a Godot scene. See the [G4MFModel4D] class for more information.

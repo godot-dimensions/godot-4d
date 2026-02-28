@@ -65,44 +65,59 @@ PackedVector4Array G4MFMesh4D::load_vertices(const Ref<G4MFState4D> &p_g4mf_stat
 	return vertices;
 }
 
-Ref<Mesh4D> G4MFMesh4D::generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_wireframe) const {
+Ref<TetraMesh4D> G4MFMesh4D::import_generate_tetra_mesh(const Ref<G4MFState4D> &p_g4mf_state) const {
 	const int surface_count = _surfaces.size();
-	ERR_FAIL_COND_V_MSG(surface_count == 0, Ref<Mesh4D>(), "G4MFMesh4D.generate_mesh: No surfaces defined for mesh.");
+	ERR_FAIL_COND_V_MSG(surface_count == 0, Ref<Mesh4D>(), "G4MFMesh4D.import_generate_tetra_mesh: No surfaces defined for mesh.");
 	if (surface_count > 1) {
-		WARN_PRINT("G4MFMesh4D.generate_mesh: Godot 4D only supports one surface per mesh. These will be merged into one surface.");
+		WARN_PRINT("G4MFMesh4D.import_generate_tetra_mesh: Godot 4D only supports one surface per mesh. These will be merged into one surface.");
 	}
 	const PackedVector4Array vertices = load_vertices(p_g4mf_state);
-	ERR_FAIL_COND_V_MSG(vertices.is_empty(), Ref<Mesh4D>(), "G4MFMesh4D.generate_mesh: No vertices found in the mesh, cannot generate mesh.");
-	const bool use_tetra_mesh = !p_force_wireframe && can_generate_tetra_meshes_for_all_surfaces();
-	if (use_tetra_mesh) {
-		Ref<ArrayTetraMesh4D> tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, vertices, 0);
-		ERR_FAIL_COND_V_MSG(tetra_mesh.is_null(), tetra_mesh, "G4MFMesh4D.generate_mesh: Failed to generate tetra mesh surface.");
-		// TODO: The merge_with function is not ideal for this, since it may result in duplicate vertices.
-		for (int i = 1; i < surface_count; i++) {
-			Ref<ArrayTetraMesh4D> next_tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, vertices, i);
-			ERR_FAIL_COND_V_MSG(next_tetra_mesh.is_null(), tetra_mesh, "G4MFMesh4D.generate_mesh: Failed to generate tetra mesh surface for surface index " + String::num(i) + ".");
-			tetra_mesh->merge_with(next_tetra_mesh);
-		}
-		tetra_mesh->set_name(get_name());
-		return tetra_mesh;
+	ERR_FAIL_COND_V_MSG(vertices.is_empty(), Ref<Mesh4D>(), "G4MFMesh4D.import_generate_tetra_mesh: No vertices found in the mesh, cannot generate mesh.");
+	Ref<ArrayTetraMesh4D> tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, vertices, 0);
+	ERR_FAIL_COND_V_MSG(tetra_mesh.is_null(), tetra_mesh, "G4MFMesh4D.import_generate_tetra_mesh: Failed to generate tetra mesh surface.");
+	// TODO: The merge_with function is not ideal for this, since it may result in duplicate vertices.
+	for (int i = 1; i < surface_count; i++) {
+		Ref<ArrayTetraMesh4D> next_tetra_mesh = _generate_tetra_mesh_surface(p_g4mf_state, vertices, i);
+		ERR_FAIL_COND_V_MSG(next_tetra_mesh.is_null(), tetra_mesh, "G4MFMesh4D.import_generate_tetra_mesh: Failed to generate tetra mesh surface for surface index " + String::num(i) + ".");
+		tetra_mesh->merge_with(next_tetra_mesh);
 	}
+	tetra_mesh->set_name(get_name());
+	return tetra_mesh;
+}
+
+Ref<WireMesh4D> G4MFMesh4D::import_generate_wire_mesh(const Ref<G4MFState4D> &p_g4mf_state) const {
+	const int surface_count = _surfaces.size();
+	ERR_FAIL_COND_V_MSG(surface_count == 0, Ref<Mesh4D>(), "G4MFMesh4D.import_generate_wire_mesh: No surfaces defined for mesh.");
+	if (surface_count > 1) {
+		WARN_PRINT("G4MFMesh4D.import_generate_wire_mesh: Godot 4D only supports one surface per mesh. These will be merged into one surface.");
+	}
+	const PackedVector4Array vertices = load_vertices(p_g4mf_state);
+	ERR_FAIL_COND_V_MSG(vertices.is_empty(), Ref<Mesh4D>(), "G4MFMesh4D.import_generate_wire_mesh: No vertices found in the mesh, cannot generate mesh.");
 	Ref<ArrayWireMesh4D> wire_mesh = _generate_wire_mesh_surface(p_g4mf_state, vertices, 0);
-	ERR_FAIL_COND_V_MSG(wire_mesh.is_null(), wire_mesh, "G4MFMesh4D.generate_mesh: Failed to generate wire mesh surface.");
+	ERR_FAIL_COND_V_MSG(wire_mesh.is_null(), wire_mesh, "G4MFMesh4D.import_generate_wire_mesh: Failed to generate wire mesh surface.");
 	for (int i = 1; i < surface_count; i++) {
 		Ref<ArrayWireMesh4D> next_wire_mesh = _generate_wire_mesh_surface(p_g4mf_state, vertices, i);
-		ERR_FAIL_COND_V_MSG(next_wire_mesh.is_null(), wire_mesh, "G4MFMesh4D.generate_mesh: Failed to generate wire mesh surface for surface index " + String::num(i) + ".");
+		ERR_FAIL_COND_V_MSG(next_wire_mesh.is_null(), wire_mesh, "G4MFMesh4D.import_generate_wire_mesh: Failed to generate wire mesh surface for surface index " + String::num(i) + ".");
 		wire_mesh->merge_with(next_wire_mesh);
 	}
 	wire_mesh->set_name(get_name());
 	return wire_mesh;
 }
 
-int G4MFMesh4D::convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const Ref<Material4D> &p_material, const bool p_deduplicate) {
+Ref<Mesh4D> G4MFMesh4D::import_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface) const {
+	const bool use_tetra_mesh = !p_g4mf_state->get_force_wireframe() && can_generate_tetra_meshes_for_all_surfaces();
+	if (use_tetra_mesh) {
+		return import_generate_tetra_mesh(p_g4mf_state);
+	}
+	return import_generate_wire_mesh(p_g4mf_state);
+}
+
+int G4MFMesh4D::export_convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate) {
 	const PackedVector4Array vertices = p_mesh->get_vertices();
 	ERR_FAIL_COND_V_MSG(vertices.is_empty(), -1, "G4MFMesh4D: Mesh4D has no vertices, cannot convert to a G4MF mesh.");
 	const int vertices_accessor = G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, vertices, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(vertices_accessor < 0, -1, "G4MFMesh4D: Failed to encode vertices into G4MFState4D.");
-	Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(p_g4mf_state, p_mesh, p_material, p_deduplicate);
+	Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(p_g4mf_state, p_mesh, p_deduplicate);
 	// Prepare a G4MFMesh4D with the surface.
 	TypedArray<G4MFMeshSurface4D> surfaces;
 	surfaces.append(surface);
@@ -177,8 +192,8 @@ void G4MFMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMesh4D::is_equal_exact);
 
 	ClassDB::bind_method(D_METHOD("load_vertices", "g4mf_state"), &G4MFMesh4D::load_vertices);
-	ClassDB::bind_method(D_METHOD("generate_mesh", "g4mf_state", "force_wireframe"), &G4MFMesh4D::generate_mesh, DEFVAL(false));
-	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("convert_mesh_into_state", "g4mf_state", "mesh", "material", "deduplicate"), &G4MFMesh4D::convert_mesh_into_state, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("import_generate_mesh", "g4mf_state", "force_single_surface"), &G4MFMesh4D::import_generate_mesh, DEFVAL(false));
+	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("export_convert_mesh_into_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMesh4D::export_convert_mesh_into_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMesh4D", D_METHOD("from_dictionary", "dict"), &G4MFMesh4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMesh4D::to_dictionary);
