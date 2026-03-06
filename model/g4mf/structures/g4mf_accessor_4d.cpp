@@ -477,6 +477,18 @@ String G4MFAccessor4D::minimal_component_type_for_int64s(const PackedInt64Array 
 	return _minimal_component_type_given_bits(CANT_USE_COMP_TYPE, min_int_bits, min_uint_bits);
 }
 
+String G4MFAccessor4D::minimal_component_type_for_vector3s(const PackedVector3Array &p_input_data) {
+	uint32_t min_float_bits = 8;
+	uint32_t min_int_bits = 8;
+	uint32_t min_uint_bits = 8;
+	for (const Vector3 &vec : p_input_data) {
+		_minimal_component_bits_for_double(vec.x, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_component_bits_for_double(vec.y, min_float_bits, min_int_bits, min_uint_bits);
+		_minimal_component_bits_for_double(vec.z, min_float_bits, min_int_bits, min_uint_bits);
+	}
+	return _minimal_component_type_given_bits(min_float_bits, min_int_bits, min_uint_bits);
+}
+
 String G4MFAccessor4D::minimal_component_type_for_vector4s(const PackedVector4Array &p_input_data) {
 	uint32_t min_float_bits = 8;
 	uint32_t min_int_bits = 8;
@@ -643,6 +655,38 @@ PackedColorArray G4MFAccessor4D::decode_colors_from_bytes(const Ref<G4MFState4D>
 		ERR_PRINT("G4MFAccessor4D: Cannot decode colors from accessor with vector size " + itos(_vector_size) + ". Returning an empty array.");
 	}
 	return colors;
+}
+
+PackedVector3Array G4MFAccessor4D::decode_vector3s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
+	PackedFloat64Array numbers = decode_floats_from_bytes(p_g4mf_state);
+	PackedVector3Array vectors;
+	if (_vector_size == 3) {
+		const int64_t vector_count = numbers.size() / 3;
+		vectors.resize(vector_count);
+		for (int64_t i = 0; i < vector_count; i++) {
+			const int64_t num_offset = i * 3;
+			vectors.set(i, Vector3(numbers[num_offset + 0], numbers[num_offset + 1], numbers[num_offset + 2]));
+		}
+	} else {
+		ERR_PRINT("G4MFAccessor4D: Cannot decode Vector3s from accessor with vector size " + itos(_vector_size) + ". Returning an empty array.");
+	}
+	return vectors;
+}
+
+PackedVector4Array G4MFAccessor4D::decode_vector4s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
+	PackedFloat64Array numbers = decode_floats_from_bytes(p_g4mf_state);
+	PackedVector4Array vectors;
+	if (_vector_size == 4) {
+		const int64_t vector_count = numbers.size() / 4;
+		vectors.resize(vector_count);
+		for (int64_t i = 0; i < vector_count; i++) {
+			const int64_t num_offset = i * 4;
+			vectors.set(i, Vector4(numbers[num_offset + 0], numbers[num_offset + 1], numbers[num_offset + 2], numbers[num_offset + 3]));
+		}
+	} else {
+		ERR_PRINT("G4MFAccessor4D: Cannot decode Vector4s from accessor with vector size " + itos(_vector_size) + ". Returning an empty array.");
+	}
+	return vectors;
 }
 
 // Low-level accessor encode functions.
@@ -1047,6 +1091,22 @@ int G4MFAccessor4D::encode_new_accessor_from_int64s(const Ref<G4MFState4D> &p_g4
 	const String prim_type = G4MFAccessor4D::minimal_component_type_for_int64s(p_input_data);
 	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 1);
 	PackedByteArray encoded_bytes = accessor->encode_ints_as_bytes(p_input_data);
+	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
+	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
+}
+
+int G4MFAccessor4D::encode_new_accessor_from_vector3s(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector3Array &p_input_data, const bool p_deduplicate) {
+	const String prim_type = G4MFAccessor4D::minimal_component_type_for_vector3s(p_input_data);
+	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 3);
+	PackedFloat64Array numbers;
+	numbers.resize(p_input_data.size() * 3);
+	for (int64_t i = 0; i < p_input_data.size(); i++) {
+		const Vector3 &vec = p_input_data[i];
+		numbers.set(i * 3, vec.x);
+		numbers.set(i * 3 + 1, vec.y);
+		numbers.set(i * 3 + 2, vec.z);
+	}
+	PackedByteArray encoded_bytes = accessor->encode_floats_as_bytes(numbers);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }

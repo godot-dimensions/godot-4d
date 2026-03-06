@@ -85,6 +85,8 @@ public:
 
 	Array load_values_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
 	PackedColorArray load_values_as_colors(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedVector3Array load_values_as_vector3s(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedVector4Array load_values_as_vector4s(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	static Ref<G4MFMeshSurfaceBinding4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;

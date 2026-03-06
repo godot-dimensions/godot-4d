@@ -31,6 +31,34 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 		tetra_mesh->set_simplex_cell_indices(load_simplex_indices(p_g4mf_state));
 		tetra_mesh->calculate_boundary_normals();
 	}
+	if (_normals_binding.is_valid()) {
+		const PackedInt32Array normal_indices = _normals_binding->load_simplex_indices(p_g4mf_state);
+		if (!normal_indices.is_empty()) {
+			const PackedVector4Array normal_values = _normals_binding->load_values_as_vector4s(p_g4mf_state);
+			PackedVector4Array sampled_normals;
+			sampled_normals.resize(normal_indices.size());
+			for (int i = 0; i < normal_indices.size(); i++) {
+				const int normal_index = normal_indices[i];
+				ERR_FAIL_INDEX_V(normal_index, normal_values.size(), tetra_mesh);
+				sampled_normals.set(i, normal_values[normal_index]);
+			}
+			tetra_mesh->set_simplex_cell_vertex_normals(sampled_normals);
+		}
+	}
+	if (_texture_map_binding.is_valid()) {
+		const PackedInt32Array texture_map_indices = _texture_map_binding->load_simplex_indices(p_g4mf_state);
+		if (!texture_map_indices.is_empty()) {
+			const PackedVector3Array texture_map_values = _texture_map_binding->load_values_as_vector3s(p_g4mf_state);
+			PackedVector3Array sampled_texture_map;
+			sampled_texture_map.resize(texture_map_indices.size());
+			for (int i = 0; i < texture_map_indices.size(); i++) {
+				const int texture_map_index = texture_map_indices[i];
+				ERR_FAIL_INDEX_V(texture_map_index, texture_map_values.size(), tetra_mesh);
+				sampled_texture_map.set(i, texture_map_values[texture_map_index]);
+			}
+			tetra_mesh->set_simplex_cell_texture_map(sampled_texture_map);
+		}
+	}
 	const bool is_valid = tetra_mesh->is_mesh_data_valid();
 	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D.generate_tetra_mesh_surface: The mesh data is not valid. Returning an empty mesh instead.");
 	if (_material_index >= 0) {
@@ -96,6 +124,68 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 			ERR_FAIL_COND_V_MSG(simplexes_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode simplex cells into G4MFState4D.");
 			surface->set_simplexes_accessor_index(simplexes_accessor);
 		}
+		const PackedVector4Array simplex_vertex_normals = tetra_mesh->get_simplex_cell_vertex_normals();
+		if (!simplex_vertex_normals.is_empty()) {
+			Ref<G4MFMeshSurfaceBinding4D> normals_binding;
+			normals_binding.instantiate();
+			PackedInt64Array normal_indices;
+			normal_indices.resize(simplex_vertex_normals.size());
+			if (p_deduplicate) {
+				// TODO: Once we have blend shapes that can affect vertex normals, use
+				// a smarter deduplication method that takes this into account.
+				PackedVector4Array normal_values;
+				for (int i = 0; i < simplex_vertex_normals.size(); i++) {
+					const Vector4 &normal_value = simplex_vertex_normals[i];
+					const int64_t normal_index = normal_values.find(normal_value);
+					if (normal_index == -1) {
+						normal_values.append(normal_value);
+						normal_indices.set(i, normal_values.size() - 1);
+					} else {
+						normal_indices.set(i, normal_index);
+					}
+				}
+				normals_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, normal_values, p_deduplicate));
+				normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, normal_indices, p_deduplicate));
+			} else {
+				normals_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, simplex_vertex_normals, p_deduplicate));
+				for (int i = 0; i < simplex_vertex_normals.size(); i++) {
+					normal_indices.set(i, i);
+				}
+				normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, normal_indices, p_deduplicate));
+			}
+			surface->set_normals_binding(normals_binding);
+		}
+		const PackedVector3Array simplex_texture_map = tetra_mesh->get_simplex_cell_texture_map();
+		if (!simplex_texture_map.is_empty()) {
+			Ref<G4MFMeshSurfaceBinding4D> texture_map_binding;
+			texture_map_binding.instantiate();
+			PackedInt64Array texture_map_indices;
+			texture_map_indices.resize(simplex_texture_map.size());
+			if (p_deduplicate) {
+				// TODO: Once we have blend shapes that can affect vertex texture maps, use
+				// a smarter deduplication method that takes this into account.
+				PackedVector3Array texture_map_values;
+				for (int i = 0; i < simplex_texture_map.size(); i++) {
+					const Vector3 &texture_map_value = simplex_texture_map[i];
+					const int64_t texture_map_index = texture_map_values.find(texture_map_value);
+					if (texture_map_index == -1) {
+						texture_map_values.append(texture_map_value);
+						texture_map_indices.set(i, texture_map_values.size() - 1);
+					} else {
+						texture_map_indices.set(i, texture_map_index);
+					}
+				}
+				texture_map_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_vector3s(p_g4mf_state, texture_map_values, p_deduplicate));
+				texture_map_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, texture_map_indices, p_deduplicate));
+			} else {
+				texture_map_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_vector3s(p_g4mf_state, simplex_texture_map, p_deduplicate));
+				for (int i = 0; i < simplex_texture_map.size(); i++) {
+					texture_map_indices.set(i, i);
+				}
+				texture_map_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, texture_map_indices, p_deduplicate));
+			}
+			surface->set_texture_map_binding(texture_map_binding);
+		}
 		// For ArrayTetraMesh4D, the only edges are those implicitly calculated from simplex cells.
 		// However, for other tetra meshes like BoxTetraMesh4D, use its explicitly defined edges.
 		const Ref<BoxTetraMesh4D> box_tetra_mesh = p_mesh;
@@ -131,11 +221,17 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::from_dictionary(const Dictionary &p_di
 	if (p_dict.has("material")) {
 		surface->set_material_index(p_dict["material"]);
 	}
+	if (p_dict.has("normals")) {
+		surface->set_normals_binding(G4MFMeshSurfaceBinding4D::from_dictionary(p_dict["normals"]));
+	}
 	if (p_dict.has("polytopeSimplexes")) {
 		surface->set_polytope_simplexes(p_dict["polytopeSimplexes"]);
 	}
 	if (p_dict.has("simplexes")) {
 		surface->set_simplexes_accessor_index(p_dict["simplexes"]);
+	}
+	if (p_dict.has("textureMap")) {
+		surface->set_texture_map_binding(G4MFMeshSurfaceBinding4D::from_dictionary(p_dict["textureMap"]));
 	}
 	return surface;
 }
@@ -151,8 +247,14 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 	if (_material_index >= 0) {
 		dict["material"] = _material_index;
 	}
+	if (_normals_binding.is_valid()) {
+		dict["normals"] = _normals_binding->to_dictionary();
+	}
 	if (_polytope_simplexes) {
 		dict["polytopeSimplexes"] = _polytope_simplexes;
+	}
+	if (_texture_map_binding.is_valid()) {
+		dict["textureMap"] = _texture_map_binding->to_dictionary();
 	}
 	return dict;
 }

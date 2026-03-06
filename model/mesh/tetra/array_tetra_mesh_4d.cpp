@@ -4,31 +4,22 @@
 
 void ArrayTetraMesh4D::_clear_cache() {
 	_simplex_positions_cache.clear();
+	_simplex_cell_boundary_normals.clear();
 	tetra_mesh_clear_cache();
 }
 
 bool ArrayTetraMesh4D::validate_mesh_data() {
 	const int64_t cell_indices_count = _simplex_cell_indices.size();
-	if (cell_indices_count % 4 != 0) {
-		return false; // Must be a multiple of 4.
-	}
+	ERR_FAIL_COND_V_MSG(cell_indices_count % 4 != 0, false, "ArrayTetraMesh4D: Simplex cell indices size must be a multiple of 4.");
 	const int64_t cell_texture_map_count = _simplex_cell_texture_map.size();
-	if (cell_texture_map_count > 0 && cell_texture_map_count != cell_indices_count) {
-		return false; // Must be the same size as the cell indices.
-	}
+	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_indices_count, false, "ArrayTetraMesh4D: Simplex cell texture map size must be the same as simplex cell indices size (or empty).");
 	const int64_t cell_boundary_normals_count = _simplex_cell_boundary_normals.size();
-	if (cell_boundary_normals_count > 0 && cell_boundary_normals_count * 4 != cell_indices_count) {
-		return false; // Must have one normal per cell (4 indices).
-	}
+	ERR_FAIL_COND_V_MSG(cell_boundary_normals_count > 0 && cell_boundary_normals_count * 4 != cell_indices_count, false, "ArrayTetraMesh4D: Simplex cell boundary normals size must be one fourth of simplex cell indices size (or empty).");
 	const int64_t cell_vertex_normals_count = _simplex_cell_vertex_normals.size();
-	if (cell_vertex_normals_count > 0 && cell_vertex_normals_count != cell_indices_count) {
-		return false; // Must have one normal per cell vertex instance (1 per index).
-	}
+	ERR_FAIL_COND_V_MSG(cell_vertex_normals_count > 0 && cell_vertex_normals_count != cell_indices_count, false, "ArrayTetraMesh4D: Simplex cell vertex normals size must be the same as simplex cell indices size (or empty).");
 	const int64_t vertex_count = _vertices.size();
 	for (int32_t cell_index : _simplex_cell_indices) {
-		if (cell_index < 0 || cell_index >= vertex_count) {
-			return false; // Cells must reference valid vertices.
-		}
+		ERR_FAIL_COND_V_MSG(cell_index < 0 || cell_index >= vertex_count, false, "ArrayTetraMesh4D: Simplex cell indices must reference valid vertices.");
 	}
 	return true;
 }

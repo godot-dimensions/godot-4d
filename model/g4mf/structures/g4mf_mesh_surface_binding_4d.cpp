@@ -84,6 +84,20 @@ PackedColorArray G4MFMeshSurfaceBinding4D::load_values_as_colors(const Ref<G4MFS
 	return accessor->decode_colors_from_bytes(p_g4mf_state);
 }
 
+PackedVector3Array G4MFMeshSurfaceBinding4D::load_values_as_vector3s(const Ref<G4MFState4D> &p_g4mf_state) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	ERR_FAIL_INDEX_V(_values_accessor_index, state_accessors.size(), PackedVector3Array());
+	const Ref<G4MFAccessor4D> accessor = state_accessors[_values_accessor_index];
+	return accessor->decode_vector3s_from_bytes(p_g4mf_state);
+}
+
+PackedVector4Array G4MFMeshSurfaceBinding4D::load_values_as_vector4s(const Ref<G4MFState4D> &p_g4mf_state) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	ERR_FAIL_INDEX_V(_values_accessor_index, state_accessors.size(), PackedVector4Array());
+	const Ref<G4MFAccessor4D> accessor = state_accessors[_values_accessor_index];
+	return accessor->decode_vector4s_from_bytes(p_g4mf_state);
+}
+
 Ref<G4MFMeshSurfaceBindingGeometry4D> G4MFMeshSurfaceBindingGeometry4D::from_dictionary(const Dictionary &p_dict) {
 	Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition;
 	geometry_decomposition.instantiate();

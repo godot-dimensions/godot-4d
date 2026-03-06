@@ -31,7 +31,7 @@
 	REPEAT_SIX_TIMES(Vector4(0.0f, 0.0f, 0.0f, +1.0f)), /* +W */ \
 }
 
-#define REPEAT_TWENTY_TIMES(m) m, m, m, m, m
+#define REPEAT_TWENTY_TIMES(m) m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m
 #define BOX_40_CELL_VERTEX_NORMALS PackedVector4Array { \
 	REPEAT_TWENTY_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)), /* -X */ \
 	REPEAT_TWENTY_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)), /* +X */ \
@@ -43,7 +43,7 @@
 	REPEAT_TWENTY_TIMES(Vector4(0.0f, 0.0f, 0.0f, +1.0f)), /* +W */ \
 }
 
-#define REPEAT_TWENTY_FOUR_TIMES(m) m, m, m, m, m, m
+#define REPEAT_TWENTY_FOUR_TIMES(m) m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m, m
 #define BOX_48_CELL_VERTEX_NORMALS PackedVector4Array { \
 	REPEAT_TWENTY_FOUR_TIMES(Vector4(-1.0f, 0.0f, 0.0f, 0.0f)), /* -X */ \
 	REPEAT_TWENTY_FOUR_TIMES(Vector4(+1.0f, 0.0f, 0.0f, 0.0f)), /* +X */ \

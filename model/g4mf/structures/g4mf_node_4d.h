@@ -18,10 +18,10 @@ class G4MFNode4D : public G4MFItem4D {
 	int _parent_index = -1;
 
 	Ref<G4MFCamera4D> _camera;
-	Ref<G4MFNodePhysics4D> _physics;
 	Ref<G4MFLight4D> _light;
 	Ref<G4MFMeshInstance4D> _mesh_instance;
 	Ref<G4MFModelInstance4D> _model_instance;
+	Ref<G4MFNodePhysics4D> _physics;
 	bool _visible = true;
 
 	NodePath _make_node_path(const Vector<StringName> &p_path) const;

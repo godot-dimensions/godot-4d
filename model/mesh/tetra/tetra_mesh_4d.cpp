@@ -246,10 +246,17 @@ void TetraMesh4D::update_cross_section_mesh() {
 
 	const PackedVector4Array cell_positions = get_simplex_cell_positions();
 	const PackedVector4Array cell_normals = get_simplex_cell_boundary_normals();
-	PackedVector3Array cell_uvws = get_simplex_cell_texture_map();
-	if (cell_uvws.size() != cell_positions.size()) {
-		ERR_PRINT("Cell UVW map size (" + itos(cell_uvws.size()) + ") does not match cell positions size (" + itos(cell_positions.size()) + ").");
-		cell_uvws.resize(cell_positions.size());
+	PackedVector3Array cell_tex_map = get_simplex_cell_texture_map();
+	if (cell_tex_map.size() != cell_positions.size()) {
+		if (cell_tex_map.size() == 0) {
+			Ref<TetraMaterial4D> tetra_material = get_material();
+			if (tetra_material.is_valid() && tetra_material->get_albedo_texture_3d().is_valid()) {
+				WARN_PRINT("Mesh '" + get_name() + "' has an albedo texture but no texture map. The texture will not function correctly.");
+			}
+		} else {
+			ERR_PRINT("Cell texture map size (" + itos(cell_tex_map.size()) + ") does not match cell positions size (" + itos(cell_positions.size()) + ").");
+		}
+		cell_tex_map.resize(cell_positions.size());
 	}
 	Ref<Material4D> material = get_material();
 	if (material.is_valid()) {
@@ -288,10 +295,10 @@ void TetraMesh4D::update_cross_section_mesh() {
 		// UVW texture coords, need 4*3 float slots.  Using UV, UV2, Normal, Color, vertex.y, and vertex.z.
 		// Normal gets normalized somewhere in the pipeline, so last coord of 1.0 will get set to whatever we need to divide by to get
 		// to get the original coords.
-		Vector3 uvw1 = cell_uvws[i];
-		Vector3 uvw2 = cell_uvws[i + 1];
-		Vector3 uvw3 = cell_uvws[i + 2];
-		Vector3 uvw4 = cell_uvws[i + 3];
+		Vector3 uvw1 = cell_tex_map[i];
+		Vector3 uvw2 = cell_tex_map[i + 1];
+		Vector3 uvw3 = cell_tex_map[i + 2];
+		Vector3 uvw4 = cell_tex_map[i + 3];
 		surface_tool->set_uv(Vector2(uvw1.x, uvw1.y));
 		surface_tool->set_uv2(Vector2(uvw2.x, uvw2.y));
 		surface_tool->set_normal(Vector3(uvw3.x, uvw3.y, 1.0));

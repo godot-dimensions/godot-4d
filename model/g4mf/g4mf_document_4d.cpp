@@ -1094,6 +1094,7 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 		// Write to a G4MF binary file. Export the buffers as binary blob chunks or as separate files.
 		if (should_separate_buffers_into_files) {
 			err = _export_serialize_buffer_data(p_g4mf_state, true);
+			ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF buffer data.");
 		}
 		const PackedByteArray json_bytes = _export_encode_as_byte_array(p_g4mf_state);
 		file->store_buffer(json_bytes);
