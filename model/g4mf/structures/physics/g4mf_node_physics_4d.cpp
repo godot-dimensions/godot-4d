@@ -124,6 +124,9 @@ Node4D *G4MFNodePhysics4D::generate_physics_node(const Ref<G4MFState4D> &p_g4mf_
 			ret = _add_physics_node_to_given_node(p_g4mf_state, p_g4mf_node, ret, col_shape_node);
 		}
 	}
+	if (!get_item_name().is_empty()) {
+		ret->set_name(get_item_name());
+	}
 	return ret;
 }
 

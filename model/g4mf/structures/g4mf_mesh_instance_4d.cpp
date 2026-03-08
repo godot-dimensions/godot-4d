@@ -5,6 +5,9 @@
 
 MeshInstance4D *G4MFMeshInstance4D::import_generate_mesh_instance(const Ref<G4MFState4D> &p_g4mf_state) const {
 	MeshInstance4D *ret_node = memnew(MeshInstance4D);
+	if (!get_item_name().is_empty()) {
+		ret_node->set_name(get_item_name());
+	}
 	Ref<G4MFMesh4D> g4mf_mesh;
 	if (_mesh_index >= 0) {
 		const TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();

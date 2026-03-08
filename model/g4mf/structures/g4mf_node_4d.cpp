@@ -123,7 +123,6 @@ Node *G4MFNode4D::import_generate_godot_node(const Ref<G4MFState4D> &p_g4mf_stat
 		if (ret_node == nullptr) {
 			ret_node = mesh_instance;
 		} else {
-			mesh_instance->set_name(p_g4mf_state->reserve_unique_name(get_name() + "Mesh"));
 			ret_node->add_child(mesh_instance);
 		}
 	}
@@ -132,7 +131,6 @@ Node *G4MFNode4D::import_generate_godot_node(const Ref<G4MFState4D> &p_g4mf_stat
 		if (ret_node == nullptr) {
 			ret_node = camera;
 		} else {
-			camera->set_name(p_g4mf_state->reserve_unique_name(get_name() + "Camera"));
 			ret_node->add_child(camera);
 		}
 	}
@@ -145,7 +143,7 @@ Node *G4MFNode4D::import_generate_godot_node(const Ref<G4MFState4D> &p_g4mf_stat
 
 void G4MFNode4D::apply_to_godot_node(Node *p_godot_node) const {
 	ERR_FAIL_NULL(p_godot_node);
-	p_godot_node->set_name(get_name());
+	p_godot_node->set_name(get_item_name());
 	Node4D *node_4d = Object::cast_to<Node4D>(p_godot_node);
 	if (node_4d) {
 		node_4d->set_transform(_transform);

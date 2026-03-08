@@ -2,6 +2,9 @@
 
 Camera4D *G4MFCamera4D::generate_camera_4d() const {
 	Camera4D *ret = memnew(Camera4D);
+	if (!get_item_name().is_empty()) {
+		ret->set_name(get_item_name());
+	}
 	ret->set_clip_far(_clip_far);
 	ret->set_clip_near(_clip_near);
 	ret->set_field_of_view_4d(_fov_radians);
