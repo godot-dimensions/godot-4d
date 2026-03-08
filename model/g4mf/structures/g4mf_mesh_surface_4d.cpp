@@ -145,14 +145,13 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 					}
 				}
 				normals_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, normal_values, p_deduplicate));
-				normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, normal_indices, p_deduplicate));
 			} else {
 				normals_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, simplex_vertex_normals, p_deduplicate));
 				for (int i = 0; i < simplex_vertex_normals.size(); i++) {
 					normal_indices.set(i, i);
 				}
-				normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, normal_indices, p_deduplicate));
 			}
+			normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, normal_indices, p_deduplicate));
 			surface->set_normals_binding(normals_binding);
 		}
 		const PackedVector3Array simplex_texture_map = tetra_mesh->get_simplex_cell_texture_map();
@@ -176,14 +175,13 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 					}
 				}
 				texture_map_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_vector3s(p_g4mf_state, texture_map_values, p_deduplicate));
-				texture_map_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, texture_map_indices, p_deduplicate));
 			} else {
 				texture_map_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_vector3s(p_g4mf_state, simplex_texture_map, p_deduplicate));
 				for (int i = 0; i < simplex_texture_map.size(); i++) {
 					texture_map_indices.set(i, i);
 				}
-				texture_map_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, texture_map_indices, p_deduplicate));
 			}
+			texture_map_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, texture_map_indices, p_deduplicate));
 			surface->set_texture_map_binding(texture_map_binding);
 		}
 		// For ArrayTetraMesh4D, the only edges are those implicitly calculated from simplex cells.
