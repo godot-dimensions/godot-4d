@@ -1,6 +1,11 @@
 #include "rendering_server_4d.h"
 
+#ifdef TOOLS_ENABLED
+#include "../editor/viewport/editor_camera_4d.h"
+#endif // TOOLS_ENABLED
+
 #if GDEXTENSION
+#include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #elif GODOT_MODULE
@@ -45,6 +50,15 @@ void RenderingServer4D::_render_frame() {
 		if (!camera0->is_current()) {
 			continue; // No 4D cameras are currently rendering.
 		}
+#ifdef TOOLS_ENABLED
+		if (Engine::get_singleton()->is_editor_hint()) {
+			// Only allow editor cameras to render in the editor.
+			EditorCamera4D *editor_camera = Object::cast_to<EditorCamera4D>(camera0->get_parent());
+			if (editor_camera == nullptr) {
+				continue;
+			}
+		}
+#endif // TOOLS_ENABLED
 		ERR_FAIL_COND_MSG(_rendering_engines.is_empty(), "No 4D rendering engines registered. 4D rendering will not occur.");
 		Ref<RenderingEngine4D> rendering_engine = _get_rendering_engine(camera0->get_rendering_engine());
 		if (viewport->has_meta("last_rendering_engine_4d")) {

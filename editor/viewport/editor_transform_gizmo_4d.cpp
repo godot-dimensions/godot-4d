@@ -1,5 +1,6 @@
 #include "editor_transform_gizmo_4d.h"
 
+#include "editor_camera_4d.h"
 #include "editor_main_viewport_4d.h"
 
 #include "../../math/geometry_4d.h"
@@ -267,6 +268,10 @@ void EditorTransformGizmo4D::_generate_gizmo_meshes(const PackedColorArray &p_ax
 }
 
 void EditorTransformGizmo4D::_on_rendering_server_pre_render(Camera4D *p_camera, Viewport *p_viewport, RenderingEngine4D *p_rendering_engine) {
+	EditorCamera4D *editor_camera = Object::cast_to<EditorCamera4D>(p_camera->get_parent());
+	if (editor_camera == nullptr) {
+		return;
+	}
 	_update_gizmo_mesh_transform(p_camera);
 }
 
@@ -327,6 +332,9 @@ void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_came
 		scale_dist_number = p_camera->get_orthographic_size() * 0.4f;
 	} else {
 		scale_dist_number = gizmo_transform.origin.distance_to(camera_transform.origin) * 0.4f;
+	}
+	if (scale_dist_number < 1e-4) {
+		scale_dist_number = 1e-4;
 	}
 	const Vector4 scale_vec = Vector4(scale_dist_number, scale_dist_number, scale_dist_number, scale_dist_number);
 	if (_is_use_local_rotation) {

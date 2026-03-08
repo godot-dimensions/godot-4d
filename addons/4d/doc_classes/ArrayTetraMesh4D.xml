@@ -68,10 +68,10 @@
 		</method>
 		<method name="set_flat_shading_normals">
 			<return type="void" />
-			<param index="0" name="recalculate_boundary_normals" type="bool" default="false" />
+			<param index="0" name="force_recalculate_boundary_normals" type="bool" default="false" />
 			<description>
 				Sets the tetrahedral mesh to use flat shading by setting all vertex instance normals to match their corresponding boundary cell normal. This gives the mesh a faceted appearance, where each tetrahedral cell is shaded uniformly.
-				If [param recalculate_boundary_normals] is [code]true[/code], the method will first recalculate the boundary normals using [method calculate_boundary_normals] before setting the vertex instance normals.
+				If [param force_recalculate_boundary_normals] is [code]true[/code], the method will first recalculate the boundary normals using [method calculate_boundary_normals] before setting the vertex instance normals. This is done automatically if the boundary normals are not already calculated.
 			</description>
 		</method>
 	</methods>

@@ -27,7 +27,7 @@ public:
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 
 	void calculate_boundary_normals(const bool p_keep_existing = false);
-	void set_flat_shading_normals(const bool p_recalculate_boundary_normals = false);
+	void set_flat_shading_normals(const bool p_force_recalculate_boundary_normals = false);
 	void merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
 	void merge_with_bind(const Ref<ArrayTetraMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 

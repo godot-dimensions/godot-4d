@@ -82,9 +82,9 @@ void ArrayTetraMesh4D::calculate_boundary_normals(const bool p_keep_existing) {
 	}
 }
 
-void ArrayTetraMesh4D::set_flat_shading_normals(const bool p_recalculate_boundary_normals) {
+void ArrayTetraMesh4D::set_flat_shading_normals(const bool p_force_recalculate_boundary_normals) {
 	_simplex_cell_vertex_normals.clear();
-	if (p_recalculate_boundary_normals) {
+	if (p_force_recalculate_boundary_normals || _simplex_cell_boundary_normals.is_empty()) {
 		calculate_boundary_normals();
 	}
 	const PackedVector4Array cell_boundary_normals = get_simplex_cell_boundary_normals();
@@ -196,7 +196,7 @@ void ArrayTetraMesh4D::set_simplex_cell_boundary_normals(const PackedVector4Arra
 
 PackedVector4Array ArrayTetraMesh4D::get_simplex_cell_vertex_normals() {
 	if (_simplex_cell_vertex_normals.is_empty()) {
-		calculate_boundary_normals();
+		set_flat_shading_normals();
 	}
 	return _simplex_cell_vertex_normals;
 }
@@ -269,7 +269,7 @@ void ArrayTetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate_vertices"), &ArrayTetraMesh4D::append_vertices, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "keep_existing"), &ArrayTetraMesh4D::calculate_boundary_normals, DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "recalculate_boundary_normals"), &ArrayTetraMesh4D::set_flat_shading_normals, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "force_recalculate_boundary_normals"), &ArrayTetraMesh4D::set_flat_shading_normals, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayTetraMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 
 	// Only bind the setters here because the getters are already bound in TetraMesh4D.
