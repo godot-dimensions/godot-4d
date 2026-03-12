@@ -41,10 +41,10 @@ public:
 	Variant get_model_g4mf_document() const;
 	void set_model_g4mf_document(const Variant p_model_g4mf_document);
 
-	Error import_preload_model_data(const Ref<G4MFState4D> &p_g4mf_state);
+	virtual Error import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) override;
 	Node *import_instantiate_model(const Ref<G4MFState4D> &p_g4mf_state) const;
 	static int export_pack_nodes_into_model(const Variant p_g4mf_document, const Ref<G4MFState4D> &p_g4mf_state, Node *p_node, const bool p_deduplicate = true);
-	Error export_write_model_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate = true, const int p_buffer_index = 0);
+	virtual Error export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate = true, const int p_buffer_index = 0) override;
 
 	static Ref<G4MFModel4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "g4mf_file_reference_4d.h"
+#include "g4mf_item_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/variant/typed_array.hpp>
@@ -12,7 +12,7 @@ class G4MFTexture4D : public G4MFItem4D {
 	GDCLASS(G4MFTexture4D, G4MFItem4D);
 
 	// Texture pixel data properties.
-	TypedArray<G4MFFileReference4D> _images;
+	PackedInt32Array _image_file_indices;
 	PackedInt32Array _texture_size;
 	Color _placeholder_color;
 
@@ -27,8 +27,8 @@ protected:
 
 public:
 	// Texture pixel data properties.
-	TypedArray<G4MFFileReference4D> get_images() const { return _images; }
-	void set_images(const TypedArray<G4MFFileReference4D> &p_images) { _images = p_images; }
+	PackedInt32Array get_image_file_indices() const { return _image_file_indices; }
+	void set_image_file_indices(const PackedInt32Array &p_image_file_indices) { _image_file_indices = p_image_file_indices; }
 
 	PackedInt32Array get_texture_size() const { return _texture_size; }
 	void set_texture_size(const PackedInt32Array &p_texture_size) { _texture_size = p_texture_size; }

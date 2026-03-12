@@ -12,11 +12,44 @@
 		<link title="IANA Media Types">https://www.iana.org/assignments/media-types/media-types.xhtml</link>
 	</tutorials>
 	<methods>
+		<method name="_export_serialize_file_data" qualifiers="virtual">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="deduplicate" type="bool" />
+			<param index="2" name="buffer_index" type="int" />
+			<description>
+				Callback method that should be used to serialize the file data. Do not call this method. This can be overridden by derived classes when creating a custom file reference type in GDScript or another scripting language. See [method export_serialize_file_data] for details.
+			</description>
+		</method>
+		<method name="_import_parse_file_data" qualifiers="virtual">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Callback method that should be used to parse the file data. Do not call this method. This can be overridden by derived classes when creating a custom file reference type in GDScript or another scripting language. See [method import_parse_file_data] for details.
+			</description>
+		</method>
 		<method name="create_missing_directories_if_needed" qualifiers="const">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
 				Creates any missing directories in the filesystem needed for writing to the external file URI specified by this file reference's [member file_uri]. If [member file_uri] is an empty string, this does nothing and returns [constant @GlobalScope.OK]. If the directories already exist, this does nothing and returns [constant @GlobalScope.OK]. If the directories do not exist, it attempts to create them and returns [constant @GlobalScope.OK] on success, or an error code on failure.
+			</description>
+		</method>
+		<method name="export_serialize_file_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="deduplicate" type="bool" default="true" />
+			<param index="2" name="buffer_index" type="int" default="0" />
+			<description>
+				Allows descendant classes to write the file data to the file if [member file_uri] is set to a non-empty value, or to a buffer view if [member file_uri] is empty. The [param g4mf_state] parameter is the state of the parent G4MF file, which is not to be confused with the [G4MFState4D] of the nested model data in the case of [G4MFModel4D], which uses an internal variable.
+				The [param deduplicate] and [param buffer_index] parameters are only used when writing to a new buffer view, and are directly passed to the [method G4MFBufferView4D.write_new_buffer_view_into_state] function. They do nothing when writing to an external file URI.
+			</description>
+		</method>
+		<method name="import_parse_file_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Allows descendant classes to parse the file data from the file or buffer view into memory, and prepare it for instantiation. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. Returns [constant @GlobalScope.OK] on success, or an error code on failure.
 			</description>
 		</method>
 		<method name="read_file_data" qualifiers="const">

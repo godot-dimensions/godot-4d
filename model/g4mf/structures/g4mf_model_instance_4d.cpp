@@ -1,5 +1,7 @@
 #include "g4mf_model_instance_4d.h"
 
+#include "g4mf_model_4d.h"
+
 #include "../g4mf_state_4d.h"
 
 Node *G4MFModelInstance4D::_find_node_by_name(Node *p_node, const String &p_node_name) const {
@@ -19,9 +21,9 @@ Node *G4MFModelInstance4D::_find_node_by_name(Node *p_node, const String &p_node
 Node *G4MFModelInstance4D::import_instantiate_model(const Ref<G4MFState4D> &p_g4mf_state) const {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), nullptr);
 	// Get the model and create an instance of it.
-	const TypedArray<G4MFModel4D> &state_g4mf_models = p_g4mf_state->get_g4mf_models();
-	ERR_FAIL_INDEX_V(_model_index, state_g4mf_models.size(), nullptr);
-	const Ref<G4MFModel4D> g4mf_model = state_g4mf_models[_model_index];
+	const TypedArray<G4MFFileReference4D> &state_g4mf_files = p_g4mf_state->get_g4mf_files();
+	ERR_FAIL_INDEX_V(_model_file_index, state_g4mf_files.size(), nullptr);
+	const Ref<G4MFModel4D> g4mf_model = state_g4mf_files[_model_file_index];
 	ERR_FAIL_COND_V(g4mf_model.is_null(), nullptr);
 	Node *ret = g4mf_model->import_instantiate_model(p_g4mf_state);
 	ERR_FAIL_NULL_V(ret, nullptr);
@@ -62,7 +64,7 @@ Ref<G4MFModelInstance4D> G4MFModelInstance4D::export_pack_nodes_into_model_insta
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ret);
 	ERR_FAIL_NULL_V(p_node, ret);
 	ret.instantiate();
-	ret->set_model_index(G4MFModel4D::export_pack_nodes_into_model(p_g4mf_document, p_g4mf_state, p_node, p_deduplicate));
+	ret->set_model_file_index(G4MFModel4D::export_pack_nodes_into_model(p_g4mf_document, p_g4mf_state, p_node, p_deduplicate));
 	return ret;
 }
 
@@ -70,8 +72,8 @@ Ref<G4MFModelInstance4D> G4MFModelInstance4D::from_dictionary(const Dictionary &
 	Ref<G4MFModelInstance4D> model;
 	model.instantiate();
 	model->read_item_entries_from_dictionary(p_dict);
-	if (p_dict.has("model")) {
-		model->set_model_index(p_dict["model"]);
+	if (p_dict.has("file")) {
+		model->set_model_file_index(p_dict["file"]);
 	}
 	if (p_dict.has("nodeAdditionalChildren")) {
 		Dictionary node_add_children_json = p_dict["nodeAdditionalChildren"];
@@ -94,8 +96,8 @@ Ref<G4MFModelInstance4D> G4MFModelInstance4D::from_dictionary(const Dictionary &
 
 Dictionary G4MFModelInstance4D::to_dictionary() const {
 	Dictionary dict = write_item_entries_to_dictionary();
-	if (_model_index >= 0) {
-		dict["model"] = _model_index;
+	if (_model_file_index >= 0) {
+		dict["file"] = _model_file_index;
 	}
 	if (!_node_additional_children.is_empty()) {
 		Dictionary node_add_children_json_obj;
@@ -118,8 +120,8 @@ void G4MFModelInstance4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_node_additional_children", "node_additional_children"), &G4MFModelInstance4D::set_node_additional_children);
 	ClassDB::bind_method(D_METHOD("get_node_overrides"), &G4MFModelInstance4D::get_node_overrides);
 	ClassDB::bind_method(D_METHOD("set_node_overrides", "node_overrides"), &G4MFModelInstance4D::set_node_overrides);
-	ClassDB::bind_method(D_METHOD("get_model_index"), &G4MFModelInstance4D::get_model_index);
-	ClassDB::bind_method(D_METHOD("set_model_index", "model_index"), &G4MFModelInstance4D::set_model_index);
+	ClassDB::bind_method(D_METHOD("get_model_file_index"), &G4MFModelInstance4D::get_model_file_index);
+	ClassDB::bind_method(D_METHOD("set_model_file_index", "model_file_index"), &G4MFModelInstance4D::set_model_file_index);
 
 	ClassDB::bind_method(D_METHOD("import_instantiate_model", "g4mf_state"), &G4MFModelInstance4D::import_instantiate_model);
 	ClassDB::bind_static_method("G4MFModelInstance4D", D_METHOD("export_pack_nodes_into_model_instance", "g4mf_document", "g4mf_state", "node", "deduplicate"), &G4MFModelInstance4D::export_pack_nodes_into_model_instance, DEFVAL(true));
@@ -129,5 +131,5 @@ void G4MFModelInstance4D::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "node_additional_children"), "set_node_additional_children", "get_node_additional_children");
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "node_overrides"), "set_node_overrides", "get_node_overrides");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "model_index"), "set_model_index", "get_model_index");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "model_file_index"), "set_model_file_index", "get_model_file_index");
 }

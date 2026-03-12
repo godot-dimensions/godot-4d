@@ -36,6 +36,7 @@
 
 // Model.
 #include "model/g4mf/g4mf_document_4d.h"
+#include "model/g4mf/structures/g4mf_model_4d.h"
 #include "model/mesh/mesh_instance_4d.h"
 #include "model/mesh/poly/array_poly_mesh_4d.h"
 #include "model/mesh/poly/box_poly_mesh_4d.h"

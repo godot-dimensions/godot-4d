@@ -4,16 +4,14 @@ Ref<G4MFTexture4D> G4MFTexture4D::from_dictionary(const Dictionary &p_dict) {
 	Ref<G4MFTexture4D> texture;
 	texture.instantiate();
 	texture->read_item_entries_from_dictionary(p_dict);
-	if (p_dict.has("images")) {
-		Array images_array = p_dict["images"];
-		TypedArray<G4MFFileReference4D> images_parsed;
-		images_parsed.resize(images_array.size());
-		for (int i = 0; i < images_array.size(); i++) {
-			Ref<G4MFFileReference4D> image_ref;
-			image_ref->read_file_reference_entries_from_dictionary(images_array[i]);
-			images_parsed[i] = image_ref;
+	if (p_dict.has("files")) {
+		Array image_file_indices_array = p_dict["files"];
+		PackedInt32Array image_file_indices_parsed;
+		image_file_indices_parsed.resize(image_file_indices_array.size());
+		for (int i = 0; i < image_file_indices_array.size(); i++) {
+			image_file_indices_parsed.set(i, (int32_t)image_file_indices_array[i]);
 		}
-		texture->set_images(images_parsed);
+		texture->set_image_file_indices(image_file_indices_parsed);
 	}
 	if (p_dict.has("placeholder")) {
 		texture->set_placeholder_color(G4MFItem4D::json_array_to_color(p_dict["placeholder"]));
@@ -56,14 +54,8 @@ Ref<G4MFTexture4D> G4MFTexture4D::from_dictionary(const Dictionary &p_dict) {
 
 Dictionary G4MFTexture4D::to_dictionary() const {
 	Dictionary dict = write_item_entries_to_dictionary();
-	if (!_images.is_empty()) {
-		Array images_array;
-		images_array.resize(_images.size());
-		for (int i = 0; i < _images.size(); i++) {
-			Ref<G4MFFileReference4D> image_ref = _images[i];
-			images_array[i] = image_ref->write_file_reference_entries_to_dictionary();
-		}
-		dict["images"] = images_array;
+	if (!_image_file_indices.is_empty()) {
+		dict["files"] = _image_file_indices;
 	}
 	dict["placeholder"] = G4MFItem4D::color_to_json_array(_placeholder_color, false); // Required property, always write.
 	{
@@ -99,8 +91,8 @@ Dictionary G4MFTexture4D::to_dictionary() const {
 
 void G4MFTexture4D::_bind_methods() {
 	// Texture pixel data properties.
-	ClassDB::bind_method(D_METHOD("get_images"), &G4MFTexture4D::get_images);
-	ClassDB::bind_method(D_METHOD("set_images", "images"), &G4MFTexture4D::set_images);
+	ClassDB::bind_method(D_METHOD("get_image_file_indices"), &G4MFTexture4D::get_image_file_indices);
+	ClassDB::bind_method(D_METHOD("set_image_file_indices", "image_file_indices"), &G4MFTexture4D::set_image_file_indices);
 	ClassDB::bind_method(D_METHOD("get_placeholder_color"), &G4MFTexture4D::get_placeholder_color);
 	ClassDB::bind_method(D_METHOD("set_placeholder_color", "placeholder_color"), &G4MFTexture4D::set_placeholder_color);
 	ClassDB::bind_method(D_METHOD("get_texture_size"), &G4MFTexture4D::get_texture_size);
@@ -119,7 +111,7 @@ void G4MFTexture4D::_bind_methods() {
 	ClassDB::bind_static_method("G4MFTexture4D", D_METHOD("from_dictionary", "dict"), &G4MFTexture4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFTexture4D::to_dictionary);
 
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "images", PROPERTY_HINT_ARRAY_TYPE, "G4MFFileReference4D"), "set_images", "get_images");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "image_file_indices"), "set_image_file_indices", "get_image_file_indices");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "placeholder_color"), "set_placeholder_color", "get_placeholder_color");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "texture_size"), "set_texture_size", "get_texture_size");
 

@@ -2,6 +2,7 @@
 
 #include "../mesh/mesh_instance_4d.h"
 #include "../off/off_document_4d.h"
+#include "structures/g4mf_model_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/file_access.hpp>
@@ -126,69 +127,55 @@ Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, 
 Error G4MFDocument4D::_export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state) {
 	Dictionary g4mf_json;
 	p_g4mf_state->set_g4mf_json(g4mf_json);
-	_export_serialize_asset_header(p_g4mf_state, g4mf_json);
-	_export_serialize_textures(p_g4mf_state, g4mf_json);
-	_export_serialize_materials(p_g4mf_state, g4mf_json);
-	_export_serialize_meshes(p_g4mf_state, g4mf_json);
-	_export_serialize_models(p_g4mf_state, g4mf_json);
-	_export_serialize_shapes(p_g4mf_state, g4mf_json);
+	// Serialize high-level objects first in case they add new low-level objects while being serialized.
 	_export_serialize_nodes(p_g4mf_state, g4mf_json);
-	// Serialize buffers, buffer views, and accessors last, in case any of the above added new ones.
+	_export_serialize_shapes(p_g4mf_state, g4mf_json);
+	_export_serialize_meshes(p_g4mf_state, g4mf_json);
+	_export_serialize_materials(p_g4mf_state, g4mf_json);
+	_export_serialize_textures(p_g4mf_state, g4mf_json);
+	_export_serialize_files(p_g4mf_state, g4mf_json);
 	_export_serialize_buffers_accessors(p_g4mf_state, g4mf_json);
+	_export_serialize_asset_header(p_g4mf_state, g4mf_json);
 	return OK;
 }
 
-void G4MFDocument4D::_export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	Dictionary asset_header;
-	asset_header["dimension"] = 4;
-	const String godot_version = itos(GODOT_VERSION_MAJOR) + "." + itos(GODOT_VERSION_MINOR) + "." + itos(GODOT_VERSION_PATCH);
-#if GDEXTENSION
-	const String mod_or_ext = "GDExtension";
-#elif GODOT_MODULE
-	const String mod_or_ext = "module";
-#endif
-	asset_header["generator"] = "Godot Engine " + godot_version + " with Godot 4D " + mod_or_ext;
-	asset_header["specification"] = "https://github.com/godot-dimensions/g4mf";
-	p_g4mf_json["asset"] = asset_header;
-}
-
-Error G4MFDocument4D::_export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	TypedArray<G4MFTexture4D> state_g4mf_textures = p_g4mf_state->get_g4mf_textures();
-	const int texture_count = state_g4mf_textures.size();
-	if (texture_count == 0) {
-		return OK; // No textures to serialize.
+Error G4MFDocument4D::_export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
+	const int node_count = state_g4mf_nodes.size();
+	Array serialized_nodes;
+	serialized_nodes.resize(node_count);
+	for (int i = 0; i < node_count; i++) {
+		Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
+		if (i == 0) {
+			g4mf_node->set_transform(Transform4D());
+		}
+		Dictionary serialized_node = g4mf_node->to_dictionary(true);
+		serialized_nodes[i] = serialized_node;
 	}
-	Array serialized_textures;
-	serialized_textures.resize(texture_count);
-	for (int i = 0; i < texture_count; i++) {
-		Ref<G4MFTexture4D> g4mf_texture = state_g4mf_textures[i];
-		ERR_FAIL_COND_V(g4mf_texture.is_null(), ERR_INVALID_DATA);
-		Dictionary serialized_texture = g4mf_texture->to_dictionary();
-		serialized_textures[i] = serialized_texture;
-	}
-	if (!serialized_textures.is_empty()) {
-		p_g4mf_json["textures"] = serialized_textures;
-		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
+	if (!serialized_nodes.is_empty()) {
+		g4mf_json["nodes"] = serialized_nodes;
+		p_g4mf_state->set_g4mf_json(g4mf_json);
 	}
 	return OK;
 }
 
-Error G4MFDocument4D::_export_serialize_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	TypedArray<G4MFMaterial4D> state_g4mf_materials = p_g4mf_state->get_g4mf_materials();
-	const int material_count = state_g4mf_materials.size();
-	if (material_count == 0) {
-		return OK; // No materials to serialize.
+Error G4MFDocument4D::_export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFShape4D> state_g4mf_shapes = p_g4mf_state->get_g4mf_shapes();
+	const int shape_count = state_g4mf_shapes.size();
+	if (shape_count == 0) {
+		return OK; // No shapes to serialize.
 	}
-	Array serialized_materials;
-	serialized_materials.resize(material_count);
-	for (int i = 0; i < material_count; i++) {
-		Ref<G4MFMaterial4D> g4mf_material = state_g4mf_materials[i];
-		ERR_FAIL_COND_V(g4mf_material.is_null(), ERR_INVALID_DATA);
-		Dictionary serialized_material = g4mf_material->to_dictionary();
-		serialized_materials[i] = serialized_material;
+	Array serialized_shapes;
+	serialized_shapes.resize(shape_count);
+	for (int i = 0; i < shape_count; i++) {
+		Ref<G4MFShape4D> g4mf_shape = state_g4mf_shapes[i];
+		ERR_FAIL_COND_V(g4mf_shape.is_null(), ERR_INVALID_DATA);
+		Dictionary serialized_shape = g4mf_shape->to_dictionary();
+		serialized_shapes[i] = serialized_shape;
 	}
-	if (!serialized_materials.is_empty()) {
-		p_g4mf_json["materials"] = serialized_materials;
+	if (!serialized_shapes.is_empty()) {
+		p_g4mf_json["shapes"] = serialized_shapes;
 		p_g4mf_state->set_g4mf_json(p_g4mf_json);
 	}
 	return OK;
@@ -215,66 +202,66 @@ Error G4MFDocument4D::_export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Di
 	return OK;
 }
 
-Error G4MFDocument4D::_export_serialize_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	TypedArray<G4MFModel4D> state_g4mf_models = p_g4mf_state->get_g4mf_models();
-	const int model_count = state_g4mf_models.size();
+Error G4MFDocument4D::_export_serialize_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFMaterial4D> state_g4mf_materials = p_g4mf_state->get_g4mf_materials();
+	const int material_count = state_g4mf_materials.size();
+	if (material_count == 0) {
+		return OK; // No materials to serialize.
+	}
+	Array serialized_materials;
+	serialized_materials.resize(material_count);
+	for (int i = 0; i < material_count; i++) {
+		Ref<G4MFMaterial4D> g4mf_material = state_g4mf_materials[i];
+		ERR_FAIL_COND_V(g4mf_material.is_null(), ERR_INVALID_DATA);
+		Dictionary serialized_material = g4mf_material->to_dictionary();
+		serialized_materials[i] = serialized_material;
+	}
+	if (!serialized_materials.is_empty()) {
+		p_g4mf_json["materials"] = serialized_materials;
+		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	}
+	return OK;
+}
+
+Error G4MFDocument4D::_export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFTexture4D> state_g4mf_textures = p_g4mf_state->get_g4mf_textures();
+	const int texture_count = state_g4mf_textures.size();
+	if (texture_count == 0) {
+		return OK; // No textures to serialize.
+	}
+	Array serialized_textures;
+	serialized_textures.resize(texture_count);
+	for (int i = 0; i < texture_count; i++) {
+		Ref<G4MFTexture4D> g4mf_texture = state_g4mf_textures[i];
+		ERR_FAIL_COND_V(g4mf_texture.is_null(), ERR_INVALID_DATA);
+		Dictionary serialized_texture = g4mf_texture->to_dictionary();
+		serialized_textures[i] = serialized_texture;
+	}
+	if (!serialized_textures.is_empty()) {
+		p_g4mf_json["textures"] = serialized_textures;
+		p_g4mf_state->set_g4mf_json(p_g4mf_json);
+	}
+	return OK;
+}
+
+Error G4MFDocument4D::_export_serialize_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	TypedArray<G4MFFileReference4D> state_g4mf_files = p_g4mf_state->get_g4mf_files();
+	const int model_count = state_g4mf_files.size();
 	if (model_count == 0) {
 		return OK; // No models to serialize.
 	}
-	Array serialized_models;
-	serialized_models.resize(model_count);
+	Array serialized_files;
+	serialized_files.resize(model_count);
 	for (int i = 0; i < model_count; i++) {
-		Ref<G4MFModel4D> g4mf_model = state_g4mf_models[i];
-		ERR_FAIL_COND_V(g4mf_model.is_null(), ERR_INVALID_DATA);
-		g4mf_model->export_write_model_data(p_g4mf_state);
-		Dictionary serialized_model = g4mf_model->to_dictionary();
-		serialized_models[i] = serialized_model;
+		Ref<G4MFFileReference4D> g4mf_file = state_g4mf_files[i];
+		ERR_FAIL_COND_V(g4mf_file.is_null(), ERR_INVALID_DATA);
+		g4mf_file->export_serialize_file_data(p_g4mf_state);
+		Dictionary serialized_file = g4mf_file->write_file_reference_entries_to_dictionary();
+		serialized_files[i] = serialized_file;
 	}
-	if (!serialized_models.is_empty()) {
-		p_g4mf_json["models"] = serialized_models;
+	if (!serialized_files.is_empty()) {
+		p_g4mf_json["files"] = serialized_files;
 		p_g4mf_state->set_g4mf_json(p_g4mf_json);
-	}
-	return OK;
-}
-
-Error G4MFDocument4D::_export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	TypedArray<G4MFShape4D> state_g4mf_shapes = p_g4mf_state->get_g4mf_shapes();
-	const int shape_count = state_g4mf_shapes.size();
-	if (shape_count == 0) {
-		return OK; // No shapes to serialize.
-	}
-	Array serialized_shapes;
-	serialized_shapes.resize(shape_count);
-	for (int i = 0; i < shape_count; i++) {
-		Ref<G4MFShape4D> g4mf_shape = state_g4mf_shapes[i];
-		ERR_FAIL_COND_V(g4mf_shape.is_null(), ERR_INVALID_DATA);
-		Dictionary serialized_shape = g4mf_shape->to_dictionary();
-		serialized_shapes[i] = serialized_shape;
-	}
-	if (!serialized_shapes.is_empty()) {
-		p_g4mf_json["shapes"] = serialized_shapes;
-		p_g4mf_state->set_g4mf_json(p_g4mf_json);
-	}
-	return OK;
-}
-
-Error G4MFDocument4D::_export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
-	const int node_count = state_g4mf_nodes.size();
-	Array serialized_nodes;
-	serialized_nodes.resize(node_count);
-	for (int i = 0; i < node_count; i++) {
-		Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
-		if (i == 0) {
-			g4mf_node->set_transform(Transform4D());
-		}
-		Dictionary serialized_node = g4mf_node->to_dictionary(true);
-		serialized_nodes[i] = serialized_node;
-	}
-	Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
-	if (!serialized_nodes.is_empty()) {
-		g4mf_json["nodes"] = serialized_nodes;
-		p_g4mf_state->set_g4mf_json(g4mf_json);
 	}
 	return OK;
 }
@@ -365,6 +352,20 @@ Error G4MFDocument4D::_export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_stat
 		json_buffer_dict["uri"] = String("data:application/octet-stream;base64,") + base64_buffer;
 	}
 	return OK;
+}
+
+void G4MFDocument4D::_export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	Dictionary asset_header;
+	asset_header["dimension"] = 4;
+	const String godot_version = itos(GODOT_VERSION_MAJOR) + "." + itos(GODOT_VERSION_MINOR) + "." + itos(GODOT_VERSION_PATCH);
+#if GDEXTENSION
+	const String mod_or_ext = "GDExtension";
+#elif GODOT_MODULE
+	const String mod_or_ext = "module";
+#endif
+	asset_header["generator"] = "Godot Engine " + godot_version + " with Godot 4D " + mod_or_ext;
+	asset_header["specification"] = "https://github.com/godot-dimensions/g4mf";
+	p_g4mf_json["asset"] = asset_header;
 }
 
 // Includes spaces after braces and commas, and avoids unnecessary digits for floats.
@@ -677,18 +678,19 @@ PackedByteArray G4MFDocument4D::_import_decompress_bytes(const PackedByteArray &
 }
 
 Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	// Parse low-level structures first since higher-level structures depend on them.
 	Error err = _import_parse_asset_header(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse asset header. Aborting file import.");
 	err = _import_parse_buffers_accessors(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse buffers and/or accessors. Aborting file import.");
+	err = _import_parse_files(p_g4mf_state, p_g4mf_json);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse sub-files. Aborting file import.");
 	err = _import_parse_textures(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse textures. Aborting file import.");
 	err = _import_parse_materials(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse materials. Aborting file import.");
 	err = _import_parse_meshes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse meshes. Aborting file import.");
-	err = _import_parse_models(p_g4mf_state, p_g4mf_json);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse models. Aborting file import.");
 	err = _import_parse_shapes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse shapes. Aborting file import.");
 	err = _import_parse_nodes(p_g4mf_state, p_g4mf_json);
@@ -802,6 +804,42 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 	return OK;
 }
 
+Error G4MFDocument4D::_import_parse_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
+	if (!p_g4mf_json.has("files")) {
+		return OK; // No files to parse.
+	}
+	Array json_files = p_g4mf_json["files"];
+	const int file_count = json_files.size();
+	if (file_count == 0) {
+		return OK; // No files to parse.
+	}
+	TypedArray<G4MFFileReference4D> g4mf_files = p_g4mf_state->get_g4mf_files();
+	g4mf_files.resize(file_count);
+	Error err;
+	for (int file_index = 0; file_index < file_count; file_index++) {
+		const Dictionary file_model = json_files[file_index];
+		String mime_type = "";
+		if (file_model.has("mimeType")) {
+			mime_type = file_model["mimeType"];
+		}
+		Ref<G4MFFileReference4D> g4mf_file_ref;
+		if (mime_type.begins_with("model/")) {
+			Ref<G4MFModel4D> g4mf_model = G4MFModel4D::from_dictionary(file_model);
+			ERR_FAIL_COND_V_MSG(g4mf_model.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse model JSON. Aborting file import.");
+			g4mf_model->set_model_g4mf_document(this);
+			g4mf_file_ref = g4mf_model;
+		} else {
+			g4mf_file_ref = G4MFFileReference4D::file_reference_from_dictionary(file_model);
+		}
+		ERR_FAIL_COND_V_MSG(g4mf_file_ref.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse file reference JSON. Aborting file import.");
+		err = g4mf_file_ref->import_parse_file_data(p_g4mf_state);
+		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to preload model data. Aborting file import.");
+		g4mf_files[file_index] = g4mf_file_ref;
+	}
+	p_g4mf_state->set_g4mf_files(g4mf_files);
+	return OK;
+}
+
 Error G4MFDocument4D::_import_parse_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	if (!p_g4mf_json.has("textures")) {
 		return OK; // No textures to parse.
@@ -862,31 +900,6 @@ Error G4MFDocument4D::_import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictio
 		g4mf_meshes[i] = g4mf_mesh;
 	}
 	p_g4mf_state->set_g4mf_meshes(g4mf_meshes);
-	return OK;
-}
-
-Error G4MFDocument4D::_import_parse_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	if (!p_g4mf_json.has("models")) {
-		return OK; // No models to parse.
-	}
-	Array json_models = p_g4mf_json["models"];
-	const int model_count = json_models.size();
-	if (model_count == 0) {
-		return OK; // No models to parse.
-	}
-	TypedArray<G4MFModel4D> g4mf_models = p_g4mf_state->get_g4mf_models();
-	g4mf_models.resize(model_count);
-	Error err;
-	for (int i = 0; i < model_count; i++) {
-		const Dictionary file_model = json_models[i];
-		Ref<G4MFModel4D> g4mf_model = G4MFModel4D::from_dictionary(file_model);
-		g4mf_model->set_model_g4mf_document(this);
-		ERR_FAIL_COND_V_MSG(g4mf_model.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse model JSON. Aborting file import.");
-		err = g4mf_model->import_preload_model_data(p_g4mf_state);
-		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to preload model data. Aborting file import.");
-		g4mf_models[i] = g4mf_model;
-	}
-	p_g4mf_state->set_g4mf_models(g4mf_models);
 	return OK;
 }
 
@@ -1156,11 +1169,12 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 
 Node *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state) {
 	// Ensure all models have a reference to this document (the working document may have changed).
-	TypedArray<G4MFModel4D> state_g4mf_models = p_g4mf_state->get_g4mf_models();
-	for (int i = 0; i < state_g4mf_models.size(); i++) {
-		Ref<G4MFModel4D> g4mf_model = state_g4mf_models[i];
-		ERR_FAIL_COND_V(g4mf_model.is_null(), nullptr);
-		g4mf_model->set_model_g4mf_document(this);
+	TypedArray<G4MFModel4D> state_g4mf_files = p_g4mf_state->get_g4mf_files();
+	for (int i = 0; i < state_g4mf_files.size(); i++) {
+		Ref<G4MFModel4D> g4mf_model = state_g4mf_files[i];
+		if (g4mf_model.is_valid()) {
+			g4mf_model->set_model_g4mf_document(this);
+		}
 	}
 	// Check how many nodes we have, and handle the case of zero nodes.
 	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();

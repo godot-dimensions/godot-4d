@@ -72,6 +72,27 @@ Error G4MFFileReference4D::write_file_data(const Ref<G4MFState4D> &p_g4mf_state,
 	return OK;
 }
 
+Error G4MFFileReference4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) {
+	// This should be overridden by derived classes if they wish to add more complex logic during import.
+	Error result = OK;
+	GDVIRTUAL_CALL(_import_parse_file_data, p_g4mf_state, result);
+	return result;
+}
+
+Error G4MFFileReference4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
+	// This should be overridden by derived classes if they wish to add more complex logic during export.
+	Error result = OK;
+	GDVIRTUAL_CALL(_export_serialize_file_data, p_g4mf_state, p_deduplicate, p_buffer_index, result);
+	return result;
+}
+
+Ref<G4MFFileReference4D> G4MFFileReference4D::file_reference_from_dictionary(const Dictionary &p_dict) {
+	Ref<G4MFFileReference4D> model;
+	model.instantiate();
+	model->read_file_reference_entries_from_dictionary(p_dict);
+	return model;
+}
+
 void G4MFFileReference4D::read_file_reference_entries_from_dictionary(const Dictionary &p_dict) {
 	read_item_entries_from_dictionary(p_dict);
 	if (p_dict.has("bufferView")) {
@@ -125,6 +146,11 @@ void G4MFFileReference4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("read_file_data", "g4mf_state"), &G4MFFileReference4D::read_file_data);
 	ClassDB::bind_method(D_METHOD("create_missing_directories_if_needed", "g4mf_state"), &G4MFFileReference4D::create_missing_directories_if_needed);
 	ClassDB::bind_method(D_METHOD("write_file_data", "g4mf_state", "data", "alignment", "deduplicate", "buffer_index"), &G4MFFileReference4D::write_file_data, DEFVAL(4), DEFVAL(true), DEFVAL(0));
+
+	ClassDB::bind_method(D_METHOD("import_parse_file_data", "g4mf_state"), &G4MFFileReference4D::import_parse_file_data);
+	ClassDB::bind_method(D_METHOD("export_serialize_file_data", "g4mf_state", "deduplicate", "buffer_index"), &G4MFFileReference4D::export_serialize_file_data, DEFVAL(true), DEFVAL(0));
+	GDVIRTUAL_BIND(_import_parse_file_data, "g4mf_state");
+	GDVIRTUAL_BIND(_export_serialize_file_data, "g4mf_state", "deduplicate", "buffer_index");
 
 	ClassDB::bind_method(D_METHOD("read_file_reference_entries_from_dictionary", "dict"), &G4MFFileReference4D::read_file_reference_entries_from_dictionary);
 	ClassDB::bind_method(D_METHOD("write_file_reference_entries_to_dictionary"), &G4MFFileReference4D::write_file_reference_entries_to_dictionary);

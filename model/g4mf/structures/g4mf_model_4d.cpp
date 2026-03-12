@@ -44,7 +44,7 @@ String G4MFModel4D::_get_relative_path_without_updir_dots(const String &p_origin
 	return original_path.substr(last_separator_index, original_path.length() - last_separator_index);
 }
 
-Error G4MFModel4D::import_preload_model_data(const Ref<G4MFState4D> &p_g4mf_state) {
+Error G4MFModel4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) {
 	Error err = OK;
 	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), ERR_INVALID_PARAMETER);
 	const String mime_type = get_mime_type();
@@ -159,10 +159,10 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	const String scene_file_path = p_node->get_scene_file_path();
 	const String target_path = _get_relative_path_without_updir_dots(scene_file_path, p_g4mf_state->get_original_path());
 	const String target_uri_without_extension = (target_path.is_empty() ? String(p_node->get_name()) : target_path.get_basename()).to_snake_case();
-	TypedArray<G4MFModel4D> g4mf_models = p_g4mf_state->get_g4mf_models();
+	TypedArray<G4MFFileReference4D> g4mf_files = p_g4mf_state->get_g4mf_files();
 	if (p_deduplicate && !target_uri_without_extension.is_empty()) {
-		for (int i = 0; i < g4mf_models.size(); i++) {
-			Ref<G4MFModel4D> g4mf_model = g4mf_models[i];
+		for (int i = 0; i < g4mf_files.size(); i++) {
+			Ref<G4MFModel4D> g4mf_model = g4mf_files[i];
 			if (g4mf_model.is_valid() && g4mf_model->get_file_uri() == target_uri_without_extension) {
 				return i;
 			}
@@ -204,14 +204,14 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 		}
 		g4mf_model->_model_g4mf_state = model_g4mf_state;
 	}
-	// Append the model to the state.
-	const int model_index = g4mf_models.size();
-	g4mf_models.append(g4mf_model);
-	p_g4mf_state->set_g4mf_models(g4mf_models);
-	return model_index;
+	// Append the model file reference to the state.
+	const int model_file_index = g4mf_files.size();
+	g4mf_files.append(g4mf_model);
+	p_g4mf_state->set_g4mf_files(g4mf_files);
+	return model_file_index;
 }
 
-Error G4MFModel4D::export_write_model_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
+Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
 	const Ref<G4MFDocument4D> model_g4mf_document = _model_g4mf_document;
 	ERR_FAIL_COND_V(model_g4mf_document.is_null(), ERR_INVALID_DATA);
@@ -297,10 +297,8 @@ void G4MFModel4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_model_g4mf_document"), &G4MFModel4D::get_model_g4mf_document);
 	ClassDB::bind_method(D_METHOD("set_model_g4mf_document", "model_g4mf_document"), &G4MFModel4D::set_model_g4mf_document);
 
-	ClassDB::bind_method(D_METHOD("import_preload_model_data", "g4mf_state"), &G4MFModel4D::import_preload_model_data);
 	ClassDB::bind_method(D_METHOD("import_instantiate_model", "g4mf_state"), &G4MFModel4D::import_instantiate_model);
 	ClassDB::bind_static_method("G4MFModel4D", D_METHOD("export_pack_nodes_into_model", "g4mf_document", "g4mf_state", "node", "deduplicate"), &G4MFModel4D::export_pack_nodes_into_model, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("export_write_model_data", "g4mf_state", "deduplicate", "buffer_index"), &G4MFModel4D::export_write_model_data, DEFVAL(true), DEFVAL(0));
 
 	ClassDB::bind_static_method("G4MFModel4D", D_METHOD("from_dictionary", "dict"), &G4MFModel4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFModel4D::to_dictionary);

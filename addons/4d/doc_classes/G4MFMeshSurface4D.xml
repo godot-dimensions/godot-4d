@@ -5,7 +5,7 @@
 	</brief_description>
 	<description>
 		G4MFMeshSurface4D is a class for 4D mesh surfaces in the G4MF format. A mesh surface is a collection of vertices, edges, and cells that define a part of a mesh. Each surface may have a material.
-		[b]Note:[/b]: Godot 4D currently only supports one surface per mesh, but multiple surfaces are allowed in the G4MF format.
+		[b]Note:[/b] Godot 4D currently only supports one surface per mesh, but multiple surfaces are allowed in the G4MF format.
 	</description>
 	<tutorials>
 		<link title="G4MF Mesh Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/mesh.md</link>

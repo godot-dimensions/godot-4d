@@ -43,8 +43,8 @@
 		</method>
 	</methods>
 	<members>
-		<member name="model_index" type="int" setter="set_model_index" getter="get_model_index" default="-1">
-			The index of the [G4MFModel4D] in the [member G4MFState4D.g4mf_models] array. If this is not a valid index, this model instance does not reference any model.
+		<member name="model_file_index" type="int" setter="set_model_file_index" getter="get_model_file_index" default="-1">
+			The index of the [G4MFModel4D] in the [member G4MFState4D.g4mf_files] array. If this is not a valid index, this model instance does not reference any model.
 		</member>
 		<member name="node_additional_children" type="Dictionary" setter="set_node_additional_children" getter="get_node_additional_children" default="{}">
 			Additional children from the host G4MF file to add to the nodes of the instantiated model. The keys of the dictionary are the file-unique names of the nodes in the instantiated model, and the values are [PackedInt32Array]s of indices of additional child nodes to add to the corresponding instantiated model node, where the indices point to the nodes in the host G4MF file's [member G4MFState4D.g4mf_nodes] array. This allows for adding additional children to the instantiated model nodes without modifying the model file itself.

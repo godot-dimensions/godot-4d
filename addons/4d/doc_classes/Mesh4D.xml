@@ -57,7 +57,7 @@
 			<param index="0" name="items" type="PackedInt32Array" />
 			<description>
 				Static helper method for deduplicating edge indices. This method ensures that each pair of two integers in the array is unique, and that the first index is less than the second index. This is useful for optimizing wireframe meshes by removing duplicate edges and ensuring a consistent order for each edge.
-				[b]Note[/b]: This only looks at edge indices. It does not remove duplicate vertices, nor does it have access to the vertices array.
+				[b]Note:[/b] This only looks at edge indices. It does not remove duplicate vertices, nor does it have access to the vertices array.
 			</description>
 		</method>
 		<method name="get_cross_section_mesh">
