@@ -33,6 +33,7 @@ void ArrayFaceMesh4D::_generate_triangles() {
 
 void ArrayFaceMesh4D::_set_smooth_shading_face_vertex_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
 	//printf("ArrayFaceMesh4D::_set_smooth_shading_face_vertex_normals\n");
+	this->_save_face_vertex_indices();
 	Vector<Vector<PackedInt32Array>> poly_cell_indices = this->get_poly_cell_indices();
 	if (poly_cell_indices.size() < 2)
 		return;
@@ -41,8 +42,9 @@ void ArrayFaceMesh4D::_set_smooth_shading_face_vertex_normals(const ComputeNorma
 	face_normals.resize(_face_vertex_indices.size());
 	for (int i = 0; i < _face_vertex_indices.size(); i++)
 		face_normals.set(i, Vector4(0,0,0,0));
-	this->calculate_boundary_normals(
-		ArrayPolyMesh4D::ComputeNormalsMode::COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION);
+	if (p_recalculate_boundary_normals)
+		this->calculate_boundary_normals(
+			ArrayPolyMesh4D::ComputeNormalsMode::COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION, false);
 	PackedVector4Array boundary_normals = this->get_poly_cell_boundary_normals();
 
 	// Sum bordering cell normals for all faces
@@ -61,12 +63,12 @@ void ArrayFaceMesh4D::_set_smooth_shading_face_vertex_normals(const ComputeNorma
 
 	// Sum bordering face normals for all vertices
 	for (int i = 0; i < _face_vertex_indices.size(); i++)
-		for (int j = 0; j < _face_vertex_indices[i].size(); i++)
+		for (int j = 0; j < _face_vertex_indices[i].size(); j++)
 			_vertex_normals.set(_face_vertex_indices[i][j], _vertex_normals[_face_vertex_indices[i][j]] + face_normals[i]);
 
 	// Normalize vertex normals
-	for (int i = 0; i < face_normals.size(); i++)
-	_vertex_normals.set(i, _vertex_normals[i].normalized());
+	for (int i = 0; i < num_vertices; i++)
+		_vertex_normals.set(i, _vertex_normals[i].normalized());
 
 }
 
@@ -326,12 +328,14 @@ void ArrayFaceMesh4D::update_cross_section_mesh() {
 	ERR_FAIL_COND(_cross_section_mesh.is_null());
 	_cross_section_mesh->clear_surfaces();
 
-	this->_save_face_vertex_indices();
 	// Initialize surface tool
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
 	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
 	surface_tool->set_smooth_group(-1);
+
+	this->_set_smooth_shading_face_vertex_normals(ArrayPolyMesh4D::ComputeNormalsMode::COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION, true);
+	//this->set_flat_shading_normals(ArrayPolyMesh4D::ComputeNormalsMode::COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION, false);
 
 	Ref<Material4D> material = get_material();
 	if (material.is_valid()) {

@@ -65,35 +65,17 @@ float inverseLerp(float a, float b, float value) {
 }
 
 void fragment() {
-	NORMAL = normalize(NORMAL);
+	mat4 modelview_basis = mat4(modelview_basis_x, modelview_basis_y, modelview_basis_z, modelview_basis_w);
+	//normal = normalize(normal);
 	vec4 vertex_base_color = vec4(COLOR.rgb, ugaf) * vec4(base_color_rgba.rgb, base_color_u);
 	vec4 color = mix(
 		vertex_base_color, 
 		w_distance >= 0.0 ? w_positive_fade_rgbu : w_negative_fade_rgbu,
-		clamp(w_distance >= 0.0 ? w_distance : -w_distance, 0.0, 1.0));
+		clamp((w_distance >= 0.0 ? w_distance : -w_distance) / w_fade_distance, 0.0, 1.0));
 	float z_depth_fade = 1.0 - clamp(VERTEX.z / 12.0, 0.0, 1.0);
 	float w_dist_fade = 1.0 - clamp(abs(w_distance / w_fade_distance), 0.0, 1.0);
-	float light = ((dot((vec4(NORMAL, 0.) * INV_VIEW_MATRIX).xyz, vec3(0., 1., 0.)) / 2.) + 0.5);
+	float light = ((dot(normalize((vec4(NORMAL,0.0) + normal) / 2.0 * modelview_basis), vec4(0., 1., 0., 0.)) / 2.) + 0.5);
 	ALBEDO = combine_ugaf(FRAGCOORD, color) * light;
-	ALPHA = z_depth_fade * w_dist_fade * 0.25 * COLOR.a * base_color_rgba.a;
-
-	/*
-	float fade_denom = w_fade_distance + abs(VERTEX.z);
-	float fade_factor = w_distance * (0.5 / fade_denom);
-
-	NORMAL = normalize(NORMAL);
-	vec4 vertex_base_color = vec4(COLOR.rgb, ugaf) * vec4(base_color_rgba.rgb, base_color_u);
-	vec4 signed_fade = w_distance >= 0. ? w_positive_fade_rgbu : w_negative_fade_rgbu;
-	vec4 faded = mix(
-		vertex_base_color,
-		vec4(vertex_base_color.rgb * signed_fade.rgb, signed_fade.w), // Make ugaf able to fade lighter
-		clamp((w_distance >= 0. ? -fade_factor : fade_factor) * 1.5, 0., 1.)
-	);
-	vec4 normaled_rgbu = faded *
-		((dot((vec4(NORMAL, 0.) * INV_VIEW_MATRIX).xyz, vec3(0., 1., 0.)) / 2.) + 0.5);
-	ALBEDO = combine_ugaf(FRAGCOORD, normaled_rgbu);
-
-	float alpha = clamp(COLOR.a * base_color_rgba.a * (1. - min(1.0, abs(fade_factor))), 0., 1.);
-	ALPHA = alpha * 0.0625;
-	*/
+	float alpha = z_depth_fade * w_dist_fade * 0.5 * COLOR.a * base_color_rgba.a;
+	if (alpha < get_dither_threshold(FRAGCOORD.xy)) discard;
 }
