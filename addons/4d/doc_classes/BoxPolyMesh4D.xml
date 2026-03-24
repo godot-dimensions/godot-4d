@@ -43,7 +43,7 @@
 			The half-extents of the box mesh in meters, also known as just "extents". This is the "radius" of the box. This is a wrapper around [member size] for situations where you want to use the extents instead of size. Since the box is centered at the origin, one vertex is located at the half-extents, and the rest have some of the components negated.
 		</member>
 		<member name="poly_texture_map" type="int" setter="set_poly_texture_map" getter="get_poly_texture_map" enum="BoxPolyMesh4D.BoxPolyTextureMap" default="0">
-			The type of texture map used for the cell UVW texture space of the box mesh cells. This determines the cell UVW texture map returned by [method get_cell_uvw_map]. Different options have different impacts on texture density, visual intuitiveness, and texture bleeding. See [enum BoxPolyTextureMap] for possible values.
+			The type of texture map used for the cell UVW texture space of the box mesh cells. This determines the cell UVW texture map returned by [method get_poly_cell_texture_map] and therefore [method get_simplex_cell_texture_map]. Different options have different impacts on texture density, visual intuitiveness, and texture bleeding. See [enum BoxPolyTextureMap] for possible values.
 		</member>
 		<member name="size" type="Vector4" setter="set_size" getter="get_size" default="Vector4(1, 1, 1, 1)">
 			The size of the box mesh in meters. This is the "diameter" size of the box in 4D space, where each component is the size of the box in one of the 4 dimensions. This is the value that is stored internally.

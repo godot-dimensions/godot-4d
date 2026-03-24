@@ -128,7 +128,17 @@ Basis4D Basis4D::rotate_plane_local(const Vector4 &p_local_plane_from, const Vec
 // Inversion methods.
 
 Basis4D Basis4D::inverse() const {
-	return adjugate() / determinant();
+	const Basis4D adj = adjugate();
+	// Use the adjugate's values instead of calling determinant() to avoid redundant calculations.
+	// Note: The adjugate already applies the sign changes needed, so these are all added here.
+	const real_t det = x.x * adj.x.x + y.x * adj.x.y + z.x * adj.x.z + w.x * adj.x.w;
+	// We want to only fail for values *really* close to zero.
+	// A scale of 0.00001 (1e-5) in 4D results in a 1e-20 determinant.
+	if (Math::is_equal_approx(det, (real_t)0.0, (real_t)1e-20) || !Math::is_finite(det)) {
+		ERR_PRINT("Basis4D.inverse: Cannot invert matrix with zero or near-zero determinant (" + String::num(det) + "). Returning identity matrix.");
+		return Basis4D();
+	}
+	return adj / det;
 }
 
 void Basis4D::transpose() {
@@ -147,24 +157,44 @@ Basis4D Basis4D::transposed() const {
 }
 
 Basis4D Basis4D::adjugate() const {
-	// This method accumulates a lot of floating-point error,
-	// but doing all calculations in at least doubles helps a ton.
-	const real_t xx = y.y * (double_t)z.z * w.w + z.y * (double_t)w.z * y.w + w.y * (double_t)y.z * z.w - w.y * (double_t)z.z * y.w - z.y * (double_t)y.z * w.w - y.y * (double_t)w.z * z.w;
-	const real_t xy = w.y * (double_t)z.z * x.w + z.y * (double_t)x.z * w.w + x.y * (double_t)w.z * z.w - x.y * (double_t)z.z * w.w - z.y * (double_t)w.z * x.w - w.y * (double_t)x.z * z.w;
-	const real_t xz = x.y * (double_t)y.z * w.w + y.y * (double_t)w.z * x.w + w.y * (double_t)x.z * y.w - w.y * (double_t)y.z * x.w - y.y * (double_t)x.z * w.w - x.y * (double_t)w.z * y.w;
-	const real_t xw = z.y * (double_t)y.z * x.w + y.y * (double_t)x.z * z.w + x.y * (double_t)z.z * y.w - x.y * (double_t)y.z * z.w - y.y * (double_t)z.z * x.w - z.y * (double_t)x.z * y.w;
-	const real_t yx = w.x * (double_t)z.z * y.w + z.x * (double_t)y.z * w.w + y.x * (double_t)w.z * z.w - y.x * (double_t)z.z * w.w - z.x * (double_t)w.z * y.w - w.x * (double_t)y.z * z.w;
-	const real_t yy = x.x * (double_t)z.z * w.w + z.x * (double_t)w.z * x.w + w.x * (double_t)x.z * z.w - w.x * (double_t)z.z * x.w - z.x * (double_t)x.z * w.w - x.x * (double_t)w.z * z.w;
-	const real_t yz = w.x * (double_t)y.z * x.w + y.x * (double_t)x.z * w.w + x.x * (double_t)w.z * y.w - x.x * (double_t)y.z * w.w - y.x * (double_t)w.z * x.w - w.x * (double_t)x.z * y.w;
-	const real_t yw = x.x * (double_t)y.z * z.w + y.x * (double_t)z.z * x.w + z.x * (double_t)x.z * y.w - z.x * (double_t)y.z * x.w - y.x * (double_t)x.z * z.w - x.x * (double_t)z.z * y.w;
-	const real_t zx = y.x * (double_t)z.y * w.w + z.x * (double_t)w.y * y.w + w.x * (double_t)y.y * z.w - w.x * (double_t)z.y * y.w - z.x * (double_t)y.y * w.w - y.x * (double_t)w.y * z.w;
-	const real_t zy = w.x * (double_t)z.y * x.w + z.x * (double_t)x.y * w.w + x.x * (double_t)w.y * z.w - x.x * (double_t)z.y * w.w - z.x * (double_t)w.y * x.w - w.x * (double_t)x.y * z.w;
-	const real_t zz = x.x * (double_t)y.y * w.w + y.x * (double_t)w.y * x.w + w.x * (double_t)x.y * y.w - w.x * (double_t)y.y * x.w - y.x * (double_t)x.y * w.w - x.x * (double_t)w.y * y.w;
-	const real_t zw = z.x * (double_t)y.y * x.w + y.x * (double_t)x.y * z.w + x.x * (double_t)z.y * y.w - x.x * (double_t)y.y * z.w - y.x * (double_t)z.y * x.w - z.x * (double_t)x.y * y.w;
-	const real_t wx = w.x * (double_t)z.y * y.z + z.x * (double_t)y.y * w.z + y.x * (double_t)w.y * z.z - y.x * (double_t)z.y * w.z - z.x * (double_t)w.y * y.z - w.x * (double_t)y.y * z.z;
-	const real_t wy = x.x * (double_t)z.y * w.z + z.x * (double_t)w.y * x.z + w.x * (double_t)x.y * z.z - w.x * (double_t)z.y * x.z - z.x * (double_t)x.y * w.z - x.x * (double_t)w.y * z.z;
-	const real_t wz = w.x * (double_t)y.y * x.z + y.x * (double_t)x.y * w.z + x.x * (double_t)w.y * y.z - x.x * (double_t)y.y * w.z - y.x * (double_t)w.y * x.z - w.x * (double_t)x.y * y.z;
-	const real_t ww = x.x * (double_t)y.y * z.z + y.x * (double_t)z.y * x.z + z.x * (double_t)x.y * y.z - z.x * (double_t)y.y * x.z - y.x * (double_t)x.y * z.z - x.x * (double_t)z.y * y.z;
+	// This method accumulates a lot of floating-point error, but doing
+	// all calculations in "at least doubles" (double_t) helps a ton.
+	// Canonical 2x2 minors.
+	const double_t dxy_zw = (double_t)x.z * (double_t)y.w - (double_t)x.w * (double_t)y.z;
+	const double_t dxz_zw = (double_t)x.z * (double_t)z.w - (double_t)x.w * (double_t)z.z;
+	const double_t dxw_zw = (double_t)x.z * (double_t)w.w - (double_t)x.w * (double_t)w.z;
+	const double_t dyz_zw = (double_t)y.z * (double_t)z.w - (double_t)y.w * (double_t)z.z;
+	const double_t dyw_zw = (double_t)y.z * (double_t)w.w - (double_t)y.w * (double_t)w.z;
+	const double_t dzw_zw = (double_t)z.z * (double_t)w.w - (double_t)z.w * (double_t)w.z;
+	const double_t dxy_yw = (double_t)x.y * (double_t)y.w - (double_t)x.w * (double_t)y.y;
+	const double_t dxz_yw = (double_t)x.y * (double_t)z.w - (double_t)x.w * (double_t)z.y;
+	const double_t dxw_yw = (double_t)x.y * (double_t)w.w - (double_t)x.w * (double_t)w.y;
+	const double_t dyz_yw = (double_t)y.y * (double_t)z.w - (double_t)y.w * (double_t)z.y;
+	const double_t dyw_yw = (double_t)y.y * (double_t)w.w - (double_t)y.w * (double_t)w.y;
+	const double_t dzw_yw = (double_t)z.y * (double_t)w.w - (double_t)z.w * (double_t)w.y;
+	const double_t dxy_yz = (double_t)x.y * (double_t)y.z - (double_t)x.z * (double_t)y.y;
+	const double_t dxz_yz = (double_t)x.y * (double_t)z.z - (double_t)x.z * (double_t)z.y;
+	const double_t dxw_yz = (double_t)x.y * (double_t)w.z - (double_t)x.z * (double_t)w.y;
+	const double_t dyz_yz = (double_t)y.y * (double_t)z.z - (double_t)y.z * (double_t)z.y;
+	const double_t dyw_yz = (double_t)y.y * (double_t)w.z - (double_t)y.z * (double_t)w.y;
+	const double_t dzw_yz = (double_t)z.y * (double_t)w.z - (double_t)z.z * (double_t)w.y;
+	// Adjugate entries.
+	const real_t xx = +(double_t)y.y * dzw_zw - (double_t)z.y * dyw_zw + (double_t)w.y * dyz_zw;
+	const real_t xy = -(double_t)w.y * dxz_zw + (double_t)z.y * dxw_zw - (double_t)x.y * dzw_zw;
+	const real_t xz = +(double_t)x.y * dyw_zw - (double_t)y.y * dxw_zw + (double_t)w.y * dxy_zw;
+	const real_t xw = -(double_t)z.y * dxy_zw + (double_t)y.y * dxz_zw - (double_t)x.y * dyz_zw;
+	const real_t yx = -(double_t)w.x * dyz_zw + (double_t)z.x * dyw_zw - (double_t)y.x * dzw_zw;
+	const real_t yy = +(double_t)x.x * dzw_zw - (double_t)z.x * dxw_zw + (double_t)w.x * dxz_zw;
+	const real_t yz = -(double_t)w.x * dxy_zw + (double_t)y.x * dxw_zw - (double_t)x.x * dyw_zw;
+	const real_t yw = +(double_t)x.x * dyz_zw - (double_t)y.x * dxz_zw + (double_t)z.x * dxy_zw;
+	const real_t zx = +(double_t)y.x * dzw_yw - (double_t)z.x * dyw_yw + (double_t)w.x * dyz_yw;
+	const real_t zy = -(double_t)w.x * dxz_yw + (double_t)z.x * dxw_yw - (double_t)x.x * dzw_yw;
+	const real_t zz = +(double_t)x.x * dyw_yw - (double_t)y.x * dxw_yw + (double_t)w.x * dxy_yw;
+	const real_t zw = -(double_t)z.x * dxy_yw + (double_t)y.x * dxz_yw - (double_t)x.x * dyz_yw;
+	const real_t wx = -(double_t)w.x * dyz_yz + (double_t)z.x * dyw_yz - (double_t)y.x * dzw_yz;
+	const real_t wy = +(double_t)x.x * dzw_yz - (double_t)z.x * dxw_yz + (double_t)w.x * dxz_yz;
+	const real_t wz = -(double_t)w.x * dxy_yz + (double_t)y.x * dxw_yz - (double_t)x.x * dyw_yz;
+	const real_t ww = +(double_t)x.x * dyz_yz - (double_t)y.x * dxz_yz + (double_t)z.x * dxy_yz;
 	return Basis4D(xx, xy, xz, xw, yx, yy, yz, yw, zx, zy, zz, zw, wx, wy, wz, ww);
 }
 

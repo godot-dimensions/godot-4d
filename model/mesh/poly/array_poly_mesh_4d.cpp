@@ -729,7 +729,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		if (end_poly_cell_texture_map_count > 0) {
 			// We need to keep these aligned, so missing entries need to exist. With the normals, there was a way to
 			// generate missing entries, but with texture maps, just let them be default-initialized to empty arrays.
-			// PolyMesh4D::get_cell_uvw_map can turn these into zero vectors for the tetrahedral cell UVW maps.
+			// PolyMesh4D::get_simplex_cell_texture_map can turn these into zero vectors for the tetrahedral cell UVW maps.
 			_poly_cell_texture_map.resize(end_poly_cell_texture_map_count);
 			for (int64_t cell_index = 0; cell_index < other_poly_cell_texture_map.size(); cell_index++) {
 				_poly_cell_texture_map.set(start_poly_cell_texture_map_count + cell_index, other_poly_cell_texture_map[cell_index]);
@@ -954,7 +954,7 @@ Ref<ArrayPolyMesh4D> ArrayPolyMesh4D::reconstruct_from_tetra_mesh(const Ref<Tetr
 	ret.instantiate();
 	const PackedVector4Array vertices = p_tetra_mesh->get_vertices();
 	ret->set_poly_cell_vertices(vertices);
-	const PackedInt32Array simplex_indices = p_tetra_mesh->get_cell_indices();
+	const PackedInt32Array simplex_indices = p_tetra_mesh->get_simplex_cell_indices();
 	const int64_t simplex_count = simplex_indices.size() / 4;
 	PackedInt32Array edge_vertex_indices;
 	Vector<PackedInt32Array> all_face_edge_indices;

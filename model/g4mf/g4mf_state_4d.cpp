@@ -96,18 +96,16 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_g4mf_buffer_views", "g4mf_buffer_views"), &G4MFState4D::set_g4mf_buffer_views);
 	ClassDB::bind_method(D_METHOD("get_g4mf_buffers"), &G4MFState4D::get_g4mf_buffers);
 	ClassDB::bind_method(D_METHOD("set_g4mf_buffers", "g4mf_buffers"), &G4MFState4D::set_g4mf_buffers);
+	ClassDB::bind_method(D_METHOD("get_g4mf_files"), &G4MFState4D::get_g4mf_files);
+	ClassDB::bind_method(D_METHOD("set_g4mf_files", "g4mf_files"), &G4MFState4D::set_g4mf_files);
 	ClassDB::bind_method(D_METHOD("get_g4mf_textures"), &G4MFState4D::get_g4mf_textures);
 	ClassDB::bind_method(D_METHOD("set_g4mf_textures", "g4mf_textures"), &G4MFState4D::set_g4mf_textures);
 	ClassDB::bind_method(D_METHOD("get_g4mf_materials"), &G4MFState4D::get_g4mf_materials);
 	ClassDB::bind_method(D_METHOD("set_g4mf_materials", "g4mf_materials"), &G4MFState4D::set_g4mf_materials);
 	ClassDB::bind_method(D_METHOD("get_g4mf_meshes"), &G4MFState4D::get_g4mf_meshes);
 	ClassDB::bind_method(D_METHOD("set_g4mf_meshes", "g4mf_meshes"), &G4MFState4D::set_g4mf_meshes);
-	ClassDB::bind_method(D_METHOD("get_g4mf_models"), &G4MFState4D::get_g4mf_models);
-	ClassDB::bind_method(D_METHOD("set_g4mf_models", "g4mf_models"), &G4MFState4D::set_g4mf_models);
 	ClassDB::bind_method(D_METHOD("get_g4mf_shapes"), &G4MFState4D::get_g4mf_shapes);
 	ClassDB::bind_method(D_METHOD("set_g4mf_shapes", "g4mf_shapes"), &G4MFState4D::set_g4mf_shapes);
-	ClassDB::bind_method(D_METHOD("get_g4mf_lights"), &G4MFState4D::get_g4mf_lights);
-	ClassDB::bind_method(D_METHOD("set_g4mf_lights", "g4mf_lights"), &G4MFState4D::set_g4mf_lights);
 	ClassDB::bind_method(D_METHOD("get_g4mf_nodes"), &G4MFState4D::get_g4mf_nodes);
 	ClassDB::bind_method(D_METHOD("set_g4mf_nodes", "g4mf_nodes"), &G4MFState4D::set_g4mf_nodes);
 	ClassDB::bind_method(D_METHOD("get_godot_nodes"), &G4MFState4D::get_godot_nodes);
@@ -118,6 +116,8 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("has_unique_name", "name"), &G4MFState4D::has_unique_name);
 	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested_name"), &G4MFState4D::reserve_unique_name);
 	ClassDB::bind_method(D_METHOD("unreserve_unique_name", "name"), &G4MFState4D::unreserve_unique_name);
+
+	ClassDB::bind_method(D_METHOD("get_declared_dimension"), &G4MFState4D::get_declared_dimension);
 
 	// Path data for the file.
 	ClassDB::bind_method(D_METHOD("get_g4mf_base_path"), &G4MFState4D::get_g4mf_base_path);
@@ -133,17 +133,19 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_external_data_mode", "mode"), &G4MFState4D::set_external_data_mode);
 	ClassDB::bind_method(D_METHOD("should_separate_resource_files"), &G4MFState4D::should_separate_resource_files);
 
+	ClassDB::bind_method(D_METHOD("get_force_wireframe"), &G4MFState4D::get_force_wireframe);
+	ClassDB::bind_method(D_METHOD("set_force_wireframe", "force_wireframe"), &G4MFState4D::set_force_wireframe);
+
 	// Data for the contents of the file.
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "g4mf_json"), "set_g4mf_json", "get_g4mf_json");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_accessors", PROPERTY_HINT_ARRAY_TYPE, "G4MFAccessor4D"), "set_g4mf_accessors", "get_g4mf_accessors");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_buffer_views", PROPERTY_HINT_ARRAY_TYPE, "G4MFBufferView4D"), "set_g4mf_buffer_views", "get_g4mf_buffer_views");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_buffers", PROPERTY_HINT_ARRAY_TYPE, "PackedByteArray"), "set_g4mf_buffers", "get_g4mf_buffers");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_files", PROPERTY_HINT_ARRAY_TYPE, "G4MFFileReference4D"), "set_g4mf_files", "get_g4mf_files");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_textures", PROPERTY_HINT_ARRAY_TYPE, "G4MFTexture4D"), "set_g4mf_textures", "get_g4mf_textures");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_materials", PROPERTY_HINT_ARRAY_TYPE, "G4MFMaterial4D"), "set_g4mf_materials", "get_g4mf_materials");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_meshes", PROPERTY_HINT_ARRAY_TYPE, "G4MFMesh4D"), "set_g4mf_meshes", "get_g4mf_meshes");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_models", PROPERTY_HINT_ARRAY_TYPE, "G4MFModel4D"), "set_g4mf_models", "get_g4mf_models");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_shapes", PROPERTY_HINT_ARRAY_TYPE, "G4MFShape4D"), "set_g4mf_shapes", "get_g4mf_shapes");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_lights", PROPERTY_HINT_ARRAY_TYPE, "G4MFLight4D"), "set_g4mf_lights", "get_g4mf_lights");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_nodes", PROPERTY_HINT_ARRAY_TYPE, "G4MFNode4D"), "set_g4mf_nodes", "get_g4mf_nodes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "godot_nodes", PROPERTY_HINT_ARRAY_TYPE, "Node4D"), "set_godot_nodes", "get_godot_nodes");
 
@@ -154,6 +156,7 @@ void G4MFState4D::_bind_methods() {
 
 	// Settings for handling the file.
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "external_data_mode", PROPERTY_HINT_ENUM, "Automatic,Embed Everything,Separate All Files,Separate Binary Blobs,Separate Resource Files"), "set_external_data_mode", "get_external_data_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "force_wireframe"), "set_force_wireframe", "get_force_wireframe");
 
 	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_AUTOMATIC);
 	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_EMBED_EVERYTHING);

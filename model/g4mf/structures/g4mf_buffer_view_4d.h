@@ -7,7 +7,7 @@ class G4MFState4D;
 class G4MFBufferView4D : public G4MFItem4D {
 	GDCLASS(G4MFBufferView4D, G4MFItem4D);
 
-	int _buffer_index = -1;
+	int _buffer_index = 0;
 	int64_t _byte_offset = 0;
 	int64_t _byte_length = 0;
 

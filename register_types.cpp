@@ -36,6 +36,7 @@
 
 // Model.
 #include "model/g4mf/g4mf_document_4d.h"
+#include "model/g4mf/structures/g4mf_model_4d.h"
 #include "model/mesh/mesh_instance_4d.h"
 #include "model/mesh/face/array_face_mesh_4d.h"
 #include "model/mesh/face/base_face_material_4d.h"
@@ -220,8 +221,12 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(G4MFMaterialChannel4D);
 		GDREGISTER_CLASS(G4MFMaterial4D);
 		GDREGISTER_CLASS(G4MFMeshSurface4D);
+		GDREGISTER_CLASS(G4MFMeshSurfaceBinding4D);
+		GDREGISTER_CLASS(G4MFMeshSurfaceBindingGeometry4D);
 		GDREGISTER_CLASS(G4MFMesh4D);
+		GDREGISTER_CLASS(G4MFMeshInstance4D);
 		GDREGISTER_CLASS(G4MFModel4D);
+		GDREGISTER_CLASS(G4MFModelInstance4D);
 		GDREGISTER_CLASS(G4MFShape4D);
 		GDREGISTER_CLASS(G4MFNodePhysics4D);
 		GDREGISTER_CLASS(G4MFNodePhysicsMotion4D);

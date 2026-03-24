@@ -200,7 +200,7 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 		const Vector3i heightmap_size = heightmap_shape->get_size();
 		ret->set_base_size(Vector4(heightmap_size.x, 1.0, heightmap_size.y, heightmap_size.z));
 		const PackedFloat64Array heightmap_data = heightmap_shape->get_height_data();
-		const String prim_type = G4MFAccessor4D::minimal_primitive_type_for_floats(heightmap_shape->get_height_data());
+		const String prim_type = G4MFAccessor4D::minimal_component_type_for_floats(heightmap_shape->get_height_data());
 		Ref<G4MFAccessor4D> accessor = G4MFAccessor4D::make_new_accessor_without_data(prim_type);
 		const PackedByteArray encoded_heightmap_data = accessor->encode_floats_as_bytes(heightmap_data);
 		int heights_accessor_index = accessor->store_accessor_data_into_state(p_g4mf_state, encoded_heightmap_data, p_deduplicate);

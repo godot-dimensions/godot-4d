@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="G4MFMeshSurfaceBindingGeometry4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Geometry decomposition for mesh surface bindings.
+	</brief_description>
+	<description>
+		Defines how binding values are associated with specific geometry's decomposed polytope elements of the mesh surface.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from_dictionary" qualifiers="static">
+			<return type="G4MFMeshSurfaceBindingGeometry4D" />
+			<param index="0" name="dict" type="Dictionary" />
+			<description>
+				Converts the given [Dictionary] representing the JSON of a G4MF mesh surface binding geometry to a [G4MFMeshSurfaceBindingGeometry4D]. This will set the fields of the [G4MFMeshSurfaceBindingGeometry4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
+			</description>
+		</method>
+		<method name="is_equal_exact" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="other" type="G4MFMeshSurfaceBindingGeometry4D" />
+			<description>
+				Checks if the [G4MFMeshSurfaceBindingGeometry4D] is equal to another [G4MFMeshSurfaceBindingGeometry4D] exactly by checking if the properties are equal and all accessor indices refer to the same accessors. If a mesh surface binding geometry refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the mesh surface binding geometry is not checked, and any metadata is ignored.
+			</description>
+		</method>
+		<method name="to_dictionary" qualifiers="const">
+			<return type="Dictionary" />
+			<description>
+				Converts the [G4MFMeshSurfaceBindingGeometry4D] into a [Dictionary] representing the JSON of a G4MF mesh surface binding geometry.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="decomposition_dimension" type="int" setter="set_decomposition_dimension" getter="get_decomposition_dimension" default="0">
+			The dimensional level to decompose to. 0 for vertices, 1 for edges, 2 for polygons, 3 for volumes, and so on. MUST NOT be greater than [member geometry_index] + 2.
+		</member>
+		<member name="geometry_index" type="int" setter="set_geometry_index" getter="get_geometry_index" default="-1">
+			The index into the mesh surface's geometry array that this binding references.
+		</member>
+		<member name="indices_accessor_index" type="int" setter="set_indices_accessor_index" getter="get_indices_accessor_index" default="-1">
+			The index of the accessor that contains indices into this binding's values. Each element corresponds to a decomposed element at the specified dimension.
+		</member>
+	</members>
+</class>

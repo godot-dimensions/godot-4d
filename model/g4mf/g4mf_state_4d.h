@@ -2,10 +2,9 @@
 
 #include "structures/g4mf_accessor_4d.h"
 #include "structures/g4mf_buffer_view_4d.h"
-#include "structures/g4mf_light_4d.h"
+#include "structures/g4mf_file_reference_4d.h"
 #include "structures/g4mf_material_4d.h"
 #include "structures/g4mf_mesh_4d.h"
-#include "structures/g4mf_model_4d.h"
 #include "structures/g4mf_node_4d.h"
 #include "structures/g4mf_texture_4d.h"
 #include "structures/physics/g4mf_shape_4d.h"
@@ -37,16 +36,17 @@ private:
 	TypedArray<G4MFAccessor4D> _g4mf_accessors;
 	TypedArray<G4MFBufferView4D> _g4mf_buffer_views;
 	TypedArray<PackedByteArray> _g4mf_buffers;
-	TypedArray<G4MFLight4D> _g4mf_lights;
+	TypedArray<G4MFFileReference4D> _g4mf_files;
 	TypedArray<G4MFTexture4D> _g4mf_textures;
 	TypedArray<G4MFMaterial4D> _g4mf_materials;
 	TypedArray<G4MFMesh4D> _g4mf_meshes;
-	TypedArray<G4MFModel4D> _g4mf_models;
 	TypedArray<G4MFShape4D> _g4mf_shapes;
 	TypedArray<G4MFNode4D> _g4mf_nodes;
 	TypedArray<Node4D> _godot_nodes;
 	HashSet<String> _unique_names;
 	Dictionary _g4mf_json;
+	int _declared_dimension = 4;
+	bool _force_wireframe = false;
 
 	// Path data for the file.
 	String _g4mf_base_path = "";
@@ -70,6 +70,9 @@ public:
 	TypedArray<PackedByteArray> get_g4mf_buffers() const { return _g4mf_buffers; }
 	void set_g4mf_buffers(const TypedArray<PackedByteArray> &p_buffers) { _g4mf_buffers = p_buffers; }
 
+	TypedArray<G4MFFileReference4D> get_g4mf_files() const { return _g4mf_files; }
+	void set_g4mf_files(const TypedArray<G4MFFileReference4D> &p_g4mf_files) { _g4mf_files = p_g4mf_files; }
+
 	Dictionary get_g4mf_json() const { return _g4mf_json; }
 	void set_g4mf_json(const Dictionary &p_g4mf_json) { _g4mf_json = p_g4mf_json; }
 
@@ -82,14 +85,8 @@ public:
 	TypedArray<G4MFMesh4D> get_g4mf_meshes() const { return _g4mf_meshes; }
 	void set_g4mf_meshes(const TypedArray<G4MFMesh4D> &p_g4mf_meshes) { _g4mf_meshes = p_g4mf_meshes; }
 
-	TypedArray<G4MFModel4D> get_g4mf_models() const { return _g4mf_models; }
-	void set_g4mf_models(const TypedArray<G4MFModel4D> &p_g4mf_models) { _g4mf_models = p_g4mf_models; }
-
 	TypedArray<G4MFShape4D> get_g4mf_shapes() const { return _g4mf_shapes; }
 	void set_g4mf_shapes(const TypedArray<G4MFShape4D> &p_g4mf_shapes) { _g4mf_shapes = p_g4mf_shapes; }
-
-	TypedArray<G4MFLight4D> get_g4mf_lights() const { return _g4mf_lights; }
-	void set_g4mf_lights(const TypedArray<G4MFLight4D> &p_g4mf_lights) { _g4mf_lights = p_g4mf_lights; }
 
 	TypedArray<G4MFNode4D> get_g4mf_nodes() const { return _g4mf_nodes; }
 	void set_g4mf_nodes(const TypedArray<G4MFNode4D> &p_g4mf_nodes) { _g4mf_nodes = p_g4mf_nodes; }
@@ -102,6 +99,13 @@ public:
 	bool has_unique_name(const String &p_name) const { return _unique_names.has(p_name); }
 	String reserve_unique_name(const String &p_requested_name);
 	bool unreserve_unique_name(const String &p_name);
+
+	int get_declared_dimension() const { return _declared_dimension; }
+	// Do not expose this setter! It has exactly one usage in G4MFDocument4D when importing a file.
+	void set_declared_dimension(const int p_declared_dimension) { _declared_dimension = p_declared_dimension; }
+
+	bool get_force_wireframe() const { return _force_wireframe; }
+	void set_force_wireframe(const bool p_force_wireframe) { _force_wireframe = p_force_wireframe; }
 
 	// Path data for the file.
 	String get_g4mf_base_path() const { return _g4mf_base_path; }

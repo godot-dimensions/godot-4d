@@ -45,6 +45,7 @@ private:
 	double _information_label_auto_hide_time = 0.0;
 
 	Vector2 _get_warped_mouse_motion(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const;
+	bool _should_mouse_motion_affect_4d(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const;
 	void _on_button_toggled(const bool p_toggled_on, const int p_option);
 	void _update_theme();
 

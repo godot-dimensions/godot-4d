@@ -5,7 +5,7 @@
 #include "../wire/orthoplex_wire_mesh_4d.h"
 
 void OrthoplexPolyMesh4D::_clear_caches() {
-	_cell_positions_cache.clear();
+	_simplex_positions_cache.clear();
 	_vertices_cache.clear();
 	poly_mesh_clear_cache();
 }

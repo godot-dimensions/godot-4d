@@ -4,7 +4,7 @@
 #include "../wire/orthoplex_wire_mesh_4d.h"
 
 void OrthoplexTetraMesh4D::_clear_caches() {
-	_cell_positions_cache.clear();
+	_simplex_positions_cache.clear();
 	_vertices_cache.clear();
 	tetra_mesh_clear_cache();
 }
@@ -27,19 +27,19 @@ void OrthoplexTetraMesh4D::set_size(const Vector4 &p_size) {
 	_clear_caches();
 }
 
-PackedInt32Array OrthoplexTetraMesh4D::get_cell_indices() {
+PackedInt32Array OrthoplexTetraMesh4D::get_simplex_cell_indices() {
 	return ORTHOPLEX_CELL_INDICES;
 }
 
-PackedVector4Array OrthoplexTetraMesh4D::get_cell_boundary_normals() {
+PackedVector4Array OrthoplexTetraMesh4D::get_simplex_cell_boundary_normals() {
 	return ORTHOPLEX_CELL_BOUNDARY_NORMALS;
 }
 
-PackedVector4Array OrthoplexTetraMesh4D::get_cell_vertex_normals() {
+PackedVector4Array OrthoplexTetraMesh4D::get_simplex_cell_vertex_normals() {
 	return ORTHOPLEX_CELL_VERTEX_NORMALS;
 }
 
-PackedVector3Array OrthoplexTetraMesh4D::get_cell_uvw_map() {
+PackedVector3Array OrthoplexTetraMesh4D::get_simplex_cell_texture_map() {
 	return ORTHOPLEX_CELL_UVW_MAP;
 }
 

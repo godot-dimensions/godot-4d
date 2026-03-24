@@ -20,7 +20,6 @@ public:
 private:
 	CompressionFormat _compression_format = COMPRESSION_FORMAT_NONE;
 	int _max_nested_scene_depth = -1; // -1 means unlimited depth.
-	bool _force_wireframe = false;
 
 	inline uint64_t _ceiling_division(uint64_t a, uint64_t b) {
 		return (a + b - 1) / b;
@@ -28,22 +27,21 @@ private:
 
 	uint32_t _compression_format_to_indicator(const CompressionFormat p_compression_format);
 	CompressionFormat _compression_indicator_to_format(const uint32_t p_indicator);
-	String _uint32_to_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
-	uint32_t _string_to_uint32(const String &p_value);
+	String _uint32_to_ascii_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
+	uint32_t _ascii_string_to_uint32(const String &p_value);
 
 	// Export process.
 	Error _export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index);
 	Error _export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state);
-	void _export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _export_serialize_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _export_serialize_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_state, const bool p_should_separate_buffers_into_files);
+	void _export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	static String _export_pretty_print_inline(const Variant &p_variant);
 	static String _export_pretty_print_json(const Dictionary &p_g4mf_json);
 	PackedByteArray _export_compress_buffer_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data);
@@ -55,12 +53,11 @@ private:
 	Error _import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _import_parse_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _import_parse_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _import_parse_lights(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Node *_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root);
 	Ref<Mesh4D> _import_generate_combined_mesh(const Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible = false);
@@ -87,10 +84,6 @@ public:
 	// Settings for the export process.
 	CompressionFormat get_compression_format() const { return _compression_format; }
 	void set_compression_format(const CompressionFormat p_compression_format);
-
-	// Settings for the import process.
-	bool get_force_wireframe() const { return _force_wireframe; }
-	void set_force_wireframe(const bool p_force_wireframe) { _force_wireframe = p_force_wireframe; }
 };
 
 VARIANT_ENUM_CAST(G4MFDocument4D::CompressionFormat);

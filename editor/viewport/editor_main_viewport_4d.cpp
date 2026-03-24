@@ -81,6 +81,10 @@ Basis4D EditorMainViewport4D::get_view_camera_basis() const {
 	return _editor_camera_4d->get_basis();
 }
 
+bool EditorMainViewport4D::_should_mouse_motion_affect_4d(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const {
+	return p_ev_mouse_motion->is_ctrl_pressed() || p_ev_mouse_motion->is_command_or_control_pressed() || Input::get_singleton()->is_mouse_button_pressed(MOUSE_BUTTON_LEFT);
+}
+
 void EditorMainViewport4D::navigation_freelook(const Ref<InputEventMouseMotion> &p_input_event) {
 	Vector2 relative = _get_warped_mouse_motion(p_input_event);
 	const real_t degrees_per_pixel = EDITOR_GET("editors/3d/freelook/freelook_sensitivity");
@@ -90,7 +94,7 @@ void EditorMainViewport4D::navigation_freelook(const Ref<InputEventMouseMotion> 
 	if (invert_y_axis) {
 		rotation_radians.y = -rotation_radians.y;
 	}
-	if (p_input_event->is_ctrl_pressed() || p_input_event->is_command_or_control_pressed()) {
+	if (_should_mouse_motion_affect_4d(p_input_event)) {
 		_editor_camera_4d->freelook_rotate_ground_basis(Basis4D::from_xw(-rotation_radians.x) * Basis4D::from_zw(rotation_radians.y));
 	} else {
 		_editor_camera_4d->freelook_rotate_ground_basis_and_pitch(Basis4D::from_zx(-rotation_radians.x), -rotation_radians.y);
@@ -111,7 +115,7 @@ void EditorMainViewport4D::navigation_orbit(const Ref<InputEventMouseMotion> &p_
 	if (invert_y_axis) {
 		rotation_radians.y = -rotation_radians.y;
 	}
-	if (p_input_event->is_ctrl_pressed() || p_input_event->is_command_or_control_pressed()) {
+	if (_should_mouse_motion_affect_4d(p_input_event)) {
 		_editor_camera_4d->orbit_rotate_ground_basis(Basis4D::from_xw(-rotation_radians.x) * Basis4D::from_zw(rotation_radians.y));
 	} else {
 		_editor_camera_4d->orbit_rotate_ground_basis_and_pitch(Basis4D::from_zx(-rotation_radians.x), -rotation_radians.y);
@@ -122,7 +126,7 @@ void EditorMainViewport4D::navigation_orbit(const Ref<InputEventMouseMotion> &p_
 void EditorMainViewport4D::navigation_pan(const Ref<InputEventMouseMotion> &p_input_event) {
 	Vector2 relative = _get_warped_mouse_motion(p_input_event);
 	Vector4 pan;
-	if (p_input_event->is_ctrl_pressed() || p_input_event->is_command_or_control_pressed()) {
+	if (_should_mouse_motion_affect_4d(p_input_event)) {
 		pan = Vector4(0.0f, 0.0f, relative.y, relative.x);
 	} else {
 		pan = Vector4(-relative.x, relative.y, 0.0f, 0.0f);

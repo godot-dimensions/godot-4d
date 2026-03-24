@@ -408,7 +408,9 @@ Transform4D Node4D::get_global_transform() const {
 void Node4D::set_global_transform(const Transform4D &p_transform) {
 	Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
 	if (node_4d_parent) {
-		set_transform(node_4d_parent->get_global_transform().inverse() * p_transform);
+		const Transform4D parent_global_transform = node_4d_parent->get_global_transform();
+		ERR_FAIL_COND_MSG(parent_global_transform.basis.determinant() == 0.0f, "Failed to set global transform of the '" + get_name() + "' Node4D because its parent '" + node_4d_parent->get_name() + "' has a zero determinant basis, which is non-invertible.");
+		set_transform(parent_global_transform.inverse() * p_transform);
 	} else {
 		set_transform(p_transform);
 	}
@@ -445,7 +447,9 @@ Basis4D Node4D::get_global_basis() const {
 void Node4D::set_global_basis(const Basis4D &p_basis) {
 	Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
 	if (node_4d_parent) {
-		set_basis(node_4d_parent->get_global_basis().inverse() * p_basis);
+		const Basis4D parent_global_basis = node_4d_parent->get_global_basis();
+		ERR_FAIL_COND_MSG(parent_global_basis.determinant() == 0.0f, "Failed to set global basis of the '" + get_name() + "' Node4D because its parent '" + node_4d_parent->get_name() + "' has a zero determinant basis, which is non-invertible.");
+		set_basis(parent_global_basis.inverse() * p_basis);
 	} else {
 		set_basis(p_basis);
 	}

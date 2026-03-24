@@ -235,7 +235,8 @@ real_t GeneralShape4D::get_surface_volume() const {
 			// Duocylinder-specific surface volume, see DuocylinderShape4D.
 			surface += (2.0 * Math_PI * Math_PI) * (radii_average * radii1_average) * (radii_average + radii1_average);
 		}
-		ERR_FAIL_V_MSG(surface, "GeneralShape4D.get_surface_volume: Steinmetz solids are not supported.");
+		ERR_FAIL_COND_V_MSG(curve_count > 2, surface, "GeneralShape4D.get_surface_volume: Steinmetz solids are not supported.");
+		return surface;
 	}
 	// Curve dimension 1 is not really a valid curve, but we can handle it anyway.
 	if (curve_dimension == 1) {
