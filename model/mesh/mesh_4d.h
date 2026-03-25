@@ -59,5 +59,5 @@ public:
 	GDVIRTUAL0R(bool, _validate_mesh_data);
 	GDVIRTUAL0R(Ref<Material4D>, _get_fallback_material);
 	GDVIRTUAL0(_update_cross_section_mesh);
-	GDVIRTUAL1(_validate_material_for_mesh, const Ref<Material4D> &);
+	GDVIRTUAL1(_validate_material_for_mesh, Ref<Material4D>);
 };

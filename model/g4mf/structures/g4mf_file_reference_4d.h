@@ -30,8 +30,13 @@ public:
 
 	virtual Error import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state);
 	virtual Error export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate = true, const int p_buffer_index = 0);
-	GDVIRTUAL1R(Error, _import_parse_file_data, const Ref<G4MFState4D> &);
-	GDVIRTUAL3R(Error, _export_serialize_file_data, const Ref<G4MFState4D> &, const bool, const int);
+#ifdef GDEXTENSION
+	GDVIRTUAL1R(Error, _import_parse_file_data, Ref<Resource>);
+	GDVIRTUAL3R(Error, _export_serialize_file_data, Ref<Resource>, bool, int);
+#else // GODOT_MODULE
+	GDVIRTUAL1R(Error, _import_parse_file_data, Ref<G4MFState4D>);
+	GDVIRTUAL3R(Error, _export_serialize_file_data, Ref<G4MFState4D>, bool, int);
+#endif
 
 	static Ref<G4MFFileReference4D> file_reference_from_dictionary(const Dictionary &p_dict);
 	void read_file_reference_entries_from_dictionary(const Dictionary &p_dict);
