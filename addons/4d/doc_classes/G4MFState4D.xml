@@ -77,9 +77,6 @@
 			Saving resources like images to their own files can be useful for destinations where you need access to these files separately. For example, if the exported G4MF is added to the [code]res://[/code] folder of a Godot project, the default behavior of the Godot editor is to extract embedded images to their own files so they can be imported and compressed into GPU-optimized formats.
 			Extensions should respect this setting by calling [method should_separate_resource_files] to determine if they should save their resources in separate files.
 		</member>
-		<member name="force_wireframe" type="bool" setter="set_force_wireframe" getter="get_force_wireframe" default="false">
-			Whether to force all meshes to be generated as wireframe meshes. If [code]true[/code], all meshes will be generated as wireframe meshes, and meshes without edges will have their edges calculated from the cells. If [code]false[/code] (default), meshes will be generated as tetrahedral meshes if they have cells, or as wireframe meshes if they do not have cells.
-		</member>
 		<member name="g4mf_accessors" type="G4MFAccessor4D[]" setter="set_g4mf_accessors" getter="get_g4mf_accessors" default="[]">
 			The array of [G4MFAccessor4D]s in this G4MF file. If empty, the G4MF file does not have any accessors. Accessors are referenced by index in other structures to access data in buffer views in a typed way.
 		</member>
@@ -121,6 +118,9 @@
 		</member>
 		<member name="original_path" type="String" setter="set_original_path" getter="get_original_path" default="&quot;&quot;">
 			The original path of the file whose data led to populating this G4MFState4D. When importing a G4MF file, this is set to the path of the G4MF file, and is the same as the combination of [member g4mf_base_path] and [member g4mf_filename]. When exporting from a Godot scene, this is set to the path of the Godot scene file, if the root node is an instance of a Godot scene file.
+		</member>
+		<member name="preferred_mesh_format" type="int" setter="set_preferred_mesh_format" getter="get_preferred_mesh_format" enum="G4MFMesh4D.MeshFormat" default="1">
+			The preferred choice of mesh format which will try to be used when generating meshes from [G4MFMesh4D]s. If the selected format cannot be used for a given mesh, it will fall back to another format. The default value is [constant G4MFMesh4D.MESH_FORMAT_TETRAHEDRAL], which means that tetrahedral meshes will be preferred, but if a mesh has no cells and therefore cannot be represented as a tetrahedral mesh, it will fall back to a wireframe mesh.
 		</member>
 	</members>
 	<constants>

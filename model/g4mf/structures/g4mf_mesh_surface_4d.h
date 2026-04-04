@@ -2,6 +2,7 @@
 
 #include "g4mf_mesh_surface_binding_4d.h"
 
+#include "../../mesh/poly/array_poly_mesh_4d.h"
 #include "../../mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../mesh/wire/array_wire_mesh_4d.h"
 

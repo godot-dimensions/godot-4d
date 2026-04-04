@@ -72,4 +72,15 @@
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the vertex data for this mesh. Each vertex is a 4D vector. Vertices are shared between all mesh surfaces.
 		</member>
 	</members>
+	<constants>
+		<constant name="MESH_FORMAT_POLYTOPE" value="0" enum="MeshFormat">
+			On import, try to generate meshes as [ArrayPolyMesh4D] when possible. If no polytope mesh data is available, fall back to [constant MESH_FORMAT_TETRAHEDRAL].
+		</constant>
+		<constant name="MESH_FORMAT_TETRAHEDRAL" value="1" enum="MeshFormat">
+			On import, try to generate meshes as [ArrayTetraMesh4D] when possible. If no tetrahedral mesh data is available, fall back to [constant MESH_FORMAT_WIREFRAME].
+		</constant>
+		<constant name="MESH_FORMAT_WIREFRAME" value="2" enum="MeshFormat">
+			On import, generate meshes as [ArrayWireMesh4D].
+		</constant>
+	</constants>
 </class>

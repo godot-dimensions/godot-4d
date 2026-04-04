@@ -46,7 +46,7 @@ private:
 	HashSet<String> _unique_names;
 	Dictionary _g4mf_json;
 	int _declared_dimension = 4;
-	bool _force_wireframe = false;
+	G4MFMesh4D::MeshFormat _preferred_mesh_format = G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL;
 
 	// Path data for the file.
 	String _g4mf_base_path = "";
@@ -104,8 +104,8 @@ public:
 	// Do not expose this setter! It has exactly one usage in G4MFDocument4D when importing a file.
 	void set_declared_dimension(const int p_declared_dimension) { _declared_dimension = p_declared_dimension; }
 
-	bool get_force_wireframe() const { return _force_wireframe; }
-	void set_force_wireframe(const bool p_force_wireframe) { _force_wireframe = p_force_wireframe; }
+	G4MFMesh4D::MeshFormat get_preferred_mesh_format() const { return _preferred_mesh_format; }
+	void set_preferred_mesh_format(const G4MFMesh4D::MeshFormat p_preferred_mesh_format) { _preferred_mesh_format = p_preferred_mesh_format; }
 
 	// Path data for the file.
 	String get_g4mf_base_path() const { return _g4mf_base_path; }

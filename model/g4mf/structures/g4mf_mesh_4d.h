@@ -7,6 +7,15 @@ class G4MFState4D;
 class G4MFMesh4D : public G4MFItem4D {
 	GDCLASS(G4MFMesh4D, G4MFItem4D);
 
+public:
+	// These values need to be kept stable as new ones are introduced.
+	enum MeshFormat {
+		MESH_FORMAT_POLYTOPE = 0,
+		MESH_FORMAT_TETRAHEDRAL = 1,
+		MESH_FORMAT_WIREFRAME = 2,
+	};
+
+private:
 	TypedArray<G4MFMeshSurface4D> _surfaces;
 	int _vertices_accessor_index = -1;
 
@@ -24,6 +33,7 @@ public:
 	void set_vertices_accessor_index(const int p_vertices_accessor_index) { _vertices_accessor_index = p_vertices_accessor_index; }
 
 	bool can_generate_tetra_meshes_for_all_surfaces() const;
+	MeshFormat get_compatible_mesh_format(MeshFormat p_preferred_mesh_format) const;
 	bool is_equal_exact(const Ref<G4MFMesh4D> &p_other) const;
 
 	PackedVector4Array load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const;
@@ -35,3 +45,5 @@ public:
 	static Ref<G4MFMesh4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;
 };
+
+VARIANT_ENUM_CAST(G4MFMesh4D::MeshFormat);

@@ -1009,59 +1009,73 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 	const int mesh_count = state_g4mf_meshes.size();
 	const TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	const int node_count = state_g4mf_nodes.size();
-	bool wireframe = p_g4mf_state->get_force_wireframe();
-	if (!wireframe) {
+	// Figure out what mesh format to use based on:
+	// - The preferred mesh format set in the state.
+	// - What's possible to generate from the meshes in the file.
+	G4MFMesh4D::MeshFormat mesh_format = p_g4mf_state->get_preferred_mesh_format();
+	if (mesh_format != G4MFMesh4D::MESH_FORMAT_WIREFRAME) {
 		for (int i = 0; i < mesh_count; i++) {
 			Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[i];
-			if (!g4mf_mesh->can_generate_tetra_meshes_for_all_surfaces()) {
-				wireframe = true;
+			mesh_format = g4mf_mesh->get_compatible_mesh_format(mesh_format);
+			if (mesh_format == G4MFMesh4D::MESH_FORMAT_WIREFRAME) {
 				break;
 			}
 		}
 	}
-	// The above loop may have set this to true if any mesh cannot generate tetra meshes for all surfaces.
-	if (wireframe) {
-		Ref<ArrayWireMesh4D> combined_wire_mesh;
-		combined_wire_mesh.instantiate();
-		for (int i = 0; i < node_count; i++) {
-			const Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
-			const Ref<G4MFMeshInstance4D> mesh_instance = g4mf_node->get_mesh_instance();
-			const int mesh_index = mesh_instance->get_mesh_index();
-			if (mesh_index < 0) {
-				continue;
+	// Generate the combined mesh in the best possible format.
+	switch (mesh_format) {
+		case G4MFMesh4D::MESH_FORMAT_POLYTOPE: {
+			Ref<ArrayPolyMesh4D> combined_poly_mesh;
+			combined_poly_mesh.instantiate();
+			// Stub.
+			return combined_poly_mesh;
+		} break;
+		case G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL: {
+			Ref<ArrayTetraMesh4D> combined_tetra_mesh;
+			combined_tetra_mesh.instantiate();
+			for (int i = 0; i < node_count; i++) {
+				const Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
+				const Ref<G4MFMeshInstance4D> mesh_instance = g4mf_node->get_mesh_instance();
+				const int mesh_index = mesh_instance->get_mesh_index();
+				if (mesh_index < 0) {
+					continue;
+				}
+				if (!(p_include_invisible || g4mf_node->get_visible())) {
+					continue;
+				}
+				ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
+				Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
+				Ref<ArrayTetraMesh4D> mesh = g4mf_mesh->import_generate_tetra_mesh(p_g4mf_state);
+				if (mesh.is_valid()) {
+					combined_tetra_mesh->merge_with(mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
+				}
 			}
-			if (!(p_include_invisible || g4mf_node->get_visible())) {
-				continue;
+			return combined_tetra_mesh;
+		} break;
+		case G4MFMesh4D::MESH_FORMAT_WIREFRAME: {
+			Ref<ArrayWireMesh4D> combined_wire_mesh;
+			combined_wire_mesh.instantiate();
+			for (int i = 0; i < node_count; i++) {
+				const Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
+				const Ref<G4MFMeshInstance4D> mesh_instance = g4mf_node->get_mesh_instance();
+				const int mesh_index = mesh_instance->get_mesh_index();
+				if (mesh_index < 0) {
+					continue;
+				}
+				if (!(p_include_invisible || g4mf_node->get_visible())) {
+					continue;
+				}
+				ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
+				Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
+				Ref<ArrayWireMesh4D> mesh = g4mf_mesh->import_generate_wire_mesh(p_g4mf_state);
+				if (mesh.is_valid()) {
+					combined_wire_mesh->merge_with(mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
+				}
 			}
-			ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
-			Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
-			Ref<ArrayWireMesh4D> mesh = g4mf_mesh->import_generate_wire_mesh(p_g4mf_state);
-			if (mesh.is_valid()) {
-				combined_wire_mesh->merge_with(mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
-			}
-		}
-		return combined_wire_mesh;
+			return combined_wire_mesh;
+		} break;
 	}
-	Ref<ArrayTetraMesh4D> combined_tetra_mesh;
-	combined_tetra_mesh.instantiate();
-	for (int i = 0; i < node_count; i++) {
-		const Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
-		const Ref<G4MFMeshInstance4D> mesh_instance = g4mf_node->get_mesh_instance();
-		const int mesh_index = mesh_instance->get_mesh_index();
-		if (mesh_index < 0) {
-			continue;
-		}
-		if (!(p_include_invisible || g4mf_node->get_visible())) {
-			continue;
-		}
-		ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
-		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
-		Ref<ArrayTetraMesh4D> mesh = g4mf_mesh->import_generate_tetra_mesh(p_g4mf_state);
-		if (mesh.is_valid()) {
-			combined_tetra_mesh->merge_with(mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
-		}
-	}
-	return combined_tetra_mesh;
+	ERR_FAIL_V(Ref<Mesh4D>());
 }
 
 // Public functions.

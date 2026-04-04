@@ -28,6 +28,14 @@ bool G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces() const {
 	return true;
 }
 
+G4MFMesh4D::MeshFormat G4MFMesh4D::get_compatible_mesh_format(MeshFormat p_preferred_mesh_format) const {
+	// Only use a preferred mesh format if all surfaces can support it.
+	if (p_preferred_mesh_format == MESH_FORMAT_TETRAHEDRAL && !can_generate_tetra_meshes_for_all_surfaces()) {
+		p_preferred_mesh_format = MESH_FORMAT_WIREFRAME;
+	}
+	return p_preferred_mesh_format;
+}
+
 bool G4MFMesh4D::is_equal_exact(const Ref<G4MFMesh4D> &p_other) const {
 	const TypedArray<G4MFMeshSurface4D> other_surfaces = p_other->get_surfaces();
 	const int surfaces_count = _surfaces.size();
@@ -105,7 +113,8 @@ Ref<WireMesh4D> G4MFMesh4D::import_generate_wire_mesh(const Ref<G4MFState4D> &p_
 }
 
 Ref<Mesh4D> G4MFMesh4D::import_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface) const {
-	const bool use_tetra_mesh = !p_g4mf_state->get_force_wireframe() && can_generate_tetra_meshes_for_all_surfaces();
+	const G4MFMesh4D::MeshFormat preferred_mesh_format = p_g4mf_state->get_preferred_mesh_format();
+	const bool use_tetra_mesh = preferred_mesh_format != G4MFMesh4D::MESH_FORMAT_WIREFRAME && can_generate_tetra_meshes_for_all_surfaces();
 	if (use_tetra_mesh) {
 		return import_generate_tetra_mesh(p_g4mf_state);
 	}
@@ -200,4 +209,8 @@ void G4MFMesh4D::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "surfaces", PROPERTY_HINT_ARRAY_TYPE, "G4MFMeshSurface4D"), "set_surfaces", "get_surfaces");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "vertices_accessor_index"), "set_vertices_accessor_index", "get_vertices_accessor_index");
+
+	BIND_ENUM_CONSTANT(MESH_FORMAT_POLYTOPE);
+	BIND_ENUM_CONSTANT(MESH_FORMAT_TETRAHEDRAL);
+	BIND_ENUM_CONSTANT(MESH_FORMAT_WIREFRAME);
 }
