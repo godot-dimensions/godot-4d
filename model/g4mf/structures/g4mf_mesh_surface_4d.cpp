@@ -9,17 +9,17 @@ bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) co
 			_polytope_simplexes == p_other->get_polytope_simplexes());
 }
 
-PackedInt32Array G4MFMeshSurface4D::load_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
-	ERR_FAIL_INDEX_V(_simplexes_accessor_index, state_accessors.size(), PackedInt32Array());
-	const Ref<G4MFAccessor4D> accessor = state_accessors[_simplexes_accessor_index];
-	return accessor->decode_int32s_from_bytes(p_g4mf_state);
-}
-
 PackedInt32Array G4MFMeshSurface4D::load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_edges_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_edges_accessor_index];
+	return accessor->decode_int32s_from_bytes(p_g4mf_state);
+}
+
+PackedInt32Array G4MFMeshSurface4D::load_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	ERR_FAIL_INDEX_V(_simplexes_accessor_index, state_accessors.size(), PackedInt32Array());
+	const Ref<G4MFAccessor4D> accessor = state_accessors[_simplexes_accessor_index];
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
@@ -236,9 +236,6 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::from_dictionary(const Dictionary &p_di
 
 Dictionary G4MFMeshSurface4D::to_dictionary() const {
 	Dictionary dict = write_item_entries_to_dictionary();
-	if (_simplexes_accessor_index >= 0) {
-		dict["simplexes"] = _simplexes_accessor_index;
-	}
 	if (_edges_accessor_index >= 0) {
 		dict["edges"] = _edges_accessor_index;
 	}
@@ -250,6 +247,9 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 	}
 	if (_polytope_simplexes) {
 		dict["polytopeSimplexes"] = _polytope_simplexes;
+	}
+	if (_simplexes_accessor_index >= 0) {
+		dict["simplexes"] = _simplexes_accessor_index;
 	}
 	if (_texture_map_binding.is_valid()) {
 		dict["textureMap"] = _texture_map_binding->to_dictionary();
@@ -272,8 +272,8 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_texture_map_binding", "texture_map_binding"), &G4MFMeshSurface4D::set_texture_map_binding);
 
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMeshSurface4D::is_equal_exact);
-	ClassDB::bind_method(D_METHOD("load_simplex_indices", "g4mf_state"), &G4MFMeshSurface4D::load_simplex_indices);
 	ClassDB::bind_method(D_METHOD("load_edge_indices", "g4mf_state"), &G4MFMeshSurface4D::load_edge_indices);
+	ClassDB::bind_method(D_METHOD("load_simplex_indices", "g4mf_state"), &G4MFMeshSurface4D::load_simplex_indices);
 	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::generate_tetra_mesh_surface);
 	ClassDB::bind_method(D_METHOD("generate_wire_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::generate_wire_mesh_surface);
 	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("convert_mesh_surface_for_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMeshSurface4D::convert_mesh_surface_for_state, DEFVAL(true));

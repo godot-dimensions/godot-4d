@@ -11,14 +11,14 @@
 		<link title="G4MF Accessor Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.accessor.schema.json</link>
 	</tutorials>
 	<methods>
-		<method name="decode_floats_from_bytes" qualifiers="const">
+		<method name="decode_float64s_from_bytes" qualifiers="const">
 			<return type="PackedFloat64Array" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
 				Decodes floats from the accessor data and returns them as a [PackedFloat64Array]. This is a low-level function that only works if the underlying data in the accessor is some kind of float. If you want to convert non-float data to floats, use [method decode_accessor_as_variants] instead.
 			</description>
 		</method>
-		<method name="decode_ints_from_bytes" qualifiers="const">
+		<method name="decode_int64s_from_bytes" qualifiers="const">
 			<return type="PackedInt64Array" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
@@ -33,14 +33,14 @@
 				Decodes the accessor data as a [Variant] array where all elements are of the specified [param variant_type]. Supported Variant types are those that can either be converted to/from numbers ([bool]/[int]/[float]), vectors, matrices, or arrays of numbers (packed byte/int/float arrays), but not arrays of vectors or non-numeric types like [Dictionary], [Object], or [String]. The possible types are for which [method components_per_variant] returns a value greater than [code]0[/code].
 			</description>
 		</method>
-		<method name="encode_floats_as_bytes" qualifiers="const">
+		<method name="encode_float64s_as_bytes" qualifiers="const">
 			<return type="PackedByteArray" />
 			<param index="0" name="input_data" type="PackedFloat64Array" />
 			<description>
 				Encodes the given [PackedFloat64Array] as a [PackedByteArray] and returns it. If you want to convert other data to floats, use [method encode_accessor_from_variants] instead.
 			</description>
 		</method>
-		<method name="encode_ints_as_bytes" qualifiers="const">
+		<method name="encode_int64s_as_bytes" qualifiers="const">
 			<return type="PackedByteArray" />
 			<param index="0" name="input_data" type="PackedInt64Array" />
 			<description>

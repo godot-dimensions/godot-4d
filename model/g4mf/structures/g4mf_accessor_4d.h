@@ -59,10 +59,10 @@ public:
 
 	// Decode functions.
 	PackedByteArray load_bytes_from_buffer_view(const Ref<G4MFState4D> &p_g4mf_state) const;
-	PackedFloat64Array decode_floats_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedFloat64Array decode_float64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array decode_int32s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
-	PackedInt64Array decode_ints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Vector<uint64_t> decode_uints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedInt64Array decode_int64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Vector<uint64_t> decode_uint64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	Array decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const;
 	PackedColorArray decode_colors_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
@@ -70,9 +70,9 @@ public:
 	PackedVector4Array decode_vector4s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	// Low-level accessor encode functions.
-	PackedByteArray encode_floats_as_bytes(const PackedFloat64Array &p_input_numbers) const;
-	PackedByteArray encode_ints_as_bytes(const PackedInt64Array &p_input_numbers) const;
-	PackedByteArray encode_uints_as_bytes(const Vector<uint64_t> &p_input_numbers) const;
+	PackedByteArray encode_float64s_as_bytes(const PackedFloat64Array &p_input_numbers) const;
+	PackedByteArray encode_int64s_as_bytes(const PackedInt64Array &p_input_numbers) const;
+	PackedByteArray encode_uint64s_as_bytes(const Vector<uint64_t> &p_input_numbers) const;
 	PackedByteArray encode_variants_as_bytes(const Array &p_input_data) const;
 
 	int store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data_bytes, const bool p_deduplicate = true);

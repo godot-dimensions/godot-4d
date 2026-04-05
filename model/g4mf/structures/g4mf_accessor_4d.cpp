@@ -337,21 +337,21 @@ String G4MFAccessor4D::_minimal_component_type_given_bits(const uint32_t p_float
 	}
 
 Array G4MFAccessor4D::_decode_floats_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
-	PackedFloat64Array numbers = decode_floats_from_bytes(p_g4mf_state);
+	PackedFloat64Array numbers = decode_float64s_from_bytes(p_g4mf_state);
 	Array values;
 	G4MF_ACCESSOR_4D_DECODE_COMPONENTS_AS_VARIANTS(numbers, values);
 	return values;
 }
 
 Array G4MFAccessor4D::_decode_ints_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
-	PackedInt64Array numbers = decode_ints_from_bytes(p_g4mf_state);
+	PackedInt64Array numbers = decode_int64s_from_bytes(p_g4mf_state);
 	Array values;
 	G4MF_ACCESSOR_4D_DECODE_COMPONENTS_AS_VARIANTS(numbers, values);
 	return values;
 }
 
 Array G4MFAccessor4D::_decode_uints_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
-	Vector<uint64_t> numbers = decode_uints_from_bytes(p_g4mf_state);
+	Vector<uint64_t> numbers = decode_uint64s_from_bytes(p_g4mf_state);
 	Array values;
 	G4MF_ACCESSOR_4D_DECODE_COMPONENTS_AS_VARIANTS(numbers, values);
 	return values;
@@ -588,7 +588,7 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 		ERR_FAIL_V_MSG(m_numbers, "G4MF import: Godot does not support reading G4MF accessor components of type '" + _component_type + "'. Returning an zero array.");                  \
 	}
 
-PackedFloat64Array G4MFAccessor4D::decode_floats_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
+PackedFloat64Array G4MFAccessor4D::decode_float64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedFloat64Array numbers;
 	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, double);
 	return numbers;
@@ -602,13 +602,13 @@ PackedInt32Array G4MFAccessor4D::decode_int32s_from_bytes(const Ref<G4MFState4D>
 	return numbers;
 }
 
-PackedInt64Array G4MFAccessor4D::decode_ints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
+PackedInt64Array G4MFAccessor4D::decode_int64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedInt64Array numbers;
 	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, int64_t);
 	return numbers;
 }
 
-Vector<uint64_t> G4MFAccessor4D::decode_uints_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
+Vector<uint64_t> G4MFAccessor4D::decode_uint64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	Vector<uint64_t> numbers;
 	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, uint64_t);
 	return numbers;
@@ -628,7 +628,7 @@ Array G4MFAccessor4D::decode_variants_from_bytes(const Ref<G4MFState4D> &p_g4mf_
 }
 
 PackedColorArray G4MFAccessor4D::decode_colors_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
-	PackedFloat64Array numbers = decode_floats_from_bytes(p_g4mf_state);
+	PackedFloat64Array numbers = decode_float64s_from_bytes(p_g4mf_state);
 	PackedColorArray colors;
 	if (_vector_size == 1) {
 		const int64_t color_count = numbers.size();
@@ -658,7 +658,7 @@ PackedColorArray G4MFAccessor4D::decode_colors_from_bytes(const Ref<G4MFState4D>
 }
 
 PackedVector3Array G4MFAccessor4D::decode_vector3s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
-	PackedFloat64Array numbers = decode_floats_from_bytes(p_g4mf_state);
+	PackedFloat64Array numbers = decode_float64s_from_bytes(p_g4mf_state);
 	PackedVector3Array vectors;
 	if (_vector_size == 3) {
 		const int64_t vector_count = numbers.size() / 3;
@@ -674,7 +674,7 @@ PackedVector3Array G4MFAccessor4D::decode_vector3s_from_bytes(const Ref<G4MFStat
 }
 
 PackedVector4Array G4MFAccessor4D::decode_vector4s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
-	PackedFloat64Array numbers = decode_floats_from_bytes(p_g4mf_state);
+	PackedFloat64Array numbers = decode_float64s_from_bytes(p_g4mf_state);
 	PackedVector4Array vectors;
 	if (_vector_size == 4) {
 		const int64_t vector_count = numbers.size() / 4;
@@ -761,19 +761,19 @@ PackedVector4Array G4MFAccessor4D::decode_vector4s_from_bytes(const Ref<G4MFStat
 		}                                                                                                                                             \
 	}
 
-PackedByteArray G4MFAccessor4D::encode_floats_as_bytes(const PackedFloat64Array &p_input_numbers) const {
+PackedByteArray G4MFAccessor4D::encode_float64s_as_bytes(const PackedFloat64Array &p_input_numbers) const {
 	PackedByteArray ret;
 	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(p_input_numbers, ret);
 	return ret;
 }
 
-PackedByteArray G4MFAccessor4D::encode_ints_as_bytes(const PackedInt64Array &p_input_numbers) const {
+PackedByteArray G4MFAccessor4D::encode_int64s_as_bytes(const PackedInt64Array &p_input_numbers) const {
 	PackedByteArray ret;
 	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(p_input_numbers, ret);
 	return ret;
 }
 
-PackedByteArray G4MFAccessor4D::encode_uints_as_bytes(const Vector<uint64_t> &p_input_numbers) const {
+PackedByteArray G4MFAccessor4D::encode_uint64s_as_bytes(const Vector<uint64_t> &p_input_numbers) const {
 	PackedByteArray ret;
 	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(p_input_numbers, ret);
 	return ret;
@@ -1006,13 +1006,13 @@ PackedByteArray G4MFAccessor4D::encode_variants_as_bytes(const Array &p_input_da
 	ERR_FAIL_COND_V_MSG(bytes_per_vec == 0, PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _component_type + "'.");
 	if (_component_type.begins_with("float")) {
 		PackedFloat64Array numbers = _encode_variants_as_floats(p_input_data);
-		return encode_floats_as_bytes(numbers);
+		return encode_float64s_as_bytes(numbers);
 	} else if (_component_type.begins_with("int")) {
 		PackedInt64Array numbers = _encode_variants_as_ints(p_input_data);
-		return encode_ints_as_bytes(numbers);
+		return encode_int64s_as_bytes(numbers);
 	} else if (_component_type.begins_with("uint")) {
 		Vector<uint64_t> numbers = _encode_variants_as_uints(p_input_data);
-		return encode_uints_as_bytes(numbers);
+		return encode_uint64s_as_bytes(numbers);
 	}
 	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Cannot encode an accessor of type '" + _component_type + "' as a G4MF accessor.");
 }
@@ -1082,7 +1082,7 @@ int G4MFAccessor4D::encode_new_accessor_from_colors(const Ref<G4MFState4D> &p_g4
 			numbers.set(i * vector_size + 3, col.a);
 		}
 	}
-	PackedByteArray encoded_bytes = accessor->encode_floats_as_bytes(numbers);
+	PackedByteArray encoded_bytes = accessor->encode_float64s_as_bytes(numbers);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
@@ -1090,7 +1090,7 @@ int G4MFAccessor4D::encode_new_accessor_from_colors(const Ref<G4MFState4D> &p_g4
 int G4MFAccessor4D::encode_new_accessor_from_int64s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt64Array &p_input_data, const bool p_deduplicate) {
 	const String prim_type = G4MFAccessor4D::minimal_component_type_for_int64s(p_input_data);
 	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 1);
-	PackedByteArray encoded_bytes = accessor->encode_ints_as_bytes(p_input_data);
+	PackedByteArray encoded_bytes = accessor->encode_int64s_as_bytes(p_input_data);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
@@ -1106,7 +1106,7 @@ int G4MFAccessor4D::encode_new_accessor_from_vector3s(const Ref<G4MFState4D> &p_
 		numbers.set(i * 3 + 1, vec.y);
 		numbers.set(i * 3 + 2, vec.z);
 	}
-	PackedByteArray encoded_bytes = accessor->encode_floats_as_bytes(numbers);
+	PackedByteArray encoded_bytes = accessor->encode_float64s_as_bytes(numbers);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
@@ -1123,7 +1123,7 @@ int G4MFAccessor4D::encode_new_accessor_from_vector4s(const Ref<G4MFState4D> &p_
 		numbers.set(i * 4 + 2, vec.z);
 		numbers.set(i * 4 + 3, vec.w);
 	}
-	PackedByteArray encoded_bytes = accessor->encode_floats_as_bytes(numbers);
+	PackedByteArray encoded_bytes = accessor->encode_float64s_as_bytes(numbers);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
@@ -1181,14 +1181,14 @@ void G4MFAccessor4D::_bind_methods() {
 
 	// Decode functions.
 	ClassDB::bind_method(D_METHOD("decode_variants_from_bytes", "g4mf_state", "variant_type"), &G4MFAccessor4D::decode_variants_from_bytes);
-	ClassDB::bind_method(D_METHOD("decode_floats_from_bytes", "g4mf_state"), &G4MFAccessor4D::decode_floats_from_bytes);
-	ClassDB::bind_method(D_METHOD("decode_ints_from_bytes", "g4mf_state"), &G4MFAccessor4D::decode_ints_from_bytes);
+	ClassDB::bind_method(D_METHOD("decode_float64s_from_bytes", "g4mf_state"), &G4MFAccessor4D::decode_float64s_from_bytes);
+	ClassDB::bind_method(D_METHOD("decode_int64s_from_bytes", "g4mf_state"), &G4MFAccessor4D::decode_int64s_from_bytes);
 	ClassDB::bind_method(D_METHOD("load_bytes_from_buffer_view", "g4mf_state"), &G4MFAccessor4D::load_bytes_from_buffer_view);
 
 	// Encode functions.
 	ClassDB::bind_method(D_METHOD("encode_variants_as_bytes", "input_data"), &G4MFAccessor4D::encode_variants_as_bytes);
-	ClassDB::bind_method(D_METHOD("encode_floats_as_bytes", "input_data"), &G4MFAccessor4D::encode_floats_as_bytes);
-	ClassDB::bind_method(D_METHOD("encode_ints_as_bytes", "input_data"), &G4MFAccessor4D::encode_ints_as_bytes);
+	ClassDB::bind_method(D_METHOD("encode_float64s_as_bytes", "input_data"), &G4MFAccessor4D::encode_float64s_as_bytes);
+	ClassDB::bind_method(D_METHOD("encode_int64s_as_bytes", "input_data"), &G4MFAccessor4D::encode_int64s_as_bytes);
 
 	// High-level encode functions.
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_variants", "g4mf_state", "input_data", "component_type", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_variants, DEFVAL(true));
