@@ -9,10 +9,67 @@ bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) co
 			_polytope_simplexes == p_other->get_polytope_simplexes());
 }
 
+void G4MFMeshSurface4D::convert_separated_geometry_into_packed(const Ref<G4MFState4D> &p_g4mf_state, const TypedArray<Array> &p_separated_geometry, const bool p_deduplicate) {
+	const int64_t separated_geometry_size = p_separated_geometry.size();
+	_geometry_accessor_indices.resize(separated_geometry_size);
+	for (int geom_index = 0; geom_index < separated_geometry_size; geom_index++) {
+		const Array separated_geometry_data = p_separated_geometry[geom_index];
+		PackedInt32Array packed_geometry_data;
+		for (int cell_index = 0; cell_index < separated_geometry_data.size(); cell_index++) {
+			const PackedInt32Array cell_vertex_indices = separated_geometry_data[cell_index];
+			packed_geometry_data.append(cell_vertex_indices.size());
+			for (int i = 0; i < cell_vertex_indices.size(); i++) {
+				packed_geometry_data.append(cell_vertex_indices[i]);
+			}
+		}
+		const int geom_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, packed_geometry_data, p_deduplicate);
+		ERR_FAIL_COND(geom_accessor_index == -1);
+		_geometry_accessor_indices.set(geom_index, geom_accessor_index);
+	}
+}
+
+TypedArray<Array> G4MFMeshSurface4D::load_geometry_separated(const Ref<G4MFState4D> &p_g4mf_state) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	TypedArray<Array> all_separated;
+	all_separated.resize(_geometry_accessor_indices.size());
+	for (int geom_index = 0; geom_index < _geometry_accessor_indices.size(); geom_index++) {
+		const int accessor_index = _geometry_accessor_indices[geom_index];
+		ERR_FAIL_INDEX_V(accessor_index, state_accessors.size(), Array());
+		const Ref<G4MFAccessor4D> accessor = state_accessors[accessor_index];
+		const PackedInt32Array packed_geometry_data = accessor->decode_int32s_from_bytes(p_g4mf_state);
+		const int64_t packed_geometry_data_size = packed_geometry_data.size();
+		// This should be TypedArray<PackedInt32Array> but Godot's type system doesn't allow nested typed arrays.
+		Array separated_geometry_data;
+		int cell_start = 0;
+		while (cell_start < packed_geometry_data_size) {
+			const int cell_vertex_count = packed_geometry_data[cell_start];
+			ERR_FAIL_COND_V(cell_vertex_count <= 0, Array());
+			ERR_FAIL_INDEX_V(cell_start + cell_vertex_count, packed_geometry_data_size, Array());
+			cell_start += 1; // Move past the vertex count to the start of the vertex indices.
+			PackedInt32Array cell_vertex_indices;
+			cell_vertex_indices.resize(cell_vertex_count);
+			for (int i = 0; i < cell_vertex_count; i++) {
+				cell_vertex_indices.set(i, packed_geometry_data[cell_start + i]);
+			}
+			separated_geometry_data.append(cell_vertex_indices);
+			cell_start += cell_vertex_count;
+		}
+		all_separated[geom_index] = separated_geometry_data;
+	}
+	return all_separated;
+}
+
 PackedInt32Array G4MFMeshSurface4D::load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_edges_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_edges_accessor_index];
+	return accessor->decode_int32s_from_bytes(p_g4mf_state);
+}
+
+PackedInt32Array G4MFMeshSurface4D::load_seam_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	ERR_FAIL_INDEX_V(_seams_accessor_index, state_accessors.size(), PackedInt32Array());
+	const Ref<G4MFAccessor4D> accessor = state_accessors[_seams_accessor_index];
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
@@ -216,6 +273,15 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::from_dictionary(const Dictionary &p_di
 	if (p_dict.has("edges")) {
 		surface->set_edges_accessor_index(p_dict["edges"]);
 	}
+	if (p_dict.has("geometry")) {
+		const Array geometry_array = p_dict["geometry"];
+		PackedInt32Array geometry_accessor_indices;
+		geometry_accessor_indices.resize(geometry_array.size());
+		for (int i = 0; i < geometry_array.size(); i++) {
+			geometry_accessor_indices.set(i, geometry_array[i]);
+		}
+		surface->set_geometry_accessor_indices(geometry_accessor_indices);
+	}
 	if (p_dict.has("material")) {
 		surface->set_material_index(p_dict["material"]);
 	}
@@ -224,6 +290,9 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::from_dictionary(const Dictionary &p_di
 	}
 	if (p_dict.has("polytopeSimplexes")) {
 		surface->set_polytope_simplexes(p_dict["polytopeSimplexes"]);
+	}
+	if (p_dict.has("seams")) {
+		surface->set_seams_accessor_index(p_dict["seams"]);
 	}
 	if (p_dict.has("simplexes")) {
 		surface->set_simplexes_accessor_index(p_dict["simplexes"]);
@@ -239,6 +308,9 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 	if (_edges_accessor_index >= 0) {
 		dict["edges"] = _edges_accessor_index;
 	}
+	if (_geometry_accessor_indices.size() > 0) {
+		dict["geometry"] = _geometry_accessor_indices;
+	}
 	if (_material_index >= 0) {
 		dict["material"] = _material_index;
 	}
@@ -247,6 +319,9 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 	}
 	if (_polytope_simplexes) {
 		dict["polytopeSimplexes"] = _polytope_simplexes;
+	}
+	if (_seams_accessor_index >= 0) {
+		dict["seams"] = _seams_accessor_index;
 	}
 	if (_simplexes_accessor_index >= 0) {
 		dict["simplexes"] = _simplexes_accessor_index;
@@ -260,19 +335,26 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_edges_accessor_index"), &G4MFMeshSurface4D::get_edges_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_edges_accessor_index", "edges_accessor_index"), &G4MFMeshSurface4D::set_edges_accessor_index);
+	ClassDB::bind_method(D_METHOD("get_geometry_accessor_indices"), &G4MFMeshSurface4D::get_geometry_accessor_indices);
+	ClassDB::bind_method(D_METHOD("set_geometry_accessor_indices", "geometry_accessor_indices"), &G4MFMeshSurface4D::set_geometry_accessor_indices);
 	ClassDB::bind_method(D_METHOD("get_material_index"), &G4MFMeshSurface4D::get_material_index);
 	ClassDB::bind_method(D_METHOD("set_material_index", "material_index"), &G4MFMeshSurface4D::set_material_index);
 	ClassDB::bind_method(D_METHOD("get_normals_binding"), &G4MFMeshSurface4D::get_normals_binding);
 	ClassDB::bind_method(D_METHOD("set_normals_binding", "normals_binding"), &G4MFMeshSurface4D::set_normals_binding);
 	ClassDB::bind_method(D_METHOD("get_polytope_simplexes"), &G4MFMeshSurface4D::get_polytope_simplexes);
 	ClassDB::bind_method(D_METHOD("set_polytope_simplexes", "polytope_simplexes"), &G4MFMeshSurface4D::set_polytope_simplexes);
+	ClassDB::bind_method(D_METHOD("get_seams_accessor_index"), &G4MFMeshSurface4D::get_seams_accessor_index);
+	ClassDB::bind_method(D_METHOD("set_seams_accessor_index", "seams_accessor_index"), &G4MFMeshSurface4D::set_seams_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_simplexes_accessor_index"), &G4MFMeshSurface4D::get_simplexes_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_simplexes_accessor_index", "simplexes_accessor_index"), &G4MFMeshSurface4D::set_simplexes_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_texture_map_binding"), &G4MFMeshSurface4D::get_texture_map_binding);
 	ClassDB::bind_method(D_METHOD("set_texture_map_binding", "texture_map_binding"), &G4MFMeshSurface4D::set_texture_map_binding);
 
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMeshSurface4D::is_equal_exact);
+	ClassDB::bind_method(D_METHOD("convert_separated_geometry_into_packed", "g4mf_state", "separated_geometry", "deduplicate"), &G4MFMeshSurface4D::convert_separated_geometry_into_packed, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("load_geometry_separated", "g4mf_state"), &G4MFMeshSurface4D::load_geometry_separated);
 	ClassDB::bind_method(D_METHOD("load_edge_indices", "g4mf_state"), &G4MFMeshSurface4D::load_edge_indices);
+	ClassDB::bind_method(D_METHOD("load_seam_indices", "g4mf_state"), &G4MFMeshSurface4D::load_seam_indices);
 	ClassDB::bind_method(D_METHOD("load_simplex_indices", "g4mf_state"), &G4MFMeshSurface4D::load_simplex_indices);
 	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::generate_tetra_mesh_surface);
 	ClassDB::bind_method(D_METHOD("generate_wire_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::generate_wire_mesh_surface);
@@ -282,9 +364,11 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurface4D::to_dictionary);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "edges_accessor_index"), "set_edges_accessor_index", "get_edges_accessor_index");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "geometry_accessor_indices"), "set_geometry_accessor_indices", "get_geometry_accessor_indices");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_index"), "set_material_index", "get_material_index");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "normals_binding", PROPERTY_HINT_RESOURCE_TYPE, "G4MFMeshSurfaceBinding4D"), "set_normals_binding", "get_normals_binding");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "polytope_simplexes"), "set_polytope_simplexes", "get_polytope_simplexes");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "seams_accessor_index"), "set_seams_accessor_index", "get_seams_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "simplexes_accessor_index"), "set_simplexes_accessor_index", "get_simplexes_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_map_binding", PROPERTY_HINT_RESOURCE_TYPE, "G4MFMeshSurfaceBinding4D"), "set_texture_map_binding", "get_texture_map_binding");
 }

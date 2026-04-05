@@ -20,8 +20,10 @@ class G4MFMeshSurface4D : public G4MFItem4D {
 
 	Ref<G4MFMeshSurfaceBinding4D> _normals_binding;
 	Ref<G4MFMeshSurfaceBinding4D> _texture_map_binding;
+	PackedInt32Array _geometry_accessor_indices;
 	int _edges_accessor_index = -1;
 	int _material_index = -1;
+	int _seams_accessor_index = -1;
 	int _simplexes_accessor_index = -1;
 	bool _polytope_simplexes = false;
 
@@ -32,6 +34,9 @@ public:
 	int get_edges_accessor_index() const { return _edges_accessor_index; }
 	void set_edges_accessor_index(const int p_edges_accessor_index) { _edges_accessor_index = p_edges_accessor_index; }
 
+	PackedInt32Array get_geometry_accessor_indices() const { return _geometry_accessor_indices; }
+	void set_geometry_accessor_indices(const PackedInt32Array &p_geometry_accessor_indices) { _geometry_accessor_indices = p_geometry_accessor_indices; }
+
 	int get_material_index() const { return _material_index; }
 	void set_material_index(const int p_material_index) { _material_index = p_material_index; }
 
@@ -41,6 +46,9 @@ public:
 	bool get_polytope_simplexes() const { return _polytope_simplexes; }
 	void set_polytope_simplexes(const bool p_polytope_simplexes) { _polytope_simplexes = p_polytope_simplexes; }
 
+	int get_seams_accessor_index() const { return _seams_accessor_index; }
+	void set_seams_accessor_index(const int p_seams_accessor_index) { _seams_accessor_index = p_seams_accessor_index; }
+
 	int get_simplexes_accessor_index() const { return _simplexes_accessor_index; }
 	void set_simplexes_accessor_index(const int p_simplexes_accessor_index) { _simplexes_accessor_index = p_simplexes_accessor_index; }
 
@@ -48,7 +56,10 @@ public:
 	void set_texture_map_binding(const Ref<G4MFMeshSurfaceBinding4D> &p_texture_map_binding) { _texture_map_binding = p_texture_map_binding; }
 
 	bool is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const;
+	void convert_separated_geometry_into_packed(const Ref<G4MFState4D> &p_g4mf_state, const TypedArray<Array> &p_separated_geometry, const bool p_deduplicate);
+	TypedArray<Array> load_geometry_separated(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
+	PackedInt32Array load_seam_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array load_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	Ref<ArrayTetraMesh4D> generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;

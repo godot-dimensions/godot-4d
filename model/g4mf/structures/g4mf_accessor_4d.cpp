@@ -767,6 +767,12 @@ PackedByteArray G4MFAccessor4D::encode_float64s_as_bytes(const PackedFloat64Arra
 	return ret;
 }
 
+PackedByteArray G4MFAccessor4D::encode_int32s_as_bytes(const PackedInt32Array &p_input_numbers) const {
+	PackedByteArray ret;
+	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(p_input_numbers, ret);
+	return ret;
+}
+
 PackedByteArray G4MFAccessor4D::encode_int64s_as_bytes(const PackedInt64Array &p_input_numbers) const {
 	PackedByteArray ret;
 	G4MF_ACCESSOR_4D_ENCODE_NUMBERS_AS_COMPONENTS(p_input_numbers, ret);
@@ -1083,6 +1089,14 @@ int G4MFAccessor4D::encode_new_accessor_from_colors(const Ref<G4MFState4D> &p_g4
 		}
 	}
 	PackedByteArray encoded_bytes = accessor->encode_float64s_as_bytes(numbers);
+	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
+	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
+}
+
+int G4MFAccessor4D::encode_new_accessor_from_int32s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt32Array &p_input_data, const bool p_deduplicate) {
+	const String prim_type = G4MFAccessor4D::minimal_component_type_for_int32s(p_input_data);
+	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 1);
+	PackedByteArray encoded_bytes = accessor->encode_int32s_as_bytes(p_input_data);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }

@@ -21,6 +21,16 @@
 				Converts the given [Mesh4D] into encoded G4MF mesh data and stores this inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF. The returned [G4MFMeshSurface4D] is intended to be used by a [G4MFMesh4D], which goes inside of the [G4MFState4D]. See [method G4MFMesh4D.export_convert_mesh_into_state].
 			</description>
 		</method>
+		<method name="convert_separated_geometry_into_packed">
+			<return type="void" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="separated_geometry" type="Array[]" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Converts the separated geometry input into a compact format, storing the result in the [G4MFState4D]'s accessors and buffers, and setting the [member geometry_accessor_indices] to refer to the new accessors. This is used for exporting a poly mesh to G4MF. The separated geometry input must have a data type of [code]Array[Array[PackedInt32Array]][/code], an array of arrays of [PackedInt32Array]s, where the outer [Array] represents the different geometry dimensions, and each inner [Array] is a list of cells in that dimension.
+				For example, if the input separated geometry is [code][[[0, 1, 2], [0, 3, 4], [1, 4, 5], [2, 5, 3]], [[0, 1, 2, 3]]][/code], then the first accessor will contain [code]3 0 1 2 3 0 3 4 3 1 4 5 3 2 5 3[/code] and the second accessor will contain [code]4 0 1 2 3[/code] (the encoding of a tetrahedron), and the [member geometry_accessor_indices] will be set to the indices of these two new accessors.
+			</description>
+		</method>
 		<method name="from_dictionary" qualifiers="static">
 			<return type="G4MFMeshSurface4D" />
 			<param index="0" name="dict" type="Dictionary" />
@@ -58,6 +68,22 @@
 				Loads the edge indices from the [G4MFAccessor4D] at [member edges_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid edge indices.
 			</description>
 		</method>
+		<method name="load_geometry_separated" qualifiers="const">
+			<return type="Array[]" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the geometry for this surface from the [G4MFAccessor4D]s at the indices in [member geometry_accessor_indices] in the [G4MFState4D]'s accessors array. The data is expanded such that each cell gets its own [PackedInt32Array], such that the returned data is [code]Array[Array[PackedInt32Array]][/code].
+				For example, if the geometry is defined as [code][0, 1][/code], accessor 0 contains [code]3 0 1 2 3 0 3 4 3 1 4 5 3 2 5 3[/code], and accessor 1 contains [code]4 0 1 2 3[/code] (the encoding of a tetrahedron), then the returned data will be [code][[[0, 1, 2], [0, 3, 4], [1, 4, 5], [2, 5, 3]], [[0, 1, 2, 3]]][/code], because the data [code]3 0 1 2[/code] defines a cell with 3 members of the lower order (in this case, a face made of edges 0, 1, and 2), and the data [code]4 0 1 2 3[/code] defines a cell with 4 members of the lower order (in this case, a cell made of faces 0, 1, 2, and 3).
+			</description>
+		</method>
+		<method name="load_seam_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the seam indices from the [G4MFAccessor4D] at [member seams_accessor_index] in the [G4MFState4D]'s accessors array. This is a low-level function that will fail if the index does not refer to a valid [G4MFAccessor4D] or if the accessor does not contain valid seam indices.
+				Seams are border geometry items that separate parts of a mesh surface so that they can be considered different islands in a texture map. A 3D mesh's seams are 1D edges, separating the 2D faces of its surface. A 4D mesh's seams are 2D faces, separating the 3D cells of its surface. Seams are optional and are only needed during authoring to define texture map islands.
+			</description>
+		</method>
 		<method name="load_simplex_indices" qualifiers="const">
 			<return type="PackedInt32Array" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -76,6 +102,10 @@
 		<member name="edges_accessor_index" type="int" setter="set_edges_accessor_index" getter="get_edges_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the edge indices for this surface. Each integer in the array is an index of a vertex in the mesh's vertices array, and MUST NOT exceed the bounds of the mesh's vertices array. If not defined, the surface does not have explicit edges, but edges may be calculated from the cells if needed.
 		</member>
+		<member name="geometry_accessor_indices" type="PackedInt32Array" setter="set_geometry_accessor_indices" getter="get_geometry_accessor_indices" default="PackedInt32Array()">
+			The indices of the accessors defining the hierarchical geometry for this surface, providing topological data useful during authoring. Each accessor provides a dimension of geometry, where the first accessor defines faces made of edges, the second accessor defines cells made of faces, and so on. The first number defines how many members are in that cell, the following numbers are the indices of the members of that cell, and this pattern repeats for each cell.
+			For example, [code]3 0 1 2 4 0 3 4 5[/code] defines 2 cells, the first having a size of [code]3[/code] with contents [code]0 1 2[/code] and the second having a size of [code]4[/code] with contents [code]0 3 4 5[/code].
+		</member>
 		<member name="material_index" type="int" setter="set_material_index" getter="get_material_index" default="-1">
 			The index of the [G4MFMaterial4D] in the [G4MFState4D]'s materials array that contains the material for this surface. This is used to define the appearance of the surface. If not defined, the surface should render with a default white material.
 		</member>
@@ -84,6 +114,9 @@
 		</member>
 		<member name="polytope_simplexes" type="bool" setter="set_polytope_simplexes" getter="get_polytope_simplexes" default="false">
 			If [code]true[/code], allow treating the tetrahedral cells as part of a larger polytope instead of just simplexes. Each polytope is defined by a set of consecutive simplex cells that share the same starting vertex. This is not used by Godot 4D when importing the mesh.
+		</member>
+		<member name="seams_accessor_index" type="int" setter="set_seams_accessor_index" getter="get_seams_accessor_index" default="-1">
+			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the seam indices for this surface. Each integer in the accessor data is the index of a border geometry item that separates parts of the mesh surface into different islands for texture mapping.
 		</member>
 		<member name="simplexes_accessor_index" type="int" setter="set_simplexes_accessor_index" getter="get_simplexes_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the simplex cell indices for this surface. Each integer in the array is an index of a vertex in the mesh's vertices array, and MUST NOT exceed the bounds of the mesh's vertices array. If not defined, the surface does not have explicit simplexes, and may be a wireframe-only surface.

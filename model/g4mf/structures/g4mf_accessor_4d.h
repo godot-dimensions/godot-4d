@@ -71,6 +71,7 @@ public:
 
 	// Low-level accessor encode functions.
 	PackedByteArray encode_float64s_as_bytes(const PackedFloat64Array &p_input_numbers) const;
+	PackedByteArray encode_int32s_as_bytes(const PackedInt32Array &p_input_numbers) const;
 	PackedByteArray encode_int64s_as_bytes(const PackedInt64Array &p_input_numbers) const;
 	PackedByteArray encode_uint64s_as_bytes(const Vector<uint64_t> &p_input_numbers) const;
 	PackedByteArray encode_variants_as_bytes(const Array &p_input_data) const;
@@ -81,6 +82,7 @@ public:
 	// High-level accessor encode functions.
 	static int encode_new_accessor_from_variants(const Ref<G4MFState4D> &p_g4mf_state, const Array &p_input_data, const String &p_component_type, const int p_vector_size = 1, const bool p_deduplicate = true);
 	static int encode_new_accessor_from_colors(const Ref<G4MFState4D> &p_g4mf_state, const PackedColorArray &p_input_data, const bool p_deduplicate = true);
+	static int encode_new_accessor_from_int32s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt32Array &p_input_data, const bool p_deduplicate = true);
 	static int encode_new_accessor_from_int64s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt64Array &p_input_data, const bool p_deduplicate = true);
 	static int encode_new_accessor_from_vector3s(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector3Array &p_input_data, const bool p_deduplicate = true);
 	static int encode_new_accessor_from_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_input_data, const bool p_deduplicate = true);
