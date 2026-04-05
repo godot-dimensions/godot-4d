@@ -2,6 +2,14 @@
 
 #include "../g4mf_state_4d.h"
 
+Ref<ArrayPolyMesh4D> G4MFMesh4D::_generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const {
+	Ref<ArrayPolyMesh4D> poly_mesh;
+	poly_mesh.instantiate();
+	ERR_FAIL_INDEX_V(p_surface, _surfaces.size(), poly_mesh);
+	const Ref<G4MFMeshSurface4D> surface = _surfaces[p_surface];
+	return surface->generate_poly_mesh_surface(p_g4mf_state, p_vertices);
+}
+
 Ref<ArrayTetraMesh4D> G4MFMesh4D::_generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const {
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
@@ -18,10 +26,20 @@ Ref<ArrayWireMesh4D> G4MFMesh4D::_generate_wire_mesh_surface(const Ref<G4MFState
 	return surface->generate_wire_mesh_surface(p_g4mf_state, p_vertices);
 }
 
+bool G4MFMesh4D::can_generate_poly_meshes_for_all_surfaces() const {
+	for (int i = 0; i < _surfaces.size(); i++) {
+		const Ref<G4MFMeshSurface4D> surface = _surfaces[i];
+		if (surface->get_geometry_accessor_indices().size() == 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
 bool G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces() const {
 	for (int i = 0; i < _surfaces.size(); i++) {
 		const Ref<G4MFMeshSurface4D> surface = _surfaces[i];
-		if (surface->get_simplexes_accessor_index() < 0) {
+		if (surface->get_simplexes_accessor_index() < 0 && surface->get_geometry_accessor_indices().size() == 0) {
 			return false;
 		}
 	}
@@ -30,6 +48,9 @@ bool G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces() const {
 
 G4MFMesh4D::MeshFormat G4MFMesh4D::get_compatible_mesh_format(MeshFormat p_preferred_mesh_format) const {
 	// Only use a preferred mesh format if all surfaces can support it.
+	if (p_preferred_mesh_format == MESH_FORMAT_POLYTOPE && !can_generate_poly_meshes_for_all_surfaces()) {
+		p_preferred_mesh_format = MESH_FORMAT_TETRAHEDRAL;
+	}
 	if (p_preferred_mesh_format == MESH_FORMAT_TETRAHEDRAL && !can_generate_tetra_meshes_for_all_surfaces()) {
 		p_preferred_mesh_format = MESH_FORMAT_WIREFRAME;
 	}
@@ -73,6 +94,25 @@ PackedVector4Array G4MFMesh4D::load_vertices(const Ref<G4MFState4D> &p_g4mf_stat
 	return vertices;
 }
 
+Ref<PolyMesh4D> G4MFMesh4D::import_generate_poly_mesh(const Ref<G4MFState4D> &p_g4mf_state) const {
+	const int surface_count = _surfaces.size();
+	ERR_FAIL_COND_V_MSG(surface_count == 0, Ref<Mesh4D>(), "G4MFMesh4D.import_generate_poly_mesh: No surfaces defined for mesh.");
+	if (surface_count > 1) {
+		WARN_PRINT("G4MFMesh4D.import_generate_poly_mesh: Godot 4D only supports one surface per mesh. These will be merged into one surface.");
+	}
+	const PackedVector4Array vertices = load_vertices(p_g4mf_state);
+	ERR_FAIL_COND_V_MSG(vertices.is_empty(), Ref<Mesh4D>(), "G4MFMesh4D.import_generate_poly_mesh: No vertices found in the mesh, cannot generate mesh.");
+	Ref<ArrayPolyMesh4D> poly_mesh = _generate_poly_mesh_surface(p_g4mf_state, vertices, 0);
+	ERR_FAIL_COND_V_MSG(poly_mesh.is_null(), poly_mesh, "G4MFMesh4D.import_generate_poly_mesh: Failed to generate poly mesh surface.");
+	for (int i = 1; i < surface_count; i++) {
+		Ref<ArrayPolyMesh4D> next_poly_mesh = _generate_poly_mesh_surface(p_g4mf_state, vertices, i);
+		ERR_FAIL_COND_V_MSG(next_poly_mesh.is_null(), poly_mesh, "G4MFMesh4D.import_generate_poly_mesh: Failed to generate poly mesh surface for surface index " + String::num(i) + ".");
+		poly_mesh->merge_with(next_poly_mesh);
+	}
+	poly_mesh->set_name(get_name());
+	return poly_mesh;
+}
+
 Ref<TetraMesh4D> G4MFMesh4D::import_generate_tetra_mesh(const Ref<G4MFState4D> &p_g4mf_state) const {
 	const int surface_count = _surfaces.size();
 	ERR_FAIL_COND_V_MSG(surface_count == 0, Ref<Mesh4D>(), "G4MFMesh4D.import_generate_tetra_mesh: No surfaces defined for mesh.");
@@ -114,6 +154,10 @@ Ref<WireMesh4D> G4MFMesh4D::import_generate_wire_mesh(const Ref<G4MFState4D> &p_
 
 Ref<Mesh4D> G4MFMesh4D::import_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface) const {
 	const G4MFMesh4D::MeshFormat preferred_mesh_format = p_g4mf_state->get_preferred_mesh_format();
+	const bool use_poly_mesh = preferred_mesh_format == G4MFMesh4D::MESH_FORMAT_POLYTOPE && can_generate_poly_meshes_for_all_surfaces();
+	if (use_poly_mesh) {
+		return import_generate_poly_mesh(p_g4mf_state);
+	}
 	const bool use_tetra_mesh = preferred_mesh_format != G4MFMesh4D::MESH_FORMAT_WIREFRAME && can_generate_tetra_meshes_for_all_surfaces();
 	if (use_tetra_mesh) {
 		return import_generate_tetra_mesh(p_g4mf_state);
@@ -197,6 +241,7 @@ void G4MFMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_vertices_accessor_index"), &G4MFMesh4D::get_vertices_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_vertices_accessor_index", "vertices_accessor_index"), &G4MFMesh4D::set_vertices_accessor_index);
 
+	ClassDB::bind_method(D_METHOD("can_generate_poly_meshes_for_all_surfaces"), &G4MFMesh4D::can_generate_poly_meshes_for_all_surfaces);
 	ClassDB::bind_method(D_METHOD("can_generate_tetra_meshes_for_all_surfaces"), &G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces);
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMesh4D::is_equal_exact);
 

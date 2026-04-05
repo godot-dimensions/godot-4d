@@ -12,6 +12,12 @@
 		<link title="G4MF Mesh Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.mesh.schema.json</link>
 	</tutorials>
 	<methods>
+		<method name="can_generate_poly_meshes_for_all_surfaces" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Checks if all surfaces in the mesh can generate polytope meshes, meaning that they all have a non-negative [member G4MFMeshSurface4D.geometry_accessor_indices] that refers to valid polytope geometry data. This does not check if the accessor exists or if it contains valid data. Returns [code]true[/code] if all surfaces can generate polytope meshes, and returns [code]false[/code] if even one surface cannot.
+			</description>
+		</method>
 		<method name="can_generate_tetra_meshes_for_all_surfaces" qualifiers="const">
 			<return type="bool" />
 			<description>

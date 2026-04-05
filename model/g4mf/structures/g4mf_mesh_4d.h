@@ -19,6 +19,7 @@ private:
 	TypedArray<G4MFMeshSurface4D> _surfaces;
 	int _vertices_accessor_index = -1;
 
+	Ref<ArrayPolyMesh4D> _generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const;
 	Ref<ArrayTetraMesh4D> _generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const;
 	Ref<ArrayWireMesh4D> _generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const;
 
@@ -32,11 +33,13 @@ public:
 	int get_vertices_accessor_index() const { return _vertices_accessor_index; }
 	void set_vertices_accessor_index(const int p_vertices_accessor_index) { _vertices_accessor_index = p_vertices_accessor_index; }
 
+	bool can_generate_poly_meshes_for_all_surfaces() const;
 	bool can_generate_tetra_meshes_for_all_surfaces() const;
 	MeshFormat get_compatible_mesh_format(MeshFormat p_preferred_mesh_format) const;
 	bool is_equal_exact(const Ref<G4MFMesh4D> &p_other) const;
 
 	PackedVector4Array load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Ref<PolyMesh4D> import_generate_poly_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Ref<TetraMesh4D> import_generate_tetra_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Ref<WireMesh4D> import_generate_wire_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Ref<Mesh4D> import_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface = false) const;

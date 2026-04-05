@@ -112,22 +112,22 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 			return false;
 		}
 	}
-	const Vector<PackedVector3Array> poly_cell_uvw_map = get_poly_cell_texture_map();
-	const int64_t poly_cell_uvw_map_count = poly_cell_uvw_map.size();
-	if (poly_cell_uvw_map_count != 0) {
+	const Vector<PackedVector3Array> poly_cell_texture_map = get_poly_cell_texture_map();
+	const int64_t poly_cell_texture_map_count = poly_cell_texture_map.size();
+	if (poly_cell_texture_map_count != 0) {
 		if (poly_cell_dims < 2) {
 			return false; // Invalid to have UVW texture map data without any 3D cells to map to.
 		}
 		const Vector<PackedInt32Array> &cells_3d = poly_cell_indices[1];
-		if (cells_3d.size() != poly_cell_uvw_map_count) {
+		if (cells_3d.size() != poly_cell_texture_map_count) {
 			return false; // Invalid number of UVW texture maps, should match number of 3D cells.
 		}
 		const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(poly_cell_indices, edge_indices, false);
-		for (int64_t i = 0; i < poly_cell_uvw_map_count; i++) {
-			if (poly_cell_uvw_map[i].is_empty()) {
+		for (int64_t i = 0; i < poly_cell_texture_map_count; i++) {
+			if (poly_cell_texture_map[i].is_empty()) {
 				continue; // Allow unmapped 3D cells.
 			}
-			if (poly_cell_uvw_map[i].size() != cell_vert[i].size()) {
+			if (poly_cell_texture_map[i].size() != cell_vert[i].size()) {
 				return false; // Each UVW texture map entry corresponds to a vertex instance in the 3D cell.
 			}
 		}
@@ -592,7 +592,16 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_face_vertex_indices_bind() {
 	return ret;
 }
 
-TypedArray<PackedInt32Array> PolyMesh4D::get_all_cell_vertex_indices_bind(const bool p_start_with_canonical_span) {
+Vector<PackedInt32Array> PolyMesh4D::get_all_boundary_cell_vertex_indices(const bool p_start_with_canonical_span) {
+	ERR_FAIL_COND_V(!is_mesh_data_valid(), Vector<PackedInt32Array>());
+	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
+	ERR_FAIL_COND_V(poly_cell_indices.size() < 2, Vector<PackedInt32Array>());
+	const PackedInt32Array all_edge_indices = get_edge_indices();
+	ERR_FAIL_COND_V(all_edge_indices.is_empty(), Vector<PackedInt32Array>());
+	return _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, p_start_with_canonical_span);
+}
+
+TypedArray<PackedInt32Array> PolyMesh4D::get_all_boundary_cell_vertex_indices_bind(const bool p_start_with_canonical_span) {
 	ERR_FAIL_COND_V(!is_mesh_data_valid(), TypedArray<PackedInt32Array>());
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 	ERR_FAIL_COND_V(poly_cell_indices.size() < 2, TypedArray<PackedInt32Array>());
@@ -608,7 +617,7 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_cell_vertex_indices_bind(const 
 }
 
 void PolyMesh4D::poly_mesh_clear_cache(const bool p_normals_only) {
-	_simplex_cell_normals_cache.clear();
+	_simplex_cell_boundary_normals_cache.clear();
 	reset_mesh_data_validation();
 	// Normals can be computed separately from the rest, so allow resetting just them (and mark cross section dirty).
 	if (p_normals_only) {
@@ -748,12 +757,12 @@ PackedInt32Array PolyMesh4D::get_simplex_cell_indices() {
 }
 
 PackedVector4Array PolyMesh4D::get_simplex_cell_boundary_normals() {
-	if (_simplex_cell_normals_cache.is_empty()) {
+	if (_simplex_cell_boundary_normals_cache.is_empty()) {
 		if (_simplex_cell_indices_cache.is_empty()) {
 			_decompose_boundary_cells_into_simplexes(true);
 		}
 		const int64_t simplex_count = _simplex_cell_indices_cache.size() / 4;
-		_simplex_cell_normals_cache.resize(simplex_count);
+		_simplex_cell_boundary_normals_cache.resize(simplex_count);
 		for (int64_t i = 0; i < simplex_count; i++) {
 			const int64_t offset = i * 4;
 			const int32_t vert0 = _simplex_cell_indices_cache[offset];
@@ -764,10 +773,63 @@ PackedVector4Array PolyMesh4D::get_simplex_cell_boundary_normals() {
 					_simplex_cell_vertices_cache[vert0].direction_to(_simplex_cell_vertices_cache[vert1]),
 					_simplex_cell_vertices_cache[vert0].direction_to(_simplex_cell_vertices_cache[vert2]),
 					_simplex_cell_vertices_cache[vert0].direction_to(_simplex_cell_vertices_cache[vert3]));
-			_simplex_cell_normals_cache.set(i, perp.normalized());
+			_simplex_cell_boundary_normals_cache.set(i, perp.normalized());
 		}
 	}
-	return _simplex_cell_normals_cache;
+	return _simplex_cell_boundary_normals_cache;
+}
+
+PackedVector4Array PolyMesh4D::get_simplex_cell_vertex_normals() {
+	if (_simplex_cell_vertex_normals_cache.is_empty()) {
+		const Vector<PackedVector4Array> poly_cell_vertex_normals = get_poly_cell_vertex_normals();
+		if (poly_cell_vertex_normals.is_empty()) {
+			return PackedVector4Array(); // No vertex normal data available.
+		}
+		int64_t simplex_count = _simplex_cell_indices_source_poly_cells.size();
+		if (simplex_count * 4 != _simplex_cell_indices_cache.size()) {
+			_decompose_boundary_cells_into_simplexes(true);
+			simplex_count = _simplex_cell_indices_source_poly_cells.size();
+			CRASH_COND_MSG(simplex_count * 4 != _simplex_cell_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
+		}
+		const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
+		ERR_FAIL_COND_V_MSG(poly_cell_indices.size() < 2, PackedVector4Array(), "PolyMesh4D: No boundary cells available, cannot compute simplex vertex normals.");
+		const PackedInt32Array all_edge_indices = get_edge_indices();
+		const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, false);
+		_simplex_cell_vertex_normals_cache.resize(simplex_count * 4);
+		bool has_some_vertex_normals = false;
+		bool missing_some_vertex_normals = false;
+		for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
+			const int32_t source_cell = _simplex_cell_indices_source_poly_cells[simplex_index];
+			const PackedVector4Array &source_poly_vertex_normals = poly_cell_vertex_normals[source_cell];
+			if (source_poly_vertex_normals.is_empty()) {
+				missing_some_vertex_normals = true;
+				continue;
+			}
+			has_some_vertex_normals = true;
+			const PackedInt32Array &source_cell_vertices = cell_vert[source_cell];
+			CRASH_COND_MSG(source_poly_vertex_normals.size() != source_cell_vertices.size(), "PolyMesh4D: Source polytope cell vertex normals size does not match cell vertex count.");
+			const int64_t offset = simplex_index * 4;
+			for (int64_t vertex_in_simplex = 0; vertex_in_simplex < 4; vertex_in_simplex++) {
+				const int32_t vertex_index = _simplex_cell_indices_cache[offset + vertex_in_simplex];
+				const int64_t vertex_in_source_poly = source_cell_vertices.find(vertex_index);
+				Vector4 normal;
+				if (vertex_in_source_poly == -1) {
+					normal = Vector4D::average(source_poly_vertex_normals);
+				} else {
+					normal = source_poly_vertex_normals[vertex_in_source_poly];
+				}
+				_simplex_cell_vertex_normals_cache.set(offset + vertex_in_simplex, normal);
+			}
+		}
+		if (missing_some_vertex_normals) {
+			if (has_some_vertex_normals) {
+				WARN_PRINT("PolyMesh4D: Some polytope cells are missing vertex normal data, the corresponding simplex vertex normals will be averaged from the available data which may produce inaccurate lighting.");
+			} else {
+				_simplex_cell_vertex_normals_cache.clear(); // No vertex normal data available.
+			}
+		}
+	}
+	return _simplex_cell_vertex_normals_cache;
 }
 
 PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
@@ -833,7 +895,7 @@ PackedVector4Array PolyMesh4D::get_vertices() {
 
 void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_face_vertex_indices"), &PolyMesh4D::get_all_face_vertex_indices_bind);
-	ClassDB::bind_method(D_METHOD("get_all_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_cell_vertex_indices_bind);
+	ClassDB::bind_method(D_METHOD("get_all_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("poly_mesh_clear_cache", "normals_only"), &PolyMesh4D::poly_mesh_clear_cache, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("to_array_poly_mesh"), &PolyMesh4D::to_array_poly_mesh);
 

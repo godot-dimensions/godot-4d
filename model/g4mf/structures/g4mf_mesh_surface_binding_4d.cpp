@@ -98,6 +98,78 @@ PackedVector4Array G4MFMeshSurfaceBinding4D::load_values_as_vector4s(const Ref<G
 	return accessor->decode_vector4s_from_bytes(p_g4mf_state);
 }
 
+Array G4MFMeshSurfaceBinding4D::sample_values_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index, const Variant::Type p_variant_type) {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	ERR_FAIL_INDEX_V(p_accessor_index, state_accessors.size(), Array());
+	const Array values = load_values_as_variants(p_g4mf_state, p_variant_type);
+	const Ref<G4MFAccessor4D> accessor = state_accessors[p_accessor_index];
+	const PackedInt32Array sampling_indices = accessor->decode_int32s_from_bytes(p_g4mf_state);
+	Array sampled_values;
+	sampled_values.resize(sampling_indices.size());
+	for (int i = 0; i < sampling_indices.size(); i++) {
+		const int index = sampling_indices[i];
+		if (index < 0 || index >= values.size()) {
+			ERR_FAIL_INDEX_V(index, values.size(), Array());
+		}
+		sampled_values[i] = values[index];
+	}
+	return sampled_values;
+}
+
+PackedColorArray G4MFMeshSurfaceBinding4D::sample_values_as_colors(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	ERR_FAIL_INDEX_V(p_accessor_index, state_accessors.size(), PackedColorArray());
+	const PackedColorArray values = load_values_as_colors(p_g4mf_state);
+	const Ref<G4MFAccessor4D> accessor = state_accessors[p_accessor_index];
+	const PackedInt32Array sampling_indices = accessor->decode_int32s_from_bytes(p_g4mf_state);
+	PackedColorArray sampled_values;
+	sampled_values.resize(sampling_indices.size());
+	for (int i = 0; i < sampling_indices.size(); i++) {
+		const int index = sampling_indices[i];
+		if (index < 0 || index >= values.size()) {
+			ERR_FAIL_INDEX_V(index, values.size(), PackedColorArray());
+		}
+		sampled_values.set(i, values[index]);
+	}
+	return sampled_values;
+}
+
+PackedVector3Array G4MFMeshSurfaceBinding4D::sample_values_as_vector3s(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	ERR_FAIL_INDEX_V(p_accessor_index, state_accessors.size(), PackedVector3Array());
+	const PackedVector3Array values = load_values_as_vector3s(p_g4mf_state);
+	const Ref<G4MFAccessor4D> accessor = state_accessors[p_accessor_index];
+	const PackedInt32Array sampling_indices = accessor->decode_int32s_from_bytes(p_g4mf_state);
+	PackedVector3Array sampled_values;
+	sampled_values.resize(sampling_indices.size());
+	for (int i = 0; i < sampling_indices.size(); i++) {
+		const int index = sampling_indices[i];
+		if (index < 0 || index >= values.size()) {
+			ERR_FAIL_INDEX_V(index, values.size(), PackedVector3Array());
+		}
+		sampled_values.set(i, values[index]);
+	}
+	return sampled_values;
+}
+
+PackedVector4Array G4MFMeshSurfaceBinding4D::sample_values_as_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const {
+	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	ERR_FAIL_INDEX_V(p_accessor_index, state_accessors.size(), PackedVector4Array());
+	const PackedVector4Array values = load_values_as_vector4s(p_g4mf_state);
+	const Ref<G4MFAccessor4D> accessor = state_accessors[p_accessor_index];
+	const PackedInt32Array sampling_indices = accessor->decode_int32s_from_bytes(p_g4mf_state);
+	PackedVector4Array sampled_values;
+	sampled_values.resize(sampling_indices.size());
+	for (int i = 0; i < sampling_indices.size(); i++) {
+		const int index = sampling_indices[i];
+		if (index < 0 || index >= values.size()) {
+			ERR_FAIL_INDEX_V(index, values.size(), PackedVector4Array());
+		}
+		sampled_values.set(i, values[index]);
+	}
+	return sampled_values;
+}
+
 Ref<G4MFMeshSurfaceBindingGeometry4D> G4MFMeshSurfaceBindingGeometry4D::from_dictionary(const Dictionary &p_dict) {
 	Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition;
 	geometry_decomposition.instantiate();

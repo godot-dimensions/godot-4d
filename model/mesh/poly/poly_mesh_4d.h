@@ -18,7 +18,8 @@ class PolyMesh4D : public TetraMesh4D {
 	PackedInt32Array _simplex_cell_indices_cache;
 	PackedInt32Array _simplex_cell_indices_source_poly_cells;
 	PackedVector4Array _simplex_cell_vertices_cache; // Superset of the polytope cell vertices.
-	PackedVector4Array _simplex_cell_normals_cache;
+	PackedVector4Array _simplex_cell_boundary_normals_cache;
+	PackedVector4Array _simplex_cell_vertex_normals_cache;
 	PackedVector3Array _simplex_cell_uvw_texture_map_cache;
 	bool _is_poly_mesh_data_valid = false;
 
@@ -55,7 +56,8 @@ protected:
 public:
 	Vector<PackedInt32Array> get_all_face_vertex_indices();
 	TypedArray<PackedInt32Array> get_all_face_vertex_indices_bind();
-	TypedArray<PackedInt32Array> get_all_cell_vertex_indices_bind(const bool p_start_with_canonical_span);
+	Vector<PackedInt32Array> get_all_boundary_cell_vertex_indices(const bool p_start_with_canonical_span);
+	TypedArray<PackedInt32Array> get_all_boundary_cell_vertex_indices_bind(const bool p_start_with_canonical_span);
 	void poly_mesh_clear_cache(const bool p_normals_only = false);
 	Ref<ArrayPolyMesh4D> to_array_poly_mesh();
 
@@ -71,6 +73,7 @@ public:
 
 	virtual PackedInt32Array get_simplex_cell_indices() override;
 	virtual PackedVector4Array get_simplex_cell_boundary_normals() override;
+	virtual PackedVector4Array get_simplex_cell_vertex_normals() override;
 	virtual PackedVector3Array get_simplex_cell_texture_map() override;
 	virtual PackedVector4Array get_vertices() override;
 
