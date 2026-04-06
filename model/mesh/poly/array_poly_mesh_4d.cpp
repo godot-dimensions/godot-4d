@@ -73,6 +73,7 @@ void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode
 	_poly_cell_boundary_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, p_keep_existing);
 	CRASH_COND(_poly_cell_boundary_normals.size() != cell_vertex_indices.size());
 	if (p_mode == COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY) {
+		poly_mesh_clear_cache();
 		return;
 	}
 	// Ensure normals point outward from the mesh.
@@ -101,6 +102,7 @@ void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode
 	if (p_mode == COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION) {
 		_poly_cell_indices.set(1, boundary_cell_indices);
 	}
+	poly_mesh_clear_cache();
 }
 
 void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
@@ -124,6 +126,7 @@ void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, 
 		}
 		_poly_cell_vertex_normals.set(cell_index, vertex_normals_for_cell);
 	}
+	poly_mesh_clear_cache();
 }
 
 void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radians, const bool p_discard_seams_within_islands) {

@@ -10,6 +10,7 @@
 #include "scene/resources/mesh.h"
 #endif
 
+#include "../mesh/poly/array_poly_mesh_4d.h"
 #include "../mesh/tetra/array_tetra_mesh_4d.h"
 #include "../mesh/wire/array_wire_mesh_4d.h"
 
@@ -25,17 +26,23 @@ class OFFDocument4D : public Resource {
 	bool _has_any_face_colors = false;
 	bool _has_any_cell_colors = false;
 
+	// String conversion helpers.
 	static String _vector4_to_off_3d(const Vector4 &p_vertex);
 	static String _vector4_to_off_4d(const Vector4 &p_vertex);
 	static String _color_to_off_string(const Color &p_color);
 	static String _cell_or_face_to_off_string(const PackedInt32Array &p_face);
 
+	// Misc helper functions.
 	void _count_unique_edges_from_faces();
 	int64_t _find_or_insert_face(const int32_t p_a, const int32_t p_b, const int32_t p_c, const bool p_deduplicate_faces = true);
 	int64_t _find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
-	TypedArray<PackedInt32Array> _calculate_cell_vertex_indices();
-	TypedArray<PackedInt32Array> _calculate_simplex_vertex_indices(const TypedArray<PackedInt32Array> &p_cell_vertex_indices);
 
+	// Export winding order correction helper functions.
+	static int32_t _get_next_vertex_not_in_common_edge(const PackedInt32Array &p_face, const int64_t p_common_edge_index, const int32_t p_common_edge_min, const int32_t p_common_edge_max);
+	static Vector4 _predict_poly_import_cell_normal(const PackedVector4Array &p_vertices, const TypedArray<PackedInt32Array> &p_face_vertex_indices, const PackedInt32Array &p_cell_face_indices);
+	static Vector4 _compute_cell_normal_from_canonical_span(const PackedVector4Array &p_vertices, const PackedInt32Array &p_cell_vertex_indices);
+
+	// Internal entire-file string conversion functions.
 	String _export_save_to_string();
 	static Ref<OFFDocument4D> _import_load_from_raw_text(const String &p_raw_text, const String &p_path);
 
@@ -51,6 +58,7 @@ public:
 	static Ref<OFFDocument4D> import_load_from_byte_array(const PackedByteArray &p_data);
 	static Ref<OFFDocument4D> import_load_from_file(const String &p_path);
 	Ref<ArrayMesh> import_generate_mesh_3d(const bool p_per_face_vertices = true);
+	Ref<ArrayPolyMesh4D> import_generate_poly_mesh_4d();
 	Ref<ArrayTetraMesh4D> import_generate_tetra_mesh_4d();
 	Ref<ArrayWireMesh4D> import_generate_wire_mesh_4d(const bool p_deduplicate_edges = true);
 	Node *import_generate_node(const bool p_deduplicate_edges = true, const bool p_per_face_vertices = true);

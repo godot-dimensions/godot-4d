@@ -103,12 +103,14 @@ void Godot4DEditorPlugin::_notification(int p_what) {
 			_g4mf_scene_4d_importer.instantiate();
 			_off_mesh_3d_importer.instantiate();
 			_off_scene_importer.instantiate();
+			_off_poly_4d_importer.instantiate();
 			_off_tetra_4d_importer.instantiate();
 			_off_wire_4d_importer.instantiate();
 			add_import_plugin(_g4mf_mesh_4d_importer);
 			add_import_plugin(_g4mf_scene_4d_importer);
 			add_import_plugin(_off_mesh_3d_importer);
 			add_import_plugin(_off_scene_importer);
+			add_import_plugin(_off_poly_4d_importer);
 			add_import_plugin(_off_tetra_4d_importer);
 			add_import_plugin(_off_wire_4d_importer);
 			_add_4d_main_screen();
@@ -122,6 +124,7 @@ void Godot4DEditorPlugin::_notification(int p_what) {
 			remove_import_plugin(_g4mf_scene_4d_importer);
 			remove_import_plugin(_off_mesh_3d_importer);
 			remove_import_plugin(_off_scene_importer);
+			remove_import_plugin(_off_poly_4d_importer);
 			remove_import_plugin(_off_tetra_4d_importer);
 			remove_import_plugin(_off_wire_4d_importer);
 			_g4mf_export_dialog->queue_free();

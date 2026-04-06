@@ -11,6 +11,7 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
+#include "../../math/vector_4d.h"
 #include "../mesh/mesh_instance_4d.h"
 #include "../mesh/tetra/tetra_material_4d.h"
 #include "../mesh/wire/wire_material_4d.h"
@@ -46,100 +47,6 @@ int64_t OFFDocument4D::_find_or_insert_vertex(const Vector4 &p_vertex, const boo
 	}
 	_vertices.append(p_vertex);
 	return vertex_count;
-}
-
-// OFF stores cells with indices to faces, but this provides indices of vertices.
-TypedArray<PackedInt32Array> OFFDocument4D::_calculate_cell_vertex_indices() {
-	const int64_t cell_face_indices_size = _cell_face_indices.size();
-	TypedArray<PackedInt32Array> ret;
-	if (cell_face_indices_size == 0) {
-		return ret;
-	}
-	ret.resize(cell_face_indices_size);
-	for (int64_t cell_number = 0; cell_number < cell_face_indices_size; cell_number++) {
-		PackedInt32Array face_indices = _cell_face_indices[cell_number];
-		const int64_t face_size = face_indices.size();
-		PackedInt32Array this_cell_vertex_indices;
-		for (int64_t face_number = 0; face_number < face_size; face_number++) {
-			const int32_t face_index = face_indices[face_number];
-			ERR_CONTINUE(face_index >= _face_vertex_indices.size());
-			const PackedInt32Array this_face_vertex_indices = _face_vertex_indices[face_index];
-			for (int64_t vertex_number = 0; vertex_number < this_face_vertex_indices.size(); vertex_number++) {
-				const int32_t vertex_index = this_face_vertex_indices[vertex_number];
-				if (!this_cell_vertex_indices.has(vertex_index)) {
-					this_cell_vertex_indices.append(vertex_index);
-				}
-			}
-		}
-		ret[cell_number] = this_cell_vertex_indices;
-	}
-	return ret;
-}
-
-TypedArray<PackedInt32Array> OFFDocument4D::_calculate_simplex_vertex_indices(const TypedArray<PackedInt32Array> &p_cell_vertex_indices) {
-	const int64_t cell_face_indices_size = _cell_face_indices.size();
-	CRASH_COND(p_cell_vertex_indices.size() != cell_face_indices_size);
-	TypedArray<PackedInt32Array> ret;
-	if (cell_face_indices_size == 0) {
-		return ret;
-	}
-	// OFF faces store vertices, so we need to compose them into edges (1D simplexes) for triangles.
-	TypedArray<PackedInt32Array> triangle_faces_vertex_indices;
-	{
-		for (int64_t i = 0; i < _face_vertex_indices.size(); i++) {
-			const PackedInt32Array polygon_vertex_indices = _face_vertex_indices[i];
-			const int64_t triangle_count = polygon_vertex_indices.size() - 2;
-			ERR_CONTINUE(triangle_count < 1);
-			PackedInt32Array triangle_vertex_indices;
-			triangle_vertex_indices.resize(3 * triangle_count);
-			// This logic assumes that the face is a flat convex 2D polygon with vertices in a consistent winding order.
-			// We break it into triangles by connecting the first vertex to every pair of adjacent vertices.
-			const int32_t pivot_vertex_index = polygon_vertex_indices[0];
-			int64_t simplex_iter = 0;
-			for (int64_t triangle_index = 0; triangle_index < triangle_count; triangle_index++) {
-				triangle_vertex_indices.set(simplex_iter++, pivot_vertex_index);
-				triangle_vertex_indices.set(simplex_iter++, polygon_vertex_indices[triangle_index + 1]);
-				triangle_vertex_indices.set(simplex_iter++, polygon_vertex_indices[triangle_index + 2]);
-			}
-			triangle_faces_vertex_indices.append(triangle_vertex_indices);
-		}
-	}
-	// OFF cells store faces from the previous dimension (which we've calculated triangle simplexes for).
-	CRASH_COND(_cell_face_indices.size() != p_cell_vertex_indices.size());
-	constexpr int64_t prev_dimension_verts_per_simplex = 3;
-	constexpr int64_t current_dimension_verts_per_simplex = 4;
-	ret.resize(_cell_face_indices.size());
-	int32_t prev_cell_pivot_vertex = -1;
-	for (int cell_number = 0; cell_number < _cell_face_indices.size(); cell_number++) {
-		const PackedInt32Array face_indices = _cell_face_indices[cell_number];
-		const PackedInt32Array vertex_indices = p_cell_vertex_indices[cell_number];
-		ERR_FAIL_COND_V(vertex_indices.size() < 2, ret);
-		PackedInt32Array simplex_indices;
-		int64_t simplex_iter = 0;
-		const int64_t face_size = face_indices.size();
-		// This logic assumes that the face is a "flat" convex polytope where all vertices are "visible" to the chosen pivot vertex.
-		const int32_t pivot_vertex_index = (vertex_indices[0] == prev_cell_pivot_vertex) ? vertex_indices[1] : vertex_indices[0];
-		for (int64_t face_number = 0; face_number < face_size; face_number++) {
-			PackedInt32Array face_vertex_indices = triangle_faces_vertex_indices[face_indices[face_number]];
-			if (face_vertex_indices.has(pivot_vertex_index)) {
-				// Skip any faces connected to the pivot vertex.
-				// For example, if making tetrahedra out of a box, we only want the 3 opposite faces to connect 6 tetrahedra.
-				continue;
-			}
-			int64_t face_vert_iter = 0;
-			const int64_t face_simplex_count = face_vertex_indices.size() / prev_dimension_verts_per_simplex;
-			simplex_indices.resize(simplex_iter + current_dimension_verts_per_simplex * face_simplex_count);
-			for (int64_t new_simplex_number = 0; new_simplex_number < face_simplex_count; new_simplex_number++) {
-				simplex_indices.set(simplex_iter++, pivot_vertex_index);
-				for (int64_t face_simplex_number = 0; face_simplex_number < prev_dimension_verts_per_simplex; face_simplex_number++) {
-					simplex_indices.set(simplex_iter++, face_vertex_indices[face_vert_iter++]);
-				}
-			}
-		}
-		ret[cell_number] = simplex_indices;
-		prev_cell_pivot_vertex = pivot_vertex_index;
-	}
-	return ret;
 }
 
 Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices) {
@@ -188,21 +95,140 @@ int64_t OFFDocument4D::_find_or_insert_face(const int32_t p_a, const int32_t p_b
 	return face_count;
 }
 
+// Export winding order correction helper functions.
+
+int32_t OFFDocument4D::_get_next_vertex_not_in_common_edge(const PackedInt32Array &p_face, const int64_t p_common_edge_index, const int32_t p_common_edge_min, const int32_t p_common_edge_max) {
+	const int64_t next_edge_index = (p_common_edge_index + 1) % p_face.size();
+	const int32_t next_edge_vertex_a = p_face[next_edge_index];
+	const int32_t next_edge_vertex_b = p_face[(next_edge_index + 1) % p_face.size()];
+	int32_t next_vertex = MIN(next_edge_vertex_a, next_edge_vertex_b);
+	if (next_vertex == p_common_edge_min || next_vertex == p_common_edge_max) {
+		next_vertex = MAX(next_edge_vertex_a, next_edge_vertex_b);
+	}
+	if (next_vertex == p_common_edge_min || next_vertex == p_common_edge_max) {
+		return INT32_MIN;
+	}
+	return next_vertex;
+}
+
+Vector4 OFFDocument4D::_predict_poly_import_cell_normal(const PackedVector4Array &p_vertices, const TypedArray<PackedInt32Array> &p_face_vertex_indices, const PackedInt32Array &p_cell_face_indices) {
+	if (p_cell_face_indices.size() < 2) {
+		return Vector4();
+	}
+	const PackedInt32Array face_a = p_face_vertex_indices[p_cell_face_indices[0]];
+	const PackedInt32Array face_b = p_face_vertex_indices[p_cell_face_indices[1]];
+	if (face_a.size() < 2 || face_b.size() < 2) {
+		return Vector4();
+	}
+	int64_t common_edge_index_in_a = -1;
+	int64_t common_edge_index_in_b = -1;
+	int32_t common_edge_min = INT32_MIN;
+	int32_t common_edge_max = INT32_MIN;
+	for (int64_t edge_index_a = 0; edge_index_a < face_a.size(); edge_index_a++) {
+		const int32_t a0 = face_a[edge_index_a];
+		const int32_t a1 = face_a[(edge_index_a + 1) % face_a.size()];
+		const int32_t a_min = MIN(a0, a1);
+		const int32_t a_max = MAX(a0, a1);
+		for (int64_t edge_index_b = 0; edge_index_b < face_b.size(); edge_index_b++) {
+			const int32_t b0 = face_b[edge_index_b];
+			const int32_t b1 = face_b[(edge_index_b + 1) % face_b.size()];
+			if (a_min == MIN(b0, b1) && a_max == MAX(b0, b1)) {
+				common_edge_index_in_a = edge_index_a;
+				common_edge_index_in_b = edge_index_b;
+				common_edge_min = a_min;
+				common_edge_max = a_max;
+				break;
+			}
+		}
+		if (common_edge_index_in_a != -1) {
+			break;
+		}
+	}
+	if (common_edge_index_in_a == -1 || common_edge_index_in_b == -1) {
+		return Vector4();
+	}
+	const int32_t first_next_vertex = _get_next_vertex_not_in_common_edge(face_a, common_edge_index_in_a, common_edge_min, common_edge_max);
+	const int32_t second_next_vertex = _get_next_vertex_not_in_common_edge(face_b, common_edge_index_in_b, common_edge_min, common_edge_max);
+	if (first_next_vertex == INT32_MIN || second_next_vertex == INT32_MIN) {
+		return Vector4();
+	}
+	return Vector4D::perpendicular(
+			p_vertices[first_next_vertex].direction_to(p_vertices[common_edge_min]),
+			p_vertices[first_next_vertex].direction_to(p_vertices[common_edge_max]),
+			p_vertices[first_next_vertex].direction_to(p_vertices[second_next_vertex]));
+}
+
+Vector4 OFFDocument4D::_compute_cell_normal_from_canonical_span(const PackedVector4Array &p_vertices, const PackedInt32Array &p_cell_vertex_indices) {
+	if (p_cell_vertex_indices.size() < 4) {
+		return Vector4();
+	}
+	return Vector4D::perpendicular(
+			p_vertices[p_cell_vertex_indices[0]].direction_to(p_vertices[p_cell_vertex_indices[1]]),
+			p_vertices[p_cell_vertex_indices[0]].direction_to(p_vertices[p_cell_vertex_indices[2]]),
+			p_vertices[p_cell_vertex_indices[0]].direction_to(p_vertices[p_cell_vertex_indices[3]]));
+}
+
 Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces) {
 	Ref<OFFDocument4D> off_document;
 	ERR_FAIL_COND_V(p_tetra_mesh.is_null(), off_document);
 	off_document.instantiate();
 	off_document->_vertices = p_tetra_mesh->get_vertices();
-	const PackedInt32Array cell_indices = p_tetra_mesh->get_simplex_cell_indices();
-	// TetraMesh4D references cells by their vertex indices, but OFF files reference them by their face indices.
-	for (int i = 0; i < cell_indices.size(); i += 4) {
-		const int a = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 1], cell_indices[i + 2], p_deduplicate_faces);
-		const int b = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 2], cell_indices[i + 3], p_deduplicate_faces);
-		const int c = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 3], cell_indices[i + 1], p_deduplicate_faces);
-		const int d = off_document->_find_or_insert_face(cell_indices[i + 1], cell_indices[i + 3], cell_indices[i + 2], p_deduplicate_faces);
-		off_document->_cell_face_indices.append(PackedInt32Array{ a, b, c, d });
+	const Ref<Material4D> material = p_tetra_mesh->get_material();
+	const Ref<PolyMesh4D> poly_mesh = p_tetra_mesh;
+	if (poly_mesh.is_valid()) {
+		const Vector<Vector<PackedInt32Array>> poly_cell_indices = poly_mesh->get_poly_cell_indices();
+		ERR_FAIL_COND_V(poly_cell_indices.size() < 2, off_document);
+		// PolyMesh4D uses hierarchical geometry like OFF, but each face references edges instead of vertices.
+		const Vector<PackedInt32Array> face_vertex_indices = poly_mesh->get_all_face_vertex_indices();
+		off_document->_face_vertex_indices.resize(face_vertex_indices.size());
+		for (int64_t i = 0; i < face_vertex_indices.size(); i++) {
+			off_document->_face_vertex_indices[i] = face_vertex_indices[i];
+		}
+		const Vector<PackedInt32Array> cell_face_indices = poly_cell_indices[1];
+		off_document->_cell_face_indices.resize(cell_face_indices.size());
+		for (int64_t i = 0; i < cell_face_indices.size(); i++) {
+			off_document->_cell_face_indices[i] = cell_face_indices[i];
+		}
+		// Predict what PolyMesh winding would be after OFF re-import and fix by swapping the first two faces when anti-aligned.
+		const PackedVector4Array source_cell_normals = poly_mesh->get_poly_cell_boundary_normals();
+		const Vector<PackedInt32Array> source_cell_vertex_indices = poly_mesh->get_all_boundary_cell_vertex_indices(true);
+		for (int64_t cell_number = 0; cell_number < off_document->_cell_face_indices.size(); cell_number++) {
+			PackedInt32Array exported_cell_face_indices = off_document->_cell_face_indices[cell_number];
+			if (exported_cell_face_indices.size() < 2) {
+				continue;
+			}
+			Vector4 desired_normal;
+			if (cell_number < source_cell_normals.size()) {
+				desired_normal = source_cell_normals[cell_number];
+			}
+			if (desired_normal.is_zero_approx() && cell_number < source_cell_vertex_indices.size()) {
+				desired_normal = OFFDocument4D::_compute_cell_normal_from_canonical_span(off_document->_vertices, source_cell_vertex_indices[cell_number]);
+			}
+			if (desired_normal.is_zero_approx()) {
+				continue;
+			}
+			const Vector4 predicted_import_normal = OFFDocument4D::_predict_poly_import_cell_normal(off_document->_vertices, off_document->_face_vertex_indices, exported_cell_face_indices);
+			if (predicted_import_normal.is_zero_approx()) {
+				continue;
+			}
+			if (predicted_import_normal.dot(desired_normal) < 0.0f) {
+				const int32_t swap_tmp = exported_cell_face_indices[0];
+				exported_cell_face_indices.set(0, exported_cell_face_indices[1]);
+				exported_cell_face_indices.set(1, swap_tmp);
+				off_document->_cell_face_indices[cell_number] = exported_cell_face_indices;
+			}
+		}
+	} else {
+		// TetraMesh4D references cells by their vertex indices, but OFF files reference them by their face indices.
+		const PackedInt32Array cell_indices = p_tetra_mesh->get_simplex_cell_indices();
+		for (int i = 0; i < cell_indices.size(); i += 4) {
+			const int32_t a = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 1], cell_indices[i + 2], p_deduplicate_faces);
+			const int32_t b = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 2], cell_indices[i + 3], p_deduplicate_faces);
+			const int32_t c = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 3], cell_indices[i + 1], p_deduplicate_faces);
+			const int32_t d = off_document->_find_or_insert_face(cell_indices[i + 1], cell_indices[i + 3], cell_indices[i + 2], p_deduplicate_faces);
+			off_document->_cell_face_indices.append(PackedInt32Array{ a, b, c, d });
+		}
 	}
-	Ref<Material4D> material = p_tetra_mesh->get_material();
 	if (material.is_valid()) {
 		if (material->get_albedo_source_flags() & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
 			off_document->_cell_colors = material->get_albedo_color_array();
@@ -264,46 +290,56 @@ Ref<ArrayMesh> OFFDocument4D::import_generate_mesh_3d(const bool p_per_face_vert
 	return array_mesh;
 }
 
-Ref<ArrayTetraMesh4D> OFFDocument4D::import_generate_tetra_mesh_4d() {
-	Ref<ArrayTetraMesh4D> cell_mesh;
-	cell_mesh.instantiate();
-	cell_mesh->set_vertices(_vertices);
+Ref<ArrayPolyMesh4D> OFFDocument4D::import_generate_poly_mesh_4d() {
+	Ref<ArrayPolyMesh4D> poly_mesh;
+	poly_mesh.instantiate();
+	poly_mesh->set_poly_cell_vertices(_vertices);
 	if (_cell_face_indices.is_empty()) {
-		ERR_FAIL_COND_V_MSG(_face_vertex_indices.is_empty(), cell_mesh, "OFFDocument4D: This OFF document does not contain any cells or faces, so it cannot be converted to a tetrahedral cell mesh. Perhaps this is a vertex-only OFF file, or a 0D or 1D OFF file?");
-		ERR_FAIL_V_MSG(cell_mesh, "OFFDocument4D: This OFF document does not contain any cells, so it cannot be converted to a tetrahedral cell mesh. Perhaps this is a 2D or 3D OFF file?");
+		ERR_FAIL_COND_V_MSG(_face_vertex_indices.is_empty(), poly_mesh, "OFFDocument4D: This OFF document does not contain any cells or faces, so it cannot be converted to a polyhedral cell mesh. Perhaps this is a vertex-only OFF file, or a 0D or 1D OFF file?");
+		ERR_FAIL_V_MSG(poly_mesh, "OFFDocument4D: This OFF document does not contain any cells, so it cannot be converted to a polyhedral cell mesh. Perhaps this is a 2D or 3D OFF file?");
 	}
-	const TypedArray<PackedInt32Array> cell_vertex_indices = _calculate_cell_vertex_indices();
-	const TypedArray<PackedInt32Array> simplex_vertex_indices = _calculate_simplex_vertex_indices(cell_vertex_indices);
-	const int64_t simplex_vertex_indices_size = simplex_vertex_indices.size();
-	CRASH_COND(simplex_vertex_indices_size != _cell_colors.size());
-	ERR_FAIL_COND_V_MSG(simplex_vertex_indices_size == 0, cell_mesh, "OFFDocument4D: Failed to generate tetrahedral simplexes from OFF cells.");
-	// After those calculations, we can discard most of the data.
-	// We just need the last array of the simplex vertex indices.
-	constexpr int64_t vertices_per_simplex = 4;
-	int64_t cell_colors_iter = 0;
-	PackedColorArray packed_cell_colors;
-	PackedInt32Array packed_cell_indices;
-	for (int i = 0; i < simplex_vertex_indices.size(); i++) {
-		PackedInt32Array simplex_vertex_indices_for_cell = simplex_vertex_indices[i];
-		packed_cell_indices.append_array(simplex_vertex_indices_for_cell);
-		if (_has_any_cell_colors) {
-			const int64_t simplexes_in_face = simplex_vertex_indices_for_cell.size() / vertices_per_simplex;
-			packed_cell_colors.resize(cell_colors_iter + simplexes_in_face);
-			for (int simplex_number = 0; simplex_number < simplexes_in_face; simplex_number++) {
-				packed_cell_colors.set(cell_colors_iter++, _cell_colors[i]);
-			}
+	// OFF faces reference vertices, but PolyMesh4D faces reference edges.
+	Vector<PackedInt32Array> face_edge_indices;
+	face_edge_indices.resize(_face_vertex_indices.size());
+	for (int64_t face_number = 0; face_number < _face_vertex_indices.size(); face_number++) {
+		const PackedInt32Array face_vertex_indices = _face_vertex_indices[face_number];
+		PackedInt32Array this_face_edges;
+		this_face_edges.resize(face_vertex_indices.size());
+		const int64_t face_size = face_vertex_indices.size();
+		for (int64_t face_vert = 0; face_vert < face_size; face_vert++) {
+			const int64_t other_vert = (face_vert + 1) % face_size;
+			// The call to `append_edge_indices` adds to the PolyMesh4D's
+			// edge indices and returns the index of the new or existing edge.
+			this_face_edges.set(face_vert, poly_mesh->append_edge_indices(face_vertex_indices[face_vert], face_vertex_indices[other_vert], true));
 		}
+		face_edge_indices.set(face_number, this_face_edges);
 	}
-	cell_mesh->set_simplex_cell_indices(packed_cell_indices);
+	// OFF cells references faces, and PolyMesh4D cells also reference faces, but we need it in Vector<> format.
+	Vector<PackedInt32Array> cell_face_indices;
+	cell_face_indices.resize(_cell_face_indices.size());
+	for (int64_t cell_number = 0; cell_number < _cell_face_indices.size(); cell_number++) {
+		cell_face_indices.set(cell_number, _cell_face_indices[cell_number]);
+	}
+	// Combine the face and cell indices into the unified poly cell indices array.
+	Vector<Vector<PackedInt32Array>> poly_cell_indices;
+	poly_cell_indices.resize(2);
+	poly_cell_indices.set(0, face_edge_indices);
+	poly_cell_indices.set(1, cell_face_indices);
+	poly_mesh->set_poly_cell_indices(poly_cell_indices);
+	// Convert any cell colors into a material. Note: PolyMesh4D doesn't support per-face colors, so we have to ignore those.
 	if (_has_any_cell_colors) {
 		Ref<TetraMaterial4D> cell_material;
 		cell_material.instantiate();
 		cell_material->set_albedo_source_flags(Material4D::COLOR_SOURCE_FLAG_PER_CELL);
-		cell_material->set_albedo_color_array(packed_cell_colors);
-		cell_mesh->set_material(cell_material);
+		cell_material->set_albedo_color_array(_cell_colors);
+		poly_mesh->set_material(cell_material);
 	}
-	ERR_FAIL_COND_V_MSG(!cell_mesh->is_mesh_data_valid(), cell_mesh, "OFFDocument4D: Failed to import OFF as cell mesh, mesh data is not valid.");
-	return cell_mesh;
+	ERR_FAIL_COND_V_MSG(!poly_mesh->is_mesh_data_valid(), poly_mesh, "OFFDocument4D: Failed to import OFF as poly mesh, mesh data is not valid.");
+	return poly_mesh;
+}
+
+Ref<ArrayTetraMesh4D> OFFDocument4D::import_generate_tetra_mesh_4d() {
+	return import_generate_poly_mesh_4d()->to_array_tetra_mesh();
 }
 
 Ref<ArrayWireMesh4D> OFFDocument4D::import_generate_wire_mesh_4d(const bool p_deduplicate_edges) {
@@ -628,7 +664,7 @@ String OFFDocument4D::_color_to_off_string(const Color &p_color) {
 }
 
 String OFFDocument4D::_cell_or_face_to_off_string(const PackedInt32Array &p_face) {
-	String ret = String::num(p_face.size());
+	String ret = String::num_int64(p_face.size());
 	for (int i = 0; i < p_face.size(); i++) {
 		ret += String(" ") + String::num_int64(p_face[i]);
 	}
@@ -663,11 +699,11 @@ String OFFDocument4D::_export_save_to_string() {
 	if (has_4d_cells) {
 		lines.append("4OFF");
 		lines.append("# Vertices, Faces, Edges, Cells");
-		lines.append(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count) + " " + String::num(_cell_face_indices.size()));
+		lines.append(String::num_int64(_vertices.size()) + " " + String::num_int64(_face_vertex_indices.size()) + " " + String::num_int64(_edge_count) + " " + String::num_int64(_cell_face_indices.size()));
 	} else {
 		lines.append("OFF");
 		lines.append("# Vertices, Faces, Edges");
-		lines.append(String::num(_vertices.size()) + " " + String::num(_face_vertex_indices.size()) + " " + String::num(_edge_count));
+		lines.append(String::num_int64(_vertices.size()) + " " + String::num_int64(_face_vertex_indices.size()) + " " + String::num_int64(_edge_count));
 	}
 	lines.append("\n# Vertices");
 	for (int i = 0; i < _vertices.size(); i++) {
