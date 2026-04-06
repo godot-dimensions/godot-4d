@@ -23,6 +23,70 @@
 				Checks if the [G4MFMeshSurfaceBinding4D] is equal to another [G4MFMeshSurfaceBinding4D] exactly by checking if the properties are equal and all accessor indices refer to the same accessors. If a mesh surface binding refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the mesh surface binding is not checked, and any metadata is ignored.
 			</description>
 		</method>
+		<method name="load_edge_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the edge indices for this binding from the given [G4MFState4D]. This reads the data from the accessor at the [member edges_accessor_index] variable, which should contain indices into this binding's values corresponding to the edge vertex indices of the mesh surface (2 indices per edge).
+			</description>
+		</method>
+		<method name="load_per_edge_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the per-edge indices for this binding from the given [G4MFState4D]. This reads the data from the accessor at the [member per_edge_accessor_index] variable, which should contain indices into this binding's values corresponding to each edge of the mesh surface.
+			</description>
+		</method>
+		<method name="load_per_simplex_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the per-simplex indices for this binding from the given [G4MFState4D]. This reads the data from the accessor at the [member per_simplex_accessor_index] variable, which should contain indices into this binding's values corresponding to each simplex cell of the mesh surface.
+			</description>
+		</method>
+		<method name="load_simplex_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the simplex indices for this binding from the given [G4MFState4D]. This reads the data from the accessor at the [member simplexes_accessor_index] variable, which should contain indices into this binding's values corresponding to the simplex vertex indices of the mesh surface (4 indices per simplex for a 4D mesh surface).
+			</description>
+		</method>
+		<method name="load_values_as_colors" qualifiers="const">
+			<return type="PackedColorArray" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the values for this binding as [Color]s from the given [G4MFState4D]. This reads the data from the accessor at the [member values_accessor_index] variable, and interprets the data as [Color]s.
+			</description>
+		</method>
+		<method name="load_values_as_variants" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="variant_type" type="int" enum="Variant.Type" />
+			<description>
+				Loads the values for this binding as an array of variants of the specified type from the given [G4MFState4D]. This reads the data from the accessor at the [member values_accessor_index] variable, and converts each element to a variant of the specified type.
+			</description>
+		</method>
+		<method name="load_values_as_vector3s" qualifiers="const">
+			<return type="PackedVector3Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the values for this binding as [Vector3]s from the given [G4MFState4D]. This reads the data from the accessor at the [member values_accessor_index] variable, and interprets the data as [Vector3]s.
+			</description>
+		</method>
+		<method name="load_values_as_vector4s" qualifiers="const">
+			<return type="PackedVector4Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the values for this binding as [Vector4]s from the given [G4MFState4D]. This reads the data from the accessor at the [member values_accessor_index] variable, and interprets the data as [Vector4]s.
+			</description>
+		</method>
+		<method name="load_vertex_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the vertex indices for this binding from the given [G4MFState4D]. This reads the data from the accessor at the [member vertices_accessor_index] variable, which should contain indices into this binding's values corresponding to the shared vertices of the mesh (only applying to where those are instanced on the mesh surface).
+			</description>
+		</method>
 		<method name="to_dictionary" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
@@ -34,8 +98,8 @@
 		<member name="edges_accessor_index" type="int" setter="set_edges_accessor_index" getter="get_edges_accessor_index" default="-1">
 			The index of the accessor that contains indices into this binding's values corresponding to the edges of the mesh surface (see [member G4MFMeshSurface4D.edges_accessor_index]). If defined, this MUST point to a valid accessor, which MUST have an integer [member G4MFAccessor4D.component_type], MUST have a [member G4MFAccessor4D.vector_size] of 2 (matching the mesh surface's edges accessor), and MUST have the same number of elements as the mesh surface's edges accessor. Each component in the accessor is an index into this binding's values array. This property is only valid if the mesh surface defines edges.
 		</member>
-		<member name="geometry_decompositions" type="G4MFMeshSurfaceBindingGeometry4D[]" setter="set_geometry_decompositions" getter="get_geometry_decompositions" default="[]">
-			An array of geometry decomposition objects that define how binding values are associated with specific geometry's decomposed polytope elements of the mesh surface. Usually, this will have one item referring to vertex instances of boundary geometry items, meaning for a 3D mesh surface, `index` will be set to 0 (the 2D faces), and for a 4D mesh surface, `index` will be set to 1 (the 3D cells).
+		<member name="geometry_bindings" type="G4MFMeshSurfaceBindingGeometry4D[]" setter="set_geometry_bindings" getter="get_geometry_bindings" default="[]">
+			An array of geometry binding objects that define how the values are associated with specific geometry's polytope elements of the mesh surface, or elements decomposed from those. Usually, this will have one item referring to vertex instances of boundary geometry items, meaning for a 3D mesh surface, `index` will be set to 0 (the 2D faces), and for a 4D mesh surface, `index` will be set to 1 (the 3D cells).
 		</member>
 		<member name="per_edge_accessor_index" type="int" setter="set_per_edge_accessor_index" getter="get_per_edge_accessor_index" default="-1">
 			The index of the accessor that contains indices into this binding's values corresponding to each edge of the mesh surface (see [member G4MFMeshSurface4D.edges_accessor_index]). If defined, this MUST point to a valid accessor, which MUST have an integer [member G4MFAccessor4D.component_type], MUST have a [member G4MFAccessor4D.vector_size] of 1, and MUST have the same number of elements as the mesh surface's edges accessor (half the number of component indices). Each component in the accessor is an index into this binding's values array. This property is only valid if the mesh surface defines edges.

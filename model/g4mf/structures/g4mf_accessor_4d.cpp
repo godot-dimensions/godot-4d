@@ -1191,6 +1191,8 @@ void G4MFAccessor4D::_bind_methods() {
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_colors", "input_data"), &G4MFAccessor4D::minimal_component_type_for_colors);
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_floats", "input_data"), &G4MFAccessor4D::minimal_component_type_for_floats);
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_int32s", "input_data"), &G4MFAccessor4D::minimal_component_type_for_int32s);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_int64s", "input_data"), &G4MFAccessor4D::minimal_component_type_for_int64s);
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_vector3s", "input_data"), &G4MFAccessor4D::minimal_component_type_for_vector3s);
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("minimal_component_type_for_vector4s", "input_data"), &G4MFAccessor4D::minimal_component_type_for_vector4s);
 
 	// Decode functions.
@@ -1206,6 +1208,10 @@ void G4MFAccessor4D::_bind_methods() {
 
 	// High-level encode functions.
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_variants", "g4mf_state", "input_data", "component_type", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_variants, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_colors", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_colors, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_int32s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_int32s, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_int64s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_int64s, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_vector3s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_vector3s, DEFVAL(true));
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_vector4s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_vector4s, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("store_accessor_data_into_state", "g4mf_state", "data_bytes", "deduplicate"), &G4MFAccessor4D::store_accessor_data_into_state, DEFVAL(true));

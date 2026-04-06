@@ -41,7 +41,7 @@ public:
 class G4MFMeshSurfaceBinding4D : public G4MFItem4D {
 	GDCLASS(G4MFMeshSurfaceBinding4D, G4MFItem4D);
 
-	TypedArray<G4MFMeshSurfaceBindingGeometry4D> _geometry_decompositions;
+	TypedArray<G4MFMeshSurfaceBindingGeometry4D> _geometry_bindings;
 	int _edges_accessor_index = -1;
 	int _per_edge_accessor_index = -1;
 	int _per_simplex_accessor_index = -1;
@@ -53,9 +53,9 @@ protected:
 	static void _bind_methods();
 
 public:
-	TypedArray<G4MFMeshSurfaceBindingGeometry4D> get_geometry_decompositions() const { return _geometry_decompositions; }
-	void set_geometry_decompositions(const TypedArray<G4MFMeshSurfaceBindingGeometry4D> &p_geometry_decompositions) {
-		_geometry_decompositions = p_geometry_decompositions;
+	TypedArray<G4MFMeshSurfaceBindingGeometry4D> get_geometry_bindings() const { return _geometry_bindings; }
+	void set_geometry_bindings(const TypedArray<G4MFMeshSurfaceBindingGeometry4D> &p_geometry_bindings) {
+		_geometry_bindings = p_geometry_bindings;
 	}
 
 	int get_edges_accessor_index() const { return _edges_accessor_index; }
@@ -76,7 +76,6 @@ public:
 	int get_vertices_accessor_index() const { return _vertices_accessor_index; }
 	void set_vertices_accessor_index(const int p_vertices_accessor_index) { _vertices_accessor_index = p_vertices_accessor_index; }
 
-	bool is_equal_exact(const Ref<G4MFMeshSurfaceBinding4D> &p_other) const;
 	PackedInt32Array load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array load_per_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array load_per_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
@@ -88,11 +87,7 @@ public:
 	PackedVector3Array load_values_as_vector3s(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedVector4Array load_values_as_vector4s(const Ref<G4MFState4D> &p_g4mf_state) const;
 
-	Array sample_values_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index, const Variant::Type p_variant_type);
-	PackedColorArray sample_values_as_colors(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const;
-	PackedVector3Array sample_values_as_vector3s(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const;
-	PackedVector4Array sample_values_as_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const;
-
+	bool is_equal_exact(const Ref<G4MFMeshSurfaceBinding4D> &p_other) const;
 	static Ref<G4MFMeshSurfaceBinding4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;
 };

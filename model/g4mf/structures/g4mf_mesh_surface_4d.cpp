@@ -142,7 +142,7 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 		poly_mesh->set_poly_cell_indices(geom_sep);
 		if (geom_sep.size() > 1) {
 			if (_normals_binding.is_valid()) {
-				const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _normals_binding->get_geometry_decompositions();
+				const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _normals_binding->get_geometry_bindings();
 				for (int bind_geom_index = 0; bind_geom_index < geometry_decompositions.size(); bind_geom_index++) {
 					const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition = geometry_decompositions[bind_geom_index];
 					// Look for 3D poly cells (geom index 1) decomposed into vertices (decomp dim 0).
@@ -168,7 +168,7 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 				}
 			}
 			if (_texture_map_binding.is_valid()) {
-				const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _texture_map_binding->get_geometry_decompositions();
+				const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _texture_map_binding->get_geometry_bindings();
 				for (int bind_geom_index = 0; bind_geom_index < geometry_decompositions.size(); bind_geom_index++) {
 					const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition = geometry_decompositions[bind_geom_index];
 					// Look for 3D poly cells (geom index 1) decomposed into vertices (decomp dim 0).
@@ -323,9 +323,9 @@ void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState
 			geometry_decomposition.instantiate();
 			geometry_decomposition->set_geometry_index(1);
 			geometry_decomposition->set_indices_accessor_index(indices_accessor_index);
-			TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _normals_binding->get_geometry_decompositions();
+			TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _normals_binding->get_geometry_bindings();
 			geometry_decompositions.append(geometry_decomposition);
-			_normals_binding->set_geometry_decompositions(geometry_decompositions);
+			_normals_binding->set_geometry_bindings(geometry_decompositions);
 		}
 	}
 	const Vector<PackedVector3Array> poly_cell_texture_map = p_poly_mesh->get_poly_cell_texture_map();
@@ -360,9 +360,9 @@ void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState
 			geometry_decomposition.instantiate();
 			geometry_decomposition->set_geometry_index(1);
 			geometry_decomposition->set_indices_accessor_index(indices_accessor_index);
-			TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _texture_map_binding->get_geometry_decompositions();
+			TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _texture_map_binding->get_geometry_bindings();
 			geometry_decompositions.append(geometry_decomposition);
-			_texture_map_binding->set_geometry_decompositions(geometry_decompositions);
+			_texture_map_binding->set_geometry_bindings(geometry_decompositions);
 		}
 	}
 }

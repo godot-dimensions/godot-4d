@@ -16,12 +16,12 @@ PackedInt32Array G4MFMeshSurfaceBindingGeometry4D::load_indices(const Ref<G4MFSt
 }
 
 bool G4MFMeshSurfaceBinding4D::is_equal_exact(const Ref<G4MFMeshSurfaceBinding4D> &p_other) const {
-	const TypedArray<G4MFMeshSurfaceBindingGeometry4D> other_geometry_decompositions = p_other->get_geometry_decompositions();
-	if (_geometry_decompositions.size() != other_geometry_decompositions.size()) {
+	const TypedArray<G4MFMeshSurfaceBindingGeometry4D> other_geometry_decompositions = p_other->get_geometry_bindings();
+	if (_geometry_bindings.size() != other_geometry_decompositions.size()) {
 		return false;
 	}
-	for (int i = 0; i < _geometry_decompositions.size(); i++) {
-		const Ref<G4MFMeshSurfaceBindingGeometry4D> geom = _geometry_decompositions[i];
+	for (int i = 0; i < _geometry_bindings.size(); i++) {
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> geom = _geometry_bindings[i];
 		const Ref<G4MFMeshSurfaceBindingGeometry4D> other = other_geometry_decompositions[i];
 		if (!geom->is_equal_exact(other)) {
 			return false;
@@ -98,78 +98,6 @@ PackedVector4Array G4MFMeshSurfaceBinding4D::load_values_as_vector4s(const Ref<G
 	return accessor->decode_vector4s_from_bytes(p_g4mf_state);
 }
 
-Array G4MFMeshSurfaceBinding4D::sample_values_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index, const Variant::Type p_variant_type) {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
-	ERR_FAIL_INDEX_V(p_accessor_index, state_accessors.size(), Array());
-	const Array values = load_values_as_variants(p_g4mf_state, p_variant_type);
-	const Ref<G4MFAccessor4D> accessor = state_accessors[p_accessor_index];
-	const PackedInt32Array sampling_indices = accessor->decode_int32s_from_bytes(p_g4mf_state);
-	Array sampled_values;
-	sampled_values.resize(sampling_indices.size());
-	for (int i = 0; i < sampling_indices.size(); i++) {
-		const int index = sampling_indices[i];
-		if (index < 0 || index >= values.size()) {
-			ERR_FAIL_INDEX_V(index, values.size(), Array());
-		}
-		sampled_values[i] = values[index];
-	}
-	return sampled_values;
-}
-
-PackedColorArray G4MFMeshSurfaceBinding4D::sample_values_as_colors(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
-	ERR_FAIL_INDEX_V(p_accessor_index, state_accessors.size(), PackedColorArray());
-	const PackedColorArray values = load_values_as_colors(p_g4mf_state);
-	const Ref<G4MFAccessor4D> accessor = state_accessors[p_accessor_index];
-	const PackedInt32Array sampling_indices = accessor->decode_int32s_from_bytes(p_g4mf_state);
-	PackedColorArray sampled_values;
-	sampled_values.resize(sampling_indices.size());
-	for (int i = 0; i < sampling_indices.size(); i++) {
-		const int index = sampling_indices[i];
-		if (index < 0 || index >= values.size()) {
-			ERR_FAIL_INDEX_V(index, values.size(), PackedColorArray());
-		}
-		sampled_values.set(i, values[index]);
-	}
-	return sampled_values;
-}
-
-PackedVector3Array G4MFMeshSurfaceBinding4D::sample_values_as_vector3s(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
-	ERR_FAIL_INDEX_V(p_accessor_index, state_accessors.size(), PackedVector3Array());
-	const PackedVector3Array values = load_values_as_vector3s(p_g4mf_state);
-	const Ref<G4MFAccessor4D> accessor = state_accessors[p_accessor_index];
-	const PackedInt32Array sampling_indices = accessor->decode_int32s_from_bytes(p_g4mf_state);
-	PackedVector3Array sampled_values;
-	sampled_values.resize(sampling_indices.size());
-	for (int i = 0; i < sampling_indices.size(); i++) {
-		const int index = sampling_indices[i];
-		if (index < 0 || index >= values.size()) {
-			ERR_FAIL_INDEX_V(index, values.size(), PackedVector3Array());
-		}
-		sampled_values.set(i, values[index]);
-	}
-	return sampled_values;
-}
-
-PackedVector4Array G4MFMeshSurfaceBinding4D::sample_values_as_vector4s(const Ref<G4MFState4D> &p_g4mf_state, const int p_accessor_index) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
-	ERR_FAIL_INDEX_V(p_accessor_index, state_accessors.size(), PackedVector4Array());
-	const PackedVector4Array values = load_values_as_vector4s(p_g4mf_state);
-	const Ref<G4MFAccessor4D> accessor = state_accessors[p_accessor_index];
-	const PackedInt32Array sampling_indices = accessor->decode_int32s_from_bytes(p_g4mf_state);
-	PackedVector4Array sampled_values;
-	sampled_values.resize(sampling_indices.size());
-	for (int i = 0; i < sampling_indices.size(); i++) {
-		const int index = sampling_indices[i];
-		if (index < 0 || index >= values.size()) {
-			ERR_FAIL_INDEX_V(index, values.size(), PackedVector4Array());
-		}
-		sampled_values.set(i, values[index]);
-	}
-	return sampled_values;
-}
-
 Ref<G4MFMeshSurfaceBindingGeometry4D> G4MFMeshSurfaceBindingGeometry4D::from_dictionary(const Dictionary &p_dict) {
 	Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition;
 	geometry_decomposition.instantiate();
@@ -208,7 +136,7 @@ Ref<G4MFMeshSurfaceBinding4D> G4MFMeshSurfaceBinding4D::from_dictionary(const Di
 			Ref<G4MFMeshSurfaceBindingGeometry4D> geom = G4MFMeshSurfaceBindingGeometry4D::from_dictionary(geom_dict);
 			geometry_decompositions.append(geom);
 		}
-		binding->set_geometry_decompositions(geometry_decompositions);
+		binding->set_geometry_bindings(geometry_decompositions);
 	}
 	if (p_dict.has("edges")) {
 		binding->set_edges_accessor_index(int(p_dict["edges"]));
@@ -233,10 +161,10 @@ Ref<G4MFMeshSurfaceBinding4D> G4MFMeshSurfaceBinding4D::from_dictionary(const Di
 
 Dictionary G4MFMeshSurfaceBinding4D::to_dictionary() const {
 	Dictionary dict = write_item_entries_to_dictionary();
-	if (_geometry_decompositions.size() > 0) {
+	if (_geometry_bindings.size() > 0) {
 		Array geometry_array;
-		for (int i = 0; i < _geometry_decompositions.size(); i++) {
-			Ref<G4MFMeshSurfaceBindingGeometry4D> geom = _geometry_decompositions[i];
+		for (int i = 0; i < _geometry_bindings.size(); i++) {
+			Ref<G4MFMeshSurfaceBindingGeometry4D> geom = _geometry_bindings[i];
 			geometry_array.append(geom->to_dictionary());
 		}
 		dict["geometry"] = geometry_array;
@@ -278,8 +206,8 @@ void G4MFMeshSurfaceBindingGeometry4D::_bind_methods() {
 }
 
 void G4MFMeshSurfaceBinding4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_geometry_decompositions"), &G4MFMeshSurfaceBinding4D::get_geometry_decompositions);
-	ClassDB::bind_method(D_METHOD("set_geometry_decompositions", "geometry_decompositions"), &G4MFMeshSurfaceBinding4D::set_geometry_decompositions);
+	ClassDB::bind_method(D_METHOD("get_geometry_bindings"), &G4MFMeshSurfaceBinding4D::get_geometry_bindings);
+	ClassDB::bind_method(D_METHOD("set_geometry_bindings", "geometry_bindings"), &G4MFMeshSurfaceBinding4D::set_geometry_bindings);
 	ClassDB::bind_method(D_METHOD("get_edges_accessor_index"), &G4MFMeshSurfaceBinding4D::get_edges_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_edges_accessor_index", "edges_accessor_index"), &G4MFMeshSurfaceBinding4D::set_edges_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_per_edge_accessor_index"), &G4MFMeshSurfaceBinding4D::get_per_edge_accessor_index);
@@ -293,11 +221,22 @@ void G4MFMeshSurfaceBinding4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_vertices_accessor_index"), &G4MFMeshSurfaceBinding4D::get_vertices_accessor_index);
 	ClassDB::bind_method(D_METHOD("set_vertices_accessor_index", "vertices_accessor_index"), &G4MFMeshSurfaceBinding4D::set_vertices_accessor_index);
 
+	ClassDB::bind_method(D_METHOD("load_edge_indices", "g4mf_state"), &G4MFMeshSurfaceBinding4D::load_edge_indices);
+	ClassDB::bind_method(D_METHOD("load_per_edge_indices", "g4mf_state"), &G4MFMeshSurfaceBinding4D::load_per_edge_indices);
+	ClassDB::bind_method(D_METHOD("load_per_simplex_indices", "g4mf_state"), &G4MFMeshSurfaceBinding4D::load_per_simplex_indices);
+	ClassDB::bind_method(D_METHOD("load_simplex_indices", "g4mf_state"), &G4MFMeshSurfaceBinding4D::load_simplex_indices);
+	ClassDB::bind_method(D_METHOD("load_vertex_indices", "g4mf_state"), &G4MFMeshSurfaceBinding4D::load_vertex_indices);
+
+	ClassDB::bind_method(D_METHOD("load_values_as_variants", "g4mf_state", "variant_type"), &G4MFMeshSurfaceBinding4D::load_values_as_variants);
+	ClassDB::bind_method(D_METHOD("load_values_as_colors", "g4mf_state"), &G4MFMeshSurfaceBinding4D::load_values_as_colors);
+	ClassDB::bind_method(D_METHOD("load_values_as_vector3s", "g4mf_state"), &G4MFMeshSurfaceBinding4D::load_values_as_vector3s);
+	ClassDB::bind_method(D_METHOD("load_values_as_vector4s", "g4mf_state"), &G4MFMeshSurfaceBinding4D::load_values_as_vector4s);
+
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMeshSurfaceBinding4D::is_equal_exact);
 	ClassDB::bind_static_method("G4MFMeshSurfaceBinding4D", D_METHOD("from_dictionary", "dict"), &G4MFMeshSurfaceBinding4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurfaceBinding4D::to_dictionary);
 
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "geometry_decompositions", PROPERTY_HINT_ARRAY_TYPE, "G4MFMeshSurfaceBindingGeometry4D"), "set_geometry_decompositions", "get_geometry_decompositions");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "geometry_bindings", PROPERTY_HINT_ARRAY_TYPE, "G4MFMeshSurfaceBindingGeometry4D"), "set_geometry_bindings", "get_geometry_bindings");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "edges_accessor_index"), "set_edges_accessor_index", "get_edges_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "per_edge_accessor_index"), "set_per_edge_accessor_index", "get_per_edge_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "per_simplex_accessor_index"), "set_per_simplex_accessor_index", "get_per_simplex_accessor_index");
