@@ -59,6 +59,7 @@ private:
 	Error _import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _import_infer_buffer_view_alignment(Ref<G4MFState4D> p_g4mf_state);
 	Node *_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root);
 	Ref<Mesh4D> _import_generate_combined_mesh(const Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible = false);
 
@@ -69,6 +70,7 @@ public:
 	// Main import and export functions.
 	Error export_append_from_godot_scene(Ref<G4MFState4D> p_g4mf_state, Node *p_scene_root);
 	Error export_append_from_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh);
+	Error export_repack_buffer_data(Ref<G4MFState4D> p_g4mf_state, const bool p_allow_reordering = true);
 	PackedByteArray export_write_to_byte_array(Ref<G4MFState4D> p_g4mf_state);
 	Error export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path);
 

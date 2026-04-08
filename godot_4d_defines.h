@@ -42,13 +42,13 @@ using namespace godot;
 #define GODOT_VERSION_PATCH VERSION_PATCH
 #endif
 
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
 // Prior to Godot 4.6, the internal API of free_rid in RenderingServer and other servers did not match the exposed API.
 // See https://github.com/godotengine/godot/pull/107139
 #define free_rid free
 #endif
 
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
 // As of Godot 4.5, we can use constexpr for vectors, but 4.4 and earlier don't support constexpr for vectors.
 #define USE_CONST_NOT_CONSTEXPR_FOR_VECTORS 1
 #endif
@@ -81,5 +81,15 @@ using namespace godot;
 #ifndef _NO_DISCARD_
 #define _NO_DISCARD_ [[nodiscard]]
 #endif // _NO_DISCARD_
+
+#if GODOT_VERSION_MAJOR < 4
+#error "Godot 4D requires Godot 4 or later."
+#endif
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
+// Prior to Godot 4.5, the vector resize API did not clarify whether it was initializing new elements or not.
+// See https://github.com/godotengine/godot/pull/104522
+#define resize_initialized resize
+#endif
 
 #endif // GODOT_4D_DEFINES_H

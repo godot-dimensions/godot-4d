@@ -119,8 +119,8 @@
 		<member name="original_path" type="String" setter="set_original_path" getter="get_original_path" default="&quot;&quot;">
 			The original path of the file whose data led to populating this G4MFState4D. When importing a G4MF file, this is set to the path of the G4MF file, and is the same as the combination of [member g4mf_base_path] and [member g4mf_filename]. When exporting from a Godot scene, this is set to the path of the Godot scene file, if the root node is an instance of a Godot scene file.
 		</member>
-		<member name="preferred_mesh_format" type="int" setter="set_preferred_mesh_format" getter="get_preferred_mesh_format" enum="G4MFMesh4D.MeshFormat" default="1">
-			The preferred choice of mesh format which will try to be used when generating meshes from [G4MFMesh4D]s. If the selected format cannot be used for a given mesh, it will fall back to another format. The default value is [constant G4MFMesh4D.MESH_FORMAT_TETRAHEDRAL], which means that tetrahedral meshes will be preferred, but if a mesh has no cells and therefore cannot be represented as a tetrahedral mesh, it will fall back to a wireframe mesh.
+		<member name="preferred_mesh_format" type="int" setter="set_preferred_mesh_format" getter="get_preferred_mesh_format" enum="G4MFMesh4D.MeshFormat" default="0">
+			The preferred choice of mesh format which will try to be used when generating meshes from [G4MFMesh4D]s. If the selected format cannot be used for a given mesh, it will fall back to another format. The default value is [constant G4MFMesh4D.MESH_FORMAT_POLYTOPE], which means that polytope meshes will be preferred when possible. If a mesh does not have polytope geometry, it will try to fall back to a tetrahedral mesh. If a mesh has no cells and therefore cannot be represented as a tetrahedral mesh, it will fall back to a wireframe mesh.
 		</member>
 	</members>
 	<constants>

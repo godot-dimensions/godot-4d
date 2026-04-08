@@ -7,6 +7,7 @@ class G4MFState4D;
 class G4MFBufferView4D : public G4MFItem4D {
 	GDCLASS(G4MFBufferView4D, G4MFItem4D);
 
+	int _alignment = -1; // Not stored in the G4MF JSON.
 	int _buffer_index = 0;
 	int64_t _byte_offset = 0;
 	int64_t _byte_length = 0;
@@ -15,6 +16,9 @@ protected:
 	static void _bind_methods();
 
 public:
+	int get_alignment() const { return _alignment; }
+	void set_alignment(const int p_alignment) { _alignment = p_alignment; }
+
 	int get_buffer_index() const { return _buffer_index; }
 	void set_buffer_index(const int p_buffer_index) { _buffer_index = p_buffer_index; }
 

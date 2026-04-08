@@ -67,6 +67,8 @@ void EditorExportDialogG4MF4D::_export_scene_as_g4mf(const String &p_path) {
 	g4mf_state->set_external_data_mode(_export_settings->get_external_data_mode());
 	Error err = _g4mf_document->export_append_from_godot_scene(g4mf_state, scene_root);
 	ERR_FAIL_COND_SHOW_DIALOG(err != OK, "G4MF editor export: Error while running export_append_from_godot_scene.");
+	err = _g4mf_document->export_repack_buffer_data(g4mf_state);
+	ERR_FAIL_COND_SHOW_DIALOG(err != OK, "G4MF editor export: Error while running export_repack_buffer_data.");
 	err = _g4mf_document->export_write_to_file(g4mf_state, p_path);
 	ERR_FAIL_COND_SHOW_DIALOG(err != OK, "G4MF editor export: Error while running export_write_to_file.");
 	// Refresh the editor file system to inform it of the new file.

@@ -44,6 +44,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="alignment" type="int" setter="set_alignment" getter="get_alignment" default="-1">
+			The byte alignment of the buffer view. When creating a buffer view to hold file data, the alignment is set to 16. When creating a buffer view from an accessor, this is determined by the accessor's component type. For example, an accessor storing a Vector3 of float32s would have an alignment of 4, since float32s are 4 bytes each, and the vector size does not affect the alignment. A value of -1 means the alignment is unknown. Note: The alignment is not explicitly stored as a property in the G4MF file.
+		</member>
 		<member name="buffer_index" type="int" setter="set_buffer_index" getter="get_buffer_index" default="0">
 			The index of the buffer this buffer view points to. This is the index of the buffer in the G4MF buffers array.
 		</member>

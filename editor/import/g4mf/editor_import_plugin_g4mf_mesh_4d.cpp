@@ -32,7 +32,7 @@ TypedArray<Dictionary> EditorImportPluginG4MFMesh4D::_get_import_options(const S
 	Dictionary preferred_mesh_format;
 	preferred_mesh_format["name"] = "preferred_mesh_format";
 	preferred_mesh_format["type"] = Variant::INT;
-	preferred_mesh_format["default_value"] = G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL;
+	preferred_mesh_format["default_value"] = G4MFMesh4D::MESH_FORMAT_POLYTOPE;
 	preferred_mesh_format["hint"] = PropertyHint::PROPERTY_HINT_ENUM;
 	preferred_mesh_format["hint_string"] = "Polytope,Tetrahedral,Wireframe";
 	options.append(preferred_mesh_format);
@@ -47,7 +47,7 @@ TypedArray<Dictionary> EditorImportPluginG4MFMesh4D::_get_import_options(const S
 Error EditorImportPluginG4MFMesh4D::_import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const
 #elif GODOT_MODULE
 void EditorImportPluginG4MFMesh4D::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "preferred_mesh_format", PROPERTY_HINT_ENUM, "Polytope,Tetrahedral,Wireframe"), G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "preferred_mesh_format", PROPERTY_HINT_ENUM, "Polytope,Tetrahedral,Wireframe"), G4MFMesh4D::MESH_FORMAT_POLYTOPE));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "include_invisible"), false));
 }
 

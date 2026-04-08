@@ -50,8 +50,10 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 	// This is used by accessors. The byte offset of an accessor's buffer view MUST be a multiple of the accessor's primitive size.
 	// https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/data.md#accessors
 	int64_t byte_offset = state_buffer.size();
-	if (byte_offset % p_alignment != 0) {
-		byte_offset += p_alignment - (byte_offset % p_alignment);
+	if (p_alignment > 1) {
+		if (byte_offset % p_alignment != 0) {
+			byte_offset += p_alignment - (byte_offset % p_alignment);
+		}
 	}
 	state_buffer.resize(byte_offset + input_data_size);
 	uint8_t *buffer_ptr = state_buffer.ptrw();
@@ -61,6 +63,7 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 	// Create a new G4MFBufferView4D that references the new buffer.
 	Ref<G4MFBufferView4D> buffer_view;
 	buffer_view.instantiate();
+	buffer_view->set_alignment(p_alignment);
 	buffer_view->set_buffer_index(p_buffer_index);
 	buffer_view->set_byte_offset(byte_offset);
 	buffer_view->set_byte_length(input_data_size);
@@ -100,6 +103,8 @@ Dictionary G4MFBufferView4D::to_dictionary() const {
 }
 
 void G4MFBufferView4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_alignment", "alignment"), &G4MFBufferView4D::set_alignment);
+	ClassDB::bind_method(D_METHOD("get_alignment"), &G4MFBufferView4D::get_alignment);
 	ClassDB::bind_method(D_METHOD("set_buffer_index", "buffer_index"), &G4MFBufferView4D::set_buffer_index);
 	ClassDB::bind_method(D_METHOD("get_buffer_index"), &G4MFBufferView4D::get_buffer_index);
 	ClassDB::bind_method(D_METHOD("set_byte_offset", "byte_offset"), &G4MFBufferView4D::set_byte_offset);
@@ -113,6 +118,7 @@ void G4MFBufferView4D::_bind_methods() {
 	ClassDB::bind_static_method("G4MFBufferView4D", D_METHOD("from_dictionary", "dict"), &G4MFBufferView4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFBufferView4D::to_dictionary);
 
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "alignment"), "set_alignment", "get_alignment");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "buffer_index"), "set_buffer_index", "get_buffer_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "byte_offset"), "set_byte_offset", "get_byte_offset");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "byte_length"), "set_byte_length", "get_byte_length");

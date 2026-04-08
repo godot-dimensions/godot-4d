@@ -694,6 +694,8 @@ Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dic
 	err = _import_parse_shapes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse shapes. Aborting file import.");
 	err = _import_parse_nodes(p_g4mf_state, p_g4mf_json);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse nodes. Aborting file import.");
+	err = _import_infer_buffer_view_alignment(p_g4mf_state);
 	return err;
 }
 
@@ -957,6 +959,49 @@ Error G4MFDocument4D::_import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Diction
 	return OK;
 }
 
+Error G4MFDocument4D::_import_infer_buffer_view_alignment(Ref<G4MFState4D> p_g4mf_state) {
+	const TypedArray<G4MFAccessor4D> accessors = p_g4mf_state->get_g4mf_accessors();
+	const TypedArray<G4MFBufferView4D> buffer_views = p_g4mf_state->get_g4mf_buffer_views();
+	const TypedArray<G4MFFileReference4D> files = p_g4mf_state->get_g4mf_files();
+	for (int accessor_index = 0; accessor_index < accessors.size(); accessor_index++) {
+		const Ref<G4MFAccessor4D> accessor = accessors[accessor_index];
+		const int buffer_view_index = accessor->get_buffer_view_index();
+		if (buffer_view_index < 0) {
+			continue;
+		}
+		ERR_FAIL_INDEX_V(buffer_view_index, buffer_views.size(), ERR_INVALID_DATA);
+		const Ref<G4MFBufferView4D> buffer_view = buffer_views[buffer_view_index];
+		buffer_view->set_alignment(accessor->get_bytes_per_component());
+	}
+	for (int file_index = 0; file_index < files.size(); file_index++) {
+		const Ref<G4MFFileReference4D> file = files[file_index];
+		const int buffer_view_index = file->get_buffer_view_index();
+		if (buffer_view_index < 0) {
+			continue;
+		}
+		ERR_FAIL_INDEX_V(buffer_view_index, buffer_views.size(), ERR_INVALID_DATA);
+		const Ref<G4MFBufferView4D> buffer_view = buffer_views[buffer_view_index];
+		buffer_view->set_alignment(16); // It's safe to assume files want to be highly aligned.
+	}
+	for (int buffer_view_index = 0; buffer_view_index < buffer_views.size(); buffer_view_index++) {
+		const Ref<G4MFBufferView4D> buffer_view = buffer_views[buffer_view_index];
+		if (buffer_view->get_alignment() >= 0) {
+			continue;
+		}
+		const int byte_offset = buffer_view->get_byte_offset();
+		int guessed_alignment = 16;
+		while (guessed_alignment > 1) {
+			if (byte_offset % guessed_alignment == 0) {
+				break;
+			}
+			guessed_alignment /= 2;
+		}
+		buffer_view->set_alignment(guessed_alignment);
+		WARN_PRINT("G4MF import: Warning: Alignment for buffer view " + String::num_int64(buffer_view_index) + " could not be inferred with certainty, and has been guessed to be " + String::num_int64(guessed_alignment) + " bytes.");
+	}
+	return OK;
+}
+
 Node *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root) {
 	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	ERR_FAIL_INDEX_V(p_node_index, state_g4mf_nodes.size(), nullptr);
@@ -1090,6 +1135,57 @@ Error G4MFDocument4D::export_append_from_godot_mesh(Ref<G4MFState4D> p_g4mf_stat
 	ERR_FAIL_COND_V_MSG(p_mesh.is_null(), ERR_INVALID_PARAMETER, "G4MF export: Cannot export a null mesh.");
 	const int mesh_index = G4MFMesh4D::export_convert_mesh_into_state(p_g4mf_state, p_mesh, true);
 	ERR_FAIL_COND_V_MSG(mesh_index < 0, ERR_INVALID_PARAMETER, "G4MF export: Failed to convert mesh into G4MF state.");
+	return OK;
+}
+
+Error G4MFDocument4D::export_repack_buffer_data(Ref<G4MFState4D> p_g4mf_state, const bool p_allow_reordering) {
+	TypedArray<G4MFBufferView4D> buffer_views_copy = p_g4mf_state->get_g4mf_buffer_views().duplicate();
+	if (p_allow_reordering) {
+		// Stable sort buffer views by alignment, highest first (insertion sort for simplicity).
+		for (int this_index = 1; this_index < buffer_views_copy.size(); this_index++) {
+			Ref<G4MFBufferView4D> key = buffer_views_copy[this_index];
+			int other_index = this_index - 1;
+			while (other_index >= 0 && Ref<G4MFBufferView4D>(buffer_views_copy[other_index])->get_alignment() < key->get_alignment()) {
+				buffer_views_copy[other_index + 1] = buffer_views_copy[other_index];
+				other_index--;
+			}
+			buffer_views_copy[other_index + 1] = key;
+		}
+	}
+	// Prepare a new array of buffers to be filled with the repacked data.
+	TypedArray<PackedByteArray> original_buffers = p_g4mf_state->get_g4mf_buffers();
+	TypedArray<PackedByteArray> new_buffers;
+	const int64_t buffer_count = original_buffers.size();
+	new_buffers.resize(buffer_count);
+	for (int64_t buffer_index = 0; buffer_index < buffer_count; buffer_index++) {
+		new_buffers[buffer_index] = PackedByteArray();
+	}
+	// Transfer data from the original buffer views to the new buffers.
+	for (int64_t buffer_view_index = 0; buffer_view_index < buffer_views_copy.size(); buffer_view_index++) {
+		const Ref<G4MFBufferView4D> buffer_view = buffer_views_copy[buffer_view_index];
+		const int64_t buffer_index = buffer_view->get_buffer_index();
+		ERR_FAIL_INDEX_V(buffer_index, buffer_count, ERR_INVALID_DATA);
+		int64_t alignment = buffer_view->get_alignment();
+		if (alignment < 1) {
+			alignment = 1;
+		}
+		PackedByteArray new_buffer = new_buffers[buffer_index];
+		// Insert the data into the new buffer with the same index, and make the buffer view point to it.
+		const PackedByteArray data = buffer_view->read_buffer_view_data(p_g4mf_state);
+		int64_t byte_offset = new_buffer.size();
+		if (byte_offset % alignment != 0) {
+			byte_offset += alignment - (byte_offset % alignment);
+			new_buffer.resize_initialized(byte_offset);
+		}
+		// The buffer views array was shallow-copied, so this affects the original buffer view in the state.
+		buffer_view->set_byte_offset(byte_offset);
+		new_buffer.append_array(data);
+		new_buffers[buffer_index] = new_buffer;
+	}
+	// Set the buffers, but do set the re-ordered buffer views because we want to keep
+	// the original order to ensure that existing index-based references to buffer views
+	// remain valid. The buffer views are still mutated, just not re-ordered.
+	p_g4mf_state->set_g4mf_buffers(new_buffers);
 	return OK;
 }
 
@@ -1250,6 +1346,7 @@ void G4MFDocument4D::_bind_methods() {
 	// Main import and export functions.
 	ClassDB::bind_method(D_METHOD("export_append_from_godot_scene", "g4mf_state", "scene_root"), &G4MFDocument4D::export_append_from_godot_scene);
 	ClassDB::bind_method(D_METHOD("export_append_from_godot_mesh", "g4mf_state", "mesh"), &G4MFDocument4D::export_append_from_godot_mesh);
+	ClassDB::bind_method(D_METHOD("export_repack_buffer_data", "g4mf_state", "allow_reordering"), &G4MFDocument4D::export_repack_buffer_data, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("export_write_to_byte_array", "g4mf_state"), &G4MFDocument4D::export_write_to_byte_array);
 	ClassDB::bind_method(D_METHOD("export_write_to_file", "g4mf_state", "path"), &G4MFDocument4D::export_write_to_file);
 	ClassDB::bind_method(D_METHOD("import_read_from_byte_array", "g4mf_state", "byte_array"), &G4MFDocument4D::import_read_from_byte_array);

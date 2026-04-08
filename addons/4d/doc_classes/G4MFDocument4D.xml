@@ -29,6 +29,15 @@
 				Part of the export process. Populates a [G4MFState4D] with data from a Godot scene. To export a scene to a G4MF, first call this function, then call [method export_write_to_file].
 			</description>
 		</method>
+		<method name="export_repack_buffer_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="allow_reordering" type="bool" default="true" />
+			<description>
+				Part of the export process. Re-packs the buffer data, minimizing the gaps between buffer views. This is optional, but can reduce the file size of the exported G4MF data, and can be useful if editing operations had previously affected data in the middle of buffers.
+				If [param allow_reordering] is [code]false[/code], the buffer data of the buffer views are kept in the same order. If [param allow_reordering] is [code]true[/code], buffer views with higher alignment requirements are moved to be first in the buffer, to minimize the amount of padding needed between buffer views. This does not re-order the buffer views themselves, it only re-orders the data within the buffers, so any existing references to buffer views by index will still be valid.
+			</description>
+		</method>
 		<method name="export_write_to_byte_array">
 			<return type="PackedByteArray" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />

@@ -46,7 +46,7 @@ private:
 	HashSet<String> _unique_names;
 	Dictionary _g4mf_json;
 	int _declared_dimension = 4;
-	G4MFMesh4D::MeshFormat _preferred_mesh_format = G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL;
+	G4MFMesh4D::MeshFormat _preferred_mesh_format = G4MFMesh4D::MESH_FORMAT_POLYTOPE;
 
 	// Path data for the file.
 	String _g4mf_base_path = "";
