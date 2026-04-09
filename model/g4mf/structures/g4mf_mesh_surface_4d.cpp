@@ -540,7 +540,12 @@ Dictionary G4MFMeshSurface4D::to_dictionary() const {
 		dict["edges"] = _edges_accessor_index;
 	}
 	if (_geometry_accessor_indices.size() > 0) {
-		dict["geometry"] = _geometry_accessor_indices;
+		Array geometry_array;
+		geometry_array.resize(_geometry_accessor_indices.size());
+		for (int i = 0; i < _geometry_accessor_indices.size(); i++) {
+			geometry_array[i] = _geometry_accessor_indices[i];
+		}
+		dict["geometry"] = geometry_array;
 	}
 	if (_material_index >= 0) {
 		dict["material"] = _material_index;

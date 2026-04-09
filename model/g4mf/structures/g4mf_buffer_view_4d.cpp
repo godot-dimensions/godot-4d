@@ -25,6 +25,7 @@ PackedByteArray G4MFBufferView4D::read_buffer_view_data(const Ref<G4MFState4D> &
 }
 
 int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_input_data, const int64_t p_alignment, const bool p_deduplicate, const int p_buffer_index) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), -1);
 	ERR_FAIL_COND_V_MSG(p_buffer_index < 0, -1, "Buffer index must be greater than or equal to zero.");
 	// Check for duplicate buffer views before adding a new one.
 	TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_g4mf_buffer_views();
@@ -32,6 +33,9 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 	if (p_deduplicate) {
 		for (int i = 0; i < buffer_view_index; i++) {
 			const Ref<G4MFBufferView4D> existing_buffer_view = state_buffer_views[i];
+			if (existing_buffer_view.is_null()) {
+				continue;
+			}
 			if (existing_buffer_view->get_byte_offset() % p_alignment == 0) {
 				if (existing_buffer_view->read_buffer_view_data(p_g4mf_state) == p_input_data) {
 					// Duplicate found, return the index of the existing buffer view.

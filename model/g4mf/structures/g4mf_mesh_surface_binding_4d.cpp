@@ -197,6 +197,7 @@ void G4MFMeshSurfaceBindingGeometry4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_geometry_index", "geometry_index"), &G4MFMeshSurfaceBindingGeometry4D::set_geometry_index);
 
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMeshSurfaceBindingGeometry4D::is_equal_exact);
+	ClassDB::bind_method(D_METHOD("load_indices", "g4mf_state"), &G4MFMeshSurfaceBindingGeometry4D::load_indices);
 	ClassDB::bind_static_method("G4MFMeshSurfaceBindingGeometry4D", D_METHOD("from_dictionary", "dict"), &G4MFMeshSurfaceBindingGeometry4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurfaceBindingGeometry4D::to_dictionary);
 

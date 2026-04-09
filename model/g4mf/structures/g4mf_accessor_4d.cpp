@@ -365,6 +365,9 @@ void G4MFAccessor4D::set_vector_size(const int p_vector_size) {
 // General helper functions.
 
 bool G4MFAccessor4D::is_equal_exact(const Ref<G4MFAccessor4D> &p_other) const {
+	if (p_other.is_null()) {
+		return false;
+	}
 	return (_buffer_view_index == p_other->get_buffer_view_index() &&
 			_vector_size == p_other->get_vector_size() &&
 			_component_type == p_other->get_component_type());
@@ -372,7 +375,9 @@ bool G4MFAccessor4D::is_equal_exact(const Ref<G4MFAccessor4D> &p_other) const {
 
 int64_t G4MFAccessor4D::get_bytes_per_component() const {
 	// The `to_int` function only looks at numeric digits, so for example, "float32" -> 32 -> 4.
-	return _component_type.to_int() / 8;
+	const int64_t bits = _component_type.to_int();
+	ERR_FAIL_COND_V_MSG(bits < 8, -1, "G4MFAccessor4D: Cannot handle component type '" + _component_type + "' bit count.");
+	return bits / 8;
 }
 
 int64_t G4MFAccessor4D::get_bytes_per_vector() const {
@@ -1024,11 +1029,14 @@ PackedByteArray G4MFAccessor4D::encode_variants_as_bytes(const Array &p_input_da
 }
 
 int G4MFAccessor4D::store_accessor_data_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data_bytes, const bool p_deduplicate) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), -1);
 	ERR_FAIL_COND_V_MSG(p_data_bytes.is_empty(), -1, "G4MF export: Cannot store nothing.");
+	const int64_t bytes_per_component = get_bytes_per_component();
+	ERR_FAIL_COND_V_MSG(bytes_per_component < 1, -1, "G4MF export: Accessor component type '" + _component_type + "' does not encode a valid byte size.");
 	// Write the data into a new buffer view.
 	// The byte offset of an accessor's buffer view MUST be a multiple of the accessor's component size.
 	// https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/data.md#accessors
-	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, get_bytes_per_component(), p_deduplicate);
+	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data_bytes, bytes_per_component, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(buffer_view_index == -1, -1, "G4MF export: Accessor failed to write new buffer view into G4MF state.");
 	set_buffer_view_index(buffer_view_index);
 	// Add the new accessor to the state, but check for duplicates first.

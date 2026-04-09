@@ -67,7 +67,7 @@ Error EditorImportPluginG4MFMesh4D::import(ResourceUID::ID p_source_id, const St
 	ERR_FAIL_COND_V_MSG(err != OK, err, "Editor: Failed to read G4MF document from file. Aborting file import.");
 	const bool include_invisible = p_options[StringName("include_invisible")];
 	Ref<Mesh4D> mesh = g4mf_doc->import_generate_godot_mesh(g4mf_state, include_invisible);
-	ERR_FAIL_COND_V_MSG(mesh.is_null(), ERR_INVALID_DATA, "Editor: Failed to generate scene from G4MF document.");
+	ERR_FAIL_COND_V_MSG(mesh.is_null(), ERR_INVALID_DATA, "Editor: Failed to generate mesh from G4MF document.");
 	const String save_file = p_save_path + String(".res");
 #if GDEXTENSION
 	err = ResourceSaver::get_singleton()->save(mesh, save_file);

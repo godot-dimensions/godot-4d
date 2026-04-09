@@ -551,7 +551,7 @@
 		PackedInt32Array {0,  5,  1,  4,  8,  9}, /* XYZ cell facing -W */ \
 		PackedInt32Array {6, 12,  4, 13, 20, 21}, /* XZW cell facing -Y */ \
 		PackedInt32Array {0, 12,  2, 14, 16, 18}, /* XYW cell facing -Z */ \
-		PackedInt32Array {1, 13,  3, 15, 17, 19}, /* XYW cell facing +Z */ \
+		PackedInt32Array {13, 1,  3, 15, 17, 19}, /* XYW cell facing +Z */ \
 		PackedInt32Array {9, 19, 11, 18, 21, 23}, /* YZW cell facing +X */ \
 		PackedInt32Array {8, 16, 10, 17, 20, 22}, /* YZW cell facing -X */ \
 		PackedInt32Array {7, 15,  5, 14, 22, 23}, /* XZW cell facing +Y */ \

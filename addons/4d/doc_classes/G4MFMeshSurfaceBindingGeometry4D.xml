@@ -23,6 +23,13 @@
 				Checks if the [G4MFMeshSurfaceBindingGeometry4D] is equal to another [G4MFMeshSurfaceBindingGeometry4D] exactly by checking if the properties are equal and all accessor indices refer to the same accessors. If a mesh surface binding geometry refers to a different accessor, even if the data is the same, this will return [code]false[/code]. The name of the mesh surface binding geometry is not checked, and any metadata is ignored.
 			</description>
 		</method>
+		<method name="load_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Loads the indices from the accessor this mesh surface binding geometry references into a [PackedInt32Array].
+			</description>
+		</method>
 		<method name="to_dictionary" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
