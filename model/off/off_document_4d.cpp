@@ -13,7 +13,7 @@
 
 #include "../../math/vector_4d.h"
 #include "../mesh/mesh_instance_4d.h"
-#include "../mesh/tetra/tetra_material_4d.h"
+#include "../mesh/poly/poly_material_4d.h"
 #include "../mesh/wire/wire_material_4d.h"
 
 void OFFDocument4D::_count_unique_edges_from_faces() {
@@ -326,13 +326,14 @@ Ref<ArrayPolyMesh4D> OFFDocument4D::import_generate_poly_mesh_4d() {
 	poly_cell_indices.set(0, face_edge_indices);
 	poly_cell_indices.set(1, cell_face_indices);
 	poly_mesh->set_poly_cell_indices(poly_cell_indices);
-	// Convert any cell colors into a material. Note: PolyMesh4D doesn't support per-face colors, so we have to ignore those.
+	// Convert any 3D cell colors into a material. Note: PolyMesh4D doesn't support per-2D-face colors, so we have to ignore those.
 	if (_has_any_cell_colors) {
-		Ref<TetraMaterial4D> cell_material;
-		cell_material.instantiate();
-		cell_material->set_albedo_source_flags(Material4D::COLOR_SOURCE_FLAG_PER_CELL);
-		cell_material->set_albedo_color_array(_cell_colors);
-		poly_mesh->set_material(cell_material);
+		Ref<PolyMaterial4D> poly_material;
+		poly_material.instantiate();
+		poly_material->set_albedo_source_flags(Material4D::COLOR_SOURCE_FLAG_PER_CELL);
+		poly_material->set_poly_albedo_color_array(_cell_colors);
+		poly_material->populate_albedo_color_array_for_poly_mesh(poly_mesh);
+		poly_mesh->set_material(poly_material);
 	}
 	ERR_FAIL_COND_V_MSG(!poly_mesh->is_mesh_data_valid(), poly_mesh, "OFFDocument4D: Failed to import OFF as poly mesh, mesh data is not valid.");
 	return poly_mesh;

@@ -4,7 +4,7 @@
 #include "poly_mesh_4d.h"
 
 class PolyMaterial4D : public TetraMaterial4D {
-	GDCLASS(PolyMaterial4D, Material4D);
+	GDCLASS(PolyMaterial4D, TetraMaterial4D);
 
 	PackedColorArray _poly_albedo_color_array;
 

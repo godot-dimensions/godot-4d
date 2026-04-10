@@ -37,6 +37,7 @@ def get_doc_classes():
 		"Material4D",
 		"Mesh4D",
 		"MeshInstance4D",
+		"PolyMaterial4D",
 		"PolyMesh4D",
 		"TetraMaterial4D",
 		"TetraMesh4D",

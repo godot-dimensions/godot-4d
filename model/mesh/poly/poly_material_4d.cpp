@@ -45,5 +45,7 @@ void PolyMaterial4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_poly_albedo_color_array"), &PolyMaterial4D::get_poly_albedo_color_array);
 	ClassDB::bind_method(D_METHOD("set_poly_albedo_color_array", "colors"), &PolyMaterial4D::set_poly_albedo_color_array);
 
+	ClassDB::bind_method(D_METHOD("populate_albedo_color_array_for_poly_mesh", "poly_mesh"), &PolyMaterial4D::populate_albedo_color_array_for_poly_mesh);
+
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "poly_albedo_color_array"), "set_poly_albedo_color_array", "get_poly_albedo_color_array");
 }

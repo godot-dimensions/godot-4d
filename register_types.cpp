@@ -41,6 +41,7 @@
 #include "model/mesh/poly/array_poly_mesh_4d.h"
 #include "model/mesh/poly/box_poly_mesh_4d.h"
 #include "model/mesh/poly/orthoplex_poly_mesh_4d.h"
+#include "model/mesh/poly/poly_material_4d.h"
 #include "model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "model/mesh/tetra/box_tetra_mesh_4d.h"
 #include "model/mesh/tetra/orthoplex_tetra_mesh_4d.h"
@@ -155,6 +156,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Virtual classes.
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
+		GDREGISTER_CLASS(PolyMaterial4D);
 		GDREGISTER_CLASS(TetraMaterial4D);
 		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);

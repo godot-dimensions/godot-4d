@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PolyMaterial4D" inherits="TetraMaterial4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Polyhedral material for 4D polyhedral meshes.
+	</brief_description>
+	<description>
+		PolyMaterial4D is a material for 4D polyhedral meshes. The normal case is to use PolyMaterial4D with a [PolyMesh4D]-derived class, such as [ArrayPolyMesh4D].
+		PolyMaterial4D extends [TetraMaterial4D], providing interoperability in the same way that [PolyMesh4D] extends [TetraMesh4D]. You can use a PolyMaterial4D with a [TetraMesh4D], which will operate under the assumption that the tetrahedra within the [TetraMesh4D] are grouped by their starting vertex in the same way that a [TetraMesh4D] generated from a [PolyMesh4D] would be. You can also use a [TetraMaterial4D] with a [PolyMesh4D], which would provide control over the individual tetrahedra that the cells get cut up into for rendering.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="populate_albedo_color_array_for_poly_mesh">
+			<return type="void" />
+			<param index="0" name="poly_mesh" type="TetraMesh4D" />
+			<description>
+				Populates the [member TetraMaterial4D.albedo_color_array] of this material for the given [param poly_mesh] by reading the cell colors from [member poly_albedo_color_array] and duplicating them for each tetrahedron formed by the polyhedral cells. This function supports PolyMesh4D passed in directly, but also supports TetraMesh4D converted from PolyMesh4D, and any TetraMesh4D which has tets grouped by their starting vertex.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="poly_albedo_color_array" type="PackedColorArray" setter="set_poly_albedo_color_array" getter="get_poly_albedo_color_array">
+			Array of albedo colors for the cells in a polyhedral mesh. The length of this array should equal the cell count of the mesh. See [method populate_albedo_color_array_for_poly_mesh] for details.
+		</member>
+	</members>
+</class>
