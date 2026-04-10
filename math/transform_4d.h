@@ -1,9 +1,8 @@
 #pragma once
 
 #include "euler_4d.h"
-#include "rect4.h"
-
 #include "geometric_algebra/rotor_4d.h"
+#include "rect4.h"
 
 #if GDEXTENSION
 #include <godot_cpp/templates/vector.hpp>

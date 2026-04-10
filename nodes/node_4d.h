@@ -8,6 +8,7 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/node.hpp>
+
 #include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "scene/main/node.h"

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../math/geometry_4d.h"
+
 #include "tests/test_macros.h"
 
 namespace TestGeometry4D {

@@ -1,8 +1,7 @@
 #pragma once
 
-#include "editor_viewport_4d_defines.h"
-
 #include "../../nodes/camera_4d.h"
+#include "editor_viewport_4d_defines.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/config_file.hpp>

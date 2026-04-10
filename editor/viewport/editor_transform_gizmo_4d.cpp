@@ -1,8 +1,5 @@
 #include "editor_transform_gizmo_4d.h"
 
-#include "editor_camera_4d.h"
-#include "editor_main_viewport_4d.h"
-
 #include "../../math/geometry_4d.h"
 #include "../../math/plane_4d.h"
 #include "../../math/vector_4d.h"
@@ -11,6 +8,8 @@
 #include "../../model/mesh/wire/wire_material_4d.h"
 #include "../../model/mesh/wire/wire_mesh_builder_4d.h"
 #include "../../render/rendering_server_4d.h"
+#include "editor_camera_4d.h"
+#include "editor_main_viewport_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_inspector.hpp>

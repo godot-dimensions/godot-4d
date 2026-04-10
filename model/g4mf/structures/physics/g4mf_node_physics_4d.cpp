@@ -1,10 +1,9 @@
 #include "g4mf_node_physics_4d.h"
 
-#include "../../g4mf_state_4d.h"
-#include "../g4mf_node_4d.h"
-
 #include "../../../../physics/bodies/area_4d.h"
 #include "../../../../physics/bodies/static_body_4d.h"
+#include "../../g4mf_state_4d.h"
+#include "../g4mf_node_4d.h"
 
 const CollisionObject4D *G4MFNodePhysics4D::_get_ancestor_collision_object(const Node *p_scene_parent) {
 	const Node *ancestor = p_scene_parent;

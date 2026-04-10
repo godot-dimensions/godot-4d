@@ -10,7 +10,7 @@ struct _NO_DISCARD_ Plane4D {
 	real_t get_distance() const { return distance; }
 	void set_distance(const real_t p_distance) { distance = p_distance; }
 
-	Vector4 get_normal() const { return normal; };
+	Vector4 get_normal() const { return normal; }
 	void set_normal(const Vector4 &p_normal) { normal = p_normal; }
 
 	// Point functions.

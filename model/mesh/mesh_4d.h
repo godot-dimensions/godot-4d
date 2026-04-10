@@ -27,7 +27,7 @@ protected:
 	virtual bool validate_mesh_data();
 	// Call when the mesh is modified to indicate that
 	// the 3D mesh used for cross-section rendering needs to be updated.
-	void mark_cross_section_mesh_dirty() { _is_cross_section_mesh_dirty = true; };
+	void mark_cross_section_mesh_dirty() { _is_cross_section_mesh_dirty = true; }
 	// Called when the cross-section mesh is requested and the cross-section mesh has been marked dirty.
 	// Update the mesh referenced by _cross_section_mesh to match the current state of the mesh.
 	virtual void update_cross_section_mesh();

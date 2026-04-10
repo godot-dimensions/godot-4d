@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../../math/geometric_algebra/rotor_4d.h"
+
 #include "core/math/random_number_generator.h"
 #include "tests/test_macros.h"
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../math/rect4.h"
+
 #include "tests/test_macros.h"
 
 namespace TestRect4 {

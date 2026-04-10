@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../godot_4d_defines.h"
-
 #include "geometric_algebra/bivector_4d.h"
 #include "vector_4d.h"
 

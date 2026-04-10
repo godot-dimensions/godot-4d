@@ -1,8 +1,7 @@
 #pragma once
 
-#include "shape_4d.h"
-
 #include "../../math/plane_4d.h"
+#include "shape_4d.h"
 
 class PlaneShape4D : public Shape4D {
 	GDCLASS(PlaneShape4D, Shape4D);

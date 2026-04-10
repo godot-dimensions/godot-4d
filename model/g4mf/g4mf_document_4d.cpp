@@ -628,7 +628,7 @@ PackedByteArray G4MFDocument4D::_import_next_chunk_bytes_uncompressed(Ref<G4MFSt
 	p_read_offset = _ceiling_division(p_read_offset, 16) * 16; // Chunks start at 16-byte boundaries.
 	// Done reading the chunk header and raw data. Now to uncompress it, if needed.
 	return _import_decompress_bytes(chunk_raw_data, chunk_compression_indicator);
-};
+}
 
 PackedByteArray G4MFDocument4D::_import_decompress_bytes(const PackedByteArray &p_raw_compressed_data, const uint32_t p_compression_indicator) {
 	const CompressionFormat chunk_compression_format = _compression_indicator_to_format(p_compression_indicator);

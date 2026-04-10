@@ -1,8 +1,7 @@
 #pragma once
 
-#include "transform_4d.h"
-
 #include "geometric_algebra/rotor_4d_bind.h"
+#include "transform_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/ref_counted.hpp>

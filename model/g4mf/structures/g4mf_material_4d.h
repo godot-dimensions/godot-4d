@@ -1,11 +1,10 @@
 #pragma once
 
-#include "g4mf_material_channel_4d.h"
-
 #include "../../mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../mesh/tetra/tetra_material_4d.h"
 #include "../../mesh/wire/array_wire_mesh_4d.h"
 #include "../../mesh/wire/wire_material_4d.h"
+#include "g4mf_material_channel_4d.h"
 
 class G4MFState4D;
 

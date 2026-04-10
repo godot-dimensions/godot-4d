@@ -1,10 +1,9 @@
 #pragma once
 
-#include "g4mf_mesh_surface_binding_4d.h"
-
 #include "../../mesh/poly/array_poly_mesh_4d.h"
 #include "../../mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../mesh/wire/array_wire_mesh_4d.h"
+#include "g4mf_mesh_surface_binding_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_set.hpp>

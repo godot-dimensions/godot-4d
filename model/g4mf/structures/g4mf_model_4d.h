@@ -1,8 +1,7 @@
 #pragma once
 
-#include "g4mf_file_reference_4d.h"
-
 #include "../../off/off_document_4d.h"
+#include "g4mf_file_reference_4d.h"
 
 #if GDEXTENSION
 // Assume that GDExtension users have all the built-in modules enabled.

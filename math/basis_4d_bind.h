@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../godot_4d_defines.h"
-
 #include "euler_4d_bind.h"
 #include "geometric_algebra/rotor_4d_bind.h"
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../../../godot_4d_defines.h"
-
 #include "editor_export_settings_g4mf_4d.h"
 
 #if GDEXTENSION

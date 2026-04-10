@@ -1,8 +1,7 @@
 #pragma once
 
-#include "shape_4d.h"
-
 #include "general_shape_curve_4d.h"
+#include "shape_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/variant/typed_array.hpp>

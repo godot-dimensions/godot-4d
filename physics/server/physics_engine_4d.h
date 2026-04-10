@@ -7,9 +7,10 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/ref_counted.hpp>
-#include <godot_cpp/core/gdvirtual.gen.inc>
 #include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/variant/typed_array.hpp>
+
+#include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "core/object/ref_counted.h"
 #include "core/variant/typed_array.h"

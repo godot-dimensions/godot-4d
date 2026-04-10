@@ -1,8 +1,7 @@
 #include "g4mf_model_instance_4d.h"
 
-#include "g4mf_model_4d.h"
-
 #include "../g4mf_state_4d.h"
+#include "g4mf_model_4d.h"
 
 Node *G4MFModelInstance4D::_find_node_by_name(Node *p_node, const String &p_node_name) const {
 	if (p_node->get_name() == p_node_name) {

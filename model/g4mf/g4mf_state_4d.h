@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../nodes/node_4d.h"
 #include "structures/g4mf_accessor_4d.h"
 #include "structures/g4mf_buffer_view_4d.h"
 #include "structures/g4mf_file_reference_4d.h"
@@ -8,8 +9,6 @@
 #include "structures/g4mf_node_4d.h"
 #include "structures/g4mf_texture_4d.h"
 #include "structures/physics/g4mf_shape_4d.h"
-
-#include "../../nodes/node_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_set.hpp>

@@ -5,6 +5,7 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/resource.hpp>
 #include <godot_cpp/classes/shader_material.hpp>
+
 #include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "core/io/resource.h"

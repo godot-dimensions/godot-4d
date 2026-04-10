@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../math/plane_4d.h"
+
 #include "tests/test_macros.h"
 
 namespace TestPlane4D {

@@ -1,12 +1,11 @@
 #pragma once
 
+#include "../../../nodes/node_4d.h"
 #include "g4mf_camera_4d.h"
 #include "g4mf_light_4d.h"
 #include "g4mf_mesh_instance_4d.h"
 #include "g4mf_model_instance_4d.h"
 #include "physics/g4mf_node_physics_4d.h"
-
-#include "../../../nodes/node_4d.h"
 
 class G4MFState4D;
 

@@ -1,8 +1,7 @@
 #pragma once
 
-#include "g4mf_item_4d.h"
-
 #include "../../../nodes/camera_4d.h"
+#include "g4mf_item_4d.h"
 
 class G4MFCamera4D : public G4MFItem4D {
 	GDCLASS(G4MFCamera4D, G4MFItem4D);

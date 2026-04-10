@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../model/tetra/array_tetra_mesh_4d.h"
+
 #include "tests/test_macros.h"
 
 namespace TestArrayTetraMesh4D {
