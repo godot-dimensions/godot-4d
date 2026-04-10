@@ -396,9 +396,9 @@ Node *OFFDocument4D::import_generate_node(const bool p_deduplicate_edges, const 
 			return mesh_instance_4d;
 		}
 	}
-	// Tetrahedral mesh.
-	Ref<ArrayTetraMesh4D> tetra_mesh = import_generate_tetra_mesh_4d();
-	mesh_instance_4d->set_mesh(tetra_mesh);
+	// Polytope mesh.
+	Ref<ArrayPolyMesh4D> poly_mesh = import_generate_poly_mesh_4d();
+	mesh_instance_4d->set_mesh(poly_mesh);
 	return mesh_instance_4d;
 }
 
@@ -739,6 +739,7 @@ void OFFDocument4D::_bind_methods() {
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_byte_array", "data"), &OFFDocument4D::import_load_from_byte_array);
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_file", "path"), &OFFDocument4D::import_load_from_file);
 	ClassDB::bind_method(D_METHOD("import_generate_mesh_3d", "per_face_vertices"), &OFFDocument4D::import_generate_mesh_3d, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("import_generate_poly_mesh_4d"), &OFFDocument4D::import_generate_poly_mesh_4d);
 	ClassDB::bind_method(D_METHOD("import_generate_tetra_mesh_4d"), &OFFDocument4D::import_generate_tetra_mesh_4d);
 	ClassDB::bind_method(D_METHOD("import_generate_wire_mesh_4d", "deduplicate_edges"), &OFFDocument4D::import_generate_wire_mesh_4d, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("import_generate_node", "deduplicate_edges", "per_face_vertices"), &OFFDocument4D::import_generate_node, DEFVAL(true), DEFVAL(true));

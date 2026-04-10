@@ -55,6 +55,12 @@
 				Generates some kind of mesh instance node best suited for the OFF data. If there are no 4D cells, a [MeshInstance3D] with an [ArrayMesh] will be returned. If there are 4D cells, a [MeshInstance4D] will be returned, with either an [ArrayTetraMesh4D] if all cells are tetrahedral, or an [ArrayWireMesh4D] if there are any non-tetrahedral cells. See [method generate_mesh_3d], [method generate_tetra_mesh_4d], and [method generate_wire_mesh_4d] for more details. The arguments are passed to the corresponding generate method.
 			</description>
 		</method>
+		<method name="import_generate_poly_mesh_4d">
+			<return type="ArrayPolyMesh4D" />
+			<description>
+				Generates a 4D [ArrayPolyMesh4D] resource from the OFF data, for use with [MeshInstance4D]. Per-face colors will be discarded. If there are any per-cell colors, the mesh will have a [PolyMaterial4D] with the cell colors. This is the most general type of 4D mesh, and can represent any valid OFF file, but may have worse performance than the more specialized mesh types.
+			</description>
+		</method>
 		<method name="import_generate_tetra_mesh_4d">
 			<return type="ArrayTetraMesh4D" />
 			<description>
