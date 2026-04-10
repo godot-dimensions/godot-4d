@@ -610,7 +610,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	const int64_t end_vertex_count = start_vertex_count + other_vertex_count;
 	const int64_t end_edge_index_count = start_edge_index_count + other_edge_index_count;
 	// Expand the poly cell indices dimensions if needed and count how many entries are in each dimension.
-	int64_t poly_cell_indices_dims = other_poly_cell_indices.size();
+	const int64_t poly_cell_indices_dims = MAX(_poly_cell_indices.size(), other_poly_cell_indices.size());
 	if (poly_cell_indices_dims > _poly_cell_indices.size()) {
 		_poly_cell_indices.resize(poly_cell_indices_dims);
 	}
@@ -622,7 +622,11 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	PackedInt32Array other_poly_cell_indices_counts;
 	other_poly_cell_indices_counts.resize(poly_cell_indices_dims);
 	for (int64_t dim_index = 0; dim_index < poly_cell_indices_dims; dim_index++) {
-		other_poly_cell_indices_counts.set(dim_index, other_poly_cell_indices[dim_index].size());
+		if (dim_index < other_poly_cell_indices.size()) {
+			other_poly_cell_indices_counts.set(dim_index, other_poly_cell_indices[dim_index].size());
+		} else {
+			other_poly_cell_indices_counts.set(dim_index, 0);
+		}
 	}
 	// Merge vertices.
 	_poly_cell_vertices.resize(end_vertex_count);
@@ -654,12 +658,17 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		_poly_cell_indices.set(dim_index, this_dim);
 	}
 	// Merge seams.
-	const int32_t adjust_seam_face = start_poly_cell_indices_counts[0];
-	for (const int32_t seam_face_index : other_seam_face_indices) {
-		_seam_face_indices.insert(seam_face_index + adjust_seam_face);
+	if (poly_cell_indices_dims > 0) {
+		const int32_t adjust_seam_face = start_poly_cell_indices_counts[0];
+		for (const int32_t seam_face_index : other_seam_face_indices) {
+			_seam_face_indices.insert(seam_face_index + adjust_seam_face);
+		}
+	} else if (!other_seam_face_indices.is_empty()) {
+		WARN_PRINT("ArrayPolyMesh4D: Ignoring seam face indices while merging because there is no face dimension in the merged poly cell indices.");
 	}
+	const bool has_boundary_cells = poly_cell_indices_dims > 1;
 	// Merge cell boundary and vertex normals. These need to stay aligned with the boundary cell indices.
-	{
+	if (has_boundary_cells) {
 		const Vector<PackedInt32Array> cell_vertex_instances_span_first = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
 		int64_t start_poly_cell_boundary_normal_count = _poly_cell_boundary_normals.size();
 		int64_t other_poly_cell_boundary_normal_count = other_poly_cell_boundary_normals.size();
@@ -727,7 +736,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		}
 	}
 	// Merge UVW texture maps. These need to stay aligned with the boundary cell indices.
-	{
+	if (has_boundary_cells) {
 		const int64_t start_poly_cell_texture_map_count = _poly_cell_texture_map.size();
 		const int64_t other_poly_cell_texture_map_count = other_poly_cell_texture_map.size();
 		const int64_t end_poly_cell_texture_map_count = start_poly_cell_texture_map_count + other_poly_cell_texture_map_count;
@@ -740,6 +749,8 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 				_poly_cell_texture_map.set(start_poly_cell_texture_map_count + cell_index, other_poly_cell_texture_map[cell_index]);
 			}
 		}
+	} else if (!_poly_cell_boundary_normals.is_empty() || !other_poly_cell_boundary_normals.is_empty() || !_poly_cell_vertex_normals.is_empty() || !other_poly_cell_vertex_normals.is_empty() || !_poly_cell_texture_map.is_empty() || !other_poly_cell_texture_map.is_empty()) {
+		WARN_PRINT("ArrayPolyMesh4D: Ignoring boundary-cell-aligned normals or UVW data while merging because there is no boundary cell dimension in the merged poly cell indices.");
 	}
 	// Merge materials.
 	Ref<Material4D> other_material = p_other->get_material();

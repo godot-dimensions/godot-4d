@@ -71,6 +71,7 @@ public:
 	TypedArray<PackedVector4Array> get_poly_cell_vertex_normals_bind();
 	TypedArray<PackedVector3Array> get_poly_cell_texture_map_bind();
 
+	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedInt32Array get_simplex_cell_indices() override;
 	virtual PackedVector4Array get_simplex_cell_boundary_normals() override;
 	virtual PackedVector4Array get_simplex_cell_vertex_normals() override;

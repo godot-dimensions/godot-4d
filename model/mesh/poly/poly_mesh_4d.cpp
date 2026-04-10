@@ -749,6 +749,12 @@ TypedArray<PackedVector3Array> PolyMesh4D::get_poly_cell_texture_map_bind() {
 	return uvw_texture_map_bind;
 }
 
+PackedInt32Array PolyMesh4D::get_edge_indices() {
+	PackedInt32Array indices;
+	GDVIRTUAL_CALL(_get_edge_indices, indices);
+	return indices;
+}
+
 PackedInt32Array PolyMesh4D::get_simplex_cell_indices() {
 	if (_simplex_cell_indices_cache.is_empty()) {
 		_decompose_boundary_cells_into_simplexes(true);
