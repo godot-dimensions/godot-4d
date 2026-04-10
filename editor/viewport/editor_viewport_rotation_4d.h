@@ -46,7 +46,7 @@ class EditorViewportRotation4D : public Control {
 	Axis2D _make_plane_axis(const Basis4D &p_basis, const int p_a, const int p_b, const Vector2 &p_center, const real_t p_radius);
 	void _on_mouse_exited();
 	void _process_click(int p_index, Vector2 p_position, bool p_pressed);
-	void _process_drag(Ref<InputEventWithModifiers> p_event, int p_index, Vector2 p_position);
+	void _process_drag(Ref<InputEvent> p_event, int p_index, Vector2 p_position);
 	void _update_focus();
 	void _update_theme();
 

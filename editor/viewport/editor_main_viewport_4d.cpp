@@ -9,18 +9,27 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/editor_selection.hpp>
+#include <godot_cpp/classes/input_event_screen_drag.hpp>
 #elif GODOT_MODULE
 #include "editor/editor_data.h"
 #include "editor/editor_interface.h"
 #endif
 
-Vector2 EditorMainViewport4D::_get_warped_mouse_motion(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const {
+Vector2 EditorMainViewport4D::_get_warped_mouse_motion(const Ref<InputEvent> &p_input_event) const {
+	Ref<InputEventMouseMotion> ev_mouse_motion = p_input_event;
+	if (ev_mouse_motion.is_valid()) {
 #if GODOT_MODULE
-	if (bool(EDITOR_GET("editors/3d/navigation/warped_mouse_panning"))) {
-		return Input::get_singleton()->warp_mouse_motion(p_ev_mouse_motion, _input_surface_4d->get_global_rect());
-	}
+		if (bool(EDITOR_GET("editors/3d/navigation/warped_mouse_panning"))) {
+			return Input::get_singleton()->warp_mouse_motion(ev_mouse_motion, _input_surface_4d->get_global_rect());
+		}
 #endif // GODOT_MODULE
-	return p_ev_mouse_motion->get_relative();
+		return ev_mouse_motion->get_relative();
+	}
+	Ref<InputEventScreenDrag> ev_screen_drag = p_input_event;
+	if (ev_screen_drag.is_valid()) {
+		return ev_screen_drag->get_relative();
+	}
+	ERR_FAIL_V_MSG(Vector2(), "Expected InputEventMouseMotion or InputEventScreenDrag.");
 }
 
 void EditorMainViewport4D::_update_theme() {
@@ -81,10 +90,13 @@ Basis4D EditorMainViewport4D::get_view_camera_basis() const {
 }
 
 bool EditorMainViewport4D::_should_mouse_motion_affect_4d(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const {
+	if (p_ev_mouse_motion.is_null()) {
+		return false;
+	}
 	return p_ev_mouse_motion->is_ctrl_pressed() || p_ev_mouse_motion->is_command_or_control_pressed() || Input::get_singleton()->is_mouse_button_pressed(MOUSE_BUTTON_LEFT);
 }
 
-void EditorMainViewport4D::navigation_freelook(const Ref<InputEventMouseMotion> &p_input_event) {
+void EditorMainViewport4D::navigation_freelook(const Ref<InputEvent> &p_input_event) {
 	Vector2 relative = _get_warped_mouse_motion(p_input_event);
 	const real_t degrees_per_pixel = EDITOR_GET("editors/3d/freelook/freelook_sensitivity");
 	const real_t radians_per_pixel = Math::deg_to_rad(degrees_per_pixel);
@@ -101,7 +113,7 @@ void EditorMainViewport4D::navigation_freelook(const Ref<InputEventMouseMotion> 
 	_viewport_rotation_4d->queue_redraw();
 }
 
-void EditorMainViewport4D::navigation_orbit(const Ref<InputEventMouseMotion> &p_input_event) {
+void EditorMainViewport4D::navigation_orbit(const Ref<InputEvent> &p_input_event) {
 	Vector2 relative = _get_warped_mouse_motion(p_input_event);
 	const real_t degrees_per_pixel = EDITOR_GET("editors/3d/navigation_feel/orbit_sensitivity");
 	const real_t radians_per_pixel = Math::deg_to_rad(degrees_per_pixel);
@@ -122,7 +134,7 @@ void EditorMainViewport4D::navigation_orbit(const Ref<InputEventMouseMotion> &p_
 	_viewport_rotation_4d->queue_redraw();
 }
 
-void EditorMainViewport4D::navigation_pan(const Ref<InputEventMouseMotion> &p_input_event) {
+void EditorMainViewport4D::navigation_pan(const Ref<InputEvent> &p_input_event) {
 	Vector2 relative = _get_warped_mouse_motion(p_input_event);
 	Vector4 pan;
 	if (_should_mouse_motion_affect_4d(p_input_event)) {
