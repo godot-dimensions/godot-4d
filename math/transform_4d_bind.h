@@ -114,11 +114,7 @@ public:
 	static Ref<Transform4D> from_vectors(const Vector4 &p_x, const Vector4 &p_y, const Vector4 &p_z, const Vector4 &p_w, const Vector4 &p_origin = Vector4());
 	Ref<Transform4D> copy() const;
 
-#if GDEXTENSION
-	String _to_string() const;
-#elif GODOT_MODULE
-	virtual String to_string() override;
-#endif
+	virtual String _to_string() MODULE_OVERRIDE;
 
 	// Constructors.
 	Transform4D() {}

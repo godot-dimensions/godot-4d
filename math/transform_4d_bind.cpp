@@ -272,12 +272,7 @@ Ref<godot_4d_bind::Transform4D> godot_4d_bind::Transform4D::copy() const {
 	TRANSFORM4D_BIND_RETURN_REF(transform);
 }
 
-#if GDEXTENSION
-String godot_4d_bind::Transform4D::_to_string() const
-#elif GODOT_MODULE
-String godot_4d_bind::Transform4D::to_string()
-#endif
-{
+String godot_4d_bind::Transform4D::_to_string() {
 	return transform.operator String();
 }
 

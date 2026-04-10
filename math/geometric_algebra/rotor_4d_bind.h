@@ -107,11 +107,8 @@ public:
 	static Ref<Rotor4D> from_numbers(const real_t p_s, const real_t p_xy, const real_t p_xz, const real_t p_xw, const real_t p_yz, const real_t p_yw, const real_t p_zw, const real_t p_xyzw = 0.0);
 	static Ref<Rotor4D> from_vectors(const Vector4 &p_s_xy_xz_xw, const Vector4 &p_yz_yw_zw_xyzw);
 	Ref<Rotor4D> copy() const;
-#if GDEXTENSION
-	String _to_string() const;
-#elif GODOT_MODULE
-	virtual String to_string() override;
-#endif
+
+	virtual String _to_string() MODULE_OVERRIDE;
 
 	// Constructors.
 	Rotor4D() {}

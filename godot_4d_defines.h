@@ -22,6 +22,7 @@
 #define EDSCALE EditorInterface::get_singleton()->get_editor_scale()
 #define GDEXTMOD_GUI_INPUT _gui_input
 #define GET_NODE_TYPE(m_parent, m_type, m_path) m_parent->get_node<m_type>(NodePath(m_path))
+#define MODULE_OVERRIDE
 #define TTR(m_text) m_text
 #define USE_CONST_NOT_CONSTEXPR_FOR_VECTORS 1
 #define VariantUtilityFunctions UtilityFunctions
@@ -33,6 +34,7 @@ using namespace godot;
 #include "core/version.h"
 #define GDEXTMOD_GUI_INPUT gui_input
 #define GET_NODE_TYPE(m_parent, m_type, m_path) Object::cast_to<m_type>(m_parent->get_node(NodePath(m_path)))
+#define MODULE_OVERRIDE override
 
 #ifndef GODOT_VERSION_MAJOR
 // Prior to Godot 4.5, the Godot version macros were just "VERSION_*" which did not match the godot-cpp API.
@@ -46,6 +48,9 @@ using namespace godot;
 // Prior to Godot 4.6, the internal API of free_rid in RenderingServer and other servers did not match the exposed API.
 // See https://github.com/godotengine/godot/pull/107139
 #define free_rid free
+
+// Prior to Godot 4.6, the internal API of to_string did not match the exposed API of _to_string.
+#define _to_string to_string
 #endif
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5

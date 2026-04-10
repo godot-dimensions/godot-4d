@@ -12,6 +12,7 @@
 #elif GODOT_MODULE
 #include "core/core_bind.h"
 #include "core/io/compression.h"
+#include "core/io/file_access.h"
 #include "core/io/json.h"
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 4
 // In Godot 4.5 and later, namespaces were capitalized: core_bind -> CoreBind.
@@ -1272,7 +1273,11 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 		return import_read_from_byte_array(p_g4mf_state, file_bytes);
 	}
 	// If there is no magic number, try reading the file as JSON.
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
 	Dictionary g4mf_json = JSON::parse_string(file->get_as_text(true));
+#else
+	Dictionary g4mf_json = JSON::parse_string(file->get_as_text());
+#endif
 	p_g4mf_state->set_g4mf_json(g4mf_json);
 	return _import_parse_json_data(p_g4mf_state, g4mf_json);
 }

@@ -236,12 +236,7 @@ Ref<godot_4d_bind::Rotor4D> godot_4d_bind::Rotor4D::copy() const {
 	ROTOR4D_BIND_RETURN_REF(rotor);
 }
 
-#if GDEXTENSION
-String godot_4d_bind::Rotor4D::_to_string() const
-#elif GODOT_MODULE
-String godot_4d_bind::Rotor4D::to_string()
-#endif
-{
+String godot_4d_bind::Rotor4D::_to_string() {
 	return rotor.operator String();
 }
 

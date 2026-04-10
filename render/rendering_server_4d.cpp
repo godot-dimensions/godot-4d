@@ -10,7 +10,11 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #elif GODOT_MODULE
 #include "scene/main/scene_tree.h"
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
 #include "servers/rendering_server.h"
+#else
+#include "servers/rendering/rendering_server.h"
+#endif
 #endif
 
 Ref<RenderingEngine4D> RenderingServer4D::_get_rendering_engine(const String &p_friendly_name) const {

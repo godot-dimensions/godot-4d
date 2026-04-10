@@ -7,7 +7,11 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/rendering_server.hpp>
 #elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
 #include "servers/rendering_server.h"
+#else
+#include "servers/rendering/rendering_server.h"
+#endif
 #endif
 
 void CrossSectionRenderingEngine4D::render_frame() {

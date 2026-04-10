@@ -200,7 +200,7 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 	}
 	poly_mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 	const bool is_valid = poly_mesh->is_mesh_data_valid();
-	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");
+	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayPolyMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");
 	if (_material_index >= 0) {
 		const TypedArray<G4MFMaterial4D> materials = p_g4mf_state->get_g4mf_materials();
 		ERR_FAIL_INDEX_V(_material_index, materials.size(), poly_mesh);
@@ -249,7 +249,7 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 		}
 	}
 	const bool is_valid = tetra_mesh->is_mesh_data_valid();
-	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D.generate_tetra_mesh_surface: The mesh data is not valid. Returning an empty mesh instead.");
+	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayTetraMesh4D>(), "G4MFMeshSurface4D.generate_tetra_mesh_surface: The mesh data is not valid. Returning an empty mesh instead.");
 	if (_material_index >= 0) {
 		const TypedArray<G4MFMaterial4D> materials = p_g4mf_state->get_g4mf_materials();
 		ERR_FAIL_INDEX_V(_material_index, materials.size(), tetra_mesh);

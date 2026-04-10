@@ -7,6 +7,7 @@
 #include <godot_cpp/classes/surface_tool.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
 #elif GODOT_MODULE
+#include "core/io/file_access.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/resources/surface_tool.h"
 #endif
