@@ -21,7 +21,7 @@
 		<method name="can_generate_tetra_meshes_for_all_surfaces" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Checks if all surfaces in the mesh can generate tetrahedral meshes, meaning that they all have a non-negative [member G4MFMeshSurface4D.cells_accessor_index]. This does not check if the accessor exists or if it contains valid data. Returns [code]true[/code] if all surfaces can generate tetrahedral meshes, and returns [code]false[/code] if even one surface cannot.
+				Checks if all surfaces in the mesh can generate tetrahedral meshes, meaning that they all have a non-negative [member G4MFMeshSurface4D.simplexes_accessor_index]. This does not check if the accessor exists or if it contains valid data. Returns [code]true[/code] if all surfaces can generate tetrahedral meshes, and returns [code]false[/code] if even one surface cannot.
 			</description>
 		</method>
 		<method name="export_convert_mesh_into_state" qualifiers="static">
@@ -45,8 +45,8 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="force_single_surface" type="bool" default="false" />
 			<description>
-				Generates a [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. This will create either a [ArrayTetraMesh4D] or [ArrayWireMesh4D] and return it. This is used for importing a mesh from G4MF, and is the inverse of [method export_convert_mesh_into_state].
-				If [member G4MFState4D.force_wireframe] is set to true, the mesh will always be generated as a wireframe mesh. Otherwise, the mesh will be generated as a tetrahedral mesh if the [G4MFMesh4D] defines cells, or as a wireframe mesh if the [G4MFMesh4D] does not define cells.
+				Generates a [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. This will create either an [ArrayPolyMesh4D], [ArrayTetraMesh4D], or [ArrayWireMesh4D] and return it. This is used for importing a mesh from G4MF, and is the inverse of [method export_convert_mesh_into_state].
+				The mesh will be polyhedral if [member G4MFState4D.preferred_mesh_format] is [constant G4MFMesh4D.MESH_FORMAT_POLYTOPE] and the mesh can be generated as a polytope mesh. Otherwise, the mesh will be tetrahedral if [member G4MFState4D.preferred_mesh_format] is [constant G4MFMesh4D.MESH_FORMAT_TETRAHEDRAL] or [constant G4MFMesh4D.MESH_FORMAT_POLYTOPE], and the mesh can be generated as a tetrahedral mesh. Otherwise, the mesh will be wireframe.
 			</description>
 		</method>
 		<method name="is_equal_exact" qualifiers="const">

@@ -87,8 +87,8 @@
 		<method name="get_poly_cell_vertices">
 			<return type="PackedVector4Array" />
 			<description>
-				Returns the vertex positions of the polyhedral mesh. Each Vector4 in the array is a position in meters in 4D space. The items in this array are referenced by the [method get_edge_indices] array.
-				[b]Note:[/b] The vertices returned by [method get_vertices] may be longer than this array. This is because [method get_vertices] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method get_vertices] will always match this array, such that it is either a superset of this array, or identical to it.
+				Returns the vertex positions of the polyhedral mesh. Each Vector4 in the array is a position in meters in 4D space. The items in this array are referenced by the [method Mesh4D.get_edge_indices] array.
+				[b]Note:[/b] The vertices returned by [method Mesh4D.get_vertices] may be longer than this array. This is because [method Mesh4D.get_vertices] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method Mesh4D.get_vertices] will always match this array, such that it is either a superset of this array, or identical to it.
 			</description>
 		</method>
 		<method name="poly_mesh_clear_cache">

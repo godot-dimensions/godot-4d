@@ -386,18 +386,8 @@ Node *OFFDocument4D::import_generate_node(const bool p_deduplicate_edges, const 
 		mesh_instance_3d->set_mesh(mesh_3d);
 		return mesh_instance_3d;
 	}
-	// Some kind of 4D mesh.
+	// 4D mesh, so generate an ArrayPolyMesh4D.
 	MeshInstance4D *mesh_instance_4d = memnew(MeshInstance4D);
-	for (int i = 0; i < _cell_face_indices.size(); i++) {
-		PackedInt32Array cell_face_index = _cell_face_indices[i];
-		if (cell_face_index.size() > 4) {
-			// Not a tetrahedral mesh. Let's generate a wireframe instead.
-			Ref<ArrayWireMesh4D> wire_mesh = import_generate_wire_mesh_4d(p_deduplicate_edges);
-			mesh_instance_4d->set_mesh(wire_mesh);
-			return mesh_instance_4d;
-		}
-	}
-	// Polytope mesh.
 	Ref<ArrayPolyMesh4D> poly_mesh = import_generate_poly_mesh_4d();
 	mesh_instance_4d->set_mesh(poly_mesh);
 	return mesh_instance_4d;

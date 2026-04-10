@@ -52,7 +52,7 @@
 			<param index="0" name="deduplicate_edges" type="bool" default="true" />
 			<param index="1" name="per_face_vertices" type="bool" default="true" />
 			<description>
-				Generates some kind of mesh instance node best suited for the OFF data. If there are no 4D cells, a [MeshInstance3D] with an [ArrayMesh] will be returned. If there are 4D cells, a [MeshInstance4D] will be returned, with either an [ArrayTetraMesh4D] if all cells are tetrahedral, or an [ArrayWireMesh4D] if there are any non-tetrahedral cells. See [method generate_mesh_3d], [method generate_tetra_mesh_4d], and [method generate_wire_mesh_4d] for more details. The arguments are passed to the corresponding generate method.
+				Generates some kind of mesh instance node best suited for the OFF data. If there are no 4D cells, a [MeshInstance3D] with an [ArrayMesh] will be returned. If there are 4D cells, a [MeshInstance4D] will be returned with an [ArrayPolyMesh4D] in it. See [method import_generate_mesh_3d], [method import_generate_tetra_mesh_4d], and [method import_generate_wire_mesh_4d] for more details. The arguments are passed to the corresponding generate method.
 			</description>
 		</method>
 		<method name="import_generate_poly_mesh_4d">
@@ -91,7 +91,7 @@
 	</methods>
 	<members>
 		<member name="cell_colors" type="PackedColorArray" setter="set_cell_colors" getter="get_cell_colors" default="PackedColorArray()">
-			The cell colors of the 4D mesh, if any. This will be empty for 3D meshes. These are used by [method generate_tetra_mesh_4d], but not used by [method generate_wire_mesh_4d] or [method generate_mesh_3d].
+			The cell colors of the 4D mesh, if any. This will be empty for 3D meshes. These are used by [method import_generate_poly_mesh_4d] and [method import_generate_tetra_mesh_4d], but not used by [method import_generate_wire_mesh_4d] or [method import_generate_mesh_3d].
 		</member>
 		<member name="cell_face_indices" type="PackedInt32Array[]" setter="set_cell_face_indices" getter="get_cell_face_indices" default="[]">
 			The indices of the faces of each cell in the 4D mesh. Each item in the array is a PackedInt32Array that represents a 4D cell by containing the indices of the faces that make up the cell. This will be empty for 3D meshes.
@@ -100,7 +100,7 @@
 			The number of edges in the mesh. This is not used in any of the generate functions, but is stored in the OFF data. When converting a [Mesh] or [ArrayTetraMesh4D] to OFF data, this value will be calculated from the face data automatically.
 		</member>
 		<member name="face_colors" type="PackedColorArray" setter="set_face_colors" getter="get_face_colors" default="PackedColorArray()">
-			The face colors of the mesh, if any. These are used by [method generate_mesh_3d], but not used by the 4D mesh generation functions.
+			The face colors of the mesh, if any. These are used by [method import_generate_mesh_3d], but not used by the 4D mesh generation functions.
 		</member>
 		<member name="face_vertex_indices" type="PackedInt32Array[]" setter="set_face_vertex_indices" getter="get_face_vertex_indices" default="[]">
 			The indices of the vertices of each face in the mesh. Each item in the array is a PackedInt32Array that represents a face by containing the indices of the vertices that make up the face.

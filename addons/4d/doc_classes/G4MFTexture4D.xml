@@ -29,7 +29,7 @@
 	</methods>
 	<members>
 		<member name="image_file_indices" type="PackedInt32Array" setter="set_image_file_indices" getter="get_image_file_indices" default="PackedInt32Array()">
-			The images property is an array of integers which are the indices of [G4MFFileReference4D]s in the [member G4MFState4D.] array of that defines the images used by the texture. If not specified or empty, the texture has no images. Images SHOULD NOT contain embedded color space profiles (ICC profiles) or other metadata that alters the visual appearance of the image. This is to ensure that the image is displayed consistently in applications that do not support color spaces or other visual-affecting metadata.
+			The images property is an array of integers which are the indices of [G4MFFileReference4D]s in the [member G4MFState4D.g4mf_files] array that defines the images used by the texture. If not specified or empty, the texture has no images. Images SHOULD NOT contain embedded color space profiles (ICC profiles) or other metadata that alters the visual appearance of the image. This is to ensure that the image is displayed consistently in applications that do not support color spaces or other visual-affecting metadata.
 			Images may be cut into multiple tiles if their width and height exceeds the [member texture_size]'s first two numbers and is still a multiple of them, allowing single images to contain many layers which may be assembled into a 3D texture. However, images MUST NOT be smaller than the [member texture_size]'s first two numbers, meaning that images MUST NOT be stitched together on their sides.
 		</member>
 		<member name="mag_filter" type="String" setter="set_sampler_mag_filter" getter="get_sampler_mag_filter" default="&quot;linear&quot;">

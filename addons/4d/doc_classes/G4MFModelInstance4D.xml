@@ -4,7 +4,7 @@
 		Instance of a [G4MFModel4D] on a [G4MFNode4D].
 	</brief_description>
 	<description>
-		G4MFModelInstance4D represents an instance of a [G4MFModel4D] on a [G4MFNode4D]. This is used to instantiate an entire model hierarchy, such as from an embedded G4MF file. The [G4MFModelInstance4D] contains the index of the referenced [G4MFModel4D] in the [member G4MFState4D.g4mf_models] array, and may contain overrides for the nodes in the model, as well as additional children to add to the root of the instantiated model.
+		G4MFModelInstance4D represents an instance of a [G4MFModel4D] on a [G4MFNode4D]. This is used to instantiate an entire model hierarchy, such as from an embedded G4MF file. The [G4MFModelInstance4D] contains the index of the referenced [G4MFModel4D] in the [member G4MFState4D.g4mf_files] array, and may contain overrides for the nodes in the model, as well as additional children to add to the root of the instantiated model.
 	</description>
 	<tutorials>
 		<link title="G4MF Node Model Instance Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/model/node_model_instance.md</link>

@@ -518,7 +518,7 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 	return raw_bytes;
 }
 
-#define G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(m_numbers, m_prim_type)                                                                                                            \
+#define G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_BYTES(m_numbers, m_prim_type)                                                                                                              \
 	const PackedByteArray raw_bytes = load_bytes_from_buffer_view(p_g4mf_state);                                                                                                        \
 	const int64_t raw_byte_size = raw_bytes.size();                                                                                                                                     \
 	const int64_t bytes_per_prim = get_bytes_per_component();                                                                                                                           \
@@ -595,7 +595,7 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 
 PackedFloat64Array G4MFAccessor4D::decode_float64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedFloat64Array numbers;
-	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, double);
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_BYTES(numbers, double);
 	return numbers;
 }
 
@@ -603,19 +603,19 @@ PackedFloat64Array G4MFAccessor4D::decode_float64s_from_bytes(const Ref<G4MFStat
 // and needed internally let's provide a dedicated function for it.
 PackedInt32Array G4MFAccessor4D::decode_int32s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedInt32Array numbers;
-	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, int32_t);
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_BYTES(numbers, int32_t);
 	return numbers;
 }
 
 PackedInt64Array G4MFAccessor4D::decode_int64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedInt64Array numbers;
-	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, int64_t);
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_BYTES(numbers, int64_t);
 	return numbers;
 }
 
 Vector<uint64_t> G4MFAccessor4D::decode_uint64s_from_bytes(const Ref<G4MFState4D> &p_g4mf_state) const {
 	Vector<uint64_t> numbers;
-	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_NUMBERS(numbers, uint64_t);
+	G4MF_ACCESSOR_4D_DECODE_NUMBERS_FROM_BYTES(numbers, uint64_t);
 	return numbers;
 }
 

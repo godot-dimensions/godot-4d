@@ -87,7 +87,7 @@
 			Controls if depth fading is enabled, which means that once things get further than [member depth_fade_start] on the selected local axes, they start to fade until they become transparent at [member clip_far]. This is also known as fog. See [enum DepthFadeMode] for options.
 		</member>
 		<member name="depth_fade_start" type="float" setter="set_depth_fade_start" getter="get_depth_fade_start" default="25.0">
-			How many units on the camera's selected local axes away an edge has to be before it starts fading. Only applies if [member depth_fade] is [code]true[/code]. This is also known as fog.
+			How many units on the camera's selected local axes away an edge has to be before it starts fading. Only applies if [member depth_fade_mode] is not [constant DEPTH_FADE_DISABLED]. This is also known as fog.
 		</member>
 		<member name="field_of_view_3d" type="float" setter="set_field_of_view_3d" getter="get_field_of_view_3d">
 			The field of view of the camera when projecting from 3D to 2D. This value is in radians, but is displayed as degrees in the inspector. The field of view must be between 0 and TAU / 2 radians (0 and 180 degrees), exclusive. The default field of view is TAU / 4 radians, or 90 degrees. This is only used when [member projection_type] is set to [constant PROJECTION4D_PERSPECTIVE_3D] and [member view_angle_type] is set to [constant VIEW_ANGLE_FIELD_OF_VIEW].

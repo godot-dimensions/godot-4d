@@ -17,7 +17,7 @@
 			<param index="0" name="vertex" type="Vector4" />
 			<param index="1" name="deduplicate_vertices" type="bool" default="true" />
 			<description>
-				Append a vertex to the polyhedral mesh. If [param deduplicate_vertices] is [code]true[/code] (default), the method will check if the vertex already exists in the [member vertices] array and return the index of the existing vertex. If the vertex does not exist, it will be appended to the vertices array and its index will be returned. In both cases, the returned index points to a vertex identical to the input vertex.
+				Append a vertex to the polyhedral mesh. If [param deduplicate_vertices] is [code]true[/code] (default), the method will check if the vertex already exists in the [member poly_cell_vertices] array and return the index of the existing vertex. If the vertex does not exist, it will be appended to the vertices array and its index will be returned. In both cases, the returned index points to a vertex identical to the input vertex.
 			</description>
 		</method>
 		<method name="append_vertices">
@@ -114,7 +114,7 @@
 	</methods>
 	<members>
 		<member name="edge_indices" type="PackedInt32Array" setter="set_edge_indices" getter="get_edge_indices" default="PackedInt32Array()">
-			The flat array of edge indices. Every 2 integers defines an edge. Each integer is an index to the [member vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
+			The flat array of edge indices. Every 2 integers defines an edge. Each integer is an index into the [member poly_cell_vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
 		</member>
 		<member name="poly_cell_boundary_normals" type="PackedVector4Array" setter="set_poly_cell_boundary_normals" getter="get_poly_cell_boundary_normals" default="PackedVector4Array()">
 			The normals of the polyhedral boundary cells themselves. Boundary normals define which side of the cell is the front side, and therefore should be drawn. Boundary normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized.
@@ -134,7 +134,7 @@
 		</member>
 		<member name="poly_cell_vertices" type="PackedVector4Array" setter="set_poly_cell_vertices" getter="get_poly_cell_vertices" default="PackedVector4Array()">
 			The vertex positions of the polyhedral mesh. Each Vector4 in the array is a position in meters in 4D space. The items in this array are referenced by the [member edge_indices] array.
-			[b]Note:[/b] The vertices returned by [method get_vertices] may be longer than this array. This is because [method get_vertices] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method get_vertices] will always match this array, such that it is either a superset of this array, or identical to it.
+			[b]Note:[/b] The vertices returned by [method Mesh4D.get_vertices] may be longer than this array. This is because [method Mesh4D.get_vertices] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method Mesh4D.get_vertices] will always match this array, such that it is either a superset of this array, or identical to it.
 		</member>
 		<member name="seam_face_indices" type="PackedInt32Array" setter="set_seam_face_indices" getter="get_seam_face_indices" default="PackedInt32Array()">
 			The indices of the faces marked as seams. Each index is a reference to the items in the faces array, which is the first array in the [member poly_cell_indices] array. Faces are the boundaries of boundary cells, and therefore marking faces as seams affects how islands of cells are determined, such as when calling [method collect_cells_in_island], and when calling [method unwrap_texture_map] if using the [constant UNWRAP_MODE_ISLANDS_FROM_SEAMS] mode.

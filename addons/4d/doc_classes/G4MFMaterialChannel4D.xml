@@ -40,7 +40,7 @@
 			The modulate factor of the surface, also known as the value or single base color. If non-negative, this is per-component multiplied with other properties to get the final color of the cells and edges, or if no other properties are defined, this is the only color used.
 		</member>
 		<member name="texture_index" type="int" setter="set_texture_index" getter="get_texture_index" default="-1">
-			The index of the [G4MFTexture4D] in the [G4MFState4D]'s textures array that contains the texture for this surface. This is per-component multiplied with the [member single_color] and the cell colors to get the final color of the cells. If not defined, the surface does not have a texture.
+			The index of the [G4MFTexture4D] in the [G4MFState4D]'s textures array that contains the texture for this surface. This is per-component multiplied with the [member factor] and the cell colors to get the final color of the cells. If not defined, the surface does not have a texture.
 			[b]Note:[/b] This property is currently not used when generating a [Material4D] from a [G4MFMaterial4D].
 		</member>
 		<member name="texture_map_binding" type="G4MFMeshSurfaceBinding4D" setter="set_texture_map_binding" getter="get_texture_map_binding">

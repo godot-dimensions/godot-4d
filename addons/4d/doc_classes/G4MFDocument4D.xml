@@ -62,7 +62,7 @@
 			<param index="2" name="include_invisible" type="bool" default="false" />
 			<description>
 				Part of the import process. Generates a Godot [Mesh4D] from the G4MF data in a [G4MFState4D].
-				If [param which_mesh_index] is set to -1 (default), and the G4MF data contains nodes, the nodes will be used to determine the transforms of the mesh instances and generate a combined mesh. The combined mesh will only be tetrahedral if every mesh in the G4MF data can be generated as a tetrahedral mesh and [member G4MFState4D.force_wireframe] is set to [code]false[/code], otherwise the combined mesh will be wireframe.
+				If [param which_mesh_index] is set to -1 (default), and the G4MF data contains nodes, the nodes will be used to determine the transforms of the mesh instances and generate a combined mesh. The combined mesh will be polyhedral if [member G4MFState4D.preferred_mesh_format] is [constant G4MFMesh4D.MESH_FORMAT_POLYTOPE] and every mesh in the G4MF data can be generated as a polytope mesh. Otherwise, the combined mesh will be tetrahedral if [member G4MFState4D.preferred_mesh_format] is [constant G4MFMesh4D.MESH_FORMAT_TETRAHEDRAL] or [constant G4MFMesh4D.MESH_FORMAT_POLYTOPE], and every mesh in the G4MF data can be generated as a tetrahedral mesh. Otherwise, the combined mesh will be wireframe.
 				If [param which_mesh_index] is set to a valid mesh index, only that mesh will be generated exactly as-is, and any other meshes will be ignored. Otherwise, if the G4MF data does not contain nodes, the mesh at index 0 will be generated.
 			</description>
 		</method>

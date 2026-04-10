@@ -45,8 +45,8 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="scene_parent" type="Node" />
 			<description>
-				Generates a [Node4D] from the G4MF node data. This will consider all fields of the [G4MFNode4D] except for the [member children_indices] and [member parent_index] properties, since this does not traverse the G4MF hierarchy to generate descendant nodes. This function also does not consider any additional data provided by extensions, only the base G4MF node data. To generate a full scene and handle extensions, use [G4MFDocument4D.import_generate_godot_scene] to generate a complete scene from the [G4MFState] data.
-				The [param g4mf_state] parameter is used to access [G4MFShape4D] objects when generating physics shapes, and to access [G4MFMesh4D] and [G4MFMaterial4D] objects when generating meshes. The [param p_scene_parent] parameter is only used when generating physics nodes.
+				Generates a [Node4D] from the G4MF node data. This will consider all fields of the [G4MFNode4D] except for the [member children_indices] and [member parent_index] properties, since this does not traverse the G4MF hierarchy to generate descendant nodes. This function also does not consider any additional data provided by extensions, only the base G4MF node data. To generate a full scene and handle extensions, use [method G4MFDocument4D.import_generate_godot_scene] to generate a complete scene from the [G4MFState4D] data.
+				The [param g4mf_state] parameter is used to access [G4MFShape4D] objects when generating physics shapes, and to access [G4MFMesh4D] and [G4MFMaterial4D] objects when generating meshes. The [param scene_parent] parameter is only used when generating physics nodes.
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">
