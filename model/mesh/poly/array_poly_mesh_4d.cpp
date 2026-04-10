@@ -130,6 +130,8 @@ void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, 
 }
 
 void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radians, const bool p_discard_seams_within_islands) {
+	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate seam faces because there are no boundary cells.");
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate seam faces for an invalid mesh.");
 	if (_poly_cell_boundary_normals.is_empty()) {
 		calculate_boundary_normals(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
 	}
