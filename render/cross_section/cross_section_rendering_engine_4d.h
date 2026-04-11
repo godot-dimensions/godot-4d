@@ -20,6 +20,7 @@ private:
 
 	void update_camera();
 	RID create_instance();
+	void _cleanup_render_resources();
 
 protected:
 	static void _bind_methods() {}
@@ -27,6 +28,7 @@ protected:
 public:
 	virtual String get_friendly_name() const override { return "Cross-section"; }
 	virtual void setup_for_viewport() override;
+	virtual void cleanup_for_viewport() override;
 	virtual void render_frame() override;
 
 	virtual ~CrossSectionRenderingEngine4D();

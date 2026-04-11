@@ -124,12 +124,32 @@ void RenderingServer4D::register_camera(Camera4D *p_camera) {
 void RenderingServer4D::unregister_camera(Camera4D *p_camera) {
 	ERR_FAIL_NULL(p_camera);
 	Viewport *viewport = p_camera->get_viewport();
+	ERR_FAIL_NULL(viewport);
+	ERR_FAIL_COND(!_viewport_cameras.has(viewport));
 	Vector<Camera4D *> &cameras = _viewport_cameras[viewport];
 	ERR_FAIL_COND(!cameras.has(p_camera));
 	if (p_camera == cameras[0]) {
 		p_camera->clear_current();
 	}
 	cameras.erase(p_camera);
+	if (cameras.is_empty()) {
+		for (KeyValue<String, Ref<RenderingEngine4D>> &E : _rendering_engines) {
+			if (E.value.is_valid()) {
+				E.value->cleanup_for_viewport_if_needed(viewport);
+			}
+		}
+		_viewport_cameras.erase(viewport);
+		if (_is_render_frame_connected && _viewport_cameras.is_empty()) {
+			RenderingServer *godot_rendering_server = RenderingServer::get_singleton();
+			if (godot_rendering_server != nullptr) {
+				const Callable render_callable = callable_mp(this, &RenderingServer4D::_render_frame);
+				if (godot_rendering_server->is_connected(StringName("frame_pre_draw"), render_callable)) {
+					godot_rendering_server->disconnect(StringName("frame_pre_draw"), render_callable);
+				}
+			}
+			_is_render_frame_connected = false;
+		}
+	}
 }
 
 void RenderingServer4D::make_camera_current(Camera4D *p_camera) {

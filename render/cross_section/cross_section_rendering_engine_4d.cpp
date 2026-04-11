@@ -139,10 +139,32 @@ void CrossSectionRenderingEngine4D::setup_for_viewport() {
 	}
 }
 
-CrossSectionRenderingEngine4D::~CrossSectionRenderingEngine4D() {
-	ERR_FAIL_NULL(RenderingServer::get_singleton());
-	for (RID instance : _instances_3d) {
-		RenderingServer::get_singleton()->free_rid(instance);
+void CrossSectionRenderingEngine4D::_cleanup_render_resources() {
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	if (rendering_server == nullptr) {
+		_instances_3d.clear();
+		_cross_section_camera = RID();
+		return;
 	}
-	RenderingServer::get_singleton()->free_rid(_cross_section_camera);
+	for (const RID &instance : _instances_3d) {
+		if (instance.is_valid()) {
+			rendering_server->free_rid(instance);
+		}
+	}
+	_instances_3d.clear();
+	if (_cross_section_camera.is_valid()) {
+		rendering_server->free_rid(_cross_section_camera);
+		_cross_section_camera = RID();
+	}
+}
+
+void CrossSectionRenderingEngine4D::cleanup_for_viewport() {
+	_cleanup_render_resources();
+	if (_cross_section_world_3d.is_valid() && get_viewport() != nullptr) {
+		get_viewport()->set_world_3d(Ref<World3D>());
+	}
+}
+
+CrossSectionRenderingEngine4D::~CrossSectionRenderingEngine4D() {
+	_cleanup_render_resources();
 }
