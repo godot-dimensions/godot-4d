@@ -29,6 +29,23 @@ Ref<RenderingEngine4D> RenderingServer4D::_get_rendering_engine(const String &p_
 	return _rendering_engines.begin()->value;
 }
 
+RenderingServer4D::~RenderingServer4D() {
+	for (const KeyValue<Viewport *, Vector<Camera4D *>> &E : _viewport_cameras) {
+		Viewport *viewport = E.key;
+		if (viewport == nullptr) {
+			continue;
+		}
+		for (KeyValue<String, Ref<RenderingEngine4D>> &engine_entry : _rendering_engines) {
+			if (engine_entry.value.is_valid()) {
+				engine_entry.value->cleanup_for_viewport_if_needed(viewport);
+			}
+		}
+	}
+	_viewport_cameras.clear();
+	_rendering_engines.clear();
+	singleton = nullptr;
+}
+
 TypedArray<MeshInstance4D> RenderingServer4D::_get_visible_mesh_instances() const {
 	TypedArray<MeshInstance4D> visible_mesh_instances;
 	for (int i = 0; i < _mesh_instances.size(); i++) {

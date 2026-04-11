@@ -44,5 +44,5 @@ public:
 
 	static RenderingServer4D *get_singleton() { return singleton; }
 	RenderingServer4D() { singleton = this; }
-	~RenderingServer4D() { singleton = nullptr; }
+	~RenderingServer4D();
 };

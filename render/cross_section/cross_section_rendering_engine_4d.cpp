@@ -156,13 +156,19 @@ void CrossSectionRenderingEngine4D::_cleanup_render_resources() {
 		rendering_server->free_rid(_cross_section_camera);
 		_cross_section_camera = RID();
 	}
+	// Explicitly free the World3D so its scenario RID (and any remaining
+	// instances inside it) are released while the RenderingServer is alive.
+	_cross_section_world_3d = Ref<World3D>();
 }
 
 void CrossSectionRenderingEngine4D::cleanup_for_viewport() {
-	_cleanup_render_resources();
+	// Detach the custom world from the viewport BEFORE freeing RS resources,
+	// so any VisualInstance3D nodes in the viewport re-register in the
+	// default world rather than our soon-to-be-freed scenario.
 	if (_cross_section_world_3d.is_valid() && get_viewport() != nullptr) {
 		get_viewport()->set_world_3d(Ref<World3D>());
 	}
+	_cleanup_render_resources();
 }
 
 CrossSectionRenderingEngine4D::~CrossSectionRenderingEngine4D() {
