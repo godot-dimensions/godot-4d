@@ -1,5 +1,9 @@
 #include "node_4d.h"
 
+#if GODOT_MODULE
+#include "core/variant/typed_array.h"
+#endif
+
 // Rotation edit mode.
 
 Node4D::RotationEditMode Node4D::get_rotation_edit_mode() const {

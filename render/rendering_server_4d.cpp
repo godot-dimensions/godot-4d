@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #elif GODOT_MODULE
+#include "core/config/engine.h"
 #include "scene/main/scene_tree.h"
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
 #include "servers/rendering_server.h"

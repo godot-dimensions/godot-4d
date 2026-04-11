@@ -14,12 +14,6 @@
 #include "core/io/compression.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 4
-// In Godot 4.5 and later, namespaces were capitalized: core_bind -> CoreBind.
-using namespace CoreBind;
-#else
-using namespace core_bind;
-#endif
 #endif
 
 uint32_t G4MFDocument4D::_compression_format_to_indicator(const CompressionFormat p_compression_format) {
@@ -349,7 +343,7 @@ Error G4MFDocument4D::_export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_stat
 				WARN_PRINT("G4MF export: Failed to write buffer data to file: " + buffer_rel_path + ". Writing as base64 instead as fallback.");
 			}
 		}
-		const String base64_buffer = Marshalls::get_singleton()->raw_to_base64(compressed_buffer);
+		const String base64_buffer = CoreBind::Marshalls::get_singleton()->raw_to_base64(compressed_buffer);
 		json_buffer_dict["uri"] = String("data:application/octet-stream;base64,") + base64_buffer;
 	}
 	return OK;
@@ -748,7 +742,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 				if (uri.begins_with("data:")) {
 					PackedStringArray split = uri.split(";base64,", true, 1);
 					ERR_FAIL_COND_V_MSG(split.size() != 2, ERR_INVALID_DATA, "G4MF import: Buffer URI is malformed. Expected 'data:application/octet-stream;base64,<base64 data>'. Aborting file import.");
-					buffer = _import_decompress_bytes(Marshalls::get_singleton()->base64_to_raw(split[1]), compression_indicator);
+					buffer = _import_decompress_bytes(CoreBind::Marshalls::get_singleton()->base64_to_raw(split[1]), compression_indicator);
 				} else {
 					// Infer the external data mode on import in case the user wishes to round-trip the G4MF file back out of Godot later.
 					p_g4mf_state->set_external_data_mode(G4MFState4D::EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS);

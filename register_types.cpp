@@ -7,6 +7,7 @@
 #endif // TOOLS_ENABLED
 #elif GODOT_MODULE
 #include "core/config/engine.h"
+#include "core/core_bind.h"
 #ifdef TOOLS_ENABLED
 #include "editor/plugins/editor_plugin.h"
 #include "editor/themes/editor_color_map.h"
@@ -112,19 +113,11 @@
 #endif // TOOLS_ENABLED
 
 inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
-#if GDEXTENSION
-	Engine::get_singleton()->register_singleton(p_singleton_name, p_object);
-#elif GODOT_MODULE
-	Engine::get_singleton()->add_singleton(Engine::Singleton(p_singleton_name, p_object));
-#endif
+	CoreBind::Engine::get_singleton()->register_singleton(p_singleton_name, p_object);
 }
 
 inline void remove_godot_singleton(const StringName &p_singleton_name) {
-#if GDEXTENSION
-	Engine::get_singleton()->unregister_singleton(p_singleton_name);
-#elif GODOT_MODULE
-	Engine::get_singleton()->remove_singleton(p_singleton_name);
-#endif
+	CoreBind::Engine::get_singleton()->unregister_singleton(p_singleton_name);
 }
 
 void initialize_4d_module(ModuleInitializationLevel p_level) {

@@ -35,7 +35,7 @@ Ref<ImageTexture> _generate_editor_4d_icon(const String &p_icon_name) {
 	Ref<Image> img;
 	img.instantiate();
 #ifdef MODULE_SVG_ENABLED
-	const HashMap<Color, Color> &color_map = EditorThemeManager::is_dark_theme() ? HashMap<Color, Color>() : EditorColorMap::get_color_conversion_map();
+	const HashMap<Color, Color> color_map = EditorThemeManager::is_dark_theme() ? HashMap<Color, Color>() : HashMap<Color, Color>(EditorColorMap::get_color_conversion_map());
 	Error err = ImageLoaderSVG::create_image_from_string(img, editor_4d_icons_sources[source_index], scale, false, color_map);
 #else
 	// If there's no SVG module this may be because the editor was compiled

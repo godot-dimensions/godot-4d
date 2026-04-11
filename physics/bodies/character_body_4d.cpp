@@ -4,6 +4,8 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/engine.hpp>
+#elif GODOT_MODULE
+#include "core/config/engine.h"
 #endif
 
 constexpr int MAX_MOVE_AND_SLIDE_ITERATIONS = 10;

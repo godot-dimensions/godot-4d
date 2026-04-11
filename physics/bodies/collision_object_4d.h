@@ -2,6 +2,10 @@
 
 #include "../../nodes/node_4d.h"
 
+#if GODOT_MODULE
+#include "core/variant/typed_array.h"
+#endif
+
 class CollisionShape4D;
 
 class CollisionObject4D : public Node4D {

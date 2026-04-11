@@ -310,8 +310,8 @@ void EditorViewportRotation4D::_process_click(int p_index, Vector2 p_position, b
 			_update_focus();
 		}
 		_orbiting_mouse_button_index = -1;
-		if (Input::get_singleton()->get_mouse_mode() == Input::MOUSE_MODE_CAPTURED) {
-			Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_VISIBLE);
+		if (Input::get_singleton()->get_mouse_mode() == InputClassEnums::MOUSE_MODE_CAPTURED) {
+			Input::get_singleton()->set_mouse_mode(InputClassEnums::MOUSE_MODE_VISIBLE);
 			Input::get_singleton()->warp_mouse(_orbiting_mouse_start);
 		}
 	}
@@ -320,8 +320,8 @@ void EditorViewportRotation4D::_process_click(int p_index, Vector2 p_position, b
 
 void EditorViewportRotation4D::_process_drag(Ref<InputEvent> p_event, int p_index, Vector2 p_position) {
 	if (_orbiting_mouse_button_index == p_index) {
-		if (Input::get_singleton()->get_mouse_mode() == Input::MOUSE_MODE_VISIBLE) {
-			Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_CAPTURED);
+		if (Input::get_singleton()->get_mouse_mode() == InputClassEnums::MOUSE_MODE_VISIBLE) {
+			Input::get_singleton()->set_mouse_mode(InputClassEnums::MOUSE_MODE_CAPTURED);
 			_orbiting_mouse_start = p_position;
 		}
 		_editor_main_viewport->navigation_orbit(p_event);

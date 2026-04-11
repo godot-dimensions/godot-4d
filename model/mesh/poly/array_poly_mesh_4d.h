@@ -92,7 +92,7 @@ public:
 	void set_poly_cell_texture_map(const Vector<PackedVector3Array> &p_poly_cell_texture_map);
 	void set_poly_cell_texture_map_bind(const TypedArray<PackedVector3Array> &p_poly_cell_texture_map);
 
-	virtual HashSet<int32_t> get_seam_face_indices() const override { return _seam_face_indices; }
+	virtual HashSet<int32_t> get_seam_face_indices() const override { return HashSet<int32_t>(_seam_face_indices); }
 	PackedInt32Array get_seam_face_indices_bind() const;
 	void set_seam_face_indices(const HashSet<int32_t> &p_seam_face_indices);
 	void set_seam_face_indices_bind(const PackedInt32Array &p_seam_face_indices);
