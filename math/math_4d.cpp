@@ -277,6 +277,49 @@ int32_t Math4D::find_common_int32(const PackedInt32Array &p_a, const PackedInt32
 	return INT32_MIN;
 }
 
+bool Math4D::has_common_int32(const PackedInt32Array &p_a, const PackedInt32Array &p_b) {
+	for (int64_t a_index = 0; a_index < p_a.size(); a_index++) {
+		const int32_t a_item = p_a[a_index];
+		for (int64_t b_index = 0; b_index < p_b.size(); b_index++) {
+			if (a_item == p_b[b_index]) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Math4D::ensure_first_two_indices_share_common_int32(PackedInt32Array &r_indices, const Vector<PackedInt32Array> &p_indexed_data) {
+	if (r_indices.size() < 2) {
+		return true;
+	}
+	const int32_t first_index = r_indices[0];
+	if (first_index < 0 || first_index >= p_indexed_data.size()) {
+		return false;
+	}
+	const PackedInt32Array &first_data = p_indexed_data[first_index];
+	const int32_t second_index = r_indices[1];
+	if (second_index >= 0 && second_index < p_indexed_data.size()) {
+		if (has_common_int32(first_data, p_indexed_data[second_index])) {
+			return true;
+		}
+	}
+	for (int64_t other_index_in_list = 2; other_index_in_list < r_indices.size(); other_index_in_list++) {
+		const int32_t other_index = r_indices[other_index_in_list];
+		if (other_index < 0 || other_index >= p_indexed_data.size()) {
+			continue;
+		}
+		if (!has_common_int32(first_data, p_indexed_data[other_index])) {
+			continue;
+		}
+		const int32_t old_second_index = r_indices[1];
+		r_indices.set(1, other_index);
+		r_indices.set(other_index_in_list, old_second_index);
+		return true;
+	}
+	return false;
+}
+
 Math4D *Math4D::singleton = nullptr;
 
 void Math4D::_bind_methods() {
@@ -286,4 +329,6 @@ void Math4D::_bind_methods() {
 	ClassDB::bind_static_method("Math4D", D_METHOD("double_to_float4", "double"), &Math4D::double_to_float4);
 	ClassDB::bind_static_method("Math4D", D_METHOD("double_to_float8", "double"), &Math4D::double_to_float8);
 	ClassDB::bind_static_method("Math4D", D_METHOD("double_to_float16", "double"), &Math4D::double_to_float16);
+
+	ClassDB::bind_static_method("Math4D", D_METHOD("has_common_int32", "a", "b"), &Math4D::has_common_int32);
 }

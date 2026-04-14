@@ -63,6 +63,8 @@ public:
 
 	void calculate_boundary_normals(const ComputeNormalsMode p_mode, const bool p_keep_existing = false);
 	void set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals = true);
+	void make_double_sided(const bool p_idempotent = true);
+	PackedInt32Array make_single_volume_from_all_cells() const;
 	void calculate_seam_faces(const double p_angle_threshold_radians = Math_TAU / 8.0, const bool p_discard_seams_within_islands = false);
 	PackedInt32Array collect_cells_in_island(const int64_t p_start_cell);
 	Vector<PackedInt32Array> collect_all_islands();

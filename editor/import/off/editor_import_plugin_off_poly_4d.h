@@ -2,8 +2,12 @@
 
 #include "editor_import_plugin_off_base.h"
 
+class ArrayPolyMesh4D;
+
 class EditorImportPluginOFFPoly4D : public EditorImportPluginOFFBase {
 	GDCLASS(EditorImportPluginOFFPoly4D, EditorImportPluginOFFBase);
+
+	static void _make_single_convex_volume(Ref<ArrayPolyMesh4D> p_mesh);
 
 protected:
 	static void _bind_methods() {}

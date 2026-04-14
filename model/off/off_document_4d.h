@@ -36,6 +36,7 @@ class OFFDocument4D : public Resource {
 	void _count_unique_edges_from_faces();
 	int64_t _find_or_insert_face(const int32_t p_a, const int32_t p_b, const int32_t p_c, const bool p_deduplicate_faces = true);
 	int64_t _find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
+	static bool _do_triangle_faces_match(const PackedInt32Array &p_face_a, const PackedInt32Array &p_face_b);
 
 	// Export winding order correction helper functions.
 	static int32_t _get_next_vertex_not_in_common_edge(const PackedInt32Array &p_face, const int64_t p_common_edge_index, const int32_t p_common_edge_min, const int32_t p_common_edge_max);

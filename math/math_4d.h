@@ -23,6 +23,8 @@ public:
 	static uint16_t double_to_float16(const double p_double);
 
 	static int32_t find_common_int32(const PackedInt32Array &p_a, const PackedInt32Array &p_b, int64_t &r_a_index, int64_t &r_b_index);
+	static bool has_common_int32(const PackedInt32Array &p_a, const PackedInt32Array &p_b);
+	static bool ensure_first_two_indices_share_common_int32(PackedInt32Array &r_indices, const Vector<PackedInt32Array> &p_indexed_data);
 
 	static Math4D *get_singleton() { return singleton; }
 	Math4D() { singleton = this; }

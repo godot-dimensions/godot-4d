@@ -56,6 +56,21 @@
 				Before running this function, ensure that the seams are up to date. You can set seams manually, or calculate seams based on the angles between cells using [method calculate_seam_faces].
 			</description>
 		</method>
+		<method name="make_double_sided">
+			<return type="void" />
+			<param index="0" name="idempotent" type="bool" default="true" />
+			<description>
+				Copies the boundary cells of the mesh, swaps the first two faces in the cell to flip the orientation, and appends them to the mesh, effectively making the mesh double sided.
+				If [param idempotent] is [code]true[/code] (default), the method will first check if the mesh already has the flipped version of a cell before adding a flipped cell, ensuring that running the method multiple times will not create duplicate cells. If [param idempotent] is [code]false[/code], the method will add a flipped cell for every existing cell without checking for duplicates, which may be faster when you know for certain that the source mesh does not already have double-sided cells, but will create duplicate cells if you run it multiple times or if the source mesh already has double-sided cells.
+			</description>
+		</method>
+		<method name="make_single_volume_from_all_cells" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+				Returns an array of cell indices that contains all cells in the mesh as a single volumetric cell. As long as the first boundary cell shares a face with at least one other boundary cell, the returned array will be a valid single volumetric cell.
+				The array will look like a sequence of all the cell indices in the mesh, potentially with some indices swapped, such as [code][0, 1, 2, 3, 4, 5, ...][/code], or [code][0, 4, 2, 3, 1, 5, ...][/code] if cells 1, 2, and 3 do not share a face with cell 0 but cell 4 does.
+			</description>
+		</method>
 		<method name="merge_with">
 			<return type="void" />
 			<param index="0" name="other" type="PolyMesh4D" />

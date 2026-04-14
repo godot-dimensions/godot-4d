@@ -12,6 +12,7 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
+#include "../../math/math_4d.h"
 #include "../../math/vector_4d.h"
 #include "../mesh/mesh_instance_4d.h"
 #include "../mesh/poly/poly_material_4d.h"
@@ -73,7 +74,7 @@ Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_3d(const Ref<Mesh> &p_mesh
 	return off_document;
 }
 
-bool _do_triangle_faces_match(const PackedInt32Array &p_face_a, const PackedInt32Array &p_face_b) {
+bool OFFDocument4D::_do_triangle_faces_match(const PackedInt32Array &p_face_a, const PackedInt32Array &p_face_b) {
 	return ((p_face_a[0] == p_face_b[0] && p_face_a[1] == p_face_b[1] && p_face_a[2] == p_face_b[2]) ||
 			(p_face_a[0] == p_face_b[0] && p_face_a[1] == p_face_b[2] && p_face_a[2] == p_face_b[1]) ||
 			(p_face_a[0] == p_face_b[1] && p_face_a[1] == p_face_b[0] && p_face_a[2] == p_face_b[2]) ||
@@ -315,11 +316,15 @@ Ref<ArrayPolyMesh4D> OFFDocument4D::import_generate_poly_mesh_4d() {
 		}
 		face_edge_indices.set(face_number, this_face_edges);
 	}
-	// OFF cells references faces, and PolyMesh4D cells also reference faces, but we need it in Vector<> format.
+	// OFF cells references faces, and PolyMesh4D cells also reference faces, but we need it in Vector<> format,
+	// and we need to ensure that the first two faces of each cell share a common edge.
 	Vector<PackedInt32Array> cell_face_indices;
 	cell_face_indices.resize(_cell_face_indices.size());
 	for (int64_t cell_number = 0; cell_number < _cell_face_indices.size(); cell_number++) {
-		cell_face_indices.set(cell_number, _cell_face_indices[cell_number]);
+		PackedInt32Array cell_faces = PackedInt32Array(_cell_face_indices[cell_number]);
+		// PolyMesh4D orientation requires the first two faces in each cell to share an edge.
+		Math4D::ensure_first_two_indices_share_common_int32(cell_faces, face_edge_indices);
+		cell_face_indices.set(cell_number, cell_faces);
 	}
 	// Combine the face and cell indices into the unified poly cell indices array.
 	Vector<Vector<PackedInt32Array>> poly_cell_indices;

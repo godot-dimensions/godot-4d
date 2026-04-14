@@ -21,7 +21,14 @@ TypedArray<Dictionary> EditorImportPluginOFFTetra4D::_get_import_options(const S
 	compute_normals_mode["name"] = "compute_normals_mode";
 	compute_normals_mode["type"] = Variant::INT;
 	compute_normals_mode["default_value"] = ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY;
+	compute_normals_mode["property_hint"] = PROPERTY_HINT_ENUM;
+	compute_normals_mode["hint_string"] = "Cell Orientation Only,Force Outward and Fix Cell Orientation,Force Outward and Override Cell Orientation";
 	options.append(compute_normals_mode);
+	Dictionary double_sided;
+	double_sided["name"] = "double_sided";
+	double_sided["type"] = Variant::BOOL;
+	double_sided["default_value"] = false;
+	options.append(double_sided);
 	return options;
 }
 
@@ -39,6 +46,7 @@ Error EditorImportPluginOFFTetra4D::_import(const String &p_source_file, const S
 #elif GODOT_MODULE
 void EditorImportPluginOFFTetra4D::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compute_normals_mode", PROPERTY_HINT_ENUM, "Cell Orientation Only,Force Outward and Fix Cell Orientation,Force Outward and Override Cell Orientation"), ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "double_sided"), false));
 }
 
 #if VERSION_HEX < 0x040400

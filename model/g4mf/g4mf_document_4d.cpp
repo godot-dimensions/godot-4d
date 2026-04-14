@@ -1169,8 +1169,12 @@ Error G4MFDocument4D::export_repack_buffer_data(Ref<G4MFState4D> p_g4mf_state, c
 		const PackedByteArray data = buffer_view->read_buffer_view_data(p_g4mf_state);
 		int64_t byte_offset = new_buffer.size();
 		if (byte_offset % alignment != 0) {
+			const int64_t old_size = byte_offset;
 			byte_offset += alignment - (byte_offset % alignment);
 			new_buffer.resize_initialized(byte_offset);
+			for (int64_t i = old_size; i < byte_offset; i++) {
+				new_buffer.set(i, 0);
+			}
 		}
 		// The buffer views array was shallow-copied, so this affects the original buffer view in the state.
 		buffer_view->set_byte_offset(byte_offset);

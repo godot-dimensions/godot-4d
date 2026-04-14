@@ -129,6 +129,91 @@ void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, 
 	poly_mesh_clear_cache();
 }
 
+void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
+	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot make double sided because there are no boundary cells.");
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot make double sided for an invalid mesh.");
+	if (_poly_cell_boundary_normals.is_empty()) {
+		calculate_boundary_normals(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
+	}
+	Vector<PackedInt32Array> cell_face_indices = Vector<PackedInt32Array>(_poly_cell_indices[1]);
+	const int64_t original_cell_count = cell_face_indices.size();
+	PackedInt32Array flipped_cell_index_for_original;
+	flipped_cell_index_for_original.resize(original_cell_count);
+	for (int64_t i = 0; i < original_cell_count; i++) {
+		flipped_cell_index_for_original.set(i, -1);
+	}
+	for (int64_t cell_index = 0; cell_index < original_cell_count; cell_index++) {
+		PackedInt32Array flipped_cell_faces = PackedInt32Array(cell_face_indices[cell_index]);
+		int32_t temp = flipped_cell_faces[0];
+		flipped_cell_faces.set(0, flipped_cell_faces[1]);
+		flipped_cell_faces.set(1, temp);
+		int32_t existing_flipped_index = -1;
+		if (p_idempotent) {
+			// Check if this flipped cell already exists before adding it, whenever idempotence is requested,
+			// to avoid creating duplicates if this function is called multiple times. Note: This algorithm only
+			// checks the original cells, which assumes that there are no same-facing duplicate cells in the original mesh.
+			bool already_exists = false;
+			for (int64_t other_cell_index = 0; other_cell_index < original_cell_count; other_cell_index++) {
+				if (other_cell_index == cell_index) {
+					continue;
+				}
+				if (cell_face_indices[other_cell_index] == flipped_cell_faces) {
+					already_exists = true;
+					existing_flipped_index = other_cell_index;
+					break;
+				}
+			}
+			if (already_exists) {
+				flipped_cell_index_for_original.set(cell_index, existing_flipped_index);
+				continue;
+			}
+		}
+		const int32_t new_flipped_cell_index = cell_face_indices.size();
+		cell_face_indices.append(flipped_cell_faces);
+		flipped_cell_index_for_original.set(cell_index, new_flipped_cell_index);
+		_poly_cell_boundary_normals.append(-_poly_cell_boundary_normals[cell_index]);
+	}
+	_poly_cell_indices.set(1, cell_face_indices);
+	if (_poly_cell_indices.size() > 2) {
+		Vector<PackedInt32Array> volumetric_cell_indices = _poly_cell_indices[2];
+		for (int64_t volumetric_cell_index = 0; volumetric_cell_index < volumetric_cell_indices.size(); volumetric_cell_index++) {
+			PackedInt32Array vol_cell = volumetric_cell_indices[volumetric_cell_index];
+			const int64_t original_vol_cell_size = vol_cell.size();
+			for (int64_t i = 0; i < original_vol_cell_size; i++) {
+				const int32_t original_boundary_cell_index = vol_cell[i];
+				if (original_boundary_cell_index < 0 || original_boundary_cell_index >= original_cell_count) {
+					continue;
+				}
+				const int32_t flipped_boundary_cell_index = flipped_cell_index_for_original[original_boundary_cell_index];
+				if (flipped_boundary_cell_index == -1 || vol_cell.has(flipped_boundary_cell_index)) {
+					continue;
+				}
+				vol_cell.append(flipped_boundary_cell_index);
+			}
+			volumetric_cell_indices.set(volumetric_cell_index, vol_cell);
+		}
+		_poly_cell_indices.set(2, volumetric_cell_indices);
+	}
+	poly_mesh_clear_cache();
+}
+
+PackedInt32Array ArrayPolyMesh4D::make_single_volume_from_all_cells() const {
+	ERR_FAIL_COND_V_MSG(_poly_cell_indices.size() < 2, PackedInt32Array(), "ArrayPolyMesh4D: Cannot make single volume from all cells because there are no boundary cells.");
+	const Vector<PackedInt32Array> &boundary_cells = _poly_cell_indices[1];
+	const int64_t boundary_cell_count = boundary_cells.size();
+	PackedInt32Array volumetric_cell_indices;
+	volumetric_cell_indices.resize(boundary_cell_count);
+	for (int64_t cell_index = 0; cell_index < boundary_cell_count; cell_index++) {
+		volumetric_cell_indices.set(cell_index, cell_index);
+	}
+	// For a deterministic volumetric orientation basis, the first two boundary cells must share a face.
+	bool success = Math4D::ensure_first_two_indices_share_common_int32(volumetric_cell_indices, boundary_cells);
+	if (!success) {
+		ERR_PRINT("ArrayPolyMesh4D: Failed to make single volume from all cells because the first boundary cell does not share a face with any other cell.");
+	}
+	return volumetric_cell_indices;
+}
+
 void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radians, const bool p_discard_seams_within_islands) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate seam faces because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate seam faces for an invalid mesh.");
@@ -462,7 +547,7 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 }
 
 void ArrayPolyMesh4D::_unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing) {
-	_poly_cell_texture_map.resize(_poly_cell_indices[1].size());
+	CRASH_COND(_poly_cell_texture_map.size() != _poly_cell_indices[1].size());
 	const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
 	for (int64_t cell_index_index = 0; cell_index_index < p_cells_in_island.size(); cell_index_index++) {
 		if (p_keep_existing && !_poly_cell_texture_map[p_cells_in_island[cell_index_index]].is_empty()) {
@@ -481,6 +566,12 @@ void ArrayPolyMesh4D::unwrap_texture_map_island(const PackedInt32Array &p_cells_
 		ERR_FAIL_COND_MSG(p_cells_in_island[i] >= cells.size(), "ArrayPolyMesh4D: A cell in this island is not in the mesh.");
 	}
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Poly mesh data is invalid, cannot unwrap.");
+	const int64_t cell_count = cells.size();
+	const int64_t existing_texture_map_count = _poly_cell_texture_map.size();
+	_poly_cell_texture_map.resize_initialized(cell_count);
+	for (int64_t i = existing_texture_map_count; i < cell_count; i++) {
+		_poly_cell_texture_map.set(i, PackedVector3Array());
+	}
 	// Use the internal version internally when we know the data is valid.
 	_unwrap_texture_map_island_internal(p_cells_in_island, p_keep_existing);
 	poly_mesh_clear_cache();
@@ -490,8 +581,14 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 	ERR_FAIL_COND_MSG(p_padding < 0.0, "ArrayPolyMesh4D: Padding must be non-negative.");
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot unwrap texture map for a mesh with no cells.");
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Poly mesh data is invalid, cannot unwrap.");
+	const int64_t cell_count = _poly_cell_indices[1].size();
 	if (!p_keep_existing) {
 		_poly_cell_texture_map.clear();
+	}
+	const int64_t existing_texture_map_count = _poly_cell_texture_map.size();
+	_poly_cell_texture_map.resize_initialized(cell_count);
+	for (int64_t i = existing_texture_map_count; i < cell_count; i++) {
+		_poly_cell_texture_map.set(i, PackedVector3Array());
 	}
 	UnwrapTextureMapMode actual_mode = p_mode;
 	if (actual_mode == UNWRAP_MODE_AUTOMATIC) {
@@ -499,7 +596,6 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 	}
 	const double pad_offset = p_padding * 0.5 / (1.0 + p_padding);
 	const double pad_size = 1.0 / (1.0 + p_padding);
-	const int32_t cell_count = _poly_cell_indices[1].size();
 	// Handle EACH_CELL_FILLS mode separately since it does not require tiling.
 	if (actual_mode == UNWRAP_MODE_EACH_CELL_FILLS) {
 		const AABB padded_full_aabb = AABB(Vector3(pad_offset, pad_offset, pad_offset), Vector3(pad_size, pad_size, pad_size));
@@ -1152,6 +1248,9 @@ void ArrayPolyMesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "normals_mode", "keep_existing"), &ArrayPolyMesh4D::calculate_boundary_normals, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_flat_shading_normals, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("make_double_sided", "idempotent"), &ArrayPolyMesh4D::make_double_sided, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("make_single_volume_from_all_cells"), &ArrayPolyMesh4D::make_single_volume_from_all_cells);
+
 	ClassDB::bind_method(D_METHOD("calculate_seam_faces", "angle_threshold_radians", "discard_seams_within_islands"), &ArrayPolyMesh4D::calculate_seam_faces, DEFVAL(Math_TAU / 8.0), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("collect_cells_in_island", "start_cell"), &ArrayPolyMesh4D::collect_cells_in_island);
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map_island", "cells_in_island", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_island, DEFVAL(false));

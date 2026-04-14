@@ -57,5 +57,13 @@
 				See [url=https://en.wikipedia.org/wiki/Half-precision_floating-point_format]"Half-precision floating-point format" on Wikipedia[/url] for more information.
 			</description>
 		</method>
+		<method name="has_common_int32" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="a" type="PackedInt32Array" />
+			<param index="1" name="b" type="PackedInt32Array" />
+			<description>
+				Returns [code]true[/code] if the two arrays have at least one common int32 value, otherwise returns [code]false[/code].
+			</description>
+		</method>
 	</methods>
 </class>

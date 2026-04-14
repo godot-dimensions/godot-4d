@@ -88,7 +88,7 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 					if (dim == 0) {
 						ERR_PRINT("The first two edges of face " + cell_str + " do not share a common vertex, therefore orientation is not determinable and the face is invalid.");
 					} else if (dim == 1) {
-						ERR_PRINT("The first two faces of cell " + cell_str + " do not share a common edge, therefore orientation is not determinable and the cell is invalid.");
+						ERR_PRINT("The first two faces of cell " + itos(cell_idx) + " with data " + cell_str + " do not share a common edge, therefore orientation is not determinable and the cell is invalid.");
 					} else if (dim == 2) {
 						ERR_PRINT("The first two 3D cells of 4D cell " + cell_str + " do not share a common face, therefore orientation is not determinable and the 4D cell is invalid.");
 					} else {
@@ -101,15 +101,35 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 			prev_dim_count = cells_of_dim.size();
 		}
 	}
-	const PackedVector4Array poly_cell_normals = get_poly_cell_boundary_normals();
-	const int64_t poly_cell_normals_count = poly_cell_normals.size();
-	if (poly_cell_normals_count != 0) {
+	const PackedVector4Array poly_cell_boundary_normals = get_poly_cell_boundary_normals();
+	const int64_t poly_cell_boundary_normals_count = poly_cell_boundary_normals.size();
+	if (poly_cell_boundary_normals_count != 0) {
 		if (poly_cell_dims < 2) {
 			return false;
 		}
 		const Vector<PackedInt32Array> &cells_3d = poly_cell_indices[1];
-		if (cells_3d.size() != poly_cell_normals_count) {
+		if (cells_3d.size() != poly_cell_boundary_normals_count) {
 			return false;
+		}
+	}
+	const Vector<PackedVector4Array> poly_cell_vertex_normals = get_poly_cell_vertex_normals();
+	const int64_t poly_cell_vertex_normals_count = poly_cell_vertex_normals.size();
+	if (poly_cell_vertex_normals_count != 0) {
+		if (poly_cell_dims < 2) {
+			return false; // Invalid to have vertex normal data without any 3D cells to map to.
+		}
+		const Vector<PackedInt32Array> &cells_3d = poly_cell_indices[1];
+		if (cells_3d.size() != poly_cell_vertex_normals_count) {
+			return false; // Invalid number of vertex normal arrays, should match number of 3D cells.
+		}
+		const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(poly_cell_indices, edge_indices, false);
+		for (int64_t i = 0; i < poly_cell_vertex_normals_count; i++) {
+			if (poly_cell_vertex_normals[i].is_empty()) {
+				continue; // Allow cells without vertex normals.
+			}
+			if (poly_cell_vertex_normals[i].size() != cell_vert[i].size()) {
+				return false; // Each vertex normal array entry corresponds to a vertex instance in the 3D cell.
+			}
 		}
 	}
 	const Vector<PackedVector3Array> poly_cell_texture_map = get_poly_cell_texture_map();
@@ -373,7 +393,10 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	if (poly_cell_indices.size() > 2) {
 		const Vector<PackedInt32Array> &volumetric_cells = poly_cell_indices[2];
 		PackedInt32Array cell_usage_counts;
-		cell_usage_counts.resize(boundary_cell_count);
+		cell_usage_counts.resize_initialized(boundary_cell_count);
+		for (int64_t i = 0; i < boundary_cell_count; i++) {
+			cell_usage_counts.set(i, 0);
+		}
 		for (int64_t i = 0; i < volumetric_cells.size(); i++) {
 			const PackedInt32Array &volumetric_cell = volumetric_cells[i];
 			for (const int32_t vol_cell_part : volumetric_cell) {
