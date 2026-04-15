@@ -11,9 +11,12 @@ bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) co
 
 void G4MFMeshSurface4D::convert_separated_geometry_into_packed(const Ref<G4MFState4D> &p_g4mf_state, const Vector<Vector<PackedInt32Array>> &p_separated_geometry, const bool p_deduplicate) {
 	const int64_t separated_geometry_size = p_separated_geometry.size();
-	_geometry_accessor_indices.resize(separated_geometry_size);
+	_geometry_accessor_indices.clear();
 	for (int geom_index = 0; geom_index < separated_geometry_size; geom_index++) {
 		const Vector<PackedInt32Array> &separated_geometry_data = p_separated_geometry[geom_index];
+		if (separated_geometry_data.is_empty()) {
+			return; // Nothing on this dimension, which also implies nothing on the higher dimensions.
+		}
 		PackedInt32Array packed_geometry_data;
 		for (int cell_index = 0; cell_index < separated_geometry_data.size(); cell_index++) {
 			const PackedInt32Array &cell_vertex_indices = separated_geometry_data[cell_index];
@@ -24,7 +27,7 @@ void G4MFMeshSurface4D::convert_separated_geometry_into_packed(const Ref<G4MFSta
 		}
 		const int geom_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, packed_geometry_data, p_deduplicate);
 		ERR_FAIL_COND(geom_accessor_index == -1);
-		_geometry_accessor_indices.set(geom_index, geom_accessor_index);
+		_geometry_accessor_indices.append(geom_accessor_index);
 	}
 }
 

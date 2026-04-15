@@ -214,6 +214,179 @@ PackedInt32Array ArrayPolyMesh4D::make_single_volume_from_all_cells() const {
 	return volumetric_cell_indices;
 }
 
+void ArrayPolyMesh4D::delete_poly_element(const int32_t p_dimension, const int32_t p_index) {
+	if (p_dimension < 0) {
+		ERR_FAIL_MSG("ArrayPolyMesh4D: Cannot delete from negative dimension.");
+	} else if (p_dimension == 0) {
+		_delete_vertex_internal(p_index);
+	} else if (p_dimension == 1) {
+		_delete_edge_internal(p_index);
+	} else {
+		const int64_t poly_cell_index = p_dimension - 2;
+		if (poly_cell_index >= _poly_cell_indices.size()) {
+			ERR_FAIL_MSG("ArrayPolyMesh4D: Cannot delete from dimension higher than the highest poly cell dimension.");
+		}
+		_delete_poly_cell_element_internal(poly_cell_index, p_index);
+	}
+	poly_mesh_clear_cache();
+	reset_poly_mesh_data_validation();
+}
+
+void ArrayPolyMesh4D::_delete_edge_internal(const int32_t p_index) {
+	const int32_t edge_count = _edge_vertex_indices.size() / 2;
+	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= edge_count, "ArrayPolyMesh4D: Edge index is out of range.");
+	// Before deleting this edge, we need to delete any poly cells in higher dimensions that reference it.
+	if (!_poly_cell_indices.is_empty()) {
+		Vector<int32_t> faces_to_delete;
+		const Vector<PackedInt32Array> &face_edge_indices = _poly_cell_indices[0];
+		for (int32_t face_index = 0; face_index < face_edge_indices.size(); face_index++) {
+			if (face_edge_indices[face_index].has(p_index)) {
+				faces_to_delete.push_back(face_index);
+			}
+		}
+		for (int32_t i = faces_to_delete.size() - 1; i >= 0; i--) {
+			_delete_poly_cell_element_internal(0, faces_to_delete[i]);
+		}
+	}
+	// Delete the edge's two vertex index entries from the flat edge array.
+	const int32_t edge_vertex_start = p_index * 2;
+	_edge_vertex_indices.remove_at(edge_vertex_start + 1);
+	_edge_vertex_indices.remove_at(edge_vertex_start);
+	// Shift remaining face edge references down to preserve index semantics.
+	if (!_poly_cell_indices.is_empty()) {
+		Vector<PackedInt32Array> face_edge_indices = _poly_cell_indices[0];
+		for (int32_t face_index = 0; face_index < face_edge_indices.size(); face_index++) {
+			PackedInt32Array face = face_edge_indices[face_index];
+			bool changed = false;
+			for (int32_t edge_index_in_face = 0; edge_index_in_face < face.size(); edge_index_in_face++) {
+				if (face[edge_index_in_face] > p_index) {
+					face.set(edge_index_in_face, face[edge_index_in_face] - 1);
+					changed = true;
+				}
+			}
+			if (changed) {
+				face_edge_indices.set(face_index, face);
+			}
+		}
+		_poly_cell_indices.set(0, face_edge_indices);
+	}
+}
+
+void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
+	const int64_t vertex_count = _poly_cell_vertices.size();
+	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= vertex_count, "ArrayPolyMesh4D: Vertex index is out of range.");
+	// Before deleting this vertex, we need to delete any edges that reference it,
+	// and any poly cells in higher dimensions that reference those edges.
+	const int32_t edge_count = _edge_vertex_indices.size() / 2;
+	Vector<int32_t> edges_to_delete;
+	for (int32_t edge_index = 0; edge_index < edge_count; edge_index++) {
+		if (_edge_vertex_indices[edge_index * 2] == p_index || _edge_vertex_indices[edge_index * 2 + 1] == p_index) {
+			edges_to_delete.push_back(edge_index);
+		}
+	}
+	for (int32_t i = edges_to_delete.size() - 1; i >= 0; i--) {
+		_delete_edge_internal(edges_to_delete[i]);
+	}
+	// Delete the vertex itself now that all dependent edges (and higher dimensions) are gone.
+	_poly_cell_vertices.remove_at(p_index);
+	// Shift remaining edge vertex references down to preserve index semantics.
+	for (int64_t edge_vertex_index = 0; edge_vertex_index < _edge_vertex_indices.size(); edge_vertex_index++) {
+		if (_edge_vertex_indices[edge_vertex_index] > p_index) {
+			_edge_vertex_indices.set(edge_vertex_index, _edge_vertex_indices[edge_vertex_index] - 1);
+		}
+	}
+}
+
+void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_cell_index, const int32_t p_index) {
+	ERR_FAIL_COND_MSG(p_poly_cell_index < 0 || p_poly_cell_index >= _poly_cell_indices.size(), "ArrayPolyMesh4D: Dimension is out of range.");
+	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= _poly_cell_indices[p_poly_cell_index].size(), "ArrayPolyMesh4D: Index is out of range.");
+	// Before deleting this poly cell element, we need to delete anything in higher dimensions that reference it.
+	const int32_t next_dim = p_poly_cell_index + 1;
+	if (next_dim < _poly_cell_indices.size()) {
+		// Collect indices in next_dim whose elements reference p_index.
+		Vector<int32_t> to_delete;
+		const Vector<PackedInt32Array> &next_level = _poly_cell_indices[next_dim];
+		for (int32_t j = 0; j < next_level.size(); j++) {
+			const PackedInt32Array &refs = next_level[j];
+			for (int32_t k = 0; k < refs.size(); k++) {
+				if (refs[k] == p_index) {
+					to_delete.push_back(j);
+					break;
+				}
+			}
+		}
+		// Delete in reverse order so that earlier indices are not shifted by later removals.
+		for (int32_t i = to_delete.size() - 1; i >= 0; i--) {
+			_delete_poly_cell_element_internal(next_dim, to_delete[i]);
+		}
+	}
+	// Delete any corresponding elements in the associated arrays for this poly cell dimension.
+	if (p_poly_cell_index == 0) {
+		// For border faces (poly cell index 0), delete from the seam faces.
+		if (!_seam_face_indices.is_empty()) {
+			HashSet<int32_t> adjusted_seam_face_indices;
+			for (const int32_t face_index : _seam_face_indices) {
+				if (face_index == p_index) {
+					continue;
+				}
+				adjusted_seam_face_indices.insert(face_index > p_index ? face_index - 1 : face_index);
+			}
+			_seam_face_indices = adjusted_seam_face_indices;
+		}
+	} else if (p_poly_cell_index == 1) {
+		// For boundary cells (poly cell index 1), delete from the boundary normals, vertex normals, and texture map.
+		if (p_index < _poly_cell_boundary_normals.size()) {
+			PackedVector4Array adjusted_boundary_normals;
+			adjusted_boundary_normals.resize(_poly_cell_boundary_normals.size() - 1);
+			int64_t target_index = 0;
+			for (int64_t source_index = 0; source_index < _poly_cell_boundary_normals.size(); source_index++) {
+				if (source_index == p_index) {
+					continue;
+				}
+				adjusted_boundary_normals.set(target_index, _poly_cell_boundary_normals[source_index]);
+				target_index++;
+			}
+			_poly_cell_boundary_normals = adjusted_boundary_normals;
+		}
+		if (p_index < _poly_cell_vertex_normals.size()) {
+			_poly_cell_vertex_normals.remove_at(p_index);
+		}
+		if (p_index < _poly_cell_texture_map.size()) {
+			_poly_cell_texture_map.remove_at(p_index);
+		}
+	}
+	// Remove the element at p_index from _poly_cell_indices[p_dimension].
+	Vector<PackedInt32Array> dim_data = _poly_cell_indices[p_poly_cell_index];
+	dim_data.remove_at(p_index);
+	_poly_cell_indices.set(p_poly_cell_index, dim_data);
+	// Fix up references in next_dim by decrementing any index greater than p_index.
+	if (next_dim < _poly_cell_indices.size()) {
+		Vector<PackedInt32Array> next_dim_data = _poly_cell_indices[next_dim];
+		for (int32_t j = 0; j < next_dim_data.size(); j++) {
+			PackedInt32Array refs = next_dim_data[j];
+			bool changed = false;
+			for (int32_t k = 0; k < refs.size(); k++) {
+				if (refs[k] > p_index) {
+					refs.set(k, refs[k] - 1);
+					changed = true;
+				}
+			}
+			if (changed) {
+				next_dim_data.set(j, refs);
+			}
+		}
+		_poly_cell_indices.set(next_dim, next_dim_data);
+	}
+	// Keep dimensions normalized by trimming from the first empty dimension onward.
+	// In a valid poly mesh, once a dimension is empty, all higher dimensions must also be empty.
+	for (int32_t dim_index = 0; dim_index < _poly_cell_indices.size(); dim_index++) {
+		if (_poly_cell_indices[dim_index].is_empty()) {
+			_poly_cell_indices.resize(dim_index);
+			break;
+		}
+	}
+}
+
 void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radians, const bool p_discard_seams_within_islands) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate seam faces because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate seam faces for an invalid mesh.");
@@ -1250,6 +1423,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_flat_shading_normals, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("make_double_sided", "idempotent"), &ArrayPolyMesh4D::make_double_sided, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("make_single_volume_from_all_cells"), &ArrayPolyMesh4D::make_single_volume_from_all_cells);
+	ClassDB::bind_method(D_METHOD("delete_poly_element", "dimension", "index"), &ArrayPolyMesh4D::delete_poly_element);
 
 	ClassDB::bind_method(D_METHOD("calculate_seam_faces", "angle_threshold_radians", "discard_seams_within_islands"), &ArrayPolyMesh4D::calculate_seam_faces, DEFVAL(Math_TAU / 8.0), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("collect_cells_in_island", "start_cell"), &ArrayPolyMesh4D::collect_cells_in_island);

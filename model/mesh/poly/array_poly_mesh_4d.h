@@ -44,6 +44,9 @@ private:
 	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot);
 	Vector<PackedInt32Array> _get_face_to_cell_map() const;
 	PackedInt32Array _collect_cells_in_island_internal(const int64_t p_start_cell, const Vector<PackedInt32Array> &p_face_to_cell_map);
+	void _delete_edge_internal(const int32_t p_index);
+	void _delete_vertex_internal(const int32_t p_index);
+	void _delete_poly_cell_element_internal(const int32_t p_dimension, const int32_t p_index);
 	bool _unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert);
 	void _unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing);
 	void _fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb);
@@ -65,6 +68,8 @@ public:
 	void set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals = true);
 	void make_double_sided(const bool p_idempotent = true);
 	PackedInt32Array make_single_volume_from_all_cells() const;
+	void delete_poly_element(const int32_t p_dimension, const int32_t p_index);
+
 	void calculate_seam_faces(const double p_angle_threshold_radians = Math_TAU / 8.0, const bool p_discard_seams_within_islands = false);
 	PackedInt32Array collect_cells_in_island(const int64_t p_start_cell);
 	Vector<PackedInt32Array> collect_all_islands();

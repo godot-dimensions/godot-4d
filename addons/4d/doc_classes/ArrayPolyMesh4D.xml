@@ -56,6 +56,14 @@
 				Before running this function, ensure that the seams are up to date. You can set seams manually, or calculate seams based on the angles between cells using [method calculate_seam_faces].
 			</description>
 		</method>
+		<method name="delete_poly_element">
+			<return type="void" />
+			<param index="0" name="dimension" type="int" />
+			<param index="1" name="index" type="int" />
+			<description>
+				Deletes the specified element from the poly mesh data. The [param dimension] can be 0 for vertices, 1 for edges, 2 for faces, 3 for cells, and 4 for hypervolumes. The [param index] is the index of the element to delete within its dimension. For example, [code]0, 0[/code] deletes vertex 0, [code]1, 5[/code] deletes edge 5, [code]2, 7[/code] deletes face 7, and so on. All higher-dimensional elements that reference the deleted element will also be recursively deleted, and indices will be adjusted to keep the poly mesh data consistent.
+			</description>
+		</method>
 		<method name="make_double_sided">
 			<return type="void" />
 			<param index="0" name="idempotent" type="bool" default="true" />
