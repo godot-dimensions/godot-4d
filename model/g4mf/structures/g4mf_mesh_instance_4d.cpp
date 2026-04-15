@@ -24,7 +24,7 @@ MeshInstance4D *G4MFMeshInstance4D::import_generate_mesh_instance(const Ref<G4MF
 	}
 	const TypedArray<G4MFMeshSurface4D> g4mf_mesh_surfaces = g4mf_mesh->get_surfaces();
 	const TypedArray<G4MFMaterial4D> state_g4mf_materials = p_g4mf_state->get_g4mf_materials();
-	const int64_t mat_and_surface_count = MAX(_material_indices.size(), (int64_t)g4mf_mesh_surfaces.size());
+	const int64_t mat_and_surface_count = MIN(_material_indices.size(), (int64_t)g4mf_mesh_surfaces.size());
 	for (int64_t surface_index = 0; surface_index < mat_and_surface_count; surface_index++) {
 		int material_index = _material_indices[surface_index];
 		if (material_index == -1) {
