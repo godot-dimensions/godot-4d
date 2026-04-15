@@ -12,8 +12,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	G4MFDocument4D::CompressionFormat get_compression_format() const;
-	void set_compression_format(const G4MFDocument4D::CompressionFormat p_compression_format);
+	G4MFDocument4D::EncodingFormat get_encoding_format() const;
+	void set_encoding_format(const G4MFDocument4D::EncodingFormat p_encoding_format);
 
 	G4MFState4D::ExternalDataMode get_external_data_mode() const { return _external_data_mode; }
 	void set_external_data_mode(const G4MFState4D::ExternalDataMode p_external_data_mode) { _external_data_mode = p_external_data_mode; }

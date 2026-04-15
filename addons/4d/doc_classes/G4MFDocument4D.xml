@@ -91,8 +91,9 @@
 		</method>
 	</methods>
 	<members>
-		<member name="compression_format" type="int" setter="set_compression_format" getter="get_compression_format" enum="G4MFDocument4D.CompressionFormat" default="0">
-			The compression format to use when exporting a binary G4MF file or byte array. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays. The [code]".g4tf"[/code] Good 4D model Text File format is always uncompressed. See [enum CompressionFormat] for the available formats. The default is [constant COMPRESSION_FORMAT_NONE], which does not compress the G4MF data.
+		<member name="encoding_format" type="int" setter="set_encoding_format" getter="get_encoding_format" enum="G4MFDocument4D.EncodingFormat" default="0">
+			The encoding format to use when exporting a binary G4MF file or byte array. This applies to binary buffers, the chunks of a binary G4MF [code]".g4b"[/code] file, or the chunks of a binary G4MF in-memory byte array.
+			See [enum EncodingFormat] for the available formats. The default is [constant ENCODING_FORMAT_NONE], which does not compress or encrypt the G4MF data.
 		</member>
 		<member name="max_nested_scene_depth" type="int" setter="set_max_nested_scene_depth" getter="get_max_nested_scene_depth" default="-1">
 			How to deal with nested Godot scenes when exporting to G4MF, and how to deal with nested G4MF models when importing as a Godot scene. See the [G4MFModel4D] class for more information.
@@ -104,11 +105,11 @@
 		</member>
 	</members>
 	<constants>
-		<constant name="COMPRESSION_FORMAT_NONE" value="0" enum="CompressionFormat">
-			Do not compress the G4MF data when exporting a binary G4MF file or byte array. This is the default.
+		<constant name="ENCODING_FORMAT_NONE" value="0" enum="EncodingFormat">
+			Plainly encode (do not compress or encrypt) the G4MF data when exporting. This applies to binary buffers, the chunks of a binary G4MF [code]".g4b"[/code] file, or the chunks of a binary G4MF in-memory byte array. This is the default.
 		</constant>
-		<constant name="COMPRESSION_FORMAT_ZSTD" value="1" enum="CompressionFormat">
-			Compress the binary G4MF data using Zstandard compression. This only applies to the chunks of the [code]".g4b"[/code] Good 4D model Binary file format, or in-memory byte arrays.
+		<constant name="ENCODING_FORMAT_ZSTD" value="1" enum="EncodingFormat">
+			Compress the binary G4MF data using Zstandard compression. This applies to binary buffers, the chunks of a binary G4MF [code]".g4b"[/code] file, or the chunks of a binary G4MF in-memory byte array. This can significantly reduce the file size of the exported G4MF data, at the cost of an additional dependency for importers.
 		</constant>
 	</constants>
 </class>
