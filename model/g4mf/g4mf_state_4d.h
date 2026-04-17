@@ -96,7 +96,7 @@ public:
 	int append_g4mf_node(Ref<G4MFNode4D> p_node);
 	int get_node_index(const Node4D *p_node);
 	bool has_unique_name(const String &p_name) const { return _unique_names.has(p_name); }
-	String reserve_unique_name(const String &p_requested_name);
+	String reserve_unique_name(const String &p_requested_name, const bool p_show_warning = true);
 	bool unreserve_unique_name(const String &p_name);
 
 	int get_declared_dimension() const { return _declared_dimension; }

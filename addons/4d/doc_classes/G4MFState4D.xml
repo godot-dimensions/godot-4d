@@ -51,8 +51,9 @@
 		<method name="reserve_unique_name">
 			<return type="String" />
 			<param index="0" name="requested_name" type="String" />
+			<param index="1" name="show_warning" type="bool" default="true" />
 			<description>
-				Reserves a unique name based on the requested name. This allows you to create a unique name for a node or resource in the G4MF file without conflicting with other names. If the requested name is already in use, a number will be appended to the name to make it unique. The number will be incremented until a unique name is found. The returned name is guaranteed to be unique relative to already reserved names.
+				Reserves a unique name based on the requested name. This allows you to create a unique name for a node or resource in the G4MF file without conflicting with other names. If the requested name is already in use, a number will be appended to the name to make it unique. The number will be incremented until a unique name is found. The returned name is guaranteed to be unique relative to already reserved names. If [param show_warning] is [code]true[/code] (default), a warning will be printed when the requested name is already in use and a number needs to be appended to make it unique.
 			</description>
 		</method>
 		<method name="should_separate_resource_files" qualifiers="const">

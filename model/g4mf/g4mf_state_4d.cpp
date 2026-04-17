@@ -23,7 +23,7 @@ int G4MFState4D::get_node_index(const Node4D *p_node) {
 	return -1;
 }
 
-String G4MFState4D::reserve_unique_name(const String &p_requested_name) {
+String G4MFState4D::reserve_unique_name(const String &p_requested_name, const bool p_show_warning) {
 	String unique_name = p_requested_name;
 	if (_unique_names.has(unique_name)) {
 		uint64_t discriminator = 2;
@@ -31,7 +31,9 @@ String G4MFState4D::reserve_unique_name(const String &p_requested_name) {
 			unique_name = p_requested_name + String::num_uint64(discriminator);
 			discriminator++;
 		}
-		WARN_PRINT("G4MFState4D: The requested name " + p_requested_name + " is already in use. The name " + unique_name + " will be used instead.");
+		if (p_show_warning) {
+			WARN_PRINT("G4MFState4D: The requested name " + p_requested_name + " is already in use. The name " + unique_name + " will be used instead.");
+		}
 	}
 	_unique_names.insert(unique_name);
 	return unique_name;
@@ -114,7 +116,7 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_g4mf_node", "node"), &G4MFState4D::append_g4mf_node);
 	ClassDB::bind_method(D_METHOD("get_node_index", "node"), &G4MFState4D::get_node_index);
 	ClassDB::bind_method(D_METHOD("has_unique_name", "name"), &G4MFState4D::has_unique_name);
-	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested_name"), &G4MFState4D::reserve_unique_name);
+	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested_name", "show_warning"), &G4MFState4D::reserve_unique_name, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("unreserve_unique_name", "name"), &G4MFState4D::unreserve_unique_name);
 
 	ClassDB::bind_method(D_METHOD("get_declared_dimension"), &G4MFState4D::get_declared_dimension);
