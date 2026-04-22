@@ -4,6 +4,12 @@
 
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_set.hpp>
+#elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
+#include "servers/rendering_server.h"
+#else
+#include "servers/rendering/rendering_server.h"
+#endif
 #endif
 
 PackedInt32Array Mesh4D::deduplicate_edge_indices(const PackedInt32Array &p_items) {
@@ -100,8 +106,16 @@ Ref<WireMesh4D> Mesh4D::to_wire_mesh() {
 Ref<ArrayMesh> Mesh4D::get_cross_section_mesh() {
 	if (_is_cross_section_mesh_dirty || _cross_section_mesh.is_null()) {
 		_cross_section_mesh.instantiate();
+		const String mesh_path_or_name = get_path().is_empty() ? get_name() : get_path();
+		const String cross_section_hint = mesh_path_or_name + String(" Cross-Section Mesh");
+		_cross_section_mesh->set_name(cross_section_hint);
 		update_cross_section_mesh();
 		_is_cross_section_mesh_dirty = false;
+#if GODOT_MODULE
+		if (RenderingServer::get_singleton() != nullptr && _cross_section_mesh->get_rid().is_valid()) {
+			RenderingServer::get_singleton()->mesh_set_path(_cross_section_mesh->get_rid(), cross_section_hint);
+		}
+#endif
 	}
 	return _cross_section_mesh;
 }

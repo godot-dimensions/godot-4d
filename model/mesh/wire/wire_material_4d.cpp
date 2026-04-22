@@ -2,6 +2,16 @@
 
 #include "../../../render/cross_section/wireframe_cross_section_shader.glsl.gen.h"
 
+#if GDEXTENSION
+#include <godot_cpp/classes/rendering_server.hpp>
+#elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
+#include "servers/rendering_server.h"
+#else
+#include "servers/rendering/rendering_server.h"
+#endif
+#endif
+
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
 #if GDEXTENSION
 #include <godot_cpp/classes/project_settings.hpp>
@@ -94,7 +104,11 @@ Ref<Shader> WireMaterial4D::_cross_section_shader;
 
 void WireMaterial4D::init_shaders() {
 	_cross_section_shader.instantiate();
+	_cross_section_shader->set_name(String("Wireframe Cross-Section Shader"));
 	_cross_section_shader->set_code(wireframe_cross_section_shader_shader_glsl);
+	if (RenderingServer::get_singleton() != nullptr) {
+		RenderingServer::get_singleton()->shader_set_path_hint(_cross_section_shader->get_rid(), String("Wireframe Cross-Section Shader"));
+	}
 }
 
 void WireMaterial4D::cleanup_shaders() {

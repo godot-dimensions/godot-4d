@@ -3,6 +3,16 @@
 #include "../../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
 
+#if GDEXTENSION
+#include <godot_cpp/classes/rendering_server.hpp>
+#elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
+#include "servers/rendering_server.h"
+#else
+#include "servers/rendering/rendering_server.h"
+#endif
+#endif
+
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
 #if GDEXTENSION
 #include <godot_cpp/classes/project_settings.hpp>
@@ -185,7 +195,11 @@ Ref<Shader> TetraMaterial4D::_cross_section_shader;
 
 void TetraMaterial4D::init_shaders() {
 	_cross_section_shader.instantiate();
+	_cross_section_shader->set_name(String("Tetra Cross-Section Shader"));
 	_cross_section_shader->set_code(tetra_cross_section_shader_shader_glsl);
+	if (RenderingServer::get_singleton() != nullptr) {
+		RenderingServer::get_singleton()->shader_set_path_hint(_cross_section_shader->get_rid(), String("Tetra Cross-Section Shader"));
+	}
 }
 
 void TetraMaterial4D::cleanup_shaders() {

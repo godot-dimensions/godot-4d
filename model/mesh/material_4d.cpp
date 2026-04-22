@@ -160,6 +160,8 @@ void Material4D::resize_albedo_color_array(const int64_t p_size, const Color &p_
 Ref<ShaderMaterial> Material4D::get_cross_section_material() {
 	if (_cross_section_material.is_null()) {
 		_cross_section_material.instantiate();
+		const String material_path_or_name = get_path().is_empty() ? get_name() : get_path();
+		_cross_section_material->set_name(material_path_or_name + String(" Cross-Section Material"));
 		update_cross_section_material();
 	}
 	return _cross_section_material;
