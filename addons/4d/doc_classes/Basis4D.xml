@@ -400,6 +400,14 @@
 				Transforms the given [param vector] from the local space of the [param basis] [Basis4D] to global space.
 			</description>
 		</method>
+		<method name="xform_array" qualifiers="static">
+			<return type="PackedVector4Array" />
+			<param index="0" name="basis" type="Projection" />
+			<param index="1" name="vector_array" type="PackedVector4Array" />
+			<description>
+				Transforms the given [param vector_array] of [Vector4]s from the local space of the [param basis] [Basis4D] to global space. This is more efficient than calling [method xform] on each vector individually.
+			</description>
+		</method>
 		<method name="xform_inv" qualifiers="static">
 			<return type="Vector4" />
 			<param index="0" name="basis" type="Projection" />

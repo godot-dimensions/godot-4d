@@ -48,6 +48,10 @@ Vector4 godot_4d_bind::Basis4D::xform_transposed(const Projection &p_basis, cons
 	return ::Basis4D(p_basis).xform_transposed(p_vector);
 }
 
+PackedVector4Array godot_4d_bind::Basis4D::xform_array(const Projection &p_basis, const PackedVector4Array &p_vector_array) {
+	return ::Basis4D(p_basis).xform_array(p_vector_array);
+}
+
 // Rotation methods.
 
 AABB godot_4d_bind::Basis4D::rotate_bivector(const Projection &p_basis, const AABB &p_bivector) {
@@ -251,6 +255,7 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform", "basis", "vector"), &godot_4d_bind::Basis4D::xform);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_inv", "basis", "vector"), &godot_4d_bind::Basis4D::xform_inv);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_transposed", "basis", "vector"), &godot_4d_bind::Basis4D::xform_transposed);
+	ClassDB::bind_static_method("Basis4D", D_METHOD("xform_array", "basis", "vector_array"), &godot_4d_bind::Basis4D::xform_array);
 	// Rotation methods.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("rotate_bivector", "basis", "bivector"), &godot_4d_bind::Basis4D::rotate_bivector);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("rotate_plane_global", "basis", "plane_from", "plane_to", "angle"), &godot_4d_bind::Basis4D::rotate_plane_global);

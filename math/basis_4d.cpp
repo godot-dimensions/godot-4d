@@ -79,6 +79,15 @@ Vector4 Basis4D::xform_transposed(const Vector4 &p_vector) const {
 			w.dot(p_vector));
 }
 
+PackedVector4Array Basis4D::xform_array(const PackedVector4Array &p_vector_array) const {
+	PackedVector4Array ret;
+	ret.resize(p_vector_array.size());
+	for (int64_t i = 0; i < p_vector_array.size(); i++) {
+		ret.set(i, xform(p_vector_array[i]));
+	}
+	return ret;
+}
+
 // Rotation methods.
 
 Bivector4D Basis4D::rotate_bivector(const Bivector4D &p_bivector) const {

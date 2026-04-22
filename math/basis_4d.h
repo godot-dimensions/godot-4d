@@ -37,6 +37,7 @@ struct _NO_DISCARD_ Basis4D {
 	Vector4 xform(const Vector4 &p_vector) const;
 	Vector4 xform_inv(const Vector4 &p_vector) const;
 	Vector4 xform_transposed(const Vector4 &p_vector) const;
+	PackedVector4Array xform_array(const PackedVector4Array &p_vector_array) const;
 
 	// Rotation methods.
 	Bivector4D rotate_bivector(const Bivector4D &p_bivector) const;
