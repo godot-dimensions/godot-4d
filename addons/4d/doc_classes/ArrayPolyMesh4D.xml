@@ -60,7 +60,7 @@
 		</method>
 		<method name="calculate_boundary_normals">
 			<return type="void" />
-			<param index="0" name="normals_mode" type="int" enum="ArrayPolyMesh4D.ComputeNormalsMode" />
+			<param index="0" name="normals_mode" type="int" enum="ArrayPolyMesh4D.ComputeNormalsMode" default="0" />
 			<param index="1" name="keep_existing" type="bool" default="false" />
 			<description>
 				Calculates the normals of the polyhedral cells. Boundary normals define which side of the cell is the front side, and therefore should be drawn. Boundary normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell.
@@ -129,11 +129,20 @@
 		</method>
 		<method name="set_flat_shading_normals">
 			<return type="void" />
-			<param index="0" name="normals_mode" type="int" enum="ArrayPolyMesh4D.ComputeNormalsMode" />
+			<param index="0" name="normals_mode" type="int" enum="ArrayPolyMesh4D.ComputeNormalsMode" default="0" />
 			<param index="1" name="recalculate_boundary_normals" type="bool" default="true" />
 			<description>
 				Sets the polyhedral mesh to use flat shading by setting all vertex instance normals to match their corresponding boundary cell normal. This gives the mesh a faceted appearance, where each polyhedral cell is shaded uniformly.
-				If [param recalculate_boundary_normals] is [code]true[/code], the method will first recalculate the boundary normals using [method calculate_boundary_normals] before setting the vertex instance normals.
+				If [param recalculate_boundary_normals] is [code]true[/code], or if the boundary normals are outdated, the method will first recalculate the boundary normals using [method calculate_boundary_normals] before setting the vertex instance normals, passing the given [param normals_mode] to that function. If boundary normals are already up to date and [param recalculate_boundary_normals] is [code]false[/code], the existing boundary normals will be used, and [param normals_mode] will be ignored.
+			</description>
+		</method>
+		<method name="set_smooth_shading_normals">
+			<return type="void" />
+			<param index="0" name="normals_mode" type="int" enum="ArrayPolyMesh4D.ComputeNormalsMode" default="0" />
+			<param index="1" name="recalculate_boundary_normals" type="bool" default="true" />
+			<description>
+				Sets the polyhedral mesh to use smooth shading by setting all vertex instance normals to be the average of the normals of the boundary cells that share the vertex within the same island. Note that seams are considered sharp edges that separate islands, so normals will not be averaged across islands formed by seams. This gives the mesh a smooth appearance, where lighting angles are calculated to create a blended shading effect across cells.
+				If [param recalculate_boundary_normals] is [code]true[/code], or if the boundary normals are outdated, the method will first recalculate the boundary normals using [method calculate_boundary_normals] before setting the vertex instance normals, passing the given [param normals_mode] to that function. If boundary normals are already up to date and [param recalculate_boundary_normals] is [code]false[/code], the existing boundary normals will be used, and [param normals_mode] will be ignored.
 			</description>
 		</method>
 		<method name="transform_texture_map">

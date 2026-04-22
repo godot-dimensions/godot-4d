@@ -66,8 +66,9 @@ public:
 	int append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 
-	void calculate_boundary_normals(const ComputeNormalsMode p_mode, const bool p_keep_existing = false);
-	void set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals = true);
+	void calculate_boundary_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_keep_existing = false);
+	void set_flat_shading_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_recalculate_boundary_normals = true);
+	void set_smooth_shading_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_recalculate_boundary_normals = true);
 	void make_double_sided(const bool p_idempotent = true);
 	PackedInt32Array make_single_cell_from_all_faces() const;
 	PackedInt32Array make_single_volume_from_all_cells() const;

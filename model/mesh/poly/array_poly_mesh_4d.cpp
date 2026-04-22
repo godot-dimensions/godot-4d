@@ -183,6 +183,52 @@ void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, 
 	poly_mesh_clear_cache();
 }
 
+void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
+	_poly_cell_vertex_normals.clear();
+	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
+	// Step 1: Prepare the data arrays which will be used by this function.
+	if (p_recalculate_boundary_normals || _poly_cell_boundary_normals.size() != _poly_cell_indices[1].size()) {
+		calculate_boundary_normals(p_mode);
+	}
+	_poly_cell_vertex_normals.resize(_poly_cell_boundary_normals.size());
+	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
+	PackedVector4Array vertex_normals;
+	vertex_normals.resize(_poly_cell_vertices.size());
+	// Step 2: Iterate through each island separately such that seams (if they exist)
+	// are respected and are treated as sharp edges that should not be smoothed across.
+	const Vector<PackedInt32Array> islands = collect_all_islands();
+	for (int64_t island_index = 0; island_index < islands.size(); island_index++) {
+		const PackedInt32Array &cells_in_island = islands[island_index];
+		// Step 3: Calculate the average normal of each vertex across each usage in cells in this island.
+		for (int64_t vertex_index = 0; vertex_index < _poly_cell_vertices.size(); vertex_index++) {
+			vertex_normals.set(vertex_index, Vector4(0.0, 0.0, 0.0, 0.0));
+		}
+		for (const int32_t cell_index : cells_in_island) {
+			const PackedInt32Array &vertex_indices_for_cell = cell_vertex_indices[cell_index];
+			const Vector4 &cell_normal = _poly_cell_boundary_normals[cell_index];
+			for (const int32_t vertex_index : vertex_indices_for_cell) {
+				vertex_normals.set(vertex_index, vertex_normals[vertex_index] + cell_normal);
+			}
+		}
+		for (int64_t vertex_index = 0; vertex_index < _poly_cell_vertices.size(); vertex_index++) {
+			vertex_normals.set(vertex_index, vertex_normals[vertex_index].normalized());
+		}
+		// Step 4: Assign each cell's vertex normals to the average normal of the vertices that make up that cell.
+		for (const int32_t cell_index : cells_in_island) {
+			const PackedInt32Array &vertex_indices_for_cell = cell_vertex_indices[cell_index];
+			PackedVector4Array vertex_normals_for_cell;
+			const int64_t cell_vertex_count = vertex_indices_for_cell.size();
+			vertex_normals_for_cell.resize(cell_vertex_count);
+			for (int64_t vertex_in_cell = 0; vertex_in_cell < cell_vertex_count; vertex_in_cell++) {
+				vertex_normals_for_cell.set(vertex_in_cell, vertex_normals[vertex_indices_for_cell[vertex_in_cell]]);
+			}
+			_poly_cell_vertex_normals.set(cell_index, vertex_normals_for_cell);
+		}
+	}
+	poly_mesh_clear_cache();
+}
+
 void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot make double sided because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot make double sided for an invalid mesh.");
@@ -1512,8 +1558,9 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertex, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertices, DEFVAL(true));
 
-	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "normals_mode", "keep_existing"), &ArrayPolyMesh4D::calculate_boundary_normals, DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_flat_shading_normals, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "normals_mode", "keep_existing"), &ArrayPolyMesh4D::calculate_boundary_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_flat_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("set_smooth_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_smooth_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("make_double_sided", "idempotent"), &ArrayPolyMesh4D::make_double_sided, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("make_single_volume_from_all_cells"), &ArrayPolyMesh4D::make_single_volume_from_all_cells);
 	ClassDB::bind_method(D_METHOD("delete_poly_element", "dimension", "index"), &ArrayPolyMesh4D::delete_poly_element);

@@ -672,6 +672,7 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices_bind(c
 
 void PolyMesh4D::poly_mesh_clear_cache(const bool p_normals_only) {
 	_simplex_cell_boundary_normals_cache.clear();
+	_simplex_cell_vertex_normals_cache.clear();
 	reset_mesh_data_validation();
 	// Normals can be computed separately from the rest, so allow resetting just them (and mark cross section dirty).
 	if (p_normals_only) {
@@ -679,6 +680,7 @@ void PolyMesh4D::poly_mesh_clear_cache(const bool p_normals_only) {
 		return;
 	}
 	_simplex_cell_indices_cache.clear();
+	_simplex_cell_indices_source_poly_cells.clear();
 	_simplex_cell_uvw_texture_map_cache.clear();
 	_simplex_cell_vertices_cache.clear();
 	tetra_mesh_clear_cache();
