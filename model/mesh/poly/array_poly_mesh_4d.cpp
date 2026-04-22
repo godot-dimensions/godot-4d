@@ -197,6 +197,23 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 	poly_mesh_clear_cache();
 }
 
+PackedInt32Array ArrayPolyMesh4D::make_single_cell_from_all_faces() const {
+	ERR_FAIL_COND_V_MSG(_poly_cell_indices.size() < 1, PackedInt32Array(), "ArrayPolyMesh4D: Cannot make single cell from all faces because there are no faces.");
+	const Vector<PackedInt32Array> &faces = _poly_cell_indices[0];
+	const int64_t face_count = faces.size();
+	PackedInt32Array cell_indices;
+	cell_indices.resize(face_count);
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		cell_indices.set(face_index, face_index);
+	}
+	// For a deterministic cell orientation normal, the first two boundary cells must share a face.
+	bool success = Math4D::ensure_first_two_indices_share_common_int32(cell_indices, faces);
+	if (!success) {
+		ERR_PRINT("ArrayPolyMesh4D: Failed to make single cell from all faces because the first face does not share an edge with any other face.");
+	}
+	return cell_indices;
+}
+
 PackedInt32Array ArrayPolyMesh4D::make_single_volume_from_all_cells() const {
 	ERR_FAIL_COND_V_MSG(_poly_cell_indices.size() < 2, PackedInt32Array(), "ArrayPolyMesh4D: Cannot make single volume from all cells because there are no boundary cells.");
 	const Vector<PackedInt32Array> &boundary_cells = _poly_cell_indices[1];
@@ -667,6 +684,11 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 	for (int64_t already_mapped_cell_index_index = 0; already_mapped_cell_index_index < p_current_cell_index_index; already_mapped_cell_index_index++) {
 		const int32_t already_mapped_cell_index = p_cells_in_island[already_mapped_cell_index_index];
 		const PackedInt32Array &already_mapped_cell_data = _poly_cell_indices[1][already_mapped_cell_index];
+		const PackedInt32Array &already_mapped_cell_verts = p_cell_vert[already_mapped_cell_index];
+		const PackedVector3Array &already_mapped_texture_map = _poly_cell_texture_map[already_mapped_cell_index];
+		if (already_mapped_cell_verts.is_empty() || already_mapped_texture_map.is_empty()) {
+			continue;
+		}
 		int64_t cell_data_index;
 		int64_t already_mapped_cell_data_index;
 		const int32_t common_face = Math4D::find_common_int32(cell_data, already_mapped_cell_data, cell_data_index, already_mapped_cell_data_index);
@@ -691,11 +713,15 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 				tolerance = 1e-38; // Lower bound based on 32-bit floats.
 			}
 			ERR_FAIL_COND_V_MSG(Math::abs(world_coord.determinant()) < tolerance, false, "ArrayPolyMesh4D: Cell is degenerate.");
-			const PackedInt32Array &already_mapped_cell_verts = p_cell_vert[already_mapped_cell_index];
-			const PackedVector3Array &already_mapped_texture_map = _poly_cell_texture_map[already_mapped_cell_index];
-			const Vector3 texcoord_start = already_mapped_texture_map[already_mapped_cell_verts.find(cell_span[0])];
-			const Vector3 texcoord_x = already_mapped_texture_map[already_mapped_cell_verts.find(cell_span[1])] - texcoord_start;
-			const Vector3 texcoord_y = already_mapped_texture_map[already_mapped_cell_verts.find(cell_span[2])] - texcoord_start;
+			const int64_t texcoord_start_index = already_mapped_cell_verts.find(cell_span[0]);
+			const int64_t texcoord_x_index = already_mapped_cell_verts.find(cell_span[1]);
+			const int64_t texcoord_y_index = already_mapped_cell_verts.find(cell_span[2]);
+			if (texcoord_start_index < 0 || texcoord_x_index < 0 || texcoord_y_index < 0) {
+				continue;
+			}
+			const Vector3 texcoord_start = already_mapped_texture_map[texcoord_start_index];
+			const Vector3 texcoord_x = already_mapped_texture_map[texcoord_x_index] - texcoord_start;
+			const Vector3 texcoord_y = already_mapped_texture_map[texcoord_y_index] - texcoord_start;
 			// This could be `length_squared()`, so long as the world's lengths were also changed, but then it would
 			// fail for vertex separations around 10^-9 or smaller, or vertex separations around 10^9 or bigger,
 			// which I think is... not entirely unreasonable of a use case, so let's just use `length()`.
@@ -726,7 +752,9 @@ void ArrayPolyMesh4D::_unwrap_texture_map_island_internal(const PackedInt32Array
 		if (p_keep_existing && !_poly_cell_texture_map[p_cells_in_island[cell_index_index]].is_empty()) {
 			continue;
 		}
-		_unwrap_texture_map_island_cell(p_cells_in_island, cell_index_index, cell_vert);
+		if (!_unwrap_texture_map_island_cell(p_cells_in_island, cell_index_index, cell_vert)) {
+			return;
+		}
 	}
 }
 

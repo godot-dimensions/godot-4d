@@ -296,9 +296,8 @@ Ref<ArrayPolyMesh4D> OFFDocument4D::import_generate_poly_mesh_4d() {
 	Ref<ArrayPolyMesh4D> poly_mesh;
 	poly_mesh.instantiate();
 	poly_mesh->set_poly_cell_vertices(_vertices);
-	if (_cell_face_indices.is_empty()) {
-		ERR_FAIL_COND_V_MSG(_face_vertex_indices.is_empty(), poly_mesh, "OFFDocument4D: This OFF document does not contain any cells or faces, so it cannot be converted to a polyhedral cell mesh. Perhaps this is a vertex-only OFF file, or a 0D or 1D OFF file?");
-		ERR_FAIL_V_MSG(poly_mesh, "OFFDocument4D: This OFF document does not contain any cells, so it cannot be converted to a polyhedral cell mesh. Perhaps this is a 2D or 3D OFF file?");
+	if (_face_vertex_indices.is_empty()) {
+		ERR_FAIL_V_MSG(poly_mesh, "OFFDocument4D: This OFF document does not contain any cells or faces, so it cannot be converted to a polyhedral cell mesh. Perhaps this is a vertex-only OFF file, or a 0D or 1D OFF file?");
 	}
 	// OFF faces reference vertices, but PolyMesh4D faces reference edges.
 	Vector<PackedInt32Array> face_edge_indices;
@@ -316,21 +315,22 @@ Ref<ArrayPolyMesh4D> OFFDocument4D::import_generate_poly_mesh_4d() {
 		}
 		face_edge_indices.set(face_number, this_face_edges);
 	}
-	// OFF cells references faces, and PolyMesh4D cells also reference faces, but we need it in Vector<> format,
-	// and we need to ensure that the first two faces of each cell share a common edge.
-	Vector<PackedInt32Array> cell_face_indices;
-	cell_face_indices.resize(_cell_face_indices.size());
-	for (int64_t cell_number = 0; cell_number < _cell_face_indices.size(); cell_number++) {
-		PackedInt32Array cell_faces = PackedInt32Array(_cell_face_indices[cell_number]);
-		// PolyMesh4D orientation requires the first two faces in each cell to share an edge.
-		Math4D::ensure_first_two_indices_share_common_int32(cell_faces, face_edge_indices);
-		cell_face_indices.set(cell_number, cell_faces);
-	}
 	// Combine the face and cell indices into the unified poly cell indices array.
 	Vector<Vector<PackedInt32Array>> poly_cell_indices;
-	poly_cell_indices.resize(2);
-	poly_cell_indices.set(0, face_edge_indices);
-	poly_cell_indices.set(1, cell_face_indices);
+	poly_cell_indices.append(face_edge_indices);
+	if (_cell_face_indices.size() > 0) {
+		// OFF cells references faces, and PolyMesh4D cells also reference faces, but we need it in Vector<> format,
+		// and we need to ensure that the first two faces of each cell share a common edge.
+		Vector<PackedInt32Array> cell_face_indices;
+		cell_face_indices.resize(_cell_face_indices.size());
+		for (int64_t cell_number = 0; cell_number < _cell_face_indices.size(); cell_number++) {
+			PackedInt32Array cell_faces = PackedInt32Array(_cell_face_indices[cell_number]);
+			// PolyMesh4D orientation requires the first two faces in each cell to share an edge.
+			Math4D::ensure_first_two_indices_share_common_int32(cell_faces, face_edge_indices);
+			cell_face_indices.set(cell_number, cell_faces);
+		}
+		poly_cell_indices.append(cell_face_indices);
+	}
 	poly_mesh->set_poly_cell_indices(poly_cell_indices);
 	// Convert any 3D cell colors into a material. Note: PolyMesh4D doesn't support per-2D-face colors, so we have to ignore those.
 	if (_has_any_cell_colors) {
@@ -346,6 +346,14 @@ Ref<ArrayPolyMesh4D> OFFDocument4D::import_generate_poly_mesh_4d() {
 }
 
 Ref<ArrayTetraMesh4D> OFFDocument4D::import_generate_tetra_mesh_4d() {
+	if (_cell_face_indices.is_empty()) {
+		Ref<ArrayTetraMesh4D> ret;
+		ret.instantiate();
+		ret->set_vertices(_vertices);
+		ERR_FAIL_V_MSG(ret, "OFFDocument4D: This OFF document does not contain any cells, so it cannot be converted to a tetrahedral cell mesh. Perhaps this is a 2D or 3D OFF file?");
+	}
+	// Normal path: Go through PolyMesh4D generation and then convert to TetraMesh4D.
+	// PolyMesh4D has all of the code required to tetrahedralize the OFF polyhedral cells.
 	return import_generate_poly_mesh_4d()->to_array_tetra_mesh();
 }
 

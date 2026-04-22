@@ -67,6 +67,7 @@ public:
 	void calculate_boundary_normals(const ComputeNormalsMode p_mode, const bool p_keep_existing = false);
 	void set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals = true);
 	void make_double_sided(const bool p_idempotent = true);
+	PackedInt32Array make_single_cell_from_all_faces() const;
 	PackedInt32Array make_single_volume_from_all_cells() const;
 	void delete_poly_element(const int32_t p_dimension, const int32_t p_index);
 

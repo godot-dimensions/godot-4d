@@ -90,6 +90,9 @@ void TetraMesh4D::tetra_mesh_clear_cache() {
 bool TetraMesh4D::validate_mesh_data() {
 	const PackedInt32Array cell_indices = get_simplex_cell_indices();
 	const int64_t cell_indices_count = cell_indices.size();
+	if (cell_indices_count == 0) {
+		return true; // Zero cells is allowed, and no need to validate anything else in that case.
+	}
 	if (cell_indices_count % 4 != 0) {
 		return false; // Must be a multiple of 4.
 	}

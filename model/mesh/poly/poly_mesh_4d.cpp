@@ -780,7 +780,11 @@ PackedInt32Array PolyMesh4D::get_edge_indices() {
 
 PackedInt32Array PolyMesh4D::get_simplex_cell_indices() {
 	if (_simplex_cell_indices_cache.is_empty()) {
-		_decompose_boundary_cells_into_simplexes(true);
+		// Only attempt to decompose boundary cells into simplexes if there are boundary cells to decompose.
+		if (get_poly_cell_indices().size() > 1) {
+			// This will populate the simplex indices cache as a side effect.
+			_decompose_boundary_cells_into_simplexes(true);
+		}
 	}
 	return _simplex_cell_indices_cache;
 }
@@ -916,8 +920,14 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 
 PackedVector4Array PolyMesh4D::get_vertices() {
 	if (_simplex_cell_vertices_cache.is_empty()) {
-		// This will populate the vertex cache as a side effect.
-		_decompose_boundary_cells_into_simplexes(true);
+		// Only attempt to decompose boundary cells into simplexes if there are boundary cells to decompose.
+		if (get_poly_cell_indices().size() > 1) {
+			// This will populate the simplex vertices cache as a side effect.
+			_decompose_boundary_cells_into_simplexes(true);
+		} else {
+			// If there are no boundary cells, then we can just use the poly cell vertices directly as the simplex vertices.
+			_simplex_cell_vertices_cache = get_poly_cell_vertices();
+		}
 	}
 	return _simplex_cell_vertices_cache;
 }
