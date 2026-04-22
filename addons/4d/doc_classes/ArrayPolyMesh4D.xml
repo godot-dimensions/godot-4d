@@ -12,6 +12,36 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="append_edge_indices">
+			<return type="int" />
+			<param index="0" name="index_a" type="int" />
+			<param index="1" name="index_b" type="int" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Appends an edge to the polyhedral mesh by specifying the indices of its two endpoint vertices in the [member poly_cell_vertices] array.
+				If [param deduplicate] is [code]true[/code] (default), the method will check if the edge already exists in the [member edge_indices] array and return the index of the existing edge. Edges are considered identical if they have the same elements, regardless of order. If the edge does not exist, it will be appended to the edge indices array and its index will be returned. In both cases, the returned index points to an edge that is topologically equivalent to the input edge, except that the order may be different.
+			</description>
+		</method>
+		<method name="append_edge_points">
+			<return type="int" />
+			<param index="0" name="point_a" type="Vector4" />
+			<param index="1" name="point_b" type="Vector4" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Appends an edge to the polyhedral mesh by specifying the positions of its two endpoint vertices. This is a convenience method that combines the functionality of [method append_vertex] and [method append_edge_indices]. The method will first append the two vertices using [method append_vertex], and then append the edge between them using [method append_edge_indices].
+				If [param deduplicate] is [code]true[/code] (default), the method will check for existing vertices, and check if the edge already exists in the [member edge_indices] array, and return the index of the existing edge. Edges are considered identical if they have the same elements, regardless of order. If the vertices do not exist, they will be appended to the vertices array. If the edge does not exist, it will be appended to the edge indices array and its index will be returned. In all cases, the returned index points to an edge that is topologically equivalent to the input edge, except that the order may be different.
+			</description>
+		</method>
+		<method name="append_poly_cell">
+			<return type="int" />
+			<param index="0" name="dimension" type="int" />
+			<param index="1" name="cell" type="PackedInt32Array" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Appends a polyhedral cell to the mesh by specifying its dimension and the indices of its boundary elements. The [param dimension] specifies the dimension of the cell, where 2 is a face, 3 is a cell, and 4 is a hypervolume. The [param cell] is an array of indices that reference elements of the lower dimension. For example, if appending a 2D face, [param dimension] is 2 and [param cell] contains the indices of the edges that make up the face. If appending a 3D cell, [param dimension] is 3 and [param cell] contains the indices of the faces that make up the cell.
+				If [param deduplicate] is [code]true[/code] (default), the method will check if a cell with the same boundary elements already exists in the mesh and return the index of the existing cell. Cells are considered identical if they have the same boundary elements, regardless of order. If the cell does not exist, it will be appended to the poly cell indices array and its index will be returned. In both cases, the returned index points to a cell that is topologically equivalent to the input cell, except that the order of the boundary elements may be different.
+			</description>
+		</method>
 		<method name="append_vertex">
 			<return type="int" />
 			<param index="0" name="vertex" type="Vector4" />

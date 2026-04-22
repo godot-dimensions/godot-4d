@@ -35,7 +35,7 @@ private:
 	HashSet<int32_t> _seam_face_indices;
 	PackedInt32Array _edge_vertex_indices;
 
-	static int64_t _append_edge_indices_internal(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate, PackedInt32Array &r_edge_indices);
+	static int64_t _append_edge_indices_to_array(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate, PackedInt32Array &r_edge_indices);
 	static int64_t _append_face_internal(const PackedInt32Array &p_face, Vector<PackedInt32Array> &r_all_face_edge_indices);
 	static Vector4 _compute_cell_normal(const PackedInt32Array &p_cell_first_face, const PackedInt32Array &p_cell_second_face, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_vertices);
 	static Vector<PackedInt32Array> _compose_triangles_into_faces(const PackedVector4Array &p_vertices, const Vector<PackedInt32Array> &p_triangle_vertex_indices, PackedInt32Array &r_edge_indices);
@@ -62,6 +62,7 @@ protected:
 public:
 	int64_t append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate = true);
 	int64_t append_edge_indices(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate = true);
+	int64_t append_poly_cell(const int32_t p_dimension, const PackedInt32Array &p_cell, const bool p_deduplicate = true);
 	int append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 

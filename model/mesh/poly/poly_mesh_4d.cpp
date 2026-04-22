@@ -61,11 +61,12 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 	if (poly_cell_dims != 0) {
 		Vector<PackedInt32Array> cells_of_prev_dim;
 		int64_t prev_dim_count = edge_count;
-		for (int64_t dim = 0; dim < poly_cell_dims; dim++) {
-			const Vector<PackedInt32Array> &cells_of_dim = poly_cell_indices[dim];
+		for (int64_t poly_dim_index = 0; poly_dim_index < poly_cell_dims; poly_dim_index++) {
+			const Vector<PackedInt32Array> &cells_of_dim = poly_cell_indices[poly_dim_index];
 			for (int64_t cell_idx = 0; cell_idx < cells_of_dim.size(); cell_idx++) {
 				const PackedInt32Array &cell = cells_of_dim[cell_idx];
-				if (cell.size() < dim + 2) {
+				// Faces (poly_dim_index 0) must have at least 3 edges, cells (poly_dim_index 1) must have at least 4 faces, etc.
+				if (cell.size() < poly_dim_index + 3) {
 					return false;
 				}
 				for (int64_t i = 0; i < cell.size(); i++) {
@@ -74,7 +75,7 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 					}
 				}
 				bool is_common = false;
-				if (dim == 0) {
+				if (poly_dim_index == 0) {
 					is_common = _do_edges_have_common_vertex(edge_indices[cell[0] * 2], edge_indices[cell[0] * 2 + 1], edge_indices[cell[1] * 2], edge_indices[cell[1] * 2 + 1]);
 				} else {
 					int64_t common_in_first = 0;
@@ -85,14 +86,14 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 				if (!is_common) {
 					// This problem may be common so let's give a descriptive error message.
 					const String cell_str = String(Variant(cell));
-					if (dim == 0) {
+					if (poly_dim_index == 0) {
 						ERR_PRINT("The first two edges of face " + cell_str + " do not share a common vertex, therefore orientation is not determinable and the face is invalid.");
-					} else if (dim == 1) {
+					} else if (poly_dim_index == 1) {
 						ERR_PRINT("The first two faces of cell " + itos(cell_idx) + " with data " + cell_str + " do not share a common edge, therefore orientation is not determinable and the cell is invalid.");
-					} else if (dim == 2) {
+					} else if (poly_dim_index == 2) {
 						ERR_PRINT("The first two 3D cells of 4D cell " + cell_str + " do not share a common face, therefore orientation is not determinable and the 4D cell is invalid.");
 					} else {
-						ERR_PRINT("The first two " + itos(dim + 1) + "D cells of " + itos(dim + 2) + "D cell " + cell_str + " do not share a common " + itos(dim) + "D cell, therefore orientation is not determinable and the " + itos(dim + 2) + "D cell is invalid.");
+						ERR_PRINT("The first two " + itos(poly_dim_index + 1) + "D cells of " + itos(poly_dim_index + 2) + "D cell " + cell_str + " do not share a common " + itos(poly_dim_index) + "D cell, therefore orientation is not determinable and the " + itos(poly_dim_index + 2) + "D cell is invalid.");
 					}
 					return false;
 				}
@@ -630,11 +631,41 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_boundary_cell_vertex_indices_bi
 	ERR_FAIL_COND_V(poly_cell_indices.size() < 2, TypedArray<PackedInt32Array>());
 	const PackedInt32Array all_edge_indices = get_edge_indices();
 	ERR_FAIL_COND_V(all_edge_indices.is_empty(), TypedArray<PackedInt32Array>());
-	Vector<PackedInt32Array> vec = _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, p_start_with_canonical_span);
+	const Vector<PackedInt32Array> vec = _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, p_start_with_canonical_span);
 	TypedArray<PackedInt32Array> ret;
 	ret.resize(vec.size());
 	for (int64_t i = 0; i < vec.size(); i++) {
 		ret[i] = vec[i];
+	}
+	return ret;
+}
+
+Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices(const int p_poly_dim_index, const bool p_start_with_canonical_span) {
+	ERR_FAIL_COND_V(!is_mesh_data_valid(), Vector<PackedInt32Array>());
+	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
+	ERR_FAIL_COND_V(p_poly_dim_index < 0 || p_poly_dim_index >= poly_cell_indices.size(), Vector<PackedInt32Array>());
+	const PackedInt32Array &all_edge_indices = get_edge_indices();
+	ERR_FAIL_COND_V(all_edge_indices.is_empty(), Vector<PackedInt32Array>());
+	const Vector<PackedInt32Array> &cells = poly_cell_indices[p_poly_dim_index];
+	Vector<PackedInt32Array> ret;
+	ret.resize(cells.size());
+	for (int64_t cell_index = 0; cell_index < cells.size(); cell_index++) {
+		ret.set(cell_index, _get_vertex_indices_of_poly_cell(poly_cell_indices, all_edge_indices, p_poly_dim_index, cell_index, p_start_with_canonical_span));
+	}
+	return ret;
+}
+
+TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices_bind(const int p_poly_dim_index, const bool p_start_with_canonical_span) {
+	ERR_FAIL_COND_V(!is_mesh_data_valid(), TypedArray<PackedInt32Array>());
+	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
+	ERR_FAIL_COND_V(p_poly_dim_index < 0 || p_poly_dim_index >= poly_cell_indices.size(), TypedArray<PackedInt32Array>());
+	const PackedInt32Array &all_edge_indices = get_edge_indices();
+	ERR_FAIL_COND_V(all_edge_indices.is_empty(), TypedArray<PackedInt32Array>());
+	const Vector<PackedInt32Array> &cells = poly_cell_indices[p_poly_dim_index];
+	TypedArray<PackedInt32Array> ret;
+	ret.resize(cells.size());
+	for (int64_t cell_index = 0; cell_index < cells.size(); cell_index++) {
+		ret[cell_index] = _get_vertex_indices_of_poly_cell(poly_cell_indices, all_edge_indices, p_poly_dim_index, cell_index, p_start_with_canonical_span);
 	}
 	return ret;
 }
@@ -935,6 +966,7 @@ PackedVector4Array PolyMesh4D::get_vertices() {
 void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_face_vertex_indices"), &PolyMesh4D::get_all_face_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
+	ClassDB::bind_method(D_METHOD("get_all_poly_cell_vertex_indices", "poly_dim_index", "start_with_canonical_span"), &PolyMesh4D::get_all_poly_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("poly_mesh_clear_cache", "normals_only"), &PolyMesh4D::poly_mesh_clear_cache, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("to_array_poly_mesh"), &PolyMesh4D::to_array_poly_mesh);
 

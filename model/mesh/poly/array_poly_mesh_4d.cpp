@@ -9,7 +9,7 @@ int64_t ArrayPolyMesh4D::append_edge_points(const Vector4 &p_point_a, const Vect
 	return append_edge_indices(index_a, index_b, p_deduplicate);
 }
 
-int64_t ArrayPolyMesh4D::_append_edge_indices_internal(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate, PackedInt32Array &r_edge_vertex_indices) {
+int64_t ArrayPolyMesh4D::_append_edge_indices_to_array(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate, PackedInt32Array &r_edge_vertex_indices) {
 	const int64_t edge_count = r_edge_vertex_indices.size() / 2;
 	if (p_index_a > p_index_b) {
 		SWAP(p_index_a, p_index_b);
@@ -28,13 +28,67 @@ int64_t ArrayPolyMesh4D::_append_edge_indices_internal(int32_t p_index_a, int32_
 
 int64_t ArrayPolyMesh4D::append_edge_indices(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate) {
 	const int64_t old_edge_count = _edge_vertex_indices.size() / 2;
-	const int64_t new_edge_index = _append_edge_indices_internal(p_index_a, p_index_b, p_deduplicate, _edge_vertex_indices);
-	if (new_edge_index == old_edge_count) {
-		// A new edge was appended! We don't need to clear the poly mesh cache, but TetraMesh4D does cache edges.
-		tetra_mesh_clear_cache();
-		reset_poly_mesh_data_validation();
+	if (p_index_a > p_index_b) {
+		SWAP(p_index_a, p_index_b);
 	}
-	return new_edge_index;
+	if (p_deduplicate) {
+		for (int64_t i = 0; i < old_edge_count; i++) {
+			if (_edge_vertex_indices[i * 2] == p_index_a && _edge_vertex_indices[i * 2 + 1] == p_index_b) {
+				return i;
+			}
+		}
+	}
+	// Append a new edge. We don't need to clear the poly mesh cache, but TetraMesh4D does cache edges.
+	_edge_vertex_indices.append(p_index_a);
+	_edge_vertex_indices.append(p_index_b);
+	tetra_mesh_clear_cache();
+	reset_poly_mesh_data_validation();
+	return old_edge_count;
+}
+
+int64_t ArrayPolyMesh4D::append_poly_cell(const int32_t p_dimension, const PackedInt32Array &p_cell, const bool p_deduplicate) {
+	ERR_FAIL_COND_V_MSG(_poly_cell_vertices.is_empty() || _edge_vertex_indices.is_empty(), -1, "This ArrayPolyMesh4D lacks any 0D vertices or 1D edges, so cannot append a poly cell.");
+	ERR_FAIL_COND_V_MSG(p_dimension < 2, -1, "ArrayPolyMesh4D: Cannot append " + itos(p_dimension) + "D poly cell. For 0D vertices and 1D edges, use the special functions for those.");
+	const int64_t old_mesh_dim = _poly_cell_indices.size() + 1;
+	ERR_FAIL_COND_V_MSG(p_dimension > old_mesh_dim + 1, -1, "ArrayPolyMesh4D: Cannot append a " + itos(p_dimension) + "D poly cell because the mesh currently only has cells up to " + itos(old_mesh_dim) + "D. Cells must be appended in order of dimension, so append the missing " + itos(old_mesh_dim + 1) + "D cell(s) first.");
+	// Check if the elements of the previous dimension referenced by this new cell actually exist.
+	// If inserting a 2D face (`p_dimension == 2`), check edges. If inserting a 3D cell (`p_dimension == 3`), check faces (`_poly_cell_indices[0]`). Etc.
+	const int64_t prev_dim_cell_count = p_dimension == 2 ? _edge_vertex_indices.size() / 2 : _poly_cell_indices[p_dimension - 3].size();
+	for (const int32_t cell_element : p_cell) {
+		ERR_FAIL_INDEX_V_MSG(cell_element, prev_dim_cell_count, -1, "ArrayPolyMesh4D: Cannot append poly cell because it references non-existent elements of the previous dimension.");
+	}
+	// Append the new cell to the poly cell indices, deduplicating if desired.
+	if (p_dimension == old_mesh_dim + 1) {
+		Vector<PackedInt32Array> new_dim;
+		new_dim.append(p_cell);
+		_poly_cell_indices.append(new_dim);
+		return 0;
+	}
+	const int64_t poly_cell_dim_index = p_dimension - 2;
+	Vector<PackedInt32Array> existing_dim = _poly_cell_indices[poly_cell_dim_index];
+	const int64_t existing_cell_count = existing_dim.size();
+	if (p_deduplicate) {
+		// Check for cells made of the same elements, regardless of order.
+		// When appending, we need to preserve the order given, but for deduplication,
+		// it is fine if the order is different, as long as the same elements are present.
+		PackedInt32Array sorted_new_cell = p_cell;
+		sorted_new_cell.sort();
+		for (int64_t existing_cell_index = 0; existing_cell_index < existing_cell_count; existing_cell_index++) {
+			PackedInt32Array existing_cell_copy = PackedInt32Array(existing_dim[existing_cell_index]);
+			if (existing_cell_copy.size() != sorted_new_cell.size()) {
+				continue;
+			}
+			existing_cell_copy.sort();
+			if (existing_cell_copy == sorted_new_cell) {
+				// This existing cell is made of the same elements as the new cell, so consider them duplicates.
+				return existing_cell_index;
+			}
+		}
+	}
+	existing_dim.append(p_cell);
+	_poly_cell_indices.set(poly_cell_dim_index, existing_dim);
+	reset_poly_mesh_data_validation();
+	return existing_cell_count;
 }
 
 int ArrayPolyMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
@@ -1135,7 +1189,7 @@ Vector<PackedInt32Array> ArrayPolyMesh4D::_compose_triangles_into_faces(const Pa
 		PackedInt32Array face_edges;
 		face_edges.resize(face_unique_edges.size());
 		Vector2i last_edge = *(face_unique_edges.begin());
-		face_edges.set(0, _append_edge_indices_internal(last_edge.x, last_edge.y, true, r_edge_vertex_indices));
+		face_edges.set(0, _append_edge_indices_to_array(last_edge.x, last_edge.y, true, r_edge_vertex_indices));
 		face_unique_edges.erase(last_edge);
 		int64_t face_edges_index = 1;
 		while (!face_unique_edges.is_empty()) {
@@ -1143,7 +1197,7 @@ Vector<PackedInt32Array> ArrayPolyMesh4D::_compose_triangles_into_faces(const Pa
 			for (const Vector2i unique_edge : face_unique_edges) {
 				if ((unique_edge.x == last_edge.x) || (unique_edge.x == last_edge.y) || (unique_edge.y == last_edge.x) || (unique_edge.y == last_edge.y)) {
 					// This edge shares a vertex with the last edge, so let's insert it.
-					const int64_t edge_index = _append_edge_indices_internal(unique_edge.x, unique_edge.y, true, r_edge_vertex_indices);
+					const int64_t edge_index = _append_edge_indices_to_array(unique_edge.x, unique_edge.y, true, r_edge_vertex_indices);
 					face_edges.set(face_edges_index, edge_index);
 					face_edges_index++;
 					face_unique_edges.erase(unique_edge);
@@ -1452,6 +1506,9 @@ void ArrayPolyMesh4D::set_poly_cell_vertices(const PackedVector4Array &p_poly_ce
 }
 
 void ArrayPolyMesh4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("append_edge_points", "point_a", "point_b", "deduplicate"), &ArrayPolyMesh4D::append_edge_points, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("append_edge_indices", "index_a", "index_b", "deduplicate"), &ArrayPolyMesh4D::append_edge_indices, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("append_poly_cell", "dimension", "cell", "deduplicate"), &ArrayPolyMesh4D::append_poly_cell, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertex, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertices, DEFVAL(true));
 

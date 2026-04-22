@@ -58,6 +58,8 @@ public:
 	TypedArray<PackedInt32Array> get_all_face_vertex_indices_bind();
 	Vector<PackedInt32Array> get_all_boundary_cell_vertex_indices(const bool p_start_with_canonical_span);
 	TypedArray<PackedInt32Array> get_all_boundary_cell_vertex_indices_bind(const bool p_start_with_canonical_span);
+	Vector<PackedInt32Array> get_all_poly_cell_vertex_indices(const int p_poly_dim_index, const bool p_start_with_canonical_span);
+	TypedArray<PackedInt32Array> get_all_poly_cell_vertex_indices_bind(const int p_poly_dim_index, const bool p_start_with_canonical_span);
 	void poly_mesh_clear_cache(const bool p_normals_only = false);
 	Ref<ArrayPolyMesh4D> to_array_poly_mesh();
 

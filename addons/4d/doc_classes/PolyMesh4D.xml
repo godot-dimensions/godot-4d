@@ -56,6 +56,15 @@
 				[b]Note:[/b] This is not a trivial operation, consider caching the result if you need the same data multiple times.
 			</description>
 		</method>
+		<method name="get_all_poly_cell_vertex_indices">
+			<return type="PackedInt32Array[]" />
+			<param index="0" name="poly_dim_index" type="int" />
+			<param index="1" name="start_with_canonical_span" type="bool" />
+			<description>
+				Returns the vertex indices of each cell of a given dimension in the form of an array of [PackedInt32Array]s, by drilling down through the polyhedral hierarchy. The [param poly_dim_index] parameter specifies which polyhedral cell dimension index to return, where 0 means 2D faces, 1 means 3D cells, and 2 means 4D hypervolumes if they exist.
+				[b]Note:[/b] This is not a trivial operation, consider caching the result if you need the same data multiple times.
+			</description>
+		</method>
 		<method name="get_poly_cell_boundary_normals">
 			<return type="PackedVector4Array" />
 			<description>
