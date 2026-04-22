@@ -66,8 +66,22 @@ Error EditorImportPluginG4MFMesh4D::import(ResourceUID::ID p_source_id, const St
 	Error err = g4mf_doc->import_read_from_file(g4mf_state, p_source_file);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "Editor: Failed to read G4MF document from file. Aborting file import.");
 	const bool include_invisible = p_options[StringName("include_invisible")];
-	Ref<Mesh4D> mesh = g4mf_doc->import_generate_godot_mesh(g4mf_state, include_invisible);
+	Ref<Mesh4D> mesh;
+	String mesh_name;
+	// Directly generate mesh 0 if there is only one mesh, otherwise generate a combined mesh with the nodes.
+	if (g4mf_state->get_g4mf_meshes().size() == 1) {
+		Ref<G4MFMesh4D> g4mf_mesh = g4mf_state->get_g4mf_meshes()[0];
+		mesh_name = g4mf_mesh->get_name();
+		mesh = g4mf_doc->import_generate_godot_mesh(g4mf_state, 0, include_invisible);
+	} else {
+		mesh = g4mf_doc->import_generate_godot_mesh(g4mf_state, -1, include_invisible);
+	}
 	ERR_FAIL_COND_V_MSG(mesh.is_null(), ERR_INVALID_DATA, "Editor: Failed to generate mesh from G4MF document.");
+	// Use the file name if either there are multiple meshes or the mesh is unnamed.
+	if (mesh_name.is_empty()) {
+		mesh_name = p_save_path.get_file().get_basename();
+	}
+	mesh->set_name(mesh_name);
 	const String save_file = p_save_path + String(".res");
 #if GDEXTENSION
 	err = ResourceSaver::get_singleton()->save(mesh, save_file);
