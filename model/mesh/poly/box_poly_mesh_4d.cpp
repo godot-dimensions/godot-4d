@@ -30,8 +30,8 @@ void BoxPolyMesh4D::set_size(const Vector4 &p_size) {
 
 void BoxPolyMesh4D::set_poly_texture_map(const BoxPolyTextureMap p_map) {
 	_poly_texture_map = p_map;
-	// Most of the caches can be kept, but the cross section mesh needs to be rebuilt.
-	mark_cross_section_mesh_dirty();
+	// The position caches can be kept, but the poly cache needs clearing.
+	poly_mesh_clear_cache();
 }
 
 Vector<Vector<PackedInt32Array>> BoxPolyMesh4D::get_poly_cell_indices() {

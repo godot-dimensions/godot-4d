@@ -778,7 +778,7 @@ void ArrayPolyMesh4D::unwrap_texture_map_island(const PackedInt32Array &p_cells_
 	poly_mesh_clear_cache();
 }
 
-void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding, const bool p_keep_existing) {
+void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding, const bool p_proportional, const bool p_keep_existing) {
 	ERR_FAIL_COND_MSG(p_padding < 0.0, "ArrayPolyMesh4D: Padding must be non-negative.");
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot unwrap texture map for a mesh with no cells.");
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Poly mesh data is invalid, cannot unwrap.");
@@ -793,59 +793,62 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 	}
 	UnwrapTextureMapMode actual_mode = p_mode;
 	if (actual_mode == UNWRAP_MODE_AUTOMATIC) {
-		actual_mode = _seam_face_indices.is_empty() ? UNWRAP_MODE_TILE_CELLS : UNWRAP_MODE_ISLANDS_FROM_SEAMS;
+		actual_mode = _seam_face_indices.is_empty() ? UNWRAP_MODE_TILE_CELLS : UNWRAP_MODE_TILE_ISLANDS;
 	}
 	const double pad_offset = p_padding * 0.5 / (1.0 + p_padding);
 	const double pad_size = 1.0 / (1.0 + p_padding);
-	// Handle EACH_CELL_FILLS mode separately since it does not require tiling.
-	if (actual_mode == UNWRAP_MODE_EACH_CELL_FILLS) {
-		const AABB padded_full_aabb = AABB(Vector3(pad_offset, pad_offset, pad_offset), Vector3(pad_size, pad_size, pad_size));
-		for (int32_t cell_index = 0; cell_index < cell_count; cell_index++) {
-			const PackedInt32Array single_cell_island = PackedInt32Array{ cell_index };
-			_unwrap_texture_map_island_internal(single_cell_island, p_keep_existing);
-			_fit_island_texture_map_into_aabb(single_cell_island, padded_full_aabb);
-		}
-		poly_mesh_clear_cache();
-		return;
-	}
-	// Handle TILE_CELLS and ISLANDS_FROM_SEAMS modes below, since both require tiling.
+	// Step 1: What is the list of islands we need to unwrap? This depends on the mode.
 	Vector<PackedInt32Array> islands;
-	if (actual_mode == UNWRAP_MODE_TILE_CELLS) {
+	if (actual_mode == UNWRAP_MODE_EACH_CELL_FILLS || actual_mode == UNWRAP_MODE_TILE_CELLS) {
 		islands.resize(cell_count);
 		for (int32_t cell_index = 0; cell_index < cell_count; cell_index++) {
 			islands.set(cell_index, PackedInt32Array{ cell_index });
 		}
-	} else if (actual_mode == UNWRAP_MODE_ISLANDS_FROM_SEAMS) {
+	} else if (actual_mode == UNWRAP_MODE_EACH_ISLAND_FILLS || actual_mode == UNWRAP_MODE_TILE_ISLANDS) {
 		islands = collect_all_islands();
 	} else {
 		ERR_FAIL_MSG("ArrayPolyMesh4D: Unknown unwrap texture map mode.");
 	}
+	// Step 2: Unwrap each island individually into an unbounded space.
 	for (int64_t island_index = 0; island_index < islands.size(); island_index++) {
 		_unwrap_texture_map_island_internal(islands[island_index], p_keep_existing);
 	}
-	// Tile the islands in texture space by rescaling and offsetting them.
-	const Vector3i tiles = _tiles_for_island_count(islands.size());
-	const Vector3 unpadded_tile_size = Vector3(1.0 / real_t(tiles.x), 1.0 / real_t(tiles.y), 1.0 / real_t(tiles.z));
-	const Vector3 padding_offset = unpadded_tile_size * pad_offset;
-	const Vector3 padded_tile_size = unpadded_tile_size * pad_size;
-	for (int32_t x = 0; x < tiles.x; x++) {
-		for (int32_t y = 0; y < tiles.y; y++) {
-			for (int32_t z = 0; z < tiles.z; z++) {
-				const int32_t tile_index = x + y * tiles.x + z * tiles.x * tiles.y;
-				if (tile_index >= islands.size()) {
-					break;
+	// Step 3: Fit or tile the islands into the texture space depending on the mode.
+	if (actual_mode == UNWRAP_MODE_EACH_CELL_FILLS || actual_mode == UNWRAP_MODE_EACH_ISLAND_FILLS) {
+		// Fit each island into the 0-to-1 UVW texture space with padding.
+		const AABB padded_full_aabb = AABB(Vector3(pad_offset, pad_offset, pad_offset), Vector3(pad_size, pad_size, pad_size));
+		for (int32_t island_index = 0; island_index < islands.size(); island_index++) {
+			_fit_island_texture_map_into_aabb(islands[island_index], padded_full_aabb, p_proportional);
+		}
+	} else if (actual_mode == UNWRAP_MODE_TILE_CELLS || actual_mode == UNWRAP_MODE_TILE_ISLANDS) {
+		// Tile the islands in texture space by rescaling and offsetting them.
+		const Vector3i tiles = _tiles_for_island_count(islands.size());
+		const Vector3 unpadded_tile_size = Vector3(1.0 / real_t(tiles.x), 1.0 / real_t(tiles.y), 1.0 / real_t(tiles.z));
+		const Vector3 padding_offset = unpadded_tile_size * pad_offset;
+		const Vector3 padded_tile_size = unpadded_tile_size * pad_size;
+		for (int32_t x = 0; x < tiles.x; x++) {
+			for (int32_t y = 0; y < tiles.y; y++) {
+				for (int32_t z = 0; z < tiles.z; z++) {
+					const int32_t tile_index = x + y * tiles.x + z * tiles.x * tiles.y;
+					if (tile_index >= islands.size()) {
+						break;
+					}
+					const PackedInt32Array &cells_in_island = islands[tile_index];
+					const AABB island_aabb = AABB(Vector3(x, y, z) * unpadded_tile_size + padding_offset, padded_tile_size);
+					_fit_island_texture_map_into_aabb(cells_in_island, island_aabb, p_proportional);
 				}
-				const PackedInt32Array &cells_in_island = islands[tile_index];
-				const AABB island_aabb = AABB(Vector3(x, y, z) * unpadded_tile_size + padding_offset, padded_tile_size);
-				_fit_island_texture_map_into_aabb(cells_in_island, island_aabb);
 			}
 		}
+	} else {
+		ERR_FAIL_MSG("ArrayPolyMesh4D: Unknown unwrap texture map mode.");
 	}
 	poly_mesh_clear_cache();
 }
 
-void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb) {
-	AABB current_aabb = AABB(_poly_cell_texture_map[p_cells_in_island[0]][0], Vector3());
+void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional) {
+	const PackedVector3Array first_cell_texture_map = _poly_cell_texture_map[p_cells_in_island[0]];
+	ERR_FAIL_COND_MSG(first_cell_texture_map.is_empty(), "ArrayPolyMesh4D: Cannot fit island texture map into AABB because at least one cell in the island has an empty texture map.");
+	AABB current_aabb = AABB(first_cell_texture_map[0], Vector3());
 	for (int64_t cell_index_index = 0; cell_index_index < p_cells_in_island.size(); cell_index_index++) {
 		const int32_t cell_index = p_cells_in_island[cell_index_index];
 		const PackedVector3Array &cell_texture_map = _poly_cell_texture_map[cell_index];
@@ -853,10 +856,15 @@ void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &
 			current_aabb.expand_to(cell_texture_map[vertex_index]);
 		}
 	}
-	const Basis scale = Basis::from_scale(p_target_aabb.size / current_aabb.size);
+	Vector3 scale_vec = p_target_aabb.size / current_aabb.size;
+	if (p_proportional) {
+		const real_t min_scale = MIN(MIN(scale_vec.x, scale_vec.y), scale_vec.z);
+		scale_vec = Vector3(min_scale, min_scale, min_scale);
+	}
+	const Basis scale_basis = Basis::from_scale(scale_vec);
 	// Note: xform_inv performs a transposed xform, not an inverse xform, which is what we want in this case.
 	// This is badly named in Godot, see this proposal: https://github.com/godotengine/godot-proposals/issues/11235
-	const Transform3D to_target = Transform3D(scale, p_target_aabb.position - scale.xform_inv(current_aabb.position));
+	const Transform3D to_target = Transform3D(scale_basis, p_target_aabb.position - scale_basis.xform_inv(current_aabb.position));
 	for (int64_t cell_index_index = 0; cell_index_index < p_cells_in_island.size(); cell_index_index++) {
 		const int32_t cell_index = p_cells_in_island[cell_index_index];
 		PackedVector3Array cell_texture_map = _poly_cell_texture_map[cell_index];
@@ -1456,7 +1464,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("calculate_seam_faces", "angle_threshold_radians", "discard_seams_within_islands"), &ArrayPolyMesh4D::calculate_seam_faces, DEFVAL(Math_TAU / 8.0), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("collect_cells_in_island", "start_cell"), &ArrayPolyMesh4D::collect_cells_in_island);
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map_island", "cells_in_island", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_island, DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_ISLANDS_FROM_SEAMS), DEFVAL(0.0), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);
 
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayPolyMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
@@ -1492,5 +1500,6 @@ void ArrayPolyMesh4D::_bind_methods() {
 	BIND_ENUM_CONSTANT(UNWRAP_MODE_AUTOMATIC);
 	BIND_ENUM_CONSTANT(UNWRAP_MODE_EACH_CELL_FILLS);
 	BIND_ENUM_CONSTANT(UNWRAP_MODE_TILE_CELLS);
-	BIND_ENUM_CONSTANT(UNWRAP_MODE_ISLANDS_FROM_SEAMS);
+	BIND_ENUM_CONSTANT(UNWRAP_MODE_EACH_ISLAND_FILLS);
+	BIND_ENUM_CONSTANT(UNWRAP_MODE_TILE_ISLANDS);
 }

@@ -116,12 +116,14 @@
 		</method>
 		<method name="unwrap_texture_map">
 			<return type="void" />
-			<param index="0" name="mode" type="int" enum="ArrayPolyMesh4D.UnwrapTextureMapMode" default="3" />
+			<param index="0" name="mode" type="int" enum="ArrayPolyMesh4D.UnwrapTextureMapMode" default="4" />
 			<param index="1" name="padding" type="float" default="0.0" />
-			<param index="2" name="keep_existing" type="bool" default="false" />
+			<param index="2" name="proportional" type="bool" default="true" />
+			<param index="3" name="keep_existing" type="bool" default="false" />
 			<description>
 				Unwraps a texture map for the polyhedral mesh, generating UVW texture coordinates for each vertex instance in each cell. The unwrapping is done based on the selected [param mode], which determines how the unwrapping is performed. See [enum UnwrapTextureMapMode] for details.
 				If [param padding] is greater than 0.0, texture islands will have this amount of space between them in texture space, helping to prevent texture bleeding when using mipmaps or other resampling techniques.
+				If [param proportional] is [code]true[/code] (default), the unwrapping will preserve the relative proportions of the cells in each island, however the islands may be scaled differently from each other.
 				If [param keep_existing] is [code]true[/code], existing texture coordinates are preserved when present, and new texture coordinates are only calculated for cells without texture coordinates. When a new cell is in the same island as an existing cell, the new cell will have its texture coordinates aligned with already mapped cells. When none of the cells in an island have existing texture coordinates, a new island will be mapped. In both cases, the islands will be re-packed with the given [param mode] and [param padding].
 			</description>
 		</method>
@@ -178,13 +180,16 @@
 			Automatically choose the best unwrapping mode. If a mesh has seams defined, use [constant UNWRAP_MODE_ISLANDS_FROM_SEAMS], otherwise use [constant UNWRAP_MODE_TILE_CELLS].
 		</constant>
 		<constant name="UNWRAP_MODE_EACH_CELL_FILLS" value="1" enum="UnwrapTextureMapMode">
-			Each cell is unwrapped to fill the entire UVW space from (0, 0, 0) to (1, 1, 1). This is useful for objects where all faces should have the same texture, such as a tiled pattern, like a block of cobblestone in Minecraft.
+			Each cell is unwrapped to fill the entire UVW texture space from (0, 0, 0) to (1, 1, 1). This is useful for objects where all faces should have the same texture, such as a tiled pattern, like a block of cobblestone in Minecraft.
 		</constant>
 		<constant name="UNWRAP_MODE_TILE_CELLS" value="2" enum="UnwrapTextureMapMode">
-			Each cell is unwrapped to fit within a tile in the UVW space. The tiles are arranged in a grid that fits within the UVW space from (0, 0, 0) to (1, 1, 1), where the space each tile takes up is proportional to the inverse cube root of the number of cells. For example, if there are 8 cells, the tiles will be arranged in a 2x2x2 grid, with each tile taking up 0.5 units in each dimension.
+			Each cell is unwrapped to fit within a tile in the UVW texture space. The tiles are arranged in a grid that fits within the UVW texture space from (0, 0, 0) to (1, 1, 1), where the space each tile takes up is proportional to the inverse cube root of the number of cells. For example, if there are 8 cells, the tiles will be arranged in a 2x2x2 grid, with each tile taking up 0.5 units in each dimension.
 		</constant>
-		<constant name="UNWRAP_MODE_ISLANDS_FROM_SEAMS" value="3" enum="UnwrapTextureMapMode">
-			Each island of connected cells, separated by seams, is unwrapped to fit within a tile in the UVW space. The tiles are arranged in a grid that fits within the UVW space from (0, 0, 0) to (1, 1, 1), where the space each tile takes up is proportional to the inverse cube root of the number of islands. For example, if there are 8 islands, the tiles will be arranged in a 2x2x2 grid, with each tile taking up 0.5 units in each dimension.
+		<constant name="UNWRAP_MODE_EACH_ISLAND_FILLS" value="3" enum="UnwrapTextureMapMode">
+			Each island of connected cells, separated by seams, is unwrapped to fill the entire UVW texture space from (0, 0, 0) to (1, 1, 1). This is useful for objects where every island should have the same texture.
+		</constant>
+		<constant name="UNWRAP_MODE_TILE_ISLANDS" value="4" enum="UnwrapTextureMapMode">
+			Each island of connected cells, separated by seams, is unwrapped to fit within a tile in the UVW texture space. The tiles are arranged in a grid that fits within the UVW texture space from (0, 0, 0) to (1, 1, 1), where the space each tile takes up is proportional to the inverse cube root of the number of islands. For example, if there are 8 islands, the tiles will be arranged in a 2x2x2 grid, with each tile taking up 0.5 units in each dimension.
 		</constant>
 	</constants>
 </class>

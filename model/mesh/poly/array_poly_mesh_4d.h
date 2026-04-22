@@ -17,7 +17,8 @@ public:
 		UNWRAP_MODE_AUTOMATIC,
 		UNWRAP_MODE_EACH_CELL_FILLS,
 		UNWRAP_MODE_TILE_CELLS,
-		UNWRAP_MODE_ISLANDS_FROM_SEAMS,
+		UNWRAP_MODE_EACH_ISLAND_FILLS,
+		UNWRAP_MODE_TILE_ISLANDS,
 	};
 
 private:
@@ -49,7 +50,7 @@ private:
 	void _delete_poly_cell_element_internal(const int32_t p_dimension, const int32_t p_index);
 	bool _unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert);
 	void _unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing);
-	void _fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb);
+	void _fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional);
 	static Vector3i _tiles_for_island_count(const int32_t p_island_count);
 	static inline int32_t _ceil_div(int32_t p_a, int32_t p_b) {
 		return (p_a + p_b - 1) / p_b;
@@ -75,7 +76,7 @@ public:
 	PackedInt32Array collect_cells_in_island(const int64_t p_start_cell);
 	Vector<PackedInt32Array> collect_all_islands();
 	void unwrap_texture_map_island(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing = false);
-	void unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding = 0.0, const bool p_keep_existing = false);
+	void unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding = 0.0, const bool p_proportional = true, const bool p_keep_existing = false);
 	void transform_texture_map(const Transform3D &p_transform);
 
 	void merge_with(const Ref<PolyMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
