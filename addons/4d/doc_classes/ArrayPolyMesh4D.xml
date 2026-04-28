@@ -119,14 +119,6 @@
 				This method will also attempt to merge the materials of the two meshes, by calling [method Material4D.merge_with] on this mesh's material and passing the other mesh's material as an argument. See [method Material4D.merge_with] for more information.
 			</description>
 		</method>
-		<method name="reconstruct_from_tetra_mesh" qualifiers="static">
-			<return type="ArrayPolyMesh4D" />
-			<param index="0" name="tetra_mesh" type="TetraMesh4D" />
-			<description>
-				Reconstructs a polyhedral mesh from a tetrahedral mesh by converting each consecutive sequence of tetrahedral cells with the same starting vertex into a single polyhedral cell, forming a new cell when the starting vertex changes.
-				This function is useful for converting tetrahedral meshes into polyhedral meshes when the polyhedral structure is implied by the ordering of the tetrahedral cells and a polyhedral representation is desired for further processing. However, this operation is lossy, and so round-trip conversions may not yield the original data. Whenever possible, always keep the original polyhedral mesh data and work with that directly, and avoid using this function unless absolutely necessary.
-			</description>
-		</method>
 		<method name="set_flat_shading_normals">
 			<return type="void" />
 			<param index="0" name="normals_mode" type="int" enum="ArrayPolyMesh4D.ComputeNormalsMode" default="0" />

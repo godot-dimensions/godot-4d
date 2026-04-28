@@ -43,6 +43,7 @@
 #include "model/mesh/poly/box_poly_mesh_4d.h"
 #include "model/mesh/poly/orthoplex_poly_mesh_4d.h"
 #include "model/mesh/poly/poly_material_4d.h"
+#include "model/mesh/poly/poly_mesh_builder_4d.h"
 #include "model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "model/mesh/tetra/box_tetra_mesh_4d.h"
 #include "model/mesh/tetra/orthoplex_tetra_mesh_4d.h"
@@ -177,7 +178,9 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(OrthoplexPolyMesh4D);
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
+		GDREGISTER_CLASS(PolyMeshBuilder4D);
 		GDREGISTER_CLASS(WireMeshBuilder4D);
+		add_godot_singleton("PolyMeshBuilder4D", memnew(PolyMeshBuilder4D));
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
 		// Depends on mesh.
 		GDREGISTER_CLASS(Marker4D);
@@ -288,12 +291,14 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		remove_godot_singleton("PhysicsServer4D");
 		remove_godot_singleton("RenderingServer4D");
 		remove_godot_singleton("Vector4D");
+		remove_godot_singleton("PolyMeshBuilder4D");
 		remove_godot_singleton("WireMeshBuilder4D");
 		memdelete(godot_4d_bind::Basis4D::get_singleton());
 		memdelete(Geometry4D::get_singleton());
 		memdelete(PhysicsServer4D::get_singleton());
 		memdelete(RenderingServer4D::get_singleton());
 		memdelete(Vector4D::get_singleton());
+		memdelete(PolyMeshBuilder4D::get_singleton());
 		memdelete(WireMeshBuilder4D::get_singleton());
 
 		TetraMesh4D::cleanup_fallback_material();

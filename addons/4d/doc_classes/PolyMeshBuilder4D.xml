@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PolyMeshBuilder4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Functions for creating and modifying 4D polyhedral meshes.
+	</brief_description>
+	<description>
+		PolyMeshBuilder4D is a singleton for creating and modifying 4D polyhedral meshes. It contains all functions important enough to be included in the 4D module, but too complex to be included in [ArrayPolyMesh4D], and not important enough to have their own dedicated types. For example, creating a subdivided 4D box is handled by [BoxPolyMesh4D], not by this class.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="convert_mesh_3d_to_4d_faces_only" qualifiers="static">
+			<return type="ArrayPolyMesh4D" />
+			<param index="0" name="mesh_3d" type="ArrayMesh" />
+			<param index="1" name="which_surface" type="int" default="-1" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Converts a 3D [ArrayMesh] into a 4D [ArrayPolyMesh4D] by copying the vertex positions, inferring the edges of faces, and translating the faces to use those edges.
+				If [param which_surface] is -1, then all surfaces are used, otherwise the specified surface is used. If [param deduplicate] is true, then vertices and edges will be deduplicated so that vertices with the same position will be merged into a single vertex, otherwise separate vertices and edges in the input will be kept separate.
+				The resulting mesh will have no 3D cells or 4D volumes, only the 2D faces brought in with as minimal modifications as possible. After conversion, the mesh can be further modified with other functions in this class to extrude the 2D faces into 3D cells and/or 4D volumes to build a 4D mesh.
+			</description>
+		</method>
+		<method name="extrude_linear" qualifiers="static">
+			<return type="ArrayPolyMesh4D" />
+			<param index="0" name="input_mesh" type="ArrayPolyMesh4D" />
+			<param index="1" name="extrusion_vector" type="Vector4" default="Vector4(0, 0, 0, 1)" />
+			<description>
+				Extrudes a 3D mesh into 4D by creating 2 copies of the input mesh's data, translating one copy by the [param extrusion_vector] and the other copy by the negative of the [param extrusion_vector], and then connecting the corresponding 2D faces into new 3D cells.
+				This operation is similar to Blender's "Mesh → Extrude → Extrude Faces" operation (hotkey "E"), but Blender's operation extrudes the 2D faces of a 3D mesh, while this function extrudes the 3D cells of a 4D mesh. Also, unlike Blender's operation, this function extrudes in both directions at once, and extrudes the entire mesh at once instead of allowing selection of which cells to extrude.
+				The input mesh MUST have both 2D faces and 3D cells defined in the [member ArrayPolyMesh4D.poly_cell_indices] array. This means that [member ArrayPolyMesh4D.poly_cell_indices] MUST have a length of at least 2.
+			</description>
+		</method>
+		<method name="extrude_spin_from_faces_xw" qualifiers="static">
+			<return type="ArrayPolyMesh4D" />
+			<param index="0" name="input_mesh" type="ArrayPolyMesh4D" />
+			<param index="1" name="steps" type="int" default="16" />
+			<description>
+				Extrudes a 3D mesh into 4D by creating many copies of the input mesh's data, rotating each copy incrementally in the XW plane, and then connecting the corresponding 2D faces into new 3D cells.
+				This operation is similar to Blender's "Mesh → Extrude → Spin" operation, but Blender's operation uses the 1D edges of a 2D mesh to create the 2D faces of a 3D mesh, while this function uses the 2D faces of a 3D mesh to create the 3D cells of a 4D mesh. Also, unlike Blender's operation, this function extrudes the entire mesh at once instead of allowing selection of which faces to extrude. This operation is also known as lathe, revolve, or sweep in some 3D modeling software.
+				The input mesh MUST have 2D faces defined in the [member ArrayPolyMesh4D.poly_cell_indices] array, and MUST NOT have any 3D cells or 4D volumes defined. This means that [member ArrayPolyMesh4D.poly_cell_indices] MUST have a length of exactly 1. The input mesh SHOULD NOT have significant vertex positions on the W axis. The input mesh SHOULD only exist in one radial direction, for example, only existing in +X and not -X. The input mesh SHOULD have 1D edges converging to zero along both [param from_axis] and [param to_axis], or else the resulting mesh will have holes.
+			</description>
+		</method>
+		<method name="reconstruct_from_tetra_mesh" qualifiers="static">
+			<return type="ArrayPolyMesh4D" />
+			<param index="0" name="tetra_mesh" type="TetraMesh4D" />
+			<description>
+				Reconstructs a polyhedral mesh from a tetrahedral mesh by converting each consecutive sequence of tetrahedral cells with the same starting vertex into a single polyhedral cell, forming a new cell when the starting vertex changes.
+				This function is useful for converting tetrahedral meshes into polyhedral meshes when the polyhedral structure is implied by the ordering of the tetrahedral cells and a polyhedral representation is desired for further processing. However, this operation is lossy, and so round-trip conversions may not yield the original data. Whenever possible, always keep the original polyhedral mesh data and work with that directly, and avoid using this function unless absolutely necessary.
+			</description>
+		</method>
+	</methods>
+</class>

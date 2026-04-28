@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="WireMeshBuilder4D" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Functions for creating 4D wireframe meshes.
+		Functions for creating and modifying 4D wireframe meshes.
 	</brief_description>
 	<description>
-		WireMeshBuilder4D is a singleton for creating 4D wireframe meshes. It contains all functions important enough to be included in the 4D module, but not important enough to have their own dedicated types. For example, creating a subdivided 4D box is handled by [BoxWireMesh4D], not by this class.
+		WireMeshBuilder4D is a singleton for creating and modifying 4D wireframe meshes. It contains all functions important enough to be included in the 4D module, but too complex to be included in [ArrayWireMesh4D], and not important enough to have their own dedicated types. For example, creating a subdivided 4D box is handled by [BoxWireMesh4D], not by this class.
 	</description>
 	<tutorials>
 	</tutorials>
