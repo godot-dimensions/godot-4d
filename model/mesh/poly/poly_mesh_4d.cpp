@@ -410,6 +410,104 @@ int32_t PolyMesh4D::_score_vertex_for_cell(const int32_t p_vertex_index, const i
 	return score;
 }
 
+// A dense array of elements partitioned into contiguous usage-count buckets, with inclusive cutoff indices for each bucket.
+class UniqueCountingPriorityQueueInt32 {
+	PackedInt32Array _tracked_elements;
+	PackedInt32Array _usage_cutoffs;
+	HashMap<int32_t, int> _element_to_index;
+
+	inline void _swap_element_indices(const int p_index_a, const int p_index_b) {
+		if (p_index_a == p_index_b) {
+			return;
+		}
+		const int32_t old_a = _tracked_elements[p_index_a];
+		const int32_t old_b = _tracked_elements[p_index_b];
+		_tracked_elements.set(p_index_a, old_b);
+		_tracked_elements.set(p_index_b, old_a);
+		_element_to_index[old_a] = p_index_b;
+		_element_to_index[old_b] = p_index_a;
+	}
+
+	inline int _get_usage_count_at_index(const int p_index) const {
+		for (int usage_index = 0; usage_index < _usage_cutoffs.size(); usage_index++) {
+			if (_usage_cutoffs[usage_index] >= p_index) {
+				return usage_index;
+			}
+		}
+		return -1;
+	}
+
+public:
+	UniqueCountingPriorityQueueInt32(const PackedInt32Array &p_elements) {
+		ERR_FAIL_COND(p_elements.is_empty());
+		_tracked_elements = PackedInt32Array(p_elements);
+		_usage_cutoffs = { (int32_t)p_elements.size() - 1 };
+		for (int64_t i = 0; i < _tracked_elements.size(); i++) {
+			ERR_FAIL_COND(_element_to_index.has(_tracked_elements[i]));
+			_element_to_index[_tracked_elements[i]] = (int)i;
+		}
+	}
+
+	bool is_empty() const {
+		return _tracked_elements.is_empty();
+	}
+
+	bool has_element(const int32_t p_element) const {
+		return _element_to_index.has(p_element);
+	}
+
+	int size() const {
+		return _tracked_elements.size();
+	}
+
+	int count_usages(const int32_t p_element) const {
+		const int *index_ptr = _element_to_index.getptr(p_element);
+		ERR_FAIL_NULL_V(index_ptr, -1);
+		return _get_usage_count_at_index(*index_ptr);
+	}
+
+	void add_usage(const int32_t p_element) {
+		const int *index_ptr = _element_to_index.getptr(p_element);
+		ERR_FAIL_NULL(index_ptr);
+		const int index = *index_ptr;
+		int current_usage = _get_usage_count_at_index(index);
+		_swap_element_indices(index, _usage_cutoffs[current_usage]);
+		int new_usage = current_usage + 1;
+		if (new_usage == _usage_cutoffs.size()) {
+			_usage_cutoffs.append(_tracked_elements.size() - 1);
+		}
+		_usage_cutoffs.set(current_usage, _usage_cutoffs[current_usage] - 1);
+	}
+
+	void remove_usage(const int32_t p_element) {
+		const int *index_ptr = _element_to_index.getptr(p_element);
+		ERR_FAIL_NULL(index_ptr);
+		const int index = *index_ptr;
+		int current_usage = _get_usage_count_at_index(index);
+		ERR_FAIL_COND(current_usage == 0);
+		int new_usage = current_usage - 1;
+		_usage_cutoffs.set(new_usage, _usage_cutoffs[new_usage] + 1);
+		_swap_element_indices(index, _usage_cutoffs[new_usage]);
+	}
+
+	// Note: Ties are arbitrary, and are not handled in any stable order.
+	int32_t pop_most_used_element() {
+		const int64_t last_index = _tracked_elements.size() - 1;
+		ERR_FAIL_COND_V(last_index < 0, -1);
+		int32_t popped = _tracked_elements[last_index];
+		_tracked_elements.resize(last_index);
+		_element_to_index.erase(popped);
+		if (last_index == 0) {
+			_usage_cutoffs.clear();
+		} else {
+			int second_to_last_usage = _get_usage_count_at_index(last_index - 1);
+			_usage_cutoffs.set(second_to_last_usage, last_index - 1);
+			_usage_cutoffs.resize(second_to_last_usage + 1);
+		}
+		return popped;
+	}
+};
+
 void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_align_triangulations) {
 	// This function is required to make the mesh renderable, so it needs to only check the poly mesh data.
 	if (!is_poly_mesh_data_valid()) {
@@ -464,12 +562,23 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 			surface_cells_to_use.set(i, i);
 		}
 	}
-	// Step 4: For each face, cache the vertex indices.
+	// Step 4: For each face, cache the vertex indices and which surface cells use that face.
 	// The vertex indices are needed several times for scoring and final triangulation.
 	Vector<PackedInt32Array> face_vertices_cache;
 	face_vertices_cache.resize(faces.size());
+	Vector<PackedInt32Array> face_to_using_cells;
+	face_to_using_cells.resize(faces.size());
 	for (int64_t face_index = 0; face_index < faces.size(); face_index++) {
 		face_vertices_cache.set(face_index, _get_vertex_indices_of_face(all_edge_indices, faces[face_index]));
+	}
+	for (const int32_t cell_index : surface_cells_to_use) {
+		const PackedInt32Array &cell_data = boundary_cells[cell_index];
+		for (int64_t face_number = 0; face_number < cell_data.size(); face_number++) {
+			const int32_t face_index = cell_data[face_number];
+			PackedInt32Array cells_for_face = face_to_using_cells[face_index];
+			cells_for_face.append(cell_index);
+			face_to_using_cells.set(face_index, cells_for_face);
+		}
 	}
 	// Step 5: Determine which vertex in each cell to use as the "start" vertex.
 	// This is the slowest step in the function, and is complex, so it is heavily commented.
@@ -483,30 +592,26 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	cell_pivot_vertices.resize(boundary_cell_count);
 	{
 		// Start this by copying of all cells we are using.
-		PackedInt32Array surface_cells_to_check = PackedInt32Array(surface_cells_to_use);
+		UniqueCountingPriorityQueueInt32 cells_by_triangulated_faces = UniqueCountingPriorityQueueInt32(surface_cells_to_use);
 		HashSet<int32_t> chosen_pivot_vertices;
 		int32_t prev_pivot_vertex = -1;
-		while (!surface_cells_to_check.is_empty()) {
-			int32_t best_cell_number = -1;
-			// Step 5.1: Find the cell and pivot vertex that is least disruptive to the decomposition of other cells.
+		while (!cells_by_triangulated_faces.is_empty()) {
+			int32_t best_cell_index = cells_by_triangulated_faces.pop_most_used_element();
+			const PackedInt32Array &cell_data = boundary_cells[best_cell_index];
+			const PackedInt32Array &cell_vertices = cell_vertex_indices[best_cell_index];
+			const int64_t vertex_count = cell_vertices.size();
+			// Step 5.1: Within the most constrained cell, find the pivot vertex
+			// that is least disruptive to the decomposition of other cells.
 			int32_t best_pivot_vertex = -1;
 			int32_t best_score = INT32_MIN;
-			for (int64_t cell_number = 0; cell_number < surface_cells_to_check.size(); cell_number++) {
-				const int32_t cell_index = surface_cells_to_check[cell_number];
-				const PackedInt32Array &cell_data = boundary_cells[cell_index];
-				const PackedInt32Array &cell_vertices = cell_vertex_indices[cell_index];
-				const int64_t vertex_count = cell_vertices.size();
-				for (int64_t vertex_number_in_cell = 0; vertex_number_in_cell < vertex_count; vertex_number_in_cell++) {
-					const int32_t vertex_index = cell_vertices[vertex_number_in_cell];
-					const int32_t score = _score_vertex_for_cell(vertex_index, prev_pivot_vertex, chosen_pivot_vertices, cell_data, face_triangulations, face_vertices_cache);
-					if (score > best_score) {
-						best_score = score;
-						best_cell_number = cell_number;
-						best_pivot_vertex = vertex_index;
-					}
+			for (int64_t vertex_number_in_cell = 0; vertex_number_in_cell < vertex_count; vertex_number_in_cell++) {
+				const int32_t vertex_index = cell_vertices[vertex_number_in_cell];
+				const int32_t score = _score_vertex_for_cell(vertex_index, prev_pivot_vertex, chosen_pivot_vertices, cell_data, face_triangulations, face_vertices_cache);
+				if (score > best_score) {
+					best_score = score;
+					best_pivot_vertex = vertex_index;
 				}
 			}
-			const int32_t best_cell_index = surface_cells_to_check[best_cell_number];
 			// Step 5.2: Now that the best cell has been chosen, we need to either bake its adjacent face triangulations, or mark it as a centroid.
 			if (p_force_align_triangulations && best_score < 0) {
 				// This cell is disruptive to other cells, so we will tetrahedralize it using the centroid of its vertices.
@@ -518,14 +623,29 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 				best_pivot_vertex = _append_vertex_internal(_simplex_cell_vertices_cache, centroid, true);
 			} else {
 				// This cell is not disruptive, so we will triangulate the faces adjacent to its pivot vertex.
-				const PackedInt32Array &cell_data = boundary_cells[best_cell_index];
 				for (int64_t face_number_in_cell = 0; face_number_in_cell < cell_data.size(); face_number_in_cell++) {
 					const int32_t face_index = cell_data[face_number_in_cell];
 					const PackedInt32Array &face_vertices = face_vertices_cache[face_index];
+					if (face_triangulations[face_index].size() != 0) {
+						// Already triangulated this face. Overwriting would be either redundant
+						// or net-zero, and we don't want to count usage twice, so just skip it.
+						continue;
+					}
+					if (!face_vertices.has(best_pivot_vertex)) {
+						// The cell pivot vertex is not on this face, so it
+						// doesn't affect the triangulation of this face.
+						continue;
+					}
 					const PackedInt32Array triangulation = _triangulate_face_vertex_indices(face_vertices, best_pivot_vertex);
-					// It's okay if we overwrite an existing triangulation. If it's the same, there is no problem.
-					// If it's different, then it's bad either way, overwriting won't make it worse, so just do it.
 					face_triangulations.set(face_index, triangulation);
+					// Count this triangulation as a "usage" for all cells that use this face, prioritizing
+					// cells which use this face for sooner triangulation in later loop iterations.
+					const PackedInt32Array &cells_using_this_face = face_to_using_cells[face_index];
+					for (const int32_t cell_using_this_face : cells_using_this_face) {
+						if (cells_by_triangulated_faces.has_element(cell_using_this_face)) {
+							cells_by_triangulated_faces.add_usage(cell_using_this_face);
+						}
+					}
 				}
 			}
 			// Step 5.3: We found the best cell and vertex to use as the pivot for that cell.
@@ -533,7 +653,6 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 			cell_pivot_vertices.set(best_cell_index, best_pivot_vertex);
 			chosen_pivot_vertices.insert(best_pivot_vertex);
 			prev_pivot_vertex = best_pivot_vertex;
-			surface_cells_to_check.remove_at(best_cell_number);
 		}
 	}
 	// Step 6: Triangulate all faces that haven't been triangulated yet.
