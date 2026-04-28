@@ -44,8 +44,6 @@ protected:
 	static constexpr int64_t MAX_POLY_VERTICES = Mesh4D::MAX_VERTICES * 3 / 4;
 
 	static void _bind_methods();
-	bool is_poly_mesh_data_valid();
-	void reset_poly_mesh_data_validation();
 	virtual bool validate_mesh_data() override;
 	virtual bool _validate_poly_mesh_data_only();
 
@@ -54,6 +52,9 @@ protected:
 	PackedVector4Array _compute_boundary_normals_based_on_cell_orientation(const Vector<PackedInt32Array> &p_boundary_cell_vertex_indices, const bool p_keep_existing);
 
 public:
+	bool is_poly_mesh_data_valid();
+	void reset_poly_mesh_data_validation();
+
 	Vector<PackedInt32Array> get_all_face_vertex_indices();
 	TypedArray<PackedInt32Array> get_all_face_vertex_indices_bind();
 	Vector<PackedInt32Array> get_all_boundary_cell_vertex_indices(const bool p_start_with_canonical_span);

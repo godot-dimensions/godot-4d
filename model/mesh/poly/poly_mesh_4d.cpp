@@ -18,7 +18,7 @@ bool PolyMesh4D::is_poly_mesh_data_valid() {
 	if (likely(_is_poly_mesh_data_valid)) {
 		return true;
 	}
-	_is_poly_mesh_data_valid = validate_mesh_data();
+	_is_poly_mesh_data_valid = _validate_poly_mesh_data_only();
 	if (!_is_poly_mesh_data_valid) {
 		ERR_PRINT("Mesh4D: Mesh data is invalid on mesh '" + get_name() + "'.");
 	}
@@ -285,14 +285,19 @@ PackedInt32Array PolyMesh4D::_get_edges_of_poly_cell(const Vector<Vector<PackedI
 	}
 	// Given a 3D cell (dim index 1) or higher, run this function recursively.
 	PackedInt32Array ret;
+	HashSet<int32_t> seen_edges;
 	for (int64_t i = 0; i < cell_indices.size(); i++) {
 		PackedInt32Array face_edges = _get_edges_of_poly_cell(p_poly_cell_indices, p_cell_dim_index - 1, cell_indices[i]);
 		if (i == 0) {
 			ret = face_edges;
+			for (int64_t j = 0; j < face_edges.size(); j++) {
+				seen_edges.insert(face_edges[j]);
+			}
 			continue;
 		}
 		for (int64_t j = 0; j < face_edges.size(); j++) {
-			if (!ret.has(face_edges[j])) {
+			if (!seen_edges.has(face_edges[j])) {
+				seen_edges.insert(face_edges[j]);
 				ret.append(face_edges[j]);
 			}
 		}
@@ -303,16 +308,22 @@ PackedInt32Array PolyMesh4D::_get_edges_of_poly_cell(const Vector<Vector<PackedI
 PackedInt32Array PolyMesh4D::_get_vertex_indices_of_poly_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const bool p_start_with_canonical_span) {
 	const PackedInt32Array cell_edges = _get_edges_of_poly_cell(p_poly_cell_indices, p_cell_dim_index, p_which_cell);
 	PackedInt32Array ret;
+	HashSet<int32_t> seen_vertices;
 	if (p_start_with_canonical_span) {
 		ret = _get_canonical_span_vertex_index_sequence(p_poly_cell_indices, p_all_edge_indices, p_cell_dim_index, p_which_cell);
+		for (int64_t i = 0; i < ret.size(); i++) {
+			seen_vertices.insert(ret[i]);
+		}
 	}
 	for (int64_t i = 0; i < cell_edges.size(); i++) {
 		const int32_t edge_start_vertex = p_all_edge_indices[cell_edges[i] * 2];
 		const int32_t edge_end_vertex = p_all_edge_indices[cell_edges[i] * 2 + 1];
-		if (!ret.has(edge_start_vertex)) {
+		if (!seen_vertices.has(edge_start_vertex)) {
+			seen_vertices.insert(edge_start_vertex);
 			ret.append(edge_start_vertex);
 		}
-		if (!ret.has(edge_end_vertex)) {
+		if (!seen_vertices.has(edge_end_vertex)) {
+			seen_vertices.insert(edge_end_vertex);
 			ret.append(edge_end_vertex);
 		}
 	}
@@ -332,13 +343,19 @@ PackedInt32Array PolyMesh4D::_get_vertex_indices_of_face(const PackedInt32Array 
 	PackedInt32Array ret = _get_face_edge_3_vertex_index_sequence(
 			p_all_edge_indices[p_face_edge_indices[0] * 2], p_all_edge_indices[p_face_edge_indices[0] * 2 + 1],
 			p_all_edge_indices[p_face_edge_indices[1] * 2], p_all_edge_indices[p_face_edge_indices[1] * 2 + 1]);
+	HashSet<int32_t> seen_vertices;
+	for (int64_t i = 0; i < ret.size(); i++) {
+		seen_vertices.insert(ret[i]);
+	}
 	for (int64_t i = 2; i < p_face_edge_indices.size(); i++) {
 		const int32_t edge_start_vertex = p_all_edge_indices[p_face_edge_indices[i] * 2];
 		const int32_t edge_end_vertex = p_all_edge_indices[p_face_edge_indices[i] * 2 + 1];
-		if (!ret.has(edge_start_vertex)) {
+		if (!seen_vertices.has(edge_start_vertex)) {
+			seen_vertices.insert(edge_start_vertex);
 			ret.append(edge_start_vertex);
 		}
-		if (!ret.has(edge_end_vertex)) {
+		if (!seen_vertices.has(edge_end_vertex)) {
+			seen_vertices.insert(edge_end_vertex);
 			ret.append(edge_end_vertex);
 		}
 	}
@@ -368,7 +385,7 @@ PackedInt32Array PolyMesh4D::_triangulate_face_vertex_indices(const PackedInt32A
 
 void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_align_triangulations) {
 	// This function is required to make the mesh renderable, so it needs to only check the poly mesh data.
-	if (!_validate_poly_mesh_data_only()) {
+	if (!is_poly_mesh_data_valid()) {
 		return;
 	}
 	// Gather information needed to compute the simplex decomposition.
@@ -382,9 +399,9 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	// First pass: Drill down into each cell's components to get the vertex indices and normals.
 	// The `true` argument makes the first 4 vertices form the "canonical span" of the cell.
 	Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, true);
-	PackedVector4Array poly_cell_normals = get_poly_cell_boundary_normals();
-	if (poly_cell_normals.size() != boundary_cell_count) {
-		poly_cell_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, false);
+	PackedVector4Array poly_cell_boundary_normals = get_poly_cell_boundary_normals();
+	if (poly_cell_boundary_normals.size() != boundary_cell_count) {
+		poly_cell_boundary_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, false);
 	}
 	// Second pass: Determine which boundary cells to use for tetrahedralization.
 	// Don't bother tetrahedralizing surface cells completely covered by volumetric cells (2+ uses),
@@ -537,7 +554,7 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[1]]),
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[2]]),
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[3]]));
-				if (tet_perp.dot(poly_cell_normals[cell_index]) < 0.0) {
+				if (tet_perp.dot(poly_cell_boundary_normals[cell_index]) < 0.0) {
 					SWAP(new_tet[2], new_tet[3]);
 				}
 				const int64_t old_size = _simplex_cell_indices_cache.size();
@@ -564,7 +581,8 @@ Vector<PackedInt32Array> PolyMesh4D::_get_vertex_indices_of_boundary_cells(const
 }
 
 PackedVector4Array PolyMesh4D::_compute_boundary_normals_based_on_cell_orientation(const Vector<PackedInt32Array> &p_boundary_cell_vertex_indices, const bool p_keep_existing) {
-	CRASH_COND_MSG(_simplex_cell_vertices_cache.is_empty(), "PolyMesh4D: Simplex cell vertices cache needs to be populated before computing normals.");
+	const PackedVector4Array poly_cell_vertices = get_poly_cell_vertices();
+	ERR_FAIL_COND_V_MSG(poly_cell_vertices.is_empty(), PackedVector4Array(), "PolyMesh4D: Poly cell vertices are required to compute boundary normals.");
 	PackedVector4Array poly_cell_normals;
 	if (p_keep_existing) {
 		poly_cell_normals = get_poly_cell_boundary_normals();
@@ -578,9 +596,9 @@ PackedVector4Array PolyMesh4D::_compute_boundary_normals_based_on_cell_orientati
 		const PackedInt32Array &cell_vertices = p_boundary_cell_vertex_indices[cell_index];
 		ERR_FAIL_COND_V_MSG(cell_vertices.size() < 4, poly_cell_normals, "PolyMesh4D: Cannot compute normal for boundary cell because it has fewer than 4 vertices.");
 		const Vector4 cell_perp = Vector4D::perpendicular(
-				_simplex_cell_vertices_cache[cell_vertices[0]].direction_to(_simplex_cell_vertices_cache[cell_vertices[1]]),
-				_simplex_cell_vertices_cache[cell_vertices[0]].direction_to(_simplex_cell_vertices_cache[cell_vertices[2]]),
-				_simplex_cell_vertices_cache[cell_vertices[0]].direction_to(_simplex_cell_vertices_cache[cell_vertices[3]]));
+				poly_cell_vertices[cell_vertices[0]].direction_to(poly_cell_vertices[cell_vertices[1]]),
+				poly_cell_vertices[cell_vertices[0]].direction_to(poly_cell_vertices[cell_vertices[2]]),
+				poly_cell_vertices[cell_vertices[0]].direction_to(poly_cell_vertices[cell_vertices[3]]));
 		poly_cell_normals.set(cell_index, cell_perp.normalized());
 	}
 	return poly_cell_normals;

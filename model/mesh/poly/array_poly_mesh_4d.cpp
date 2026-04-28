@@ -117,8 +117,8 @@ PackedInt32Array ArrayPolyMesh4D::append_vertices(const PackedVector4Array &p_ve
 
 void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode, const bool p_keep_existing) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
-	const PackedVector4Array &vertices = get_vertices();
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for invalid poly mesh data.");
+	const PackedVector4Array &vertices = get_poly_cell_vertices();
 	ERR_FAIL_COND_MSG(vertices.is_empty(), "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no vertices.");
 	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
 	if (cell_vertex_indices.is_empty()) {
