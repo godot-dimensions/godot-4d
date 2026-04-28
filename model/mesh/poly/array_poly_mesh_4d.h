@@ -31,7 +31,7 @@ private:
 	PackedVector4Array _poly_cell_boundary_normals;
 	Vector<PackedVector4Array> _poly_cell_vertex_normals;
 	Vector<PackedVector3Array> _poly_cell_texture_map;
-	// Seams always refer to 2D faces (the boundary between boundary 3D cells).
+	// Seams always refer to 2D faces (the border between boundary 3D cells).
 	HashSet<int32_t> _seam_face_indices;
 	PackedInt32Array _edge_vertex_indices;
 

@@ -383,12 +383,39 @@ PackedInt32Array PolyMesh4D::_triangulate_face_vertex_indices(const PackedInt32A
 	return face_triangles;
 }
 
+int32_t PolyMesh4D::_score_vertex_for_cell(const int32_t p_vertex_index, const int32_t p_prev_pivot_vertex, const HashSet<int32_t> &p_chosen_pivot_vertices, const PackedInt32Array &p_cell_data, const Vector<PackedInt32Array> &p_face_triangulations, const Vector<PackedInt32Array> &p_face_vertices_cache) {
+	int32_t score = 0;
+	if (p_vertex_index == p_prev_pivot_vertex) {
+		// Strongly discourage using the same vertex as the previous cell.
+		// to support the `"polytopeCells"` option (basically an ND triangle fan).
+		score = -10000000;
+	} else if (p_chosen_pivot_vertices.has(p_vertex_index)) {
+		score = 1; // Slightly encourage non-sequential reuse of pivot vertices.
+	}
+	for (int64_t face_number = 0; face_number < p_cell_data.size(); face_number++) {
+		const int32_t face_index = p_cell_data[face_number];
+		ERR_FAIL_INDEX_V(face_index, p_face_vertices_cache.size(), -1000);
+		const PackedInt32Array existing_triangulation = p_face_triangulations[face_index];
+		if (existing_triangulation.is_empty()) {
+			continue; // No triangulation yet, if we apply one then it can't conflict with anything (zero score).
+		}
+		const PackedInt32Array face_vertices = p_face_vertices_cache[face_index];
+		if (!face_vertices.has(p_vertex_index)) {
+			continue; // Non-adjacent faces don't affect the score because we will triangulate them later (zero score).
+		}
+		const PackedInt32Array candidate_triangulation = _triangulate_face_vertex_indices(face_vertices, p_vertex_index);
+		// Score faces with compatible triangulations higher, and incompatible triangulations much lower.
+		score += _compare_triangulation_alignment(existing_triangulation, candidate_triangulation);
+	}
+	return score;
+}
+
 void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_align_triangulations) {
 	// This function is required to make the mesh renderable, so it needs to only check the poly mesh data.
 	if (!is_poly_mesh_data_valid()) {
 		return;
 	}
-	// Gather information needed to compute the simplex decomposition.
+	// Step 1: Gather information needed to compute the simplex decomposition.
 	_simplex_cell_vertices_cache = get_poly_cell_vertices();
 	const PackedInt32Array all_edge_indices = get_edge_indices();
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
@@ -396,14 +423,14 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	const Vector<PackedInt32Array> &faces = poly_cell_indices[0];
 	const Vector<PackedInt32Array> &boundary_cells = poly_cell_indices[1];
 	const int64_t boundary_cell_count = boundary_cells.size();
-	// First pass: Drill down into each cell's components to get the vertex indices and normals.
+	// Step 2: Drill down into each cell's components to get the vertex indices and normals.
 	// The `true` argument makes the first 4 vertices form the "canonical span" of the cell.
 	Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, true);
 	PackedVector4Array poly_cell_boundary_normals = get_poly_cell_boundary_normals();
 	if (poly_cell_boundary_normals.size() != boundary_cell_count) {
 		poly_cell_boundary_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, false);
 	}
-	// Second pass: Determine which boundary cells to use for tetrahedralization.
+	// Step 3: Determine which boundary cells to use for tetrahedralization.
 	// Don't bother tetrahedralizing surface cells completely covered by volumetric cells (2+ uses),
 	// because such cells will never be externally visible (like the face between two Minecraft blocks).
 	PackedInt32Array surface_cells_to_use;
@@ -437,66 +464,50 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 			surface_cells_to_use.set(i, i);
 		}
 	}
-	// Third pass: Determine which vertex in each cell to use as the "start" vertex.
-	// Note that this algorithm is O(n^2) time complexity for the number of boundary cells.
-	PackedInt32Array cell_pivot_vertices;
-	cell_pivot_vertices.resize(boundary_cell_count);
+	// Step 4: For each face, cache the vertex indices.
+	// The vertex indices are needed several times for scoring and final triangulation.
+	Vector<PackedInt32Array> face_vertices_cache;
+	face_vertices_cache.resize(faces.size());
+	for (int64_t face_index = 0; face_index < faces.size(); face_index++) {
+		face_vertices_cache.set(face_index, _get_vertex_indices_of_face(all_edge_indices, faces[face_index]));
+	}
+	// Step 5: Determine which vertex in each cell to use as the "start" vertex.
+	// This is the slowest step in the function, and is complex, so it is heavily commented.
 	// Keep track of triangulated versions of 2D faces so we can reuse them for all cells that use that face.
 	// This tries to avoid this problem: https://www.youtube.com/watch?v=Ir8oft_qAMQ&t=90s
 	// However this is not a complete solution to that problem, it WILL still occur in SOME cases.
 	// There surely is an algorithm that can completely avoid it, but it would be even more complex.
 	Vector<PackedInt32Array> face_triangulations;
 	face_triangulations.resize(faces.size());
+	PackedInt32Array cell_pivot_vertices;
+	cell_pivot_vertices.resize(boundary_cell_count);
 	{
 		// Start this by copying of all cells we are using.
 		PackedInt32Array surface_cells_to_check = PackedInt32Array(surface_cells_to_use);
 		HashSet<int32_t> chosen_pivot_vertices;
-		int32_t prev_vertex_index = -1;
+		int32_t prev_pivot_vertex = -1;
 		while (!surface_cells_to_check.is_empty()) {
 			int32_t best_cell_number = -1;
-			int32_t best_vertex_index = -1;
+			// Step 5.1: Find the cell and pivot vertex that is least disruptive to the decomposition of other cells.
+			int32_t best_pivot_vertex = -1;
 			int32_t best_score = INT32_MIN;
-			// Find the cell and pivot vertex that is least disruptive to the decomposition of other cells.
 			for (int64_t cell_number = 0; cell_number < surface_cells_to_check.size(); cell_number++) {
 				const int32_t cell_index = surface_cells_to_check[cell_number];
 				const PackedInt32Array &cell_data = boundary_cells[cell_index];
 				const PackedInt32Array &cell_vertices = cell_vertex_indices[cell_index];
 				const int64_t vertex_count = cell_vertices.size();
-				for (int64_t vertex_number = 0; vertex_number < vertex_count; vertex_number++) {
-					const int32_t vertex_index = cell_vertices[vertex_number];
-					int32_t score = 0;
-					if (vertex_index == prev_vertex_index) {
-						// Strongly discourage using the same vertex as the previous cell.
-						// to support the `"polytopeCells"` option (basically an ND triangle fan).
-						score = -10000000;
-					} else if (chosen_pivot_vertices.has(vertex_index)) {
-						score = 1; // Slightly encourage non-sequential reuse of pivot vertices.
-					}
-					for (int64_t face_number = 0; face_number < cell_data.size(); face_number++) {
-						const int32_t face_index = cell_data[face_number];
-						ERR_FAIL_INDEX(face_index, faces.size());
-						const PackedInt32Array existing_triangulation = face_triangulations[face_index];
-						if (existing_triangulation.is_empty()) {
-							continue; // No triangulation yet, if we apply one then it can't conflict with anything (zero score).
-						}
-						const PackedInt32Array face_data = faces[face_index];
-						const PackedInt32Array face_vertices = _get_vertex_indices_of_face(all_edge_indices, face_data);
-						if (!face_vertices.has(vertex_index)) {
-							continue; // Non-adjacent faces don't affect the score because we will triangulate them later (zero score).
-						}
-						const PackedInt32Array candidate_triangulation = _triangulate_face_vertex_indices(face_vertices, vertex_index);
-						// Score faces with compatible triangulations higher, and incompatible triangulations much lower.
-						score += _compare_triangulation_alignment(existing_triangulation, candidate_triangulation);
-					}
+				for (int64_t vertex_number_in_cell = 0; vertex_number_in_cell < vertex_count; vertex_number_in_cell++) {
+					const int32_t vertex_index = cell_vertices[vertex_number_in_cell];
+					const int32_t score = _score_vertex_for_cell(vertex_index, prev_pivot_vertex, chosen_pivot_vertices, cell_data, face_triangulations, face_vertices_cache);
 					if (score > best_score) {
 						best_score = score;
 						best_cell_number = cell_number;
-						best_vertex_index = vertex_index;
+						best_pivot_vertex = vertex_index;
 					}
 				}
 			}
 			const int32_t best_cell_index = surface_cells_to_check[best_cell_number];
-			// Now that the best cell has been chosen, we need to either bake its adjacent face triangulations, or mark it as a centroid.
+			// Step 5.2: Now that the best cell has been chosen, we need to either bake its adjacent face triangulations, or mark it as a centroid.
 			if (p_force_align_triangulations && best_score < 0) {
 				// This cell is disruptive to other cells, so we will tetrahedralize it using the centroid of its vertices.
 				Vector4 centroid;
@@ -504,37 +515,37 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 					centroid += _simplex_cell_vertices_cache[vertex_index];
 				}
 				centroid /= (real_t)cell_vertex_indices[best_cell_index].size();
-				best_vertex_index = _append_vertex_internal(_simplex_cell_vertices_cache, centroid, true);
+				best_pivot_vertex = _append_vertex_internal(_simplex_cell_vertices_cache, centroid, true);
 			} else {
+				// This cell is not disruptive, so we will triangulate the faces adjacent to its pivot vertex.
 				const PackedInt32Array &cell_data = boundary_cells[best_cell_index];
-				for (int64_t face_number = 0; face_number < cell_data.size(); face_number++) {
-					const int32_t face_index = cell_data[face_number];
-					const PackedInt32Array face_vertices = _get_vertex_indices_of_face(all_edge_indices, faces[face_index]);
-					const PackedInt32Array triangulation = _triangulate_face_vertex_indices(face_vertices, best_vertex_index);
+				for (int64_t face_number_in_cell = 0; face_number_in_cell < cell_data.size(); face_number_in_cell++) {
+					const int32_t face_index = cell_data[face_number_in_cell];
+					const PackedInt32Array &face_vertices = face_vertices_cache[face_index];
+					const PackedInt32Array triangulation = _triangulate_face_vertex_indices(face_vertices, best_pivot_vertex);
 					// It's okay if we overwrite an existing triangulation. If it's the same, there is no problem.
 					// If it's different, then it's bad either way, overwriting won't make it worse, so just do it.
 					face_triangulations.set(face_index, triangulation);
 				}
 			}
-			// We found the best cell and vertex to use as the pivot for that cell.
+			// Step 5.3: We found the best cell and vertex to use as the pivot for that cell.
 			// Record it, and remove that cell from the list of cells to check.
-			cell_pivot_vertices.set(best_cell_index, best_vertex_index);
-			chosen_pivot_vertices.insert(best_vertex_index);
-			prev_vertex_index = best_vertex_index;
+			cell_pivot_vertices.set(best_cell_index, best_pivot_vertex);
+			chosen_pivot_vertices.insert(best_pivot_vertex);
+			prev_pivot_vertex = best_pivot_vertex;
 			surface_cells_to_check.remove_at(best_cell_number);
 		}
 	}
-	// Fourth pass: Triangulate all faces that haven't been triangulated yet.
+	// Step 6: Triangulate all faces that haven't been triangulated yet.
 	// Since the second pass did not determine these, any triangulation works equally well.
 	for (int64_t face_index = 0; face_index < faces.size(); face_index++) {
 		if (!face_triangulations[face_index].is_empty()) {
 			continue; // Already triangulated during the second pass.
 		}
-		const PackedInt32Array &face_data = faces[face_index];
-		const PackedInt32Array face_vertices = _get_vertex_indices_of_face(all_edge_indices, face_data);
+		const PackedInt32Array &face_vertices = face_vertices_cache[face_index];
 		face_triangulations.set(face_index, _triangulate_face_vertex_indices(face_vertices, -1));
 	}
-	// Fifth and final pass: Tetrahedralize each cell by connecting each opposing face to the start vertex.
+	// Step 7: Tetrahedralize each cell by connecting each opposing face to the start vertex.
 	// Determine which way is "outward" for this cell's normal vector, so we can orient the tetrahedra properly.
 	_simplex_cell_indices_source_poly_cells.clear();
 	for (const int32_t cell_index : surface_cells_to_use) {

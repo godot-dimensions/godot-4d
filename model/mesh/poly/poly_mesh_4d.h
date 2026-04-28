@@ -37,6 +37,7 @@ class PolyMesh4D : public TetraMesh4D {
 	static PackedInt32Array _get_vertex_indices_of_poly_cell(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const bool p_start_with_canonical_span);
 	static PackedInt32Array _get_vertex_indices_of_face(const PackedInt32Array &p_all_edge_indices, const PackedInt32Array &p_face_edge_indices);
 	static PackedInt32Array _triangulate_face_vertex_indices(const PackedInt32Array &p_face_vertex_indices, const int32_t p_pivot_attempt);
+	static int32_t _score_vertex_for_cell(const int32_t p_vertex_index, const int32_t p_prev_pivot_vertex, const HashSet<int32_t> &p_chosen_pivot_vertices, const PackedInt32Array &p_cell_data, const Vector<PackedInt32Array> &p_face_triangulations, const Vector<PackedInt32Array> &p_face_vertices_cache);
 	void _decompose_boundary_cells_into_simplexes(const bool p_force_align_triangulations);
 
 protected:
