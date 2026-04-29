@@ -195,9 +195,6 @@ void ArrayTetraMesh4D::set_simplex_cell_boundary_normals(const PackedVector4Arra
 }
 
 PackedVector4Array ArrayTetraMesh4D::get_simplex_cell_vertex_normals() {
-	if (_simplex_cell_vertex_normals.is_empty()) {
-		set_flat_shading_normals();
-	}
 	return _simplex_cell_vertex_normals;
 }
 
