@@ -24,6 +24,8 @@
 #endif
 
 constexpr real_t LINE_THICKNESS_4D = 3.0;
+constexpr real_t CENTER_TARGET_RADIUS_4D = 0.125;
+constexpr real_t CENTER_VISUAL_RADIUS_4D = CENTER_TARGET_RADIUS_4D * 0.5;
 constexpr int MOVE_ARROW_SUBDIVISIONS_4D = 4;
 constexpr real_t MOVE_ARROW_TIP_POSITION_4D = 0.125;
 constexpr real_t MOVE_ARROW_RADIUS_4D = 0.0625;
@@ -93,7 +95,7 @@ Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh_4d() {
 	PackedVector4Array vertices = mesh->get_vertices();
 	PackedInt32Array edge_indices = mesh->get_edge_indices();
 	const int octahedral_cone_vertex_count = vertices.size();
-	vertices.append(Vector4(0.0, 0.0, 0.0, -1.0));
+	vertices.append(Vector4(0.0, 0.0, 0.0, -1.0 + CENTER_VISUAL_RADIUS_4D));
 	edge_indices.push_back(octahedral_cone_vertex_count - 1);
 	edge_indices.push_back(octahedral_cone_vertex_count);
 	mesh->set_vertices(vertices);
@@ -130,7 +132,7 @@ Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh_4d() {
 	box_mesh->set_size(Vector4(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D));
 	const Vector4i subdiv_segments = Vector4i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D);
 	Ref<ArrayWireMesh4D> mesh = box_mesh->subdivide_box(subdiv_segments);
-	mesh->append_edge_points(Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0));
+	mesh->append_edge_points(Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, -1.0 + CENTER_VISUAL_RADIUS_4D));
 	return mesh;
 }
 
@@ -156,7 +158,7 @@ Ref<ArrayWireMesh4D> _make_stretch_triplane_wire_mesh_4d() {
 	return WireMeshBuilder4D::create_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
 }
 
-MeshInstance4D *EditorTransformGizmo4D::_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material, Node4D *p_parent) {
+MeshInstance4D *EditorTransformGizmo4D::_make_mesh_instance_4d(const StringName &p_name, const Ref<Mesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material, Node4D *p_parent) {
 	MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
 	mesh_instance->set_name(p_name);
 	mesh_instance->set_mesh(p_mesh);
@@ -173,6 +175,13 @@ void EditorTransformGizmo4D::_generate_gizmo_meshes(const PackedColorArray &p_ax
 	Ref<WireMaterial4D> y_material = _make_single_color_wire_material_4d(p_axis_colors[1]);
 	Ref<WireMaterial4D> z_material = _make_single_color_wire_material_4d(p_axis_colors[2]);
 	Ref<WireMaterial4D> w_material = _make_single_color_wire_material_4d(p_axis_colors[3]);
+	Ref<WireMaterial4D> center_material = _make_single_color_wire_material_4d(Color(0.5, 0.5, 0.5, 1.0));
+	// Create the center cube mesh.
+	Ref<BoxWireMesh4D> center_cube_mesh;
+	center_cube_mesh.instantiate();
+	center_cube_mesh->set_size(2.0f * Vector4(CENTER_VISUAL_RADIUS_4D, CENTER_VISUAL_RADIUS_4D, CENTER_VISUAL_RADIUS_4D, CENTER_VISUAL_RADIUS_4D));
+	_meshes[TRANSFORM_MOVE_SCREEN_RELATIVE] = _make_mesh_instance_4d(StringName("CenterCube"), center_cube_mesh, center_material, _mesh_holder);
+	_meshes[TRANSFORM_SCALE_UNIFORM] = _meshes[TRANSFORM_MOVE_SCREEN_RELATIVE]; // Reuse the center cube mesh for uniform scaling.
 	// Create the move arrow meshes.
 	Ref<ArrayWireMesh4D> move_arrow_mesh = _make_move_arrow_wire_mesh_4d();
 	_meshes[TRANSFORM_MOVE_X] = _make_mesh_instance_4d(StringName("MoveArrowX"), move_arrow_mesh, x_material, _mesh_keep_conformal[0]);
@@ -377,6 +386,7 @@ String EditorTransformGizmo4D::_get_transform_part_simple_action_name(const Tran
 		case TRANSFORM_NONE: {
 			return "Transform";
 		} break;
+		case TRANSFORM_MOVE_SCREEN_RELATIVE:
 		case TRANSFORM_MOVE_X:
 		case TRANSFORM_MOVE_Y:
 		case TRANSFORM_MOVE_Z:
@@ -397,6 +407,7 @@ String EditorTransformGizmo4D::_get_transform_part_simple_action_name(const Tran
 		case TRANSFORM_ROTATE_ZW: {
 			return "Rotate";
 		} break;
+		case TRANSFORM_SCALE_UNIFORM:
 		case TRANSFORM_SCALE_X:
 		case TRANSFORM_SCALE_Y:
 		case TRANSFORM_SCALE_Z:
@@ -486,18 +497,29 @@ Vector4 _origin_axis_aligned_bivector_ring_raycast(const Vector4 &p_ray_origin, 
 EditorTransformGizmo4D::TransformPart EditorTransformGizmo4D::_check_for_best_hit(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) const {
 	Vector4 aligned;
 	real_t current_distance;
-	real_t closest_distance = 0.1;
+	// If all distances are farther than this, no hit is registered.
+	real_t closest_distance = CENTER_TARGET_RADIUS_4D;
 	TransformPart closest_part = TRANSFORM_NONE;
+	// Check center (move screen-relative and scale uniformly).
+	if (_is_move_screen_relative_enabled || _is_scale_linear_enabled) {
+		current_distance = Geometry4D::closest_point_on_ray(p_local_ray_origin, p_local_ray_direction, Vector4(0.0, 0.0, 0.0, 0.0)).length();
+		if (current_distance < closest_distance) {
+			closest_distance = current_distance;
+			closest_part = _is_move_screen_relative_enabled ? TRANSFORM_MOVE_SCREEN_RELATIVE : TRANSFORM_SCALE_UNIFORM;
+		}
+	}
 	// Check arrows.
 	if (_is_move_linear_enabled || _is_scale_linear_enabled) {
 		PackedVector4Array current_points;
-#define CHECK_ARROW(m_axis, m_part)                                                                                                                        \
-	aligned = Vector4D::slide(m_axis, p_local_perp_direction);                                                                                             \
-	current_points = Geometry4D::closest_points_between_line_and_segment(p_local_ray_origin, p_local_ray_direction, Vector4(0.0, 0.0, 0.0, 0.0), aligned); \
-	current_distance = current_points[0].distance_to(current_points[1]);                                                                                   \
-	if (current_distance < closest_distance) {                                                                                                             \
-		closest_distance = current_distance;                                                                                                               \
-		closest_part = m_part;                                                                                                                             \
+		Vector4 axis_start;
+#define CHECK_ARROW(m_axis, m_part)                                                                                                       \
+	aligned = Vector4D::slide(m_axis, p_local_perp_direction);                                                                            \
+	axis_start = aligned * CENTER_TARGET_RADIUS_4D;                                                                                       \
+	current_points = Geometry4D::closest_points_between_line_and_segment(p_local_ray_origin, p_local_ray_direction, axis_start, aligned); \
+	current_distance = current_points[0].distance_to(current_points[1]);                                                                  \
+	if (current_distance < closest_distance) {                                                                                            \
+		closest_distance = current_distance;                                                                                              \
+		closest_part = m_part;                                                                                                            \
 	}
 		CHECK_ARROW(Vector4(1.0, 0.0, 0.0, 0.0), _is_move_linear_enabled ? TRANSFORM_MOVE_X : TRANSFORM_SCALE_X);
 		CHECK_ARROW(Vector4(0.0, 1.0, 0.0, 0.0), _is_move_linear_enabled ? TRANSFORM_MOVE_Y : TRANSFORM_SCALE_Y);
@@ -584,10 +606,15 @@ void EditorTransformGizmo4D::_highlight_mesh(TransformPart p_transformation) {
 	mesh_instance->set_material_override(highlight_material);
 }
 
-Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
+Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction, const Vector4 &p_local_camera_direction) {
 	switch (_current_transformation) {
 		case TRANSFORM_NONE: {
 			return Variant();
+		} break;
+		case TRANSFORM_MOVE_SCREEN_RELATIVE:
+		case TRANSFORM_SCALE_UNIFORM: {
+			const Plane4D plane = Plane4D(p_local_camera_direction, 0.0);
+			return plane.intersect_ray(p_local_ray_origin, p_local_ray_direction);
 		} break;
 		case TRANSFORM_MOVE_X:
 		case TRANSFORM_SCALE_X:
@@ -668,10 +695,10 @@ Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_lo
 	return Variant();
 }
 
-void EditorTransformGizmo4D::_begin_transformation(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
+void EditorTransformGizmo4D::_begin_transformation(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction, const Vector4 &p_local_camera_direction) {
 	_old_gizmo_transform = get_transform();
 	_old_mesh_holder_transform = _mesh_holder->get_transform();
-	_transform_reference_value = _get_transform_raycast_value(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
+	_transform_reference_value = _get_transform_raycast_value(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction, p_local_camera_direction);
 	_selected_top_node_old_transforms.resize(_selected_top_nodes.size());
 	for (int i = 0; i < _selected_top_nodes.size(); i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
@@ -705,13 +732,14 @@ void EditorTransformGizmo4D::_end_transformation() {
 	EditorInterface::get_singleton()->mark_scene_as_unsaved();
 }
 
-void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
+void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction, const Vector4 &p_local_camera_direction) {
 	Transform4D transform_change;
-	Variant casted = _get_transform_raycast_value(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
+	Variant casted = _get_transform_raycast_value(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction, p_local_camera_direction);
 	switch (_current_transformation) {
 		case TRANSFORM_NONE: {
 			// Do nothing.
 		} break;
+		case TRANSFORM_MOVE_SCREEN_RELATIVE:
 		case TRANSFORM_MOVE_X:
 		case TRANSFORM_MOVE_Y:
 		case TRANSFORM_MOVE_Z:
@@ -741,6 +769,15 @@ void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origi
 		} break;
 		case TRANSFORM_ROTATE_ZW: {
 			transform_change.basis = Basis4D::from_zw(real_t(casted) - real_t(_transform_reference_value));
+		} break;
+		case TRANSFORM_SCALE_UNIFORM: {
+			const real_t along = Vector4(casted).dot(Vector4(_transform_reference_value)) / Vector4(_transform_reference_value).length_squared();
+			// The 0.05 factor is an arbitrary value that can be changed to adjust the sensitivity of the uniform scaling.
+			const real_t uniform_scale = Math::exp((along - 1.0f) * 0.05f);
+			transform_change.basis.x.x = uniform_scale;
+			transform_change.basis.y.y = uniform_scale;
+			transform_change.basis.z.z = uniform_scale;
+			transform_change.basis.w.w = uniform_scale;
 		} break;
 		case TRANSFORM_SCALE_X: {
 			transform_change.basis.x.x = Vector4(casted).x / Vector4(_transform_reference_value).x;
@@ -934,41 +971,51 @@ void EditorTransformGizmo4D::set_keep_mode(const KeepMode p_mode) {
 void EditorTransformGizmo4D::set_gizmo_mode(const GizmoMode p_mode) {
 	switch (p_mode) {
 		case GizmoMode::SELECT: {
+			_is_move_screen_relative_enabled = true;
 			_is_move_linear_enabled = true;
 			_is_move_planar_enabled = false;
 			_is_rotation_enabled = false;
+			_is_scale_uniform_enabled = false;
 			_is_scale_linear_enabled = false;
 			_is_scale_planar_enabled = false;
 			_is_stretch_enabled = false;
 		} break;
 		case GizmoMode::MOVE: {
+			_is_move_screen_relative_enabled = true;
 			_is_move_linear_enabled = true;
 			_is_move_planar_enabled = true;
 			_is_rotation_enabled = false;
+			_is_scale_uniform_enabled = false;
 			_is_scale_linear_enabled = false;
 			_is_scale_planar_enabled = false;
 			_is_stretch_enabled = false;
 		} break;
 		case GizmoMode::ROTATE: {
+			_is_move_screen_relative_enabled = false;
 			_is_move_linear_enabled = false;
 			_is_move_planar_enabled = false;
 			_is_rotation_enabled = true;
+			_is_scale_uniform_enabled = false;
 			_is_scale_linear_enabled = false;
 			_is_scale_planar_enabled = false;
 			_is_stretch_enabled = false;
 		} break;
 		case GizmoMode::SCALE: {
+			_is_move_screen_relative_enabled = false;
 			_is_move_linear_enabled = false;
 			_is_move_planar_enabled = false;
 			_is_rotation_enabled = false;
+			_is_scale_uniform_enabled = true;
 			_is_scale_linear_enabled = true;
 			_is_scale_planar_enabled = _keep_mode != KeepMode::CONFORMAL;
 			_is_stretch_enabled = false;
 		} break;
 		case GizmoMode::STRETCH: {
+			_is_move_screen_relative_enabled = false;
 			_is_move_linear_enabled = false;
 			_is_move_planar_enabled = false;
 			_is_rotation_enabled = false;
+			_is_scale_uniform_enabled = false;
 			_is_scale_linear_enabled = false;
 			_is_scale_planar_enabled = false;
 			_is_stretch_enabled = true;
@@ -997,6 +1044,10 @@ void EditorTransformGizmo4D::set_gizmo_mode(const GizmoMode p_mode) {
 	_meshes[TRANSFORM_STRETCH_NEG_Z]->set_visible(_is_stretch_enabled);
 	_meshes[TRANSFORM_STRETCH_POS_W]->set_visible(_is_stretch_enabled);
 	_meshes[TRANSFORM_STRETCH_NEG_W]->set_visible(_is_stretch_enabled);
+	// Update TRANSFORM_MOVE_SCREEN_RELATIVE based on center visibility (same mesh as scale uniform).
+	const bool is_center_visible = _is_move_screen_relative_enabled || _is_scale_uniform_enabled;
+	_meshes[TRANSFORM_MOVE_SCREEN_RELATIVE]->set_visible(is_center_visible);
+	// Update TRANSFORM_MOVE planes based on planar visibility (same meshes as scale planes).
 	const bool is_plane_visible = _is_move_planar_enabled || _is_scale_planar_enabled;
 	_meshes[TRANSFORM_MOVE_XY]->set_visible(is_plane_visible);
 	_meshes[TRANSFORM_MOVE_XZ]->set_visible(is_plane_visible);
@@ -1023,15 +1074,16 @@ bool EditorTransformGizmo4D::gizmo_mouse_input(const Ref<InputEventMouse> &p_mou
 	if (_current_transformation == TRANSFORM_NONE) {
 		_old_gizmo_transform = get_transform();
 		_old_mesh_holder_transform = _mesh_holder->get_transform();
+		_old_global_to_local = (_old_gizmo_transform * _old_mesh_holder_transform).inverse();
 	}
-	const Transform4D global_to_local = (_old_gizmo_transform * _old_mesh_holder_transform).inverse();
-	const Vector4 local_perp_direction = global_to_local.basis.xform(perpendicular_direction).normalized();
-	const Vector4 local_ray_origin = Vector4D::slide(global_to_local.xform(ray_origin), local_perp_direction);
-	const Vector4 local_ray_direction = Vector4D::slide(global_to_local.basis.xform(ray_direction), local_perp_direction);
+	const Vector4 local_perp_direction = _old_global_to_local.basis.xform(perpendicular_direction).normalized();
+	const Vector4 local_ray_origin = Vector4D::slide(_old_global_to_local.xform(ray_origin), local_perp_direction);
+	const Vector4 local_ray_direction = Vector4D::slide(_old_global_to_local.basis.xform(ray_direction), local_perp_direction);
 	return _gizmo_mouse_raycast(p_mouse_event, p_camera, local_ray_origin, local_ray_direction, local_perp_direction);
 }
 
 bool EditorTransformGizmo4D::_gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera, const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction) {
+	const Vector4 local_camera_direction = _old_global_to_local.basis.xform(p_camera->get_global_basis().z);
 	Ref<InputEventMouseButton> mouse_button = p_mouse_event;
 	if (mouse_button.is_valid()) {
 		if (mouse_button->get_button_index() != MOUSE_BUTTON_LEFT) {
@@ -1041,7 +1093,7 @@ bool EditorTransformGizmo4D::_gizmo_mouse_raycast(const Ref<InputEventMouse> &p_
 			// If we are not transforming anything and the user clicks, try to start a transformation.
 			_current_transformation = _check_for_best_hit(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
 			if (_current_transformation != TRANSFORM_NONE) {
-				_begin_transformation(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
+				_begin_transformation(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction, local_camera_direction);
 				_snap_settings->set_camera_distance(_old_gizmo_transform.origin.distance_to(p_camera->get_global_position()));
 			}
 		} else if (!mouse_button->is_pressed() && _current_transformation != TRANSFORM_NONE) {
@@ -1065,7 +1117,7 @@ bool EditorTransformGizmo4D::_gizmo_mouse_raycast(const Ref<InputEventMouse> &p_
 			return true;
 		} else {
 			// If we are transforming something, process the transformation.
-			_process_transform(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction);
+			_process_transform(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction, local_camera_direction);
 			return true;
 		}
 	}

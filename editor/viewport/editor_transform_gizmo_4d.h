@@ -33,6 +33,7 @@ public:
 private:
 	enum TransformPart {
 		TRANSFORM_NONE,
+		TRANSFORM_MOVE_SCREEN_RELATIVE,
 		TRANSFORM_MOVE_X,
 		TRANSFORM_MOVE_Y,
 		TRANSFORM_MOVE_Z,
@@ -49,6 +50,7 @@ private:
 		TRANSFORM_ROTATE_YZ,
 		TRANSFORM_ROTATE_YW,
 		TRANSFORM_ROTATE_ZW,
+		TRANSFORM_SCALE_UNIFORM,
 		TRANSFORM_SCALE_X,
 		TRANSFORM_SCALE_Y,
 		TRANSFORM_SCALE_Z,
@@ -80,15 +82,20 @@ private:
 	TransformPart _current_transformation = TRANSFORM_NONE;
 	TransformPart _highlighted_transformation = TRANSFORM_NONE;
 
+	// "Old" here means that the values are not updated during transformation.
+	// These are used to calculate the delta change during transformation.
 	Transform4D _old_gizmo_transform = Transform4D();
 	Transform4D _old_mesh_holder_transform = Transform4D();
+	Transform4D _old_global_to_local = Transform4D();
 	Variant _transform_reference_value = Variant();
 	TypedArray<Node> _selected_top_nodes;
 	Vector<Transform4D> _selected_top_node_old_transforms;
 
+	bool _is_move_screen_relative_enabled = true;
 	bool _is_move_linear_enabled = true;
 	bool _is_move_planar_enabled = false;
 	bool _is_rotation_enabled = false;
+	bool _is_scale_uniform_enabled = false;
 	bool _is_scale_linear_enabled = false;
 	bool _is_scale_planar_enabled = false;
 	bool _is_stretch_enabled = false;
@@ -96,7 +103,7 @@ private:
 	bool _are_generated_meshes_wireframes = false;
 
 	// Setup functions.
-	MeshInstance4D *_make_mesh_instance_4d(const StringName &p_name, const Ref<ArrayWireMesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material, Node4D *p_parent);
+	MeshInstance4D *_make_mesh_instance_4d(const StringName &p_name, const Ref<Mesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material, Node4D *p_parent);
 	void _generate_gizmo_meshes(const PackedColorArray &p_axis_colors);
 
 	// Misc internal functions.
@@ -115,10 +122,10 @@ private:
 	void _highlight_mesh(TransformPart p_transformation);
 
 	// Transformation functions.
-	Variant _get_transform_raycast_value(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction);
-	void _begin_transformation(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction);
+	Variant _get_transform_raycast_value(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction, const Vector4 &p_local_camera_direction);
+	void _begin_transformation(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction, const Vector4 &p_local_camera_direction);
 	void _end_transformation();
-	void _process_transform(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction);
+	void _process_transform(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction, const Vector4 &p_local_camera_direction);
 
 protected:
 	static void _bind_methods() {}
