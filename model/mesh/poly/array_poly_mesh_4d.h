@@ -27,18 +27,18 @@ private:
 	// 2: Each 4D cell made up of 3D cell indices (optional, for encoding hypervolumes).
 	Vector<Vector<PackedInt32Array>> _poly_cell_indices;
 	PackedVector4Array _poly_cell_vertices;
-	// Normals and UVW map always refer to 3D cells (the boundary/surface of the 4D mesh).
-	PackedVector4Array _poly_cell_boundary_normals;
+	// The key's X is the geometry dimension, Y is the decomposition dimension.
+	// See G4MFMeshSurfaceBindingGeometry4D for more details.
+	HashMap<Vector2i, Vector<PackedVector4Array>> _all_poly_cell_normals;
+	HashMap<Vector2i, Vector<PackedVector3Array>> _all_poly_cell_texture_maps;
 	PackedInt32Array _poly_cell_boundary_pivot_overrides;
-	Vector<PackedVector4Array> _poly_cell_vertex_normals;
-	Vector<PackedVector3Array> _poly_cell_texture_map;
 	// Seams always refer to 2D faces (the border between boundary 3D cells).
 	HashSet<int32_t> _seam_face_indices;
 	PackedInt32Array _edge_vertex_indices;
 
 	PackedInt32Array _get_cell_4_vertices_starting_from_face(const int64_t p_cell, const int64_t p_start_face) const;
 	void _get_cell_world_span_seed(const int64_t p_which_cell, Vector4 &r_world_x, Vector4 &r_world_y, Vector4 &r_world_z, int32_t &p_pivot) const;
-	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot);
+	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map);
 	Vector<PackedInt32Array> _get_face_to_cell_map() const;
 	PackedInt32Array _collect_cells_in_island_internal(const int64_t p_start_cell, const Vector<PackedInt32Array> &p_face_to_cell_map);
 	void _delete_edge_internal(const int32_t p_index);
@@ -81,6 +81,11 @@ public:
 	void transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis = Projection());
 	void merge_with(const Ref<PolyMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
 	void merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
+
+	HashMap<Vector2i, Vector<PackedVector4Array>> get_all_poly_cell_normals() const { return _all_poly_cell_normals; }
+	void set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals);
+	HashMap<Vector2i, Vector<PackedVector3Array>> get_all_poly_cell_texture_maps() const { return _all_poly_cell_texture_maps; }
+	void set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vector<PackedVector3Array>> &p_all_poly_cell_texture_maps);
 
 	virtual PackedInt32Array get_edge_indices() override;
 	void set_edge_vertex_indices(const PackedInt32Array &p_edge_indices);

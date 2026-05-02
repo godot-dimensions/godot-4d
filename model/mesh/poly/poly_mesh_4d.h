@@ -15,6 +15,21 @@ class ArrayPolyMesh4D;
 class PolyMesh4D : public TetraMesh4D {
 	GDCLASS(PolyMesh4D, TetraMesh4D);
 
+public:
+	// Normals and texture map usually refer to 3D cells (the boundary/surface of the 4D mesh).
+#if USE_CONST_NOT_CONSTEXPR_FOR_VECTORS
+	static const Vector2i CELL_TO_VERT_KEY;
+	static const Vector2i FACE_TO_VERT_KEY;
+	static const Vector2i PER_CELL_KEY;
+	static const Vector2i PER_FACE_KEY;
+#else
+	static constexpr Vector2i CELL_TO_VERT_KEY = Vector2i(3, 0);
+	static constexpr Vector2i FACE_TO_VERT_KEY = Vector2i(2, 0);
+	static constexpr Vector2i PER_CELL_KEY = Vector2i(3, 3);
+	static constexpr Vector2i PER_FACE_KEY = Vector2i(2, 2);
+#endif
+
+private:
 	PackedInt32Array _simplex_cell_indices_cache;
 	PackedInt32Array _simplex_cell_indices_source_poly_cells;
 	PackedVector4Array _simplex_cell_vertices_cache; // Superset of the polytope cell vertices.
