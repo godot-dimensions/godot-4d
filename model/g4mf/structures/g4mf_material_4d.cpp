@@ -1,5 +1,6 @@
 #include "g4mf_material_4d.h"
 
+#include "../../mesh/poly/poly_material_4d.h"
 #include "../g4mf_state_4d.h"
 
 bool G4MFMaterial4D::is_equal_exact(const Ref<G4MFMaterial4D> &p_other) const {
@@ -79,17 +80,17 @@ Ref<WireMaterial4D> G4MFMaterial4D::generate_wire_material(const Ref<G4MFState4D
 		}
 		const Ref<G4MFMeshSurfaceBinding4D> base_color_binding = _base_color_channel->get_element_map_binding();
 		if (base_color_binding.is_valid()) {
-			const PackedColorArray original_colors = base_color_binding->load_values_as_colors(p_g4mf_state);
-			if (base_color_binding->get_per_edge_accessor_index() != 0) {
-				PackedInt32Array edge_indices = base_color_binding->load_edge_indices(p_g4mf_state);
-				PackedColorArray edge_colors;
-				edge_colors.resize(edge_indices.size());
-				for (int i = 0; i < edge_indices.size(); i++) {
-					const int color_index = edge_indices[i];
+			const PackedInt32Array per_edge_indices = base_color_binding->load_geometry_binding_indices(p_g4mf_state, 1, 1);
+			if (per_edge_indices.size() > 0) {
+				const PackedColorArray original_colors = base_color_binding->load_values_as_colors(p_g4mf_state);
+				PackedColorArray per_edge_colors;
+				per_edge_colors.resize(per_edge_indices.size());
+				for (int i = 0; i < per_edge_indices.size(); i++) {
+					const int color_index = per_edge_indices[i];
 					ERR_FAIL_INDEX_V(color_index, original_colors.size(), wire_material);
-					edge_colors.set(i, original_colors[color_index]);
+					per_edge_colors.set(i, original_colors[color_index]);
 				}
-				wire_material->set_albedo_color_array(edge_colors);
+				wire_material->set_albedo_color_array(per_edge_colors);
 				if (has_single_base_color) {
 					wire_material->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_AND_SINGLE);
 				} else {
@@ -110,6 +111,15 @@ Ref<WireMaterial4D> G4MFMaterial4D::generate_wire_material(const Ref<G4MFState4D
 	return wire_material;
 }
 
+void G4MFMaterial4D::_append_geometry_binding(TypedArray<G4MFMeshSurfaceBindingGeometry4D> &p_geometry_bindings, const int p_geometry_dimension, const int p_decompose_dimension, const int p_indices_accessor_index) {
+	Ref<G4MFMeshSurfaceBindingGeometry4D> geom;
+	geom.instantiate();
+	geom->set_geometry_dimension(p_geometry_dimension);
+	geom->set_decompose_dimension(p_decompose_dimension);
+	geom->set_indices_accessor_index(p_indices_accessor_index);
+	p_geometry_bindings.append(geom);
+}
+
 int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Material4D> &p_material, const bool p_deduplicate) {
 	Ref<G4MFMaterial4D> g4mf_material;
 	g4mf_material.instantiate();
@@ -117,34 +127,74 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
 	const PackedColorArray albedo_colors = p_material->get_albedo_color_array();
 	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY && albedo_colors.size() > 0) {
-		PackedColorArray deduplicated_colors;
-		PackedInt64Array deduplicated_indices;
-		deduplicated_indices.resize(albedo_colors.size());
-		HashMap<Color, int> color_to_index_map;
-		for (int i = 0; i < albedo_colors.size(); i++) {
-			const Color color = albedo_colors[i];
-			if (color_to_index_map.has(color)) {
-				deduplicated_indices.set(i, color_to_index_map[color]);
-			} else {
-				const int new_index = deduplicated_colors.size();
-				deduplicated_colors.append(color);
-				color_to_index_map[color] = new_index;
-				deduplicated_indices.set(i, new_index);
-			}
-		}
 		Ref<G4MFMaterialChannel4D> base_color_channel;
 		base_color_channel.instantiate();
 		Ref<G4MFMeshSurfaceBinding4D> element_map_binding;
 		element_map_binding.instantiate();
-		element_map_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_colors(p_g4mf_state, deduplicated_colors, p_deduplicate));
-		int indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, deduplicated_indices, p_deduplicate);
+		TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_bindings;
+		// Deduplicate colors with indices to store the data in the G4MF style.
+		PackedColorArray deduplicated_colors;
+		PackedInt64Array deduplicated_simplex_indices;
+		deduplicated_simplex_indices.resize(albedo_colors.size());
+		HashMap<Color, int> color_to_index_map;
+		for (int i = 0; i < albedo_colors.size(); i++) {
+			const Color color = albedo_colors[i];
+			if (color_to_index_map.has(color)) {
+				deduplicated_simplex_indices.set(i, color_to_index_map[color]);
+			} else {
+				const int new_index = deduplicated_colors.size();
+				deduplicated_colors.append(color);
+				color_to_index_map[color] = new_index;
+				deduplicated_simplex_indices.set(i, new_index);
+			}
+		}
+		// Handle PolyMaterial4D's separate color array.
+		Ref<PolyMaterial4D> poly_material = p_material;
+		if (poly_material.is_valid()) {
+			const PackedColorArray poly_array = poly_material->get_poly_albedo_color_array();
+			PackedInt64Array deduplicated_poly_indices;
+			deduplicated_poly_indices.resize(poly_array.size());
+			for (int i = 0; i < poly_array.size(); i++) {
+				const Color color = poly_array[i];
+				if (color_to_index_map.has(color)) {
+					deduplicated_poly_indices.set(i, color_to_index_map[color]);
+				} else {
+					const int new_index = deduplicated_colors.size();
+					deduplicated_colors.append(color);
+					color_to_index_map[color] = new_index;
+					deduplicated_poly_indices.set(i, new_index);
+				}
+			}
+			const int poly_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, deduplicated_poly_indices, p_deduplicate);
+			if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
+				_append_geometry_binding(geometry_bindings, 3, 3, poly_indices_accessor_index);
+			} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_FACE) {
+				_append_geometry_binding(geometry_bindings, 2, 2, poly_indices_accessor_index);
+			} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
+				_append_geometry_binding(geometry_bindings, 1, 1, poly_indices_accessor_index);
+			} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_VERT) {
+				_append_geometry_binding(geometry_bindings, 0, 0, poly_indices_accessor_index);
+			} else {
+				ERR_PRINT("G4MFMaterial4D.convert_material_into_state: Unhandled albedo source flag for poly material.");
+			}
+		}
+		// Handle the main material's color array.
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
-			element_map_binding->set_per_simplex_accessor_index(indices_accessor_index);
+			int simplex_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, deduplicated_simplex_indices, p_deduplicate);
+			element_map_binding->set_per_simplex_accessor_index(simplex_indices_accessor_index);
 		} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
-			element_map_binding->set_per_edge_accessor_index(indices_accessor_index);
+			// Only encode per-edge indices here if it wasn't already handled above by the poly material's per-vertex/edge/face/cell colors.
+			// deduplicated_simplex_indices is just the data from the array, it is not necessarily exactly the same simplex indices as the tetrahedra.
+			if (poly_material.is_null()) {
+				int edge_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, deduplicated_simplex_indices, p_deduplicate);
+				_append_geometry_binding(geometry_bindings, 1, 1, edge_indices_accessor_index);
+			}
 		} else {
 			ERR_PRINT("G4MFMaterial4D.convert_material_into_state: Unhandled albedo source flag.");
 		}
+		// Set the bindings, values, and factor for the material channel.
+		element_map_binding->set_geometry_bindings(geometry_bindings);
+		element_map_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_colors(p_g4mf_state, deduplicated_colors, p_deduplicate));
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) {
 			base_color_channel->set_factor(p_material->get_albedo_color());
 		}

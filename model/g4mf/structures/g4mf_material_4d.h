@@ -16,6 +16,8 @@ class G4MFMaterial4D : public G4MFItem4D {
 	Ref<G4MFMaterialChannel4D> _normal_channel;
 	Ref<G4MFMaterialChannel4D> _orm_channel;
 
+	static void _append_geometry_binding(TypedArray<G4MFMeshSurfaceBindingGeometry4D> &p_geometry_bindings, const int p_geometry_dimension, const int p_decompose_dimension, const int p_indices_accessor_index);
+
 protected:
 	static void _bind_methods();
 

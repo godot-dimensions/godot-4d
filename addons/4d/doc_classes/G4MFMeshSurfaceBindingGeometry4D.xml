@@ -4,7 +4,14 @@
 		Geometry decomposition for mesh surface bindings.
 	</brief_description>
 	<description>
-		Defines how binding values are associated with specific geometry's decomposed polytope elements of the mesh surface.
+		Defines how binding values are associated with specific geometry's decomposed polytope elements of the mesh surface. [member decompose_dimension] must be less than or equal to [member geometry_dimension]. For example:
+		- When [member geometry_dimension] is 0, then the binding is based on 0D vertices, and [member decompose_dimension] may only be set to 0, meaning the binding is per vertex.
+		- When [member geometry_dimension] is 1, then the binding is based on 1D edges. Then, [member decompose_dimension] set to 0 means the vertices of those edges, and 1 means one value for each entire edge.
+		- When [member geometry_dimension] is 2, then the binding is based on 2D faces. Then, [member decompose_dimension] set to 0 means the vertices of those faces, 1 means the edges of those faces, and 2 means one value for each entire face.
+		- When [member geometry_dimension] is 3, then the binding is based on 3D cells. Then, [member decompose_dimension] set to 0 means the vertices of those cells, 1 means the edges of those cells, 2 means the faces of those cells, and 3 means one value for each entire cell.
+		- When [member geometry_dimension] is 4, then the binding is based on 4D volumes. Then, [member decompose_dimension] set to 0 means the vertices of those volumes, 1 means the edges of those volumes, 2 means the faces of those volumes, 3 means the cells of those volumes, and 4 means one value for each entire volume.
+		- And so on for higher source dimensions, where the decomposition dimension can be set anywhere from 0 to the source dimension, inclusive.
+		Note that these refer to the hierarchical geometry structure of the mesh surface. With a 4D mesh, a [member geometry_dimension] of 3 refers to the polytope cells of the mesh surface geometry, NOT the simplexes. The data for simplexes is instead stored in separate accessors of the main binding object, which can be [member G4MFMeshSurfaceBinding4D.simplexes_accessor_index] for per-corner data, and/or [member G4MFMeshSurfaceBinding4D.per_simplex_accessor_index] for per-simplex data.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -38,11 +45,12 @@
 		</method>
 	</methods>
 	<members>
-		<member name="decomposition_dimension" type="int" setter="set_decomposition_dimension" getter="get_decomposition_dimension" default="0">
-			The dimensional level to decompose to. 0 for vertices, 1 for edges, 2 for polygons, 3 for volumes, and so on. MUST NOT be greater than [member geometry_index] + 2.
+		<member name="decompose_dimension" type="int" setter="set_decompose_dimension" getter="get_decompose_dimension" default="0">
+			The dimensional level to decompose to. 0 for vertices, 1 for edges, 2 for polygons, 3 for cells, 4 for volumes, and so on. MUST NOT be greater than [member geometry_dimension], it must be less than or equal to [member geometry_dimension].
 		</member>
-		<member name="geometry_index" type="int" setter="set_geometry_index" getter="get_geometry_index" default="-1">
-			The index into the mesh surface's geometry array that this binding references.
+		<member name="geometry_dimension" type="int" setter="set_geometry_dimension" getter="get_geometry_dimension" default="-1">
+			The dimension of geometry elements that this binding references. 0 for vertices, 1 for edges, 2 for polygons, 3 for cells, 4 for volumes, and so on. MUST NOT be less than [member decompose_dimension], it must be greater than or equal to [member decompose_dimension].
+			A geometry dimension of 2 or greater means this binding will bind to elements based on the mesh surface's geometry array at an index of this minus 2. A geometry dimension of 0 means this binding will bind to mesh vertices, and a geometry dimension of 1 means this binding will bind to mesh edges.
 		</member>
 		<member name="indices_accessor_index" type="int" setter="set_indices_accessor_index" getter="get_indices_accessor_index" default="-1">
 			The index of the accessor that contains indices into this binding's values. Each element corresponds to a decomposed element at the specified dimension.
