@@ -436,17 +436,7 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_ce
 	} else if (p_poly_cell_index == 1) {
 		// For boundary cells (poly cell index 1), delete from the boundary normals, vertex normals, and texture map.
 		if (p_index < _poly_cell_boundary_normals.size()) {
-			PackedVector4Array adjusted_boundary_normals;
-			adjusted_boundary_normals.resize(_poly_cell_boundary_normals.size() - 1);
-			int64_t target_index = 0;
-			for (int64_t source_index = 0; source_index < _poly_cell_boundary_normals.size(); source_index++) {
-				if (source_index == p_index) {
-					continue;
-				}
-				adjusted_boundary_normals.set(target_index, _poly_cell_boundary_normals[source_index]);
-				target_index++;
-			}
-			_poly_cell_boundary_normals = adjusted_boundary_normals;
+			_poly_cell_boundary_normals.remove_at(p_index);
 		}
 		if (p_index < _poly_cell_vertex_normals.size()) {
 			_poly_cell_vertex_normals.remove_at(p_index);
