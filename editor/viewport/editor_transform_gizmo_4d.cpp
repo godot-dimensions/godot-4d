@@ -899,7 +899,7 @@ void EditorTransformGizmo4D::_process_transform(const Vector4 &p_local_ray_origi
 	transform_change.origin = _old_mesh_holder_transform * transform_change.origin;
 	Transform4D new_transform = _snap_settings->snap_transform_change(_old_gizmo_transform, transform_change);
 	// Special case: Only in move mode, ignore any snapping that happened to the basis.
-	if (_current_transformation >= TRANSFORM_MOVE_X && _current_transformation <= TRANSFORM_MOVE_ZW) {
+	if (_current_transformation >= TRANSFORM_MOVE_SCREEN_RELATIVE && _current_transformation <= TRANSFORM_MOVE_ZW) {
 		new_transform.basis = _old_gizmo_transform.basis;
 	}
 	set_transform(new_transform);
