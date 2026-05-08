@@ -69,6 +69,7 @@ Ref<WireMaterial4D> _make_plane_material_4d(const Color &p_first_color, const Co
 Ref<WireMaterial4D> _make_rotation_ring_material_4d(const Color &p_first_color, const Color &p_second_color) {
 	Ref<WireMaterial4D> mat;
 	mat.instantiate();
+	mat->set_line_thickness(LINE_THICKNESS_4D);
 	mat->set_albedo_source(WireMaterial4D::WIRE_COLOR_SOURCE_PER_EDGE_ONLY);
 	PackedColorArray colors;
 	for (int i = 0; i < ROTATION_RING_SEGMENTS_4D; i++) {
@@ -137,7 +138,7 @@ Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh_4d() {
 }
 
 Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
-	// Must match constexpr int PLANE_SEGMENTS.
+	// Must match constexpr int PLANE_EDGES_4D.
 	PackedVector4Array vertices = {
 		Vector4(-PLANE_RADIUS_4D * 0.9, -PLANE_RADIUS_4D, 0.0, 0.0), // First triangle lower left.
 		Vector4(PLANE_RADIUS_4D, -PLANE_RADIUS_4D, 0.0, 0.0), // First triangle lower right.
@@ -439,6 +440,7 @@ String EditorTransformGizmo4D::_get_transform_part_simple_action_name(const Tran
 
 Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp) {
 	const Vector4 axis1_slid = Vector4D::slide(p_axis1, p_perp).normalized();
+	// These use exact equality checks, not approximate. Only exactly zero is a failure case.
 	if (axis1_slid == Vector4()) {
 		return Vector4();
 	}
@@ -670,6 +672,7 @@ Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_lo
 		} break;
 		case TRANSFORM_ROTATE_XZ: {
 			Vector4 casted = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), p_local_perp_direction);
+			// Note: This is actually a ZX rotation, so the atan2 order needs to be (x, z) instead of (z, x).
 			return Math::atan2(casted.x, casted.z);
 		} break;
 		case TRANSFORM_ROTATE_XW: {
@@ -682,6 +685,7 @@ Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_lo
 		} break;
 		case TRANSFORM_ROTATE_YW: {
 			Vector4 casted = _origin_axis_aligned_bivector_ring_raycast(p_local_ray_origin, p_local_ray_direction, Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), p_local_perp_direction);
+			// Note: This is actually a WY rotation, so the atan2 order needs to be (y, w) instead of (w, y).
 			return Math::atan2(casted.y, casted.w);
 		} break;
 		case TRANSFORM_ROTATE_ZW: {
