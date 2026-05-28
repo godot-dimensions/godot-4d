@@ -43,9 +43,9 @@ class EditorViewportRotation4D : public Control {
 	void _draw_axis_line(const HitTarget2D &p_target, const Vector2 &p_center);
 	void _draw_plane_semicircles(const HitTarget2D &p_target);
 	void _draw_filled_arc(const Vector2 &p_center, const real_t p_radius, const real_t p_start_angle, const real_t p_end_angle, const Color &p_color);
-	void _get_sorted_axis(const Vector2 &p_center, Vector<HitTarget2D> &r_axis);
-	void _get_sorted_axis_screen_aligned(const Basis4D &p_basis, const Vector2 &p_center, const real_t p_radius, const int p_right_index, const int p_up_index, const int p_perp_right, const int p_perp_up, Vector<HitTarget2D> &r_axis);
-	HitTarget2D _make_plane_axis(const Basis4D &p_basis, const int p_a, const int p_b, const Vector2 &p_center, const real_t p_radius);
+	void _get_sorted_axis_targets(const Vector2 &p_center, Vector<HitTarget2D> &r_targets);
+	void _get_sorted_axis_screen_aligned(const Basis4D &p_basis, const Vector2 &p_center, const real_t p_radius, const int p_right_index, const int p_up_index, const int p_perp_right, const int p_perp_up, Vector<HitTarget2D> &r_targets);
+	HitTarget2D _make_plane_target(const Basis4D &p_basis, const int p_a, const int p_b, const Vector2 &p_center, const real_t p_radius);
 	void _on_mouse_exited();
 	void _process_click(int p_index, Vector2 p_position, bool p_pressed);
 	void _process_drag(Ref<InputEvent> p_event, int p_index, Vector2 p_position);

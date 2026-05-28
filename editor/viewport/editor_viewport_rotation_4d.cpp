@@ -38,10 +38,10 @@ void EditorViewportRotation4D::_draw() {
 	if (_focused_target.hit_type != HIT_TYPE_NONE || _orbiting_mouse_button_index != -1) {
 		draw_circle(center, center.x, Color(0.5f, 0.5f, 0.5f, 0.25f), true, -1.0f, true);
 	}
-	Vector<HitTarget2D> axis_to_draw;
-	_get_sorted_axis(center, axis_to_draw);
-	for (int i = 0; i < axis_to_draw.size(); ++i) {
-		HitTarget2D axis = axis_to_draw[i];
+	Vector<HitTarget2D> axis_targets_to_draw;
+	_get_sorted_axis_targets(center, axis_targets_to_draw);
+	for (int i = 0; i < axis_targets_to_draw.size(); ++i) {
+		HitTarget2D axis = axis_targets_to_draw[i];
 		if (axis.hit_type == HIT_TYPE_AXIS_LINE) {
 			_draw_axis_line(axis, center);
 		} else if (axis.hit_type == HIT_TYPE_PLANE) {
@@ -132,7 +132,7 @@ void EditorViewportRotation4D::_draw_filled_arc(const Vector2 &p_center, real_t 
 	draw_polygon(points, colors);
 }
 
-EditorViewportRotation4D::HitTarget2D EditorViewportRotation4D::_make_plane_axis(const Basis4D &p_basis, const int p_right, const int p_up, const Vector2 &p_center, const real_t p_radius) {
+EditorViewportRotation4D::HitTarget2D EditorViewportRotation4D::_make_plane_target(const Basis4D &p_basis, const int p_right, const int p_up, const Vector2 &p_center, const real_t p_radius) {
 	HitTarget2D ret;
 	ret.hit_type = HIT_TYPE_PLANE;
 	ret.primary_axis_number = p_right;
@@ -146,7 +146,7 @@ EditorViewportRotation4D::HitTarget2D EditorViewportRotation4D::_make_plane_axis
 	return ret;
 }
 
-void EditorViewportRotation4D::_get_sorted_axis_screen_aligned(const Basis4D &p_basis, const Vector2 &p_center, const real_t p_radius, const int p_right_index, const int p_up_index, const int p_perp_right, const int p_perp_up, Vector<HitTarget2D> &r_axis) {
+void EditorViewportRotation4D::_get_sorted_axis_screen_aligned(const Basis4D &p_basis, const Vector2 &p_center, const real_t p_radius, const int p_right_index, const int p_up_index, const int p_perp_right, const int p_perp_up, Vector<HitTarget2D> &r_targets) {
 	const Vector2 axis_right_offset = p_radius * Vector2(p_basis[p_right_index].x, -p_basis[p_right_index].y);
 	const Vector2 axis_up_offset = p_radius * Vector2(p_basis[p_up_index].x, -p_basis[p_up_index].y);
 	// Axis lines.
@@ -155,26 +155,26 @@ void EditorViewportRotation4D::_get_sorted_axis_screen_aligned(const Basis4D &p_
 	axis_right.z_index = -1.0f;
 	axis_right.hit_type = HIT_TYPE_AXIS_LINE;
 	axis_right.screen_point = p_center + axis_right_offset;
-	r_axis.push_back(axis_right);
+	r_targets.push_back(axis_right);
 	HitTarget2D axis_up;
 	axis_up.primary_axis_number = p_up_index;
 	axis_up.z_index = -1.0f;
 	axis_up.hit_type = HIT_TYPE_AXIS_LINE;
 	axis_up.screen_point = p_center + axis_up_offset;
-	r_axis.push_back(axis_up);
+	r_targets.push_back(axis_up);
 	// Axis circles.
 	axis_right.hit_type = HIT_TYPE_AXIS_CIRCLE_POSITIVE;
 	axis_right.z_index = 0.0f;
-	r_axis.push_back(axis_right);
+	r_targets.push_back(axis_right);
 	axis_right.hit_type = HIT_TYPE_AXIS_CIRCLE_NEGATIVE;
 	axis_right.screen_point = p_center - axis_right_offset;
-	r_axis.push_back(axis_right);
+	r_targets.push_back(axis_right);
 	axis_up.hit_type = HIT_TYPE_AXIS_CIRCLE_POSITIVE;
 	axis_up.z_index = 0.0f;
-	r_axis.push_back(axis_up);
+	r_targets.push_back(axis_up);
 	axis_up.hit_type = HIT_TYPE_AXIS_CIRCLE_NEGATIVE;
 	axis_up.screen_point = p_center - axis_up_offset;
-	r_axis.push_back(axis_up);
+	r_targets.push_back(axis_up);
 	// Parallel direction.
 	HitTarget2D axis_parallel;
 	axis_parallel.hit_type = HIT_TYPE_PLANE;
@@ -184,7 +184,7 @@ void EditorViewportRotation4D::_get_sorted_axis_screen_aligned(const Basis4D &p_
 	axis_parallel.angle = axis_right_offset.angle_to_point(axis_up_offset);
 	const Vector4 axis_parallel_4d = (p_basis[p_right_index] + p_basis[p_up_index]).normalized();
 	axis_parallel.screen_point = p_center + p_radius * Vector2(axis_parallel_4d.x, -axis_parallel_4d.y);
-	r_axis.push_back(axis_parallel);
+	r_targets.push_back(axis_parallel);
 	// Perpendicular direction.
 	HitTarget2D axis_perp;
 	axis_perp.hit_type = HIT_TYPE_PLANE;
@@ -192,37 +192,36 @@ void EditorViewportRotation4D::_get_sorted_axis_screen_aligned(const Basis4D &p_
 	axis_perp.secondary_axis_number = p_perp_up;
 	axis_perp.screen_point = p_center;
 	axis_perp.z_index = 8.0f;
-	r_axis.push_back(axis_perp);
+	r_targets.push_back(axis_perp);
 }
 
-void EditorViewportRotation4D::_get_sorted_axis(const Vector2 &p_center, Vector<HitTarget2D> &r_axis) {
-	const Vector2 center = get_size() / 2.0f;
-	const real_t radius = get_size().x / 2.0f - 10.0f * _editor_scale;
+void EditorViewportRotation4D::_get_sorted_axis_targets(const Vector2 &p_center, Vector<HitTarget2D> &r_targets) {
+	const real_t radius = p_center.x - 10.0f * _editor_scale;
 	const Basis4D camera_basis_transposed = _editor_main_viewport->get_view_camera_basis().transposed();
 	// Special cases: Axes are aligned with the screen.
 	constexpr real_t SPECIAL_CASE_THRESHOLD = CMP_EPSILON;
 	if (Math::abs(camera_basis_transposed.x.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.x.y) < SPECIAL_CASE_THRESHOLD) {
 		if (Math::abs(camera_basis_transposed.y.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.y.y) < SPECIAL_CASE_THRESHOLD) {
-			_get_sorted_axis_screen_aligned(camera_basis_transposed, center, radius, 2, 3, 0, 1, r_axis);
+			_get_sorted_axis_screen_aligned(camera_basis_transposed, p_center, radius, 2, 3, 0, 1, r_targets);
 			return;
 		} else if (Math::abs(camera_basis_transposed.z.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.z.y) < SPECIAL_CASE_THRESHOLD) {
-			_get_sorted_axis_screen_aligned(camera_basis_transposed, center, radius, 3, 1, 0, 2, r_axis);
+			_get_sorted_axis_screen_aligned(camera_basis_transposed, p_center, radius, 3, 1, 0, 2, r_targets);
 			return;
 		} else if (Math::abs(camera_basis_transposed.w.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.w.y) < SPECIAL_CASE_THRESHOLD) {
-			_get_sorted_axis_screen_aligned(camera_basis_transposed, center, radius, 2, 1, 0, 3, r_axis);
+			_get_sorted_axis_screen_aligned(camera_basis_transposed, p_center, radius, 2, 1, 0, 3, r_targets);
 			return;
 		}
 	} else if (Math::abs(camera_basis_transposed.y.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.y.y) < SPECIAL_CASE_THRESHOLD) {
 		if (Math::abs(camera_basis_transposed.z.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.z.y) < SPECIAL_CASE_THRESHOLD) {
-			_get_sorted_axis_screen_aligned(camera_basis_transposed, center, radius, 0, 3, 2, 1, r_axis);
+			_get_sorted_axis_screen_aligned(camera_basis_transposed, p_center, radius, 0, 3, 2, 1, r_targets);
 			return;
 		} else if (Math::abs(camera_basis_transposed.w.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.w.y) < SPECIAL_CASE_THRESHOLD) {
-			_get_sorted_axis_screen_aligned(camera_basis_transposed, center, radius, 0, 2, 3, 1, r_axis);
+			_get_sorted_axis_screen_aligned(camera_basis_transposed, p_center, radius, 0, 2, 3, 1, r_targets);
 			return;
 		}
 	} else if (Math::abs(camera_basis_transposed.z.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.z.y) < SPECIAL_CASE_THRESHOLD) {
 		if (Math::abs(camera_basis_transposed.w.x) < SPECIAL_CASE_THRESHOLD && Math::abs(camera_basis_transposed.w.y) < SPECIAL_CASE_THRESHOLD) {
-			_get_sorted_axis_screen_aligned(camera_basis_transposed, center, radius, 0, 1, 2, 3, r_axis);
+			_get_sorted_axis_screen_aligned(camera_basis_transposed, p_center, radius, 0, 1, 2, 3, r_targets);
 			return;
 		}
 	}
@@ -236,41 +235,41 @@ void EditorViewportRotation4D::_get_sorted_axis(const Vector2 &p_center, Vector<
 			HitTarget2D axis;
 			axis.hit_type = HIT_TYPE_AXIS_CIRCLE_POSITIVE;
 			axis.primary_axis_number = i;
-			axis.screen_point = center;
-			r_axis.push_back(axis);
+			axis.screen_point = p_center;
+			r_targets.push_back(axis);
 		} else {
 			HitTarget2D pos_axis;
 			pos_axis.hit_type = HIT_TYPE_AXIS_CIRCLE_POSITIVE;
 			pos_axis.primary_axis_number = i;
-			pos_axis.screen_point = center + axis_screen_position;
+			pos_axis.screen_point = p_center + axis_screen_position;
 			pos_axis.z_index = axis_4d.z;
-			r_axis.push_back(pos_axis);
+			r_targets.push_back(pos_axis);
 
 			HitTarget2D line_axis;
 			line_axis.hit_type = HIT_TYPE_AXIS_LINE;
 			line_axis.primary_axis_number = i;
-			line_axis.screen_point = center + axis_screen_position;
+			line_axis.screen_point = p_center + axis_screen_position;
 			// Ensure the lines draw behind their connected circles.
 			line_axis.z_index = MIN(axis_4d.z, 0.0f) - (float)CMP_EPSILON;
-			r_axis.push_back(line_axis);
+			r_targets.push_back(line_axis);
 
 			HitTarget2D neg_axis;
 			neg_axis.hit_type = HIT_TYPE_AXIS_CIRCLE_NEGATIVE;
 			neg_axis.primary_axis_number = i;
-			neg_axis.screen_point = center - axis_screen_position;
+			neg_axis.screen_point = p_center - axis_screen_position;
 			neg_axis.z_index = -axis_4d.z;
-			r_axis.push_back(neg_axis);
+			r_targets.push_back(neg_axis);
 		}
 	}
 	// Add orthogonal planes.
-	r_axis.append(_make_plane_axis(camera_basis_transposed, 0, 1, center, radius));
-	r_axis.append(_make_plane_axis(camera_basis_transposed, 2, 1, center, radius));
-	r_axis.append(_make_plane_axis(camera_basis_transposed, 0, 2, center, radius));
-	r_axis.append(_make_plane_axis(camera_basis_transposed, 0, 3, center, radius));
-	r_axis.append(_make_plane_axis(camera_basis_transposed, 3, 1, center, radius));
-	r_axis.append(_make_plane_axis(camera_basis_transposed, 2, 3, center, radius));
+	r_targets.append(_make_plane_target(camera_basis_transposed, 0, 1, p_center, radius));
+	r_targets.append(_make_plane_target(camera_basis_transposed, 2, 1, p_center, radius));
+	r_targets.append(_make_plane_target(camera_basis_transposed, 0, 2, p_center, radius));
+	r_targets.append(_make_plane_target(camera_basis_transposed, 0, 3, p_center, radius));
+	r_targets.append(_make_plane_target(camera_basis_transposed, 3, 1, p_center, radius));
+	r_targets.append(_make_plane_target(camera_basis_transposed, 2, 3, p_center, radius));
 	// Sort the axes by z_index.
-	r_axis.sort_custom<HitTarget2DCompare>();
+	r_targets.sort_custom<HitTarget2DCompare>();
 }
 
 void EditorViewportRotation4D::_on_mouse_exited() {
@@ -328,10 +327,10 @@ void EditorViewportRotation4D::_update_focus() {
 	if (mouse_pos.distance_to(center) < center.x) {
 		_focused_target.hit_type = HIT_TYPE_BACKGROUND;
 	}
-	Vector<HitTarget2D> axes;
-	_get_sorted_axis(center, axes);
-	for (int i = 0; i < axes.size(); i++) {
-		const HitTarget2D &axis = axes[i];
+	Vector<HitTarget2D> axis_targets;
+	_get_sorted_axis_targets(center, axis_targets);
+	for (int i = 0; i < axis_targets.size(); i++) {
+		const HitTarget2D &axis = axis_targets[i];
 		if (axis.z_index > _focused_target.z_index && mouse_pos.distance_to(axis.screen_point) < 8.0f * _editor_scale) {
 			_focused_target = axis;
 		}
