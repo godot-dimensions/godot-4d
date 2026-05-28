@@ -27,6 +27,7 @@
 #define InputClassEnums Input
 #define MODULE_OVERRIDE
 #define resize_initialized resize
+#define resize_uninitialized resize
 #define TTR(m_text) m_text
 #define USE_CONST_NOT_CONSTEXPR_FOR_VECTORS 1
 #define VariantUtilityFunctions UtilityFunctions

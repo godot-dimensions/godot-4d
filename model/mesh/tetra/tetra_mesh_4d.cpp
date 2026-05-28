@@ -93,22 +93,14 @@ bool TetraMesh4D::validate_mesh_data() {
 	if (cell_indices_count == 0) {
 		return true; // Zero cells is allowed, and no need to validate anything else in that case.
 	}
-	if (cell_indices_count % 4 != 0) {
-		return false; // Must be a multiple of 4.
-	}
+	ERR_FAIL_COND_V_MSG(cell_indices_count % 4 != 0, false, "TetraMesh4D: Cell indices count must be a multiple of 4 (" + itos(cell_indices_count) + " % 4 != 0).");
 	const int64_t cell_texture_map_count = get_simplex_cell_texture_map().size();
-	if (cell_texture_map_count > 0 && cell_texture_map_count != cell_indices_count) {
-		return false; // Must be the same size as the cell indices if UVW map is present.
-	}
+	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_indices_count, false, "TetraMesh4D: UVW texture map size (" + itos(cell_texture_map_count) + ") must match cell indices size (" + itos(cell_indices_count) + ").");
 	const int64_t cell_normals_count = get_simplex_cell_boundary_normals().size();
-	if (cell_normals_count > 0 && cell_normals_count * 4 != cell_indices_count) {
-		return false; // Must be have one normal per cell (4 indices) if normals are present.
-	}
+	ERR_FAIL_COND_V_MSG(cell_normals_count > 0 && cell_normals_count * 4 != cell_indices_count, false, "TetraMesh4D: Boundary normals count (" + itos(cell_normals_count) + ") must have one per cell (expected " + itos(cell_indices_count / 4) + ")");
 	const int64_t vertex_count = get_vertices().size();
 	for (int32_t cell_index : cell_indices) {
-		if (cell_index < 0 || cell_index >= vertex_count) {
-			return false; // Cells must reference valid vertices.
-		}
+		ERR_FAIL_COND_V_MSG(cell_index < 0 || cell_index >= vertex_count, false, "TetraMesh4D: Cell index " + itos(cell_index) + " is out of range (valid: 0-" + itos(vertex_count - 1) + ")");
 	}
 	return true;
 }

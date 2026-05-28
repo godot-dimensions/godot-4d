@@ -330,7 +330,7 @@ Error G4MFDocument4D::_export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_stat
 	const String file_prefix = p_g4mf_state->get_g4mf_filename().get_basename();
 	for (int buffer_index = 0; buffer_index < state_buffers.size(); buffer_index++) {
 		Dictionary json_buffer_dict = json_buffers[buffer_index];
-		PackedByteArray compressed_buffer = _export_encode_buffer_data(p_g4mf_state, state_buffers[buffer_index]);
+		PackedByteArray compressed_buffer = _export_encode_chunk_data(p_g4mf_state, state_buffers[buffer_index]);
 		if (p_should_separate_buffers_into_files) {
 			const String buffer_rel_path = file_prefix + String("_buffer") + String::num_int64(buffer_index) + String(".bin");
 			Ref<FileAccess> file = FileAccess::open(p_g4mf_state->get_g4mf_base_path().path_join(buffer_rel_path), FileAccess::WRITE);
@@ -496,11 +496,11 @@ String G4MFDocument4D::_export_pretty_print_json(const Dictionary &p_g4mf_json) 
 	return pretty;
 }
 
-PackedByteArray G4MFDocument4D::_export_encode_buffer_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data) {
-	const int64_t buffer_size = p_buffer_data.size();
+PackedByteArray G4MFDocument4D::_export_encode_chunk_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_chunk_data) {
+	const int64_t buffer_size = p_chunk_data.size();
 	switch (_encoding_format) {
 		case G4MFDocument4D::ENCODING_FORMAT_NONE: {
-			return p_buffer_data;
+			return p_chunk_data;
 		};
 		case G4MFDocument4D::ENCODING_FORMAT_ZSTD: {
 			// Compress the buffer data using Zstd.
@@ -511,7 +511,7 @@ PackedByteArray G4MFDocument4D::_export_encode_buffer_data(Ref<G4MFState4D> p_g4
 			if (buffer_size > 0) {
 				constexpr Compression::Mode mode = Compression::Mode::MODE_ZSTD;
 				compressed.resize(Compression::get_max_compressed_buffer_size(buffer_size, mode));
-				int result = Compression::compress(compressed.ptrw(), p_buffer_data.ptr(), buffer_size, mode);
+				int result = Compression::compress(compressed.ptrw(), p_chunk_data.ptr(), buffer_size, mode);
 				ERR_FAIL_COND_V(result < 0, PackedByteArray());
 				compressed.resize(result);
 			}
@@ -519,10 +519,10 @@ PackedByteArray G4MFDocument4D::_export_encode_buffer_data(Ref<G4MFState4D> p_g4
 #endif
 		}
 		case G4MFDocument4D::ENCODING_FORMAT_UNKNOWN: {
-			ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Compression format is not set.");
+			ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Encoding format is not set.");
 		};
 	}
-	CRASH_NOW_MSG("G4MF export: Unknown compression format. This should never happen (the switch should handle all cases the enum is allowed to be set to).");
+	CRASH_NOW_MSG("G4MF export: Unknown encoding format. This should never happen (the switch should handle all cases the enum is allowed to be set to).");
 	return PackedByteArray(); // Unreachable, but MSVC complains about not all control paths returning a value.
 }
 
@@ -533,7 +533,7 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 	ERR_FAIL_COND_V(!g4mf_json.has("asset"), PackedByteArray());
 	const String json_string = JSON::stringify(g4mf_json, "", true);
 	ERR_FAIL_COND_V(json_string.length() < 25, PackedByteArray()); // Minimum possible valid JSON is `{"asset":{"dimension":4}}` (25 bytes).
-	const PackedByteArray json_encoded = _export_encode_buffer_data(p_g4mf_state, json_string.to_utf8_buffer());
+	const PackedByteArray json_encoded = _export_encode_chunk_data(p_g4mf_state, json_string.to_utf8_buffer());
 	const uint64_t json_encoded_size = json_encoded.size();
 	uint64_t total_file_size = 32 + json_encoded_size;
 	// Add binary buffer chunks to the file size.
@@ -550,7 +550,7 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 		for (int i = 0; i < state_buffers_size; i++) {
 			// The start of each chunk needs to be padded to 16 bytes.
 			total_file_size = _ceiling_division(total_file_size, 16) * 16;
-			const PackedByteArray buffer_encoded = _export_encode_buffer_data(p_g4mf_state, state_buffers[i]);
+			const PackedByteArray buffer_encoded = _export_encode_chunk_data(p_g4mf_state, state_buffers[i]);
 			total_file_size += 16 + buffer_encoded.size();
 			buffers_encoded.set(i, buffer_encoded);
 		}
@@ -622,10 +622,10 @@ PackedByteArray G4MFDocument4D::_import_next_chunk_bytes_decoded(Ref<G4MFState4D
 	p_read_offset += chunk_raw_size;
 	p_read_offset = _ceiling_division(p_read_offset, 16) * 16; // Chunks start at 16-byte boundaries.
 	// Done reading the chunk header and raw data. Now to decode it, if needed.
-	return _import_decode_bytes(chunk_raw_data, chunk_encoding_indicator);
+	return _import_decode_chunk_data(chunk_raw_data, chunk_encoding_indicator);
 }
 
-PackedByteArray G4MFDocument4D::_import_decode_bytes(const PackedByteArray &p_raw_encoded_data, const uint32_t p_encoding_indicator) {
+PackedByteArray G4MFDocument4D::_import_decode_chunk_data(const PackedByteArray &p_raw_encoded_data, const uint32_t p_encoding_indicator) {
 	const EncodingFormat chunk_encoding_format = _encoding_indicator_to_enum(p_encoding_indicator);
 	const int64_t chunk_raw_size = p_raw_encoded_data.size();
 	switch (chunk_encoding_format) {
@@ -742,14 +742,14 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 				if (uri.begins_with("data:")) {
 					PackedStringArray split = uri.split(";base64,", true, 1);
 					ERR_FAIL_COND_V_MSG(split.size() != 2, ERR_INVALID_DATA, "G4MF import: Buffer URI is malformed. Expected 'data:application/octet-stream;base64,<base64 data>'. Aborting file import.");
-					buffer = _import_decode_bytes(CoreBind::Marshalls::get_singleton()->base64_to_raw(split[1]), encoding_indicator);
+					buffer = _import_decode_chunk_data(CoreBind::Marshalls::get_singleton()->base64_to_raw(split[1]), encoding_indicator);
 				} else {
 					// Infer the external data mode on import in case the user wishes to round-trip the G4MF file back out of Godot later.
 					p_g4mf_state->set_external_data_mode(G4MFState4D::EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS);
 					const String buffer_path = p_g4mf_state->get_g4mf_base_path().path_join(uri);
 					Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::READ);
 					if (file.is_valid()) {
-						buffer = _import_decode_bytes(file->get_buffer(byte_length), encoding_indicator);
+						buffer = _import_decode_chunk_data(file->get_buffer(byte_length), encoding_indicator);
 						file->close();
 					} else {
 						// The file is not valid, but only fail if the buffer is empty. It may have been filled by a chunk.

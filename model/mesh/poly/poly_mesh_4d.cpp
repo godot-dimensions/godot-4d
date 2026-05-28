@@ -47,14 +47,10 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 	const PackedInt32Array edge_indices = get_edge_indices();
 	const PackedVector4Array poly_cell_vertices = get_poly_cell_vertices();
 	const int64_t edge_index_count = edge_indices.size();
-	if (edge_index_count % 2 != 0) {
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(edge_index_count % 2 != 0, false, "PolyMesh4D: Edge index count must be even (pairs of vertices).");
 	const int64_t vertex_count = poly_cell_vertices.size();
 	for (int64_t i = 0; i < edge_index_count; i++) {
-		if (edge_indices[i] < 0 || edge_indices[i] >= vertex_count) {
-			return false;
-		}
+		ERR_FAIL_COND_V_MSG(edge_indices[i] < 0 || edge_indices[i] >= vertex_count, false, "PolyMesh4D: Edge index " + itos(i) + " references invalid vertex " + itos(edge_indices[i]) + " (valid range: 0-" + itos(vertex_count - 1) + ").");
 	}
 	const int64_t poly_cell_dims = poly_cell_indices.size();
 	const int64_t edge_count = edge_index_count / 2;
@@ -66,13 +62,9 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 			for (int64_t cell_idx = 0; cell_idx < cells_of_dim.size(); cell_idx++) {
 				const PackedInt32Array &cell = cells_of_dim[cell_idx];
 				// Faces (poly_dim_index 0) must have at least 3 edges, cells (poly_dim_index 1) must have at least 4 faces, etc.
-				if (cell.size() < poly_dim_index + 3) {
-					return false;
-				}
+				ERR_FAIL_COND_V_MSG(cell.size() < poly_dim_index + 3, false, "PolyMesh4D: " + itos(poly_dim_index + 2) + "D cell has insufficient elements (" + itos(cell.size()) + "<" + itos(poly_dim_index + 3) + ").");
 				for (int64_t i = 0; i < cell.size(); i++) {
-					if (cell[i] < 0 || cell[i] >= prev_dim_count) {
-						return false;
-					}
+					ERR_FAIL_COND_V_MSG(cell[i] < 0 || cell[i] >= prev_dim_count, false, "PolyMesh4D: " + itos(poly_dim_index + 1) + "D cell references invalid " + itos(poly_dim_index + 1) + "D element " + itos(cell[i]) + ".");
 				}
 				bool is_common = false;
 				if (poly_dim_index == 0) {
@@ -105,52 +97,36 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 	const PackedVector4Array poly_cell_boundary_normals = get_poly_cell_boundary_normals();
 	const int64_t poly_cell_boundary_normals_count = poly_cell_boundary_normals.size();
 	if (poly_cell_boundary_normals_count != 0) {
-		if (poly_cell_dims < 2) {
-			return false;
-		}
+		ERR_FAIL_COND_V_MSG(poly_cell_dims < 2, false, "PolyMesh4D: Boundary normals provided without any 3D cells.");
 		const Vector<PackedInt32Array> &cells_3d = poly_cell_indices[1];
-		if (cells_3d.size() != poly_cell_boundary_normals_count) {
-			return false;
-		}
+		ERR_FAIL_COND_V_MSG(cells_3d.size() != poly_cell_boundary_normals_count, false, "PolyMesh4D: Boundary normals count (" + itos(poly_cell_boundary_normals_count) + ") does not match 3D cells count (" + itos(cells_3d.size()) + ").");
 	}
 	const Vector<PackedVector4Array> poly_cell_vertex_normals = get_poly_cell_vertex_normals();
 	const int64_t poly_cell_vertex_normals_count = poly_cell_vertex_normals.size();
 	if (poly_cell_vertex_normals_count != 0) {
-		if (poly_cell_dims < 2) {
-			return false; // Invalid to have vertex normal data without any 3D cells to map to.
-		}
+		ERR_FAIL_COND_V_MSG(poly_cell_dims < 2, false, "PolyMesh4D: Vertex normals provided without any 3D cells to map to.");
 		const Vector<PackedInt32Array> &cells_3d = poly_cell_indices[1];
-		if (cells_3d.size() != poly_cell_vertex_normals_count) {
-			return false; // Invalid number of vertex normal arrays, should match number of 3D cells.
-		}
+		ERR_FAIL_COND_V_MSG(cells_3d.size() != poly_cell_vertex_normals_count, false, "PolyMesh4D: Vertex normals count (" + itos(poly_cell_vertex_normals_count) + ") does not match 3D cells count (" + itos(cells_3d.size()) + ").");
 		const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(poly_cell_indices, edge_indices, false);
 		for (int64_t i = 0; i < poly_cell_vertex_normals_count; i++) {
 			if (poly_cell_vertex_normals[i].is_empty()) {
 				continue; // Allow cells without vertex normals.
 			}
-			if (poly_cell_vertex_normals[i].size() != cell_vert[i].size()) {
-				return false; // Each vertex normal array entry corresponds to a vertex instance in the 3D cell.
-			}
+			ERR_FAIL_COND_V_MSG(poly_cell_vertex_normals[i].size() != cell_vert[i].size(), false, "PolyMesh4D: Vertex normal array " + itos(i) + " has " + itos(poly_cell_vertex_normals[i].size()) + " entries but cell has " + itos(cell_vert[i].size()) + " vertices.");
 		}
 	}
 	const Vector<PackedVector3Array> poly_cell_texture_map = get_poly_cell_texture_map();
 	const int64_t poly_cell_texture_map_count = poly_cell_texture_map.size();
 	if (poly_cell_texture_map_count != 0) {
-		if (poly_cell_dims < 2) {
-			return false; // Invalid to have UVW texture map data without any 3D cells to map to.
-		}
+		ERR_FAIL_COND_V_MSG(poly_cell_dims < 2, false, "PolyMesh4D: Texture map provided without any 3D cells to map to.");
 		const Vector<PackedInt32Array> &cells_3d = poly_cell_indices[1];
-		if (cells_3d.size() != poly_cell_texture_map_count) {
-			return false; // Invalid number of UVW texture maps, should match number of 3D cells.
-		}
+		ERR_FAIL_COND_V_MSG(cells_3d.size() != poly_cell_texture_map_count, false, "PolyMesh4D: Texture maps count (" + itos(poly_cell_texture_map_count) + ") does not match 3D cells count (" + itos(cells_3d.size()) + ").");
 		const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(poly_cell_indices, edge_indices, false);
 		for (int64_t i = 0; i < poly_cell_texture_map_count; i++) {
 			if (poly_cell_texture_map[i].is_empty()) {
 				continue; // Allow unmapped 3D cells.
 			}
-			if (poly_cell_texture_map[i].size() != cell_vert[i].size()) {
-				return false; // Each UVW texture map entry corresponds to a vertex instance in the 3D cell.
-			}
+			ERR_FAIL_COND_V_MSG(poly_cell_texture_map[i].size() != cell_vert[i].size(), false, "PolyMesh4D: Texture map " + itos(i) + " has " + itos(poly_cell_texture_map[i].size()) + " entries but cell has " + itos(cell_vert[i].size()) + " vertices.");
 		}
 	}
 	return true;

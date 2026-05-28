@@ -971,6 +971,18 @@ void ArrayPolyMesh4D::transform_texture_map(const Transform3D &p_transform) {
 	poly_mesh_clear_cache();
 }
 
+void ArrayPolyMesh4D::transform_vertices(const Transform4D &p_transform) {
+	const int64_t vertex_count = _poly_cell_vertices.size();
+	for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
+		_poly_cell_vertices.set(vertex_index, p_transform.xform(_poly_cell_vertices[vertex_index]));
+	}
+	poly_mesh_clear_cache();
+}
+
+void ArrayPolyMesh4D::transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis) {
+	transform_vertices(Transform4D(p_basis, p_offset));
+}
+
 void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform4D &p_transform) {
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: This mesh is invalid, cannot merge another mesh into it.");
 	ERR_FAIL_COND_MSG(p_other.is_null() || !p_other->is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot merge an invalid PolyMesh4D into this mesh.");
@@ -1295,6 +1307,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);
 
+	ClassDB::bind_method(D_METHOD("transform_vertices", "offset", "basis"), &ArrayPolyMesh4D::transform_vertices_bind, DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayPolyMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 
 	// Only bind the setters here because the getters are already bound in PolyMesh4D.

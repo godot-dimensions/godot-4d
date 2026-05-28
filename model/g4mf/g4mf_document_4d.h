@@ -39,11 +39,11 @@ private:
 	void _export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	static String _export_pretty_print_inline(const Variant &p_variant);
 	static String _export_pretty_print_json(const Dictionary &p_g4mf_json);
-	PackedByteArray _export_encode_buffer_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data);
+	PackedByteArray _export_encode_chunk_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data);
 	PackedByteArray _export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state);
 
 	// Import process.
-	PackedByteArray _import_decode_bytes(const PackedByteArray &p_raw_encoded_data, const uint32_t p_encoding_indicator);
+	PackedByteArray _import_decode_chunk_data(const PackedByteArray &p_raw_encoded_data, const uint32_t p_encoding_indicator);
 	PackedByteArray _import_next_chunk_bytes_decoded(Ref<G4MFState4D> p_g4mf_state, const uint8_t *p_file_bytes, const uint64_t p_file_size, size_t &p_read_offset);
 	Error _import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);

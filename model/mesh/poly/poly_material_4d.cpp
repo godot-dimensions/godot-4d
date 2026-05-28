@@ -4,10 +4,12 @@
 // or otherwise have tets grouped by their starting vertex.
 void PolyMaterial4D::populate_albedo_color_array_for_poly_mesh(const Ref<TetraMesh4D> &p_poly_mesh) {
 	ERR_FAIL_COND(p_poly_mesh.is_null());
+	const int64_t poly_color_array_size = _poly_albedo_color_array.size();
+	if (poly_color_array_size == 0) {
+		return; // Nothing to do.
+	}
 	const PackedInt32Array tets = p_poly_mesh->get_simplex_cell_indices();
 	ERR_FAIL_COND(tets.size() < 4 || tets.size() % 4 != 0);
-	const int64_t poly_color_array_size = _poly_albedo_color_array.size();
-	ERR_FAIL_COND(poly_color_array_size == 0);
 	_albedo_color_array.clear();
 	_albedo_color_array.append(_poly_albedo_color_array[0]);
 	int64_t color_index = 0;
