@@ -500,6 +500,7 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	if (!is_poly_mesh_data_valid()) {
 		return;
 	}
+	poly_mesh_clear_cache();
 	// Step 1: Gather information needed to compute the simplex decomposition.
 	_simplex_cell_vertices_cache = get_poly_cell_vertices();
 	const PackedInt32Array all_edge_indices = get_edge_indices();
@@ -659,10 +660,13 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	}
 	// Step 7: Tetrahedralize each cell by connecting each opposing face to the pivot vertex.
 	// Determine which way is "outward" for this cell's normal vector, so we can orient the tetrahedra properly.
-	_simplex_cell_indices_source_poly_cells.clear();
 	for (const int32_t cell_index : surface_cells_to_use) {
 		const PackedInt32Array &cell_data = boundary_cells[cell_index];
 		const int32_t pivot_vertex_index = cell_pivot_vertices[cell_index];
+		const Vector4 cell_boundary_normal = poly_cell_boundary_normals[cell_index];
+		const bool has_cell_boundary_normal = !cell_boundary_normal.is_zero_approx();
+		Vector4 cell_reference_perp;
+		bool has_cell_reference_perp = false;
 		for (int64_t face_number = 0; face_number < cell_data.size(); face_number++) {
 			const int32_t face_index = cell_data[face_number];
 			ERR_FAIL_INDEX(face_index, faces.size());
@@ -677,8 +681,21 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[1]]),
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[2]]),
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[3]]));
-				if (tet_perp.dot(poly_cell_boundary_normals[cell_index]) < 0.0) {
+				bool should_flip = false;
+				if (has_cell_boundary_normal && tet_perp.dot(cell_boundary_normal) < 0.0) {
+					should_flip = true;
+				}
+				Vector4 oriented_tet_perp = should_flip ? -tet_perp : tet_perp;
+				if (has_cell_reference_perp && oriented_tet_perp.dot(cell_reference_perp) < 0.0) {
+					should_flip = !should_flip;
+					oriented_tet_perp = -oriented_tet_perp;
+				}
+				if (should_flip) {
 					SWAP(new_tet[2], new_tet[3]);
+				}
+				if (!has_cell_reference_perp && !oriented_tet_perp.is_zero_approx()) {
+					cell_reference_perp = oriented_tet_perp;
+					has_cell_reference_perp = true;
 				}
 				const int64_t old_size = _simplex_cell_indices_cache.size();
 				_simplex_cell_indices_cache.resize(old_size + 4);
