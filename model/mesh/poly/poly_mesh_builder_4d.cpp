@@ -281,111 +281,6 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 	return ret;
 }
 
-void PolyMeshBuilder4D::make_boundary_normals_topologically_consistent(Ref<ArrayPolyMesh4D> &p_mesh, const PackedInt32Array &p_authoritative) {
-	// TODO: This function relies on averages and pivot overrides, which breaks in non-convex edge cases.
-	// Properly solving this in 4D is non-trivial, this can be improved in the future if needed.
-	Vector<Vector<PackedInt32Array>> poly_cell_indices = p_mesh->get_poly_cell_indices();
-	ERR_FAIL_COND_MSG(poly_cell_indices.size() < 2, "Mesh must have boundary cells in order to have boundary normals.");
-	// Clear out and calculate new normals. The correct ones will either be these, or the negatives of these.
-	const PackedVector4Array original_boundary_normals = p_mesh->get_poly_cell_boundary_normals();
-	p_mesh->set_poly_cell_boundary_normals(PackedVector4Array());
-	p_mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
-	CRASH_COND(!p_mesh->is_mesh_data_valid());
-	PackedVector4Array boundary_normals = p_mesh->get_poly_cell_boundary_normals();
-	for (int64_t auth_index = 0; auth_index < p_authoritative.size(); auth_index++) {
-		const int64_t boundary_cell_index = p_authoritative[auth_index];
-		ERR_FAIL_INDEX_MSG(boundary_cell_index, boundary_normals.size(), "Authoritative boundary cell index is out of range.");
-		boundary_normals.set(boundary_cell_index, original_boundary_normals[boundary_cell_index]);
-	}
-	// Build a map of faces to the cells that reference them, which will be used to traverse adjacent boundary cells.
-	const Vector<PackedInt32Array> faces = poly_cell_indices[0];
-	Vector<PackedInt32Array> boundary_cells = poly_cell_indices[1];
-	Vector<PackedInt32Array> faces_to_cells;
-	faces_to_cells.resize(faces.size());
-	for (int64_t cell_index = 0; cell_index < boundary_cells.size(); cell_index++) {
-		const PackedInt32Array cell_face_indices = boundary_cells[cell_index];
-		for (int64_t face_num = 0; face_num < cell_face_indices.size(); face_num++) {
-			const int64_t face_index = cell_face_indices[face_num];
-			PackedInt32Array cells_for_face = faces_to_cells[face_index];
-			cells_for_face.append(cell_index);
-			faces_to_cells.set(face_index, cells_for_face);
-		}
-	}
-	// Compute the average position of each boundary cell.
-	const PackedVector4Array &poly_vertices = p_mesh->get_poly_cell_vertices();
-	const Vector<PackedInt32Array> boundary_vert = p_mesh->get_all_poly_cell_vertex_indices(3, false);
-	const PackedInt32Array &boundary_pivot_overrides = p_mesh->get_poly_cell_boundary_pivot_overrides();
-	CRASH_COND(boundary_vert.size() != boundary_cells.size());
-	PackedVector4Array boundary_pivot_pos;
-	boundary_pivot_pos.resize(boundary_cells.size());
-	for (int64_t boundary_cell_index = 0; boundary_cell_index < boundary_cells.size(); boundary_cell_index++) {
-		const PackedInt32Array &boundary_cell_vert_indices = boundary_vert[boundary_cell_index];
-		Vector4 average_pos = Vector4(0.0, 0.0, 0.0, 0.0);
-		for (int64_t i = 0; i < boundary_cell_vert_indices.size(); i++) {
-			average_pos += poly_vertices[boundary_cell_vert_indices[i]];
-		}
-		average_pos /= boundary_cell_vert_indices.size();
-		// If the pivot is overridden, use it, but also still take the average and use it for a slight offset.
-		// This ensures that pivot overrides on the sides will still give something inside the cell.
-		if (boundary_pivot_overrides.size() > boundary_cell_index && boundary_pivot_overrides[boundary_cell_index] != -1) {
-			constexpr real_t ONE_PLUS_EPSILON = 1.0 + CMP_EPSILON;
-			const int32_t pivot_vert_index = boundary_pivot_overrides[boundary_cell_index];
-			average_pos = (average_pos * (ONE_PLUS_EPSILON - 1.0f) + poly_vertices[pivot_vert_index]) / ONE_PLUS_EPSILON;
-		}
-		boundary_pivot_pos.set(boundary_cell_index, average_pos);
-	}
-	// Visit each boundary cell, check its neighbors, and flip normals as needed to ensure they are all consistent.
-	PackedInt32Array settled = p_authoritative;
-	PackedInt32Array to_visit_its_neighbors = p_authoritative;
-	while (!to_visit_its_neighbors.is_empty()) {
-		const int64_t this_cell_index = to_visit_its_neighbors[to_visit_its_neighbors.size() - 1];
-		to_visit_its_neighbors.resize(to_visit_its_neighbors.size() - 1);
-		const PackedInt32Array cell_face_indices = boundary_cells[this_cell_index];
-		const Vector4 this_cell_pivot = boundary_pivot_pos[this_cell_index];
-		const Vector4 this_cell_normal = boundary_normals[this_cell_index];
-		for (int64_t face_num = 0; face_num < cell_face_indices.size(); face_num++) {
-			const int64_t face_index = cell_face_indices[face_num];
-			const PackedInt32Array adjacent_cells = faces_to_cells[face_index];
-			for (int64_t adjacent_cell_num = 0; adjacent_cell_num < adjacent_cells.size(); adjacent_cell_num++) {
-				const int64_t adjacent_cell_index = adjacent_cells[adjacent_cell_num];
-				if (adjacent_cell_index == this_cell_index) {
-					continue;
-				}
-				if (settled.find(adjacent_cell_index) != -1) {
-					continue;
-				}
-				to_visit_its_neighbors.append(adjacent_cell_index);
-				settled.append(adjacent_cell_index);
-				const Vector4 adjacent_boundary_cell_average = boundary_pivot_pos[adjacent_cell_index];
-				const Vector4 adjacent_boundary_cell_normal = boundary_normals[adjacent_cell_index];
-				const real_t source_to_adjacent = this_cell_normal.dot(adjacent_boundary_cell_average - this_cell_pivot);
-				const real_t adjacent_to_source = adjacent_boundary_cell_normal.dot(this_cell_pivot - adjacent_boundary_cell_average);
-				bool should_flip_adjacent = false;
-				if (Math::is_zero_approx(source_to_adjacent) || Math::is_zero_approx(adjacent_to_source)) {
-					// Coplanar boundary cells should just be oriented the same.
-					if (this_cell_normal.dot(adjacent_boundary_cell_normal) < 0.0) {
-						should_flip_adjacent = true;
-					}
-				} else if (SIGN(source_to_adjacent) != SIGN(adjacent_to_source)) {
-					should_flip_adjacent = true;
-				}
-				if (should_flip_adjacent) {
-					// This adjacent boundary cell is facing the wrong way, so swap the first two faces to flip.
-					PackedInt32Array adjacent_boundary_cell = boundary_cells[adjacent_cell_index];
-					int32_t temp = adjacent_boundary_cell[0];
-					adjacent_boundary_cell.set(0, adjacent_boundary_cell[1]);
-					adjacent_boundary_cell.set(1, temp);
-					boundary_cells.set(adjacent_cell_index, adjacent_boundary_cell);
-					boundary_normals.set(adjacent_cell_index, -adjacent_boundary_cell_normal);
-				}
-			}
-		}
-	}
-	poly_cell_indices.set(1, boundary_cells);
-	p_mesh->set_poly_cell_indices(poly_cell_indices);
-	p_mesh->set_poly_cell_boundary_normals(boundary_normals);
-}
-
 Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<ArrayPolyMesh4D> &p_input_mesh, const int p_steps) {
 	Ref<ArrayPolyMesh4D> ret;
 	ret.instantiate();
@@ -1118,11 +1013,122 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::reconstruct_from_tetra_mesh(const Ref<Te
 	return ret;
 }
 
+// In-place adjustments to the given mesh.
+
+void PolyMeshBuilder4D::make_boundary_normals_topologically_consistent(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const PackedInt32Array &p_authoritative) {
+	// TODO: This function relies on averages and pivot overrides, which breaks in non-convex edge cases.
+	// Properly solving this in 4D is non-trivial, this can be improved in the future if needed.
+	Vector<Vector<PackedInt32Array>> poly_cell_indices = p_mesh_4d->get_poly_cell_indices();
+	ERR_FAIL_COND_MSG(poly_cell_indices.size() < 2, "Mesh must have boundary cells in order to have boundary normals.");
+	// Clear out and calculate new normals. The correct ones will either be these, or the negatives of these.
+	const PackedVector4Array original_boundary_normals = p_mesh_4d->get_poly_cell_boundary_normals();
+	p_mesh_4d->set_poly_cell_boundary_normals(PackedVector4Array());
+	p_mesh_4d->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+	CRASH_COND(!p_mesh_4d->is_mesh_data_valid());
+	PackedVector4Array boundary_normals = p_mesh_4d->get_poly_cell_boundary_normals();
+	for (int64_t auth_index = 0; auth_index < p_authoritative.size(); auth_index++) {
+		const int64_t boundary_cell_index = p_authoritative[auth_index];
+		ERR_FAIL_INDEX_MSG(boundary_cell_index, boundary_normals.size(), "Authoritative boundary cell index is out of range.");
+		boundary_normals.set(boundary_cell_index, original_boundary_normals[boundary_cell_index]);
+	}
+	// Build a map of faces to the cells that reference them, which will be used to traverse adjacent boundary cells.
+	const Vector<PackedInt32Array> faces = poly_cell_indices[0];
+	Vector<PackedInt32Array> boundary_cells = poly_cell_indices[1];
+	Vector<PackedInt32Array> faces_to_cells;
+	faces_to_cells.resize(faces.size());
+	for (int64_t cell_index = 0; cell_index < boundary_cells.size(); cell_index++) {
+		const PackedInt32Array cell_face_indices = boundary_cells[cell_index];
+		for (int64_t face_num = 0; face_num < cell_face_indices.size(); face_num++) {
+			const int64_t face_index = cell_face_indices[face_num];
+			PackedInt32Array cells_for_face = faces_to_cells[face_index];
+			cells_for_face.append(cell_index);
+			faces_to_cells.set(face_index, cells_for_face);
+		}
+	}
+	// Compute the average position of each boundary cell.
+	const PackedVector4Array &poly_vertices = p_mesh_4d->get_poly_cell_vertices();
+	const Vector<PackedInt32Array> boundary_vert = p_mesh_4d->get_all_poly_cell_vertex_indices(3, false);
+	const PackedInt32Array &boundary_pivot_overrides = p_mesh_4d->get_poly_cell_boundary_pivot_overrides();
+	CRASH_COND(boundary_vert.size() != boundary_cells.size());
+	PackedVector4Array boundary_pivot_pos;
+	boundary_pivot_pos.resize(boundary_cells.size());
+	for (int64_t boundary_cell_index = 0; boundary_cell_index < boundary_cells.size(); boundary_cell_index++) {
+		const PackedInt32Array &boundary_cell_vert_indices = boundary_vert[boundary_cell_index];
+		Vector4 average_pos = Vector4(0.0, 0.0, 0.0, 0.0);
+		for (int64_t i = 0; i < boundary_cell_vert_indices.size(); i++) {
+			average_pos += poly_vertices[boundary_cell_vert_indices[i]];
+		}
+		average_pos /= boundary_cell_vert_indices.size();
+		// If the pivot is overridden, use it, but also still take the average and use it for a slight offset.
+		// This ensures that pivot overrides on the sides will still give something inside the cell.
+		if (boundary_pivot_overrides.size() > boundary_cell_index && boundary_pivot_overrides[boundary_cell_index] != -1) {
+			constexpr real_t ONE_PLUS_EPSILON = 1.0 + CMP_EPSILON;
+			const int32_t pivot_vert_index = boundary_pivot_overrides[boundary_cell_index];
+			average_pos = (average_pos * (ONE_PLUS_EPSILON - 1.0f) + poly_vertices[pivot_vert_index]) / ONE_PLUS_EPSILON;
+		}
+		boundary_pivot_pos.set(boundary_cell_index, average_pos);
+	}
+	// Visit each boundary cell, check its neighbors, and flip normals as needed to ensure they are all consistent.
+	PackedInt32Array settled = p_authoritative;
+	PackedInt32Array to_visit_its_neighbors = p_authoritative;
+	while (!to_visit_its_neighbors.is_empty()) {
+		const int64_t this_cell_index = to_visit_its_neighbors[to_visit_its_neighbors.size() - 1];
+		to_visit_its_neighbors.resize(to_visit_its_neighbors.size() - 1);
+		const PackedInt32Array cell_face_indices = boundary_cells[this_cell_index];
+		const Vector4 this_cell_pivot = boundary_pivot_pos[this_cell_index];
+		const Vector4 this_cell_normal = boundary_normals[this_cell_index];
+		for (int64_t face_num = 0; face_num < cell_face_indices.size(); face_num++) {
+			const int64_t face_index = cell_face_indices[face_num];
+			const PackedInt32Array adjacent_cells = faces_to_cells[face_index];
+			for (int64_t adjacent_cell_num = 0; adjacent_cell_num < adjacent_cells.size(); adjacent_cell_num++) {
+				const int64_t adjacent_cell_index = adjacent_cells[adjacent_cell_num];
+				if (adjacent_cell_index == this_cell_index) {
+					continue;
+				}
+				if (settled.find(adjacent_cell_index) != -1) {
+					continue;
+				}
+				to_visit_its_neighbors.append(adjacent_cell_index);
+				settled.append(adjacent_cell_index);
+				const Vector4 adjacent_boundary_cell_average = boundary_pivot_pos[adjacent_cell_index];
+				const Vector4 adjacent_boundary_cell_normal = boundary_normals[adjacent_cell_index];
+				const real_t source_to_adjacent = this_cell_normal.dot(adjacent_boundary_cell_average - this_cell_pivot);
+				const real_t adjacent_to_source = adjacent_boundary_cell_normal.dot(this_cell_pivot - adjacent_boundary_cell_average);
+				bool should_flip_adjacent = false;
+				if (Math::is_zero_approx(source_to_adjacent) || Math::is_zero_approx(adjacent_to_source)) {
+					// Coplanar boundary cells should just be oriented the same.
+					if (this_cell_normal.dot(adjacent_boundary_cell_normal) < 0.0) {
+						should_flip_adjacent = true;
+					}
+				} else if (SIGN(source_to_adjacent) != SIGN(adjacent_to_source)) {
+					should_flip_adjacent = true;
+				}
+				if (should_flip_adjacent) {
+					// This adjacent boundary cell is facing the wrong way, so swap the first two faces to flip.
+					PackedInt32Array adjacent_boundary_cell = boundary_cells[adjacent_cell_index];
+					int32_t temp = adjacent_boundary_cell[0];
+					adjacent_boundary_cell.set(0, adjacent_boundary_cell[1]);
+					adjacent_boundary_cell.set(1, temp);
+					boundary_cells.set(adjacent_cell_index, adjacent_boundary_cell);
+					boundary_normals.set(adjacent_cell_index, -adjacent_boundary_cell_normal);
+				}
+			}
+		}
+	}
+	poly_cell_indices.set(1, boundary_cells);
+	p_mesh_4d->set_poly_cell_indices(poly_cell_indices);
+	p_mesh_4d->set_poly_cell_boundary_normals(boundary_normals);
+}
+
 PolyMeshBuilder4D *PolyMeshBuilder4D::singleton = nullptr;
 
 void PolyMeshBuilder4D::_bind_methods() {
+	// These functions create new meshes from the given data.
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("convert_mesh_3d_to_4d_faces_only", "mesh_3d", "which_surface", "deduplicate"), &PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only, DEFVAL(-1), DEFVAL(true));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("extrude_linear", "input_mesh", "extrusion_vector"), &PolyMeshBuilder4D::extrude_linear, DEFVAL(Vector4(0, 0, 0, 1)));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("extrude_spin_from_faces_xw", "input_mesh", "steps"), &PolyMeshBuilder4D::extrude_spin_from_faces_xw, DEFVAL(16));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("reconstruct_from_tetra_mesh", "tetra_mesh"), &PolyMeshBuilder4D::reconstruct_from_tetra_mesh);
+
+	// In-place adjustments to the given mesh.
+	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_boundary_normals_topologically_consistent", "mesh_4d", "authoritative_boundary_cells"), &PolyMeshBuilder4D::make_boundary_normals_topologically_consistent);
 }

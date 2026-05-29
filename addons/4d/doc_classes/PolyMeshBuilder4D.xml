@@ -40,6 +40,15 @@
 				The input mesh MUST have 2D faces defined in the [member ArrayPolyMesh4D.poly_cell_indices] array, and MUST NOT have any 3D cells or 4D volumes defined. This means that [member ArrayPolyMesh4D.poly_cell_indices] MUST have a length of exactly 1. The input mesh SHOULD NOT have significant vertex positions on the W axis. The input mesh SHOULD only exist in one radial direction, for example, only existing in +X and not -X. The input mesh SHOULD have 1D edges converging to zero along both [param from_axis] and [param to_axis], or else the resulting mesh will have holes.
 			</description>
 		</method>
+		<method name="make_boundary_normals_topologically_consistent" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="mesh_4d" type="ArrayPolyMesh4D" />
+			<param index="1" name="authoritative_boundary_cells" type="PackedInt32Array" />
+			<description>
+				Makes the boundary normals of a 4D polyhedral mesh topologically consistent by ensuring that all boundary cells that share a common face have the same normal direction. The [param authoritative_boundary_cells] parameter specifies a list of boundary cell indices that are considered authoritative for determining the normal direction. Their normals will be preserved, and any adjacent non-authoritative boundary cells will be flipped if necessary to match the authoritative normals, recursively propagating in a flood-fill manner.
+				[b]Note:[/b] This function only works correctly if the input mesh has star-shaped polyhedral boundary cells, and if it can locate a point within the star-shaped region of that cell. For non-convex cells, you may need to set [member ArrayPolyMesh4D.poly_cell_boundary_pivot_overrides] to specify where the pivot point is located in the cells.
+			</description>
+		</method>
 		<method name="reconstruct_from_tetra_mesh" qualifiers="static">
 			<return type="ArrayPolyMesh4D" />
 			<param index="0" name="tetra_mesh" type="TetraMesh4D" />
