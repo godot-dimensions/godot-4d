@@ -401,11 +401,11 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_ce
 	ERR_FAIL_COND_MSG(p_poly_cell_index < 0 || p_poly_cell_index >= _poly_cell_indices.size(), "ArrayPolyMesh4D: Dimension is out of range.");
 	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= _poly_cell_indices[p_poly_cell_index].size(), "ArrayPolyMesh4D: Index is out of range.");
 	// Before deleting this poly cell element, we need to delete anything in higher dimensions that reference it.
-	const int32_t next_dim = p_poly_cell_index + 1;
-	if (next_dim < _poly_cell_indices.size()) {
-		// Collect indices in next_dim whose elements reference p_index.
+	const int32_t next_dim_poly_index = p_poly_cell_index + 1;
+	if (next_dim_poly_index < _poly_cell_indices.size()) {
+		// Collect indices in next_dim_poly_index whose elements reference p_index.
 		Vector<int32_t> to_delete;
-		const Vector<PackedInt32Array> &next_level = _poly_cell_indices[next_dim];
+		const Vector<PackedInt32Array> &next_level = _poly_cell_indices[next_dim_poly_index];
 		for (int32_t j = 0; j < next_level.size(); j++) {
 			const PackedInt32Array &refs = next_level[j];
 			for (int32_t k = 0; k < refs.size(); k++) {
@@ -417,7 +417,7 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_ce
 		}
 		// Delete in reverse order so that earlier indices are not shifted by later removals.
 		for (int32_t i = to_delete.size() - 1; i >= 0; i--) {
-			_delete_poly_cell_element_internal(next_dim, to_delete[i]);
+			_delete_poly_cell_element_internal(next_dim_poly_index, to_delete[i]);
 		}
 	}
 	// Delete any corresponding elements in the associated arrays for this poly cell dimension.
@@ -449,9 +449,9 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_ce
 	Vector<PackedInt32Array> dim_data = _poly_cell_indices[p_poly_cell_index];
 	dim_data.remove_at(p_index);
 	_poly_cell_indices.set(p_poly_cell_index, dim_data);
-	// Fix up references in next_dim by decrementing any index greater than p_index.
-	if (next_dim < _poly_cell_indices.size()) {
-		Vector<PackedInt32Array> next_dim_data = _poly_cell_indices[next_dim];
+	// Fix up references in next_dim_poly_index by decrementing any index greater than p_index.
+	if (next_dim_poly_index < _poly_cell_indices.size()) {
+		Vector<PackedInt32Array> next_dim_data = _poly_cell_indices[next_dim_poly_index];
 		for (int32_t j = 0; j < next_dim_data.size(); j++) {
 			PackedInt32Array refs = next_dim_data[j];
 			bool changed = false;
@@ -465,7 +465,7 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_ce
 				next_dim_data.set(j, refs);
 			}
 		}
-		_poly_cell_indices.set(next_dim, next_dim_data);
+		_poly_cell_indices.set(next_dim_poly_index, next_dim_data);
 	}
 	// Keep dimensions normalized by trimming from the first empty dimension onward.
 	// In a valid poly mesh, once a dimension is empty, all higher dimensions must also be empty.
@@ -1186,7 +1186,7 @@ PackedInt32Array ArrayPolyMesh4D::get_edge_indices() {
 }
 
 void ArrayPolyMesh4D::set_edge_vertex_indices(const PackedInt32Array &p_edge_indices) {
-	_edge_vertex_indices = p_edge_indices;
+	_edge_vertex_indices = PackedInt32Array(p_edge_indices);
 	poly_mesh_clear_cache();
 	reset_poly_mesh_data_validation();
 }

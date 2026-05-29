@@ -178,9 +178,9 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 		if (poly_cell_indices.size() > 2) {
 			ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 			const PackedVector4Array &output_vertices = ret->get_poly_cell_vertices();
-			const Vector<PackedInt32Array> volume_vert = ret->get_all_poly_cell_vertex_indices(2, false);
+			const Vector<PackedInt32Array> volume_vert = ret->get_all_poly_cell_vertex_indices(4, false);
 			const Vector<PackedInt32Array> volume_cells = poly_cell_indices[2];
-			const Vector<PackedInt32Array> boundary_vert = ret->get_all_poly_cell_vertex_indices(1, false);
+			const Vector<PackedInt32Array> boundary_vert = ret->get_all_poly_cell_vertex_indices(3, false);
 			const PackedVector4Array boundary_normals = ret->get_poly_cell_boundary_normals();
 			Vector<PackedInt32Array> boundary_cells = poly_cell_indices[1];
 			CRASH_COND(volume_vert.size() != volume_cells.size() || boundary_vert.size() != boundary_cells.size() || boundary_normals.size() != boundary_cells.size());
@@ -275,7 +275,7 @@ void PolyMeshBuilder4D::make_boundary_normals_topologically_consistent(Ref<Array
 	}
 	// Compute the average position of each boundary cell.
 	const PackedVector4Array &poly_vertices = p_mesh->get_poly_cell_vertices();
-	const Vector<PackedInt32Array> boundary_vert = p_mesh->get_all_poly_cell_vertex_indices(1, false);
+	const Vector<PackedInt32Array> boundary_vert = p_mesh->get_all_poly_cell_vertex_indices(3, false);
 	const PackedInt32Array &boundary_pivot_overrides = p_mesh->get_poly_cell_boundary_pivot_overrides();
 	CRASH_COND(boundary_vert.size() != boundary_cells.size());
 	PackedVector4Array boundary_pivot_pos;

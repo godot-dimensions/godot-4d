@@ -798,32 +798,44 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_boundary_cell_vertex_indices_bi
 	return ret;
 }
 
-Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices(const int p_poly_dim_index, const bool p_start_with_canonical_span) {
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), Vector<PackedInt32Array>());
-	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
-	ERR_FAIL_COND_V(p_poly_dim_index < 0 || p_poly_dim_index >= poly_cell_indices.size(), Vector<PackedInt32Array>());
-	const PackedInt32Array &all_edge_indices = get_edge_indices();
-	ERR_FAIL_COND_V(all_edge_indices.is_empty(), Vector<PackedInt32Array>());
-	const Vector<PackedInt32Array> &cells = poly_cell_indices[p_poly_dim_index];
+Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices(const int p_cell_dimension, const bool p_start_with_canonical_span) {
 	Vector<PackedInt32Array> ret;
+	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
+	ERR_FAIL_COND_V(p_cell_dimension >= poly_cell_indices.size() + 2, ret);
+	if (p_cell_dimension == 0) {
+		const int64_t vertex_count = get_poly_cell_vertices().size();
+		ret.resize(vertex_count);
+		for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
+			ret.set(vertex_index, PackedInt32Array{ (int32_t)vertex_index });
+		}
+		return ret;
+	}
+	const PackedInt32Array &all_edge_indices = get_edge_indices();
+	if (p_cell_dimension == 1) {
+		const int64_t edge_count = all_edge_indices.size() / 2;
+		ret.resize(edge_count);
+		for (int64_t edge_index = 0; edge_index < edge_count; edge_index++) {
+			ret.set(edge_index, PackedInt32Array{ all_edge_indices[edge_index * 2], all_edge_indices[edge_index * 2 + 1] });
+		}
+		return ret;
+	}
+	ERR_FAIL_COND_V(all_edge_indices.is_empty(), ret);
+	const Vector<PackedInt32Array> &cells = poly_cell_indices[p_cell_dimension - 2];
 	ret.resize(cells.size());
 	for (int64_t cell_index = 0; cell_index < cells.size(); cell_index++) {
-		ret.set(cell_index, _get_vertex_indices_of_poly_cell(poly_cell_indices, all_edge_indices, p_poly_dim_index, cell_index, p_start_with_canonical_span));
+		ret.set(cell_index, _get_vertex_indices_of_poly_cell(poly_cell_indices, all_edge_indices, p_cell_dimension - 2, cell_index, p_start_with_canonical_span));
 	}
 	return ret;
 }
 
-TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices_bind(const int p_poly_dim_index, const bool p_start_with_canonical_span) {
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), TypedArray<PackedInt32Array>());
-	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
-	ERR_FAIL_COND_V(p_poly_dim_index < 0 || p_poly_dim_index >= poly_cell_indices.size(), TypedArray<PackedInt32Array>());
-	const PackedInt32Array &all_edge_indices = get_edge_indices();
-	ERR_FAIL_COND_V(all_edge_indices.is_empty(), TypedArray<PackedInt32Array>());
-	const Vector<PackedInt32Array> &cells = poly_cell_indices[p_poly_dim_index];
+TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices_bind(const int p_cell_dimension, const bool p_start_with_canonical_span) {
 	TypedArray<PackedInt32Array> ret;
-	ret.resize(cells.size());
-	for (int64_t cell_index = 0; cell_index < cells.size(); cell_index++) {
-		ret[cell_index] = _get_vertex_indices_of_poly_cell(poly_cell_indices, all_edge_indices, p_poly_dim_index, cell_index, p_start_with_canonical_span);
+	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	const Vector<PackedInt32Array> all_poly_cell_vertex_indices = get_all_poly_cell_vertex_indices(p_cell_dimension, p_start_with_canonical_span);
+	ret.resize(all_poly_cell_vertex_indices.size());
+	for (int64_t cell_index = 0; cell_index < all_poly_cell_vertex_indices.size(); cell_index++) {
+		ret[cell_index] = all_poly_cell_vertex_indices[cell_index];
 	}
 	return ret;
 }
@@ -1132,7 +1144,7 @@ PackedVector4Array PolyMesh4D::get_vertices() {
 void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_face_vertex_indices"), &PolyMesh4D::get_all_face_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
-	ClassDB::bind_method(D_METHOD("get_all_poly_cell_vertex_indices", "poly_dim_index", "start_with_canonical_span"), &PolyMesh4D::get_all_poly_cell_vertex_indices_bind);
+	ClassDB::bind_method(D_METHOD("get_all_poly_cell_vertex_indices", "cell_dimension", "start_with_canonical_span"), &PolyMesh4D::get_all_poly_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("poly_mesh_clear_cache", "normals_only"), &PolyMesh4D::poly_mesh_clear_cache, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("to_array_poly_mesh"), &PolyMesh4D::to_array_poly_mesh);
 
