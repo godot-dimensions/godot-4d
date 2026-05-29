@@ -1384,6 +1384,70 @@ void ArrayPolyMesh4D::set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vec
 	reset_poly_mesh_data_validation();
 }
 
+#if GODOT_HAS_TYPED_DICTIONARY
+TypedDictionary<Vector2i, Array> ArrayPolyMesh4D::get_all_poly_cell_normals_bind() const {
+	TypedDictionary<Vector2i, Array> result;
+	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : _all_poly_cell_normals) {
+		const Vector2i &key = kv.key;
+		const Vector<PackedVector4Array> &normals_data = kv.value;
+		Array normals_array;
+		normals_array.resize(normals_data.size());
+		for (int64_t i = 0; i < normals_data.size(); i++) {
+			normals_array.set(i, normals_data[i]);
+		}
+		result[key] = normals_array;
+	}
+	return result;
+}
+
+void ArrayPolyMesh4D::set_all_poly_cell_normals_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_normals) {
+	HashMap<Vector2i, Vector<PackedVector4Array>> normals_hashmap;
+	for (const KeyValue<Variant, Variant> &kv : p_all_poly_cell_normals) {
+		const Vector2i key = kv.key;
+		const Array normals_array = kv.value;
+		Vector<PackedVector4Array> normals_data;
+		normals_data.resize(normals_array.size());
+		for (int64_t i = 0; i < normals_array.size(); i++) {
+			const PackedVector4Array vec4_array = normals_array[i];
+			normals_data.set(i, vec4_array);
+		}
+		normals_hashmap.insert(key, normals_data);
+	}
+	set_all_poly_cell_normals(normals_hashmap);
+}
+
+TypedDictionary<Vector2i, Array> ArrayPolyMesh4D::get_all_poly_cell_texture_maps_bind() const {
+	TypedDictionary<Vector2i, Array> result;
+	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : _all_poly_cell_texture_maps) {
+		const Vector2i &key = kv.key;
+		const Vector<PackedVector3Array> &texture_map_data = kv.value;
+		Array texture_map_array;
+		texture_map_array.resize(texture_map_data.size());
+		for (int64_t i = 0; i < texture_map_data.size(); i++) {
+			texture_map_array.set(i, texture_map_data[i]);
+		}
+		result[key] = texture_map_array;
+	}
+	return result;
+}
+
+void ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_texture_maps) {
+	HashMap<Vector2i, Vector<PackedVector3Array>> texture_maps_hashmap;
+	for (const KeyValue<Variant, Variant> &kv : p_all_poly_cell_texture_maps) {
+		const Vector2i key = kv.key;
+		const Array texture_map_array = kv.value;
+		Vector<PackedVector3Array> texture_map_data;
+		texture_map_data.resize(texture_map_array.size());
+		for (int64_t i = 0; i < texture_map_array.size(); i++) {
+			const PackedVector3Array vec3_array = texture_map_array[i];
+			texture_map_data.set(i, vec3_array);
+		}
+		texture_maps_hashmap.insert(key, texture_map_data);
+	}
+	set_all_poly_cell_texture_maps(texture_maps_hashmap);
+}
+#endif // GODOT_HAS_TYPED_DICTIONARY
+
 PackedInt32Array ArrayPolyMesh4D::get_edge_indices() {
 	return _edge_vertex_indices;
 }
@@ -1539,46 +1603,41 @@ void ArrayPolyMesh4D::set_poly_cell_vertices(const PackedVector4Array &p_poly_ce
 }
 
 void ArrayPolyMesh4D::_bind_methods() {
+	// Append and delete functions.
 	ClassDB::bind_method(D_METHOD("append_edge_points", "point_a", "point_b", "deduplicate"), &ArrayPolyMesh4D::append_edge_points, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_edge_indices", "index_a", "index_b", "deduplicate"), &ArrayPolyMesh4D::append_edge_indices, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_poly_cell", "dimension", "cell", "deduplicate"), &ArrayPolyMesh4D::append_poly_cell, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertex, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertices, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("delete_poly_element", "dimension", "index"), &ArrayPolyMesh4D::delete_poly_element);
 
+	// Normal calculation functions.
 	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "normals_mode", "keep_existing"), &ArrayPolyMesh4D::calculate_boundary_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_flat_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("set_smooth_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_smooth_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("make_double_sided", "idempotent"), &ArrayPolyMesh4D::make_double_sided, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("make_single_volume_from_all_cells"), &ArrayPolyMesh4D::make_single_volume_from_all_cells);
-	ClassDB::bind_method(D_METHOD("delete_poly_element", "dimension", "index"), &ArrayPolyMesh4D::delete_poly_element);
 
+	// Texture map and seam functions.
 	ClassDB::bind_method(D_METHOD("calculate_seam_faces", "angle_threshold_radians", "discard_seams_within_islands"), &ArrayPolyMesh4D::calculate_seam_faces, DEFVAL(Math_TAU / 8.0), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("collect_cells_in_island", "start_cell"), &ArrayPolyMesh4D::collect_cells_in_island);
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map_island", "cells_in_island", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_island, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);
 
+	// Misc functions.
 	ClassDB::bind_method(D_METHOD("transform_vertices", "offset", "basis"), &ArrayPolyMesh4D::transform_vertices_bind, DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayPolyMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
+	ClassDB::bind_method(D_METHOD("make_single_volume_from_all_cells"), &ArrayPolyMesh4D::make_single_volume_from_all_cells);
 
-	// Only bind the setters here because the getters are already bound in PolyMesh4D.
+	// Properties. Only bind the setters here because the getters are already bound in PolyMesh4D.
 	ClassDB::bind_method(D_METHOD("set_poly_cell_indices", "poly_cell_indices"), &ArrayPolyMesh4D::set_poly_cell_indices_bind);
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_indices"), "set_poly_cell_indices", "get_poly_cell_indices");
 
 	ClassDB::bind_method(D_METHOD("set_poly_cell_vertices", "poly_cell_vertices"), &ArrayPolyMesh4D::set_poly_cell_vertices);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertices"), "set_poly_cell_vertices", "get_poly_cell_vertices");
 
-	ClassDB::bind_method(D_METHOD("set_poly_cell_boundary_normals", "poly_cell_boundary_normals"), &ArrayPolyMesh4D::set_poly_cell_boundary_normals);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_boundary_normals"), "set_poly_cell_boundary_normals", "get_poly_cell_boundary_normals");
-
 	ClassDB::bind_method(D_METHOD("set_poly_cell_boundary_pivot_overrides", "poly_cell_boundary_pivot_overrides"), &ArrayPolyMesh4D::set_poly_cell_boundary_pivot_overrides);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "poly_cell_boundary_pivot_overrides"), "set_poly_cell_boundary_pivot_overrides", "get_poly_cell_boundary_pivot_overrides");
-
-	ClassDB::bind_method(D_METHOD("set_poly_cell_vertex_normals", "poly_cell_vertex_normals"), &ArrayPolyMesh4D::set_poly_cell_vertex_normals_bind);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertex_normals"), "set_poly_cell_vertex_normals", "get_poly_cell_vertex_normals");
-
-	ClassDB::bind_method(D_METHOD("set_poly_cell_texture_map", "poly_cell_texture_map"), &ArrayPolyMesh4D::set_poly_cell_texture_map_bind);
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_texture_map"), "set_poly_cell_texture_map", "get_poly_cell_texture_map");
 
 	ClassDB::bind_method(D_METHOD("get_seam_face_indices"), &ArrayPolyMesh4D::get_seam_face_indices_bind);
 	ClassDB::bind_method(D_METHOD("set_seam_face_indices", "seam_face_indices"), &ArrayPolyMesh4D::set_seam_face_indices_bind);
@@ -1587,6 +1646,32 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_edge_indices", "edge_indices"), &ArrayPolyMesh4D::set_edge_vertex_indices);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "edge_indices"), "set_edge_indices", "get_edge_indices");
 
+	// Normals and texture maps. The "all" ones need the getters bound here.
+#if GODOT_HAS_TYPED_DICTIONARY
+	ClassDB::bind_method(D_METHOD("get_all_poly_cell_normals"), &ArrayPolyMesh4D::get_all_poly_cell_normals_bind);
+	ClassDB::bind_method(D_METHOD("set_all_poly_cell_normals", "all_poly_cell_normals"), &ArrayPolyMesh4D::set_all_poly_cell_normals_bind);
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normals", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_normals", "get_all_poly_cell_normals");
+
+	ClassDB::bind_method(D_METHOD("get_all_poly_cell_texture_maps"), &ArrayPolyMesh4D::get_all_poly_cell_texture_maps_bind);
+	ClassDB::bind_method(D_METHOD("set_all_poly_cell_texture_maps", "all_poly_cell_texture_maps"), &ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind);
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_maps", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_texture_maps", "get_all_poly_cell_texture_maps");
+
+	constexpr PropertyUsageFlags PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS = PROPERTY_USAGE_EDITOR;
+#else
+	// When not saving the "all" ones, save the high-level properties (default = storage + editor).
+	constexpr PropertyUsageFlags PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS = PROPERTY_USAGE_DEFAULT;
+#endif // GODOT_HAS_TYPED_DICTIONARY
+
+	ClassDB::bind_method(D_METHOD("set_poly_cell_boundary_normals", "poly_cell_boundary_normals"), &ArrayPolyMesh4D::set_poly_cell_boundary_normals);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_boundary_normals", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS), "set_poly_cell_boundary_normals", "get_poly_cell_boundary_normals");
+
+	ClassDB::bind_method(D_METHOD("set_poly_cell_vertex_normals", "poly_cell_vertex_normals"), &ArrayPolyMesh4D::set_poly_cell_vertex_normals_bind);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertex_normals", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS), "set_poly_cell_vertex_normals", "get_poly_cell_vertex_normals");
+
+	ClassDB::bind_method(D_METHOD("set_poly_cell_texture_map", "poly_cell_texture_map"), &ArrayPolyMesh4D::set_poly_cell_texture_map_bind);
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_texture_map", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS), "set_poly_cell_texture_map", "get_poly_cell_texture_map");
+
+	// Enums.
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_FORCE_OUTWARD_OVERRIDE_CELL_ORIENTATION);
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION);

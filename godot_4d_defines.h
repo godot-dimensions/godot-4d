@@ -93,6 +93,10 @@ using namespace godot;
 #define Math_TAU Math::TAU
 #endif
 
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
+#define GODOT_HAS_TYPED_DICTIONARY 1
+#endif
+
 #else
 #error "Must build as Godot GDExtension or Godot module."
 #endif

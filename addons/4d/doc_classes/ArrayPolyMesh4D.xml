@@ -177,6 +177,14 @@
 		</method>
 	</methods>
 	<members>
+		<member name="all_poly_cell_normals" type="Dictionary[Vector2i, Array]" setter="set_all_poly_cell_normals" getter="get_all_poly_cell_normals" default="{}">
+			All normal data for this mesh, including per-cell ([member poly_cell_boundary_normals]), cell vertices ([member poly_cell_vertex_normals]), per-face, face vertices, and more. This is a low-level member intended for advanced use cases, the other normal-related members are recommended for most users.
+			The keys are a [Vector2i], where the X component is the geometry dimension, and the Y component is the decomposition dimension. Each array is effectively [code]Array[PackedVector4Array][/code]. When X is greater than Y, this is a hierarchical structure, where the outer array has a size equal to the number of cells in the dimension X, and each inner [PackedVector4Array] contains the normals for each decomposed element in that cell. When X equals Y, this is a flat structure, where the outer array has a size of 1. Keys are not allowed to have X be less than Y.
+		</member>
+		<member name="all_poly_cell_texture_maps" type="Dictionary[Vector2i, Array]" setter="set_all_poly_cell_texture_maps" getter="get_all_poly_cell_texture_maps" default="{}">
+			All texture map data for this mesh, including cell vertices ([member poly_cell_texture_map]), face vertices, and more. This is a low-level member intended for advanced use cases, the other texture map member is recommended for most users.
+			The keys are a [Vector2i], where the X component is the geometry dimension, and the Y component is the decomposition dimension. Each array is effectively [code]Array[PackedVector3Array][/code]. When X is greater than Y, this is a hierarchical structure, where the outer array has a size equal to the number of cells in the dimension X, and each inner [PackedVector3Array] contains the texture maps for each decomposed element in that cell. Texture maps usually do not have keys where X equals Y. Keys are not allowed to have X be less than Y.
+		</member>
 		<member name="edge_indices" type="PackedInt32Array" setter="set_edge_indices" getter="get_edge_indices" default="PackedInt32Array()">
 			The flat array of edge indices. Every 2 integers defines an edge. Each integer is an index into the [member poly_cell_vertices] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
 		</member>

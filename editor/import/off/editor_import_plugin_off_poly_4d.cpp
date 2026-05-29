@@ -20,6 +20,24 @@ void EditorImportPluginOFFPoly4D::_make_single_convex_3d_cell(Ref<ArrayPolyMesh4
 	poly_cell_indices.resize(2);
 	poly_cell_indices.set(1, Vector<PackedInt32Array>{ p_mesh->make_single_cell_from_all_faces() });
 	p_mesh->set_poly_cell_indices(poly_cell_indices);
+	// Assign face normals pointing outward from the center of the mesh.
+	// This functionality is considered niche so it's just implemented here.
+	const PackedVector4Array &poly_vert = p_mesh->get_poly_cell_vertices();
+	const Vector<PackedInt32Array> face_vert_ind = p_mesh->get_all_poly_cell_vertex_indices(2, false);
+	PackedVector4Array face_normals;
+	face_normals.resize(face_vert_ind.size());
+	for (int64_t face_index = 0; face_index < face_vert_ind.size(); face_index++) {
+		const PackedInt32Array &face_verts = face_vert_ind[face_index];
+		Vector4 sum = Vector4(0.0, 0.0, 0.0, 0.0);
+		for (int i = 0; i < face_verts.size(); i++) {
+			sum += poly_vert[face_verts[i]];
+		}
+		sum.normalize();
+		face_normals.set(face_index, sum);
+	}
+	HashMap<Vector2i, Vector<PackedVector4Array>> output_all_poly_cell_normals = p_mesh->get_all_poly_cell_normals();
+	output_all_poly_cell_normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ face_normals });
+	p_mesh->set_all_poly_cell_normals(output_all_poly_cell_normals);
 }
 
 void EditorImportPluginOFFPoly4D::_make_single_convex_4d_volume(Ref<ArrayPolyMesh4D> p_mesh) {
@@ -27,6 +45,9 @@ void EditorImportPluginOFFPoly4D::_make_single_convex_4d_volume(Ref<ArrayPolyMes
 	poly_cell_indices.resize(3);
 	poly_cell_indices.set(2, Vector<PackedInt32Array>{ p_mesh->make_single_volume_from_all_cells() });
 	p_mesh->set_poly_cell_indices(poly_cell_indices);
+	// Assign cell normals pointing outward from the center of the mesh.
+	// This functionality is built-in to ArrayPolyMesh4D, so the code is simple here.
+	p_mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION);
 }
 
 #if GDEXTENSION

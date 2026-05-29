@@ -3,6 +3,10 @@
 #include "../../../math/transform_4d.h"
 #include "poly_mesh_4d.h"
 
+#if GODOT_HAS_TYPED_DICTIONARY
+#include "core/variant/typed_dictionary.h"
+#endif
+
 class ArrayPolyMesh4D : public PolyMesh4D {
 	GDCLASS(ArrayPolyMesh4D, PolyMesh4D);
 
@@ -86,6 +90,13 @@ public:
 	void set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals);
 	HashMap<Vector2i, Vector<PackedVector3Array>> get_all_poly_cell_texture_maps() const { return _all_poly_cell_texture_maps; }
 	void set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vector<PackedVector3Array>> &p_all_poly_cell_texture_maps);
+
+#if GODOT_HAS_TYPED_DICTIONARY
+	TypedDictionary<Vector2i, Array> get_all_poly_cell_normals_bind() const;
+	void set_all_poly_cell_normals_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_normals);
+	TypedDictionary<Vector2i, Array> get_all_poly_cell_texture_maps_bind() const;
+	void set_all_poly_cell_texture_maps_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_texture_maps);
+#endif // GODOT_HAS_TYPED_DICTIONARY
 
 	virtual PackedInt32Array get_edge_indices() override;
 	void set_edge_vertex_indices(const PackedInt32Array &p_edge_indices);
