@@ -288,14 +288,16 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	ERR_FAIL_COND_V(p_input_mesh.is_null(), ret);
 	ERR_FAIL_COND_V_MSG(p_steps < 3, ret, "At least 3 steps are required for spin extrusion to form a closed loop. Multiples of 4 are recommended for axis alignment.");
 	const Vector<Vector<PackedInt32Array>> &input_poly_cell_indices = p_input_mesh->get_poly_cell_indices();
-	ERR_FAIL_COND_V_MSG(input_poly_cell_indices.size() != 1, ret, "Input mesh must have 2D faces (poly cell indices of size 1), with no higher order elements like 3D cells or 4D volumes.");
+	ERR_FAIL_COND_V_MSG(input_poly_cell_indices.size() == 0 || input_poly_cell_indices.size() > 2, ret, "Input mesh must have 2D faces and optionally 3D cells (poly cell indices of size 1 or 2), with no higher order elements like 4D volumes.");
 	ERR_FAIL_COND_V_MSG(!p_input_mesh->is_mesh_data_valid(), ret, "Input mesh is not valid, so extrusion cannot be performed.");
 	const PackedVector4Array &input_vertices = p_input_mesh->get_poly_cell_vertices();
 	const PackedInt32Array &input_edge_indices = p_input_mesh->get_edge_indices();
 	const Vector<PackedInt32Array> &input_face_indices = input_poly_cell_indices[0];
+	const Vector<PackedInt32Array> &input_cell_indices = input_poly_cell_indices.size() > 1 ? input_poly_cell_indices[1] : Vector<PackedInt32Array>();
 	const int32_t input_vertex_count = input_vertices.size();
 	const int64_t input_edge_count = input_edge_indices.size() / 2;
 	const int32_t input_face_count = input_face_indices.size();
+	const int32_t input_cell_count = input_cell_indices.size();
 	ERR_FAIL_COND_V_MSG(input_vertex_count <= 0 || input_edge_count <= 0 || input_face_count <= 0, ret, "Input mesh must contain vertices, edges, and faces.");
 	const double radians_per_step = Math_TAU / p_steps;
 	// Step 2: Start with a copy of the input mesh's vertices, edges, and faces.
@@ -303,7 +305,8 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	PackedVector4Array output_vertices = PackedVector4Array(input_vertices);
 	PackedInt32Array output_edge_indices = PackedInt32Array(input_edge_indices);
 	Vector<PackedInt32Array> output_face_indices = Vector<PackedInt32Array>(input_face_indices);
-	Vector<PackedInt32Array> output_cell_indices; // Will be filled with only new cells formed between the input faces.
+	Vector<PackedInt32Array> output_cell_indices = Vector<PackedInt32Array>(input_cell_indices);
+	Vector<PackedInt32Array> output_volume_indices; // Will be filled with only new volumes formed between the input cells, if any.
 	// Step 3: Account for floating-point error by aligning vertices nearly zero on the X axis.
 	for (int vertex_index = 0; vertex_index < output_vertices.size(); vertex_index++) {
 		Vector4 vertex = output_vertices[vertex_index];
@@ -316,9 +319,11 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	PackedInt32Array original_to_rotated_vertices;
 	PackedInt32Array original_to_rotated_edges;
 	PackedInt32Array original_to_rotated_faces;
+	PackedInt32Array original_to_rotated_cells;
 	original_to_rotated_vertices.resize(input_vertex_count * p_steps);
 	original_to_rotated_edges.resize(input_edge_count * p_steps);
 	original_to_rotated_faces.resize(input_face_count * p_steps);
+	original_to_rotated_cells.resize(input_cell_count * p_steps);
 	for (int32_t vertex_index = 0; vertex_index < input_vertex_count; vertex_index++) {
 		original_to_rotated_vertices.set(vertex_index * p_steps, vertex_index);
 	}
@@ -327,6 +332,9 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	}
 	for (int32_t face_index = 0; face_index < input_face_count; face_index++) {
 		original_to_rotated_faces.set(face_index * p_steps, face_index);
+	}
+	for (int32_t cell_index = 0; cell_index < input_cell_count; cell_index++) {
+		original_to_rotated_cells.set(cell_index * p_steps, cell_index);
 	}
 	// Step 5: Rotate and merge copies of the input mesh's vertices for each step.
 	for (int step = 1; step < p_steps; step++) {
@@ -385,15 +393,32 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			output_face_indices.append(rotated_face_edges);
 		}
 	}
+	// Step 8: Merge copies of the cells. Assume that cells aren't aligned with X=0, don't deduplicate.
+	for (int step = 1; step < p_steps; step++) {
+		for (int cell_index = 0; cell_index < input_cell_count; cell_index++) {
+			const PackedInt32Array input_cell_face_indices = input_cell_indices[cell_index];
+			PackedInt32Array rotated_cell_faces;
+			for (int i = 0; i < input_cell_face_indices.size(); i++) {
+				const int32_t face_index = input_cell_face_indices[i];
+				rotated_cell_faces.append(original_to_rotated_faces[face_index * p_steps + step]);
+			}
+			original_to_rotated_cells.set(cell_index * p_steps + step, output_cell_indices.size());
+			output_cell_indices.append(rotated_cell_faces);
+		}
+	}
+	Vector<PackedInt32Array> input_cells_to_output_volumes;
 	Vector<PackedInt32Array> input_faces_to_output_cells;
 	Vector<PackedInt32Array> input_edges_to_output_faces;
 	Vector<PackedInt32Array> input_vertices_to_output_edges;
+	if (input_cell_count > 0) {
+		input_cells_to_output_volumes.resize(p_steps);
+	}
 	input_faces_to_output_cells.resize(p_steps);
 	input_edges_to_output_faces.resize(p_steps);
 	input_vertices_to_output_edges.resize(p_steps);
 	for (int this_step = 0; this_step < p_steps; this_step++) {
 		const int next_step = (this_step + 1) % p_steps;
-		// Step 8: Form new edges between the rotated vertices of the current step and the next step.
+		// Step 9: Form new edges between the rotated vertices of the current step and the next step.
 		PackedInt32Array input_vertex_to_output_edge;
 		input_vertex_to_output_edge.resize(input_vertex_count);
 		for (int32_t vertex_index = 0; vertex_index < input_vertex_count; vertex_index++) {
@@ -414,7 +439,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			}
 		}
 		input_vertices_to_output_edges.set(this_step, input_vertex_to_output_edge);
-		// Step 9: Form new faces between the rotated edges of the current step
+		// Step 10: Form new faces between the rotated edges of the current step
 		// and the next step, and the new edges formed in the previous step.
 		PackedInt32Array input_edge_to_output_face;
 		input_edge_to_output_face.resize(input_edge_count);
@@ -442,7 +467,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			}
 		}
 		input_edges_to_output_faces.set(this_step, input_edge_to_output_face);
-		// Step 10: Form new cells between the rotated faces of the current step
+		// Step 11: Form new cells between the rotated faces of the current step
 		// and the next step, and the new faces formed in the previous step.
 		PackedInt32Array input_face_to_output_cell;
 		input_face_to_output_cell.resize(input_face_count);
@@ -464,19 +489,46 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			output_cell_indices.append(new_cell_faces);
 		}
 		input_faces_to_output_cells.set(this_step, input_face_to_output_cell);
+		// Step 12: Form new volumes between the rotated cells of the current step (if any)
+		// and the next step, and the new cells formed in the previous step.
+		if (input_cell_count > 0) {
+			PackedInt32Array input_cell_to_output_volume;
+			input_cell_to_output_volume.resize(input_cell_count);
+			for (int32_t cell_index = 0; cell_index < input_cell_count; cell_index++) {
+				const int32_t cell_base = cell_index * p_steps;
+				const int32_t this_rotated_cell_index = original_to_rotated_cells[cell_base + this_step];
+				const int32_t next_rotated_cell_index = original_to_rotated_cells[cell_base + next_step];
+				PackedInt32Array new_volume_cells = { this_rotated_cell_index };
+				PackedInt32Array input_cell_face_indices = input_cell_indices[cell_index];
+				for (int i = 0; i < input_cell_face_indices.size(); i++) {
+					const int32_t face_index = input_cell_face_indices[i];
+					const int32_t output_cell_for_face = input_face_to_output_cell[face_index];
+					if (output_cell_for_face != -1) {
+						new_volume_cells.append(output_cell_for_face);
+					}
+				}
+				new_volume_cells.append(next_rotated_cell_index);
+				input_cell_to_output_volume.set(cell_index, output_volume_indices.size());
+				output_volume_indices.append(new_volume_cells);
+			}
+			input_cells_to_output_volumes.set(this_step, input_cell_to_output_volume);
+		}
 	}
-	// Step 11: Set all of this data on the output mesh.
+	// Step 13: Set all of this data on the output mesh.
 	ret->set_poly_cell_vertices(output_vertices);
 	ret->set_edge_vertex_indices(output_edge_indices);
 	Vector<Vector<PackedInt32Array>> output_poly_cell_indices = {
 		output_face_indices,
 		output_cell_indices,
 	};
+	if (!output_volume_indices.is_empty()) {
+		output_poly_cell_indices.append(output_volume_indices);
+	}
 	ret->set_poly_cell_indices(output_poly_cell_indices);
 	ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 	const PackedVector4Array wip_boundary_normals = ret->get_poly_cell_boundary_normals();
 	const Vector<PackedInt32Array> input_face_vertex_indices = p_input_mesh->get_all_face_vertex_indices();
-	// Step 12: Get or compute the face boundary normals.
+	// Step 14: Get or compute the face boundary normals.
 	const HashMap<Vector2i, Vector<PackedVector4Array>> input_all_poly_cell_normals = p_input_mesh->get_all_poly_cell_normals();
 	PackedVector4Array input_face_normals;
 	if (input_all_poly_cell_normals.has(PolyMesh4D::PER_FACE_KEY)) {
@@ -492,7 +544,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			input_face_normals.set(face_index, Vector4D::from_3d(face_cross_3d.normalized()));
 		}
 	}
-	// Step 13: Ensure correct winding order of the new cells, make cell boundary normals match the face boundary normals.
+	// Step 15: Ensure correct winding order of the new cells, make cell boundary normals match the face boundary normals.
 	for (int step = 0; step < p_steps; step++) {
 		const PackedInt32Array cell_indices_for_faces = input_faces_to_output_cells[step];
 		const double angle = (step + 0.5) * radians_per_step;
@@ -510,7 +562,10 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			}
 		}
 	}
-	// Step 14: Copy and convert the face normals if they exist, rotating them appropriately for each step.
+	// Keep mesh topology in sync with local winding fixes before deriving vertex-mapped attributes.
+	output_poly_cell_indices.set(1, output_cell_indices);
+	ret->set_poly_cell_indices(output_poly_cell_indices);
+	// Step 16: Copy and convert the face normals if they exist, rotating them appropriately for each step.
 	HashMap<Vector2i, Vector<PackedVector4Array>> output_all_poly_cell_normals = ret->get_all_poly_cell_normals();
 	output_all_poly_cell_normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ input_face_normals });
 	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &normal_kv : input_all_poly_cell_normals) {
@@ -518,12 +573,12 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 		if (key == PolyMesh4D::PER_FACE_KEY) {
 			continue; // Used above to orient the output cells, but cannot be represented for all output faces.
 		}
-		// Step 14.1: Get and validate the normal data for this key.
+		// Step 16.1: Get and validate the normal data for this key.
 		const Vector<PackedVector4Array> &normals = normal_kv.value;
 		if (normals.is_empty()) {
 			continue; // Ignore empty normal data.
 		}
-		ERR_FAIL_COND_V_MSG(key.x > 2, ret, "Input mesh has normals for poly dimension higher than faces, which is not supported for spin extrusion.");
+		ERR_FAIL_COND_V_MSG(key.x > 3, ret, "Input mesh has normals for poly dimension higher than cells, which is not supported for spin extrusion.");
 		int32_t input_element_count = 0;
 		if (key.x == 0) {
 			input_element_count = input_vertex_count;
@@ -533,7 +588,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			input_element_count = input_face_count;
 		}
 		if (key.y == key.x) {
-			// Step 14.2: Copy and rotate the flat array structure of per-element normals. If so, skip step 14.3.
+			// Step 16.2: Copy and rotate the flat array structure of per-element normals. If so, skip step 14.3.
 			ERR_FAIL_COND_V_MSG(normals.size() != 1, ret, "Expected flat array for per-element normal data.");
 			PackedVector4Array flat_array = normals[0];
 			PackedVector4Array output_flat_array;
@@ -548,7 +603,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			}
 			output_all_poly_cell_normals.insert(key, Vector<PackedVector4Array>{ output_flat_array });
 		} else {
-			// Step 14.3: Copy and rotate the nested array structure of element-to-subelement normals.
+			// Step 16.3: Copy and rotate the nested array structure of element-to-subelement normals.
 			ERR_FAIL_COND_V_MSG(normals.size() != input_element_count, ret, "Expected array with one entry per element for element-to-subelement normal data.");
 			Vector<PackedVector4Array> output_arrays;
 			output_arrays.resize(input_element_count * p_steps);
@@ -568,7 +623,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			output_all_poly_cell_normals.insert(key, output_arrays);
 		}
 	}
-	// Step 15: Extrude the low-dim vertex normals into high-dim vertex normals, such as faces to cells.
+	// Step 17: Extrude the low-dim vertex normals into high-dim vertex normals, such as faces to cells.
 	// Here we only read where the input has the key, but the data comes from the output mesh.
 	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &normal_kv : input_all_poly_cell_normals) {
 		const Vector2i key = normal_kv.key;
@@ -583,58 +638,66 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 		if (key.y != 0) {
 			continue; // For now hard-code vertex normals, could be generalized later if needed.
 		}
-		ERR_FAIL_COND_V_MSG(key.x > 2, ret, "Input mesh has normals for poly dimension higher than faces, which is not supported for spin extrusion.");
-		// Step 15.1: Prepare the data structures needed to extrude the normals.
+		ERR_FAIL_COND_V_MSG(key.x > 3, ret, "Input mesh has normals for poly dimension higher than cells, which is not supported for spin extrusion.");
+		// Step 17.1: Prepare the data structures needed to extrude the normals.
 		const Vector<PackedVector4Array> &face_vert_normals = output_all_poly_cell_normals[key];
 		const Vector<PackedInt32Array> output_face_vert = ret->get_all_poly_cell_vertex_indices(key.x, false);
 		const Vector<PackedInt32Array> output_cell_vert = ret->get_all_poly_cell_vertex_indices(dest_key.x, false);
 		Vector<PackedVector4Array> cell_vert_normals;
 		cell_vert_normals.resize(output_cell_vert.size());
 		const int32_t output_face_vert_count = output_face_vert.size();
-		// Step 15.2: For each output cell, find the first and second copy faces it came from, and copy over their vertex normals.
-		for (int cell_index = 0; cell_index < output_cell_vert.size(); cell_index++) {
-			const PackedInt32Array &cell_faces = output_cell_indices[cell_index];
-			// Step 10 places this as the last face in the cell.
-			const int32_t second_copy_face = cell_faces[cell_faces.size() - 1];
-			// This may have been swapped in step 13 to ensure correct winding order. The first copy face will have a lower face index than the extruded faces.
-			const int32_t first_copy_face = MIN<int32_t, int32_t>(cell_faces[0], cell_faces[1]);
-			// Note: first_copy_face may be >= second_copy_face for the last step, when next_step wraps to 0 and second_copy_face becomes the step-0 face (lower index).
-			CRASH_COND(first_copy_face >= output_face_vert_count || second_copy_face >= output_face_vert_count);
-			const PackedInt32Array &cell_verts = output_cell_vert[cell_index];
-			const PackedInt32Array &first_copy_face_verts = output_face_vert[first_copy_face];
-			const PackedInt32Array &second_copy_face_verts = output_face_vert[second_copy_face];
-			PackedVector4Array this_cell_vert_normals;
-			this_cell_vert_normals.resize_uninitialized(cell_verts.size());
-			for (int vert_in_cell = 0; vert_in_cell < cell_verts.size(); vert_in_cell++) {
-				const int32_t vert_index = cell_verts[vert_in_cell];
-				const int64_t vert_in_first = first_copy_face_verts.find(vert_index);
-				const int64_t vert_in_second = second_copy_face_verts.find(vert_index);
-				if (vert_in_first == -1) {
-					CRASH_COND(vert_in_second == -1); // This vertex should be in at least one of the two faces.
-					this_cell_vert_normals.set(vert_in_cell, face_vert_normals[second_copy_face][vert_in_second]);
-				} else if (vert_in_second == -1) {
-					this_cell_vert_normals.set(vert_in_cell, face_vert_normals[first_copy_face][vert_in_first]);
-				} else {
-					// This vertex is shared by both the first and second copy faces (it was deduplicated), so average the normals from both faces for this vertex.
-					this_cell_vert_normals.set(vert_in_cell, (face_vert_normals[first_copy_face][vert_in_first] + face_vert_normals[second_copy_face][vert_in_second]) * 0.5);
+		// Step 17.2: For each spin-generated output cell, find the first and second copy faces it came from,
+		// and copy over their vertex normals. Existing input cells do not follow this layout.
+		for (int step = 0; step < p_steps; step++) {
+			const PackedInt32Array cell_indices_for_faces = input_faces_to_output_cells[step];
+			for (int32_t face_index = 0; face_index < input_face_count; face_index++) {
+				const int32_t cell_index = cell_indices_for_faces[face_index];
+				const PackedInt32Array &cell_faces = output_cell_indices[cell_index];
+				// Step 11 places this as the last face in the cell.
+				const int32_t second_copy_face = cell_faces[cell_faces.size() - 1];
+				// This may have been swapped in step 15 to ensure correct winding order. The first copy face will have a lower face index than the extruded faces.
+				const int32_t first_copy_face = MIN<int32_t, int32_t>(cell_faces[0], cell_faces[1]);
+				// Note: first_copy_face may be >= second_copy_face for the last step, when next_step wraps to 0 and second_copy_face becomes the step-0 face (lower index).
+				CRASH_COND(first_copy_face >= output_face_vert_count || second_copy_face >= output_face_vert_count);
+				const PackedInt32Array &cell_verts = output_cell_vert[cell_index];
+				const PackedInt32Array &first_copy_face_verts = output_face_vert[first_copy_face];
+				const PackedInt32Array &second_copy_face_verts = output_face_vert[second_copy_face];
+				PackedVector4Array this_cell_vert_normals;
+				this_cell_vert_normals.resize_uninitialized(cell_verts.size());
+				for (int vert_in_cell = 0; vert_in_cell < cell_verts.size(); vert_in_cell++) {
+					const int32_t vert_index = cell_verts[vert_in_cell];
+					const int64_t vert_in_first = first_copy_face_verts.find(vert_index);
+					const int64_t vert_in_second = second_copy_face_verts.find(vert_index);
+					Vector4 normal_from_first = vert_in_first != -1 ? face_vert_normals[first_copy_face][vert_in_first] : Vector4();
+					Vector4 normal_from_second = vert_in_second != -1 ? face_vert_normals[second_copy_face][vert_in_second] : Vector4();
+					// Set the normal for this vertex in the cell based on which face it came from.
+					if (vert_in_first == -1) {
+						CRASH_COND(vert_in_second == -1); // This vertex should be in at least one of the two faces.
+						this_cell_vert_normals.set(vert_in_cell, normal_from_second);
+					} else if (vert_in_second == -1) {
+						this_cell_vert_normals.set(vert_in_cell, normal_from_first);
+					} else {
+						// This vertex is shared by both the first and second copy faces (it was deduplicated), so average the normals from both faces for this vertex.
+						this_cell_vert_normals.set(vert_in_cell, (normal_from_first + normal_from_second) * 0.5);
+					}
 				}
+				cell_vert_normals.set(cell_index, this_cell_vert_normals);
 			}
-			cell_vert_normals.set(cell_index, this_cell_vert_normals);
 		}
 		output_all_poly_cell_normals.insert(dest_key, cell_vert_normals);
 	}
 	ret->set_all_poly_cell_normals(output_all_poly_cell_normals);
-	// Step 16: Copy and convert the face texture maps if they exist, adding to the Z for each step.
+	// Step 18: Copy and convert the face texture maps if they exist, adding to the Z for each step.
 	const HashMap<Vector2i, Vector<PackedVector3Array>> &input_all_poly_cell_texture_maps = p_input_mesh->get_all_poly_cell_texture_maps();
 	HashMap<Vector2i, Vector<PackedVector3Array>> output_all_poly_cell_texture_maps = ret->get_all_poly_cell_texture_maps();
 	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &tex_map_kv : input_all_poly_cell_texture_maps) {
 		const Vector2i key = tex_map_kv.key;
-		// Step 16.1: Get and validate the texture map data for this key.
+		// Step 18.1: Get and validate the texture map data for this key.
 		const Vector<PackedVector3Array> &tex_maps = tex_map_kv.value;
 		if (tex_maps.is_empty()) {
 			continue; // Ignore empty texture map data.
 		}
-		ERR_FAIL_COND_V_MSG(key.x > 2, ret, "Input mesh has texture maps for poly dimension higher than faces, which is not supported for spin extrusion.");
+		ERR_FAIL_COND_V_MSG(key.x > 3, ret, "Input mesh has texture maps for poly dimension higher than cells, which is not supported for spin extrusion.");
 		int32_t input_element_count = 0;
 		if (key.x == 0) {
 			input_element_count = input_vertex_count;
@@ -644,7 +707,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			input_element_count = input_face_count;
 		}
 		if (key.y == key.x) {
-			// Step 16.2: Copy and convert the flat array structure of per-element texture maps. If so, skip step 16.3.
+			// Step 18.2: Copy and convert the flat array structure of per-element texture maps. If so, skip step 16.3.
 			ERR_FAIL_COND_V_MSG(tex_maps.size() != 1, ret, "Expected flat array for per-element texture map data.");
 			PackedVector3Array flat_array = tex_maps[0];
 			PackedVector3Array output_flat_array;
@@ -652,14 +715,14 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			for (int step = 0; step < p_steps; step++) {
 				const double z_offset = step / (double)p_steps;
 				for (int32_t element_index = 0; element_index < input_element_count; element_index++) {
-					Vector3 uv = flat_array[element_index];
-					uv.z += z_offset;
-					output_flat_array.set(step * input_element_count + element_index, uv);
+					Vector3 tex_coord = flat_array[element_index];
+					tex_coord.z += z_offset;
+					output_flat_array.set(step * input_element_count + element_index, tex_coord);
 				}
 			}
 			output_all_poly_cell_texture_maps.insert(key, Vector<PackedVector3Array>{ output_flat_array });
 		} else {
-			// Step 16.3: Copy and convert the nested array structure of element-to-subelement texture maps.
+			// Step 18.3: Copy and convert the nested array structure of element-to-subelement texture maps.
 			ERR_FAIL_COND_V_MSG(tex_maps.size() != input_element_count, ret, "Expected array with one entry per element for element-to-subelement texture map data.");
 			Vector<PackedVector3Array> output_arrays;
 			output_arrays.resize(input_element_count * p_steps);
@@ -679,7 +742,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			output_all_poly_cell_texture_maps.insert(key, output_arrays);
 		}
 	}
-	// Step 17: Extrude the low-dim face texture maps into high-dim cell texture maps, such as faces to cells.
+	// Step 19: Extrude the low-dim face texture maps into high-dim cell texture maps, such as faces to cells.
 	// Here we only read where the input has the key, but the data comes from the output mesh.
 	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &normal_kv : input_all_poly_cell_texture_maps) {
 		const Vector2i key = normal_kv.key;
@@ -691,50 +754,61 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 		if (key.y != 0) {
 			continue; // For now hard-code vertex texture maps, could be generalized later if needed.
 		}
-		ERR_FAIL_COND_V_MSG(key.x > 2, ret, "Input mesh has texture maps for poly dimension higher than faces, which is not supported for spin extrusion.");
-		// Step 17.1: Prepare the data structures needed to extrude the texture maps.
+		ERR_FAIL_COND_V_MSG(key.x > 3, ret, "Input mesh has texture maps for poly dimension higher than cells, which is not supported for spin extrusion.");
+		// Step 19.1: Prepare the data structures needed to extrude the texture maps.
 		const Vector<PackedVector3Array> &face_vert_normals = output_all_poly_cell_texture_maps[key];
 		const Vector<PackedInt32Array> output_face_vert = ret->get_all_poly_cell_vertex_indices(key.x, false);
 		const Vector<PackedInt32Array> output_cell_vert = ret->get_all_poly_cell_vertex_indices(dest_key.x, false);
 		Vector<PackedVector3Array> cell_vert_tex_maps;
 		cell_vert_tex_maps.resize(output_cell_vert.size());
 		const int32_t output_face_vert_count = output_face_vert.size();
-		// Step 17.2: For each output cell, find the first and second copy faces it came from, and copy over their texture maps.
-		for (int cell_index = 0; cell_index < output_cell_vert.size(); cell_index++) {
-			const PackedInt32Array &cell_faces = output_cell_indices[cell_index];
-			// Step 10 places this as the last face in the cell.
-			const int32_t second_copy_face = cell_faces[cell_faces.size() - 1];
-			// This may have been swapped in step 13 to ensure correct winding order. The first copy face will have a lower face index than the extruded faces.
-			const int32_t first_copy_face = MIN<int32_t, int32_t>(cell_faces[0], cell_faces[1]);
-			// Note: first_copy_face may be >= second_copy_face for the last step, when next_step wraps to 0 and second_copy_face becomes the step-0 face (lower index).
-			CRASH_COND(first_copy_face >= output_face_vert_count || second_copy_face >= output_face_vert_count);
-			const PackedInt32Array &cell_verts = output_cell_vert[cell_index];
-			const PackedInt32Array &first_copy_face_verts = output_face_vert[first_copy_face];
-			const PackedInt32Array &second_copy_face_verts = output_face_vert[second_copy_face];
-			PackedVector3Array this_cell_vert_tex_maps;
-			this_cell_vert_tex_maps.resize_uninitialized(cell_verts.size());
-			for (int vert_in_cell = 0; vert_in_cell < cell_verts.size(); vert_in_cell++) {
-				const int32_t vert_index = cell_verts[vert_in_cell];
-				const int64_t vert_in_first = first_copy_face_verts.find(vert_index);
-				const int64_t vert_in_second = second_copy_face_verts.find(vert_index);
-				if (vert_in_first == -1) {
-					CRASH_COND(vert_in_second == -1); // This vertex should be in at least one of the two faces.
-					this_cell_vert_tex_maps.set(vert_in_cell, face_vert_normals[second_copy_face][vert_in_second]);
-				} else if (vert_in_second == -1) {
-					this_cell_vert_tex_maps.set(vert_in_cell, face_vert_normals[first_copy_face][vert_in_first]);
-				} else {
-					// This vertex is shared by both the first and second copy faces (it was deduplicated), so average the texture maps from both faces for this vertex.
-					this_cell_vert_tex_maps.set(vert_in_cell, (face_vert_normals[first_copy_face][vert_in_first] + face_vert_normals[second_copy_face][vert_in_second]) * 0.5);
+		// Step 19.2: For each spin-generated output cell, find the first and second copy faces it came from,
+		// and copy over their texture maps. Existing input cells do not follow this layout.
+		for (int step = 0; step < p_steps; step++) {
+			const PackedInt32Array cell_indices_for_faces = input_faces_to_output_cells[step];
+			for (int32_t face_index = 0; face_index < input_face_count; face_index++) {
+				const int32_t cell_index = cell_indices_for_faces[face_index];
+				const PackedInt32Array &cell_faces = output_cell_indices[cell_index];
+				// Step 11 places this as the last face in the cell.
+				const int32_t second_copy_face = cell_faces[cell_faces.size() - 1];
+				// This may have been swapped in step 13 to ensure correct winding order. The first copy face will have a lower face index than the extruded faces.
+				const int32_t first_copy_face = MIN<int32_t, int32_t>(cell_faces[0], cell_faces[1]);
+				// Note: first_copy_face may be >= second_copy_face for the last step, when next_step wraps to 0 and second_copy_face becomes the step-0 face (lower index).
+				CRASH_COND(first_copy_face >= output_face_vert_count || second_copy_face >= output_face_vert_count);
+				const PackedInt32Array &cell_verts = output_cell_vert[cell_index];
+				const PackedInt32Array &first_copy_face_verts = output_face_vert[first_copy_face];
+				const PackedInt32Array &second_copy_face_verts = output_face_vert[second_copy_face];
+				PackedVector3Array this_cell_vert_tex_maps;
+				this_cell_vert_tex_maps.resize_uninitialized(cell_verts.size());
+				for (int vert_in_cell = 0; vert_in_cell < cell_verts.size(); vert_in_cell++) {
+					const int32_t vert_index = cell_verts[vert_in_cell];
+					const int64_t vert_in_first = first_copy_face_verts.find(vert_index);
+					const int64_t vert_in_second = second_copy_face_verts.find(vert_index);
+					Vector3 tex_coord_from_first = vert_in_first != -1 ? face_vert_normals[first_copy_face][vert_in_first] : Vector3();
+					Vector3 tex_coord_from_second = vert_in_second != -1 ? face_vert_normals[second_copy_face][vert_in_second] : Vector3();
+					// Special case: For the last step, the second copy face is from the first step (due to wrapping),
+					// but we don't want the texture map to roll over, so let's artificially add 1.0 to the texture map's Z.
+					if (step == p_steps - 1) {
+						tex_coord_from_second.z += 1.0f;
+					}
+					// Set the texture map for this vertex in the cell based on which face it came from.
+					if (vert_in_first == -1) {
+						CRASH_COND(vert_in_second == -1); // This vertex should be in at least one of the two faces.
+						this_cell_vert_tex_maps.set(vert_in_cell, tex_coord_from_second);
+					} else if (vert_in_second == -1) {
+						this_cell_vert_tex_maps.set(vert_in_cell, tex_coord_from_first);
+					} else {
+						// This vertex is shared by both the first and second copy faces (it was deduplicated), so average the texture maps from both faces for this vertex.
+						this_cell_vert_tex_maps.set(vert_in_cell, (tex_coord_from_first + tex_coord_from_second) * 0.5);
+					}
 				}
+				cell_vert_tex_maps.set(cell_index, this_cell_vert_tex_maps);
 			}
-			cell_vert_tex_maps.set(cell_index, this_cell_vert_tex_maps);
 		}
 		output_all_poly_cell_texture_maps.insert(dest_key, cell_vert_tex_maps);
 	}
 	ret->set_all_poly_cell_texture_maps(output_all_poly_cell_texture_maps);
-	// Step 18: Set the corrected cell indices and boundary normals on the output mesh, and validate.
-	output_poly_cell_indices.set(1, output_cell_indices);
-	ret->set_poly_cell_indices(output_poly_cell_indices);
+	// Step 20: Recalculate boundary normals and validate.
 	ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 	CRASH_COND(!ret->is_poly_mesh_data_valid());
 	return ret;
