@@ -68,6 +68,7 @@ public:
 	virtual Vector<Vector<PackedInt32Array>> get_poly_cell_indices();
 	virtual PackedVector4Array get_poly_cell_vertices();
 	virtual PackedVector4Array get_poly_cell_boundary_normals();
+	virtual PackedInt32Array get_poly_cell_boundary_pivot_overrides();
 	virtual Vector<PackedVector4Array> get_poly_cell_vertex_normals();
 	virtual Vector<PackedVector3Array> get_poly_cell_texture_map();
 	virtual HashSet<int32_t> get_seam_face_indices() const { return HashSet<int32_t>(); }
@@ -85,6 +86,7 @@ public:
 	GDVIRTUAL0R(TypedArray<Array>, _get_poly_cell_indices);
 	GDVIRTUAL0R(PackedVector4Array, _get_poly_cell_vertices);
 	GDVIRTUAL0R(PackedVector4Array, _get_poly_cell_boundary_normals);
+	GDVIRTUAL0R(PackedInt32Array, _get_poly_cell_boundary_pivot_overrides);
 	GDVIRTUAL0R(TypedArray<PackedVector4Array>, _get_poly_cell_vertex_normals);
 	GDVIRTUAL0R(TypedArray<PackedVector3Array>, _get_poly_cell_texture_map);
 };

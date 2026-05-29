@@ -29,6 +29,7 @@ private:
 	PackedVector4Array _poly_cell_vertices;
 	// Normals and UVW map always refer to 3D cells (the boundary/surface of the 4D mesh).
 	PackedVector4Array _poly_cell_boundary_normals;
+	PackedInt32Array _poly_cell_boundary_pivot_overrides;
 	Vector<PackedVector4Array> _poly_cell_vertex_normals;
 	Vector<PackedVector3Array> _poly_cell_texture_map;
 	// Seams always refer to 2D faces (the border between boundary 3D cells).
@@ -90,6 +91,9 @@ public:
 
 	virtual PackedVector4Array get_poly_cell_boundary_normals() override;
 	void set_poly_cell_boundary_normals(const PackedVector4Array &p_poly_cell_boundary_normals);
+
+	virtual PackedInt32Array get_poly_cell_boundary_pivot_overrides() override;
+	void set_poly_cell_boundary_pivot_overrides(const PackedInt32Array &p_poly_cell_boundary_pivot_overrides);
 
 	virtual Vector<PackedVector4Array> get_poly_cell_vertex_normals() override;
 	void set_poly_cell_vertex_normals(const Vector<PackedVector4Array> &p_poly_cell_vertex_normals);

@@ -17,6 +17,12 @@
 				Callback method that should return the boundary normals of the 3D polyhedral cells, one per cell. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_boundary_normals] for details of the returned data.
 			</description>
 		</method>
+		<method name="_get_poly_cell_boundary_pivot_overrides" qualifiers="virtual">
+			<return type="PackedInt32Array" />
+			<description>
+				Callback method that should return the pivot override indices of the 3D polyhedral cells, one per cell. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_boundary_pivot_overrides] for details of the returned data.
+			</description>
+		</method>
 		<method name="_get_poly_cell_indices" qualifiers="virtual">
 			<return type="Array[]" />
 			<description>
@@ -69,6 +75,12 @@
 			<return type="PackedVector4Array" />
 			<description>
 				Returns the boundary normals of the 3D polyhedral cells, one per cell.
+			</description>
+		</method>
+		<method name="get_poly_cell_boundary_pivot_overrides">
+			<return type="PackedInt32Array" />
+			<description>
+				The overrides for the pivot vertex of each boundary cell, providing control over how the cell is decomposed into tetrahedra for rendering. Each integer in this array is an index into the [member poly_cell_vertices] array, specifying which vertex should be used as the pivot point for the corresponding cell when decomposing it into tetrahedra. The pivot for each boundary cell does not have to be one of the vertices on the sides, it can also be in the middle of the cell. This SHOULD be a vertex that can "see" all parts of the cell, meaning it only works for poly cells that are star-shaped.
 			</description>
 		</method>
 		<method name="get_poly_cell_indices">

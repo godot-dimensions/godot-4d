@@ -21,6 +21,7 @@ public:
 	static Ref<ArrayPolyMesh4D> convert_mesh_3d_to_4d_faces_only(const Ref<ArrayMesh> &p_mesh_3d, const int p_which_surface = -1, const bool p_deduplicate = true);
 	static Ref<ArrayPolyMesh4D> extrude_linear(const Ref<ArrayPolyMesh4D> &p_input_mesh, const Vector4 &p_extrusion_vector = Vector4(0, 0, 0, 1));
 	static Ref<ArrayPolyMesh4D> extrude_spin_from_faces_xw(const Ref<ArrayPolyMesh4D> &p_input_mesh, const int p_steps = 16);
+	static void make_boundary_normals_topologically_consistent(Ref<ArrayPolyMesh4D> &p_mesh, const PackedInt32Array &p_authoritative);
 	static Ref<ArrayPolyMesh4D> reconstruct_from_tetra_mesh(const Ref<TetraMesh4D> &p_tetra_mesh);
 
 	static PolyMeshBuilder4D *get_singleton() { return singleton; }

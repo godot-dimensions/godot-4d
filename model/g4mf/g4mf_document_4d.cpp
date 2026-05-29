@@ -505,7 +505,7 @@ PackedByteArray G4MFDocument4D::_export_encode_chunk_data(Ref<G4MFState4D> p_g4m
 		case G4MFDocument4D::ENCODING_FORMAT_ZSTD: {
 			// Compress the buffer data using Zstd.
 #if GDEXTENSION
-			return p_buffer_data.compress(FileAccess::CompressionMode::COMPRESSION_ZSTD);
+			return p_chunk_data.compress(FileAccess::CompressionMode::COMPRESSION_ZSTD);
 #elif GODOT_MODULE
 			PackedByteArray compressed;
 			if (buffer_size > 0) {

@@ -183,6 +183,9 @@
 		<member name="poly_cell_boundary_normals" type="PackedVector4Array" setter="set_poly_cell_boundary_normals" getter="get_poly_cell_boundary_normals" default="PackedVector4Array()">
 			The normals of the polyhedral boundary cells themselves. Boundary normals define which side of the cell is the front side, and therefore should be drawn. Boundary normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized.
 		</member>
+		<member name="poly_cell_boundary_pivot_overrides" type="PackedInt32Array" setter="set_poly_cell_boundary_pivot_overrides" getter="get_poly_cell_boundary_pivot_overrides" default="PackedInt32Array()">
+			The overrides for the pivot vertex of each boundary cell, providing control over how the cell is decomposed into tetrahedra for rendering. Each integer in this array is an index into the [member poly_cell_vertices] array, specifying which vertex should be used as the pivot point for the corresponding cell when decomposing it into tetrahedra. The pivot for each boundary cell does not have to be one of the vertices on the sides, it can also be in the middle of the cell. This SHOULD be a vertex that can "see" all parts of the cell, meaning it only works for poly cells that are star-shaped.
+		</member>
 		<member name="poly_cell_indices" type="Array[]" setter="set_poly_cell_indices" getter="get_poly_cell_indices" default="[]">
 			The hierarchical polyhedral cell indices in the form of an array of arrays of [PackedInt32Array]s. This is the foundational data structure of [PolyMesh4D]. The top level array usually has 2 or 3 items:
 			- The first item is an array of 2D faces. It is an array of [PackedInt32Array]s, where each [PackedInt32Array] contains the 1D edge indices that make up one 2D face.

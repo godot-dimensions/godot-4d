@@ -991,6 +991,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	const Vector<PackedVector4Array> &other_poly_cell_vertex_normals = p_other->get_poly_cell_vertex_normals();
 	const PackedVector4Array &other_poly_cell_boundary_normals = p_other->get_poly_cell_boundary_normals();
 	const PackedVector4Array &other_poly_cell_vertices = p_other->get_poly_cell_vertices();
+	const PackedInt32Array &other_poly_cell_boundary_pivot_overrides = p_other->get_poly_cell_boundary_pivot_overrides();
 	const PackedInt32Array &other_edge_indices = p_other->get_edge_indices();
 	const HashSet<int32_t> &other_seam_face_indices = p_other->get_seam_face_indices();
 	const int64_t start_vertex_count = _poly_cell_vertices.size();
@@ -1046,6 +1047,23 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 			this_dim.set(start_count + other_cell_index, other_cell_copy);
 		}
 		_poly_cell_indices.set(dim_index, this_dim);
+	}
+	// Merge pivot overrides.
+	if (!_poly_cell_boundary_pivot_overrides.is_empty() || !other_poly_cell_boundary_pivot_overrides.is_empty()) {
+		const int64_t start_required_amount = start_poly_cell_indices_counts[1];
+		const int64_t other_required_amount = other_poly_cell_indices_counts[1];
+		const int64_t start_current_amount = _poly_cell_boundary_pivot_overrides.size();
+		_poly_cell_boundary_pivot_overrides.resize(start_required_amount + other_required_amount);
+		for (int64_t i = start_current_amount; i < start_required_amount; i++) {
+			_poly_cell_boundary_pivot_overrides.set(i, -1);
+		}
+		for (int64_t i = 0; i < other_poly_cell_boundary_pivot_overrides.size(); i++) {
+			const int32_t new_pivot = other_poly_cell_boundary_pivot_overrides[i] + int32_t(start_vertex_count);
+			_poly_cell_boundary_pivot_overrides.set(start_required_amount + i, new_pivot);
+		}
+		for (int64_t i = start_required_amount + other_poly_cell_boundary_pivot_overrides.size(); i < _poly_cell_boundary_pivot_overrides.size(); i++) {
+			_poly_cell_boundary_pivot_overrides.set(i, -1);
+		}
 	}
 	// Merge seams.
 	if (poly_cell_indices_dims > 0) {
@@ -1215,6 +1233,15 @@ void ArrayPolyMesh4D::set_poly_cell_boundary_normals(const PackedVector4Array &p
 	poly_mesh_clear_cache(true);
 }
 
+PackedInt32Array ArrayPolyMesh4D::get_poly_cell_boundary_pivot_overrides() {
+	return _poly_cell_boundary_pivot_overrides;
+}
+
+void ArrayPolyMesh4D::set_poly_cell_boundary_pivot_overrides(const PackedInt32Array &p_poly_cell_boundary_pivot_overrides) {
+	_poly_cell_boundary_pivot_overrides = p_poly_cell_boundary_pivot_overrides;
+	poly_mesh_clear_cache(false);
+}
+
 Vector<PackedVector4Array> ArrayPolyMesh4D::get_poly_cell_vertex_normals() {
 	return Vector<PackedVector4Array>(_poly_cell_vertex_normals);
 }
@@ -1319,6 +1346,9 @@ void ArrayPolyMesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_poly_cell_boundary_normals", "poly_cell_boundary_normals"), &ArrayPolyMesh4D::set_poly_cell_boundary_normals);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_boundary_normals"), "set_poly_cell_boundary_normals", "get_poly_cell_boundary_normals");
+
+	ClassDB::bind_method(D_METHOD("set_poly_cell_boundary_pivot_overrides", "poly_cell_boundary_pivot_overrides"), &ArrayPolyMesh4D::set_poly_cell_boundary_pivot_overrides);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "poly_cell_boundary_pivot_overrides"), "set_poly_cell_boundary_pivot_overrides", "get_poly_cell_boundary_pivot_overrides");
 
 	ClassDB::bind_method(D_METHOD("set_poly_cell_vertex_normals", "poly_cell_vertex_normals"), &ArrayPolyMesh4D::set_poly_cell_vertex_normals_bind);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertex_normals"), "set_poly_cell_vertex_normals", "get_poly_cell_vertex_normals");

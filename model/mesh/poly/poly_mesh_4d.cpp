@@ -101,6 +101,17 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 		const Vector<PackedInt32Array> &cells_3d = poly_cell_indices[1];
 		ERR_FAIL_COND_V_MSG(cells_3d.size() != poly_cell_boundary_normals_count, false, "PolyMesh4D: Boundary normals count (" + itos(poly_cell_boundary_normals_count) + ") does not match 3D cells count (" + itos(cells_3d.size()) + ").");
 	}
+	const PackedInt32Array poly_cell_boundary_pivot_overrides = get_poly_cell_boundary_pivot_overrides();
+	if (poly_cell_boundary_pivot_overrides.size() != 0) {
+		ERR_FAIL_COND_V_MSG(poly_cell_dims < 2, false, "PolyMesh4D: Boundary pivot overrides provided without any 3D cells.");
+		for (int64_t i = 0; i < poly_cell_boundary_pivot_overrides.size(); i++) {
+			const int32_t pivot_vertex_index = poly_cell_boundary_pivot_overrides[i];
+			if (pivot_vertex_index == -1) {
+				continue; // This cell is allowed to not have a pivot override.
+			}
+			ERR_FAIL_COND_V_MSG(pivot_vertex_index < 0 || pivot_vertex_index >= vertex_count, false, "PolyMesh4D: Boundary pivot override " + itos(i) + " references invalid vertex " + itos(pivot_vertex_index) + " (valid range: 0-" + itos(vertex_count - 1) + ").");
+		}
+	}
 	const Vector<PackedVector4Array> poly_cell_vertex_normals = get_poly_cell_vertex_normals();
 	const int64_t poly_cell_vertex_normals_count = poly_cell_vertex_normals.size();
 	if (poly_cell_vertex_normals_count != 0) {
@@ -497,6 +508,7 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	const Vector<PackedInt32Array> &faces = poly_cell_indices[0];
 	const Vector<PackedInt32Array> &boundary_cells = poly_cell_indices[1];
 	const int64_t boundary_cell_count = boundary_cells.size();
+	const PackedInt32Array poly_cell_boundary_pivot_overrides = get_poly_cell_boundary_pivot_overrides();
 	// Step 2: Drill down into each cell's components to get the vertex indices and normals.
 	// The `true` argument makes the first 4 vertices form the "canonical span" of the cell.
 	Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, true);
@@ -579,52 +591,57 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 			// Step 5.1: Within the most constrained cell, find the pivot vertex
 			// that is least disruptive to the decomposition of other cells.
 			int32_t best_pivot_vertex = -1;
-			int32_t best_score = INT32_MIN;
-			for (int64_t vertex_number_in_cell = 0; vertex_number_in_cell < vertex_count; vertex_number_in_cell++) {
-				const int32_t vertex_index = cell_vertices[vertex_number_in_cell];
-				const int32_t score = _score_vertex_for_cell(vertex_index, prev_pivot_vertex, chosen_pivot_vertices, cell_data, face_triangulations, face_vertices_cache);
-				if (score > best_score) {
-					best_score = score;
-					best_pivot_vertex = vertex_index;
-				}
-			}
-			// Step 5.2: Now that the best cell has been chosen, we need to either bake its adjacent face triangulations, or mark it as a centroid.
-			if (p_force_align_triangulations && best_score < 0) {
-				// This cell is disruptive to other cells, so we will tetrahedralize it using the centroid of its vertices.
-				Vector4 centroid;
-				for (const int64_t vertex_index : cell_vertex_indices[best_cell_index]) {
-					centroid += _simplex_cell_vertices_cache[vertex_index];
-				}
-				centroid /= (real_t)cell_vertex_indices[best_cell_index].size();
-				best_pivot_vertex = _append_vertex_internal(_simplex_cell_vertices_cache, centroid, true);
+			if (poly_cell_boundary_pivot_overrides.size() > best_cell_index && poly_cell_boundary_pivot_overrides[best_cell_index] != -1) {
+				// Step 5.2: Use the pivot override for this cell whenever it exists.
+				best_pivot_vertex = poly_cell_boundary_pivot_overrides[best_cell_index];
 			} else {
-				// This cell is not disruptive, so we will triangulate the faces adjacent to its pivot vertex.
-				for (int64_t face_number_in_cell = 0; face_number_in_cell < cell_data.size(); face_number_in_cell++) {
-					const int32_t face_index = cell_data[face_number_in_cell];
-					const PackedInt32Array &face_vertices = face_vertices_cache[face_index];
-					if (face_triangulations[face_index].size() != 0) {
-						// Already triangulated this face. Overwriting would be either redundant
-						// or net-zero, and we don't want to count usage twice, so just skip it.
-						continue;
+				// Step 5.3: Score each vertex in this cell to find the best one to use as the pivot for triangulating this cell.
+				int32_t best_score = INT32_MIN;
+				for (int64_t vertex_number_in_cell = 0; vertex_number_in_cell < vertex_count; vertex_number_in_cell++) {
+					const int32_t vertex_index = cell_vertices[vertex_number_in_cell];
+					const int32_t score = _score_vertex_for_cell(vertex_index, prev_pivot_vertex, chosen_pivot_vertices, cell_data, face_triangulations, face_vertices_cache);
+					if (score > best_score) {
+						best_score = score;
+						best_pivot_vertex = vertex_index;
 					}
-					if (!face_vertices.has(best_pivot_vertex)) {
-						// The cell pivot vertex is not on this face, so it
-						// doesn't affect the triangulation of this face.
-						continue;
+				}
+				// Step 5.4: Now that the best cell has been chosen, if it is disruptive to other cells,
+				// tetrahedralize it using the centroid of its vertices instead of any of its existing vertices.
+				if (p_force_align_triangulations && best_score < 0) {
+					Vector4 centroid;
+					for (const int64_t vertex_index : cell_vertex_indices[best_cell_index]) {
+						centroid += _simplex_cell_vertices_cache[vertex_index];
 					}
-					const PackedInt32Array triangulation = _triangulate_face_vertex_indices(face_vertices, best_pivot_vertex);
-					face_triangulations.set(face_index, triangulation);
-					// Count this triangulation as a "usage" for all cells that use this face, prioritizing
-					// cells which use this face for sooner triangulation in later loop iterations.
-					const PackedInt32Array &cells_using_this_face = face_to_using_cells[face_index];
-					for (const int32_t cell_using_this_face : cells_using_this_face) {
-						if (cells_by_triangulated_faces.has_element(cell_using_this_face)) {
-							cells_by_triangulated_faces.add_usage(cell_using_this_face);
-						}
+					centroid /= (real_t)cell_vertex_indices[best_cell_index].size();
+					best_pivot_vertex = _append_vertex_internal(_simplex_cell_vertices_cache, centroid, true);
+				}
+			}
+			// Step 5.5: If the pivot is on any faces, triangulate the faces that have the pivot vertex.
+			for (int64_t face_number_in_cell = 0; face_number_in_cell < cell_data.size(); face_number_in_cell++) {
+				const int32_t face_index = cell_data[face_number_in_cell];
+				const PackedInt32Array &face_vertices = face_vertices_cache[face_index];
+				if (face_triangulations[face_index].size() != 0) {
+					// Already triangulated this face. Overwriting would be either redundant
+					// or net-zero, and we don't want to count usage twice, so just skip it.
+					continue;
+				}
+				if (!face_vertices.has(best_pivot_vertex)) {
+					// The cell pivot vertex is not on this face, so it
+					// doesn't affect the triangulation of this face.
+					continue;
+				}
+				const PackedInt32Array triangulation = _triangulate_face_vertex_indices(face_vertices, best_pivot_vertex);
+				face_triangulations.set(face_index, triangulation);
+				// Count this triangulation as a "usage" for all cells that use this face, prioritizing
+				// cells which use this face for sooner triangulation in later loop iterations.
+				const PackedInt32Array &cells_using_this_face = face_to_using_cells[face_index];
+				for (const int32_t cell_using_this_face : cells_using_this_face) {
+					if (cells_by_triangulated_faces.has_element(cell_using_this_face)) {
+						cells_by_triangulated_faces.add_usage(cell_using_this_face);
 					}
 				}
 			}
-			// Step 5.3: We found the best cell and vertex to use as the pivot for that cell.
+			// Step 5.6: We found the best cell and vertex to use as the pivot for that cell.
 			// Record it, and remove that cell from the list of cells to check.
 			cell_pivot_vertices.set(best_cell_index, best_pivot_vertex);
 			chosen_pivot_vertices.insert(best_pivot_vertex);
@@ -640,7 +657,7 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 		const PackedInt32Array &face_vertices = face_vertices_cache[face_index];
 		face_triangulations.set(face_index, _triangulate_face_vertex_indices(face_vertices, -1));
 	}
-	// Step 7: Tetrahedralize each cell by connecting each opposing face to the start vertex.
+	// Step 7: Tetrahedralize each cell by connecting each opposing face to the pivot vertex.
 	// Determine which way is "outward" for this cell's normal vector, so we can orient the tetrahedra properly.
 	_simplex_cell_indices_source_poly_cells.clear();
 	for (const int32_t cell_index : surface_cells_to_use) {
@@ -852,6 +869,12 @@ PackedVector4Array PolyMesh4D::get_poly_cell_boundary_normals() {
 	PackedVector4Array normals;
 	GDVIRTUAL_CALL(_get_poly_cell_boundary_normals, normals);
 	return normals;
+}
+
+PackedInt32Array PolyMesh4D::get_poly_cell_boundary_pivot_overrides() {
+	PackedInt32Array pivot_overrides;
+	GDVIRTUAL_CALL(_get_poly_cell_boundary_pivot_overrides, pivot_overrides);
+	return pivot_overrides;
 }
 
 Vector<PackedVector4Array> PolyMesh4D::get_poly_cell_vertex_normals() {
@@ -1099,12 +1122,14 @@ void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_poly_cell_indices"), &PolyMesh4D::get_poly_cell_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_vertices"), &PolyMesh4D::get_poly_cell_vertices);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_boundary_normals"), &PolyMesh4D::get_poly_cell_boundary_normals);
+	ClassDB::bind_method(D_METHOD("get_poly_cell_boundary_pivot_overrides"), &PolyMesh4D::get_poly_cell_boundary_pivot_overrides);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_vertex_normals"), &PolyMesh4D::get_poly_cell_vertex_normals_bind);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_texture_map"), &PolyMesh4D::get_poly_cell_texture_map_bind);
 
 	GDVIRTUAL_BIND(_get_poly_cell_indices);
 	GDVIRTUAL_BIND(_get_poly_cell_vertices);
 	GDVIRTUAL_BIND(_get_poly_cell_boundary_normals);
+	GDVIRTUAL_BIND(_get_poly_cell_boundary_pivot_overrides);
 	GDVIRTUAL_BIND(_get_poly_cell_vertex_normals);
 	GDVIRTUAL_BIND(_get_poly_cell_texture_map);
 }

@@ -141,6 +141,21 @@ Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	array_mesh->set_simplex_cell_vertex_normals(get_simplex_cell_vertex_normals());
 	array_mesh->set_simplex_cell_texture_map(get_simplex_cell_texture_map());
 	array_mesh->set_material(get_material());
+	array_mesh->set_name(get_name());
+	// Copy metadata.
+#if GDEXTENSION
+	TypedArray<StringName> meta_list = get_meta_list();
+	for (int i = 0; i < meta_list.size(); i++) {
+		const StringName meta_key = meta_list[i];
+		array_mesh->set_meta(meta_key, get_meta(meta_key));
+	}
+#elif GODOT_MODULE
+	List<StringName> meta_list;
+	get_meta_list(&meta_list);
+	for (const StringName &meta_key : meta_list) {
+		array_mesh->set_meta(meta_key, get_meta(meta_key));
+	}
+#endif
 	return array_mesh;
 }
 
