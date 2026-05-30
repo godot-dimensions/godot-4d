@@ -5,13 +5,17 @@
 #include "structures/g4mf_model_4d.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/marshalls.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/core/version.hpp>
 #elif GODOT_MODULE
+#include "core/config/project_settings.h"
 #include "core/core_bind.h"
 #include "core/io/compression.h"
+#include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/json.h"
 #endif
@@ -1195,9 +1199,14 @@ PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4
 }
 
 Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
+	const String base_dir = ProjectSettings::get_singleton()->globalize_path(p_path.get_base_dir());
+	if (!base_dir.is_empty()) {
+		Error err = DirAccess::make_dir_recursive_absolute(base_dir);
+		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to create base directory for export file: " + base_dir);
+	}
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF export: Failed to open file for writing.");
-	p_g4mf_state->set_g4mf_base_path(p_path.get_base_dir());
+	p_g4mf_state->set_g4mf_base_path(base_dir);
 	p_g4mf_state->set_g4mf_filename(p_path.get_file());
 	p_g4mf_state->set_original_path(p_path);
 	Error err = _export_serialize_json_data(p_g4mf_state);
