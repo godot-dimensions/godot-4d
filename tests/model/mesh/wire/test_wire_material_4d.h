@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../model/wire/wire_material_4d.h"
+#include "../../../../model/mesh/wire/wire_material_4d.h"
 
 #include "tests/test_macros.h"
 

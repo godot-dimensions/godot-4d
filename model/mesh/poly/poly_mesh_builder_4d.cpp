@@ -910,51 +910,93 @@ Vector<PackedInt32Array> PolyMeshBuilder4D::_compose_triangles_into_faces(const 
 			coplanar_triangle_vertex_indices.append(Vector<PackedInt32Array>{ triangle });
 		}
 	}
-	// Find the edges which border each face.
+	// Find the edges which border each face, and insert them in a consistent loop order.
 	Vector<PackedInt32Array> all_face_edges;
 	for (int64_t coplanar_tri_set_index = 0; coplanar_tri_set_index < coplanar_triangle_vertex_indices.size(); coplanar_tri_set_index++) {
-		HashSet<Vector2i> face_unique_edges;
+		// The above part of this function groups by coplanarity, but the triangles within each coplanar group
+		// might still not be touching each other in rare edge cases. Therefore, we need to further split up
+		// each coplanar group into connected components of triangles, and build faces from those.
+		// First, build a map of edges to the triangles that use them for this coplanar set, so we can quickly find neighboring triangles.
 		const Vector<PackedInt32Array> &coplanar_tri_set = coplanar_triangle_vertex_indices[coplanar_tri_set_index];
-		for (const PackedInt32Array &tri_verts : coplanar_tri_set) {
+		HashMap<Vector2i, PackedInt32Array> edge_to_triangle_indices;
+		for (int64_t triangle_index = 0; triangle_index < coplanar_tri_set.size(); triangle_index++) {
+			const PackedInt32Array &tri_verts = coplanar_tri_set[triangle_index];
 			for (int64_t vertex_in_triangle = 0; vertex_in_triangle < 3; vertex_in_triangle++) {
 				Vector2i edge = Vector2i(tri_verts[vertex_in_triangle], tri_verts[(vertex_in_triangle + 1) % 3]);
 				if (edge.x > edge.y) {
 					SWAP(edge.x, edge.y);
 				}
-				// This assumes that each edge is only used by up to 2 coplanar triangles.
-				// This is true of all sane manifold meshes, other cases are not supported.
-				if (face_unique_edges.has(edge)) {
-					face_unique_edges.erase(edge);
-				} else {
-					face_unique_edges.insert(edge);
-				}
+				PackedInt32Array triangles_for_edge = edge_to_triangle_indices.has(edge) ? edge_to_triangle_indices[edge] : PackedInt32Array();
+				triangles_for_edge.append(triangle_index);
+				edge_to_triangle_indices.insert(edge, triangles_for_edge);
 			}
 		}
-		// Insert the unique edges into the array, in some consistent winding order. Any winding will work fine.
-		PackedInt32Array face_edges;
-		face_edges.resize(face_unique_edges.size());
-		Vector2i last_edge = *(face_unique_edges.begin());
-		face_edges.set(0, _append_edge_indices_to_array(last_edge.x, last_edge.y, true, r_edge_vertex_indices));
-		face_unique_edges.erase(last_edge);
-		int64_t face_edges_index = 1;
-		while (!face_unique_edges.is_empty()) {
-			bool inserted_something = false;
-			for (const Vector2i unique_edge : face_unique_edges) {
-				if ((unique_edge.x == last_edge.x) || (unique_edge.x == last_edge.y) || (unique_edge.y == last_edge.x) || (unique_edge.y == last_edge.y)) {
-					// This edge shares a vertex with the last edge, so let's insert it.
-					const int64_t edge_index = _append_edge_indices_to_array(unique_edge.x, unique_edge.y, true, r_edge_vertex_indices);
-					face_edges.set(face_edges_index, edge_index);
-					face_edges_index++;
-					face_unique_edges.erase(unique_edge);
-					last_edge = unique_edge;
-					inserted_something = true;
-					break;
+		// Iterate through the triangles, marking any we've dealt with already as visited.
+		Vector<bool> visited_triangles;
+		visited_triangles.resize_initialized(coplanar_tri_set.size());
+		for (int64_t triangle_seed = 0; triangle_seed < coplanar_tri_set.size(); triangle_seed++) {
+			if (visited_triangles[triangle_seed]) {
+				continue;
+			}
+			// Gather all connected triangles to this seed triangle using the edge-to-triangle map,
+			// mark them as visited as we go, and build a set of the unique edges we encounter.
+			HashSet<Vector2i> face_unique_edges;
+			PackedInt32Array triangle_stack;
+			triangle_stack.append(triangle_seed);
+			visited_triangles.set(triangle_seed, true);
+			while (!triangle_stack.is_empty()) {
+				const int64_t triangle_index = triangle_stack[triangle_stack.size() - 1];
+				triangle_stack.resize(triangle_stack.size() - 1);
+				const PackedInt32Array &tri_verts = coplanar_tri_set[triangle_index];
+				for (int64_t vertex_in_triangle = 0; vertex_in_triangle < 3; vertex_in_triangle++) {
+					Vector2i edge = Vector2i(tri_verts[vertex_in_triangle], tri_verts[(vertex_in_triangle + 1) % 3]);
+					if (edge.x > edge.y) {
+						SWAP(edge.x, edge.y);
+					}
+					// This assumes that each edge is only used by up to 2 coplanar triangles.
+					// This is true of all sane manifold meshes, other cases are not supported.
+					if (face_unique_edges.has(edge)) {
+						face_unique_edges.erase(edge);
+					} else {
+						face_unique_edges.insert(edge);
+					}
+					const PackedInt32Array &neighbor_triangles = edge_to_triangle_indices[edge];
+					for (int64_t neighbor_index = 0; neighbor_index < neighbor_triangles.size(); neighbor_index++) {
+						const int64_t neighbor_triangle = neighbor_triangles[neighbor_index];
+						if (visited_triangles[neighbor_triangle]) {
+							continue;
+						}
+						visited_triangles.set(neighbor_triangle, true);
+						triangle_stack.append(neighbor_triangle);
+					}
 				}
 			}
-			// Avoid infinite loops, fail if we didn't insert anything.
-			ERR_FAIL_COND_V(!inserted_something, Vector<PackedInt32Array>());
+			// Insert the unique edges into the array, in some consistent winding order. Any winding will work fine.
+			PackedInt32Array face_edges;
+			face_edges.resize(face_unique_edges.size());
+			Vector2i last_edge = *(face_unique_edges.begin());
+			face_edges.set(0, _append_edge_indices_to_array(last_edge.x, last_edge.y, true, r_edge_vertex_indices));
+			face_unique_edges.erase(last_edge);
+			int64_t face_edges_index = 1;
+			while (!face_unique_edges.is_empty()) {
+				bool inserted_something = false;
+				for (const Vector2i unique_edge : face_unique_edges) {
+					if ((unique_edge.x == last_edge.x) || (unique_edge.x == last_edge.y) || (unique_edge.y == last_edge.x) || (unique_edge.y == last_edge.y)) {
+						// This edge shares a vertex with the last edge, so let's insert it.
+						const int64_t edge_index = _append_edge_indices_to_array(unique_edge.x, unique_edge.y, true, r_edge_vertex_indices);
+						face_edges.set(face_edges_index, edge_index);
+						face_edges_index++;
+						face_unique_edges.erase(unique_edge);
+						last_edge = unique_edge;
+						inserted_something = true;
+						break;
+					}
+				}
+				// Avoid infinite loops, fail if we didn't insert anything.
+				ERR_FAIL_COND_V(!inserted_something, Vector<PackedInt32Array>());
+			}
+			all_face_edges.append(face_edges);
 		}
-		all_face_edges.append(face_edges);
 	}
 	return all_face_edges;
 }

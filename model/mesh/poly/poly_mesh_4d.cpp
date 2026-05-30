@@ -68,9 +68,10 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 			const Vector<PackedInt32Array> &cells_of_dim = poly_cell_indices[poly_dim_index];
 			for (int64_t cell_idx = 0; cell_idx < cells_of_dim.size(); cell_idx++) {
 				const PackedInt32Array &cell = cells_of_dim[cell_idx];
+				const int64_t cell_element_count = cell.size();
 				// Faces (poly_dim_index 0) must have at least 3 edges, cells (poly_dim_index 1) must have at least 4 faces, etc.
-				ERR_FAIL_COND_V_MSG(cell.size() < poly_dim_index + 3, false, "PolyMesh4D: " + itos(poly_dim_index + 2) + "D cell has insufficient elements (" + itos(cell.size()) + "<" + itos(poly_dim_index + 3) + ").");
-				for (int64_t i = 0; i < cell.size(); i++) {
+				ERR_FAIL_COND_V_MSG(cell_element_count < poly_dim_index + 3, false, "PolyMesh4D: " + itos(poly_dim_index + 2) + "D cell has insufficient elements (" + itos(cell_element_count) + "<" + itos(poly_dim_index + 3) + ").");
+				for (int64_t i = 0; i < cell_element_count; i++) {
 					ERR_FAIL_COND_V_MSG(cell[i] < 0 || cell[i] >= prev_dim_count, false, "PolyMesh4D: " + itos(poly_dim_index + 1) + "D cell references invalid " + itos(poly_dim_index + 1) + "D element " + itos(cell[i]) + ".");
 				}
 				bool is_common = false;
