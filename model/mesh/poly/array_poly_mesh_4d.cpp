@@ -1374,14 +1374,12 @@ void ArrayPolyMesh4D::merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vect
 
 void ArrayPolyMesh4D::set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals) {
 	_all_poly_cell_normals = HashMap<Vector2i, Vector<PackedVector4Array>>(p_all_poly_cell_normals);
-	poly_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
+	poly_mesh_clear_cache(true);
 }
 
 void ArrayPolyMesh4D::set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vector<PackedVector3Array>> &p_all_poly_cell_texture_maps) {
 	_all_poly_cell_texture_maps = HashMap<Vector2i, Vector<PackedVector3Array>>(p_all_poly_cell_texture_maps);
-	poly_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
+	poly_mesh_clear_cache(false);
 }
 
 #if GODOT_HAS_TYPED_DICTIONARY
@@ -1554,7 +1552,7 @@ void ArrayPolyMesh4D::set_poly_cell_texture_map(const Vector<PackedVector3Array>
 	} else {
 		_all_poly_cell_texture_maps.insert(CELL_TO_VERT_KEY, p_poly_cell_texture_map);
 	}
-	reset_poly_mesh_data_validation();
+	poly_mesh_clear_cache(false);
 }
 
 void ArrayPolyMesh4D::set_poly_cell_texture_map_bind(const TypedArray<PackedVector3Array> &p_poly_cell_texture_map) {
