@@ -54,6 +54,7 @@ private:
 	static PackedInt32Array _triangulate_face_vertex_indices(const PackedInt32Array &p_face_vertex_indices, const int32_t p_pivot_attempt);
 	static int32_t _score_vertex_for_cell(const int32_t p_vertex_index, const int32_t p_prev_pivot_vertex, const HashSet<int32_t> &p_chosen_pivot_vertices, const PackedInt32Array &p_cell_data, const Vector<PackedInt32Array> &p_face_triangulations, const Vector<PackedInt32Array> &p_face_vertices_cache);
 	void _decompose_boundary_cells_into_simplexes(const bool p_force_align_triangulations);
+	static bool _infer_vertex_texcoord_from_cell_pivot_override(const PackedVector4Array &p_all_vertices, const PackedInt32Array &p_source_cell_vertices, const PackedVector3Array &p_source_cell_texture_map, const int32_t p_target_vertex, Vector3 &r_texcoord);
 
 protected:
 	// A decent margin under Mesh4D::MAX_VERTICES to avoid overflows.

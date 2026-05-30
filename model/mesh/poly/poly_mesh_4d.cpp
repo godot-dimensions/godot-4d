@@ -717,6 +717,44 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	}
 }
 
+bool PolyMesh4D::_infer_vertex_texcoord_from_cell_pivot_override(const PackedVector4Array &p_all_vertices, const PackedInt32Array &p_source_cell_vertices, const PackedVector3Array &p_source_cell_texture_map, const int32_t p_target_vertex, Vector3 &r_texcoord) {
+	const int64_t source_count = p_source_cell_vertices.size();
+	if (source_count < 4 || p_source_cell_texture_map.size() != source_count) {
+		return false;
+	}
+	if (p_target_vertex < 0 || p_target_vertex >= p_all_vertices.size()) {
+		return false;
+	}
+	const Vector4 p0 = p_all_vertices[p_source_cell_vertices[0]];
+	const Vector3 t0 = p_source_cell_texture_map[0];
+	for (int64_t x_index = 1; x_index < source_count - 2; x_index++) {
+		const Vector4 px = p_all_vertices[p_source_cell_vertices[x_index]] - p0;
+		const Vector4 tx = Vector4D::from_3d(p_source_cell_texture_map[x_index] - t0);
+		for (int64_t y_index = x_index + 1; y_index < source_count - 1; y_index++) {
+			const Vector4 py = p_all_vertices[p_source_cell_vertices[y_index]] - p0;
+			const Vector4 ty = Vector4D::from_3d(p_source_cell_texture_map[y_index] - t0);
+			for (int64_t z_index = y_index + 1; z_index < source_count; z_index++) {
+				const Vector4 pz = p_all_vertices[p_source_cell_vertices[z_index]] - p0;
+				const Basis4D world_coord = Basis4D::from_xyz(px, py, pz);
+				if (Math::is_zero_approx(Math::abs(world_coord.determinant()))) {
+					continue;
+				}
+				const Vector4 tz = Vector4D::from_3d(p_source_cell_texture_map[z_index] - t0);
+				const Basis4D tex_coord = Basis4D::from_xyz(tx, ty, tz);
+				if (Math::is_zero_approx(Math::abs(tex_coord.determinant()))) {
+					continue;
+				}
+				const Transform4D world_to_texcoord = Transform4D(world_coord.transform_to(tex_coord), Vector4D::from_3d(t0));
+				const Vector4 target_relative = p_all_vertices[p_target_vertex] - p0;
+				const Vector4 target_mapped = world_to_texcoord.xform(target_relative);
+				r_texcoord = Vector3(target_mapped.x, target_mapped.y, target_mapped.z);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 Vector<PackedInt32Array> PolyMesh4D::_get_vertex_indices_of_boundary_cells(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const bool p_start_with_canonical_span) {
 	ERR_FAIL_COND_V(p_poly_cell_indices.size() < 2, Vector<PackedInt32Array>());
 	Vector<PackedInt32Array> cell_vertex_indices;
@@ -1098,6 +1136,14 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 		ERR_FAIL_COND_V_MSG(poly_cell_indices.size() < 2, PackedVector3Array(), "PolyMesh4D: No boundary cells available, cannot compute simplex UVW map.");
 		const PackedInt32Array all_edge_indices = get_edge_indices();
 		const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, false);
+		// Prepare a cache for inferred vertex texcoords for pivot overrides.
+		const PackedVector4Array poly_cell_vertices = get_poly_cell_vertices();
+		const PackedInt32Array poly_cell_boundary_pivot_overrides = get_poly_cell_boundary_pivot_overrides();
+		Vector<int8_t> cached_inference_state;
+		cached_inference_state.resize_initialized(cell_vert.size());
+		PackedVector3Array cached_inferred_texcoord;
+		cached_inferred_texcoord.resize(cell_vert.size());
+		// Fill the texture map cache for each simplex cell using data from the corresponding source polytope cell.
 		_simplex_cell_uvw_texture_map_cache.resize(simplex_count * 4);
 		bool has_some_texture_map = false;
 		bool missing_some_texture_map = false;
@@ -1117,7 +1163,33 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 				const int64_t vertex_in_source_poly = source_cell_vertices.find(vertex_index);
 				Vector3 texcoord;
 				if (vertex_in_source_poly == -1) {
-					texcoord = _average_vector3(source_poly_texture_map);
+					// If the simplexes contain a vertex that is not on the original polytope cell surface,
+					// then it is either a pivot override, or a computed centroid. Check for overrides first.
+					bool used_pivot_override = false;
+					if (poly_cell_boundary_pivot_overrides.size() > source_cell) {
+						const int32_t pivot_override_vertex = poly_cell_boundary_pivot_overrides[source_cell];
+						if (pivot_override_vertex >= 0 && vertex_index == pivot_override_vertex) {
+							//  0: Not inferred yet (should try to attempt inference, then leads to 1 or -1).
+							//  1: Inferred successfully (use the cached value).
+							// -1: Inference attempted but failed (use average as fallback).
+							const int8_t inference_state = cached_inference_state[source_cell];
+							if (inference_state == 1) {
+								texcoord = cached_inferred_texcoord[source_cell];
+								used_pivot_override = true;
+							} else if (inference_state == 0) {
+								used_pivot_override = _infer_vertex_texcoord_from_cell_pivot_override(poly_cell_vertices, source_cell_vertices, source_poly_texture_map, pivot_override_vertex, texcoord);
+								cached_inference_state.set(source_cell, used_pivot_override ? (int8_t)1 : (int8_t)-1);
+								if (used_pivot_override) {
+									cached_inferred_texcoord.set(source_cell, texcoord);
+								}
+							}
+						}
+					}
+					// If this vertex is not a pivot override, or if it is but we couldn't infer a texcoord for it,
+					// then just average the existing texcoords for this cell as a fallback.
+					if (!used_pivot_override) {
+						texcoord = _average_vector3(source_poly_texture_map);
+					}
 				} else {
 					texcoord = source_poly_texture_map[vertex_in_source_poly];
 				}
