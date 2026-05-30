@@ -205,74 +205,202 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			all_cell_to_extruded_cell.append(next_dim_cell_to_extruded_cell);
 		}
 		ret->set_poly_cell_indices(poly_cell_indices);
-		// TODO: Consider calculating boundary normals from the original 3D faces.
-		// Wait until the normals are refactored to be dimension-agnostic before doing this.
+		// Figure out the boundary normals for the extruded faces. Start by calculating them as-is.
+		// Then, depending on the input mesh's data, these will be rectified in some way.
 		ret->set_poly_cell_boundary_normals(PackedVector4Array());
+		ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 		CRASH_COND(!ret->is_mesh_data_valid());
-		// 4D-specific code: Ensure boundary cells are correctly oriented with outward facing normals.
-		// This only works when we have 4D volumes (poly index 2) to indicate which side of a boundary
-		// cell is the inside vs the outside, which came from the input mesh's 3D cells.
-		// TODO: This code might be unnecessary if other techniques are used instead.
-		if (poly_cell_indices.size() > 2) {
-			ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
-			const PackedVector4Array &output_vertices = ret->get_poly_cell_vertices();
-			const Vector<PackedInt32Array> volume_vert = ret->get_all_poly_cell_vertex_indices(4, false);
-			const Vector<PackedInt32Array> volume_cells = poly_cell_indices[2];
-			const Vector<PackedInt32Array> boundary_vert = ret->get_all_poly_cell_vertex_indices(3, false);
-			const PackedVector4Array boundary_normals = ret->get_poly_cell_boundary_normals();
+		const PackedInt32Array &face_to_extruded_cell = all_cell_to_extruded_cell[1];
+		// Copy over the normals from the original 2D faces, if that data is present.
+		HashMap<Vector2i, Vector<PackedVector4Array>> all_poly_cell_normals = ret->get_all_poly_cell_normals();
+		if (all_poly_cell_normals.has(PolyMesh4D::PER_FACE_KEY) && all_poly_cell_normals[PolyMesh4D::PER_FACE_KEY].size() == 1) {
+			const PackedVector4Array &per_face_normals = all_poly_cell_normals[PolyMesh4D::PER_FACE_KEY][0];
+			CRASH_COND(per_face_normals.size() < face_to_extruded_cell.size());
 			Vector<PackedInt32Array> boundary_cells = poly_cell_indices[1];
-			CRASH_COND(volume_vert.size() != volume_cells.size() || boundary_vert.size() != boundary_cells.size() || boundary_normals.size() != boundary_cells.size());
-			// Compute the average position of each boundary cell.
-			PackedVector4Array boundary_average_pos;
-			boundary_average_pos.resize(boundary_cells.size());
-			for (int64_t boundary_cell_index = 0; boundary_cell_index < boundary_cells.size(); boundary_cell_index++) {
-				const PackedInt32Array &boundary_cell_vert_indices = boundary_vert[boundary_cell_index];
-				Vector4 average_pos = Vector4(0.0, 0.0, 0.0, 0.0);
-				for (int64_t i = 0; i < boundary_cell_vert_indices.size(); i++) {
-					average_pos += output_vertices[boundary_cell_vert_indices[i]];
+			PackedVector4Array per_cell_normals = ret->get_poly_cell_boundary_normals();
+			for (int32_t face_index = 0; face_index < face_to_extruded_cell.size(); face_index++) {
+				const Vector4 face_normal = per_face_normals[face_index];
+				const int32_t extruded_cell_index = face_to_extruded_cell[face_index];
+				const Vector4 cell_normal = per_cell_normals[extruded_cell_index];
+				// The exact boundary cell normal needs to depend on the orientation of the cell,
+				// but we can flip it the other way if it's backwards compared to the face normal.
+				if (face_normal.dot(cell_normal) < 0.0) {
+					per_cell_normals.set(extruded_cell_index, -cell_normal);
+					// Also swap the cell's first two elements to flip its orientation.
+					PackedInt32Array boundary_cell = boundary_cells[extruded_cell_index];
+					int32_t temp = boundary_cell[0];
+					boundary_cell.set(0, boundary_cell[1]);
+					boundary_cell.set(1, temp);
+					boundary_cells.set(extruded_cell_index, boundary_cell);
 				}
-				average_pos /= boundary_cell_vert_indices.size();
-				boundary_average_pos.set(boundary_cell_index, average_pos);
 			}
-			// Iterate over each volume.
-			for (int64_t volume_index = 0; volume_index < volume_cells.size(); volume_index++) {
-				// Compute the average position of this volume.
-				const PackedInt32Array &volume_cell_vert_indices = volume_vert[volume_index];
-				Vector4 volume_average_pos = Vector4(0.0, 0.0, 0.0, 0.0);
-				for (int64_t i = 0; i < volume_cell_vert_indices.size(); i++) {
-					volume_average_pos += output_vertices[volume_cell_vert_indices[i]];
+			// Write the corrected boundary cell data.
+			poly_cell_indices.set(1, boundary_cells);
+			ret->set_poly_cell_indices(poly_cell_indices);
+			// The boundary normals themselves will be recalculated at the end of this function,
+			// but write the result back anyway for internal consistency.
+			all_poly_cell_normals.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedVector4Array>{ per_cell_normals });
+			ret->set_all_poly_cell_normals(all_poly_cell_normals);
+		} else {
+			// Otherwise, if there is no data to copy over, calculate new boundary normals for the extruded faces.
+			// 4D-specific code: Ensure boundary cells are correctly oriented with outward facing normals.
+			// This only works when we have 4D volumes (poly index 2) to indicate which side of a boundary
+			// cell is the inside vs the outside, which came from the input mesh's 3D cells.
+			if (poly_cell_indices.size() > 2) {
+				const PackedVector4Array &output_vertices = ret->get_poly_cell_vertices();
+				const Vector<PackedInt32Array> volume_vert = ret->get_all_poly_cell_vertex_indices(4, false);
+				const Vector<PackedInt32Array> volume_cells = poly_cell_indices[2];
+				const Vector<PackedInt32Array> boundary_vert = ret->get_all_poly_cell_vertex_indices(3, false);
+				const PackedVector4Array boundary_normals = ret->get_poly_cell_boundary_normals();
+				Vector<PackedInt32Array> boundary_cells = poly_cell_indices[1];
+				CRASH_COND(volume_vert.size() != volume_cells.size() || boundary_vert.size() != boundary_cells.size() || boundary_normals.size() != boundary_cells.size());
+				// Compute the average position of each boundary cell.
+				PackedVector4Array boundary_average_pos;
+				boundary_average_pos.resize(boundary_cells.size());
+				for (int64_t boundary_cell_index = 0; boundary_cell_index < boundary_cells.size(); boundary_cell_index++) {
+					const PackedInt32Array &boundary_cell_vert_indices = boundary_vert[boundary_cell_index];
+					Vector4 average_pos = Vector4(0.0, 0.0, 0.0, 0.0);
+					for (int64_t i = 0; i < boundary_cell_vert_indices.size(); i++) {
+						average_pos += output_vertices[boundary_cell_vert_indices[i]];
+					}
+					average_pos /= boundary_cell_vert_indices.size();
+					boundary_average_pos.set(boundary_cell_index, average_pos);
 				}
-				volume_average_pos /= volume_cell_vert_indices.size();
-				// Ensure each boundary cell of this volume is oriented with its normal facing outward from the volume.
-				const PackedInt32Array &volume_cell_boundary_indices = volume_cells[volume_index];
-				for (int64_t i = 0; i < volume_cell_boundary_indices.size(); i++) {
-					const int64_t boundary_cell_index = volume_cell_boundary_indices[i];
-					const Vector4 out = boundary_average_pos[boundary_cell_index] - volume_average_pos;
-					if (boundary_normals[boundary_cell_index].dot(out) < 0.0) {
-						// This boundary cell is facing inward, so swap the first two faces to flip the normal to face outward.
-						PackedInt32Array boundary_cell = boundary_cells[boundary_cell_index];
-						int32_t temp = boundary_cell[0];
-						boundary_cell.set(0, boundary_cell[1]);
-						boundary_cell.set(1, temp);
-						boundary_cells.set(boundary_cell_index, boundary_cell);
+				// Iterate over each volume.
+				for (int64_t volume_index = 0; volume_index < volume_cells.size(); volume_index++) {
+					// Compute the average position of this volume.
+					const PackedInt32Array &volume_cell_vert_indices = volume_vert[volume_index];
+					Vector4 volume_average_pos = Vector4(0.0, 0.0, 0.0, 0.0);
+					for (int64_t i = 0; i < volume_cell_vert_indices.size(); i++) {
+						volume_average_pos += output_vertices[volume_cell_vert_indices[i]];
+					}
+					volume_average_pos /= volume_cell_vert_indices.size();
+					// Ensure each boundary cell of this volume is oriented with its normal facing outward from the volume.
+					const PackedInt32Array &volume_cell_boundary_indices = volume_cells[volume_index];
+					for (int64_t i = 0; i < volume_cell_boundary_indices.size(); i++) {
+						const int64_t boundary_cell_index = volume_cell_boundary_indices[i];
+						const Vector4 out = boundary_average_pos[boundary_cell_index] - volume_average_pos;
+						if (boundary_normals[boundary_cell_index].dot(out) < 0.0) {
+							// This boundary cell is facing inward, so swap the first two faces to flip the normal to face outward.
+							PackedInt32Array boundary_cell = boundary_cells[boundary_cell_index];
+							int32_t temp = boundary_cell[0];
+							boundary_cell.set(0, boundary_cell[1]);
+							boundary_cell.set(1, temp);
+							boundary_cells.set(boundary_cell_index, boundary_cell);
+						}
 					}
 				}
+				poly_cell_indices.set(1, boundary_cells);
+				ret->set_poly_cell_indices(poly_cell_indices);
 			}
-			poly_cell_indices.set(1, boundary_cells);
-		}
-		ret->set_poly_cell_indices(poly_cell_indices);
-		// The new boundary cells created from the extrusion may have inconsistent normal directions.
-		// Fix them, using the two copies of the input mesh's boundary cells as authoritative references.
-		if (input_poly_cell_indices.size() > 1) {
-			const int32_t input_boundary_cell_count = (int32_t)input_poly_cell_indices[1].size();
-			if (input_boundary_cell_count > 0) {
-				PackedInt32Array authoritative_boundary_cells;
-				authoritative_boundary_cells.resize(input_boundary_cell_count * 2);
-				for (int32_t i = 0; i < input_boundary_cell_count * 2; i++) {
-					authoritative_boundary_cells.set(i, i);
+			// The new boundary cells created from the extrusion may have inconsistent normal directions.
+			// Fix them, using the two copies of the input mesh's boundary cells as authoritative references.
+			if (input_poly_cell_indices.size() > 1) {
+				const int32_t input_boundary_cell_count = (int32_t)input_poly_cell_indices[1].size();
+				if (input_boundary_cell_count > 0) {
+					PackedInt32Array authoritative_boundary_cells;
+					authoritative_boundary_cells.resize(input_boundary_cell_count * 2);
+					for (int32_t i = 0; i < input_boundary_cell_count * 2; i++) {
+						authoritative_boundary_cells.set(i, i);
+					}
+					make_boundary_normals_topologically_consistent(ret, authoritative_boundary_cells);
 				}
-				make_boundary_normals_topologically_consistent(ret, authoritative_boundary_cells);
 			}
+		}
+		// Copy over the vertex normals from the original 2D faces, if that data is present.
+		// Unlike per-face normals, there is no need to rectify or generate fallback data when missing.
+		if (all_poly_cell_normals.has(PolyMesh4D::FACE_TO_VERT_KEY)) {
+			Vector<PackedVector4Array> face_to_vert_normals = all_poly_cell_normals[PolyMesh4D::FACE_TO_VERT_KEY];
+			// This data currently only contains one copy of the input face vertex normals, copy it again.
+			const Vector<PackedInt32Array> &input_faces = input_poly_cell_indices[0];
+			const int64_t input_face_count = input_faces.size();
+			face_to_vert_normals.resize(input_face_count); // Just in case the original size was smaller due to missing data. Empty entries are fine.
+			face_to_vert_normals.append_array(face_to_vert_normals); // New size will be 2x the input face count.
+			all_poly_cell_normals.insert(PolyMesh4D::FACE_TO_VERT_KEY, face_to_vert_normals);
+			// Now transfer the face vertex normals to the extruded cell vertex normals.
+			const PackedVector4Array &per_cell_normals = ret->get_poly_cell_boundary_normals();
+			const Vector<PackedInt32Array> all_face_vert = ret->get_all_poly_cell_vertex_indices(2, false);
+			const Vector<PackedInt32Array> all_cell_vert = ret->get_all_poly_cell_vertex_indices(3, false);
+			Vector<PackedVector4Array> cell_to_vert_normals = all_poly_cell_normals.has(PolyMesh4D::CELL_TO_VERT_KEY) ? all_poly_cell_normals[PolyMesh4D::CELL_TO_VERT_KEY] : Vector<PackedVector4Array>();
+			cell_to_vert_normals.resize(all_cell_vert.size());
+			for (int face_index = 0; face_index < input_face_count; face_index++) {
+				const PackedVector4Array &face_vert_normals = face_to_vert_normals[face_index];
+				const PackedInt32Array &first_copy_face_vert = all_face_vert[face_index];
+				// The second copy being offset by input_face_count is guaranteed because we start with `merge_with`.
+				const PackedInt32Array &second_copy_face_vert = all_face_vert[face_index + input_face_count];
+				const int64_t cell_index = face_to_extruded_cell[face_index];
+				const PackedInt32Array &this_cell_vert = all_cell_vert[cell_index];
+				PackedVector4Array cell_vert_normals;
+				cell_vert_normals.resize(this_cell_vert.size());
+				for (int64_t vert_in_cell = 0; vert_in_cell < this_cell_vert.size(); vert_in_cell++) {
+					const int32_t vert_index = this_cell_vert[vert_in_cell];
+					const int64_t vert_in_first_copy = first_copy_face_vert.find(vert_index);
+					const int64_t vert_in_second_copy = second_copy_face_vert.find(vert_index);
+					if (vert_in_first_copy != -1 && vert_in_first_copy < face_vert_normals.size()) {
+						cell_vert_normals.set(vert_in_cell, face_vert_normals[vert_in_first_copy]);
+					} else if (vert_in_second_copy != -1 && vert_in_second_copy < face_vert_normals.size()) {
+						cell_vert_normals.set(vert_in_cell, face_vert_normals[vert_in_second_copy]);
+					} else {
+						// Neither face has vertex normal data for this vertex in this cell, so just use the cell's boundary normal.
+						cell_vert_normals.set(vert_in_cell, per_cell_normals[cell_index]);
+					}
+				}
+				cell_to_vert_normals.set(cell_index, cell_vert_normals);
+			}
+			all_poly_cell_normals.insert(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_normals);
+			ret->set_all_poly_cell_normals(all_poly_cell_normals);
+		}
+		// Copy over the vertex texture maps from the original 2D faces, if that data is present.
+		HashMap<Vector2i, Vector<PackedVector3Array>> all_poly_cell_texture_maps = ret->get_all_poly_cell_texture_maps();
+		if (all_poly_cell_texture_maps.has(PolyMesh4D::FACE_TO_VERT_KEY)) {
+			Vector<PackedVector3Array> face_to_vert_texture_maps = all_poly_cell_texture_maps[PolyMesh4D::FACE_TO_VERT_KEY];
+			// This data currently only contains one copy of the input face vertex texture maps, copy it again.
+			const Vector<PackedInt32Array> &input_faces = input_poly_cell_indices[0];
+			const int64_t input_face_count = input_faces.size();
+			// Special case for texture maps: The second copy should be offset in the Z direction.
+			face_to_vert_texture_maps.resize(input_face_count * 2);
+			for (int64_t face_index = 0; face_index < input_face_count; face_index++) {
+				PackedVector3Array face_vert_texture_map = face_to_vert_texture_maps[face_index];
+				for (int64_t vert_index = 0; vert_index < face_vert_texture_map.size(); vert_index++) {
+					Vector3 tex_coord = face_vert_texture_map[vert_index];
+					tex_coord.z += 1.0f; // Setting equal to 1.0f would also work but this handles the case of existing non-zero Z values in the input texture maps.
+					face_vert_texture_map.set(vert_index, tex_coord);
+				}
+				face_to_vert_texture_maps.set(face_index + input_face_count, face_vert_texture_map);
+			}
+			all_poly_cell_texture_maps.insert(PolyMesh4D::FACE_TO_VERT_KEY, face_to_vert_texture_maps);
+			// Now transfer the face vertex texture maps to the extruded cell vertex texture maps.
+			const Vector<PackedInt32Array> all_face_vert = ret->get_all_poly_cell_vertex_indices(2, false);
+			const Vector<PackedInt32Array> all_cell_vert = ret->get_all_poly_cell_vertex_indices(3, false);
+			Vector<PackedVector3Array> cell_to_vert_texture_maps = all_poly_cell_texture_maps.has(PolyMesh4D::CELL_TO_VERT_KEY) ? all_poly_cell_texture_maps[PolyMesh4D::CELL_TO_VERT_KEY] : Vector<PackedVector3Array>();
+			cell_to_vert_texture_maps.resize(all_cell_vert.size());
+			for (int face_index = 0; face_index < input_face_count; face_index++) {
+				const PackedVector3Array &first_copy_face_vert_texture_maps = face_to_vert_texture_maps[face_index];
+				const PackedInt32Array &first_copy_face_vert_ind = all_face_vert[face_index];
+				// The second copy being offset by input_face_count is guaranteed because we start with `merge_with`.
+				const PackedVector3Array &second_copy_face_vert_texture_maps = face_to_vert_texture_maps[face_index + input_face_count];
+				const PackedInt32Array &second_copy_face_vert_ind = all_face_vert[face_index + input_face_count];
+				const int64_t cell_index = face_to_extruded_cell[face_index];
+				const PackedInt32Array &this_cell_vert = all_cell_vert[cell_index];
+				PackedVector3Array cell_vert_texture_maps;
+				cell_vert_texture_maps.resize(this_cell_vert.size());
+				for (int64_t vert_in_cell = 0; vert_in_cell < this_cell_vert.size(); vert_in_cell++) {
+					const int32_t vert_index = this_cell_vert[vert_in_cell];
+					const int64_t vert_in_first_copy = first_copy_face_vert_ind.find(vert_index);
+					const int64_t vert_in_second_copy = second_copy_face_vert_ind.find(vert_index);
+					if (vert_in_first_copy != -1 && vert_in_first_copy < first_copy_face_vert_texture_maps.size()) {
+						cell_vert_texture_maps.set(vert_in_cell, first_copy_face_vert_texture_maps[vert_in_first_copy]);
+					} else if (vert_in_second_copy != -1 && vert_in_second_copy < second_copy_face_vert_texture_maps.size()) {
+						cell_vert_texture_maps.set(vert_in_cell, second_copy_face_vert_texture_maps[vert_in_second_copy]);
+					} else {
+						// Neither face has vertex texture map data for this vertex in this cell, so just use a default value.
+						cell_vert_texture_maps.set(vert_in_cell, Vector3(0.0f, 0.0f, 0.0f));
+					}
+				}
+				cell_to_vert_texture_maps.set(cell_index, cell_vert_texture_maps);
+			}
+			all_poly_cell_texture_maps.insert(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_texture_maps);
+			ret->set_all_poly_cell_texture_maps(all_poly_cell_texture_maps);
 		}
 	}
 	// Overwrite the cells and recalculate the normals again to ensure data consistency.
