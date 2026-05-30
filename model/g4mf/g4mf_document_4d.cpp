@@ -1303,9 +1303,7 @@ Node *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state)
 	if (state_g4mf_nodes.is_empty()) {
 		// If there are no nodes, we can implicitly generate a MeshInstance4D for the first mesh.
 		TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
-		const int mesh_count = state_g4mf_meshes.size();
-		ERR_FAIL_COND_V_MSG(mesh_count == 0, nullptr, "G4MF import: This G4MF file has no nodes or meshes, so it cannot be imported as a scene.");
-		WARN_PRINT("G4MF import: This G4MF file has no nodes. Try importing as a mesh instead (Import dock -> Import As: 4D Mesh).");
+		ERR_FAIL_COND_V_MSG(state_g4mf_meshes.is_empty(), nullptr, "G4MF import: This G4MF file (" + p_g4mf_state->get_original_path() + ") has no nodes or meshes, so it cannot be imported as a scene.");
 		MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
 		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[0];
 		mesh_instance->set_mesh(g4mf_mesh->import_generate_mesh(p_g4mf_state));

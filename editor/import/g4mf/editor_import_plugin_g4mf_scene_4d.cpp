@@ -73,6 +73,11 @@ Error EditorImportPluginG4MFScene4D::import(ResourceUID::ID p_source_id, const S
 		}
 	}
 #endif
+	// Warn or error when trying to import a G4MF file with no nodes as a scene.
+	if (g4mf_state->get_g4mf_nodes().is_empty()) {
+		ERR_FAIL_COND_V_MSG(g4mf_state->get_g4mf_meshes().is_empty(), ERR_INVALID_DATA, "G4MF import: This G4MF file (" + p_source_file + ") has no nodes or meshes, so it cannot be imported as a scene.");
+		WARN_PRINT("G4MF import: This G4MF file (" + p_source_file + ") has no nodes. Try importing as a mesh instead (Import dock -> Import As: 4D Mesh).");
+	}
 	// Generate the Godot scene and save it as a PackedScene resource.
 	Node *node = g4mf_doc->import_generate_godot_scene(g4mf_state);
 	ERR_FAIL_NULL_V_MSG(node, ERR_INVALID_DATA, "Editor: Failed to generate scene from G4MF document.");
