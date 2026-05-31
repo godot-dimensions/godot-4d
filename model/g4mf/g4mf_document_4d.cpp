@@ -89,6 +89,7 @@ Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, 
 			p_g4mf_state->append_g4mf_node(g4mf_node);
 			state_godot_nodes.resize(new_node_index + 1);
 			state_godot_nodes[new_node_index] = p_current_node;
+			p_g4mf_state->set_godot_nodes(state_godot_nodes);
 			return OK;
 		}
 	}
@@ -106,6 +107,7 @@ Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, 
 	p_g4mf_state->append_g4mf_node(g4mf_node);
 	state_godot_nodes.resize(new_node_index + 1);
 	state_godot_nodes[new_node_index] = p_current_node;
+	p_g4mf_state->set_godot_nodes(state_godot_nodes);
 	PackedInt32Array children_indices;
 	for (int i = 0; i < p_current_node->get_child_count(); i++) {
 		Node *child = p_current_node->get_child(i);
@@ -323,7 +325,9 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 	return OK;
 }
 
-Error G4MFDocument4D::_export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_state, const bool p_should_separate_buffers_into_files) {
+// This can result in the data being saved to a file URI (if p_should_separate_buffers_into_files is true and file writing succeeds)
+// or a base64 data URI (if p_should_separate_buffers_into_files is false or file writing fails).
+Error G4MFDocument4D::_export_serialize_buffer_data_to_uri(Ref<G4MFState4D> p_g4mf_state, const bool p_should_separate_buffers_into_files) {
 	Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
 	if (!g4mf_json.has("buffers")) {
 		return OK; // No buffers to serialize.
@@ -1067,59 +1071,59 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 		}
 	}
 	// Generate the combined mesh in the best possible format.
-	switch (mesh_format) {
-		case G4MFMesh4D::MESH_FORMAT_POLYTOPE: {
-			Ref<ArrayPolyMesh4D> combined_poly_mesh;
-			combined_poly_mesh.instantiate();
-			// Stub.
-			return combined_poly_mesh;
-		} break;
-		case G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL: {
-			Ref<ArrayTetraMesh4D> combined_tetra_mesh;
-			combined_tetra_mesh.instantiate();
-			for (int i = 0; i < node_count; i++) {
-				const Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
-				const Ref<G4MFMeshInstance4D> mesh_instance = g4mf_node->get_mesh_instance();
-				const int mesh_index = mesh_instance->get_mesh_index();
-				if (mesh_index < 0) {
-					continue;
+	Ref<Mesh4D> combined_mesh;
+	for (int i = 0; i < node_count; i++) {
+		const Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
+		const Ref<G4MFMeshInstance4D> mesh_instance = g4mf_node->get_mesh_instance();
+		if (mesh_instance.is_null()) {
+			continue;
+		}
+		const int mesh_index = mesh_instance->get_mesh_index();
+		if (mesh_index < 0) {
+			continue;
+		}
+		if (!(p_include_invisible || g4mf_node->get_visible())) {
+			continue;
+		}
+		ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
+		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
+		switch (mesh_format) {
+			case G4MFMesh4D::MESH_FORMAT_POLYTOPE: {
+				Ref<ArrayPolyMesh4D> combined_poly_mesh = combined_mesh;
+				if (combined_poly_mesh.is_null()) {
+					combined_poly_mesh.instantiate();
+					combined_mesh = combined_poly_mesh;
 				}
-				if (!(p_include_invisible || g4mf_node->get_visible())) {
-					continue;
+				Ref<ArrayPolyMesh4D> this_poly_mesh = g4mf_mesh->import_generate_poly_mesh(p_g4mf_state);
+				if (this_poly_mesh.is_valid()) {
+					combined_poly_mesh->merge_with(this_poly_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 				}
-				ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
-				Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
-				Ref<ArrayTetraMesh4D> mesh = g4mf_mesh->import_generate_tetra_mesh(p_g4mf_state);
-				if (mesh.is_valid()) {
-					combined_tetra_mesh->merge_with(mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
+			} break;
+			case G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL: {
+				Ref<ArrayTetraMesh4D> combined_tetra_mesh = combined_mesh;
+				if (combined_tetra_mesh.is_null()) {
+					combined_tetra_mesh.instantiate();
+					combined_mesh = combined_tetra_mesh;
 				}
-			}
-			return combined_tetra_mesh;
-		} break;
-		case G4MFMesh4D::MESH_FORMAT_WIREFRAME: {
-			Ref<ArrayWireMesh4D> combined_wire_mesh;
-			combined_wire_mesh.instantiate();
-			for (int i = 0; i < node_count; i++) {
-				const Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
-				const Ref<G4MFMeshInstance4D> mesh_instance = g4mf_node->get_mesh_instance();
-				const int mesh_index = mesh_instance->get_mesh_index();
-				if (mesh_index < 0) {
-					continue;
+				Ref<ArrayTetraMesh4D> this_tetra_mesh = g4mf_mesh->import_generate_tetra_mesh(p_g4mf_state);
+				if (this_tetra_mesh.is_valid()) {
+					combined_tetra_mesh->merge_with(this_tetra_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 				}
-				if (!(p_include_invisible || g4mf_node->get_visible())) {
-					continue;
+			} break;
+			case G4MFMesh4D::MESH_FORMAT_WIREFRAME: {
+				Ref<ArrayWireMesh4D> combined_wire_mesh = combined_mesh;
+				if (combined_wire_mesh.is_null()) {
+					combined_wire_mesh.instantiate();
+					combined_mesh = combined_wire_mesh;
 				}
-				ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
-				Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
-				Ref<ArrayWireMesh4D> mesh = g4mf_mesh->import_generate_wire_mesh(p_g4mf_state);
-				if (mesh.is_valid()) {
-					combined_wire_mesh->merge_with(mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
+				Ref<ArrayWireMesh4D> this_wire_mesh = g4mf_mesh->import_generate_wire_mesh(p_g4mf_state);
+				if (this_wire_mesh.is_valid()) {
+					combined_wire_mesh->merge_with(this_wire_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 				}
-			}
-			return combined_wire_mesh;
-		} break;
+			} break;
+		}
 	}
-	ERR_FAIL_V(Ref<Mesh4D>());
+	return combined_mesh;
 }
 
 // Public functions.
@@ -1195,6 +1199,12 @@ Error G4MFDocument4D::export_repack_buffer_data(Ref<G4MFState4D> p_g4mf_state, c
 PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4mf_state) {
 	Error err = _export_serialize_json_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, PackedByteArray(), "G4MF export: Failed to serialize G4MF data.");
+	// "Automatic" is always embedded in this case anyway, so pass `-1` for `p_blob_size` which returns false.
+	const bool should_separate_buffers_into_files = p_g4mf_state->should_separate_binary_blobs(-1);
+	if (should_separate_buffers_into_files) {
+		err = _export_serialize_buffer_data_to_uri(p_g4mf_state, false);
+		ERR_FAIL_COND_V_MSG(err != OK, PackedByteArray(), "G4MF export: Failed to serialize G4MF buffer data.");
+	}
 	return _export_encode_as_byte_array(p_g4mf_state);
 }
 
@@ -1216,7 +1226,7 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 	const bool should_separate_buffers_into_files = p_g4mf_state->should_separate_binary_blobs(buffer0_size);
 	if (is_text_file) {
 		// Write to a G4MF text file. Export the buffers either as base64 or as separate files.
-		err = _export_serialize_buffer_data(p_g4mf_state, should_separate_buffers_into_files);
+		err = _export_serialize_buffer_data_to_uri(p_g4mf_state, should_separate_buffers_into_files);
 		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF buffer data.");
 		const Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
 		const String json_string = _export_pretty_print_json(g4mf_json);
@@ -1224,8 +1234,9 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 	} else {
 		// Write to a G4MF binary file. Export the buffers as binary blob chunks or as separate files.
 		if (should_separate_buffers_into_files) {
-			err = _export_serialize_buffer_data(p_g4mf_state, true);
+			err = _export_serialize_buffer_data_to_uri(p_g4mf_state, true);
 			ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF buffer data.");
+			// Else, don't call `_export_serialize_buffer_data_to_uri` because the buffers will be serialized as binary blob chunks.
 		}
 		const PackedByteArray json_bytes = _export_encode_as_byte_array(p_g4mf_state);
 		file->store_buffer(json_bytes);

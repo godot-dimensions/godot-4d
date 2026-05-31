@@ -35,7 +35,7 @@ private:
 	Error _export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _export_serialize_buffer_data(Ref<G4MFState4D> p_g4mf_state, const bool p_should_separate_buffers_into_files);
+	Error _export_serialize_buffer_data_to_uri(Ref<G4MFState4D> p_g4mf_state, const bool p_should_separate_buffers_into_files);
 	void _export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	static String _export_pretty_print_inline(const Variant &p_variant);
 	static String _export_pretty_print_json(const Dictionary &p_g4mf_json);
