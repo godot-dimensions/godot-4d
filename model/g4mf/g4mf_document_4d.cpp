@@ -738,6 +738,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 		for (int i = 0; i < buffer_count; i++) {
 			const Dictionary json_buffer = json_buffers[i];
 			ERR_FAIL_COND_V_MSG(!json_buffer.has("byteLength"), ERR_INVALID_DATA, "G4MF import: Buffer is missing required field 'byteLength'. Aborting file import.");
+			// If the buffer is encoded, this refers to the byte length after decoding.
 			const int64_t byte_length = json_buffer["byteLength"];
 			uint32_t encoding_indicator = 0;
 			if (json_buffer.has("encoding")) {
@@ -757,7 +758,7 @@ Error G4MFDocument4D::_import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_st
 					const String buffer_path = p_g4mf_state->get_g4mf_base_path().path_join(uri);
 					Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::READ);
 					if (file.is_valid()) {
-						buffer = _import_decode_chunk_data(file->get_buffer(byte_length), encoding_indicator);
+						buffer = _import_decode_chunk_data(file->get_buffer(file->get_length()), encoding_indicator);
 						file->close();
 					} else {
 						// The file is not valid, but only fail if the buffer is empty. It may have been filled by a chunk.
@@ -1189,7 +1190,7 @@ Error G4MFDocument4D::export_repack_buffer_data(Ref<G4MFState4D> p_g4mf_state, c
 		new_buffer.append_array(data);
 		new_buffers[buffer_index] = new_buffer;
 	}
-	// Set the buffers, but do set the re-ordered buffer views because we want to keep
+	// Set the buffers, but do NOT set the re-ordered buffer views because we want to keep
 	// the original order to ensure that existing index-based references to buffer views
 	// remain valid. The buffer views are still mutated, just not re-ordered.
 	p_g4mf_state->set_g4mf_buffers(new_buffers);
