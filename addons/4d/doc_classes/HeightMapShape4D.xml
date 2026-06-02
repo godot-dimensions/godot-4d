@@ -10,6 +10,25 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="fill_from_mesh_3d">
+			<return type="void" />
+			<param index="0" name="mesh_3d" type="Mesh" />
+			<param index="1" name="exponent" type="float" />
+			<param index="2" name="max_height" type="float" />
+			<param index="3" name="min_height" type="float" />
+			<description>
+				Fills the height data in this height map from the given 3D mesh, treating it as the source of a signed distance field. Points on the surface of the 3D mesh will have a height of zero, points inside will be negative, and points outside will be positive.
+				The [param exponent] controls how the heights are distributed. For example, a value of [code]1.0[/code] means the heights are linearly based on the distanced to the mesh, while a value of [code]0.5[/code] would make the basins smoother. The [param max_height] and [param min_height] parameters clamp the maximum and minimum height values.
+			</description>
+		</method>
+		<method name="gaussian_blur">
+			<return type="void" />
+			<param index="0" name="blur_radius" type="Vector3" />
+			<description>
+				Performs a Gaussian blur on the height data in this height map. The [param blur_radius] controls how much the height map is blurred in each axis, where a larger radius means more blur. The values MUST be non-negative, where a value of zero means no blur on that axis.
+				The [param blur_radius] is also known as "sigma" in the context of Gaussian blur, and behaves similarly to GIMP's Gaussian blur radius. Recommended values end in 0.5, such as 0.5, 1.5, 2.5, etc. The X value is the blur radius for the X axis, the Y value is the blur radius for the Z axis, and the Z value is the blur radius for the W axis.
+			</description>
+		</method>
 		<method name="get_height_index" qualifiers="const">
 			<return type="int" />
 			<param index="0" name="x" type="int" />

@@ -53,6 +53,9 @@ public:
 	void quantize_to_float16();
 	void quantize_to_float32();
 
+	void fill_from_mesh_3d(const Ref<Mesh> &p_mesh_3d, const double p_exponent, const real_t p_max_height, const real_t p_min_height);
+	void gaussian_blur(const Vector3 &p_blur_radius);
+
 	virtual real_t get_hypervolume() const override;
 	virtual real_t get_surface_volume() const override;
 	virtual Rect4 get_rect_bounds(const Transform4D &p_to_target = Transform4D()) const override;

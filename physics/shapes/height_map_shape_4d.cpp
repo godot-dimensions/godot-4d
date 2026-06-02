@@ -4,6 +4,12 @@
 #include "../../model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../model/mesh/wire/array_wire_mesh_4d.h"
 
+#if GDEXTENSION
+#include <godot_cpp/templates/hash_map.hpp>
+#elif GODOT_MODULE
+#include "core/templates/hash_map.h"
+#endif
+
 void HeightMapShape4D::set_height_data(const PackedFloat64Array &p_height_data) {
 	const int64_t old_size = _height_data.size();
 	const int64_t input_size = p_height_data.size();
@@ -162,6 +168,112 @@ void HeightMapShape4D::quantize_to_float32() {
 	_spacing.z = (float)_spacing.z;
 }
 
+void HeightMapShape4D::fill_from_mesh_3d(const Ref<Mesh> &p_mesh_3d, const double p_exponent, const real_t p_max_height, const real_t p_min_height) {
+	ERR_FAIL_COND(p_mesh_3d.is_null());
+#if GDEXTENSION
+	ERR_FAIL_MSG("HeightMapShape4D::fill_from_mesh_3d is not available in GDExtension builds of Godot 4D.");
+#elif GODOT_MODULE
+	const Vector<Face3> faces = p_mesh_3d->get_faces();
+	const Vector3 start_flat_physical_pos = _get_start_physical_offset();
+	// Iterate through all grid points.
+	for (int32_t i = 0; i < _grid_size.x; i++) {
+		for (int32_t j = 0; j < _grid_size.y; j++) {
+			for (int32_t k = 0; k < _grid_size.z; k++) {
+				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _spacing + start_flat_physical_pos;
+				Face3 closest_face = Face3();
+				double min_distance_squared = Math_INF;
+				for (const Face3 &face : faces) {
+					const Vector3 point_on_face = face.get_closest_point_to(data_flat_physical_pos);
+					const double distance_squared = point_on_face.distance_squared_to(data_flat_physical_pos);
+					if (distance_squared < min_distance_squared) {
+						min_distance_squared = distance_squared;
+						closest_face = face;
+					}
+				}
+				// The 0.5 factor applies the sqrt to give us the distance rather than distance squared.
+				double height = Math::pow(min_distance_squared, p_exponent * 0.5);
+				const bool over = closest_face.get_plane().is_point_over(data_flat_physical_pos);
+				if (!over) {
+					height = -height;
+				}
+				height = CLAMP(height, p_min_height, p_max_height);
+				_height_data.set(_get_height_index_nocheck(i, j, k), height);
+			}
+		}
+	}
+#endif
+}
+
+void HeightMapShape4D::gaussian_blur(const Vector3 &p_blur_radius) {
+	// p_blur_radius is also known as "sigma" in the context of Gaussian blur.
+	ERR_FAIL_COND_MSG(p_blur_radius.x < 0.0, "Gaussian blur X radius (Vector3 X component) must not be negative.");
+	ERR_FAIL_COND_MSG(p_blur_radius.y < 0.0, "Gaussian blur Z radius (Vector3 Y component) must not be negative.");
+	ERR_FAIL_COND_MSG(p_blur_radius.z < 0.0, "Gaussian blur W radius (Vector3 Z component) must not be negative.");
+	PackedFloat64Array new_height_data;
+	HashMap<real_t, PackedFloat64Array> kernel_cache;
+	// Gaussian blur is an inherently separable operation. A 3D Gaussian blur is the same as three 1D Gaussian blurs along each axis.
+	for (uint8_t axis = 0; axis < 3; axis++) {
+		// Generate the Gaussian kernel for this axis, caching it for future iterations if the same blur radius is used on another axis.
+		const real_t axis_blur_radius = p_blur_radius[axis];
+		if (axis_blur_radius == 0.0) {
+			continue;
+		}
+		PackedFloat64Array kernel;
+		if (kernel_cache.has(axis_blur_radius)) {
+			kernel = kernel_cache[axis_blur_radius];
+		} else {
+			// 3 sigma captures ~99.7% of the Gaussian curve. This is the usual practical
+			// cutoff for converting the infinite Gaussian into a finite sampled kernel.
+			constexpr double GAUSSIAN_CUTOFF_MULTIPLIER = 3.0;
+			const int32_t cutoff_radius = (int32_t)Math::ceil(axis_blur_radius * GAUSSIAN_CUTOFF_MULTIPLIER);
+			const int32_t kernel_size = cutoff_radius * 2 + 1;
+			kernel.resize(kernel_size);
+			const double gaussian_denominator = 2.0 * axis_blur_radius * axis_blur_radius;
+			double total = 0.0;
+			for (int32_t i = -cutoff_radius; i <= cutoff_radius; i++) {
+				const double weight = Math::exp(-(double)(i * i) / gaussian_denominator);
+				kernel.set(i + cutoff_radius, weight);
+				total += weight;
+			}
+			for (int32_t i = 0; i < kernel_size; i++) {
+				kernel.set(i, kernel[i] / total);
+			}
+			kernel_cache[axis_blur_radius] = kernel;
+		}
+		const int32_t kernel_radius = kernel.size() / 2;
+		new_height_data.resize(_height_data.size());
+		// Iterate over every point in the height map.
+		for (int32_t w = 0; w < _grid_size.z; w++) {
+			for (int32_t z = 0; z < _grid_size.y; z++) {
+				for (int32_t x = 0; x < _grid_size.x; x++) {
+					// Perform a 1D Gaussian blur along the current axis.
+					double blurred_value = 0.0;
+					for (int32_t kernel_index = 0; kernel_index < kernel.size(); kernel_index++) {
+						const int32_t offset = kernel_index - kernel_radius;
+						int32_t sample_x = x;
+						int32_t sample_z = z;
+						int32_t sample_w = w;
+						if (axis == 0) {
+							sample_x = CLAMP(x + offset, 0, _grid_size.x - 1);
+						} else if (axis == 1) {
+							sample_z = CLAMP(z + offset, 0, _grid_size.y - 1);
+						} else {
+							sample_w = CLAMP(w + offset, 0, _grid_size.z - 1);
+						}
+						const int64_t source_index = _get_height_index_nocheck(sample_x, sample_z, sample_w);
+						blurred_value += _height_data[source_index] * kernel[kernel_index];
+					}
+					const int64_t destination_index = _get_height_index_nocheck(x, z, w);
+					new_height_data.set(destination_index, blurred_value);
+				}
+			}
+		}
+		// Each iteration uses the previously blurred data as the source for the next axis blur,
+		// and at the end we want to write back into the height data, so this does both at once.
+		_height_data = new_height_data;
+	}
+}
+
 real_t HeightMapShape4D::get_hypervolume() const {
 	// Since the heightmap does not have a bottom, just treat it as 1 meter thick.
 	return _grid_size.x * _grid_size.y * _grid_size.z * _spacing.x * _spacing.y * _spacing.z;
@@ -240,12 +352,16 @@ bool HeightMapShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 	const Vector3 start_flat_physical_pos = _get_start_physical_offset();
 	PackedVector4Array vertices;
+	PackedVector4Array vert_normals;
 	PackedInt32Array simplex_cell_indices;
-	// 5 tetrahedra per cube, 4 vertex indices per tetrahedron.
 	// This is the maximum possible size, but the actual size may be smaller if the heightmap has any holes (non-finite height values).
-	simplex_cell_indices.resize(4 * 5 * (_grid_size.x - 1) * (_grid_size.y - 1) * (_grid_size.z - 1));
+	const int64_t grid_cell_max_count = (_grid_size.x - 1) * (_grid_size.y - 1) * (_grid_size.z - 1);
+	// 5 tetrahedra per cube, 4 vertex indices per tetrahedron.
+	simplex_cell_indices.resize(4 * 5 * grid_cell_max_count);
 	// However, the vertices are always the same size as the height data, matching 1:1 for easy addressability.
-	vertices.resize(_grid_size.x * _grid_size.y * _grid_size.z);
+	const int64_t vertex_count = _grid_size.x * _grid_size.y * _grid_size.z;
+	vertices.resize(vertex_count);
+	vert_normals.resize(vertex_count);
 	int64_t simplex_cell_iter = 0;
 	for (int32_t i = 0; i < _grid_size.x; i++) {
 		for (int32_t j = 0; j < _grid_size.y; j++) {
@@ -296,7 +412,6 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 						corner_x0y1z1, corner_x1y1z1, corner_x1y0z1, corner_x1y1z0,
 						corner_x1y0z0, corner_x1y1z0, corner_x0y0z0, corner_x1y0z1,
 					};
-					/* clang-format on */
 					if ((i + j + k) % 2 == 0) {
 						// Swap the last two corners of each tetrahedron to flip its orientation.
 						SWAP(tet_corners[2], tet_corners[3]);
@@ -308,15 +423,61 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 					for (uint8_t t = 0; t < 20; t++) {
 						simplex_cell_indices.set(simplex_cell_iter++, tet_corners[t]);
 					}
+					// Add a normal for this cube to the vertex normals array.
+					Vector3 changes = Vector3(
+						+ (_height_data[corner_x1y0z0] + _height_data[corner_x1y1z0] + _height_data[corner_x1y0z1] + _height_data[corner_x1y1z1])
+						- (_height_data[corner_x0y0z0] + _height_data[corner_x0y1z0] + _height_data[corner_x0y0z1] + _height_data[corner_x0y1z1]),
+						+ (_height_data[corner_x0y1z0] + _height_data[corner_x1y1z0] + _height_data[corner_x0y1z1] + _height_data[corner_x1y1z1])
+						- (_height_data[corner_x0y0z0] + _height_data[corner_x1y0z0] + _height_data[corner_x0y0z1] + _height_data[corner_x1y0z1]),
+						+ (_height_data[corner_x0y0z1] + _height_data[corner_x0y1z1] + _height_data[corner_x1y0z1] + _height_data[corner_x1y1z1])
+						- (_height_data[corner_x0y0z0] + _height_data[corner_x0y1z0] + _height_data[corner_x1y0z0] + _height_data[corner_x1y1z0])
+					);
+					/* clang-format on */
+					// Average the changes from the 4 corners on each side (0.25x), then rise over run.
+					changes *= 0.25 * _spacing.inverse();
+					const Vector4 grid_cell_normal = Vector4(changes.x, 1.0, changes.y, changes.z).normalized();
+					vert_normals.set(corner_x0y0z0, vert_normals[corner_x0y0z0] + grid_cell_normal);
+					vert_normals.set(corner_x1y0z0, vert_normals[corner_x1y0z0] + grid_cell_normal);
+					vert_normals.set(corner_x0y1z0, vert_normals[corner_x0y1z0] + grid_cell_normal);
+					vert_normals.set(corner_x1y1z0, vert_normals[corner_x1y1z0] + grid_cell_normal);
+					vert_normals.set(corner_x0y0z1, vert_normals[corner_x0y0z1] + grid_cell_normal);
+					vert_normals.set(corner_x1y0z1, vert_normals[corner_x1y0z1] + grid_cell_normal);
+					vert_normals.set(corner_x0y1z1, vert_normals[corner_x0y1z1] + grid_cell_normal);
+					vert_normals.set(corner_x1y1z1, vert_normals[corner_x1y1z1] + grid_cell_normal);
 				}
 			}
 		}
 	}
 	simplex_cell_indices.resize(simplex_cell_iter);
+	// Fill a texture map using the horizontal coordinates of the vertices.
+	PackedVector3Array simplex_cell_texture_map;
+	simplex_cell_texture_map.resize(simplex_cell_iter);
+	const Vector3 vert_min_vec3 = Vector3(vertices[0].x, vertices[0].z, vertices[0].w);
+	const Vector3 vert_max_vec3 = Vector3(vertices[vertices.size() - 1].x, vertices[vertices.size() - 1].z, vertices[vertices.size() - 1].w);
+	const Vector3 vert_size_vec3 = vert_max_vec3 - vert_min_vec3;
+	for (int64_t i = 0; i < simplex_cell_iter; i++) {
+		const int32_t simplex_vert = simplex_cell_indices[i];
+		const Vector4 vertex_vec4 = vertices[simplex_vert];
+		const Vector3 vertex_vec3 = Vector3(vertex_vec4.x, vertex_vec4.z, vertex_vec4.w);
+		simplex_cell_texture_map.set(i, (vertex_vec3 - vert_min_vec3) / vert_size_vec3);
+	}
+	// Normalize the normals and sample them for the tetrahedra.
+	for (int64_t i = 0; i < vert_normals.size(); i++) {
+		vert_normals.set(i, vert_normals[i].normalized());
+	}
+	PackedVector4Array simplex_cell_vertex_normals;
+	simplex_cell_vertex_normals.resize(simplex_cell_iter);
+	for (int64_t i = 0; i < simplex_cell_iter; i++) {
+		simplex_cell_vertex_normals.set(i, vert_normals[simplex_cell_indices[i]]);
+	}
+	// Insert the final data into a new mesh.
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	tetra_mesh->set_vertices(vertices);
 	tetra_mesh->set_simplex_cell_indices(simplex_cell_indices);
+	tetra_mesh->set_simplex_cell_texture_map(simplex_cell_texture_map);
+	tetra_mesh->set_simplex_cell_vertex_normals(simplex_cell_vertex_normals);
+	CRASH_COND(!tetra_mesh->is_mesh_data_valid());
 	return tetra_mesh;
 }
 
@@ -396,6 +557,9 @@ void HeightMapShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("quantize_to_float8"), &HeightMapShape4D::quantize_to_float8);
 	ClassDB::bind_method(D_METHOD("quantize_to_float16"), &HeightMapShape4D::quantize_to_float16);
 	ClassDB::bind_method(D_METHOD("quantize_to_float32"), &HeightMapShape4D::quantize_to_float32);
+
+	ClassDB::bind_method(D_METHOD("fill_from_mesh_3d", "mesh_3d", "exponent", "max_height", "min_height"), &HeightMapShape4D::fill_from_mesh_3d);
+	ClassDB::bind_method(D_METHOD("gaussian_blur", "blur_radius"), &HeightMapShape4D::gaussian_blur);
 
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "height_data"), "set_height_data", "get_height_data");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "spacing"), "set_spacing", "get_spacing");
