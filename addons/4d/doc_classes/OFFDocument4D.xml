@@ -43,6 +43,7 @@
 		<method name="import_generate_mesh_3d">
 			<return type="ArrayMesh" />
 			<param index="0" name="per_face_vertices" type="bool" default="true" />
+			<param index="1" name="force_outward_normals" type="bool" default="false" />
 			<description>
 				Generates a 3D [ArrayMesh] resource from the OFF data, for use with [MeshInstance3D]. If [param per_face_vertices] is [code]true[/code], each face will have its own vertices, which allows preserving per-face colors. If [code]false[/code], per-face colors will be discarded, since Godot's [ArrayMesh] does not support per-face colors, only per-vertex colors or textures. Per-cell colors will always be discarded when generating a 3D mesh.
 			</description>

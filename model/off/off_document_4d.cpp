@@ -241,7 +241,7 @@ Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> 
 	return off_document;
 }
 
-Ref<ArrayMesh> OFFDocument4D::import_generate_mesh_3d(const bool p_per_face_vertices) {
+Ref<ArrayMesh> OFFDocument4D::import_generate_mesh_3d(const bool p_per_face_vertices, const bool p_force_outward_normals) {
 	PackedVector3Array vertices_3d;
 	for (int vert_index = 0; vert_index < _vertices.size(); vert_index++) {
 		vertices_3d.append(Vector3(_vertices[vert_index].x, _vertices[vert_index].y, _vertices[vert_index].z));
@@ -261,9 +261,18 @@ Ref<ArrayMesh> OFFDocument4D::import_generate_mesh_3d(const bool p_per_face_vert
 			PackedInt32Array face_indices = _face_vertex_indices[face_number];
 			// OFF face indices may contain non-triangle faces. We need to triangulate those now.
 			for (int poly_index = 2; poly_index < face_indices.size(); poly_index++) {
-				surface_tool->add_vertex(vertices_3d[face_indices[poly_index]]);
-				surface_tool->add_vertex(vertices_3d[face_indices[poly_index - 1]]);
-				surface_tool->add_vertex(vertices_3d[face_indices[0]]);
+				const Vector3 vert0 = vertices_3d[face_indices[0]];
+				Vector3 vert1 = vertices_3d[face_indices[poly_index - 1]];
+				Vector3 vert2 = vertices_3d[face_indices[poly_index]];
+				if (p_force_outward_normals) {
+					const Vector3 normal = (vert2 - vert0).cross(vert1 - vert0);
+					if (normal.dot(vert0 + vert1 + vert2) < 0.0f) {
+						SWAP(vert1, vert2);
+					}
+				}
+				surface_tool->add_vertex(vert0);
+				surface_tool->add_vertex(vert1);
+				surface_tool->add_vertex(vert2);
 			}
 		}
 		surface_tool->generate_normals();
@@ -743,7 +752,7 @@ void OFFDocument4D::_bind_methods() {
 
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_byte_array", "data"), &OFFDocument4D::import_load_from_byte_array);
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_file", "path"), &OFFDocument4D::import_load_from_file);
-	ClassDB::bind_method(D_METHOD("import_generate_mesh_3d", "per_face_vertices"), &OFFDocument4D::import_generate_mesh_3d, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("import_generate_mesh_3d", "per_face_vertices", "force_outward_normals"), &OFFDocument4D::import_generate_mesh_3d, DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("import_generate_poly_mesh_4d"), &OFFDocument4D::import_generate_poly_mesh_4d);
 	ClassDB::bind_method(D_METHOD("import_generate_tetra_mesh_4d"), &OFFDocument4D::import_generate_tetra_mesh_4d);
 	ClassDB::bind_method(D_METHOD("import_generate_wire_mesh_4d", "deduplicate_edges"), &OFFDocument4D::import_generate_wire_mesh_4d, DEFVAL(true));

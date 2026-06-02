@@ -58,7 +58,7 @@ public:
 
 	static Ref<OFFDocument4D> import_load_from_byte_array(const PackedByteArray &p_data);
 	static Ref<OFFDocument4D> import_load_from_file(const String &p_path);
-	Ref<ArrayMesh> import_generate_mesh_3d(const bool p_per_face_vertices = true);
+	Ref<ArrayMesh> import_generate_mesh_3d(const bool p_per_face_vertices = true, const bool p_force_outward_normals = false);
 	Ref<ArrayPolyMesh4D> import_generate_poly_mesh_4d();
 	Ref<ArrayTetraMesh4D> import_generate_tetra_mesh_4d();
 	Ref<ArrayWireMesh4D> import_generate_wire_mesh_4d(const bool p_deduplicate_edges = true);
