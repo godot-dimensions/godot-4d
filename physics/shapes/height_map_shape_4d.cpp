@@ -561,10 +561,11 @@ void HeightMapShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fill_from_mesh_3d", "mesh_3d", "exponent", "max_height", "min_height"), &HeightMapShape4D::fill_from_mesh_3d);
 	ClassDB::bind_method(D_METHOD("gaussian_blur", "blur_radius"), &HeightMapShape4D::gaussian_blur);
 
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "height_data"), "set_height_data", "get_height_data");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "spacing"), "set_spacing", "get_spacing");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3I, "size", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_STORAGE), "set_size", "get_size");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "size_width", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_size_width", "get_size_width");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "size_depth", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_size_depth", "get_size_depth");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "size_thickness", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_size_thickness", "get_size_thickness");
+	// This MUST be the last property, since it depends on the size being set, and Godot populates properties in this order.
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "height_data"), "set_height_data", "get_height_data");
 }
