@@ -65,5 +65,19 @@
 				Returns [code]true[/code] if the two arrays have at least one common int32 value, otherwise returns [code]false[/code].
 			</description>
 		</method>
+		<method name="quantize_to_float8" qualifiers="static">
+			<return type="Variant" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+				Quantize the input value to the nearest representable value in the 8-bit float format. The input can be a scalar, a vector, or an array of scalars or vectors. Any [Variant] type will be accepted as input. Integers will be quantized as floats, then returned as integers. Non-quantizable types such as strings will be returned unchanged.
+			</description>
+		</method>
+		<method name="quantize_to_float16" qualifiers="static">
+			<return type="Variant" />
+			<param index="0" name="value" type="Variant" />
+			<description>
+				Quantize the input value to the nearest representable value in the 16-bit float format. The input can be a scalar, a vector, or an array of scalars or vectors. Any [Variant] type will be accepted as input. Integers will be quantized as floats, then returned as integers. Non-quantizable types such as strings will be returned unchanged.
+			</description>
+		</method>
 	</methods>
 </class>
