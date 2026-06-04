@@ -380,10 +380,38 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 					int32_t corner_x1y0z1 = _get_height_index_nocheck(i, j - 1, k);
 					int32_t corner_x0y1z1 = _get_height_index_nocheck(i - 1, j, k);
 					int32_t corner_x1y1z1 = index;
+					/* clang-format off */
 					// If any of the corners have non-finite height data, skip this cube.
-					if (!Math::is_finite(_height_data[corner_x0y0z0]) || !Math::is_finite(_height_data[corner_x1y0z0]) || !Math::is_finite(_height_data[corner_x0y1z0]) || !Math::is_finite(_height_data[corner_x1y1z0]) || !Math::is_finite(_height_data[corner_x0y0z1]) || !Math::is_finite(_height_data[corner_x1y0z1]) || !Math::is_finite(_height_data[corner_x0y1z1]) || !Math::is_finite(_height_data[corner_x1y1z1])) {
+					if (!Math::is_finite(_height_data[corner_x0y0z0])
+							|| !Math::is_finite(_height_data[corner_x1y0z0])
+							|| !Math::is_finite(_height_data[corner_x0y1z0])
+							|| !Math::is_finite(_height_data[corner_x1y1z0])
+							|| !Math::is_finite(_height_data[corner_x0y0z1])
+							|| !Math::is_finite(_height_data[corner_x1y0z1])
+							|| !Math::is_finite(_height_data[corner_x0y1z1])
+							|| !Math::is_finite(_height_data[corner_x1y1z1])) {
 						continue;
 					}
+					// Add a normal for this cube to the vertex normals array (must be done before swapping the corners).
+					Vector3 changes = Vector3(
+						+ (_height_data[corner_x0y0z0] + _height_data[corner_x0y1z0] + _height_data[corner_x0y0z1] + _height_data[corner_x0y1z1])
+						- (_height_data[corner_x1y0z0] + _height_data[corner_x1y1z0] + _height_data[corner_x1y0z1] + _height_data[corner_x1y1z1]),
+						+ (_height_data[corner_x0y0z0] + _height_data[corner_x1y0z0] + _height_data[corner_x0y0z1] + _height_data[corner_x1y0z1])
+						- (_height_data[corner_x0y1z0] + _height_data[corner_x1y1z0] + _height_data[corner_x0y1z1] + _height_data[corner_x1y1z1]),
+						+ (_height_data[corner_x0y0z0] + _height_data[corner_x0y1z0] + _height_data[corner_x1y0z0] + _height_data[corner_x1y1z0])
+						- (_height_data[corner_x0y0z1] + _height_data[corner_x0y1z1] + _height_data[corner_x1y0z1] + _height_data[corner_x1y1z1])
+					);
+					// Average the changes from the 4 corners on each side (0.25x), then rise over run.
+					changes *= 0.25 * _grid_spacing.inverse();
+					const Vector4 grid_cell_normal = Vector4(changes.x, 1.0, changes.y, changes.z).normalized();
+					vert_normals.set(corner_x0y0z0, vert_normals[corner_x0y0z0] + grid_cell_normal);
+					vert_normals.set(corner_x1y0z0, vert_normals[corner_x1y0z0] + grid_cell_normal);
+					vert_normals.set(corner_x0y1z0, vert_normals[corner_x0y1z0] + grid_cell_normal);
+					vert_normals.set(corner_x1y1z0, vert_normals[corner_x1y1z0] + grid_cell_normal);
+					vert_normals.set(corner_x0y0z1, vert_normals[corner_x0y0z1] + grid_cell_normal);
+					vert_normals.set(corner_x1y0z1, vert_normals[corner_x1y0z1] + grid_cell_normal);
+					vert_normals.set(corner_x0y1z1, vert_normals[corner_x0y1z1] + grid_cell_normal);
+					vert_normals.set(corner_x1y1z1, vert_normals[corner_x1y1z1] + grid_cell_normal);
 					// Swap these around to ensure that neighboring cubes have aligned triangulations.
 					if (i % 2 == 0) {
 						SWAP(corner_x0y0z0, corner_x1y0z0);
@@ -404,7 +432,6 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 						SWAP(corner_x1y1z0, corner_x1y1z1);
 					}
 					// Create 5 tetrahedra for this cube.
-					/* clang-format off */
 					int32_t tet_corners[20] = {
 						corner_x0y1z1, corner_x1y1z0, corner_x1y0z1, corner_x0y0z0,
 						corner_x0y1z1, corner_x0y0z1, corner_x0y0z0, corner_x1y0z1,
@@ -412,6 +439,7 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 						corner_x0y1z1, corner_x1y1z1, corner_x1y0z1, corner_x1y1z0,
 						corner_x1y0z0, corner_x1y1z0, corner_x0y0z0, corner_x1y0z1,
 					};
+					/* clang-format on */
 					if ((i + j + k) % 2 == 0) {
 						// Swap the last two corners of each tetrahedron to flip its orientation.
 						SWAP(tet_corners[2], tet_corners[3]);
@@ -423,27 +451,6 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 					for (uint8_t t = 0; t < 20; t++) {
 						simplex_cell_indices.set(simplex_cell_iter++, tet_corners[t]);
 					}
-					// Add a normal for this cube to the vertex normals array.
-					Vector3 changes = Vector3(
-						+ (_height_data[corner_x1y0z0] + _height_data[corner_x1y1z0] + _height_data[corner_x1y0z1] + _height_data[corner_x1y1z1])
-						- (_height_data[corner_x0y0z0] + _height_data[corner_x0y1z0] + _height_data[corner_x0y0z1] + _height_data[corner_x0y1z1]),
-						+ (_height_data[corner_x0y1z0] + _height_data[corner_x1y1z0] + _height_data[corner_x0y1z1] + _height_data[corner_x1y1z1])
-						- (_height_data[corner_x0y0z0] + _height_data[corner_x1y0z0] + _height_data[corner_x0y0z1] + _height_data[corner_x1y0z1]),
-						+ (_height_data[corner_x0y0z1] + _height_data[corner_x0y1z1] + _height_data[corner_x1y0z1] + _height_data[corner_x1y1z1])
-						- (_height_data[corner_x0y0z0] + _height_data[corner_x0y1z0] + _height_data[corner_x1y0z0] + _height_data[corner_x1y1z0])
-					);
-					/* clang-format on */
-					// Average the changes from the 4 corners on each side (0.25x), then rise over run.
-					changes *= 0.25 * _grid_spacing.inverse();
-					const Vector4 grid_cell_normal = Vector4(changes.x, 1.0, changes.y, changes.z).normalized();
-					vert_normals.set(corner_x0y0z0, vert_normals[corner_x0y0z0] + grid_cell_normal);
-					vert_normals.set(corner_x1y0z0, vert_normals[corner_x1y0z0] + grid_cell_normal);
-					vert_normals.set(corner_x0y1z0, vert_normals[corner_x0y1z0] + grid_cell_normal);
-					vert_normals.set(corner_x1y1z0, vert_normals[corner_x1y1z0] + grid_cell_normal);
-					vert_normals.set(corner_x0y0z1, vert_normals[corner_x0y0z1] + grid_cell_normal);
-					vert_normals.set(corner_x1y0z1, vert_normals[corner_x1y0z1] + grid_cell_normal);
-					vert_normals.set(corner_x0y1z1, vert_normals[corner_x0y1z1] + grid_cell_normal);
-					vert_normals.set(corner_x1y1z1, vert_normals[corner_x1y1z1] + grid_cell_normal);
 				}
 			}
 		}
