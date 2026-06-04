@@ -152,7 +152,8 @@ Ref<Shape4D> G4MFShape4D::generate_shape(const Ref<G4MFState4D> &p_g4mf_state) c
 	} else if (_shape_type == "heightmap") {
 		Ref<HeightMapShape4D> heightmap_shape;
 		heightmap_shape.instantiate();
-		heightmap_shape->set_size(Vector3i(_base_size.x, _base_size.z, _base_size.w));
+		heightmap_shape->set_grid_size(_grid_size);
+		heightmap_shape->set_grid_spacing(_grid_spacing);
 		heightmap_shape->set_height_data(load_heights(p_g4mf_state));
 		ret = heightmap_shape;
 	} else if (_shape_type == "plane") {
@@ -197,8 +198,8 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 	const Ref<HeightMapShape4D> heightmap_shape = p_shape;
 	if (heightmap_shape.is_valid()) {
 		ret->set_shape_type("heightmap");
-		const Vector3i heightmap_size = heightmap_shape->get_size();
-		ret->set_base_size(Vector4(heightmap_size.x, 1.0, heightmap_size.y, heightmap_size.z));
+		ret->set_grid_size(heightmap_shape->get_grid_size());
+		ret->set_grid_spacing(heightmap_shape->get_grid_spacing());
 		const PackedFloat64Array heightmap_data = heightmap_shape->get_height_data();
 		const String prim_type = G4MFAccessor4D::minimal_component_type_for_floats(heightmap_shape->get_height_data());
 		Ref<G4MFAccessor4D> accessor = G4MFAccessor4D::make_new_accessor_without_data(prim_type);
@@ -310,22 +311,6 @@ Ref<G4MFShape4D> G4MFShape4D::from_dictionary(const Dictionary &p_dict) {
 	Ref<G4MFShape4D> ret;
 	ret.instantiate();
 	ret->read_item_entries_from_dictionary(p_dict);
-	if (p_dict.has("type")) {
-		ret->set_shape_type(p_dict["type"]);
-	}
-	if (p_dict.has("size")) {
-		Array base_size_array = p_dict["size"];
-		ret->set_base_size(Vector4D::from_json_array(base_size_array));
-	}
-	if (p_dict.has("length")) {
-		ret->set_ray_length(p_dict["length"]);
-	}
-	if (p_dict.has("heights")) {
-		ret->set_heights_accessor_index(p_dict["heights"]);
-	}
-	if (p_dict.has("mesh")) {
-		ret->set_mesh_index(p_dict["mesh"]);
-	}
 	if (p_dict.has("curves")) {
 		Array curves_array = p_dict["curves"];
 		TypedArray<GeneralShapeCurve4D> curves;
@@ -362,26 +347,35 @@ Ref<G4MFShape4D> G4MFShape4D::from_dictionary(const Dictionary &p_dict) {
 		}
 		ret->set_curves(curves);
 	}
+	if (p_dict.has("gridSize")) {
+		Array grid_size_array = p_dict["gridSize"];
+		ret->set_grid_size(Vector3i(json_array_to_vector3(grid_size_array)));
+	}
+	if (p_dict.has("gridSpacing")) {
+		Array grid_spacing_array = p_dict["gridSpacing"];
+		ret->set_grid_spacing(json_array_to_vector3(grid_spacing_array));
+	}
+	if (p_dict.has("heights")) {
+		ret->set_heights_accessor_index(p_dict["heights"]);
+	}
+	if (p_dict.has("length")) {
+		ret->set_ray_length(p_dict["length"]);
+	}
+	if (p_dict.has("mesh")) {
+		ret->set_mesh_index(p_dict["mesh"]);
+	}
+	if (p_dict.has("size")) {
+		Array base_size_array = p_dict["size"];
+		ret->set_base_size(Vector4D::from_json_array(base_size_array));
+	}
+	if (p_dict.has("type")) {
+		ret->set_shape_type(p_dict["type"]);
+	}
 	return ret;
 }
 
 Dictionary G4MFShape4D::to_dictionary() const {
 	Dictionary ret = write_item_entries_to_dictionary();
-	if (_shape_type != "general") {
-		ret["type"] = _shape_type;
-	}
-	if (!_base_size.is_zero_approx()) {
-		ret["size"] = Vector4D::to_json_array(_base_size);
-	}
-	if (_ray_length != 1.0) {
-		ret["length"] = _ray_length;
-	}
-	if (_heights_accessor_index > -1) {
-		ret["heights"] = _heights_accessor_index;
-	}
-	if (_mesh_index > -1) {
-		ret["mesh"] = _mesh_index;
-	}
 	if (!_curves.is_empty()) {
 		Array curves_array;
 		curves_array.resize(_curves.size());
@@ -418,6 +412,30 @@ Dictionary G4MFShape4D::to_dictionary() const {
 		}
 		ret["curves"] = curves_array;
 	}
+	if (_grid_size != Vector3i(0, 0, 0)) {
+		ret["gridSize"] = vector3i_to_json_array(_grid_size);
+	}
+	if (_grid_spacing != Vector3(1.0, 1.0, 1.0)) {
+		ret["gridSpacing"] = vector3_to_json_array(_grid_spacing);
+	}
+	if (_heights_accessor_index > -1) {
+		ret["heights"] = _heights_accessor_index;
+	}
+	if (_ray_length != 1.0) {
+		ret["length"] = _ray_length;
+	}
+	if (_mesh_index > -1) {
+		ret["mesh"] = _mesh_index;
+	}
+	if (!_base_size.is_zero_approx()) {
+		ret["size"] = Vector4D::to_json_array(_base_size);
+	}
+	if (_shape_type != "general") {
+		ret["type"] = _shape_type;
+	}
+#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
+	ret.sort();
+#endif
 	return ret;
 }
 
@@ -430,12 +448,18 @@ void G4MFShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_shape_type", "shape_type"), &G4MFShape4D::set_shape_type);
 	ClassDB::bind_method(D_METHOD("get_ray_length"), &G4MFShape4D::get_ray_length);
 	ClassDB::bind_method(D_METHOD("set_ray_length", "ray_length"), &G4MFShape4D::set_ray_length);
-	ClassDB::bind_method(D_METHOD("get_heights_accessor_index"), &G4MFShape4D::get_heights_accessor_index);
-	ClassDB::bind_method(D_METHOD("set_heights_accessor_index", "heights_accessor_index"), &G4MFShape4D::set_heights_accessor_index);
 	ClassDB::bind_method(D_METHOD("get_mesh_index"), &G4MFShape4D::get_mesh_index);
 	ClassDB::bind_method(D_METHOD("set_mesh_index", "mesh_index"), &G4MFShape4D::set_mesh_index);
 
+	// HeightMap properties.
+	ClassDB::bind_method(D_METHOD("get_grid_size"), &G4MFShape4D::get_grid_size);
+	ClassDB::bind_method(D_METHOD("set_grid_size", "grid_size"), &G4MFShape4D::set_grid_size);
+	ClassDB::bind_method(D_METHOD("get_grid_spacing"), &G4MFShape4D::get_grid_spacing);
+	ClassDB::bind_method(D_METHOD("set_grid_spacing", "grid_spacing"), &G4MFShape4D::set_grid_spacing);
+	ClassDB::bind_method(D_METHOD("get_heights_accessor_index"), &G4MFShape4D::get_heights_accessor_index);
+	ClassDB::bind_method(D_METHOD("set_heights_accessor_index", "heights_accessor_index"), &G4MFShape4D::set_heights_accessor_index);
 	ClassDB::bind_method(D_METHOD("load_heights", "g4mf_state"), &G4MFShape4D::load_heights);
+
 	ClassDB::bind_method(D_METHOD("generate_shape", "g4mf_state"), &G4MFShape4D::generate_shape);
 	ClassDB::bind_static_method("G4MFShape4D", D_METHOD("convert_shape", "g4mf_state", "shape", "deduplicate"), &G4MFShape4D::convert_shape, DEFVAL(true));
 	ClassDB::bind_static_method("G4MFShape4D", D_METHOD("convert_shape_into_state", "g4mf_state", "shape", "deduplicate"), &G4MFShape4D::convert_shape_into_state, DEFVAL(true));
@@ -446,6 +470,10 @@ void G4MFShape4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "curves"), "set_curves", "get_curves");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "shape_type"), "set_shape_type", "get_shape_type");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ray_length"), "set_ray_length", "get_ray_length");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "heights_accessor_index"), "set_heights_accessor_index", "get_heights_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_index"), "set_mesh_index", "get_mesh_index");
+
+	// HeightMap properties.
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3I, "grid_size"), "set_grid_size", "get_grid_size");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "grid_spacing"), "set_grid_spacing", "get_grid_spacing");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "heights_accessor_index"), "set_heights_accessor_index", "get_heights_accessor_index");
 }

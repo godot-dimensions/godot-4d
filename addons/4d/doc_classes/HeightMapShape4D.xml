@@ -93,24 +93,24 @@
 		</method>
 	</methods>
 	<members>
+		<member name="grid_size" type="Vector3i" setter="set_grid_size" getter="get_grid_size" default="Vector3i(2, 2, 2)">
+			The flat 3D grid size of the 4D height map in the X, Z, and W directions, packed into a [Vector3i]. The X axis is the X grid width, the Y axis is the Z grid depth, and the Z axis is the W grid thickness. For improved readability, you can use the [member grid_size_width], [member grid_size_depth], and [member grid_size_thickness] properties instead.
+			This is the grid size of the height map, not the physical size. The [member grid_spacing] property defines the amount of meters between each grid point, so the physical size of the height map can be calculated as [code](grid_size - Vector3i(1, 1, 1)) * grid_spacing[/code].
+		</member>
+		<member name="grid_size_depth" type="int" setter="set_grid_size_depth" getter="get_grid_size_depth" default="2">
+			The grid size of the height map in the Z direction. This is equivalent to the Y axis of [member grid_size].
+		</member>
+		<member name="grid_size_thickness" type="int" setter="set_grid_size_thickness" getter="get_grid_size_thickness" default="2">
+			The grid size of the height map in the W direction. This is equivalent to the Z axis of [member grid_size].
+		</member>
+		<member name="grid_size_width" type="int" setter="set_grid_size_width" getter="get_grid_size_width" default="2">
+			The grid size of the height map in the X direction. This is equivalent to the X axis of [member grid_size].
+		</member>
+		<member name="grid_spacing" type="Vector3" setter="set_grid_spacing" getter="get_grid_spacing" default="Vector3(1, 1, 1)">
+			The amount of meters between each grid point in the height map. This is used to scale the height map horizontally in the X, Z, and W directions. A grid spacing of (0.5, 0.5, 0.5) has points every 0.5 meters, which is twice as dense on each axis compared to the default grid spacing of (1, 1, 1), while a grid spacing of (2, 2, 2) has points every 2 meters, which is half as dense on each axis compared to the default.
+		</member>
 		<member name="height_data" type="PackedFloat64Array" setter="set_height_data" getter="get_height_data" default="PackedFloat64Array(0, 0, 0, 0, 0, 0, 0, 0)">
-			The height data of the 4D height map, stored as a [PackedFloat64Array]. The length of the array is always equal to the grid size of the height map in the X, Z, and W directions, multiplied together.
-		</member>
-		<member name="size" type="Vector3i" setter="set_size" getter="get_size" default="Vector3i(2, 2, 2)">
-			The flat 3D grid size of the 4D height map in the X, Z, and W directions, packed into a [Vector3i]. The X axis is the X grid width, the Y axis is the Z grid depth, and the Z axis is the W grid thickness. For improved readability, you can use the [member size_width], [member size_depth], and [member size_thickness] properties instead.
-			This is the grid size of the height map, not the physical size. The [member spacing] property defines the amount of meters between each grid point, so the physical size of the height map can be calculated as [code](size - Vector3i(1, 1, 1)) * spacing[/code].
-		</member>
-		<member name="size_depth" type="int" setter="set_size_depth" getter="get_size_depth" default="2">
-			The grid size of the height map in the Z direction. This is equivalent to the Y axis of [member size].
-		</member>
-		<member name="size_thickness" type="int" setter="set_size_thickness" getter="get_size_thickness" default="2">
-			The grid size of the height map in the W direction. This is equivalent to the Z axis of [member size].
-		</member>
-		<member name="size_width" type="int" setter="set_size_width" getter="get_size_width" default="2">
-			The grid size of the height map in the X direction. This is equivalent to the X axis of [member size].
-		</member>
-		<member name="spacing" type="Vector3" setter="set_spacing" getter="get_spacing" default="Vector3(1, 1, 1)">
-			The amount of meters between each grid point in the height map. This is used to scale the height map horizontally in the X, Z, and W directions. A spacing of (0.5, 0.5, 0.5) has points every 0.5 meters, which is twice as dense on each axis compared to the default spacing of (1, 1, 1), while a spacing of (2, 2, 2) has points every 2 meters, which is half as dense on each axis compared to the default.
+			The height data of the 4D height map, stored as a [PackedFloat64Array]. The length of the array is always equal to the [member grid_size] of the height map in the X, Z, and W directions, multiplied together.
 		</member>
 	</members>
 </class>

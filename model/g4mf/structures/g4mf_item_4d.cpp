@@ -90,6 +90,36 @@ PackedInt32Array G4MFItem4D::json_array_to_int32_array(const Array &p_json_array
 	return int32_array;
 }
 
+Array G4MFItem4D::vector3i_to_json_array(const Vector3i &p_vector) {
+	Array json_array;
+	json_array.resize(3);
+	json_array[0] = (int64_t)p_vector.x;
+	json_array[1] = (int64_t)p_vector.y;
+	json_array[2] = (int64_t)p_vector.z;
+	return json_array;
+}
+
+Array G4MFItem4D::vector3_to_json_array(const Vector3 &p_vector) {
+	Array json_array;
+	json_array.resize(3);
+	json_array[0] = p_vector.x;
+	json_array[1] = p_vector.y;
+	json_array[2] = p_vector.z;
+	return json_array;
+}
+
+Vector3 G4MFItem4D::json_array_to_vector3(const Array &p_json_array) {
+	Vector3 vector;
+	if (likely(p_json_array.size() >= 3)) {
+		vector.x = p_json_array[0];
+		vector.y = p_json_array[1];
+		vector.z = p_json_array[2];
+	} else if (p_json_array.size() >= 1) {
+		vector.x = vector.y = vector.z = p_json_array[0];
+	}
+	return vector;
+}
+
 Array G4MFItem4D::bivector_4d_to_json_array(const Bivector4D &p_bivector) {
 	// Note: Bivector4D uses lexicographic geometric algebra order, but G4MF uses dimensionally-increasing order.
 	Array json_array;

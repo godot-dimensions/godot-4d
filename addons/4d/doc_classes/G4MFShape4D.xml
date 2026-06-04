@@ -66,6 +66,12 @@
 		<member name="curves" type="GeneralShapeCurve4D[]" setter="set_curves" getter="get_curves" default="[]">
 			The curves of the shape, if any. This is used to create spheres, capsules, cylinders, and more when [member shape_type] is set to [code]"general"[/code] (default), and is ignored for other shape types.
 		</member>
+		<member name="grid_size" type="Vector3i" setter="set_grid_size" getter="get_grid_size" default="Vector3i(0, 0, 0)">
+			The flat 3D grid size of the 4D height map in the X, Z, and W directions, packed into a [Vector3i]. The X axis is the X grid width, the Y axis is the Z grid depth, and the Z axis is the W grid thickness. See [member HeightMapShape4D.grid_size] for more details.
+		</member>
+		<member name="grid_spacing" type="Vector3" setter="set_grid_spacing" getter="get_grid_spacing" default="Vector3(1, 1, 1)">
+			The amount of meters between each grid point in the height map. This is used to scale the height map horizontally in the X, Z, and W directions. See [member HeightMapShape4D.grid_spacing] for more details.
+		</member>
 		<member name="heights_accessor_index" type="int" setter="set_heights_accessor_index" getter="get_heights_accessor_index" default="-1">
 			The index of the [G4MFAccessor4D] in the [G4MFState4D]'s accessors array that contains the height data for heightmap shapes. The heights array MUST be an array of floats with the same number of elements as the base size in the X, Z, and W axes multiplied together. If [member shape_type] is set to [code]"heightmap"[/code], this MUST be set to the index of a valid [G4MFAccessor4D] in the [G4MFState4D]'s accessors array.
 		</member>

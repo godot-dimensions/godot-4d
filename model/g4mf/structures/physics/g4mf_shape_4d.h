@@ -21,6 +21,9 @@ class G4MFShape4D : public G4MFItem4D {
 	int _heights_accessor_index = -1;
 	int _mesh_index = -1;
 
+	Vector3 _grid_spacing = Vector3(1.0, 1.0, 1.0);
+	Vector3i _grid_size = Vector3i(0, 0, 0);
+
 	Ref<Shape4D> _generate_shape_from_general() const;
 
 protected:
@@ -39,15 +42,22 @@ public:
 	real_t get_ray_length() const { return _ray_length; }
 	void set_ray_length(real_t p_ray_length) { _ray_length = p_ray_length; }
 
-	int get_heights_accessor_index() const { return _heights_accessor_index; }
-	void set_heights_accessor_index(int p_heights_accessor_index) { _heights_accessor_index = p_heights_accessor_index; }
-
 	int get_mesh_index() const { return _mesh_index; }
 	void set_mesh_index(int p_mesh_index) { _mesh_index = p_mesh_index; }
 
-	bool is_equal_exact(const Ref<G4MFShape4D> &p_other) const;
+	// HeightMap properties.
+	Vector3 get_grid_spacing() const { return _grid_spacing; }
+	void set_grid_spacing(const Vector3 &p_grid_spacing) { _grid_spacing = p_grid_spacing; }
+
+	Vector3i get_grid_size() const { return _grid_size; }
+	void set_grid_size(const Vector3i &p_grid_size) { _grid_size = p_grid_size; }
+
+	int get_heights_accessor_index() const { return _heights_accessor_index; }
+	void set_heights_accessor_index(int p_heights_accessor_index) { _heights_accessor_index = p_heights_accessor_index; }
 
 	PackedFloat64Array load_heights(const Ref<G4MFState4D> &p_g4mf_state) const;
+
+	bool is_equal_exact(const Ref<G4MFShape4D> &p_other) const;
 
 	Ref<Shape4D> generate_shape(const Ref<G4MFState4D> &p_g4mf_state) const;
 	static Ref<G4MFShape4D> convert_shape(Ref<G4MFState4D> p_g4mf_state, const Ref<Shape4D> &p_shape, const bool p_deduplicate = true);

@@ -8,11 +8,11 @@ class HeightMapShape4D : public Shape4D {
 	static constexpr int32_t MAX_SIZE = 1 << 20;
 
 	PackedFloat64Array _height_data = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	Vector3 _spacing = Vector3(1.0, 1.0, 1.0);
+	Vector3 _grid_spacing = Vector3(1.0, 1.0, 1.0);
 	Vector3i _grid_size = Vector3i(2, 2, 2);
 
 	inline Vector3 _get_start_physical_offset() const {
-		return Vector3(_grid_size - Vector3i(1, 1, 1)) * (-0.5 * _spacing);
+		return Vector3(_grid_size - Vector3i(1, 1, 1)) * (-0.5 * _grid_spacing);
 	}
 
 	inline int64_t _get_height_index_nocheck(const int32_t p_x, const int32_t p_z, const int32_t p_w) const {
@@ -26,20 +26,20 @@ public:
 	PackedFloat64Array get_height_data() const { return _height_data; }
 	void set_height_data(const PackedFloat64Array &p_height_data);
 
-	Vector3 get_spacing() const { return _spacing; }
-	void set_spacing(const Vector3 &p_spacing);
+	Vector3 get_grid_spacing() const { return _grid_spacing; }
+	void set_grid_spacing(const Vector3 &p_spacing);
 
-	Vector3i get_size() const { return _grid_size; }
-	void set_size(const Vector3i &p_grid_size);
+	Vector3i get_grid_size() const { return _grid_size; }
+	void set_grid_size(const Vector3i &p_grid_size);
 
-	int32_t get_size_width() const { return _grid_size.x; }
-	void set_size_width(int32_t p_width);
+	int32_t get_grid_size_width() const { return _grid_size.x; }
+	void set_grid_size_width(int32_t p_width);
 
-	int32_t get_size_depth() const { return _grid_size.y; }
-	void set_size_depth(int32_t p_depth);
+	int32_t get_grid_size_depth() const { return _grid_size.y; }
+	void set_grid_size_depth(int32_t p_depth);
 
-	int32_t get_size_thickness() const { return _grid_size.z; }
-	void set_size_thickness(int32_t p_thickness);
+	int32_t get_grid_size_thickness() const { return _grid_size.z; }
+	void set_grid_size_thickness(int32_t p_thickness);
 
 	int64_t get_height_index(const int32_t p_x, const int32_t p_z, const int32_t p_w) const;
 	int64_t get_height_index_vec3i(const Vector3i &p_pos) const;

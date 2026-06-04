@@ -35,6 +35,9 @@ public:
 	static Color json_array_to_color(const Array &p_json_array);
 	static Array int32_array_to_json_array(const PackedInt32Array &p_int32_array);
 	static PackedInt32Array json_array_to_int32_array(const Array &p_json_array);
+	static Array vector3i_to_json_array(const Vector3i &p_vector);
+	static Array vector3_to_json_array(const Vector3 &p_vector);
+	static Vector3 json_array_to_vector3(const Array &p_json_array);
 	static Array bivector_4d_to_json_array(const Bivector4D &p_bivector);
 	static Bivector4D json_array_to_bivector_4d(const Array &p_json_array);
 	static Array rotor_4d_to_json_array(const Rotor4D &p_rotor);

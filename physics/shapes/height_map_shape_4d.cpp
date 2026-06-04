@@ -25,12 +25,12 @@ void HeightMapShape4D::set_height_data(const PackedFloat64Array &p_height_data) 
 	}
 }
 
-void HeightMapShape4D::set_spacing(const Vector3 &p_spacing) {
-	ERR_FAIL_COND_MSG(p_spacing.x <= 0.0 || p_spacing.y <= 0.0 || p_spacing.z <= 0.0, "HeightMapShape4D: Spacing must be positive in all dimensions.");
-	_spacing = p_spacing;
+void HeightMapShape4D::set_grid_spacing(const Vector3 &p_grid_spacing) {
+	ERR_FAIL_COND_MSG(p_grid_spacing.x <= 0.0 || p_grid_spacing.y <= 0.0 || p_grid_spacing.z <= 0.0, "HeightMapShape4D: Spacing must be positive in all dimensions.");
+	_grid_spacing = p_grid_spacing;
 }
 
-void HeightMapShape4D::set_size(const Vector3i &p_grid_size) {
+void HeightMapShape4D::set_grid_size(const Vector3i &p_grid_size) {
 	ERR_FAIL_COND_MSG(p_grid_size.x < 1 || p_grid_size.y < 1 || p_grid_size.z < 1, "HeightMapShape4D: Size must be positive in all dimensions.");
 	ERR_FAIL_COND_MSG(p_grid_size.x > MAX_SIZE || p_grid_size.y > MAX_SIZE || p_grid_size.z > MAX_SIZE, "HeightMapShape4D: Size exceeds maximum size.");
 	const int64_t old_size = _height_data.size();
@@ -43,19 +43,19 @@ void HeightMapShape4D::set_size(const Vector3i &p_grid_size) {
 	}
 }
 
-void HeightMapShape4D::set_size_width(int32_t p_width) {
+void HeightMapShape4D::set_grid_size_width(int32_t p_width) {
 	ERR_FAIL_COND_MSG(p_width < 1, "HeightMapShape4D: Width must be positive.");
-	set_size(Vector3i(p_width, _grid_size.y, _grid_size.z));
+	set_grid_size(Vector3i(p_width, _grid_size.y, _grid_size.z));
 }
 
-void HeightMapShape4D::set_size_depth(int32_t p_depth) {
+void HeightMapShape4D::set_grid_size_depth(int32_t p_depth) {
 	ERR_FAIL_COND_MSG(p_depth < 1, "HeightMapShape4D: Depth must be positive.");
-	set_size(Vector3i(_grid_size.x, p_depth, _grid_size.z));
+	set_grid_size(Vector3i(_grid_size.x, p_depth, _grid_size.z));
 }
 
-void HeightMapShape4D::set_size_thickness(int32_t p_thickness) {
+void HeightMapShape4D::set_grid_size_thickness(int32_t p_thickness) {
 	ERR_FAIL_COND_MSG(p_thickness < 1, "HeightMapShape4D: Thickness must be positive.");
-	set_size(Vector3i(_grid_size.x, _grid_size.y, p_thickness));
+	set_grid_size(Vector3i(_grid_size.x, _grid_size.y, p_thickness));
 }
 
 int64_t HeightMapShape4D::get_height_index(const int32_t p_x, const int32_t p_z, const int32_t p_w) const {
@@ -73,7 +73,7 @@ int64_t HeightMapShape4D::get_height_index_vec3i(const Vector3i &p_pos) const {
 }
 
 double HeightMapShape4D::get_height_vec3(const Vector3 &p_physical_pos) const {
-	const Vector3 grid_pos_rel_to_start = (p_physical_pos - _get_start_physical_offset()) / _spacing;
+	const Vector3 grid_pos_rel_to_start = (p_physical_pos - _get_start_physical_offset()) / _grid_spacing;
 	const Vector3 pos_floored_float = grid_pos_rel_to_start.floor();
 	const Vector3i pos_floored_int = Vector3i(pos_floored_float);
 	const Vector3 pos_frac = grid_pos_rel_to_start - pos_floored_float;
@@ -145,27 +145,27 @@ void HeightMapShape4D::quantize_to_float8() {
 	for (int64_t i = 0; i < _height_data.size(); i++) {
 		_height_data.set(i, Math4D::float8_to_double(Math4D::double_to_float8(_height_data[i])));
 	}
-	_spacing.x = Math4D::float8_to_double(Math4D::double_to_float8(_spacing.x));
-	_spacing.y = Math4D::float8_to_double(Math4D::double_to_float8(_spacing.y));
-	_spacing.z = Math4D::float8_to_double(Math4D::double_to_float8(_spacing.z));
+	_grid_spacing.x = Math4D::float8_to_double(Math4D::double_to_float8(_grid_spacing.x));
+	_grid_spacing.y = Math4D::float8_to_double(Math4D::double_to_float8(_grid_spacing.y));
+	_grid_spacing.z = Math4D::float8_to_double(Math4D::double_to_float8(_grid_spacing.z));
 }
 
 void HeightMapShape4D::quantize_to_float16() {
 	for (int64_t i = 0; i < _height_data.size(); i++) {
 		_height_data.set(i, Math4D::float16_to_double(Math4D::double_to_float16(_height_data[i])));
 	}
-	_spacing.x = Math4D::float16_to_double(Math4D::double_to_float16(_spacing.x));
-	_spacing.y = Math4D::float16_to_double(Math4D::double_to_float16(_spacing.y));
-	_spacing.z = Math4D::float16_to_double(Math4D::double_to_float16(_spacing.z));
+	_grid_spacing.x = Math4D::float16_to_double(Math4D::double_to_float16(_grid_spacing.x));
+	_grid_spacing.y = Math4D::float16_to_double(Math4D::double_to_float16(_grid_spacing.y));
+	_grid_spacing.z = Math4D::float16_to_double(Math4D::double_to_float16(_grid_spacing.z));
 }
 
 void HeightMapShape4D::quantize_to_float32() {
 	for (int64_t i = 0; i < _height_data.size(); i++) {
 		_height_data.set(i, (float)_height_data[i]);
 	}
-	_spacing.x = (float)_spacing.x;
-	_spacing.y = (float)_spacing.y;
-	_spacing.z = (float)_spacing.z;
+	_grid_spacing.x = (float)_grid_spacing.x;
+	_grid_spacing.y = (float)_grid_spacing.y;
+	_grid_spacing.z = (float)_grid_spacing.z;
 }
 
 void HeightMapShape4D::fill_from_mesh_3d(const Ref<Mesh> &p_mesh_3d, const double p_exponent, const real_t p_max_height, const real_t p_min_height) {
@@ -179,7 +179,7 @@ void HeightMapShape4D::fill_from_mesh_3d(const Ref<Mesh> &p_mesh_3d, const doubl
 	for (int32_t i = 0; i < _grid_size.x; i++) {
 		for (int32_t j = 0; j < _grid_size.y; j++) {
 			for (int32_t k = 0; k < _grid_size.z; k++) {
-				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _spacing + start_flat_physical_pos;
+				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _grid_spacing + start_flat_physical_pos;
 				Face3 closest_face = Face3();
 				double min_distance_squared = Math_INF;
 				for (const Face3 &face : faces) {
@@ -276,12 +276,12 @@ void HeightMapShape4D::gaussian_blur(const Vector3 &p_blur_radius) {
 
 real_t HeightMapShape4D::get_hypervolume() const {
 	// Since the heightmap does not have a bottom, just treat it as 1 meter thick.
-	return _grid_size.x * _grid_size.y * _grid_size.z * _spacing.x * _spacing.y * _spacing.z;
+	return _grid_size.x * _grid_size.y * _grid_size.z * _grid_spacing.x * _grid_spacing.y * _grid_spacing.z;
 }
 
 real_t HeightMapShape4D::get_surface_volume() const {
 	// Note: This does not account for the height data.
-	return _grid_size.x * _grid_size.y * _grid_size.z * _spacing.x * _spacing.y * _spacing.z;
+	return _grid_size.x * _grid_size.y * _grid_size.z * _grid_spacing.x * _grid_spacing.y * _grid_spacing.z;
 }
 
 Rect4 HeightMapShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
@@ -291,7 +291,7 @@ Rect4 HeightMapShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	for (int32_t i = 0; i < _grid_size.x; i++) {
 		for (int32_t j = 0; j < _grid_size.y; j++) {
 			for (int32_t k = 0; k < _grid_size.z; k++) {
-				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _spacing + start_flat_physical_pos;
+				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _grid_spacing + start_flat_physical_pos;
 				const Vector4 local_point = Vector4(data_flat_physical_pos.x, _height_data[_get_height_index_nocheck(i, j, k)], data_flat_physical_pos.y, data_flat_physical_pos.z);
 				rect_bounds.expand_self_to_point(p_to_target.xform(local_point));
 			}
@@ -312,7 +312,7 @@ Vector4 HeightMapShape4D::get_support_point(const Vector4 &p_direction) const {
 	for (int32_t i = 0; i < _grid_size.x; i++) {
 		for (int32_t j = 0; j < _grid_size.y; j++) {
 			for (int32_t k = 0; k < _grid_size.z; k++) {
-				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _spacing + start_flat_physical_pos;
+				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _grid_spacing + start_flat_physical_pos;
 				const int64_t index = _get_height_index_nocheck(i, j, k);
 				const Vector4 local_point = Vector4(data_flat_physical_pos.x, _height_data[index], data_flat_physical_pos.y, data_flat_physical_pos.z);
 				const real_t dot = p_direction.dot(local_point);
@@ -340,7 +340,7 @@ bool HeightMapShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	if (other.is_null()) {
 		return false;
 	}
-	if (_spacing != other->_spacing) {
+	if (_grid_spacing != other->_grid_spacing) {
 		return false;
 	}
 	if (_grid_size != other->_grid_size) {
@@ -366,7 +366,7 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 	for (int32_t i = 0; i < _grid_size.x; i++) {
 		for (int32_t j = 0; j < _grid_size.y; j++) {
 			for (int32_t k = 0; k < _grid_size.z; k++) {
-				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _spacing + start_flat_physical_pos;
+				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _grid_spacing + start_flat_physical_pos;
 				const int64_t index = _get_height_index_nocheck(i, j, k);
 				const Vector4 local_point = Vector4(data_flat_physical_pos.x, _height_data[index], data_flat_physical_pos.y, data_flat_physical_pos.z);
 				vertices.set(index, local_point);
@@ -434,7 +434,7 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 					);
 					/* clang-format on */
 					// Average the changes from the 4 corners on each side (0.25x), then rise over run.
-					changes *= 0.25 * _spacing.inverse();
+					changes *= 0.25 * _grid_spacing.inverse();
 					const Vector4 grid_cell_normal = Vector4(changes.x, 1.0, changes.y, changes.z).normalized();
 					vert_normals.set(corner_x0y0z0, vert_normals[corner_x0y0z0] + grid_cell_normal);
 					vert_normals.set(corner_x1y0z0, vert_normals[corner_x1y0z0] + grid_cell_normal);
@@ -493,7 +493,7 @@ Ref<WireMesh4D> HeightMapShape4D::to_wire_mesh() const {
 	for (int32_t i = 0; i < _grid_size.x; i++) {
 		for (int32_t j = 0; j < _grid_size.y; j++) {
 			for (int32_t k = 0; k < _grid_size.z; k++) {
-				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _spacing + start_flat_physical_pos;
+				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _grid_spacing + start_flat_physical_pos;
 				const int64_t index = _get_height_index_nocheck(i, j, k);
 				const Vector4 local_point = Vector4(data_flat_physical_pos.x, _height_data[index], data_flat_physical_pos.y, data_flat_physical_pos.z);
 				vertices.set(index, local_point);
@@ -536,16 +536,16 @@ Ref<WireMesh4D> HeightMapShape4D::to_wire_mesh() const {
 void HeightMapShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_height_data", "height_data"), &HeightMapShape4D::set_height_data);
 	ClassDB::bind_method(D_METHOD("get_height_data"), &HeightMapShape4D::get_height_data);
-	ClassDB::bind_method(D_METHOD("set_spacing", "spacing"), &HeightMapShape4D::set_spacing);
-	ClassDB::bind_method(D_METHOD("get_spacing"), &HeightMapShape4D::get_spacing);
-	ClassDB::bind_method(D_METHOD("set_size", "grid_size"), &HeightMapShape4D::set_size);
-	ClassDB::bind_method(D_METHOD("get_size"), &HeightMapShape4D::get_size);
-	ClassDB::bind_method(D_METHOD("set_size_width", "width"), &HeightMapShape4D::set_size_width);
-	ClassDB::bind_method(D_METHOD("get_size_width"), &HeightMapShape4D::get_size_width);
-	ClassDB::bind_method(D_METHOD("set_size_depth", "depth"), &HeightMapShape4D::set_size_depth);
-	ClassDB::bind_method(D_METHOD("get_size_depth"), &HeightMapShape4D::get_size_depth);
-	ClassDB::bind_method(D_METHOD("set_size_thickness", "thickness"), &HeightMapShape4D::set_size_thickness);
-	ClassDB::bind_method(D_METHOD("get_size_thickness"), &HeightMapShape4D::get_size_thickness);
+	ClassDB::bind_method(D_METHOD("set_grid_spacing", "spacing"), &HeightMapShape4D::set_grid_spacing);
+	ClassDB::bind_method(D_METHOD("get_grid_spacing"), &HeightMapShape4D::get_grid_spacing);
+	ClassDB::bind_method(D_METHOD("set_grid_size", "grid_size"), &HeightMapShape4D::set_grid_size);
+	ClassDB::bind_method(D_METHOD("get_grid_size"), &HeightMapShape4D::get_grid_size);
+	ClassDB::bind_method(D_METHOD("set_grid_size_width", "width"), &HeightMapShape4D::set_grid_size_width);
+	ClassDB::bind_method(D_METHOD("get_grid_size_width"), &HeightMapShape4D::get_grid_size_width);
+	ClassDB::bind_method(D_METHOD("set_grid_size_depth", "depth"), &HeightMapShape4D::set_grid_size_depth);
+	ClassDB::bind_method(D_METHOD("get_grid_size_depth"), &HeightMapShape4D::get_grid_size_depth);
+	ClassDB::bind_method(D_METHOD("set_grid_size_thickness", "thickness"), &HeightMapShape4D::set_grid_size_thickness);
+	ClassDB::bind_method(D_METHOD("get_grid_size_thickness"), &HeightMapShape4D::get_grid_size_thickness);
 
 	ClassDB::bind_method(D_METHOD("get_height_index", "x", "z", "w"), &HeightMapShape4D::_get_height_index_nocheck);
 	ClassDB::bind_method(D_METHOD("get_height_index_vec3i", "vector"), &HeightMapShape4D::get_height_index_vec3i);
@@ -561,11 +561,11 @@ void HeightMapShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fill_from_mesh_3d", "mesh_3d", "exponent", "max_height", "min_height"), &HeightMapShape4D::fill_from_mesh_3d);
 	ClassDB::bind_method(D_METHOD("gaussian_blur", "blur_radius"), &HeightMapShape4D::gaussian_blur);
 
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "spacing"), "set_spacing", "get_spacing");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3I, "size", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_STORAGE), "set_size", "get_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "size_width", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_size_width", "get_size_width");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "size_depth", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_size_depth", "get_size_depth");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "size_thickness", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_size_thickness", "get_size_thickness");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "grid_spacing"), "set_grid_spacing", "get_grid_spacing");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3I, "grid_size", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_STORAGE), "set_grid_size", "get_grid_size");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "grid_size_width", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_grid_size_width", "get_grid_size_width");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "grid_size_depth", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_grid_size_depth", "get_grid_size_depth");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "grid_size_thickness", PROPERTY_HINT_RANGE, "1,1000,or_greater", PROPERTY_USAGE_EDITOR), "set_grid_size_thickness", "get_grid_size_thickness");
 	// This MUST be the last property, since it depends on the size being set, and Godot populates properties in this order.
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "height_data"), "set_height_data", "get_height_data");
 }
