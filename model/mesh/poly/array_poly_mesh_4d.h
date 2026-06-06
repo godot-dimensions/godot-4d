@@ -60,20 +60,23 @@ protected:
 	static void _bind_methods();
 
 public:
+	// Append and delete functions.
 	int64_t append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate = true);
 	int64_t append_edge_indices(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate = true);
 	int64_t append_poly_cell(const int32_t p_dimension, const PackedInt32Array &p_cell, const bool p_deduplicate = true);
 	int append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
+	void delete_poly_element(const int32_t p_dimension, const int32_t p_index);
 
+	// Normal calculation functions.
 	void calculate_boundary_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_keep_existing = false);
 	void set_flat_shading_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_recalculate_boundary_normals = true);
 	void set_smooth_shading_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_recalculate_boundary_normals = true);
 	void make_double_sided(const bool p_idempotent = true);
 	PackedInt32Array make_single_cell_from_all_faces() const;
 	PackedInt32Array make_single_volume_from_all_cells() const;
-	void delete_poly_element(const int32_t p_dimension, const int32_t p_index);
 
+	// Texture map and seam functions.
 	void calculate_seam_faces(const double p_angle_threshold_radians = Math_TAU / 8.0, const bool p_discard_seams_within_islands = false);
 	PackedInt32Array collect_cells_in_island(const int64_t p_start_cell);
 	Vector<PackedInt32Array> collect_all_islands();
@@ -81,11 +84,14 @@ public:
 	void unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding = 0.0, const bool p_proportional = true, const bool p_keep_existing = false);
 	void transform_texture_map(const Transform3D &p_transform);
 
+	// Misc functions.
+	void deduplicate_all_elements();
 	void transform_vertices(const Transform4D &p_transform);
 	void transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis = Projection());
 	void merge_with(const Ref<PolyMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
 	void merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 
+	// Getters and setters.
 	HashMap<Vector2i, Vector<PackedVector4Array>> get_all_poly_cell_normals() const { return _all_poly_cell_normals; }
 	void set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals);
 	HashMap<Vector2i, Vector<PackedVector3Array>> get_all_poly_cell_texture_maps() const { return _all_poly_cell_texture_maps; }
@@ -98,10 +104,10 @@ public:
 	void set_all_poly_cell_texture_maps_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_texture_maps);
 #endif // GODOT_HAS_TYPED_DICTIONARY
 
-	virtual PackedInt32Array get_edge_indices() override;
+	virtual PackedInt32Array get_edge_indices() override { return _edge_vertex_indices; }
 	void set_edge_vertex_indices(const PackedInt32Array &p_edge_indices);
 
-	virtual Vector<Vector<PackedInt32Array>> get_poly_cell_indices() override;
+	virtual Vector<Vector<PackedInt32Array>> get_poly_cell_indices() override { return _poly_cell_indices; }
 	void set_poly_cell_indices(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices);
 	void set_poly_cell_indices_bind(const TypedArray<Array> &p_poly_cell_indices);
 

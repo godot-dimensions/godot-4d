@@ -86,6 +86,13 @@
 				Before running this function, ensure that the seams are up to date. You can set seams manually, or calculate seams based on the angles between cells using [method calculate_seam_faces].
 			</description>
 		</method>
+		<method name="deduplicate_all_elements">
+			<return type="void" />
+			<description>
+				Deduplicates all elements in the mesh, including vertices, edges, faces, cells, hypervolumes, etc. All associated data such as normals, texture maps, seam faces, pivot overrides, and so on will be updated to match the new deduplicated elements.
+				Elements with the same structure and members but different ordering are considered duplicates, even if they have different winding. For example, a face with edges [code][0, 1, 2][/code] is considered the same as a face with edges [code][1, 0, 2][/code] and will be deduplicated. 3D boundary cells may have their first two elements swapped in order to preserve the original orientation, and if so, normal and texture map binding decompositions will be resampled to match the new deduplicated elements.
+			</description>
+		</method>
 		<method name="delete_poly_element">
 			<return type="void" />
 			<param index="0" name="dimension" type="int" />

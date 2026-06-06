@@ -3,6 +3,8 @@
 #include "../../../math/math_4d.h"
 #include "../../../math/vector_4d.h"
 
+// Append and delete functions.
+
 int64_t ArrayPolyMesh4D::append_edge_points(const Vector4 &p_point_a, const Vector4 &p_point_b, const bool p_deduplicate) {
 	const int32_t index_a = append_vertex(p_point_a, p_deduplicate);
 	const int32_t index_b = append_vertex(p_point_b, p_deduplicate);
@@ -97,6 +99,187 @@ PackedInt32Array ArrayPolyMesh4D::append_vertices(const PackedVector4Array &p_ve
 	reset_poly_mesh_data_validation();
 	return indices;
 }
+
+void ArrayPolyMesh4D::_delete_edge_internal(const int32_t p_index) {
+	const int32_t edge_count = _edge_vertex_indices.size() / 2;
+	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= edge_count, "ArrayPolyMesh4D: Edge index is out of range.");
+	// Before deleting this edge, we need to delete any poly cells in higher dimensions that reference it.
+	if (!_poly_cell_indices.is_empty()) {
+		Vector<int32_t> faces_to_delete;
+		const Vector<PackedInt32Array> &face_edge_indices = _poly_cell_indices[0];
+		for (int32_t face_index = 0; face_index < face_edge_indices.size(); face_index++) {
+			if (face_edge_indices[face_index].has(p_index)) {
+				faces_to_delete.push_back(face_index);
+			}
+		}
+		for (int32_t i = faces_to_delete.size() - 1; i >= 0; i--) {
+			_delete_poly_cell_element_internal(0, faces_to_delete[i]);
+		}
+	}
+	// Delete the edge's two vertex index entries from the flat edge array.
+	const int32_t edge_vertex_start = p_index * 2;
+	_edge_vertex_indices.remove_at(edge_vertex_start + 1);
+	_edge_vertex_indices.remove_at(edge_vertex_start);
+	// Shift remaining face edge references down to preserve index semantics.
+	if (!_poly_cell_indices.is_empty()) {
+		Vector<PackedInt32Array> face_edge_indices = _poly_cell_indices[0];
+		for (int32_t face_index = 0; face_index < face_edge_indices.size(); face_index++) {
+			PackedInt32Array face = face_edge_indices[face_index];
+			bool changed = false;
+			for (int32_t edge_index_in_face = 0; edge_index_in_face < face.size(); edge_index_in_face++) {
+				if (face[edge_index_in_face] > p_index) {
+					face.set(edge_index_in_face, face[edge_index_in_face] - 1);
+					changed = true;
+				}
+			}
+			if (changed) {
+				face_edge_indices.set(face_index, face);
+			}
+		}
+		_poly_cell_indices.set(0, face_edge_indices);
+	}
+}
+
+void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
+	const int64_t vertex_count = _poly_cell_vertices.size();
+	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= vertex_count, "ArrayPolyMesh4D: Vertex index is out of range.");
+	// Before deleting this vertex, we need to delete any edges that reference it,
+	// and any poly cells in higher dimensions that reference those edges.
+	const int32_t edge_count = _edge_vertex_indices.size() / 2;
+	Vector<int32_t> edges_to_delete;
+	for (int32_t edge_index = 0; edge_index < edge_count; edge_index++) {
+		if (_edge_vertex_indices[edge_index * 2] == p_index || _edge_vertex_indices[edge_index * 2 + 1] == p_index) {
+			edges_to_delete.push_back(edge_index);
+		}
+	}
+	for (int32_t i = edges_to_delete.size() - 1; i >= 0; i--) {
+		_delete_edge_internal(edges_to_delete[i]);
+	}
+	// Delete the vertex itself now that all dependent edges (and higher dimensions) are gone.
+	_poly_cell_vertices.remove_at(p_index);
+	// Shift remaining edge vertex references down to preserve index semantics.
+	for (int64_t edge_vertex_index = 0; edge_vertex_index < _edge_vertex_indices.size(); edge_vertex_index++) {
+		if (_edge_vertex_indices[edge_vertex_index] > p_index) {
+			_edge_vertex_indices.set(edge_vertex_index, _edge_vertex_indices[edge_vertex_index] - 1);
+		}
+	}
+}
+
+void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_cell_index, const int32_t p_index) {
+	ERR_FAIL_COND_MSG(p_poly_cell_index < 0 || p_poly_cell_index >= _poly_cell_indices.size(), "ArrayPolyMesh4D: Dimension is out of range.");
+	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= _poly_cell_indices[p_poly_cell_index].size(), "ArrayPolyMesh4D: Index is out of range.");
+	// Before deleting this poly cell element, we need to delete anything in higher dimensions that reference it.
+	const int32_t next_dim_poly_index = p_poly_cell_index + 1;
+	if (next_dim_poly_index < _poly_cell_indices.size()) {
+		// Collect indices in next_dim_poly_index whose elements reference p_index.
+		Vector<int32_t> to_delete;
+		const Vector<PackedInt32Array> &next_level = _poly_cell_indices[next_dim_poly_index];
+		for (int32_t j = 0; j < next_level.size(); j++) {
+			const PackedInt32Array &refs = next_level[j];
+			for (int32_t k = 0; k < refs.size(); k++) {
+				if (refs[k] == p_index) {
+					to_delete.push_back(j);
+					break;
+				}
+			}
+		}
+		// Delete in reverse order so that earlier indices are not shifted by later removals.
+		for (int32_t i = to_delete.size() - 1; i >= 0; i--) {
+			_delete_poly_cell_element_internal(next_dim_poly_index, to_delete[i]);
+		}
+	}
+	// Delete any corresponding elements in the associated arrays for this poly cell dimension.
+	if (p_poly_cell_index == 0) {
+		// For border faces (poly cell index 0), delete from the seam faces.
+		if (!_seam_face_indices.is_empty()) {
+			HashSet<int32_t> adjusted_seam_face_indices;
+			for (const int32_t face_index : _seam_face_indices) {
+				if (face_index == p_index) {
+					continue;
+				}
+				adjusted_seam_face_indices.insert(face_index > p_index ? face_index - 1 : face_index);
+			}
+			_seam_face_indices = adjusted_seam_face_indices;
+		}
+	}
+	const int geom_dim = p_poly_cell_index + 2;
+	// Delete from the normals, including boundary and vertex.
+	for (KeyValue<Vector2i, Vector<PackedVector4Array>> &normals_iterator : _all_poly_cell_normals) {
+		const Vector2i key = normals_iterator.key;
+		if (key.x == geom_dim) {
+			Vector<PackedVector4Array> &normals_for_dim = normals_iterator.value;
+			if (key.y == key.x) {
+				// Non-decomposed case. Only one array, with one normal per cell.
+				normals_for_dim.ptrw()[0].remove_at(p_index);
+			} else {
+				// Decomposed case, such as vertex normals for each cell.
+				normals_for_dim.remove_at(p_index);
+			}
+		}
+	}
+	// Delete from the texture map.
+	for (KeyValue<Vector2i, Vector<PackedVector3Array>> &texture_map_iterator : _all_poly_cell_texture_maps) {
+		const Vector2i key = texture_map_iterator.key;
+		if (key.x == geom_dim) {
+			Vector<PackedVector3Array> &texture_map_for_dim = texture_map_iterator.value;
+			if (key.y == key.x) {
+				// Non-decomposed case. Only one array, with one texture coordinate (UVW) per cell.
+				texture_map_for_dim.ptrw()[0].remove_at(p_index);
+			} else {
+				// Decomposed case, such as vertex texture coordinates (UVWs) for each cell.
+				texture_map_for_dim.remove_at(p_index);
+			}
+		}
+	}
+	// Remove the element at p_index from _poly_cell_indices[p_dimension].
+	_poly_cell_indices.ptrw()[p_poly_cell_index].remove_at(p_index);
+	// Fix up references in next_dim_poly_index by decrementing any index greater than p_index.
+	if (next_dim_poly_index < _poly_cell_indices.size()) {
+		Vector<PackedInt32Array> next_dim_data = _poly_cell_indices[next_dim_poly_index];
+		for (int32_t j = 0; j < next_dim_data.size(); j++) {
+			PackedInt32Array refs = next_dim_data[j];
+			bool changed = false;
+			for (int32_t k = 0; k < refs.size(); k++) {
+				if (refs[k] > p_index) {
+					refs.set(k, refs[k] - 1);
+					changed = true;
+				}
+			}
+			if (changed) {
+				next_dim_data.set(j, refs);
+			}
+		}
+		_poly_cell_indices.set(next_dim_poly_index, next_dim_data);
+	}
+	// Keep dimensions normalized by trimming from the first empty dimension onward.
+	// In a valid poly mesh, once a dimension is empty, all higher dimensions must also be empty.
+	for (int32_t dim_index = 0; dim_index < _poly_cell_indices.size(); dim_index++) {
+		if (_poly_cell_indices[dim_index].is_empty()) {
+			_poly_cell_indices.resize(dim_index);
+			break;
+		}
+	}
+}
+
+void ArrayPolyMesh4D::delete_poly_element(const int32_t p_dimension, const int32_t p_index) {
+	if (p_dimension < 0) {
+		ERR_FAIL_MSG("ArrayPolyMesh4D: Cannot delete from negative dimension.");
+	} else if (p_dimension == 0) {
+		_delete_vertex_internal(p_index);
+	} else if (p_dimension == 1) {
+		_delete_edge_internal(p_index);
+	} else {
+		const int64_t poly_cell_index = p_dimension - 2;
+		if (poly_cell_index >= _poly_cell_indices.size()) {
+			ERR_FAIL_MSG("ArrayPolyMesh4D: Cannot delete from dimension higher than the highest poly cell dimension.");
+		}
+		_delete_poly_cell_element_internal(poly_cell_index, p_index);
+	}
+	poly_mesh_clear_cache();
+	reset_poly_mesh_data_validation();
+}
+
+// Normal calculation functions.
 
 void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode, const bool p_keep_existing) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
@@ -349,185 +532,6 @@ PackedInt32Array ArrayPolyMesh4D::make_single_volume_from_all_cells() const {
 		ERR_PRINT("ArrayPolyMesh4D: Failed to make single volume from all cells because the first boundary cell does not share a face with any other cell.");
 	}
 	return volumetric_cell_indices;
-}
-
-void ArrayPolyMesh4D::delete_poly_element(const int32_t p_dimension, const int32_t p_index) {
-	if (p_dimension < 0) {
-		ERR_FAIL_MSG("ArrayPolyMesh4D: Cannot delete from negative dimension.");
-	} else if (p_dimension == 0) {
-		_delete_vertex_internal(p_index);
-	} else if (p_dimension == 1) {
-		_delete_edge_internal(p_index);
-	} else {
-		const int64_t poly_cell_index = p_dimension - 2;
-		if (poly_cell_index >= _poly_cell_indices.size()) {
-			ERR_FAIL_MSG("ArrayPolyMesh4D: Cannot delete from dimension higher than the highest poly cell dimension.");
-		}
-		_delete_poly_cell_element_internal(poly_cell_index, p_index);
-	}
-	poly_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
-}
-
-void ArrayPolyMesh4D::_delete_edge_internal(const int32_t p_index) {
-	const int32_t edge_count = _edge_vertex_indices.size() / 2;
-	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= edge_count, "ArrayPolyMesh4D: Edge index is out of range.");
-	// Before deleting this edge, we need to delete any poly cells in higher dimensions that reference it.
-	if (!_poly_cell_indices.is_empty()) {
-		Vector<int32_t> faces_to_delete;
-		const Vector<PackedInt32Array> &face_edge_indices = _poly_cell_indices[0];
-		for (int32_t face_index = 0; face_index < face_edge_indices.size(); face_index++) {
-			if (face_edge_indices[face_index].has(p_index)) {
-				faces_to_delete.push_back(face_index);
-			}
-		}
-		for (int32_t i = faces_to_delete.size() - 1; i >= 0; i--) {
-			_delete_poly_cell_element_internal(0, faces_to_delete[i]);
-		}
-	}
-	// Delete the edge's two vertex index entries from the flat edge array.
-	const int32_t edge_vertex_start = p_index * 2;
-	_edge_vertex_indices.remove_at(edge_vertex_start + 1);
-	_edge_vertex_indices.remove_at(edge_vertex_start);
-	// Shift remaining face edge references down to preserve index semantics.
-	if (!_poly_cell_indices.is_empty()) {
-		Vector<PackedInt32Array> face_edge_indices = _poly_cell_indices[0];
-		for (int32_t face_index = 0; face_index < face_edge_indices.size(); face_index++) {
-			PackedInt32Array face = face_edge_indices[face_index];
-			bool changed = false;
-			for (int32_t edge_index_in_face = 0; edge_index_in_face < face.size(); edge_index_in_face++) {
-				if (face[edge_index_in_face] > p_index) {
-					face.set(edge_index_in_face, face[edge_index_in_face] - 1);
-					changed = true;
-				}
-			}
-			if (changed) {
-				face_edge_indices.set(face_index, face);
-			}
-		}
-		_poly_cell_indices.set(0, face_edge_indices);
-	}
-}
-
-void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
-	const int64_t vertex_count = _poly_cell_vertices.size();
-	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= vertex_count, "ArrayPolyMesh4D: Vertex index is out of range.");
-	// Before deleting this vertex, we need to delete any edges that reference it,
-	// and any poly cells in higher dimensions that reference those edges.
-	const int32_t edge_count = _edge_vertex_indices.size() / 2;
-	Vector<int32_t> edges_to_delete;
-	for (int32_t edge_index = 0; edge_index < edge_count; edge_index++) {
-		if (_edge_vertex_indices[edge_index * 2] == p_index || _edge_vertex_indices[edge_index * 2 + 1] == p_index) {
-			edges_to_delete.push_back(edge_index);
-		}
-	}
-	for (int32_t i = edges_to_delete.size() - 1; i >= 0; i--) {
-		_delete_edge_internal(edges_to_delete[i]);
-	}
-	// Delete the vertex itself now that all dependent edges (and higher dimensions) are gone.
-	_poly_cell_vertices.remove_at(p_index);
-	// Shift remaining edge vertex references down to preserve index semantics.
-	for (int64_t edge_vertex_index = 0; edge_vertex_index < _edge_vertex_indices.size(); edge_vertex_index++) {
-		if (_edge_vertex_indices[edge_vertex_index] > p_index) {
-			_edge_vertex_indices.set(edge_vertex_index, _edge_vertex_indices[edge_vertex_index] - 1);
-		}
-	}
-}
-
-void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_cell_index, const int32_t p_index) {
-	ERR_FAIL_COND_MSG(p_poly_cell_index < 0 || p_poly_cell_index >= _poly_cell_indices.size(), "ArrayPolyMesh4D: Dimension is out of range.");
-	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= _poly_cell_indices[p_poly_cell_index].size(), "ArrayPolyMesh4D: Index is out of range.");
-	// Before deleting this poly cell element, we need to delete anything in higher dimensions that reference it.
-	const int32_t next_dim_poly_index = p_poly_cell_index + 1;
-	if (next_dim_poly_index < _poly_cell_indices.size()) {
-		// Collect indices in next_dim_poly_index whose elements reference p_index.
-		Vector<int32_t> to_delete;
-		const Vector<PackedInt32Array> &next_level = _poly_cell_indices[next_dim_poly_index];
-		for (int32_t j = 0; j < next_level.size(); j++) {
-			const PackedInt32Array &refs = next_level[j];
-			for (int32_t k = 0; k < refs.size(); k++) {
-				if (refs[k] == p_index) {
-					to_delete.push_back(j);
-					break;
-				}
-			}
-		}
-		// Delete in reverse order so that earlier indices are not shifted by later removals.
-		for (int32_t i = to_delete.size() - 1; i >= 0; i--) {
-			_delete_poly_cell_element_internal(next_dim_poly_index, to_delete[i]);
-		}
-	}
-	// Delete any corresponding elements in the associated arrays for this poly cell dimension.
-	if (p_poly_cell_index == 0) {
-		// For border faces (poly cell index 0), delete from the seam faces.
-		if (!_seam_face_indices.is_empty()) {
-			HashSet<int32_t> adjusted_seam_face_indices;
-			for (const int32_t face_index : _seam_face_indices) {
-				if (face_index == p_index) {
-					continue;
-				}
-				adjusted_seam_face_indices.insert(face_index > p_index ? face_index - 1 : face_index);
-			}
-			_seam_face_indices = adjusted_seam_face_indices;
-		}
-	}
-	const int geom_dim = p_poly_cell_index + 2;
-	// Delete from the normals, including boundary and vertex.
-	for (KeyValue<Vector2i, Vector<PackedVector4Array>> &normals_iterator : _all_poly_cell_normals) {
-		const Vector2i key = normals_iterator.key;
-		if (key.x == geom_dim) {
-			Vector<PackedVector4Array> &normals_for_dim = normals_iterator.value;
-			if (key.y == key.x) {
-				// Non-decomposed case. Only one array, with one normal per cell.
-				normals_for_dim.ptrw()[0].remove_at(p_index);
-			} else {
-				// Decomposed case, such as vertex normals for each cell.
-				normals_for_dim.remove_at(p_index);
-			}
-		}
-	}
-	// Delete from the texture map.
-	for (KeyValue<Vector2i, Vector<PackedVector3Array>> &texture_map_iterator : _all_poly_cell_texture_maps) {
-		const Vector2i key = texture_map_iterator.key;
-		if (key.x == geom_dim) {
-			Vector<PackedVector3Array> &texture_map_for_dim = texture_map_iterator.value;
-			if (key.y == key.x) {
-				// Non-decomposed case. Only one array, with one texture coordinate (UVW) per cell.
-				texture_map_for_dim.ptrw()[0].remove_at(p_index);
-			} else {
-				// Decomposed case, such as vertex texture coordinates (UVWs) for each cell.
-				texture_map_for_dim.remove_at(p_index);
-			}
-		}
-	}
-	// Remove the element at p_index from _poly_cell_indices[p_dimension].
-	_poly_cell_indices.ptrw()[p_poly_cell_index].remove_at(p_index);
-	// Fix up references in next_dim_poly_index by decrementing any index greater than p_index.
-	if (next_dim_poly_index < _poly_cell_indices.size()) {
-		Vector<PackedInt32Array> next_dim_data = _poly_cell_indices[next_dim_poly_index];
-		for (int32_t j = 0; j < next_dim_data.size(); j++) {
-			PackedInt32Array refs = next_dim_data[j];
-			bool changed = false;
-			for (int32_t k = 0; k < refs.size(); k++) {
-				if (refs[k] > p_index) {
-					refs.set(k, refs[k] - 1);
-					changed = true;
-				}
-			}
-			if (changed) {
-				next_dim_data.set(j, refs);
-			}
-		}
-		_poly_cell_indices.set(next_dim_poly_index, next_dim_data);
-	}
-	// Keep dimensions normalized by trimming from the first empty dimension onward.
-	// In a valid poly mesh, once a dimension is empty, all higher dimensions must also be empty.
-	for (int32_t dim_index = 0; dim_index < _poly_cell_indices.size(); dim_index++) {
-		if (_poly_cell_indices[dim_index].is_empty()) {
-			_poly_cell_indices.resize(dim_index);
-			break;
-		}
-	}
 }
 
 void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radians, const bool p_discard_seams_within_islands) {
@@ -1040,6 +1044,288 @@ void ArrayPolyMesh4D::transform_texture_map(const Transform3D &p_transform) {
 	poly_mesh_clear_cache();
 }
 
+// Misc functions.
+
+void ArrayPolyMesh4D::deduplicate_all_elements() {
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot deduplicate elements of an invalid mesh.");
+	// We need to ensure the boundary normals stay the same before and after deduplication,
+	// which means we need to start with boundary normals calculated from the original data.
+	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].size() != _poly_cell_indices[1].size()) {
+		calculate_boundary_normals();
+	}
+	// Deduplicate vertices.
+	PackedVector4Array output_vertices;
+	HashMap<int32_t, int32_t> vertex_index_remap;
+	for (int64_t input_vertex_index = 0; input_vertex_index < _poly_cell_vertices.size(); input_vertex_index++) {
+		const Vector4 vertex = _poly_cell_vertices[input_vertex_index];
+		bool found_duplicate = false;
+		for (int64_t output_vertex_index = 0; output_vertex_index < output_vertices.size(); output_vertex_index++) {
+			if (vertex.is_equal_approx(output_vertices[output_vertex_index])) {
+				vertex_index_remap[input_vertex_index] = (int32_t)output_vertex_index;
+				found_duplicate = true;
+				break;
+			}
+		}
+		if (!found_duplicate) {
+			vertex_index_remap[input_vertex_index] = (int32_t)output_vertices.size();
+			output_vertices.append(vertex);
+		}
+	}
+	// Update edges that reference those vertices.
+	for (int64_t edge_index = 0; edge_index < _edge_vertex_indices.size(); edge_index++) {
+		const int64_t input_vertex_index = _edge_vertex_indices[edge_index];
+		_edge_vertex_indices.set(edge_index, vertex_index_remap[input_vertex_index]);
+	}
+	// Deduplicate edges.
+	PackedInt32Array output_edge_vertex_indices;
+	HashMap<int32_t, int32_t> edge_index_remap;
+	for (int64_t input_edge_index = 0; input_edge_index < _edge_vertex_indices.size(); input_edge_index += 2) {
+		const int32_t vertex_index_a = _edge_vertex_indices[input_edge_index];
+		const int32_t vertex_index_b = _edge_vertex_indices[input_edge_index + 1];
+		bool found_duplicate = false;
+		for (int64_t output_edge_index = 0; output_edge_index < output_edge_vertex_indices.size(); output_edge_index += 2) {
+			const int32_t output_vertex_index_a = output_edge_vertex_indices[output_edge_index];
+			const int32_t output_vertex_index_b = output_edge_vertex_indices[output_edge_index + 1];
+			// Deduplicate edges in the same order and in the opposite order.
+			// Both orders should be considered the same edge in the PolyMesh4D code.
+			if ((vertex_index_a == output_vertex_index_a && vertex_index_b == output_vertex_index_b) ||
+					(vertex_index_a == output_vertex_index_b && vertex_index_b == output_vertex_index_a)) {
+				edge_index_remap[input_edge_index / 2] = output_edge_index / 2;
+				found_duplicate = true;
+				break;
+			}
+		}
+		if (!found_duplicate) {
+			edge_index_remap[input_edge_index / 2] = output_edge_vertex_indices.size() / 2;
+			output_edge_vertex_indices.append(vertex_index_a);
+			output_edge_vertex_indices.append(vertex_index_b);
+		}
+	}
+	// Deduplicate poly cell indices.
+	Vector<Vector<PackedInt32Array>> output_poly_cell_indices;
+	Vector<HashMap<int32_t, int32_t>> poly_cell_index_remaps;
+	for (int64_t dim_index = 0; dim_index < _poly_cell_indices.size(); dim_index++) {
+		Vector<PackedInt32Array> dim_output;
+		Vector<PackedInt32Array> dim_output_sorted;
+		HashMap<int32_t, int32_t> dim_index_remap;
+		const HashMap<int32_t, int32_t> &prev_index_remap = (dim_index == 0) ? edge_index_remap : poly_cell_index_remaps[dim_index - 1];
+		Vector<PackedInt32Array> input_cells = _poly_cell_indices[dim_index];
+		for (int64_t input_cell_index = 0; input_cell_index < input_cells.size(); input_cell_index++) {
+			PackedInt32Array cell = input_cells[input_cell_index];
+			// Remap the indices in the cell based on the previous remap.
+			for (int64_t i = 0; i < cell.size(); i++) {
+				cell.set(i, prev_index_remap[cell[i]]);
+			}
+			// Deduplicate cells regardless of the order of the indices in the cell.
+			PackedInt32Array cell_sorted = PackedInt32Array(cell); // Copy.
+			cell_sorted.sort();
+			bool found_duplicate = false;
+			for (int64_t output_cell_index = 0; output_cell_index < dim_output.size(); output_cell_index++) {
+				if (cell_sorted == dim_output_sorted[output_cell_index]) {
+					dim_index_remap[input_cell_index] = output_cell_index;
+					found_duplicate = true;
+					break;
+				}
+			}
+			if (!found_duplicate) {
+				dim_index_remap[input_cell_index] = dim_output.size();
+				dim_output.append(cell);
+				dim_output_sorted.append(cell_sorted);
+			}
+		}
+		output_poly_cell_indices.append(dim_output);
+		poly_cell_index_remaps.append(dim_index_remap);
+	}
+	// Update boundary pivot overrides based on boundary cell remap, then remap pivot vertices.
+	PackedInt32Array output_poly_cell_boundary_pivot_overrides;
+	if (!_poly_cell_boundary_pivot_overrides.is_empty() && _poly_cell_indices.size() > 1 && output_poly_cell_indices.size() > 1) {
+		const int64_t input_boundary_cell_count = _poly_cell_indices[1].size();
+		const int64_t output_boundary_cell_count = output_poly_cell_indices[1].size();
+		const int64_t input_pivot_count = MIN(_poly_cell_boundary_pivot_overrides.size(), input_boundary_cell_count);
+		output_poly_cell_boundary_pivot_overrides.resize(output_boundary_cell_count);
+		for (int64_t i = 0; i < output_boundary_cell_count; i++) {
+			output_poly_cell_boundary_pivot_overrides.set(i, -1);
+		}
+		const HashMap<int32_t, int32_t> &boundary_cell_index_remap = poly_cell_index_remaps[1];
+		for (int64_t input_cell_index = 0; input_cell_index < input_pivot_count; input_cell_index++) {
+			const int32_t input_pivot_vertex_index = _poly_cell_boundary_pivot_overrides[input_cell_index];
+			if (input_pivot_vertex_index < 0) {
+				continue;
+			}
+			const int32_t output_cell_index = boundary_cell_index_remap[input_cell_index];
+			if (output_poly_cell_boundary_pivot_overrides[output_cell_index] == -1) {
+				output_poly_cell_boundary_pivot_overrides.set(output_cell_index, vertex_index_remap[input_pivot_vertex_index]);
+			}
+		}
+	}
+	// Update seam face indices based on the face index remap.
+	HashSet<int32_t> output_seam_face_indices;
+	if (_seam_face_indices.size() > 0 && _poly_cell_indices.size() > 0) {
+		const HashMap<int32_t, int32_t> &face_index_remap = poly_cell_index_remaps[0];
+		for (const int32_t seam_face_index : _seam_face_indices) {
+			output_seam_face_indices.insert(face_index_remap[seam_face_index]);
+		}
+	}
+	// Update poly cell normal bindings.
+	HashMap<Vector2i, Vector<PackedVector4Array>> output_poly_cell_normals;
+	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : _all_poly_cell_normals) {
+		const Vector2i key = kv.key;
+		ERR_CONTINUE_MSG((key.x - 1) > poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid normal binding for geometry dimension " + itos(key.x) + ". Skipping.");
+		const HashMap<int32_t, int32_t> &index_remap = (key.x == 0) ? vertex_index_remap : ((key.x == 1) ? edge_index_remap : poly_cell_index_remaps[key.x - 2]);
+		const Vector<PackedVector4Array> &input_normal_data = kv.value;
+		Vector<PackedVector4Array> output_normals_data;
+		if (key.y == key.x && input_normal_data.size() == 1) {
+			// Non-decomposed normals use a flat structure.
+			const PackedVector4Array &input_flat_normals = input_normal_data[0];
+			PackedVector4Array output_flat_normals;
+			for (int64_t input_index = 0; input_index < input_flat_normals.size(); input_index++) {
+				const int64_t output_index = index_remap[input_index];
+				// New items should be contiguously added in the same order as the input,
+				// so the next output index should never be greater than the current output size.
+				CRASH_COND(output_index > output_flat_normals.size());
+				// When deduplicating, we only want the first copy's attached data,
+				// so that it pairs with the geometry that was kept.
+				if (output_index == output_flat_normals.size()) {
+					output_flat_normals.resize(output_index + 1);
+					output_flat_normals.set(output_index, input_flat_normals[input_index]);
+				}
+			}
+			output_normals_data = { output_flat_normals };
+		} else {
+			for (int64_t input_index = 0; input_index < input_normal_data.size(); input_index++) {
+				const int64_t output_index = index_remap[input_index];
+				CRASH_COND(output_index > output_normals_data.size());
+				if (output_index == output_normals_data.size()) {
+					output_normals_data.resize(output_index + 1);
+					// The contents within each cell's array are not remapped since they reference instances within the cell.
+					output_normals_data.set(output_index, input_normal_data[input_index]);
+				}
+			}
+		}
+		output_poly_cell_normals.insert(key, output_normals_data);
+	}
+	// Update poly cell texture map bindings.
+	HashMap<Vector2i, Vector<PackedVector3Array>> output_poly_cell_texture_maps;
+	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : _all_poly_cell_texture_maps) {
+		const Vector2i key = kv.key;
+		ERR_CONTINUE_MSG((key.x - 1) > poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid texture map binding for geometry dimension " + itos(key.x) + ". Skipping.");
+		const HashMap<int32_t, int32_t> &index_remap = (key.x == 0) ? vertex_index_remap : ((key.x == 1) ? edge_index_remap : poly_cell_index_remaps[key.x - 2]);
+		const Vector<PackedVector3Array> &input_texture_map_data = kv.value;
+		Vector<PackedVector3Array> output_texture_map_data;
+		if (key.y == key.x && input_texture_map_data.size() == 1) {
+			// Non-decomposed texture maps use a flat structure.
+			const PackedVector3Array &input_flat_texture_map = input_texture_map_data[0];
+			PackedVector3Array output_flat_texture_map;
+			for (int64_t input_index = 0; input_index < input_flat_texture_map.size(); input_index++) {
+				const int64_t output_index = index_remap[input_index];
+				CRASH_COND(output_index > output_flat_texture_map.size());
+				if (output_index == output_flat_texture_map.size()) {
+					output_flat_texture_map.resize(output_index + 1);
+					output_flat_texture_map.set(output_index, input_flat_texture_map[input_index]);
+				}
+			}
+			output_texture_map_data = { output_flat_texture_map };
+		} else {
+			for (int64_t input_index = 0; input_index < input_texture_map_data.size(); input_index++) {
+				const int64_t output_index = index_remap[input_index];
+				CRASH_COND(output_index > output_texture_map_data.size());
+				if (output_index == output_texture_map_data.size()) {
+					output_texture_map_data.resize(output_index + 1);
+					// The contents within each cell's array are not remapped since they reference instances within the cell.
+					output_texture_map_data.set(output_index, input_texture_map_data[input_index]);
+				}
+			}
+		}
+		output_poly_cell_texture_maps.insert(key, output_texture_map_data);
+	}
+	// Write back the deduplicated data to the mesh.
+	_poly_cell_vertices = output_vertices;
+	_edge_vertex_indices = output_edge_vertex_indices;
+	_poly_cell_indices = output_poly_cell_indices;
+	_poly_cell_boundary_pivot_overrides = output_poly_cell_boundary_pivot_overrides;
+	_seam_face_indices = output_seam_face_indices;
+	_all_poly_cell_normals = output_poly_cell_normals;
+	_all_poly_cell_texture_maps = output_poly_cell_texture_maps;
+	if (output_poly_cell_indices.size() > 1) {
+		// Ensure boundary normals stay consistent with the geometry after deduplication,
+		// since the reordering can cause them to become flipped. This is done by swapping
+		// the first two faces in any cell whose normal was flipped. This may also affect
+		// the binding of other decomposed elements, so those need to be resampled as well.
+		HashMap<Vector2i, Vector<PackedInt32Array>> remapped_poly_poly;
+		for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : output_poly_cell_normals) {
+			const Vector2i key = kv.key;
+			if (key.x < 3 || key.y >= 3) {
+				continue; // Swapping won't affect the binding of these elements, so we can skip remapping them.
+			}
+			remapped_poly_poly.insert(key, get_all_poly_cell_poly_indices(key.x, key.y));
+		}
+		for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : output_poly_cell_texture_maps) {
+			const Vector2i key = kv.key;
+			if (remapped_poly_poly.has(key)) {
+				continue; // Already tracked.
+			}
+			if (key.x < 3 || key.y >= 3) {
+				continue; // Swapping won't affect the binding of these elements, so we can skip remapping them.
+			}
+			remapped_poly_poly.insert(key, get_all_poly_cell_poly_indices(key.x, key.y));
+		}
+		// Now actually check on the boundary cells and see if their first two elements need swapping.
+		const PackedVector4Array &remapped_boundary_normals = output_poly_cell_normals[PER_CELL_KEY][0];
+		calculate_boundary_normals();
+		const PackedVector4Array &recalculated_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
+		Vector<PackedInt32Array> all_cell_face_indices = output_poly_cell_indices[1];
+		for (int64_t cell_index = 0; cell_index < recalculated_boundary_normals.size(); cell_index++) {
+			if (remapped_boundary_normals[cell_index].dot(recalculated_boundary_normals[cell_index]) < 0) {
+				// Swap the first two faces in the cell to flip the normal.
+				PackedInt32Array cell_face_indices = all_cell_face_indices[cell_index];
+				CRASH_COND(cell_face_indices.size() < 2);
+				const int32_t temp = cell_face_indices[0];
+				cell_face_indices.set(0, cell_face_indices[1]);
+				cell_face_indices.set(1, temp);
+				all_cell_face_indices.set(cell_index, cell_face_indices);
+			}
+		}
+		output_poly_cell_indices.set(1, all_cell_face_indices);
+		_poly_cell_indices = output_poly_cell_indices;
+		calculate_boundary_normals();
+		// Resample the bindings of any decomposed elements that were affected by the swap.
+		for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : remapped_poly_poly) {
+			const Vector2i key = kv.key;
+			const Vector<PackedInt32Array> &remapped_poly = kv.value;
+			const Vector<PackedInt32Array> recalculated_poly = get_all_poly_cell_poly_indices(key.x, key.y);
+			CRASH_COND(remapped_poly.size() != recalculated_poly.size());
+			Vector<PackedVector4Array> normal_bindings = _all_poly_cell_normals[key];
+			Vector<PackedVector3Array> texture_map_bindings = _all_poly_cell_texture_maps[key];
+			for (int64_t cell_index = 0; cell_index < remapped_poly.size(); cell_index++) {
+				const PackedInt32Array &remapped_cell_poly = remapped_poly[cell_index];
+				const PackedInt32Array &recalculated_cell_poly = recalculated_poly[cell_index];
+				if (remapped_cell_poly == recalculated_cell_poly) {
+					continue; // This cell's poly didn't change, so its binding is still correct.
+				}
+				CRASH_COND(remapped_cell_poly.size() != recalculated_cell_poly.size());
+				// This cell's poly changed, so we need to resample everything.
+				const PackedVector4Array &old_cell_normals = normal_bindings[cell_index];
+				const PackedVector3Array &old_cell_texture_maps = texture_map_bindings[cell_index];
+				PackedVector4Array new_cell_normals;
+				PackedVector3Array new_cell_texture_maps;
+				new_cell_normals.resize(old_cell_normals.size());
+				new_cell_texture_maps.resize(old_cell_texture_maps.size());
+				for (int64_t elem_index = 0; elem_index < remapped_cell_poly.size(); elem_index++) {
+					const int64_t search_element = remapped_cell_poly[elem_index];
+					const int64_t dest_index = recalculated_cell_poly.find(search_element);
+					new_cell_normals.set(dest_index, old_cell_normals[elem_index]);
+					new_cell_texture_maps.set(dest_index, old_cell_texture_maps[elem_index]);
+				}
+				normal_bindings.set(cell_index, new_cell_normals);
+				texture_map_bindings.set(cell_index, new_cell_texture_maps);
+			}
+			_all_poly_cell_normals.insert(key, normal_bindings);
+			_all_poly_cell_texture_maps.insert(key, texture_map_bindings);
+		}
+	}
+	poly_mesh_clear_cache(false);
+}
+
 void ArrayPolyMesh4D::transform_vertices(const Transform4D &p_transform) {
 	const int64_t vertex_count = _poly_cell_vertices.size();
 	for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
@@ -1372,6 +1658,8 @@ void ArrayPolyMesh4D::merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vect
 	merge_with(p_other, Transform4D(p_basis, p_offset));
 }
 
+// Getters and setters.
+
 void ArrayPolyMesh4D::set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals) {
 	_all_poly_cell_normals = HashMap<Vector2i, Vector<PackedVector4Array>>(p_all_poly_cell_normals);
 	poly_mesh_clear_cache(true);
@@ -1446,18 +1734,10 @@ void ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind(const TypedDictionary<
 }
 #endif // GODOT_HAS_TYPED_DICTIONARY
 
-PackedInt32Array ArrayPolyMesh4D::get_edge_indices() {
-	return _edge_vertex_indices;
-}
-
 void ArrayPolyMesh4D::set_edge_vertex_indices(const PackedInt32Array &p_edge_indices) {
 	_edge_vertex_indices = PackedInt32Array(p_edge_indices);
 	poly_mesh_clear_cache();
 	reset_poly_mesh_data_validation();
-}
-
-Vector<Vector<PackedInt32Array>> ArrayPolyMesh4D::get_poly_cell_indices() {
-	return _poly_cell_indices;
 }
 
 void ArrayPolyMesh4D::set_poly_cell_indices(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices) {
@@ -1623,6 +1903,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);
 
 	// Misc functions.
+	ClassDB::bind_method(D_METHOD("deduplicate_all_elements"), &ArrayPolyMesh4D::deduplicate_all_elements);
 	ClassDB::bind_method(D_METHOD("transform_vertices", "offset", "basis"), &ArrayPolyMesh4D::transform_vertices_bind, DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayPolyMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("make_single_volume_from_all_cells"), &ArrayPolyMesh4D::make_single_volume_from_all_cells);

@@ -62,6 +62,14 @@
 				[b]Note:[/b] This is not a trivial operation, consider caching the result if you need the same data multiple times.
 			</description>
 		</method>
+		<method name="get_all_poly_cell_poly_indices">
+			<return type="PackedInt32Array[]" />
+			<param index="0" name="cell_dimension" type="int" />
+			<param index="1" name="decomposition_dimension" type="int" />
+			<description>
+				Returns the indices of the cells at the given [param decomposition_dimension] that make up each cell of the given [param cell_dimension]. Both properties mean 0 for 0D vertices, 1 for 1D edges, 2 for 2D faces, 3 for 3D cells, and 4 for 4D hypervolumes. The [param decomposition_dimension] MUST NOT be greater than the [param cell_dimension], and equality is a degenerate case where the "decomposition" of a cell into its own dimension is just itself.
+			</description>
+		</method>
 		<method name="get_all_poly_cell_vertex_indices">
 			<return type="PackedInt32Array[]" />
 			<param index="0" name="cell_dimension" type="int" />

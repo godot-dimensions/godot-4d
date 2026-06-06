@@ -850,6 +850,7 @@ Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices(const int 
 	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
 	ERR_FAIL_COND_V(p_cell_dimension >= poly_cell_indices.size() + 2, ret);
 	if (p_cell_dimension == 0) {
+		// Degenerate case: the "decomposition" of a vertex into its own dimension is just itself.
 		const int64_t vertex_count = get_poly_cell_vertices().size();
 		ret.resize(vertex_count);
 		for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
@@ -882,6 +883,68 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices_bind(c
 	ret.resize(all_poly_cell_vertex_indices.size());
 	for (int64_t cell_index = 0; cell_index < all_poly_cell_vertex_indices.size(); cell_index++) {
 		ret[cell_index] = all_poly_cell_vertex_indices[cell_index];
+	}
+	return ret;
+}
+
+Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_poly_indices(const int p_cell_dimension, const int p_decomposition_dimension) {
+	Vector<PackedInt32Array> ret;
+	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	ERR_FAIL_COND_V(p_decomposition_dimension > p_cell_dimension || p_decomposition_dimension < 0, ret);
+	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
+	ERR_FAIL_INDEX_V(p_cell_dimension, poly_cell_indices.size() + 2, ret);
+	const PackedInt32Array &all_edge_indices = get_edge_indices();
+	const int64_t cells_in_dimension = (p_cell_dimension == 0) ? get_poly_cell_vertices().size() : ((p_cell_dimension == 1) ? all_edge_indices.size() / 2 : poly_cell_indices[p_cell_dimension - 2].size());
+	if (p_decomposition_dimension == p_cell_dimension) {
+		// Degenerate case: the "decomposition" of a cell into its own dimension is just itself.
+		ret.resize(cells_in_dimension);
+		for (int64_t cell_index = 0; cell_index < cells_in_dimension; cell_index++) {
+			ret.set(cell_index, PackedInt32Array{ (int32_t)cell_index });
+		}
+	} else if (p_decomposition_dimension == p_cell_dimension - 1) {
+		// The "decomposition" of a cell into the cells of the next-lower dimension is just its direct components.
+		if (p_cell_dimension == 1) {
+			// Special case: Edges stored in a flat way, and need to be repacked.
+			ret.resize(all_edge_indices.size() / 2);
+			for (int64_t edge_index = 0; edge_index < all_edge_indices.size() / 2; edge_index++) {
+				ret.set(edge_index, PackedInt32Array{ all_edge_indices[edge_index * 2], all_edge_indices[edge_index * 2 + 1] });
+			}
+		} else {
+			ret = poly_cell_indices[p_cell_dimension - 2];
+		}
+	} else if (p_decomposition_dimension == 0) {
+		ret = get_all_poly_cell_vertex_indices(p_cell_dimension, false);
+	} else {
+		// In the general case, run this function recursively.
+		const Vector<PackedInt32Array> all_level_up = get_all_poly_cell_poly_indices(p_cell_dimension, p_decomposition_dimension + 1);
+		const Vector<PackedInt32Array> all_level_down = get_all_poly_cell_poly_indices(p_decomposition_dimension + 1, p_decomposition_dimension);
+		ret.resize(cells_in_dimension);
+		for (int64_t cell_index = 0; cell_index < cells_in_dimension; cell_index++) {
+			PackedInt32Array level_up = all_level_up[cell_index];
+			HashSet<int32_t> seen_elements;
+			PackedInt32Array elements;
+			for (const int32_t level_up_element : level_up) {
+				const PackedInt32Array in_level_down = all_level_down[level_up_element];
+				for (const int32_t level_down_element : in_level_down) {
+					if (!seen_elements.has(level_down_element)) {
+						seen_elements.insert(level_down_element);
+						elements.append(level_down_element);
+					}
+				}
+			}
+			ret.set(cell_index, elements);
+		}
+	}
+	return ret;
+}
+
+TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_poly_indices_bind(const int p_cell_dimension, const int p_decomposition_dimension) {
+	TypedArray<PackedInt32Array> ret;
+	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	Vector<PackedInt32Array> vec = get_all_poly_cell_poly_indices(p_cell_dimension, p_decomposition_dimension);
+	ret.resize(vec.size());
+	for (int64_t cell_index = 0; cell_index < vec.size(); cell_index++) {
+		ret[cell_index] = vec[cell_index];
 	}
 	return ret;
 }
@@ -1225,6 +1288,7 @@ void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_face_vertex_indices"), &PolyMesh4D::get_all_face_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_vertex_indices", "cell_dimension", "start_with_canonical_span"), &PolyMesh4D::get_all_poly_cell_vertex_indices_bind);
+	ClassDB::bind_method(D_METHOD("get_all_poly_cell_poly_indices", "cell_dimension", "decomposition_dimension"), &PolyMesh4D::get_all_poly_cell_poly_indices_bind);
 	ClassDB::bind_method(D_METHOD("poly_mesh_clear_cache", "normals_only"), &PolyMesh4D::poly_mesh_clear_cache, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("to_array_poly_mesh"), &PolyMesh4D::to_array_poly_mesh);
 
