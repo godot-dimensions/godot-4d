@@ -40,6 +40,14 @@
 				Exports the tetrahedral mesh's UVW texture mapping as an [ArrayMesh]. This can help with visualizing the 3D texture space of the mesh, allowing you to create textures that can be applied to the mesh.
 			</description>
 		</method>
+		<method name="get_signed_distance_to_mesh">
+			<return type="float" />
+			<param index="0" name="local_point" type="Vector4" />
+			<description>
+				Returns the signed distance from a point in 4D space to the surface of the tetrahedral mesh. The distance is negative if the point is inside the mesh, positive if outside, and zero if on the surface. If the function fails to calculate a distance, it will return [constant @GDScript.INF].
+				[b]Note:[/b] The [method populate_nearest_point_cache] function MUST be called at least once before calling this method.
+			</description>
+		</method>
 		<method name="get_simplex_cell_boundary_normals">
 			<return type="PackedVector4Array" />
 			<description>
@@ -68,6 +76,12 @@
 			<return type="PackedVector4Array" />
 			<description>
 				Gets the vertex normals of the tetrahedral cells. Vertex normals define how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be the same length as the [method get_simplex_cell_indices] array, or empty for no normals, or else the mesh is invalid.
+			</description>
+		</method>
+		<method name="populate_nearest_point_cache">
+			<return type="void" />
+			<description>
+				Populates the cache used for nearest-point calculations, such as in [method get_signed_distance_to_mesh]. This is used to speed up nearest-point calculations, to avoid having to recalculate the same data each time a nearest-point calculation is done. This needs to be rerun whenever the geometry of the mesh changes, such as when vertices or cells are modified, if future nearest-point calculations are expected.
 			</description>
 		</method>
 		<method name="tetra_mesh_clear_cache">

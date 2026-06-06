@@ -13,6 +13,248 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
+// Nearest point and signed distance.
+
+bool TetraMesh4D::_compute_inverse_gram_3x3(const real_t p_g00, const real_t p_g01, const real_t p_g02, const real_t p_g11, const real_t p_g12, const real_t p_g22, real_t r_inv_symmetric[6]) {
+	// This is a symmetric 3x3 matrix, so we only store the six unique entries in a packed order.
+	const real_t c00 = p_g11 * p_g22 - p_g12 * p_g12;
+	const real_t c01 = p_g02 * p_g12 - p_g01 * p_g22;
+	const real_t c02 = p_g01 * p_g12 - p_g02 * p_g11;
+	const real_t c11 = p_g00 * p_g22 - p_g02 * p_g02;
+	const real_t c12 = p_g02 * p_g01 - p_g00 * p_g12;
+	const real_t c22 = p_g00 * p_g11 - p_g01 * p_g01;
+	const real_t det = p_g00 * c00 + p_g01 * c01 + p_g02 * c02;
+	if (!Math::is_finite(det) || Math::is_equal_approx(det, (real_t)0.0)) {
+		return false;
+	}
+	const real_t inv_det = (real_t)1.0 / det;
+	r_inv_symmetric[0] = c00 * inv_det;
+	r_inv_symmetric[1] = c01 * inv_det;
+	r_inv_symmetric[2] = c02 * inv_det;
+	r_inv_symmetric[3] = c11 * inv_det;
+	r_inv_symmetric[4] = c12 * inv_det;
+	r_inv_symmetric[5] = c22 * inv_det;
+	return true;
+}
+
+Vector4 TetraMesh4D::_nearest_point_on_triangle_4d(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c, const Vector4 &p_local_point) {
+	const Vector4 a_to_b = p_b - p_a;
+	const Vector4 a_to_c = p_c - p_a;
+	const Vector4 a_to_point = p_local_point - p_a;
+	const real_t ab_ap = a_to_b.dot(a_to_point);
+	const real_t ac_ap = a_to_c.dot(a_to_point);
+	if (ab_ap <= (real_t)0.0 && ac_ap <= (real_t)0.0) {
+		return p_a;
+	}
+	const Vector4 b_to_point = p_local_point - p_b;
+	const real_t ab_bp = a_to_b.dot(b_to_point);
+	const real_t ac_bp = a_to_c.dot(b_to_point);
+	if (ab_bp >= (real_t)0.0 && ac_bp <= ab_bp) {
+		return p_b;
+	}
+	const real_t vc = ab_ap * ac_bp - ab_bp * ac_ap;
+	if (vc <= (real_t)0.0 && ab_ap >= (real_t)0.0 && ab_bp <= (real_t)0.0) {
+		const real_t bary_edge_ab = ab_ap / (ab_ap - ab_bp);
+		return p_a + a_to_b * bary_edge_ab;
+	}
+	const Vector4 c_to_point = p_local_point - p_c;
+	const real_t ab_cp = a_to_b.dot(c_to_point);
+	const real_t ac_cp = a_to_c.dot(c_to_point);
+	if (ac_cp >= (real_t)0.0 && ab_cp <= ac_cp) {
+		return p_c;
+	}
+	const real_t vb = ab_cp * ac_ap - ab_ap * ac_cp;
+	if (vb <= (real_t)0.0 && ac_ap >= (real_t)0.0 && ac_cp <= (real_t)0.0) {
+		const real_t bary_edge_ac = ac_ap / (ac_ap - ac_cp);
+		return p_a + a_to_c * bary_edge_ac;
+	}
+	const real_t va = ab_bp * ac_cp - ab_cp * ac_bp;
+	if (va <= (real_t)0.0 && (ac_bp - ab_bp) >= (real_t)0.0 && (ab_cp - ac_cp) >= (real_t)0.0) {
+		const Vector4 b_to_c = p_c - p_b;
+		const real_t bary_edge_bc = (ac_bp - ab_bp) / ((ac_bp - ab_bp) + (ab_cp - ac_cp));
+		return p_b + b_to_c * bary_edge_bc;
+	}
+	const real_t denom = (real_t)1.0 / (va + vb + vc);
+	const real_t bary_ab = vb * denom;
+	const real_t bary_ac = vc * denom;
+	return p_a + a_to_b * bary_ab + a_to_c * bary_ac;
+}
+
+void TetraMesh4D::_get_nearest_point_on_tetrahedron_internal(const PackedVector4Array &p_vertices, const PackedInt32Array &p_simplex_cell_indices, const PackedFloat64Array &p_nearest_tetra_inv_gram_cache, const Vector4 &p_local_point, const int64_t p_tetrahedron_index, Vector4 *r_nearest_on_tet, real_t *r_distance_squared) {
+	const int64_t simplex_tet_count = p_simplex_cell_indices.size() / 4;
+	ERR_FAIL_INDEX(p_tetrahedron_index, simplex_tet_count);
+	ERR_FAIL_COND_MSG(p_nearest_tetra_inv_gram_cache.size() != simplex_tet_count * 6, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_nearest_point_cache()` before calling this method.");
+	// These indices are guaranteed to be within bounds due to mesh validation.
+	const int32_t i0 = p_simplex_cell_indices[p_tetrahedron_index * 4 + 0];
+	const int32_t i1 = p_simplex_cell_indices[p_tetrahedron_index * 4 + 1];
+	const int32_t i2 = p_simplex_cell_indices[p_tetrahedron_index * 4 + 2];
+	const int32_t i3 = p_simplex_cell_indices[p_tetrahedron_index * 4 + 3];
+	const Vector4 vert0 = p_vertices[i0];
+	const Vector4 vert1 = p_vertices[i1];
+	const Vector4 vert2 = p_vertices[i2];
+	const Vector4 vert3 = p_vertices[i3];
+	const Vector4 edge1 = vert1 - vert0;
+	const Vector4 edge2 = vert2 - vert0;
+	const Vector4 edge3 = vert3 - vert0;
+	// Solve for the barycentric coordinates, which implicitly solves local to the plane of the tetrahedron.
+	real_t bary0, bary1, bary2, bary3;
+	{
+		const int64_t cache_offset = p_tetrahedron_index * 6;
+		const Vector4 local = p_local_point - vert0;
+		const real_t edge1_alignment = edge1.dot(local);
+		const real_t edge2_alignment = edge2.dot(local);
+		const real_t edge3_alignment = edge3.dot(local);
+		const real_t inv00 = p_nearest_tetra_inv_gram_cache[cache_offset + 0];
+		const real_t inv01 = p_nearest_tetra_inv_gram_cache[cache_offset + 1];
+		const real_t inv02 = p_nearest_tetra_inv_gram_cache[cache_offset + 2];
+		const real_t inv11 = p_nearest_tetra_inv_gram_cache[cache_offset + 3];
+		const real_t inv12 = p_nearest_tetra_inv_gram_cache[cache_offset + 4];
+		const real_t inv22 = p_nearest_tetra_inv_gram_cache[cache_offset + 5];
+		bary1 = inv00 * edge1_alignment + inv01 * edge2_alignment + inv02 * edge3_alignment;
+		bary2 = inv01 * edge1_alignment + inv11 * edge2_alignment + inv12 * edge3_alignment;
+		bary3 = inv02 * edge1_alignment + inv12 * edge2_alignment + inv22 * edge3_alignment;
+		bary0 = (real_t)1.0 - (bary1 + bary2 + bary3);
+	}
+	// Determine the nearest point and/or the min distance based on if it's inside or outside the tetrahedron.
+	Vector4 nearest_on_tet;
+	real_t min_dist_sq = Math_INF;
+	if (bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON) {
+		// In this case, the nearest point on the plane lands inside of the tetrahedron.
+		nearest_on_tet = vert0 + edge1 * bary1 + edge2 * bary2 + edge3 * bary3;
+	} else {
+		// In this case, the nearest point on the plane lands outside, so we need to check the triangle borders.
+		const Vector4 nearest_on_tri0 = _nearest_point_on_triangle_4d(vert1, vert2, vert3, p_local_point);
+		const Vector4 nearest_on_tri1 = _nearest_point_on_triangle_4d(vert0, vert2, vert3, p_local_point);
+		const Vector4 nearest_on_tri2 = _nearest_point_on_triangle_4d(vert0, vert1, vert3, p_local_point);
+		const Vector4 nearest_on_tri3 = _nearest_point_on_triangle_4d(vert0, vert1, vert2, p_local_point);
+		nearest_on_tet = nearest_on_tri0;
+		min_dist_sq = nearest_on_tri0.distance_squared_to(p_local_point);
+		const real_t dist_sq_tri1 = nearest_on_tri1.distance_squared_to(p_local_point);
+		if (dist_sq_tri1 < min_dist_sq) {
+			nearest_on_tet = nearest_on_tri1;
+			min_dist_sq = dist_sq_tri1;
+		}
+		const real_t dist_sq_tri2 = nearest_on_tri2.distance_squared_to(p_local_point);
+		if (dist_sq_tri2 < min_dist_sq) {
+			nearest_on_tet = nearest_on_tri2;
+			min_dist_sq = dist_sq_tri2;
+		}
+		const real_t dist_sq_tri3 = nearest_on_tri3.distance_squared_to(p_local_point);
+		if (dist_sq_tri3 < min_dist_sq) {
+			nearest_on_tet = nearest_on_tri3;
+			min_dist_sq = dist_sq_tri3;
+		}
+	}
+	// Write the outputs depending on what the caller requested.
+	if (r_nearest_on_tet) {
+		*r_nearest_on_tet = nearest_on_tet;
+	}
+	if (r_distance_squared) {
+		if (min_dist_sq == Math_INF) {
+			min_dist_sq = nearest_on_tet.distance_squared_to(p_local_point);
+		}
+		*r_distance_squared = min_dist_sq;
+	}
+}
+
+void TetraMesh4D::populate_nearest_point_cache() {
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "TetraMesh4D: Cannot populate closest-point cache for an invalid mesh.");
+	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
+	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
+	if (_nearest_tetra_inv_gram_cache.size() == simplex_tet_count * 6) {
+		return;
+	}
+	_nearest_tetra_inv_gram_cache.resize(simplex_tet_count * 6);
+	const PackedVector4Array &vertices = get_vertices();
+	const int32_t vertex_count = vertices.size();
+	for (int64_t simplex_tet_index = 0; simplex_tet_index < simplex_tet_count; simplex_tet_index++) {
+		// These indices are guaranteed to be within bounds due to mesh validation.
+		const int32_t i0 = simplex_cell_indices[simplex_tet_index * 4 + 0];
+		const int32_t i1 = simplex_cell_indices[simplex_tet_index * 4 + 1];
+		const int32_t i2 = simplex_cell_indices[simplex_tet_index * 4 + 2];
+		const int32_t i3 = simplex_cell_indices[simplex_tet_index * 4 + 3];
+		const Vector4 vert0 = vertices[i0];
+		const Vector4 edge1 = vertices[i1] - vert0;
+		const Vector4 edge2 = vertices[i2] - vert0;
+		const Vector4 edge3 = vertices[i3] - vert0;
+		const real_t gram00 = edge1.dot(edge1);
+		const real_t gram01 = edge1.dot(edge2);
+		const real_t gram02 = edge1.dot(edge3);
+		const real_t gram11 = edge2.dot(edge2);
+		const real_t gram12 = edge2.dot(edge3);
+		const real_t gram22 = edge3.dot(edge3);
+		real_t inv_gram[6];
+		const bool valid = _compute_inverse_gram_3x3(gram00, gram01, gram02, gram11, gram12, gram22, inv_gram);
+		if (!valid) {
+			_nearest_tetra_inv_gram_cache.clear();
+			ERR_PRINT("TetraMesh4D: Closest-point cache build failed because tetrahedron " + itos(simplex_tet_index) + " is degenerate or non-finite.");
+			return;
+		}
+		for (int64_t gram_index = 0; gram_index < 6; gram_index++) {
+			_nearest_tetra_inv_gram_cache.set(simplex_tet_index * 6 + gram_index, inv_gram[gram_index]);
+		}
+	}
+}
+
+real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_tet, int *r_tetrahedron_index) {
+	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Math_INF, "TetraMesh4D: Cannot get signed distance to an invalid mesh.");
+	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
+	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
+	if (_nearest_tetra_inv_gram_cache.size() != simplex_tet_count * 6) {
+		populate_nearest_point_cache();
+	}
+	ERR_FAIL_COND_V_MSG(_nearest_tetra_inv_gram_cache.size() != simplex_tet_count * 6, Math_INF, "TetraMesh4D: Closest-point cache is invalid for this mesh.");
+	ERR_FAIL_COND_V_MSG(simplex_tet_count == 0, Math_INF, "TetraMesh4D: Cannot get signed distance to a mesh with zero tetrahedra.");
+	const PackedVector4Array &vertices = get_vertices();
+	// Iterate over all tetrahedra to find the nearest point on the mesh, keeping track of the best one.
+	Vector4 best_point_on_tet = Vector4();
+	real_t best_distance_sq = Math_INF;
+	int best_tet_index = -1;
+	// Future: This part could be accelerated with spatial partitioning, and/or accelerated with threading.
+	// But those optimizations add a lot of complexity and would only benefit larger meshes.
+	for (int64_t tet_index = 0; tet_index < simplex_tet_count; tet_index++) {
+		Vector4 nearest_on_tet;
+		real_t min_distance_sq = 0.0;
+		_get_nearest_point_on_tetrahedron_internal(vertices, simplex_cell_indices, _nearest_tetra_inv_gram_cache, p_local_point, tet_index, &nearest_on_tet, &min_distance_sq);
+		if (min_distance_sq < best_distance_sq) {
+			best_point_on_tet = nearest_on_tet;
+			best_distance_sq = min_distance_sq;
+			best_tet_index = tet_index;
+		}
+	}
+	// Write the outputs depending on what the caller requested.
+	if (r_nearest_point_on_tet) {
+		*r_nearest_point_on_tet = best_point_on_tet;
+	}
+	if (r_tetrahedron_index) {
+		*r_tetrahedron_index = best_tet_index;
+	}
+	if (unlikely(best_tet_index < 0)) {
+		return 0.0;
+	}
+	// If we found a nearest point with a nearest tet, check its boundary normal to determine the sign of the distance.
+	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
+	const Vector4 best_normal = boundary_normals[best_tet_index];
+	const real_t side = (p_local_point - best_point_on_tet).dot(best_normal);
+	real_t signed_distance = Math::sqrt(best_distance_sq);
+	if (side < (real_t)0.0) {
+		signed_distance = -signed_distance;
+	}
+	return signed_distance;
+}
+
+real_t TetraMesh4D::get_signed_distance_to_mesh_bind(const Vector4 &p_local_point) {
+	return get_signed_distance_to_mesh(p_local_point);
+}
+
+void TetraMesh4D::tetra_mesh_clear_cache() {
+	_simplex_positions_cache.clear();
+	_edge_positions_cache.clear();
+	_edge_indices_cache.clear();
+	_nearest_tetra_inv_gram_cache.clear();
+	mark_cross_section_mesh_dirty();
+}
+
 Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map) {
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
@@ -78,13 +320,6 @@ Ref<ArrayMesh> TetraMesh4D::export_texture_map_mesh() {
 		}
 	}
 	return convert_texture_map_to_mesh(texture_map);
-}
-
-void TetraMesh4D::tetra_mesh_clear_cache() {
-	_simplex_positions_cache.clear();
-	_edge_positions_cache.clear();
-	_edge_indices_cache.clear();
-	mark_cross_section_mesh_dirty();
 }
 
 bool TetraMesh4D::validate_mesh_data() {
@@ -162,6 +397,8 @@ Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 Ref<TetraMesh4D> TetraMesh4D::to_tetra_mesh() {
 	return to_array_tetra_mesh();
 }
+
+// Getters.
 
 PackedInt32Array TetraMesh4D::get_simplex_cell_indices() {
 	PackedInt32Array indices;
@@ -335,11 +572,16 @@ void TetraMesh4D::update_cross_section_mesh() {
 }
 
 void TetraMesh4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("export_texture_map_mesh"), &TetraMesh4D::export_texture_map_mesh);
+	// Nearest point and distance.
+	ClassDB::bind_method(D_METHOD("populate_nearest_point_cache"), &TetraMesh4D::populate_nearest_point_cache);
+	ClassDB::bind_method(D_METHOD("get_signed_distance_to_mesh", "local_point"), &TetraMesh4D::get_signed_distance_to_mesh_bind);
+	// Cache (validation is bound in base Mesh4D).
 	ClassDB::bind_method(D_METHOD("tetra_mesh_clear_cache"), &TetraMesh4D::tetra_mesh_clear_cache);
+	// Conversion.
+	ClassDB::bind_method(D_METHOD("export_texture_map_mesh"), &TetraMesh4D::export_texture_map_mesh);
 	ClassDB::bind_method(D_METHOD("to_array_tetra_mesh"), &TetraMesh4D::to_array_tetra_mesh);
 	ClassDB::bind_method(D_METHOD("to_tetra_mesh"), &TetraMesh4D::to_tetra_mesh);
-
+	// Getters.
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_indices"), &TetraMesh4D::get_simplex_cell_indices);
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_positions"), &TetraMesh4D::get_simplex_cell_positions);
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_boundary_normals"), &TetraMesh4D::get_simplex_cell_boundary_normals);
