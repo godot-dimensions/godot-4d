@@ -81,7 +81,7 @@ Vector4 TetraMesh4D::_nearest_point_on_triangle_4d(const Vector4 &p_a, const Vec
 	return p_a + a_to_b * bary_ab + a_to_c * bary_ac;
 }
 
-void TetraMesh4D::_get_nearest_point_on_tetrahedron_internal(const PackedVector4Array &p_vertices, const PackedInt32Array &p_simplex_cell_indices, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const Vector4 &p_local_point, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared) {
+void TetraMesh4D::_get_nearest_point_on_tetrahedron_internal(const PackedVector4Array &p_vertices, const PackedInt32Array &p_simplex_cell_indices, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const Vector4 &p_local_point, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared, bool &r_proj_inside) {
 	const int64_t simplex_tet_count = p_simplex_cell_indices.size() / 4;
 	ERR_FAIL_INDEX(p_tetrahedron_index, simplex_tet_count);
 	ERR_FAIL_COND_MSG(p_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_nearest_point_cache()` before calling this method.");
@@ -121,8 +121,10 @@ void TetraMesh4D::_get_nearest_point_on_tetrahedron_internal(const PackedVector4
 	real_t min_dist_sq = Math_INF;
 	if (bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON) {
 		// In this case, the nearest point on the plane lands inside of the tetrahedron.
+		r_proj_inside = true;
 		nearest_on_tet = vert0 + edge1 * bary1 + edge2 * bary2 + edge3 * bary3;
 	} else {
+		r_proj_inside = false;
 		// In this case, the nearest point on the plane lands outside, so we need to check the triangle borders.
 		const Vector4 nearest_on_tri0 = _nearest_point_on_triangle_4d(vert1, vert2, vert3, p_local_point);
 		const Vector4 nearest_on_tri1 = _nearest_point_on_triangle_4d(vert0, vert2, vert3, p_local_point);
@@ -146,7 +148,7 @@ void TetraMesh4D::_get_nearest_point_on_tetrahedron_internal(const PackedVector4
 			min_dist_sq = dist_sq_tri3;
 		}
 	}
-	// Write the outputs depending on what the caller requested.
+	// Write the outputs.
 	r_nearest_on_tet = nearest_on_tet;
 	if (min_dist_sq == Math_INF) {
 		min_dist_sq = nearest_on_tet.distance_squared_to(p_local_point);
@@ -204,24 +206,66 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 	ERR_FAIL_COND_V_MSG(simplex_tet_count == 0, Math_INF, "TetraMesh4D: Cannot get signed distance to a mesh with zero tetrahedra.");
 	const PackedVector4Array &vertices = get_vertices();
 	// Iterate over all tetrahedra to find the nearest point on the mesh, keeping track of the best one.
+	PackedInt32Array best_candidate_tets;
+	PackedVector4Array best_candidate_points_on_tet;
 	Vector4 best_point_on_tet = Vector4();
 	real_t best_distance_sq = Math_INF;
 	int best_tet_index = -1;
+	bool best_proj_inside = false;
 	// Future: This part could be accelerated with spatial partitioning, and/or accelerated with threading.
 	// But those optimizations add a lot of complexity and would only benefit larger meshes.
 	for (int64_t tet_index = 0; tet_index < simplex_tet_count; tet_index++) {
 		Vector4 nearest_on_tet;
 		real_t min_distance_sq = 0.0;
-		_get_nearest_point_on_tetrahedron_internal(vertices, simplex_cell_indices, _nearest_tetra_inverse_metric_cache, p_local_point, tet_index, nearest_on_tet, min_distance_sq);
+		bool proj_inside = false;
+		_get_nearest_point_on_tetrahedron_internal(vertices, simplex_cell_indices, _nearest_tetra_inverse_metric_cache, p_local_point, tet_index, nearest_on_tet, min_distance_sq, proj_inside);
 		const bool less_dist = min_distance_sq < best_distance_sq;
+		// If the projection is outside the tet, but the projected point is the same distance as what we
+		// already found, then we may have multiple candidates for the closest tet to this point.
+		// In this case, we need to collect them all for later disambiguation using the boundary normal.
+		if (!proj_inside) {
+			if (!best_proj_inside && Math::is_equal_approx(min_distance_sq, best_distance_sq)) {
+				best_candidate_tets.append(tet_index);
+				best_candidate_points_on_tet.append(nearest_on_tet);
+			} else if (less_dist) {
+				best_candidate_tets.resize(1);
+				best_candidate_tets.set(0, tet_index);
+				best_candidate_points_on_tet.resize(1);
+				best_candidate_points_on_tet.set(0, nearest_on_tet);
+			}
+		}
 		// If the projection is closer than what we have already found, then this is the new best point.
+		// Update the best point and distance regardless of the projection being inside or outside.
 		if (less_dist) {
 			best_point_on_tet = nearest_on_tet;
 			best_distance_sq = min_distance_sq;
 			best_tet_index = tet_index;
+			best_proj_inside = proj_inside;
+			if (proj_inside) {
+				// If the projection is inside, then this is the single unambiguous nearest point so far.
+				best_candidate_tets.clear();
+				best_candidate_points_on_tet.clear();
+			}
 		}
 	}
 	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
+	if (best_candidate_tets.size() > 1) {
+		// We have multiple candidates with the same distance, so we need to disambiguate using
+		// the absolute angle to the boundary normal (these are normalized, so use the dot product).
+		real_t best_dot_abs = 0.0;
+		for (int32_t candidate_num = 0; candidate_num < best_candidate_tets.size(); candidate_num++) {
+			const int32_t candidate_tet = best_candidate_tets[candidate_num];
+			const Vector4 candidate_point_on_tet = best_candidate_points_on_tet[candidate_num];
+			const Vector4 tet_point_dir_to_target = (p_local_point - candidate_point_on_tet).normalized();
+			const Vector4 normal = boundary_normals[candidate_tet];
+			const real_t dot_abs = Math::abs(tet_point_dir_to_target.dot(normal));
+			if (dot_abs > best_dot_abs) {
+				best_dot_abs = dot_abs;
+				best_tet_index = candidate_tet;
+				best_point_on_tet = candidate_point_on_tet;
+			}
+		}
+	}
 	// Write the outputs depending on what the caller requested.
 	if (r_nearest_point_on_tet) {
 		*r_nearest_point_on_tet = best_point_on_tet;
@@ -230,7 +274,8 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 		*r_tetrahedron_index = best_tet_index;
 	}
 	if (unlikely(best_tet_index < 0)) {
-		return 0.0;
+		// This should be impossible because we check for zero tetrahedra above, but just in case.
+		return Math_INF;
 	}
 	// If we found a nearest point with a nearest tet, check its boundary normal to determine the sign of the distance.
 	const Vector4 best_normal = boundary_normals[best_tet_index];
