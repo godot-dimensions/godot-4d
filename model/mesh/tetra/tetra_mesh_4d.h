@@ -14,16 +14,16 @@ class ArrayTetraMesh4D;
 class TetraMesh4D : public Mesh4D {
 	GDCLASS(TetraMesh4D, Mesh4D);
 
-	static bool _compute_inverse_gram_3x3(const real_t p_g00, const real_t p_g01, const real_t p_g02, const real_t p_g11, const real_t p_g12, const real_t p_g22, real_t r_inv_symmetric[6]);
+	static bool _compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g01, const real_t p_g02, const real_t p_g11, const real_t p_g12, const real_t p_g22, real_t r_inv_symmetric[6]);
 	static Vector4 _nearest_point_on_triangle_4d(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c, const Vector4 &p_local_point);
-	static void _get_nearest_point_on_tetrahedron_internal(const PackedVector4Array &p_vertices, const PackedInt32Array &p_simplex_cell_indices, const PackedFloat64Array &p_nearest_tetra_inv_gram_cache, const Vector4 &p_local_point, const int64_t p_tetrahedron_index, Vector4 *r_nearest_on_tet = nullptr, real_t *r_distance_squared = nullptr);
+	static void _get_nearest_point_on_tetrahedron_internal(const PackedVector4Array &p_vertices, const PackedInt32Array &p_simplex_cell_indices, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const Vector4 &p_local_point, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared);
 
 protected:
 	static void _bind_methods();
 	PackedInt32Array _edge_indices_cache;
 	PackedVector4Array _edge_positions_cache;
 	PackedVector4Array _simplex_positions_cache;
-	PackedFloat64Array _nearest_tetra_inv_gram_cache;
+	PackedFloat64Array _nearest_tetra_inverse_metric_cache;
 
 	Ref<ArrayMesh> convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map);
 	virtual void update_cross_section_mesh() override;
