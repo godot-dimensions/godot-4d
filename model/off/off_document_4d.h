@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../../godot_4d_defines.h"
+#include "../mesh/poly/array_poly_mesh_4d.h"
+#include "../mesh/tetra/array_tetra_mesh_4d.h"
+#include "../mesh/wire/array_wire_mesh_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/mesh.hpp>
@@ -9,10 +11,6 @@
 #include "core/io/resource.h"
 #include "scene/resources/mesh.h"
 #endif
-
-#include "../mesh/poly/array_poly_mesh_4d.h"
-#include "../mesh/tetra/array_tetra_mesh_4d.h"
-#include "../mesh/wire/array_wire_mesh_4d.h"
 
 class OFFDocument4D : public Resource {
 	GDCLASS(OFFDocument4D, Resource);

@@ -11,9 +11,13 @@ protected:
 	static void _bind_methods();
 
 public:
+	// Point-line calculations.
 	static Vector4 closest_point_on_line(const Vector4 &p_line_position, const Vector4 &p_line_direction, const Vector4 &p_point);
 	static Vector4 closest_point_on_line_segment(const Vector4 &p_line_a, const Vector4 &p_line_b, const Vector4 &p_point);
 	static Vector4 closest_point_on_ray(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_point);
+	// Point-shape calculations.
+	static Vector4 closest_point_on_triangle(const Vector4 &p_triangle_a, const Vector4 &p_triangle_b, const Vector4 &p_triangle_c, const Vector4 &p_point);
+	// Line-line calculations.
 	static Vector4 closest_point_between_lines(const Vector4 &p_line1_point, const Vector4 &p_line1_dir, const Vector4 &p_line2_point, const Vector4 &p_line2_dir);
 	static Vector4 closest_point_between_line_segments(const Vector4 &p_line1_a, const Vector4 &p_line1_b, const Vector4 &p_line2_a, const Vector4 &p_line2_b);
 	static PackedVector4Array closest_points_between_lines(const Vector4 &p_line1_point, const Vector4 &p_line1_dir, const Vector4 &p_line2_point, const Vector4 &p_line2_dir);

@@ -1,12 +1,12 @@
 #include "vector_4d.h"
 
-#include <algorithm>
-
 #if GDEXTENSION
 #include <godot_cpp/variant/utility_functions.hpp>
 #elif GODOT_MODULE
 #include "core/variant/variant_utility.h"
 #endif
+
+#include <algorithm>
 
 #if USE_CONST_NOT_CONSTEXPR_FOR_VECTORS
 const Vector4 Vector4D::ZERO = Vector4(0, 0, 0, 0);

@@ -1,5 +1,6 @@
 #include "tetra_mesh_4d.h"
 
+#include "../../../math/geometry_4d.h"
 #include "../../../math/vector_4d.h"
 #include "../material_4d.h"
 #include "array_tetra_mesh_4d.h"
@@ -36,49 +37,6 @@ bool TetraMesh4D::_compute_inverse_metric_3x3(const real_t p_g00, const real_t p
 	r_inv_symmetric[4] = c12 * inv_det;
 	r_inv_symmetric[5] = c22 * inv_det;
 	return true;
-}
-
-Vector4 TetraMesh4D::_nearest_point_on_triangle_4d(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c, const Vector4 &p_local_point) {
-	const Vector4 a_to_b = p_b - p_a;
-	const Vector4 a_to_c = p_c - p_a;
-	const Vector4 a_to_point = p_local_point - p_a;
-	const real_t ab_ap = a_to_b.dot(a_to_point);
-	const real_t ac_ap = a_to_c.dot(a_to_point);
-	if (ab_ap <= (real_t)0.0 && ac_ap <= (real_t)0.0) {
-		return p_a;
-	}
-	const Vector4 b_to_point = p_local_point - p_b;
-	const real_t ab_bp = a_to_b.dot(b_to_point);
-	const real_t ac_bp = a_to_c.dot(b_to_point);
-	if (ab_bp >= (real_t)0.0 && ac_bp <= ab_bp) {
-		return p_b;
-	}
-	const real_t vc = ab_ap * ac_bp - ab_bp * ac_ap;
-	if (vc <= (real_t)0.0 && ab_ap >= (real_t)0.0 && ab_bp <= (real_t)0.0) {
-		const real_t bary_edge_ab = ab_ap / (ab_ap - ab_bp);
-		return p_a + a_to_b * bary_edge_ab;
-	}
-	const Vector4 c_to_point = p_local_point - p_c;
-	const real_t ab_cp = a_to_b.dot(c_to_point);
-	const real_t ac_cp = a_to_c.dot(c_to_point);
-	if (ac_cp >= (real_t)0.0 && ab_cp <= ac_cp) {
-		return p_c;
-	}
-	const real_t vb = ab_cp * ac_ap - ab_ap * ac_cp;
-	if (vb <= (real_t)0.0 && ac_ap >= (real_t)0.0 && ac_cp <= (real_t)0.0) {
-		const real_t bary_edge_ac = ac_ap / (ac_ap - ac_cp);
-		return p_a + a_to_c * bary_edge_ac;
-	}
-	const real_t va = ab_bp * ac_cp - ab_cp * ac_bp;
-	if (va <= (real_t)0.0 && (ac_bp - ab_bp) >= (real_t)0.0 && (ab_cp - ac_cp) >= (real_t)0.0) {
-		const Vector4 b_to_c = p_c - p_b;
-		const real_t bary_edge_bc = (ac_bp - ab_bp) / ((ac_bp - ab_bp) + (ab_cp - ac_cp));
-		return p_b + b_to_c * bary_edge_bc;
-	}
-	const real_t denom = (real_t)1.0 / (va + vb + vc);
-	const real_t bary_ab = vb * denom;
-	const real_t bary_ac = vc * denom;
-	return p_a + a_to_b * bary_ab + a_to_c * bary_ac;
 }
 
 void TetraMesh4D::_get_nearest_point_on_tetrahedron_internal(const PackedVector4Array &p_vertices, const PackedInt32Array &p_simplex_cell_indices, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const Vector4 &p_local_point, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared, bool &r_proj_inside) {
@@ -126,10 +84,10 @@ void TetraMesh4D::_get_nearest_point_on_tetrahedron_internal(const PackedVector4
 	} else {
 		r_proj_inside = false;
 		// In this case, the nearest point on the plane lands outside, so we need to check the triangle borders.
-		const Vector4 nearest_on_tri0 = _nearest_point_on_triangle_4d(vert1, vert2, vert3, p_local_point);
-		const Vector4 nearest_on_tri1 = _nearest_point_on_triangle_4d(vert0, vert2, vert3, p_local_point);
-		const Vector4 nearest_on_tri2 = _nearest_point_on_triangle_4d(vert0, vert1, vert3, p_local_point);
-		const Vector4 nearest_on_tri3 = _nearest_point_on_triangle_4d(vert0, vert1, vert2, p_local_point);
+		const Vector4 nearest_on_tri0 = Geometry4D::closest_point_on_triangle(vert1, vert2, vert3, p_local_point);
+		const Vector4 nearest_on_tri1 = Geometry4D::closest_point_on_triangle(vert0, vert2, vert3, p_local_point);
+		const Vector4 nearest_on_tri2 = Geometry4D::closest_point_on_triangle(vert0, vert1, vert3, p_local_point);
+		const Vector4 nearest_on_tri3 = Geometry4D::closest_point_on_triangle(vert0, vert1, vert2, p_local_point);
 		nearest_on_tet = nearest_on_tri0;
 		min_dist_sq = nearest_on_tri0.distance_squared_to(p_local_point);
 		const real_t dist_sq_tri1 = nearest_on_tri1.distance_squared_to(p_local_point);
@@ -206,8 +164,10 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 	ERR_FAIL_COND_V_MSG(simplex_tet_count == 0, Math_INF, "TetraMesh4D: Cannot get signed distance to a mesh with zero tetrahedra.");
 	const PackedVector4Array &vertices = get_vertices();
 	// Iterate over all tetrahedra to find the nearest point on the mesh, keeping track of the best one.
-	PackedInt32Array best_candidate_tets;
-	PackedVector4Array best_candidate_points_on_tet;
+	constexpr int32_t MAX_CANDIDATE_TETS = 8;
+	Vector4 best_candidate_points_on_tet[MAX_CANDIDATE_TETS];
+	int32_t best_candidate_tets[MAX_CANDIDATE_TETS];
+	int32_t best_candidate_tet_count = 0;
 	Vector4 best_point_on_tet = Vector4();
 	real_t best_distance_sq = Math_INF;
 	int best_tet_index = -1;
@@ -225,13 +185,17 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 		// In this case, we need to collect them all for later disambiguation using the boundary normal.
 		if (!proj_inside) {
 			if (!best_proj_inside && Math::is_equal_approx(min_distance_sq, best_distance_sq)) {
-				best_candidate_tets.append(tet_index);
-				best_candidate_points_on_tet.append(nearest_on_tet);
+				if (best_candidate_tet_count < MAX_CANDIDATE_TETS) {
+					best_candidate_points_on_tet[best_candidate_tet_count] = nearest_on_tet;
+					best_candidate_tets[best_candidate_tet_count] = tet_index;
+					best_candidate_tet_count++;
+				} else {
+					WARN_PRINT("TetraMesh4D: Too many candidate tets for nearest point calculation. Results may be sub-optimal.");
+				}
 			} else if (less_dist) {
-				best_candidate_tets.resize(1);
-				best_candidate_tets.set(0, tet_index);
-				best_candidate_points_on_tet.resize(1);
-				best_candidate_points_on_tet.set(0, nearest_on_tet);
+				best_candidate_points_on_tet[0] = nearest_on_tet;
+				best_candidate_tets[0] = tet_index;
+				best_candidate_tet_count = 1;
 			}
 		}
 		// If the projection is closer than what we have already found, then this is the new best point.
@@ -243,17 +207,16 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 			best_proj_inside = proj_inside;
 			if (proj_inside) {
 				// If the projection is inside, then this is the single unambiguous nearest point so far.
-				best_candidate_tets.clear();
-				best_candidate_points_on_tet.clear();
+				best_candidate_tet_count = 0;
 			}
 		}
 	}
 	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
-	if (best_candidate_tets.size() > 1) {
+	if (best_candidate_tet_count > 1) {
 		// We have multiple candidates with the same distance, so we need to disambiguate using
 		// the absolute angle to the boundary normal (these are normalized, so use the dot product).
-		real_t best_dot_abs = 0.0;
-		for (int32_t candidate_num = 0; candidate_num < best_candidate_tets.size(); candidate_num++) {
+		real_t best_dot_abs = -1.0;
+		for (int32_t candidate_num = 0; candidate_num < best_candidate_tet_count; candidate_num++) {
 			const int32_t candidate_tet = best_candidate_tets[candidate_num];
 			const Vector4 candidate_point_on_tet = best_candidate_points_on_tet[candidate_num];
 			const Vector4 tet_point_dir_to_target = (p_local_point - candidate_point_on_tet).normalized();

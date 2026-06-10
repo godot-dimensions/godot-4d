@@ -2,6 +2,8 @@
 
 #include "vector_4d.h"
 
+// Point-line calculations.
+
 Vector4 Geometry4D::closest_point_on_line(const Vector4 &p_line_position, const Vector4 &p_line_direction, const Vector4 &p_point) {
 	const Vector4 vector_to_point = p_point - p_line_position;
 	return p_line_position + Vector4D::project(vector_to_point, p_line_direction);
@@ -27,6 +29,53 @@ Vector4 Geometry4D::closest_point_on_ray(const Vector4 &p_ray_origin, const Vect
 	}
 	return p_ray_origin + p_ray_direction * projection_factor;
 }
+
+// Point-shape calculations.
+
+Vector4 Geometry4D::closest_point_on_triangle(const Vector4 &p_triangle_a, const Vector4 &p_triangle_b, const Vector4 &p_triangle_c, const Vector4 &p_point) {
+	const Vector4 a_to_b = p_triangle_b - p_triangle_a;
+	const Vector4 a_to_c = p_triangle_c - p_triangle_a;
+	const Vector4 a_to_point = p_point - p_triangle_a;
+	const real_t ab_ap = a_to_b.dot(a_to_point);
+	const real_t ac_ap = a_to_c.dot(a_to_point);
+	if (ab_ap <= (real_t)0.0 && ac_ap <= (real_t)0.0) {
+		return p_triangle_a;
+	}
+	const Vector4 b_to_point = p_point - p_triangle_b;
+	const real_t ab_bp = a_to_b.dot(b_to_point);
+	const real_t ac_bp = a_to_c.dot(b_to_point);
+	if (ab_bp >= (real_t)0.0 && ac_bp <= ab_bp) {
+		return p_triangle_b;
+	}
+	const real_t vc = ab_ap * ac_bp - ab_bp * ac_ap;
+	if (vc <= (real_t)0.0 && ab_ap >= (real_t)0.0 && ab_bp <= (real_t)0.0) {
+		const real_t bary_edge_ab = ab_ap / (ab_ap - ab_bp);
+		return p_triangle_a + a_to_b * bary_edge_ab;
+	}
+	const Vector4 c_to_point = p_point - p_triangle_c;
+	const real_t ab_cp = a_to_b.dot(c_to_point);
+	const real_t ac_cp = a_to_c.dot(c_to_point);
+	if (ac_cp >= (real_t)0.0 && ab_cp <= ac_cp) {
+		return p_triangle_c;
+	}
+	const real_t vb = ab_cp * ac_ap - ab_ap * ac_cp;
+	if (vb <= (real_t)0.0 && ac_ap >= (real_t)0.0 && ac_cp <= (real_t)0.0) {
+		const real_t bary_edge_ac = ac_ap / (ac_ap - ac_cp);
+		return p_triangle_a + a_to_c * bary_edge_ac;
+	}
+	const real_t va = ab_bp * ac_cp - ab_cp * ac_bp;
+	if (va <= (real_t)0.0 && (ac_bp - ab_bp) >= (real_t)0.0 && (ab_cp - ac_cp) >= (real_t)0.0) {
+		const Vector4 b_to_c = p_triangle_c - p_triangle_b;
+		const real_t bary_edge_bc = (ac_bp - ab_bp) / ((ac_bp - ab_bp) + (ab_cp - ac_cp));
+		return p_triangle_b + b_to_c * bary_edge_bc;
+	}
+	const real_t denom = (real_t)1.0 / (va + vb + vc);
+	const real_t bary_ab = vb * denom;
+	const real_t bary_ac = vc * denom;
+	return p_triangle_a + a_to_b * bary_ab + a_to_c * bary_ac;
+}
+
+// Line-line calculations.
 
 Vector4 Geometry4D::closest_point_between_lines(const Vector4 &p_line1_point, const Vector4 &p_line1_dir, const Vector4 &p_line2_point, const Vector4 &p_line2_dir) {
 	const Vector4 difference_between_points = p_line1_point - p_line2_point;
@@ -126,9 +175,13 @@ PackedVector4Array Geometry4D::closest_points_between_line_and_segment(const Vec
 Geometry4D *Geometry4D::singleton = nullptr;
 
 void Geometry4D::_bind_methods() {
+	// Point-line calculations.
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_on_line", "line_position", "line_direction", "point"), &Geometry4D::closest_point_on_line);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_on_line_segment", "line_a", "line_b", "point"), &Geometry4D::closest_point_on_line_segment);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_on_ray", "ray_origin", "ray_direction", "point"), &Geometry4D::closest_point_on_ray);
+	// Point-shape calculations.
+	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_on_triangle", "triangle_a", "triangle_b", "triangle_c", "point"), &Geometry4D::closest_point_on_triangle);
+	// Line-line calculations.
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_between_lines", "line1_point", "line1_dir", "line2_point", "line2_dir"), &Geometry4D::closest_point_between_lines);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_between_line_segments", "line1_a", "line1_b", "line2_a", "line2_b"), &Geometry4D::closest_point_between_line_segments);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_points_between_lines", "line1_point", "line1_dir", "line2_point", "line2_dir"), &Geometry4D::closest_points_between_lines);

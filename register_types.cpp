@@ -1,19 +1,5 @@
 #include "register_types.h"
 
-#if GDEXTENSION
-#include <godot_cpp/classes/engine.hpp>
-#ifdef TOOLS_ENABLED
-#include <godot_cpp/classes/editor_plugin_registration.hpp>
-#endif // TOOLS_ENABLED
-#elif GODOT_MODULE
-#include "core/config/engine.h"
-#include "core/core_bind.h"
-#ifdef TOOLS_ENABLED
-#include "editor/plugins/editor_plugin.h"
-#include "editor/themes/editor_color_map.h"
-#endif // TOOLS_ENABLED
-#endif
-
 // General.
 #include "math/basis_4d_bind.h"
 #include "math/euler_4d_bind.h"
@@ -87,6 +73,7 @@
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/engine.hpp>
 // GDExtension has a nervous breakdown whenever singleton or casted classes are not registered.
 // We don't need to register these in principle, and we don't need it for a module, just for GDExtension.
 #include "physics/server/ghost_physics_engine_4d.h"
@@ -106,8 +93,17 @@
 #include "editor/viewport/editor_main_viewport_4d.h"
 #include "editor/viewport/editor_transform_gizmo_4d.h"
 #include "editor/viewport/editor_viewport_rotation_4d.h"
+
+#include <godot_cpp/classes/editor_plugin_registration.hpp>
 #endif // TOOLS_ENABLED
-#endif // GDEXTENSION
+#elif GODOT_MODULE
+#include "core/config/engine.h"
+#include "core/core_bind.h"
+#ifdef TOOLS_ENABLED
+#include "editor/plugins/editor_plugin.h"
+#include "editor/themes/editor_color_map.h"
+#endif // TOOLS_ENABLED
+#endif
 
 #ifdef TOOLS_ENABLED
 #include "editor/godot_4d_editor_plugin.h"
