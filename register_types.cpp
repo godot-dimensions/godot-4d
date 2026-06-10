@@ -157,11 +157,12 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
 #if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
 		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
-		TetraMaterial4D::init_shaders();
 		WireMaterial4D::init_shaders();
+		TetraMaterial4D::init_shaders();
 #endif
-		TetraMesh4D::init_fallback_material();
+		// Initialize fallback materials in the opposite order from when they will later be destroyed.
 		WireMesh4D::init_fallback_material();
+		TetraMesh4D::init_fallback_material();
 		// Mesh.
 		GDREGISTER_CLASS(ArrayPolyMesh4D);
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
@@ -296,7 +297,7 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		memdelete(Vector4D::get_singleton());
 		memdelete(PolyMeshBuilder4D::get_singleton());
 		memdelete(WireMeshBuilder4D::get_singleton());
-
+		// Clean up fallback materials and shaders in the opposite order of their creation.
 		TetraMesh4D::cleanup_fallback_material();
 		WireMesh4D::cleanup_fallback_material();
 		TetraMaterial4D::cleanup_shaders();

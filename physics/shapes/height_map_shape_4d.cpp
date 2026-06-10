@@ -78,7 +78,7 @@ double HeightMapShape4D::get_height_vec3(const Vector3 &p_physical_pos) const {
 	const Vector3i pos_floored_int = Vector3i(pos_floored_float);
 	const Vector3 pos_frac = grid_pos_rel_to_start - pos_floored_float;
 	const Vector3 pos_frac_inv = Vector3(1.0f, 1.0f, 1.0f) - pos_frac;
-	// Perform trilinear interpolation. First get the indices of the 6 axes.
+	// Perform trilinear interpolation. First get the indices of the 6 bounds on the 3 ground axes.
 	const int32_t x0 = CLAMP(pos_floored_int.x, int32_t(0), int32_t(_grid_size.x - int32_t(1)));
 	const int32_t x1 = CLAMP(pos_floored_int.x + 1, int32_t(0), int32_t(_grid_size.x - int32_t(1)));
 	const int32_t y0 = CLAMP(pos_floored_int.y, int32_t(0), int32_t(_grid_size.y - int32_t(1)));
@@ -554,7 +554,7 @@ void HeightMapShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_grid_size_thickness", "thickness"), &HeightMapShape4D::set_grid_size_thickness);
 	ClassDB::bind_method(D_METHOD("get_grid_size_thickness"), &HeightMapShape4D::get_grid_size_thickness);
 
-	ClassDB::bind_method(D_METHOD("get_height_index", "x", "z", "w"), &HeightMapShape4D::_get_height_index_nocheck);
+	ClassDB::bind_method(D_METHOD("get_height_index", "x", "z", "w"), &HeightMapShape4D::get_height_index);
 	ClassDB::bind_method(D_METHOD("get_height_index_vec3i", "vector"), &HeightMapShape4D::get_height_index_vec3i);
 	ClassDB::bind_method(D_METHOD("get_height_vec3", "physical_pos"), &HeightMapShape4D::get_height_vec3);
 	ClassDB::bind_method(D_METHOD("get_height_vec4", "physical_pos"), &HeightMapShape4D::get_height_vec4);

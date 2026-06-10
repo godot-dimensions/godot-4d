@@ -999,15 +999,19 @@ void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &
 		for (int64_t vertex_index = 0; vertex_index < cell_texture_map.size(); vertex_index++) {
 			current_aabb.expand_to(cell_texture_map[vertex_index]);
 		}
-	}
-	Vector3 scale_vec = p_target_aabb.size / current_aabb.size;
+	};
+	Vector3 scale_vec;
+	scale_vec.x = (current_aabb.size.x < CMP_EPSILON2) ? 1.0 : p_target_aabb.size.x / current_aabb.size.x;
+	scale_vec.y = (current_aabb.size.y < CMP_EPSILON2) ? 1.0 : p_target_aabb.size.y / current_aabb.size.y;
+	scale_vec.z = (current_aabb.size.z < CMP_EPSILON2) ? 1.0 : p_target_aabb.size.z / current_aabb.size.z;
 	if (p_proportional) {
 		const real_t min_scale = MIN(MIN(scale_vec.x, scale_vec.y), scale_vec.z);
 		scale_vec = Vector3(min_scale, min_scale, min_scale);
 	}
 	const Basis scale_basis = Basis::from_scale(scale_vec);
-	// Note: xform_inv performs a transposed xform, not an inverse xform, which is what we want in this case.
-	// This is badly named in Godot, see this proposal: https://github.com/godotengine/godot-proposals/issues/11235
+	// CAUTION: Godot's Basis.xform_inv performs a transposed xform, not an inverse xform.
+	// In this case, we explicitly want a transposed xform, so we use this badly named function.
+	// See this proposal to rename it upstream: https://github.com/godotengine/godot-proposals/issues/11235
 	const Transform3D to_target = Transform3D(scale_basis, p_target_aabb.position - scale_basis.xform_inv(current_aabb.position));
 	for (int64_t cell_index_index = 0; cell_index_index < p_cells_in_island.size(); cell_index_index++) {
 		const int32_t cell_index = p_cells_in_island[cell_index_index];
@@ -1170,7 +1174,7 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 	HashMap<Vector2i, Vector<PackedVector4Array>> output_poly_cell_normals;
 	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : _all_poly_cell_normals) {
 		const Vector2i key = kv.key;
-		ERR_CONTINUE_MSG((key.x - 1) > poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid normal binding for geometry dimension " + itos(key.x) + ". Skipping.");
+		ERR_CONTINUE_MSG((key.x - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid normal binding for geometry dimension " + itos(key.x) + ". Skipping.");
 		const HashMap<int32_t, int32_t> &index_remap = (key.x == 0) ? vertex_index_remap : ((key.x == 1) ? edge_index_remap : poly_cell_index_remaps[key.x - 2]);
 		const Vector<PackedVector4Array> &input_normal_data = kv.value;
 		Vector<PackedVector4Array> output_normals_data;
@@ -1208,7 +1212,7 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 	HashMap<Vector2i, Vector<PackedVector3Array>> output_poly_cell_texture_maps;
 	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : _all_poly_cell_texture_maps) {
 		const Vector2i key = kv.key;
-		ERR_CONTINUE_MSG((key.x - 1) > poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid texture map binding for geometry dimension " + itos(key.x) + ". Skipping.");
+		ERR_CONTINUE_MSG((key.x - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid texture map binding for geometry dimension " + itos(key.x) + ". Skipping.");
 		const HashMap<int32_t, int32_t> &index_remap = (key.x == 0) ? vertex_index_remap : ((key.x == 1) ? edge_index_remap : poly_cell_index_remaps[key.x - 2]);
 		const Vector<PackedVector3Array> &input_texture_map_data = kv.value;
 		Vector<PackedVector3Array> output_texture_map_data;
@@ -1952,8 +1956,8 @@ void ArrayPolyMesh4D::_bind_methods() {
 
 	// Enums.
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
-	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_FORCE_OUTWARD_OVERRIDE_CELL_ORIENTATION);
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION);
+	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_FORCE_OUTWARD_OVERRIDE_CELL_ORIENTATION);
 
 	BIND_ENUM_CONSTANT(UNWRAP_MODE_AUTOMATIC);
 	BIND_ENUM_CONSTANT(UNWRAP_MODE_EACH_CELL_FILLS);

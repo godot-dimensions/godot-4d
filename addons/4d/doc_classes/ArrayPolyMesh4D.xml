@@ -227,11 +227,11 @@
 		<constant name="COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY" value="0" enum="ComputeNormalsMode">
 			When calculating boundary normals, only use the cell orientation to determine the normal direction, preserving the existing orientation of the cells.
 		</constant>
-		<constant name="COMPUTE_NORMALS_MODE_FORCE_OUTWARD_OVERRIDE_CELL_ORIENTATION" value="2" enum="ComputeNormalsMode">
-			When calculating boundary normals, force the normals to point outward, overriding the existing orientation of the cells. When a cell is part of a volumetric hypercell, the normal will point outward from the volume, otherwise the normal will point away from the origin.
-		</constant>
 		<constant name="COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION" value="1" enum="ComputeNormalsMode">
 			When calculating boundary normals, force the normals to point outward, and adjust the orientation of the cells to match. When a cell is part of a volumetric hypercell, the normal will point outward from the volume, otherwise the normal will point away from the origin. Fixing the cell orientation involves swapping the "winding order" of the cell by swapping the first two faces of the cell.
+		</constant>
+		<constant name="COMPUTE_NORMALS_MODE_FORCE_OUTWARD_OVERRIDE_CELL_ORIENTATION" value="2" enum="ComputeNormalsMode">
+			When calculating boundary normals, force the normals to point outward, overriding the existing orientation of the cells. When a cell is part of a volumetric hypercell, the normal will point outward from the volume, otherwise the normal will point away from the origin.
 		</constant>
 		<constant name="UNWRAP_MODE_AUTOMATIC" value="0" enum="UnwrapTextureMapMode">
 			Automatically choose the best unwrapping mode. If a mesh has seams defined, use [constant UNWRAP_MODE_ISLANDS_FROM_SEAMS], otherwise use [constant UNWRAP_MODE_TILE_CELLS].

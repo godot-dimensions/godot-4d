@@ -65,8 +65,8 @@ Ref<Shape4D> G4MFShape4D::_generate_shape_from_general() const {
 	} else if (_curves.size() == 1) {
 		const Ref<GeneralShapeCurve4D> curve = _curves[0];
 		const Vector4 curve_radii = curve->get_radii();
-		const int curve_dimension = curve->get_radii_dimension();
-		const real_t curve_radius = curve->get_radii_sum() / curve_dimension;
+		const int curve_dimension = curve->get_radii_dimension(); // Amount of non-zero radii.
+		const real_t curve_radius = curve->get_radii_sum() / curve_dimension; // Average radius of the non-zero radii.
 		if (Math::is_zero_approx(_base_size.x) && Math::is_zero_approx(_base_size.z)) {
 			// A single curve with no X or Z base size? Could be one of many 4D shapes: sphere, capsule, cylinder, cubinder, orthoplex.
 			if (curve->get_exponent() == 1.0 && Math::is_zero_approx(_base_size.y) && Math::is_zero_approx(_base_size.w)) {
@@ -95,8 +95,8 @@ Ref<Shape4D> G4MFShape4D::_generate_shape_from_general() const {
 						}
 					}
 				} else if (curve_dimension == 3) {
-					// A shape with one curve of dimension 3 can be a 4D cylinder (or not one of our special shapes).
-					if (Math::is_zero_approx(_base_size.w) && curve_radii.w == curve_radius) {
+					// A shape with one curve of dimension 3 can be a 4D cylinder / spherinder (or not one of our special shapes).
+					if (Math::is_zero_approx(_base_size.w) && Math::is_zero_approx(curve_radii.y) && curve_radii.w == curve_radius) {
 						Ref<CylinderShape4D> cylinder_shape;
 						cylinder_shape.instantiate();
 						cylinder_shape->set_radius(curve_radius);
@@ -201,7 +201,7 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 		ret->set_grid_size(heightmap_shape->get_grid_size());
 		ret->set_grid_spacing(heightmap_shape->get_grid_spacing());
 		const PackedFloat64Array heightmap_data = heightmap_shape->get_height_data();
-		const String prim_type = G4MFAccessor4D::minimal_component_type_for_floats(heightmap_shape->get_height_data());
+		const String prim_type = G4MFAccessor4D::minimal_component_type_for_floats(heightmap_data);
 		Ref<G4MFAccessor4D> accessor = G4MFAccessor4D::make_new_accessor_without_data(prim_type);
 		const PackedByteArray encoded_heightmap_data = accessor->encode_float64s_as_bytes(heightmap_data);
 		int heights_accessor_index = accessor->store_accessor_data_into_state(p_g4mf_state, encoded_heightmap_data, p_deduplicate);
@@ -289,7 +289,7 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 }
 
 int G4MFShape4D::convert_shape_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Shape4D> &p_shape, const bool p_deduplicate) {
-	Ref<G4MFShape4D> g4mf_shape = convert_shape(p_g4mf_state, p_shape);
+	Ref<G4MFShape4D> g4mf_shape = convert_shape(p_g4mf_state, p_shape, p_deduplicate);
 	// Add the G4MFShape4D to the G4MFState4D, but check for duplicates first.
 	TypedArray<G4MFShape4D> state_shapes = p_g4mf_state->get_g4mf_shapes();
 	const int state_shape_count = state_shapes.size();
