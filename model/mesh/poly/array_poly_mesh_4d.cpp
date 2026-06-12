@@ -1057,6 +1057,22 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals();
 	}
+	// Snapshot the sub-element traversal order for all decomposed bindings BEFORE any deduplication.
+	// Deduplication can change sub-element ordering within cells (e.g., edge deduplication can reverse
+	// an edge's stored vertex order), breaking data indexed by traversal position.
+	HashMap<Vector2i, Vector<PackedInt32Array>> pre_dedup_poly;
+	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &pre_kv : _all_poly_cell_normals) {
+		const Vector2i pre_key = pre_kv.key;
+		if (pre_key.x != pre_key.y && !pre_dedup_poly.has(pre_key)) {
+			pre_dedup_poly.insert(pre_key, get_all_poly_cell_poly_indices(pre_key.x, pre_key.y));
+		}
+	}
+	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &pre_kv : _all_poly_cell_texture_maps) {
+		const Vector2i pre_key = pre_kv.key;
+		if (pre_key.x != pre_key.y && !pre_dedup_poly.has(pre_key)) {
+			pre_dedup_poly.insert(pre_key, get_all_poly_cell_poly_indices(pre_key.x, pre_key.y));
+		}
+	}
 	// Deduplicate vertices.
 	PackedVector4Array output_vertices;
 	HashMap<int32_t, int32_t> vertex_index_remap;
@@ -1140,10 +1156,20 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 		output_poly_cell_indices.append(dim_output);
 		poly_cell_index_remaps.append(dim_index_remap);
 	}
+	// Write back deduplicated geometry now so that get_all_poly_cell_poly_indices reads the new arrays
+	// when computing the post-dedup sub-element orderings for remapping data bindings.
+	const int64_t input_boundary_cell_count = (_poly_cell_indices.size() > 1) ? _poly_cell_indices[1].size() : 0;
+	_poly_cell_vertices = output_vertices;
+	_edge_vertex_indices = output_edge_vertex_indices;
+	_poly_cell_indices = output_poly_cell_indices;
+	// Snapshot the sub-element traversal order for all decomposed bindings AFTER deduplication.
+	HashMap<Vector2i, Vector<PackedInt32Array>> post_dedup_poly;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &post_kv : pre_dedup_poly) {
+		post_dedup_poly.insert(post_kv.key, get_all_poly_cell_poly_indices(post_kv.key.x, post_kv.key.y));
+	}
 	// Update boundary pivot overrides based on boundary cell remap, then remap pivot vertices.
 	PackedInt32Array output_poly_cell_boundary_pivot_overrides;
-	if (!_poly_cell_boundary_pivot_overrides.is_empty() && _poly_cell_indices.size() > 1 && output_poly_cell_indices.size() > 1) {
-		const int64_t input_boundary_cell_count = _poly_cell_indices[1].size();
+	if (!_poly_cell_boundary_pivot_overrides.is_empty() && input_boundary_cell_count > 0 && output_poly_cell_indices.size() > 1) {
 		const int64_t output_boundary_cell_count = output_poly_cell_indices[1].size();
 		const int64_t input_pivot_count = MIN(_poly_cell_boundary_pivot_overrides.size(), input_boundary_cell_count);
 		output_poly_cell_boundary_pivot_overrides.resize(output_boundary_cell_count);
@@ -1201,8 +1227,34 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 				CRASH_COND(output_index > output_normals_data.size());
 				if (output_index == output_normals_data.size()) {
 					output_normals_data.resize(output_index + 1);
-					// The contents within each cell's array are not remapped since they reference instances within the cell.
-					output_normals_data.set(output_index, input_normal_data[input_index]);
+					PackedVector4Array cell_normals = input_normal_data[input_index];
+					// Remap inner positions if sub-element ordering changed due to deduplication.
+					// This can happen at any dimension: e.g. edge reversal changes vertex traversal order,
+					// or face deduplication with different edge order changes cell-to-edge order.
+					if (pre_dedup_poly.has(key) && input_index < pre_dedup_poly[key].size() && output_index < post_dedup_poly[key].size()) {
+						const PackedInt32Array &old_elems = pre_dedup_poly[key][input_index];
+						const PackedInt32Array &new_elems = post_dedup_poly[key][output_index];
+						if (cell_normals.size() == old_elems.size() && old_elems.size() == new_elems.size()) {
+							ERR_CONTINUE_MSG(key.y >= 2 && (key.y - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid normal sub-element dimension " + itos(key.y) + ". Skipping remap.");
+							const HashMap<int32_t, int32_t> &subelement_remap = (key.y == 0) ? vertex_index_remap : ((key.y == 1) ? edge_index_remap : poly_cell_index_remaps[key.y - 2]);
+							PackedVector4Array remapped_normals;
+							remapped_normals.resize(new_elems.size());
+							for (int64_t new_pos = 0; new_pos < new_elems.size(); new_pos++) {
+								const int32_t new_elem = new_elems[new_pos];
+								bool found = false;
+								for (int64_t old_pos = 0; old_pos < old_elems.size(); old_pos++) {
+									if (subelement_remap[old_elems[old_pos]] == new_elem) {
+										remapped_normals.set(new_pos, cell_normals[old_pos]);
+										found = true;
+										break;
+									}
+								}
+								ERR_FAIL_COND_MSG(!found, vformat("ArrayPolyMesh4D::deduplicate_all_elements: Failed to remap normal for cell %d (new sub-element %d not found in pre-dedup traversal).", input_index, new_elem));
+							}
+							cell_normals = remapped_normals;
+						}
+					}
+					output_normals_data.set(output_index, cell_normals);
 				}
 			}
 		}
@@ -1235,17 +1287,40 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 				CRASH_COND(output_index > output_texture_map_data.size());
 				if (output_index == output_texture_map_data.size()) {
 					output_texture_map_data.resize(output_index + 1);
-					// The contents within each cell's array are not remapped since they reference instances within the cell.
-					output_texture_map_data.set(output_index, input_texture_map_data[input_index]);
+					PackedVector3Array cell_texture_map = input_texture_map_data[input_index];
+					// Remap inner positions if sub-element ordering changed due to deduplication.
+					// This can happen at any dimension: e.g. edge reversal changes vertex traversal order,
+					// or face deduplication with different edge order changes cell-to-edge order.
+					if (pre_dedup_poly.has(key) && input_index < pre_dedup_poly[key].size() && output_index < post_dedup_poly[key].size()) {
+						const PackedInt32Array &old_elems = pre_dedup_poly[key][input_index];
+						const PackedInt32Array &new_elems = post_dedup_poly[key][output_index];
+						if (cell_texture_map.size() == old_elems.size() && old_elems.size() == new_elems.size()) {
+							ERR_CONTINUE_MSG(key.y >= 2 && (key.y - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid texture map sub-element dimension " + itos(key.y) + ". Skipping remap.");
+							const HashMap<int32_t, int32_t> &subelement_remap = (key.y == 0) ? vertex_index_remap : ((key.y == 1) ? edge_index_remap : poly_cell_index_remaps[key.y - 2]);
+							PackedVector3Array remapped_texture_map;
+							remapped_texture_map.resize(new_elems.size());
+							for (int64_t new_pos = 0; new_pos < new_elems.size(); new_pos++) {
+								const int32_t new_elem = new_elems[new_pos];
+								bool found = false;
+								for (int64_t old_pos = 0; old_pos < old_elems.size(); old_pos++) {
+									if (subelement_remap[old_elems[old_pos]] == new_elem) {
+										remapped_texture_map.set(new_pos, cell_texture_map[old_pos]);
+										found = true;
+										break;
+									}
+								}
+								ERR_FAIL_COND_MSG(!found, vformat("ArrayPolyMesh4D::deduplicate_all_elements: Failed to remap texture map for cell %d (new sub-element %d not found in pre-dedup traversal).", input_index, new_elem));
+							}
+							cell_texture_map = remapped_texture_map;
+						}
+					}
+					output_texture_map_data.set(output_index, cell_texture_map);
 				}
 			}
 		}
 		output_poly_cell_texture_maps.insert(key, output_texture_map_data);
 	}
-	// Write back the deduplicated data to the mesh.
-	_poly_cell_vertices = output_vertices;
-	_edge_vertex_indices = output_edge_vertex_indices;
-	_poly_cell_indices = output_poly_cell_indices;
+	// Write back the remaining deduplicated data (geometry was already written back earlier).
 	_poly_cell_boundary_pivot_overrides = output_poly_cell_boundary_pivot_overrides;
 	_seam_face_indices = output_seam_face_indices;
 	_all_poly_cell_normals = output_poly_cell_normals;
@@ -1298,33 +1373,52 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 			const Vector<PackedInt32Array> &remapped_poly = kv.value;
 			const Vector<PackedInt32Array> recalculated_poly = get_all_poly_cell_poly_indices(key.x, key.y);
 			CRASH_COND(remapped_poly.size() != recalculated_poly.size());
-			Vector<PackedVector4Array> normal_bindings = _all_poly_cell_normals[key];
-			Vector<PackedVector3Array> texture_map_bindings = _all_poly_cell_texture_maps[key];
-			for (int64_t cell_index = 0; cell_index < remapped_poly.size(); cell_index++) {
-				const PackedInt32Array &remapped_cell_poly = remapped_poly[cell_index];
-				const PackedInt32Array &recalculated_cell_poly = recalculated_poly[cell_index];
-				if (remapped_cell_poly == recalculated_cell_poly) {
-					continue; // This cell's poly didn't change, so its binding is still correct.
+			if (_all_poly_cell_normals.has(key)) {
+				Vector<PackedVector4Array> normal_bindings = _all_poly_cell_normals[key];
+				CRASH_COND(normal_bindings.size() != remapped_poly.size());
+				for (int64_t cell_index = 0; cell_index < remapped_poly.size(); cell_index++) {
+					const PackedInt32Array &remapped_cell_poly = remapped_poly[cell_index];
+					const PackedInt32Array &recalculated_cell_poly = recalculated_poly[cell_index];
+					if (remapped_cell_poly == recalculated_cell_poly) {
+						continue; // This cell's poly didn't change, so its binding is still correct.
+					}
+					CRASH_COND(remapped_cell_poly.size() != recalculated_cell_poly.size());
+					// This cell's poly changed, so we need to resample normals.
+					const PackedVector4Array &old_cell_normals = normal_bindings[cell_index];
+					PackedVector4Array new_cell_normals;
+					new_cell_normals.resize(old_cell_normals.size());
+					for (int64_t elem_index = 0; elem_index < remapped_cell_poly.size(); elem_index++) {
+						const int64_t search_element = remapped_cell_poly[elem_index];
+						const int64_t dest_index = recalculated_cell_poly.find(search_element);
+						new_cell_normals.set(dest_index, old_cell_normals[elem_index]);
+					}
+					normal_bindings.set(cell_index, new_cell_normals);
 				}
-				CRASH_COND(remapped_cell_poly.size() != recalculated_cell_poly.size());
-				// This cell's poly changed, so we need to resample everything.
-				const PackedVector4Array &old_cell_normals = normal_bindings[cell_index];
-				const PackedVector3Array &old_cell_texture_maps = texture_map_bindings[cell_index];
-				PackedVector4Array new_cell_normals;
-				PackedVector3Array new_cell_texture_maps;
-				new_cell_normals.resize(old_cell_normals.size());
-				new_cell_texture_maps.resize(old_cell_texture_maps.size());
-				for (int64_t elem_index = 0; elem_index < remapped_cell_poly.size(); elem_index++) {
-					const int64_t search_element = remapped_cell_poly[elem_index];
-					const int64_t dest_index = recalculated_cell_poly.find(search_element);
-					new_cell_normals.set(dest_index, old_cell_normals[elem_index]);
-					new_cell_texture_maps.set(dest_index, old_cell_texture_maps[elem_index]);
-				}
-				normal_bindings.set(cell_index, new_cell_normals);
-				texture_map_bindings.set(cell_index, new_cell_texture_maps);
+				_all_poly_cell_normals.insert(key, normal_bindings);
 			}
-			_all_poly_cell_normals.insert(key, normal_bindings);
-			_all_poly_cell_texture_maps.insert(key, texture_map_bindings);
+			if (_all_poly_cell_texture_maps.has(key)) {
+				Vector<PackedVector3Array> texture_map_bindings = _all_poly_cell_texture_maps[key];
+				CRASH_COND(texture_map_bindings.size() != remapped_poly.size());
+				for (int64_t cell_index = 0; cell_index < remapped_poly.size(); cell_index++) {
+					const PackedInt32Array &remapped_cell_poly = remapped_poly[cell_index];
+					const PackedInt32Array &recalculated_cell_poly = recalculated_poly[cell_index];
+					if (remapped_cell_poly == recalculated_cell_poly) {
+						continue; // This cell's poly didn't change, so its binding is still correct.
+					}
+					CRASH_COND(remapped_cell_poly.size() != recalculated_cell_poly.size());
+					// This cell's poly changed, so we need to resample texture maps.
+					const PackedVector3Array &old_cell_texture_maps = texture_map_bindings[cell_index];
+					PackedVector3Array new_cell_texture_maps;
+					new_cell_texture_maps.resize(old_cell_texture_maps.size());
+					for (int64_t elem_index = 0; elem_index < remapped_cell_poly.size(); elem_index++) {
+						const int64_t search_element = remapped_cell_poly[elem_index];
+						const int64_t dest_index = recalculated_cell_poly.find(search_element);
+						new_cell_texture_maps.set(dest_index, old_cell_texture_maps[elem_index]);
+					}
+					texture_map_bindings.set(cell_index, new_cell_texture_maps);
+				}
+				_all_poly_cell_texture_maps.insert(key, texture_map_bindings);
+			}
 		}
 	}
 	poly_mesh_clear_cache(false);

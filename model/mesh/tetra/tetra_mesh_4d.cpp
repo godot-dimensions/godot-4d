@@ -123,7 +123,6 @@ void TetraMesh4D::populate_nearest_point_cache() {
 	}
 	_nearest_tetra_inverse_metric_cache.resize(simplex_tet_count * 6);
 	const PackedVector4Array &vertices = get_vertices();
-	const int32_t vertex_count = vertices.size();
 	for (int64_t simplex_tet_index = 0; simplex_tet_index < simplex_tet_count; simplex_tet_index++) {
 		// These indices are guaranteed to be within bounds due to mesh validation.
 		const int32_t i0 = simplex_cell_indices[simplex_tet_index * 4 + 0];

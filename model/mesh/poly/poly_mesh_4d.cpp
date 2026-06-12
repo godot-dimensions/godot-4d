@@ -72,7 +72,7 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 				// Faces (poly_dim_index 0) must have at least 3 edges, cells (poly_dim_index 1) must have at least 4 faces, etc.
 				ERR_FAIL_COND_V_MSG(cell_element_count < poly_dim_index + 3, false, "PolyMesh4D: " + itos(poly_dim_index + 2) + "D cell has insufficient elements (" + itos(cell_element_count) + "<" + itos(poly_dim_index + 3) + ").");
 				for (int64_t i = 0; i < cell_element_count; i++) {
-					ERR_FAIL_COND_V_MSG(cell[i] < 0 || cell[i] >= prev_dim_count, false, "PolyMesh4D: " + itos(poly_dim_index + 1) + "D cell references invalid " + itos(poly_dim_index + 1) + "D element " + itos(cell[i]) + ".");
+					ERR_FAIL_COND_V_MSG(cell[i] < 0 || cell[i] >= prev_dim_count, false, "PolyMesh4D: " + itos(poly_dim_index + 2) + "D cell references invalid " + itos(poly_dim_index + 1) + "D element " + itos(cell[i]) + ".");
 				}
 				bool is_common = false;
 				if (poly_dim_index == 0) {
@@ -664,7 +664,8 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 			continue; // Already triangulated during the second pass.
 		}
 		const PackedInt32Array &face_vertices = face_vertices_cache[face_index];
-		face_triangulations.set(face_index, _triangulate_face_vertex_indices(face_vertices, -1));
+		const PackedInt32Array face_triangulation = _triangulate_face_vertex_indices(face_vertices, -1);
+		face_triangulations.set(face_index, face_triangulation);
 	}
 	// Step 7: Tetrahedralize each cell by connecting each opposing face to the pivot vertex.
 	// Determine which way is "outward" for this cell's normal vector, so we can orient the tetrahedra properly.
@@ -1137,10 +1138,10 @@ PackedVector4Array PolyMesh4D::get_simplex_cell_vertex_normals() {
 			return PackedVector4Array(); // No vertex normal data available.
 		}
 		int64_t simplex_count = _simplex_cell_indices_source_poly_cells.size();
-		if (simplex_count * 4 != _simplex_cell_indices_cache.size()) {
+		if (simplex_count == 0 || simplex_count * 4 != _simplex_cell_indices_cache.size()) {
 			_decompose_boundary_cells_into_simplexes(true);
 			simplex_count = _simplex_cell_indices_source_poly_cells.size();
-			CRASH_COND_MSG(simplex_count * 4 != _simplex_cell_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
+			CRASH_COND_MSG(simplex_count == 0 || simplex_count * 4 != _simplex_cell_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
 		}
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 		ERR_FAIL_COND_V_MSG(poly_cell_indices.size() < 2, PackedVector4Array(), "PolyMesh4D: No boundary cells available, cannot compute simplex vertex normals.");

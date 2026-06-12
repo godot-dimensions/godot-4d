@@ -118,10 +118,13 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 	ret = p_input_mesh->duplicate();
 	ret->transform_vertices(Transform4D(Basis4D(), -p_extrusion_vector));
 	ret->merge_with(p_input_mesh, Transform4D(Basis4D(), p_extrusion_vector));
-	// The two copies aren't connected yet, so it's safe to blindly force their normals outward.
-	ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION);
-	// Mark all existing faces as seams since they will become sharp borders (usually 90 degrees).
 	Vector<Vector<PackedInt32Array>> poly_cell_indices = ret->get_poly_cell_indices();
+	// The two copies aren't connected yet, so it's safe to blindly force their normals outward (if any).
+	if (poly_cell_indices.size() > 1) {
+		ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION);
+		poly_cell_indices = ret->get_poly_cell_indices();
+	}
+	// Mark all existing faces as seams since they will become sharp borders (usually 90 degrees).
 	if (poly_cell_indices.size() > 0) {
 		// Use the faces retrieved from the output mesh since this includes the copying.
 		const Vector<PackedInt32Array> &faces = poly_cell_indices[0];
@@ -136,18 +139,23 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 	// as long as the input mesh is valid, which is checked at the start of this function.
 	// Form new edges between the vertices of the two copies of the input mesh.
 	const PackedInt32Array &input_edge_indices = p_input_mesh->get_edge_indices();
-	const PackedVector4Array &input_vertices = p_input_mesh->get_poly_cell_vertices();
 	const int32_t input_edge_count = (int32_t)(input_edge_indices.size() / 2);
-	const int32_t input_vertex_count = (int32_t)input_vertices.size();
-	PackedInt32Array edge_indices = ret->get_edge_indices();
 	PackedInt32Array vertex_to_extruded_edge;
-	vertex_to_extruded_edge.resize(input_vertex_count);
-	for (int input_vertex_index = 0; input_vertex_index < input_vertex_count; input_vertex_index++) {
-		vertex_to_extruded_edge.set(input_vertex_index, edge_indices.size() / 2);
-		edge_indices.append(input_vertex_index);
-		edge_indices.append(input_vertex_index + input_vertex_count);
+	{
+		const PackedVector4Array &input_vertices = p_input_mesh->get_poly_cell_vertices();
+		PackedInt32Array edge_indices = ret->get_edge_indices();
+		int64_t edge_indices_iter = edge_indices.size();
+		const int32_t input_vertex_count = (int32_t)input_vertices.size();
+		vertex_to_extruded_edge.resize(input_vertex_count);
+		edge_indices.resize(edge_indices.size() + input_vertex_count * 2);
+		for (int input_vertex_index = 0; input_vertex_index < input_vertex_count; input_vertex_index++) {
+			vertex_to_extruded_edge.set(input_vertex_index, edge_indices_iter / 2);
+			edge_indices.set(edge_indices_iter, input_vertex_index);
+			edge_indices.set(edge_indices_iter + 1, input_vertex_index + input_vertex_count);
+			edge_indices_iter += 2;
+		}
+		ret->set_edge_vertex_indices(edge_indices);
 	}
-	ret->set_edge_vertex_indices(edge_indices);
 	// Form new faces between the edges of the two copies of the input mesh.
 	PackedInt32Array edge_to_extruded_face;
 	edge_to_extruded_face.resize(input_edge_count);
