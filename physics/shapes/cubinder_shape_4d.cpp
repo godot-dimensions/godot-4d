@@ -1,5 +1,7 @@
 #include "cubinder_shape_4d.h"
 
+#include "../../model/mesh/poly/poly_mesh_builder_4d.h"
+
 real_t CubinderShape4D::get_height() const {
 	return _height;
 }
@@ -89,6 +91,78 @@ bool CubinderShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 		return false;
 	}
 	return _height == cubinder->_height && _radius == cubinder->_radius && _thickness == cubinder->_thickness;
+}
+
+Ref<PolyMesh4D> CubinderShape4D::to_poly_mesh(const Dictionary &p_options) const {
+	const int64_t segments = p_options.has("segments") ? (int64_t)p_options["segments"] : (int64_t)16;
+	ERR_FAIL_COND_V(segments < 3, Ref<PolyMesh4D>());
+	// Create a base circle for the cubinder in the XZ plane.
+	PackedVector4Array circle_vertices;
+	PackedInt32Array circle_edge_indices;
+	{
+		circle_vertices.resize(segments);
+		circle_edge_indices.resize(2 * segments);
+		int vert_iter = 0;
+		Vector4 point = Vector4(0.0, 0.0, 0.0, 0.0);
+		const int ring_start_vert = vert_iter;
+		point[0] = _radius;
+		circle_vertices.set(vert_iter, point);
+		for (int i = 1; i < segments; i++) {
+			const double angle = (double)i * (Math_TAU / (double)segments);
+			point[0] = _radius * Math::cos(angle);
+			point[2] = _radius * Math::sin(angle);
+			circle_edge_indices.set(vert_iter * 2, vert_iter);
+			circle_edge_indices.set(vert_iter * 2 + 1, vert_iter + 1);
+			vert_iter++;
+			circle_vertices.set(vert_iter, point);
+		}
+		circle_edge_indices.set(vert_iter * 2, ring_start_vert);
+		circle_edge_indices.set(vert_iter * 2 + 1, vert_iter);
+		vert_iter++;
+	}
+	// Create a single face from the ring of vertices.
+	PackedInt32Array circle_face_edge_indices;
+	circle_face_edge_indices.resize(segments);
+	for (int i = 0; i < segments; i++) {
+		circle_face_edge_indices.set(i, i);
+	}
+	// Double pack: Outer is for dimension (faces vs cells), inner is elements of the dimension (each face).
+	const Vector<Vector<PackedInt32Array>> circle_poly_cell_indices = { { circle_face_edge_indices } };
+	// Set the data into a poly mesh.
+	Ref<ArrayPolyMesh4D> ret;
+	ret.instantiate();
+	ret->set_poly_cell_vertices(circle_vertices);
+	ret->set_edge_vertex_indices(circle_edge_indices);
+	ret->set_poly_cell_indices(circle_poly_cell_indices);
+	CRASH_COND(!ret->is_mesh_data_valid());
+	// Extrude that circle along the height and thickness.
+	// The extrude_linear's extrusion vector is +/- the vector given, so we need to use the half extents.
+	const real_t height_half_extent = _height * (real_t)0.5;
+	const real_t thickness_half_extent = _thickness * (real_t)0.5;
+	ret = PolyMeshBuilder4D::extrude_linear(ret, Vector4(0.0, height_half_extent, 0.0, 0.0));
+	ret = PolyMeshBuilder4D::extrude_linear(ret, Vector4(0.0, 0.0, 0.0, thickness_half_extent));
+	// Set custom seams.
+	const PackedVector4Array poly_vertices = ret->get_poly_cell_vertices();
+	const Vector<PackedInt32Array> face_vertex_indices = ret->get_all_face_vertex_indices();
+	HashSet<int32_t> seam_face_indices;
+	for (int64_t face_index = 0; face_index < face_vertex_indices.size(); face_index++) {
+		const PackedInt32Array &face = face_vertex_indices[face_index];
+		const Vector4 &vert1 = poly_vertices[face[1]];
+		const Vector4 &vert3 = poly_vertices[face[3]];
+		if ((vert1.y != vert3.y) != (vert1.w != vert3.w)) {
+			seam_face_indices.insert(face_index);
+		}
+	}
+	ret->set_seam_face_indices(seam_face_indices);
+	return ret;
+}
+
+Ref<TetraMesh4D> CubinderShape4D::to_tetra_mesh(const Dictionary &p_options) const {
+	return to_poly_mesh(p_options);
+}
+
+Ref<WireMesh4D> CubinderShape4D::to_wire_mesh(const Dictionary &p_options) const {
+	return to_poly_mesh(p_options)->to_wire_mesh();
 }
 
 void CubinderShape4D::_bind_methods() {

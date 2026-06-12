@@ -1,5 +1,7 @@
 #include "sphere_shape_4d.h"
 
+#include "../../model/mesh/wire/array_wire_mesh_4d.h"
+
 real_t SphereShape4D::get_radius() const {
 	return _radius;
 }
@@ -38,6 +40,47 @@ bool SphereShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 		return false;
 	}
 	return _radius == sphere_shape->get_radius();
+}
+
+Ref<WireMesh4D> SphereShape4D::to_wire_mesh(const Dictionary &p_options) const {
+	const int64_t segments = p_options.has("segments") ? (int64_t)p_options["segments"] : (int64_t)16;
+	const bool deduplicate = p_options.has("deduplicate") ? (bool)p_options["deduplicate"] : true;
+	// Create 6 rings on the 6 bivector planes.
+	PackedVector4Array vertices;
+	PackedInt32Array edge_indices;
+	vertices.resize(6 * segments);
+	edge_indices.resize(6 * 2 * segments);
+	int vert_iter = 0;
+	for (int a = 0; a < 3; a++) {
+		for (int b = a + 1; b < 4; b++) {
+			// Create a ring on the a-b bivector plane.
+			Vector4 point = Vector4(0.0, 0.0, 0.0, 0.0);
+			const int ring_start_vert = vert_iter;
+			point[a] = _radius;
+			vertices.set(vert_iter, point);
+			for (int i = 1; i < segments; i++) {
+				const double angle = (double)i * (Math_TAU / (double)segments);
+				point[a] = _radius * Math::cos(angle);
+				point[b] = _radius * Math::sin(angle);
+				edge_indices.set(vert_iter * 2, vert_iter);
+				edge_indices.set(vert_iter * 2 + 1, vert_iter + 1);
+				vert_iter++;
+				vertices.set(vert_iter, point);
+			}
+			edge_indices.set(vert_iter * 2, ring_start_vert);
+			edge_indices.set(vert_iter * 2 + 1, vert_iter);
+			vert_iter++;
+		}
+	}
+	Ref<ArrayWireMesh4D> wire_mesh;
+	wire_mesh.instantiate();
+	wire_mesh->set_vertices(vertices);
+	wire_mesh->set_edge_indices(edge_indices);
+	if (deduplicate) {
+		wire_mesh->deduplicate_all_elements();
+	}
+	CRASH_COND(!wire_mesh->is_mesh_data_valid());
+	return wire_mesh;
 }
 
 void SphereShape4D::_bind_methods() {

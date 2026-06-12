@@ -86,16 +86,22 @@ bool PlaneShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	return other.is_valid();
 }
 
-Ref<WireMesh4D> PlaneShape4D::to_wire_mesh() const {
-	Ref<ArrayWireMesh4D> plane_wire_mesh = WireMeshBuilder4D::create_3d_subdivided_box(Vector3(5.0f, 5.0f, 5.0f), Vector3i(10, 10, 10), true, false);
+Ref<WireMesh4D> PlaneShape4D::to_wire_mesh(const Dictionary &p_options) const {
+	const double size = p_options.has("size") ? (double)p_options["size"] : (double)5.0;
+	const int64_t subdivision_segments = p_options.has("segments") ? (int64_t)p_options["segments"] : (int64_t)10;
+	const Vector3i subdiv = Vector3i(subdivision_segments, subdivision_segments, subdivision_segments);
+	const bool fill_cell = p_options.has("fill_cell") ? (bool)p_options["fill_cell"] : true;
+	const bool breakup_edges = p_options.has("breakup_edges") ? (bool)p_options["breakup_edges"] : false;
+	Ref<ArrayWireMesh4D> plane_wire_mesh = WireMeshBuilder4D::create_3d_subdivided_box(Vector3(size, size, size), subdiv, fill_cell, breakup_edges);
 	Basis4D swap_yw_rot = Basis4D::from_swap_rotation(1, 3);
 	plane_wire_mesh->transform_all_vertices(Transform4D(swap_yw_rot));
-	plane_wire_mesh->append_edge_points(Vector4(0, 0, 0, 0), Vector4(0, 1, 0, 0));
-	plane_wire_mesh->append_edge_points(Vector4(+0.25, 0.75, 0, 0), Vector4(0, 1, 0, 0));
-	plane_wire_mesh->append_edge_points(Vector4(-0.25, 0.75, 0, 0), Vector4(0, 1, 0, 0));
-	plane_wire_mesh->append_edge_points(Vector4(0, 0.75, +0.25, 0), Vector4(0, 1, 0, 0));
-	plane_wire_mesh->append_edge_points(Vector4(0, 0.75, -0.25, 0), Vector4(0, 1, 0, 0));
-	plane_wire_mesh->append_edge_points(Vector4(0, 0.75, 0, +0.25), Vector4(0, 1, 0, 0));
-	plane_wire_mesh->append_edge_points(Vector4(0, 0.75, 0, -0.25), Vector4(0, 1, 0, 0));
+	// Make an arrow for the normal vector.
+	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 0));
+	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(+0.25, 0.75, 0, 0));
+	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(-0.25, 0.75, 0, 0));
+	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(0, 0.75, +0.25, 0));
+	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(0, 0.75, -0.25, 0));
+	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(0, 0.75, 0, +0.25));
+	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(0, 0.75, 0, -0.25));
 	return plane_wire_mesh;
 }

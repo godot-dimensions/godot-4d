@@ -1,6 +1,7 @@
 #include "orthoplex_shape_4d.h"
 
 #include "../../math/vector_4d.h"
+#include "../../model/mesh/poly/orthoplex_poly_mesh_4d.h"
 #include "../../model/mesh/tetra/orthoplex_tetra_mesh_4d.h"
 #include "../../model/mesh/wire/orthoplex_wire_mesh_4d.h"
 
@@ -72,14 +73,21 @@ bool OrthoplexShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	return _size == other_shape->get_size();
 }
 
-Ref<TetraMesh4D> OrthoplexShape4D::to_tetra_mesh() const {
+Ref<PolyMesh4D> OrthoplexShape4D::to_poly_mesh(const Dictionary &p_options) const {
+	Ref<OrthoplexPolyMesh4D> poly_mesh;
+	poly_mesh.instantiate();
+	poly_mesh->set_size(_size);
+	return poly_mesh;
+}
+
+Ref<TetraMesh4D> OrthoplexShape4D::to_tetra_mesh(const Dictionary &p_options) const {
 	Ref<OrthoplexTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	tetra_mesh->set_size(_size);
 	return tetra_mesh;
 }
 
-Ref<WireMesh4D> OrthoplexShape4D::to_wire_mesh() const {
+Ref<WireMesh4D> OrthoplexShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	Ref<OrthoplexWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
 	wire_mesh->set_size(_size);

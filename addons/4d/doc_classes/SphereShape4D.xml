@@ -5,6 +5,9 @@
 	</brief_description>
 	<description>
 		SphereShape4D describes a 4D sphere using a [member radius]. The sphere is centered at the origin. Spheres are symmetric in all directions, so rotation does not affect the shape.
+		When converting a SphereShape4D to a mesh, the [code]options[/code] Dictionary may have any of these properties:
+		- [code]"segments"[/code]: the number of segments to divide the sphere's rings into. If not specified, the default number of segments is 16.
+		- [code]"deduplicate"[/code]: whether to deduplicate vertices. If not specified, the default is true.
 	</description>
 	<tutorials>
 		<link title="Miraheze Polytope Wiki Glome">https://polytope.miraheze.org/wiki/Glome</link>

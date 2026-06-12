@@ -349,7 +349,7 @@ bool HeightMapShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	return _height_data == other->_height_data;
 }
 
-Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
+Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh(const Dictionary &p_options) const {
 	const Vector3 start_flat_physical_pos = _get_start_physical_offset();
 	PackedVector4Array vertices;
 	PackedVector4Array vert_normals;
@@ -488,7 +488,7 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh() const {
 	return tetra_mesh;
 }
 
-Ref<WireMesh4D> HeightMapShape4D::to_wire_mesh() const {
+Ref<WireMesh4D> HeightMapShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	const Vector3 start_flat_physical_pos = _get_start_physical_offset();
 	PackedVector4Array vertices;
 	PackedInt32Array edge_indices;

@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		BoxShape4D describes a 4D box using a [member size] as a [Vector4]. The box is centered at the origin, and is axis-aligned by default; if you want a box facing a different direction, you can rotate the [CollisionShape4D] node the box is attached to.
+		When converting a BoxShape4D to a mesh, the [code]options[/code] Dictionary has no available properties, and is entirely ignored.
 	</description>
 	<tutorials>
 		<link title="Miraheze Polytope Wiki Tesseract">https://polytope.miraheze.org/wiki/Tesseract</link>

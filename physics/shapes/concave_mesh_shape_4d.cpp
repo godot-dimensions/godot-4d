@@ -32,14 +32,14 @@ bool ConcaveMeshShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	return _simplex_cells == other_cells;
 }
 
-Ref<TetraMesh4D> ConcaveMeshShape4D::to_tetra_mesh() const {
+Ref<TetraMesh4D> ConcaveMeshShape4D::to_tetra_mesh(const Dictionary &p_options) const {
 	Ref<ArrayTetraMesh4D> mesh;
 	mesh.instantiate();
 	mesh->append_vertices(_simplex_cells);
 	return mesh;
 }
 
-Ref<WireMesh4D> ConcaveMeshShape4D::to_wire_mesh() const {
+Ref<WireMesh4D> ConcaveMeshShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	return to_tetra_mesh()->to_wire_mesh();
 }
 

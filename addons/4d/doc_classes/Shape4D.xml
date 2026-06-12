@@ -59,16 +59,25 @@
 				Callback method that should return whether two 4D shapes are exactly equal. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method is_equal_exact].
 			</description>
 		</method>
+		<method name="_to_poly_mesh" qualifiers="virtual const">
+			<return type="PolyMesh4D" />
+			<param index="0" name="options" type="Dictionary" />
+			<description>
+				Callback method that should return a [PolyMesh4D] representation of this shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method to_poly_mesh]. The [param options] parameter is freeform, and custom shape types should document what options are available for their implementation.
+			</description>
+		</method>
 		<method name="_to_tetra_mesh" qualifiers="virtual const">
 			<return type="TetraMesh4D" />
+			<param index="0" name="options" type="Dictionary" />
 			<description>
-				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method to_tetra_mesh].
+				Callback method that should return a [TetraMesh4D] representation of this shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method to_tetra_mesh]. The [param options] parameter is freeform, and custom shape types should document what options are available for their implementation.
 			</description>
 		</method>
 		<method name="_to_wire_mesh" qualifiers="virtual const">
 			<return type="WireMesh4D" />
+			<param index="0" name="options" type="Dictionary" />
 			<description>
-				Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method to_wire_mesh].
+				Callback method that should return a [WireMesh4D] representation of this shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method to_wire_mesh]. The [param options] parameter is freeform, and custom shape types should document what options are available for their implementation.
 			</description>
 		</method>
 		<method name="get_hypervolume" qualifiers="const">
@@ -119,16 +128,25 @@
 				Returns [code]true[/code] if the two 4D shapes are exactly equal. This is used to check if two shapes are the same type and have the same parameters. The specific check depends on the shape type. This function never uses approximate equality comparisons, only exact equality.
 			</description>
 		</method>
+		<method name="to_poly_mesh" qualifiers="const">
+			<return type="PolyMesh4D" />
+			<param index="0" name="options" type="Dictionary" default="{}" />
+			<description>
+				Returns a polyhedral mesh representation of the 4D shape as a [PolyMesh4D]. May not be implemented for all shapes, and will not be exact for curved shapes. The available [param options] depend on the specific shape class, see that class's documentation for details.
+			</description>
+		</method>
 		<method name="to_tetra_mesh" qualifiers="const">
 			<return type="TetraMesh4D" />
+			<param index="0" name="options" type="Dictionary" default="{}" />
 			<description>
-				Returns a tetrahedral mesh representation of the 4D shape. May not be implemented for all shapes, and will not be exact for curved shapes.
+				Returns a tetrahedral mesh representation of the 4D shape as a [TetraMesh4D]. May not be implemented for all shapes, and will not be exact for curved shapes. The available [param options] depend on the specific shape class, see that class's documentation for details.
 			</description>
 		</method>
 		<method name="to_wire_mesh" qualifiers="const">
 			<return type="WireMesh4D" />
+			<param index="0" name="options" type="Dictionary" default="{}" />
 			<description>
-				Returns a wireframe mesh representation of the 4D shape. May not be implemented for all shapes, and will not be exact for curved shapes.
+				Returns a wireframe mesh representation of the 4D shape as a [WireMesh4D]. May not be implemented for all shapes, and will not be exact for curved shapes. The available [param options] depend on the specific shape class, see that class's documentation for details.
 			</description>
 		</method>
 	</methods>

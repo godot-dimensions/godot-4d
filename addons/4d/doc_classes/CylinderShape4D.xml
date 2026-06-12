@@ -6,6 +6,9 @@
 	<description>
 		CylinderShape4D describes a 4D cylinder, also known as a spherinder, using a [member height] and [member radius]. The spherinder shape is like a 4D capsule, but with the end "hemispheres" removed. The cylinder is centered at the origin. The height spans vertically along the Y axis; if you want a cylinder facing a different direction, you can rotate the [CollisionShape4D] node the cylinder is attached to.
 		When a 4D cylinder is viewed directly from the top or bottom, it appears as a flat 3D sphere, and when viewed from the side, it appears to be a cuboid. This is similar to how a 3D cylinder appears as a 2D circle when viewed from the top or bottom, and as a rectangle when viewed from the side.
+		When converting a CylinderShape4D to a mesh, the [code]options[/code] Dictionary may have any of these properties:
+		- [code]"segments"[/code]: the number of segments to divide the cylinder's rings into. If not specified, the default number of segments is 16.
+		- [code]"deduplicate"[/code]: whether to deduplicate vertices. If not specified, the default is true.
 	</description>
 	<tutorials>
 		<link title="Miraheze Polytope Wiki Spherinder">https://polytope.miraheze.org/wiki/Spherinder</link>

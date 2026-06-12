@@ -22,4 +22,6 @@ public:
 	virtual bool has_point(const Vector4 &p_point) const override;
 
 	virtual bool is_equal_exact(const Ref<Shape4D> &p_shape) const override;
+
+	virtual Ref<WireMesh4D> to_wire_mesh(const Dictionary &p_options = Dictionary()) const override;
 };

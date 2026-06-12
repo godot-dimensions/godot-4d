@@ -16,7 +16,7 @@ bool ConvexHullShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	return _points == other_points;
 }
 
-Ref<TetraMesh4D> ConvexHullShape4D::to_tetra_mesh() const {
+Ref<TetraMesh4D> ConvexHullShape4D::to_tetra_mesh(const Dictionary &p_options) const {
 	Ref<ArrayTetraMesh4D> mesh;
 	mesh.instantiate();
 	mesh->set_vertices(_points);
@@ -24,7 +24,7 @@ Ref<TetraMesh4D> ConvexHullShape4D::to_tetra_mesh() const {
 	return mesh;
 }
 
-Ref<WireMesh4D> ConvexHullShape4D::to_wire_mesh() const {
+Ref<WireMesh4D> ConvexHullShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
 	mesh->set_vertices(_points);

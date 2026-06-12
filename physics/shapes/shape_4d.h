@@ -12,6 +12,7 @@
 
 #include "../../math/rect4.h"
 #include "../../math/transform_4d.h"
+#include "../../model/mesh/poly/poly_mesh_4d.h"
 #include "../../model/mesh/tetra/tetra_mesh_4d.h"
 #include "../../model/mesh/wire/wire_mesh_4d.h"
 
@@ -33,8 +34,9 @@ public:
 
 	virtual bool is_equal_exact(const Ref<Shape4D> &p_shape) const;
 
-	virtual Ref<TetraMesh4D> to_tetra_mesh() const;
-	virtual Ref<WireMesh4D> to_wire_mesh() const;
+	virtual Ref<PolyMesh4D> to_poly_mesh(const Dictionary &p_options = Dictionary()) const;
+	virtual Ref<TetraMesh4D> to_tetra_mesh(const Dictionary &p_options = Dictionary()) const;
+	virtual Ref<WireMesh4D> to_wire_mesh(const Dictionary &p_options = Dictionary()) const;
 
 	GDVIRTUAL0RC(real_t, _get_hypervolume);
 	GDVIRTUAL0RC(real_t, _get_surface_volume);
@@ -46,6 +48,7 @@ public:
 
 	GDVIRTUAL1RC(bool, _is_equal_exact, Ref<Shape4D>);
 
-	GDVIRTUAL0RC(Ref<TetraMesh4D>, _to_tetra_mesh);
-	GDVIRTUAL0RC(Ref<WireMesh4D>, _to_wire_mesh);
+	GDVIRTUAL1RC(Ref<PolyMesh4D>, _to_poly_mesh, const Dictionary &);
+	GDVIRTUAL1RC(Ref<TetraMesh4D>, _to_tetra_mesh, const Dictionary &);
+	GDVIRTUAL1RC(Ref<WireMesh4D>, _to_wire_mesh, const Dictionary &);
 };

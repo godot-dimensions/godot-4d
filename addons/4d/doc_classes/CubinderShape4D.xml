@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		CubinderShape4D is a shape created by extruding a 3D cylinder into 4D space. It is defined by a radius of a circle in the XZ plane, a height in the Y direction, and a thickness in the W direction. The cubinder is centered at the origin. If you want a cubinder in a different orientation, you can rotate the [CollisionShape4D] node the cubinder is attached to.
+		When converting a CubinderShape4D to a mesh, the [code]options[/code] Dictionary may have the [code]"segments"[/code] key to specify the number of segments for the mesh. If not specified, the default number of segments is 16.
 	</description>
 	<tutorials>
 		<link title="Miraheze Polytope Wiki Cubinder">https://polytope.miraheze.org/wiki/Cubinder</link>

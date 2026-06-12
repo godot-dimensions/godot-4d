@@ -6,6 +6,7 @@
 	<description>
 		OrthoplexShape4D describes a 4D orthoplex physics shape using a [member size] as a [Vector4]. The orthoplex is centered at the origin, and is axis-aligned by default; if you want an orthoplex facing a different direction, you can rotate the [CollisionShape4D] node the orthoplex is attached to. An orthoplex is a 4D cross-polytope with 8 vertices, plus or minus on each axis (-X, +X, -Y, +Y, -Z, +Z, -W, +W), and 16 tetrahedral cells.
 		The 3D version of an orthoplex is the octahedron, which has 6 vertices (-X, +X, -Y, +Y, -Z, +Z) and 8 triangular faces in each octant. The 2D version is a diamond (square rotated 45 degrees), which has 4 vertices (-X, +X, -Y, +Y) and 4 edges in each quadrant. Orthoplexes exist in all dimensions, and are the dual of boxes (square/cube/hypercube).
+		When converting an OrthoplexShape4D to a mesh, the [code]options[/code] Dictionary has no available properties, and is entirely ignored.
 	</description>
 	<tutorials>
 		<link title="Miraheze Polytope Wiki Hexadecachoron">https://polytope.miraheze.org/wiki/Hexadecachoron</link>

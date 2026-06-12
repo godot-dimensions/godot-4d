@@ -6,6 +6,9 @@
 	<description>
 		CapsuleShape4D describes a 4D capsule using a [member height] and [member radius]. The capsule is centered at the origin. The height spans vertically along the Y axis; if you want a capsule facing a different direction, you can rotate the [CollisionShape4D] node the capsule is attached to.
 		When a 4D capsule is viewed directly from the top or bottom, it appears as a 3D sphere, with the center of the sphere closer to the viewer. This is similar to how a 3D capsule appears as a 2D circle when viewed from the top or bottom, with the center of the circle closer to the viewer.
+		When converting a CapsuleShape4D to a mesh, the [code]options[/code] Dictionary may have any of these properties:
+		- [code]"segments"[/code]: the number of segments to divide the capsule's rings into. If not specified, the default number of segments is 16.
+		- [code]"deduplicate"[/code]: whether to deduplicate vertices. If not specified, the default is true.
 	</description>
 	<tutorials>
 		<link title="Wikipedia Capsule (Geometry)">https://en.wikipedia.org/wiki/Capsule_(geometry)</link>

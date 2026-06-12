@@ -46,7 +46,7 @@ bool RayShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	return _ray_target_y == other->get_ray_target_y();
 }
 
-Ref<WireMesh4D> RayShape4D::to_wire_mesh() const {
+Ref<WireMesh4D> RayShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	Ref<ArrayWireMesh4D> ray_wire_mesh;
 	ray_wire_mesh.instantiate();
 	ray_wire_mesh->append_edge_points(Vector4(0, 0, 0, 0), Vector4(0, _ray_target_y, 0, 0));

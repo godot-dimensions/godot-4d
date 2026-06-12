@@ -1,5 +1,6 @@
 #include "box_shape_4d.h"
 
+#include "../../model/mesh/poly/box_poly_mesh_4d.h"
 #include "../../model/mesh/tetra/box_tetra_mesh_4d.h"
 #include "../../model/mesh/wire/box_wire_mesh_4d.h"
 
@@ -79,14 +80,21 @@ bool BoxShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	return _size == box_shape->get_size();
 }
 
-Ref<TetraMesh4D> BoxShape4D::to_tetra_mesh() const {
+Ref<PolyMesh4D> BoxShape4D::to_poly_mesh(const Dictionary &p_options) const {
+	Ref<BoxPolyMesh4D> poly_mesh;
+	poly_mesh.instantiate();
+	poly_mesh->set_size(_size);
+	return poly_mesh;
+}
+
+Ref<TetraMesh4D> BoxShape4D::to_tetra_mesh(const Dictionary &p_options) const {
 	Ref<BoxTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	tetra_mesh->set_size(_size);
 	return tetra_mesh;
 }
 
-Ref<WireMesh4D> BoxShape4D::to_wire_mesh() const {
+Ref<WireMesh4D> BoxShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	Ref<BoxWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
 	wire_mesh->set_size(_size);
