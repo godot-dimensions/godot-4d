@@ -19,6 +19,9 @@ public:
 	int append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 
+	void deduplicate_all_elements();
+	void transform_vertices(const Transform4D &p_transform);
+	void transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis = Projection());
 	void merge_with(const Ref<ArrayWireMesh4D> &p_array_wire_mesh_4d, const Transform4D &p_transform = Transform4D());
 	void merge_with_bind(const Ref<ArrayWireMesh4D> &p_array_wire_mesh_4d, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 

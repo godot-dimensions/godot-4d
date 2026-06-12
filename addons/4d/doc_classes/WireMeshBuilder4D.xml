@@ -31,5 +31,14 @@
 				If [param breakup_edges] is [code]true[/code], the wireframe lines of the box will be broken up into multiple segments. This setting is useful if you plan to animate vertices (such as a "wavy" effect), but if vertex animation is not required, keeping [param breakup_edges] set to [code]false[/code] will give better performance with the same visual result.
 			</description>
 		</method>
+		<method name="extrude_linear" qualifiers="static">
+			<return type="ArrayWireMesh4D" />
+			<param index="0" name="input_mesh" type="ArrayWireMesh4D" />
+			<param index="1" name="extrusion_vector" type="Vector4" />
+			<description>
+				Extrudes a wireframe mesh linearly by creating 2 copies of the input mesh's data, translating one copy by the [param extrusion_vector] and the other copy by the negative of the [param extrusion_vector], and then connecting the corresponding vertices with edges.
+				This operation is similar to Blender's "Mesh → Extrude → Extrude Faces" operation (hotkey "E"), but Blender's operation extrudes the 2D faces of a 3D mesh, while this function only operates on wireframe data in 4D space.
+			</description>
+		</method>
 	</methods>
 </class>

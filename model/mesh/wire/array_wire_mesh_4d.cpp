@@ -63,6 +63,73 @@ PackedInt32Array ArrayWireMesh4D::append_vertices(const PackedVector4Array &p_ve
 	return indices;
 }
 
+void ArrayWireMesh4D::deduplicate_all_elements() {
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayWireMesh4D: Cannot deduplicate elements of an invalid mesh.");
+	// Deduplicate vertices.
+	PackedVector4Array output_vertices;
+	HashMap<int32_t, int32_t> vertex_index_remap;
+	for (int64_t input_vertex_index = 0; input_vertex_index < _vertices.size(); input_vertex_index++) {
+		const Vector4 vertex = _vertices[input_vertex_index];
+		bool found_duplicate = false;
+		for (int64_t output_vertex_index = 0; output_vertex_index < output_vertices.size(); output_vertex_index++) {
+			if (vertex.is_equal_approx(output_vertices[output_vertex_index])) {
+				vertex_index_remap[input_vertex_index] = (int32_t)output_vertex_index;
+				found_duplicate = true;
+				break;
+			}
+		}
+		if (!found_duplicate) {
+			vertex_index_remap[input_vertex_index] = (int32_t)output_vertices.size();
+			output_vertices.append(vertex);
+		}
+	}
+	// Update edges that reference those vertices.
+	for (int64_t edge_index = 0; edge_index < _edge_vertex_indices.size(); edge_index++) {
+		const int64_t input_vertex_index = _edge_vertex_indices[edge_index];
+		_edge_vertex_indices.set(edge_index, vertex_index_remap[input_vertex_index]);
+	}
+	// Deduplicate edges.
+	PackedInt32Array output_edge_vertex_indices;
+	for (int64_t input_edge_index = 0; input_edge_index < _edge_vertex_indices.size(); input_edge_index += 2) {
+		int32_t vertex_index_a = _edge_vertex_indices[input_edge_index];
+		int32_t vertex_index_b = _edge_vertex_indices[input_edge_index + 1];
+		bool found_duplicate = false;
+		for (int64_t output_edge_index = 0; output_edge_index < output_edge_vertex_indices.size(); output_edge_index += 2) {
+			const int32_t output_vertex_index_a = output_edge_vertex_indices[output_edge_index];
+			const int32_t output_vertex_index_b = output_edge_vertex_indices[output_edge_index + 1];
+			// Deduplicate edges in the same order and in the opposite order.
+			// Both orders should be considered the same edge in the PolyMesh4D code.
+			if ((vertex_index_a == output_vertex_index_a && vertex_index_b == output_vertex_index_b) ||
+					(vertex_index_a == output_vertex_index_b && vertex_index_b == output_vertex_index_a)) {
+				found_duplicate = true;
+				break;
+			}
+		}
+		if (!found_duplicate) {
+			// Ensure the smaller index is first.
+			if (vertex_index_a > vertex_index_b) {
+				SWAP(vertex_index_a, vertex_index_b);
+			}
+			output_edge_vertex_indices.append(vertex_index_a);
+			output_edge_vertex_indices.append(vertex_index_b);
+		}
+	}
+	_vertices = output_vertices;
+	_edge_vertex_indices = output_edge_vertex_indices;
+}
+
+void ArrayWireMesh4D::transform_vertices(const Transform4D &p_transform) {
+	const int64_t vertex_count = _vertices.size();
+	for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
+		_vertices.set(vertex_index, p_transform.xform(_vertices[vertex_index]));
+	}
+	wire_mesh_clear_cache();
+}
+
+void ArrayWireMesh4D::transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis) {
+	transform_vertices(Transform4D(p_basis, p_offset));
+}
+
 void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Transform4D &p_transform) {
 	const int start_edge_count = _edge_vertex_indices.size();
 	const int start_vertex_count = _vertices.size();
@@ -205,6 +272,8 @@ void ArrayWireMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate"), &ArrayWireMesh4D::append_vertex, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate"), &ArrayWireMesh4D::append_vertices, DEFVAL(true));
 
+	ClassDB::bind_method(D_METHOD("deduplicate_all_elements"), &ArrayWireMesh4D::deduplicate_all_elements);
+	ClassDB::bind_method(D_METHOD("transform_vertices", "offset", "basis"), &ArrayWireMesh4D::transform_vertices_bind, DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayWireMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 
 	ClassDB::bind_method(D_METHOD("subdivide_edges", "subdivision_segments"), &ArrayWireMesh4D::subdivide_edges, DEFVAL(2));

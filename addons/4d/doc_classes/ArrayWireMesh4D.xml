@@ -43,6 +43,12 @@
 				Append an array of vertices to the wireframe mesh, by calling [method append_vertex] for each vertex in the input array. The method will return an array of indices, where each index points to a vertex identical to the corresponding vertex in the input array.
 			</description>
 		</method>
+		<method name="deduplicate_all_elements">
+			<return type="void" />
+			<description>
+				Deduplicates all vertices and edges in the wireframe mesh, removing any duplicate vertices, updating the edge indices to point to the correct vertices, removing any duplicate edges, and ensuring that the edges have a consistent vertex ordering.
+			</description>
+		</method>
 		<method name="merge_with">
 			<return type="void" />
 			<param index="0" name="other" type="ArrayWireMesh4D" />
@@ -66,6 +72,14 @@
 			<param index="1" name="subdivision_segments" type="int" default="2" />
 			<description>
 				Subdivides a single edge of the wireframe mesh into smaller segments. The edge is specified by its edge number, which is half the index of the edge indices in the [member edge_indices] array. The edge will be divided into [param subdivision_segments] segments, such that [code]subdivision_segments - 1[/code] new vertices will be added to the end of the [member vertices] array, and [code]subdivision_segments - 1[/code] new edges will be added to the end of the [member edge_indices] array.
+			</description>
+		</method>
+		<method name="transform_vertices">
+			<return type="void" />
+			<param index="0" name="offset" type="Vector4" />
+			<param index="1" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<description>
+				Transforms all vertices in the wireframe mesh by applying the given offset and basis transformation, which are assembled into a single [Transform4D] internally.
 			</description>
 		</method>
 	</methods>

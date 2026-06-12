@@ -125,9 +125,37 @@ Ref<ArrayWireMesh4D> WireMeshBuilder4D::create_3d_subdivided_box(const Vector3 &
 	return wire_mesh;
 }
 
+Ref<ArrayWireMesh4D> WireMeshBuilder4D::extrude_linear(const Ref<ArrayWireMesh4D> &p_input_mesh, const Vector4 &p_extrusion_vector) {
+	Ref<ArrayWireMesh4D> ret;
+	ret.instantiate();
+	ERR_FAIL_COND_V_MSG(p_input_mesh.is_null() || !p_input_mesh->is_mesh_data_valid(), ret, "Input mesh is not valid, so extrusion cannot be performed.");
+	// Extract and copy a bunch of data from the input mesh.
+	// Start by copying the input mesh's data into the output mesh twice,
+	// offset by the extrusion vector in both negative and positive directions.
+	ret = p_input_mesh->duplicate();
+	ret->transform_vertices(Transform4D(Basis4D(), -p_extrusion_vector));
+	ret->merge_with(p_input_mesh, Transform4D(Basis4D(), p_extrusion_vector));
+	// Form new edges between the vertices of the two copies of the input mesh.
+	{
+		const PackedVector4Array &input_vertices = p_input_mesh->get_vertices();
+		PackedInt32Array edge_indices = ret->get_edge_indices();
+		int64_t edge_indices_iter = edge_indices.size();
+		const int32_t input_vertex_count = (int32_t)input_vertices.size();
+		edge_indices.resize(edge_indices.size() + input_vertex_count * 2);
+		for (int input_vertex_index = 0; input_vertex_index < input_vertex_count; input_vertex_index++) {
+			edge_indices.set(edge_indices_iter, input_vertex_index);
+			edge_indices.set(edge_indices_iter + 1, input_vertex_index + input_vertex_count);
+			edge_indices_iter += 2;
+		}
+		ret->set_edge_indices(edge_indices);
+	}
+	return ret;
+}
+
 WireMeshBuilder4D *WireMeshBuilder4D::singleton = nullptr;
 
 void WireMeshBuilder4D::_bind_methods() {
 	ClassDB::bind_static_method("WireMeshBuilder4D", D_METHOD("create_3d_orthoplex_sphere", "radius", "subdivisions", "cone_tip_position"), &WireMeshBuilder4D::create_3d_orthoplex_sphere, DEFVAL(0.0));
 	ClassDB::bind_static_method("WireMeshBuilder4D", D_METHOD("create_3d_subdivided_box", "size", "subdivision_segments", "fill_cell", "breakup_edges"), &WireMeshBuilder4D::create_3d_subdivided_box, DEFVAL(false), DEFVAL(false));
+	ClassDB::bind_static_method("WireMeshBuilder4D", D_METHOD("extrude_linear", "input_mesh", "extrusion_vector"), &WireMeshBuilder4D::extrude_linear);
 }

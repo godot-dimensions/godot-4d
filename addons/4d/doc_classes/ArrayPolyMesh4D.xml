@@ -157,7 +157,7 @@
 			<param index="0" name="offset" type="Vector4" />
 			<param index="1" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
 			<description>
-				Transforms the vertices of the polyhedral mesh by applying the given offset and basis transformation, which are assembled into a single [Transform4D].
+				Transforms the vertices of the polyhedral mesh by applying the given offset and basis transformation, which are assembled into a single [Transform4D] internally.
 			</description>
 		</method>
 		<method name="unwrap_texture_map">
