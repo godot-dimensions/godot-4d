@@ -76,7 +76,7 @@ Ref<ArrayWireMesh4D> WireMeshBuilder4D::create_3d_subdivided_box(const Vector3 &
 				const bool y_boundary = y_index == 0 || y_index == p_subdivision_segments.y;
 				for (int z_index = 0; z_index <= p_subdivision_segments.z; z_index++) {
 					const bool z_boundary = z_index == 0 || z_index == p_subdivision_segments.z;
-					Vector4 point = Vector4(start.x + x_index * step.x, start.x + y_index * step.y, start.x + z_index * step.z, 0);
+					Vector4 point = Vector4(start.x + x_index * step.x, start.y + y_index * step.y, start.z + z_index * step.z, 0);
 					if (x_index < p_subdivision_segments.x && (p_fill_cell || (y_boundary + z_boundary >= 1))) {
 						wire_mesh->append_edge_points(point, point + Vector4(step.x, 0, 0, 0));
 					}

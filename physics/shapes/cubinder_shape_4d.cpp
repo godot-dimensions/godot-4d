@@ -51,8 +51,8 @@ real_t CubinderShape4D::get_surface_volume() const {
 }
 
 Vector4 CubinderShape4D::get_nearest_point(const Vector4 &p_point) const {
-	const real_t half_height = _height * 0.5f;
-	const real_t half_thickness = _thickness * 0.5f;
+	const real_t half_height = _height * (real_t)0.5;
+	const real_t half_thickness = _thickness * (real_t)0.5;
 	Vector4 nearest = Vector4(p_point.x, 0.0f, p_point.z, 0.0f);
 	const real_t length_sq = nearest.length_squared();
 	if (length_sq > _radius * _radius) {
@@ -64,9 +64,14 @@ Vector4 CubinderShape4D::get_nearest_point(const Vector4 &p_point) const {
 }
 
 Vector4 CubinderShape4D::get_support_point(const Vector4 &p_direction) const {
-	const real_t half_height = _height * 0.5f;
-	const real_t half_thickness = _thickness * 0.5f;
-	Vector4 support = Vector4(p_direction.x, 0.0f, p_direction.z, 0.0f).normalized() * _radius;
+	const real_t half_height = _height * (real_t)0.5;
+	const real_t half_thickness = _thickness * (real_t)0.5;
+	Vector4 support = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+	if (p_direction.x != 0.0f || p_direction.z != 0.0f) {
+		Vector2 circle_dir = Vector2(p_direction.x, p_direction.z).normalized() * _radius;
+		support.x = circle_dir.x;
+		support.z = circle_dir.y;
+	}
 	support.y = (p_direction.y > 0.0f) ? half_height : -half_height;
 	support.w = (p_direction.w > 0.0f) ? half_thickness : -half_thickness;
 	return support;
@@ -149,6 +154,7 @@ Ref<PolyMesh4D> CubinderShape4D::to_poly_mesh(const Dictionary &p_options) const
 		const PackedInt32Array &face = face_vertex_indices[face_index];
 		const Vector4 &vert1 = poly_vertices[face[1]];
 		const Vector4 &vert3 = poly_vertices[face[3]];
+		// Seam face if exactly one of Y or W differs between diagonally-opposite vertices.
 		if ((vert1.y != vert3.y) != (vert1.w != vert3.w)) {
 			seam_face_indices.insert(face_index);
 		}

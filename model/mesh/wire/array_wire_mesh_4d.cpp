@@ -1,5 +1,11 @@
 #include "array_wire_mesh_4d.h"
 
+#if GDEXTENSION
+#include <godot_cpp/templates/hash_map.hpp>
+#elif GODOT_MODULE
+#include "core/templates/hash_map.h"
+#endif
+
 bool ArrayWireMesh4D::validate_mesh_data() {
 	const int64_t edge_indices_count = _edge_vertex_indices.size();
 	if (edge_indices_count % 2 != 0) {
@@ -208,6 +214,7 @@ void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int6
 	ERR_FAIL_COND_MSG(p_subdivision_segments < 2, "ArrayWireMesh4D: Cannot subdivide an edge into " + itos(p_subdivision_segments) + " segments, must be at least 2.");
 	const int64_t start_edge_index = p_edge_number * 2;
 	const int64_t end_edge_index = start_edge_index + 1;
+	const int64_t original_edge_end = _edge_vertex_indices[end_edge_index];
 	ERR_FAIL_INDEX_MSG(end_edge_index, _edge_vertex_indices.size(), "ArrayWireMesh4D: Edge number " + itos(p_edge_number) + " does not exist.");
 	int64_t used_edge_index_count = _edge_vertex_indices.size();
 	int64_t used_vertex_count = _vertices.size();
@@ -227,7 +234,7 @@ void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int6
 		if (i == p_subdivision_segments - 1) {
 			// This is the end of the loop, so the endpoint of this
 			// edge is the endpoint of the original edge.
-			_edge_vertex_indices.set(used_edge_index_count, end_edge_index);
+			_edge_vertex_indices.set(used_edge_index_count, original_edge_end);
 		} else {
 			// This isn't the end of the loop, so the endpoint of this
 			// edge is the vertex added by the next loop iteration.
