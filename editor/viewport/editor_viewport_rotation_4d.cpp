@@ -58,8 +58,9 @@ void EditorViewportRotation4D::_draw_axis_circle(const HitTarget2D &p_target) {
 	const float alpha = MIN(2.0f, p_target.z_index + 2.0f);
 	const Color color = is_focused ? Color(axis_color.lightened(0.75f), 1.0f) : Color(axis_color, alpha);
 	const real_t axis_circle_radius = (8.0f + p_target.z_index) * _editor_scale;
+	// Draw the base circle (both positive and negative).
+	draw_circle(p_target.screen_point, axis_circle_radius, color, true, -1.0f, true);
 	if (p_target.hit_type == HIT_TYPE_AXIS_CIRCLE_POSITIVE) {
-		draw_circle(p_target.screen_point, axis_circle_radius, color, true, -1.0f, true);
 		// Draw the axis letter for the positive axes.
 		const String axis_letter = Vector4D::axis_letter(p_target.primary_axis_number);
 		const Ref<Font> &font = get_theme_font(StringName("rotation_control"), StringName("EditorFonts"));
@@ -70,7 +71,6 @@ void EditorViewportRotation4D::_draw_axis_circle(const HitTarget2D &p_target) {
 	} else {
 		CRASH_COND(p_target.hit_type != HIT_TYPE_AXIS_CIRCLE_NEGATIVE);
 		// Draw an outline around the negative axes.
-		draw_circle(p_target.screen_point, axis_circle_radius, color, true, -1.0f, true);
 		draw_circle(p_target.screen_point, axis_circle_radius * 0.8f, color.darkened(0.4f), true, -1.0f, true);
 	}
 }
@@ -139,7 +139,7 @@ EditorViewportRotation4D::HitTarget2D EditorViewportRotation4D::_make_plane_targ
 	ret.secondary_axis_number = p_up;
 	const Vector4 right_vec4 = p_basis[p_right];
 	const Vector4 up_vec4 = p_basis[p_up];
-	const Vector4 axis_4d = (right_vec4 + up_vec4).normalized();
+	const Vector4 axis_4d = (right_vec4 + up_vec4) * Math_SQRT12;
 	ret.screen_point = p_center + Vector2(axis_4d.x, -axis_4d.y) * p_radius;
 	ret.angle = Vector2(right_vec4.x, -right_vec4.y).angle_to_point(Vector2(up_vec4.x, -up_vec4.y));
 	ret.z_index = axis_4d.z;
@@ -236,6 +236,7 @@ void EditorViewportRotation4D::_get_sorted_axis_targets(const Vector2 &p_center,
 			axis.hit_type = HIT_TYPE_AXIS_CIRCLE_POSITIVE;
 			axis.primary_axis_number = i;
 			axis.screen_point = p_center;
+			axis.z_index = axis_4d.z;
 			r_targets.push_back(axis);
 		} else {
 			HitTarget2D pos_axis;
