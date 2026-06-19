@@ -22,8 +22,8 @@ class EditorViewportRotation4D : public Control {
 		float z_index = 0.0f;
 		float angle = 0.0f; // Only used by the PLANE hit type.
 		HitType2D hit_type = HIT_TYPE_NONE;
-		int primary_axis_number = -1; // 0 to 3 for XYZW, or -1 for none.
-		int secondary_axis_number = -1; // 0 to 3 for XYZW. Only used by the PLANE hit type.
+		int8_t primary_axis_number = -1; // 0 to 3 for XYZW, or -1 for none.
+		int8_t secondary_axis_number = -1; // 0 to 3 for XYZW. Only used by the PLANE hit type.
 	};
 
 	struct HitTarget2DCompare {

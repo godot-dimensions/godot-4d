@@ -30,6 +30,14 @@ void EditorViewportRotation4D::_notification(int p_what) {
 		case NOTIFICATION_THEME_CHANGED: {
 			_update_theme();
 		} break;
+		case NOTIFICATION_WM_MOUSE_EXIT:
+		case NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		case NOTIFICATION_VP_MOUSE_EXIT: {
+			_on_mouse_exited();
+			if (Input::get_singleton()->get_mouse_mode() == InputClassEnums::MOUSE_MODE_CAPTURED) {
+				Input::get_singleton()->set_mouse_mode(InputClassEnums::MOUSE_MODE_VISIBLE);
+			}
+		} break;
 	}
 }
 
@@ -53,10 +61,10 @@ void EditorViewportRotation4D::_draw() {
 }
 
 void EditorViewportRotation4D::_draw_axis_circle(const HitTarget2D &p_target) {
-	const bool is_focused = _focused_target.primary_axis_number == p_target.primary_axis_number && _focused_target.hit_type == p_target.hit_type;
+	const bool is_focused = _focused_target.hit_type == p_target.hit_type && _focused_target.primary_axis_number == p_target.primary_axis_number && _focused_target.secondary_axis_number == p_target.secondary_axis_number;
 	const Color axis_color = _axis_colors[p_target.primary_axis_number];
 	const float alpha = MIN(2.0f, p_target.z_index + 2.0f);
-	const Color color = is_focused ? Color(axis_color.lightened(0.75f), 1.0f) : Color(axis_color, alpha);
+	const Color color = is_focused ? Color(axis_color.lightened(0.5f), 1.0f) : Color(axis_color, alpha);
 	const real_t axis_circle_radius = (8.0f + p_target.z_index) * _editor_scale;
 	// Draw the base circle (both positive and negative).
 	draw_circle(p_target.screen_point, axis_circle_radius, color, true, -1.0f, true);
@@ -79,17 +87,17 @@ void EditorViewportRotation4D::_draw_axis_line(const HitTarget2D &p_target, cons
 	const bool is_focused = _focused_target.primary_axis_number == p_target.primary_axis_number && _focused_target.hit_type == HIT_TYPE_AXIS_CIRCLE_POSITIVE;
 	const Color axis_color = _axis_colors[p_target.primary_axis_number];
 	const float alpha = MIN(2.0f, p_target.z_index + 2.0f);
-	const Color color = is_focused ? Color(axis_color.lightened(0.75f), 1.0f) : Color(axis_color, alpha);
+	const Color color = is_focused ? Color(axis_color.lightened(0.5f), 1.0f) : Color(axis_color, alpha);
 	draw_line(p_center, p_target.screen_point, color, 1.5f * _editor_scale, true);
 }
 
 void EditorViewportRotation4D::_draw_plane_semicircles(const HitTarget2D &p_target) {
-	const bool is_focused = _focused_target.primary_axis_number == p_target.primary_axis_number && _focused_target.hit_type == p_target.hit_type && _focused_target.secondary_axis_number == p_target.secondary_axis_number;
+	const bool is_focused = _focused_target.hit_type == p_target.hit_type && _focused_target.primary_axis_number == p_target.primary_axis_number && _focused_target.secondary_axis_number == p_target.secondary_axis_number;
 	Color primary_color = _axis_colors[p_target.primary_axis_number];
 	Color secondary_color = _axis_colors[p_target.secondary_axis_number];
 	if (is_focused) {
-		primary_color = primary_color.lightened(0.75f);
-		secondary_color = secondary_color.lightened(0.75f);
+		primary_color = primary_color.lightened(0.5f);
+		secondary_color = secondary_color.lightened(0.5f);
 	} else {
 		const float alpha = MIN(2.0f, p_target.z_index + 2.0f);
 		primary_color.a = alpha;
@@ -322,7 +330,9 @@ void EditorViewportRotation4D::_process_drag(Ref<InputEvent> p_event, int p_inde
 void EditorViewportRotation4D::_update_focus() {
 	const Vector2 center = get_size() / 2.0f;
 	const Vector2 mouse_pos = get_local_mouse_position();
-	const int original_focus = _focused_target.primary_axis_number;
+	const HitType2D original_hit_type = _focused_target.hit_type;
+	const int8_t original_primary_focus = _focused_target.primary_axis_number;
+	const int8_t original_secondary_focus = _focused_target.secondary_axis_number;
 	_focused_target = HitTarget2D();
 	_focused_target.z_index = -10.0f;
 	if (mouse_pos.distance_to(center) < center.x) {
@@ -337,7 +347,7 @@ void EditorViewportRotation4D::_update_focus() {
 		}
 	}
 
-	if (_focused_target.primary_axis_number != original_focus) {
+	if (_focused_target.hit_type != original_hit_type || _focused_target.primary_axis_number != original_primary_focus || _focused_target.secondary_axis_number != original_secondary_focus) {
 		queue_redraw();
 	}
 }
