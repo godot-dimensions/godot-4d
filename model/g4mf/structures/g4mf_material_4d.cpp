@@ -195,6 +195,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 		// Set the bindings, values, and factor for the material channel.
 		element_map_binding->set_geometry_bindings(geometry_bindings);
 		element_map_binding->set_values_accessor_index(G4MFAccessor4D::encode_new_accessor_from_colors(p_g4mf_state, deduplicated_colors, p_deduplicate));
+		base_color_channel->set_element_map_binding(element_map_binding);
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) {
 			base_color_channel->set_factor(p_material->get_albedo_color());
 		}
