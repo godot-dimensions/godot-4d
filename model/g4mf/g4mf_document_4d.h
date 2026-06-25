@@ -2,6 +2,12 @@
 
 #include "g4mf_state_4d.h"
 
+#if GDEXTENSION
+namespace godot {
+class FileAccess;
+}
+#endif
+
 class G4MFDocument4D : public Resource {
 	GDCLASS(G4MFDocument4D, Resource);
 
@@ -16,6 +22,7 @@ private:
 	EncodingFormat _encoding_format = ENCODING_FORMAT_NONE;
 	int _max_nested_scene_depth = -1; // -1 means unlimited depth.
 
+	static constexpr uint64_t CHUNK_ALIGNMENT_BITMASK = (uint64_t)15;
 	inline uint64_t _ceiling_division(uint64_t a, uint64_t b) {
 		return (a + b - 1) / b;
 	}
@@ -43,11 +50,13 @@ private:
 	PackedByteArray _export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state);
 
 	// Import process.
-	PackedByteArray _import_decode_chunk_data(const PackedByteArray &p_raw_encoded_data, const uint32_t p_encoding_indicator);
-	PackedByteArray _import_next_chunk_bytes_decoded(Ref<G4MFState4D> p_g4mf_state, const uint8_t *p_file_bytes, const uint64_t p_file_size, size_t &p_read_offset);
+	Error _import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_state, const Ref<FileAccess> &p_file);
+	PackedByteArray _import_decode_chunk_data(const PackedByteArray &p_file_or_chunk_data, const int64_t p_chunk_data_offset, const int64_t p_chunk_data_raw_size, const uint32_t p_encoding_indicator);
+	Error _import_parse_buffers(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json, PackedInt64Array *r_chunk_indices, PackedInt64Array *r_decoded_byte_lengths);
 	Error _import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
-	Error _import_parse_buffers_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _import_parse_buffer_views(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _import_parse_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
