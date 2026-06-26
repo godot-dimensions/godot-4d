@@ -20,7 +20,7 @@
 #include "core/io/json.h"
 #endif
 
-bool G4MFDocument4D::_is_encoding_format_supported(const EncodingFormat p_encoding_format) const {
+bool G4MFDocument4D::_is_encoding_format_supported(const EncodingFormat p_encoding_format) {
 	return p_encoding_format == ENCODING_FORMAT_PLAIN || p_encoding_format == ENCODING_FORMAT_ZSTD;
 }
 
@@ -509,11 +509,11 @@ PackedByteArray G4MFDocument4D::_export_encode_chunk_data(Ref<G4MFState4D> p_g4m
 		default:
 			break;
 	}
-	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Invalid or unknown encoding format. Cannot export G4MF file.");
+	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Invalid, unknown, or unsupported encoding format. Cannot export G4MF file.");
 }
 
 PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state) {
-	ERR_FAIL_COND_V_MSG(!_is_encoding_format_supported(_encoding_format), PackedByteArray(), "G4MF export: Invalid or unknown encoding format. Cannot export G4MF file.");
+	ERR_FAIL_COND_V_MSG(!_is_encoding_format_supported(_encoding_format), PackedByteArray(), "G4MF export: Invalid, unknown, or unsupported encoding format. Cannot export G4MF file.");
 	Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
 	ERR_FAIL_COND_V(!g4mf_json.has("asset"), PackedByteArray());
 	// Add binary buffer chunks to the file size.
@@ -1539,7 +1539,7 @@ Ref<Mesh4D> G4MFDocument4D::import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_s
 void G4MFDocument4D::set_encoding_format(const EncodingFormat p_encoding_format) {
 	_encoding_format = p_encoding_format;
 	if (!_is_encoding_format_supported(_encoding_format)) {
-		ERR_PRINT("G4MF: Invalid or unknown encoding format.");
+		ERR_PRINT("G4MF: Invalid, unknown, or unsupported encoding format.");
 	}
 }
 

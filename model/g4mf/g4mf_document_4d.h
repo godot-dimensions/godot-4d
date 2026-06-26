@@ -26,9 +26,9 @@ private:
 		return (a + b - 1) / b;
 	}
 
-	bool _is_encoding_format_supported(const EncodingFormat p_encoding_format) const;
-	String _uint32_to_ascii_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
-	uint32_t _ascii_string_to_uint32(const String &p_value);
+	static bool _is_encoding_format_supported(const EncodingFormat p_encoding_format);
+	static String _uint32_to_ascii_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
+	static uint32_t _ascii_string_to_uint32(const String &p_value);
 
 	// Export process.
 	Error _export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index);
