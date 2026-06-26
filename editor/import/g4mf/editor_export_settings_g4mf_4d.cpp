@@ -2,7 +2,7 @@
 
 G4MFDocument4D::EncodingFormat EditorExportSettingsG4MF4D::get_encoding_format() const {
 	if (_g4mf_document.is_null()) {
-		return G4MFDocument4D::ENCODING_FORMAT_NONE;
+		return G4MFDocument4D::ENCODING_FORMAT_PLAIN;
 	}
 	return _g4mf_document->get_encoding_format();
 }
@@ -31,7 +31,7 @@ void EditorExportSettingsG4MF4D::setup(Ref<G4MFDocument4D> p_g4mf_document) {
 void EditorExportSettingsG4MF4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_encoding_format"), &EditorExportSettingsG4MF4D::get_encoding_format);
 	ClassDB::bind_method(D_METHOD("set_encoding_format", "encoding_format"), &EditorExportSettingsG4MF4D::set_encoding_format);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "encoding_format", PROPERTY_HINT_ENUM, "None,Zstd"), "set_encoding_format", "get_encoding_format");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "encoding_format", PROPERTY_HINT_ENUM, "Plain:0,Zstd:1685353306"), "set_encoding_format", "get_encoding_format");
 
 	ClassDB::bind_method(D_METHOD("get_external_data_mode"), &EditorExportSettingsG4MF4D::get_external_data_mode);
 	ClassDB::bind_method(D_METHOD("set_external_data_mode", "external_data_mode"), &EditorExportSettingsG4MF4D::set_external_data_mode);

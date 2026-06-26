@@ -105,10 +105,10 @@
 		</member>
 	</members>
 	<constants>
-		<constant name="ENCODING_FORMAT_NONE" value="0" enum="EncodingFormat">
+		<constant name="ENCODING_FORMAT_PLAIN" value="0" enum="EncodingFormat">
 			Plainly encode (do not compress or encrypt) the G4MF data when exporting. This applies to binary buffers, the chunks of a binary G4MF [code]".g4b"[/code] file, or the chunks of a binary G4MF in-memory byte array. This is the default.
 		</constant>
-		<constant name="ENCODING_FORMAT_ZSTD" value="1" enum="EncodingFormat">
+		<constant name="ENCODING_FORMAT_ZSTD" value="1685353306" enum="EncodingFormat">
 			Compress the binary G4MF data using Zstandard compression. This applies to binary buffers, the chunks of a binary G4MF [code]".g4b"[/code] file, or the chunks of a binary G4MF in-memory byte array. This can significantly reduce the file size of the exported G4MF data, at the cost of an additional dependency for importers.
 		</constant>
 	</constants>

@@ -20,28 +20,8 @@
 #include "core/io/json.h"
 #endif
 
-uint32_t G4MFDocument4D::_encoding_enum_to_indicator(const EncodingFormat p_encoding_format) {
-	switch (p_encoding_format) {
-		case ENCODING_FORMAT_NONE:
-			return 0x00000000;
-		case ENCODING_FORMAT_ZSTD:
-			// "Zstd" in ASCII. Note that this does not need to match the magic number in Zstd itself (0xFD2FB528).
-			return 0x6474735A;
-		case ENCODING_FORMAT_UNKNOWN:
-			return 0xFFFFFFFF; // Unknown encoding format.
-	}
-	return 0xFFFFFFFF; // Unknown encoding format.
-}
-
-G4MFDocument4D::EncodingFormat G4MFDocument4D::_encoding_indicator_to_enum(const uint32_t p_indicator) {
-	switch (p_indicator) {
-		case 0x00000000:
-			return ENCODING_FORMAT_NONE;
-		case 0x6474735A:
-			// "Zstd" in ASCII. Note that this does not need to match the magic number in Zstd itself (0xFD2FB528).
-			return ENCODING_FORMAT_ZSTD;
-	}
-	return ENCODING_FORMAT_UNKNOWN;
+bool G4MFDocument4D::_is_encoding_format_supported(const EncodingFormat p_encoding_format) const {
+	return p_encoding_format == ENCODING_FORMAT_PLAIN || p_encoding_format == ENCODING_FORMAT_ZSTD;
 }
 
 String G4MFDocument4D::_uint32_to_ascii_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii) {
@@ -280,8 +260,8 @@ Error G4MFDocument4D::_export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4m
 		const PackedByteArray state_buffer = state_buffers[i];
 		Dictionary buffer_dict;
 		buffer_dict["byteLength"] = state_buffer.size();
-		if (_encoding_format != ENCODING_FORMAT_NONE) {
-			buffer_dict["encoding"] = _uint32_to_ascii_string(_encoding_enum_to_indicator(_encoding_format), true);
+		if (_encoding_format != ENCODING_FORMAT_PLAIN) {
+			buffer_dict["encoding"] = _uint32_to_ascii_string((uint32_t)_encoding_format, true);
 		}
 		serialized_buffers[i] = buffer_dict;
 	}
@@ -507,7 +487,7 @@ String G4MFDocument4D::_export_pretty_print_json(const Dictionary &p_g4mf_json) 
 PackedByteArray G4MFDocument4D::_export_encode_chunk_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_chunk_data) {
 	const int64_t buffer_size = p_chunk_data.size();
 	switch (_encoding_format) {
-		case G4MFDocument4D::ENCODING_FORMAT_NONE: {
+		case G4MFDocument4D::ENCODING_FORMAT_PLAIN: {
 			return p_chunk_data;
 		};
 		case G4MFDocument4D::ENCODING_FORMAT_ZSTD: {
@@ -525,18 +505,15 @@ PackedByteArray G4MFDocument4D::_export_encode_chunk_data(Ref<G4MFState4D> p_g4m
 			}
 			return compressed;
 #endif
-		}
-		case G4MFDocument4D::ENCODING_FORMAT_UNKNOWN: {
-			ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Encoding format is not set.");
-		};
+		} break;
+		default:
+			break;
 	}
-	CRASH_NOW_MSG("G4MF export: Unknown encoding format. This should never happen (the switch should handle all cases the enum is allowed to be set to).");
-	return PackedByteArray(); // Unreachable, but MSVC complains about not all control paths returning a value.
+	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Invalid or unknown encoding format. Cannot export G4MF file.");
 }
 
 PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state) {
-	const uint32_t encoding_indicator = _encoding_enum_to_indicator(_encoding_format);
-	CRASH_COND(encoding_indicator == 0xFFFFFFFF);
+	ERR_FAIL_COND_V_MSG(!_is_encoding_format_supported(_encoding_format), PackedByteArray(), "G4MF export: Invalid or unknown encoding format. Cannot export G4MF file.");
 	Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
 	ERR_FAIL_COND_V(!g4mf_json.has("asset"), PackedByteArray());
 	// Add binary buffer chunks to the file size.
@@ -602,7 +579,7 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 	// Write the JSON chunk.
 	*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x4E4F534A; // ASCII string "JSON" in little-endian.
 	write_offset += 4;
-	*(uint32_t *)(file_bytes_ptrw + write_offset) = encoding_indicator;
+	*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)_encoding_format;
 	write_offset += 4;
 	*(uint64_t *)(file_bytes_ptrw + write_offset) = json_encoded_size; // JSON size after encoding.
 	write_offset += 8;
@@ -619,7 +596,7 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 			const uint64_t write_offset_padded = _ceiling_division(write_offset, 16) * 16;
 			for (uint64_t pad_index = write_offset; pad_index < write_offset_padded; pad_index++) {
 				// Pad the previous chunk with zero bytes, or spaces after a plainly encoded JSON chunk.
-				const bool use_spaces = (_encoding_format == ENCODING_FORMAT_NONE && !padded_json);
+				const bool use_spaces = (_encoding_format == ENCODING_FORMAT_PLAIN && !padded_json);
 				*(file_bytes_ptrw + write_offset) = use_spaces ? (uint8_t)0x20 : (uint8_t)0x00;
 				write_offset++;
 			}
@@ -628,7 +605,7 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 			const uint64_t buffer_encoded_size = buffer_encoded.size();
 			*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x424F4C42; // "BLOB"
 			write_offset += 4;
-			*(uint32_t *)(file_bytes_ptrw + write_offset) = encoding_indicator;
+			*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)_encoding_format;
 			write_offset += 4;
 			*(uint64_t *)(file_bytes_ptrw + write_offset) = buffer_encoded_size; // Buffer size after encoding.
 			write_offset += 8;
@@ -651,7 +628,7 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 	ERR_FAIL_COND_V_MSG(file_remaining_size < (uint64_t)32, ERR_INVALID_DATA, "G4MF import: File is too small to be a valid G4MF file.");
 	// Read the file header and validate it.
 	ERR_FAIL_COND_V_MSG(p_file->get_32() != (uint32_t)0x464D3447, ERR_INVALID_DATA, "G4MF import: File is not a valid G4MF file.");
-	ERR_FAIL_COND_V_MSG(p_file->get_32() > (uint32_t)0x00000000, ERR_UNAVAILABLE, "G4MF import: G4MF file version is not supported.");
+	ERR_FAIL_COND_V_MSG(p_file->get_32() > (uint32_t)0x00000000, ERR_UNAVAILABLE, "G4MF import: G4MF file version is not supported. Godot 4D cannot import this G4MF file.");
 	const uint64_t g4mf_declared_file_size = p_file->get_64();
 	ERR_FAIL_COND_V_MSG(g4mf_declared_file_size < (uint64_t)32, ERR_INVALID_DATA, "G4MF import: File is too small to be a valid G4MF file.");
 	ERR_FAIL_COND_V_MSG(g4mf_declared_file_size > (uint64_t)INT64_MAX, ERR_UNAVAILABLE, "G4MF import: File is too large to be a valid G4MF file.");
@@ -669,7 +646,13 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 		if (json_chunk_index == -1 && chunk_type == (uint32_t)0x4E4F534A) { // ASCII string "JSON" in little-endian.
 			json_chunk_index = chunk_data_starts.size();
 		}
-		chunk_encodings.append((int64_t)p_file->get_32());
+		const uint32_t chunk_encoding = p_file->get_32();
+		if (!_is_encoding_format_supported((EncodingFormat)chunk_encoding)) {
+			const String friendly = _uint32_to_ascii_string(chunk_encoding, false);
+			const String number_hex = String::num_uint64(chunk_encoding, 16, true);
+			ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "G4MF import: Support for reading \"" + friendly + "\" (0x" + number_hex + ") encoded data is not implemented. Godot 4D cannot import this G4MF file.");
+		}
+		chunk_encodings.append((int64_t)chunk_encoding);
 		const uint64_t chunk_size = p_file->get_64();
 		const uint64_t padded_chunk_size = (chunk_size + CHUNK_ALIGNMENT_BITMASK) & ~CHUNK_ALIGNMENT_BITMASK;
 		ERR_FAIL_COND_V_MSG(padded_chunk_size > file_remaining_size, ERR_INVALID_DATA, "G4MF import: Declared chunk size is larger than the file size. File is corrupted.");
@@ -721,12 +704,9 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 	return _import_parse_json_data(p_g4mf_state, g4mf_json);
 }
 
-PackedByteArray G4MFDocument4D::_import_decode_chunk_data(const PackedByteArray &p_file_or_chunk_data, const int64_t p_chunk_data_offset, const int64_t p_chunk_data_raw_size, const uint32_t p_encoding_indicator) {
-	const EncodingFormat chunk_encoding_format = _encoding_indicator_to_enum(p_encoding_indicator);
-	switch (chunk_encoding_format) {
-		case ENCODING_FORMAT_UNKNOWN:
-			break;
-		case ENCODING_FORMAT_NONE: {
+PackedByteArray G4MFDocument4D::_import_decode_chunk_data(const PackedByteArray &p_file_or_chunk_data, const int64_t p_chunk_data_offset, const int64_t p_chunk_data_raw_size, const uint32_t p_chunk_encoding_format) {
+	switch (p_chunk_encoding_format) {
+		case ENCODING_FORMAT_PLAIN: {
 			if (p_chunk_data_offset == (int64_t)0 && p_chunk_data_raw_size == p_file_or_chunk_data.size()) {
 				return p_file_or_chunk_data;
 			}
@@ -768,10 +748,12 @@ PackedByteArray G4MFDocument4D::_import_decode_chunk_data(const PackedByteArray 
 #endif
 			}
 			return decompressed;
-		}
+		} break;
+		default:
+			break;
 	}
-	const String friendly = _uint32_to_ascii_string(p_encoding_indicator, false);
-	const String number_hex = String::num_uint64(p_encoding_indicator, 16, true);
+	const String friendly = _uint32_to_ascii_string(p_chunk_encoding_format, false);
+	const String number_hex = String::num_uint64(p_chunk_encoding_format, 16, true);
 	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF import: Support for reading \"" + friendly + "\" (0x" + number_hex + ") encoded data is not implemented.");
 }
 
@@ -1555,8 +1537,10 @@ Ref<Mesh4D> G4MFDocument4D::import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_s
 }
 
 void G4MFDocument4D::set_encoding_format(const EncodingFormat p_encoding_format) {
-	ERR_FAIL_COND_MSG(_encoding_enum_to_indicator(p_encoding_format) == (uint32_t)0xFFFFFFFF, "G4MF: Invalid or unknown encoding format.");
 	_encoding_format = p_encoding_format;
+	if (!_is_encoding_format_supported(_encoding_format)) {
+		ERR_PRINT("G4MF: Invalid or unknown encoding format.");
+	}
 }
 
 void G4MFDocument4D::_bind_methods() {
@@ -1578,9 +1562,9 @@ void G4MFDocument4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_max_nested_scene_depth", "max_nested_scene_depth"), &G4MFDocument4D::set_max_nested_scene_depth);
 
 	// Properties.
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "encoding_format", PROPERTY_HINT_ENUM, "None,Zstd"), "set_encoding_format", "get_encoding_format");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "encoding_format", PROPERTY_HINT_ENUM, "Plain:0,Zstd:1685353306"), "set_encoding_format", "get_encoding_format");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_nested_scene_depth", PROPERTY_HINT_ENUM, "Allow Nested:-1,Merge into Single File:0,Merge into Flat Hierarchy:1"), "set_max_nested_scene_depth", "get_max_nested_scene_depth");
 
-	BIND_ENUM_CONSTANT(ENCODING_FORMAT_NONE);
+	BIND_ENUM_CONSTANT(ENCODING_FORMAT_PLAIN);
 	BIND_ENUM_CONSTANT(ENCODING_FORMAT_ZSTD);
 }

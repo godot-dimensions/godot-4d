@@ -12,14 +12,13 @@ class G4MFDocument4D : public Resource {
 	GDCLASS(G4MFDocument4D, Resource);
 
 public:
-	enum EncodingFormat {
-		ENCODING_FORMAT_UNKNOWN = -1,
-		ENCODING_FORMAT_NONE = 0,
-		ENCODING_FORMAT_ZSTD = 1,
+	enum EncodingFormat : uint32_t {
+		ENCODING_FORMAT_PLAIN = 0u,
+		ENCODING_FORMAT_ZSTD = 0x6474735Au, // ASCII string "Zstd" in little-endian. Note that this does not need to match the magic number in Zstd itself (0xFD2FB528).
 	};
 
 private:
-	EncodingFormat _encoding_format = ENCODING_FORMAT_NONE;
+	EncodingFormat _encoding_format = ENCODING_FORMAT_PLAIN;
 	int _max_nested_scene_depth = -1; // -1 means unlimited depth.
 
 	static constexpr uint64_t CHUNK_ALIGNMENT_BITMASK = (uint64_t)15;
@@ -27,8 +26,7 @@ private:
 		return (a + b - 1) / b;
 	}
 
-	uint32_t _encoding_enum_to_indicator(const EncodingFormat p_encoding_format);
-	EncodingFormat _encoding_indicator_to_enum(const uint32_t p_indicator);
+	bool _is_encoding_format_supported(const EncodingFormat p_encoding_format) const;
 	String _uint32_to_ascii_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
 	uint32_t _ascii_string_to_uint32(const String &p_value);
 
@@ -51,7 +49,7 @@ private:
 
 	// Import process.
 	Error _import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_state, const Ref<FileAccess> &p_file);
-	PackedByteArray _import_decode_chunk_data(const PackedByteArray &p_file_or_chunk_data, const int64_t p_chunk_data_offset, const int64_t p_chunk_data_raw_size, const uint32_t p_encoding_indicator);
+	PackedByteArray _import_decode_chunk_data(const PackedByteArray &p_file_or_chunk_data, const int64_t p_chunk_data_offset, const int64_t p_chunk_data_raw_size, const uint32_t p_chunk_encoding_format);
 	Error _import_parse_buffers(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json, PackedInt64Array *r_chunk_indices, PackedInt64Array *r_decoded_byte_lengths);
 	Error _import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
