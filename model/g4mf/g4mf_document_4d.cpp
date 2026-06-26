@@ -670,12 +670,13 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 	{
 		p_file->seek(chunk_data_starts[json_chunk_index]);
 		const PackedByteArray json_chunk_encoded = p_file->get_buffer(chunk_data_sizes[json_chunk_index]);
-		const PackedByteArray json_chunk = _import_decode_chunk_data(json_chunk_encoded, (int64_t)0, chunk_data_sizes[json_chunk_index], (uint32_t)chunk_encodings[json_chunk_index]);
+		const EncodingFormat json_chunk_encoding_format = (EncodingFormat)(uint32_t)chunk_encodings[json_chunk_index];
+		const PackedByteArray json_chunk = _import_decode_chunk_data(json_chunk_encoded, (int64_t)0, chunk_data_sizes[json_chunk_index], json_chunk_encoding_format);
 		const String json_string = String::utf8(reinterpret_cast<const char *>(json_chunk.ptr()), json_chunk.size());
 		g4mf_json = JSON::parse_string(json_string);
 		ERR_FAIL_COND_V_MSG(g4mf_json.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to parse JSON chunk in G4MF file. File is corrupted.");
 		p_g4mf_state->set_g4mf_json(g4mf_json);
-		// Parse only the JSON structure of the buffers, so we can know which chunks to read and decode.
+		// Parse the JSON structure of only the buffers, so we can know which chunks to read and decode.
 		Error err = _import_parse_buffers(p_g4mf_state, g4mf_json, &buffer_chunk_indices, &buffer_chunk_declared_decoded_byte_lengths);
 		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse G4MF buffers when reading from binary G4MF file at: " + p_g4mf_state->get_original_path());
 	}
@@ -689,7 +690,8 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 		ERR_FAIL_INDEX_V_MSG(chunk_index, chunk_data_starts.size(), ERR_INVALID_DATA, "G4MF import: Buffer chunk index " + itos(chunk_index) + " is out of range for binary file with " + itos(chunk_data_starts.size()) + " chunks. File is corrupted.");
 		p_file->seek(chunk_data_starts[chunk_index]);
 		const PackedByteArray chunk_data_encoded = p_file->get_buffer(chunk_data_sizes[chunk_index]);
-		PackedByteArray chunk_data_decoded = _import_decode_chunk_data(chunk_data_encoded, (int64_t)0, chunk_data_sizes[chunk_index], (uint32_t)chunk_encodings[chunk_index]);
+		const EncodingFormat chunk_encoding_format = (EncodingFormat)(uint32_t)chunk_encodings[chunk_index];
+		PackedByteArray chunk_data_decoded = _import_decode_chunk_data(chunk_data_encoded, (int64_t)0, chunk_data_sizes[chunk_index], chunk_encoding_format);
 		// The data has been read in now, so check that the size is at least the declared size, and truncate if larger.
 		const int64_t declared_decoded_byte_length = buffer_chunk_declared_decoded_byte_lengths[buffer_index];
 		if (chunk_data_decoded.size() < declared_decoded_byte_length) {
@@ -704,7 +706,7 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 	return _import_parse_json_data(p_g4mf_state, g4mf_json);
 }
 
-PackedByteArray G4MFDocument4D::_import_decode_chunk_data(const PackedByteArray &p_file_or_chunk_data, const int64_t p_chunk_data_offset, const int64_t p_chunk_data_raw_size, const uint32_t p_chunk_encoding_format) {
+PackedByteArray G4MFDocument4D::_import_decode_chunk_data(const PackedByteArray &p_file_or_chunk_data, const int64_t p_chunk_data_offset, const int64_t p_chunk_data_raw_size, const EncodingFormat p_chunk_encoding_format) {
 	switch (p_chunk_encoding_format) {
 		case ENCODING_FORMAT_PLAIN: {
 			if (p_chunk_data_offset == (int64_t)0 && p_chunk_data_raw_size == p_file_or_chunk_data.size()) {
@@ -799,7 +801,7 @@ Error G4MFDocument4D::_import_parse_buffers(Ref<G4MFState4D> p_g4mf_state, Dicti
 					PackedStringArray split = uri.split(";base64,", true, 1);
 					ERR_FAIL_COND_V_MSG(split.size() != 2, ERR_INVALID_DATA, "G4MF import: Buffer URI is malformed. Expected 'data:application/octet-stream;base64,<base64 data>'. Aborting file import.");
 					const PackedByteArray raw_data = CoreBind::Marshalls::get_singleton()->base64_to_raw(split[1]);
-					buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), encoding_indicator);
+					buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), (EncodingFormat)encoding_indicator);
 				} else {
 					// Infer the external data mode on import in case the user wishes to round-trip the G4MF file back out of Godot later.
 					p_g4mf_state->set_external_data_mode(G4MFState4D::EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS);
@@ -807,7 +809,7 @@ Error G4MFDocument4D::_import_parse_buffers(Ref<G4MFState4D> p_g4mf_state, Dicti
 					Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::READ);
 					if (file.is_valid()) {
 						const PackedByteArray raw_data = file->get_buffer(file->get_length());
-						buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), encoding_indicator);
+						buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), (EncodingFormat)encoding_indicator);
 						file->close();
 					} else {
 						// The file is not valid, but only fail if the buffer is empty. It may have been filled by a chunk.
@@ -1420,7 +1422,8 @@ Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state,
 	PackedInt64Array buffer_chunk_indices;
 	PackedInt64Array buffer_chunk_declared_decoded_byte_lengths;
 	{
-		const PackedByteArray json_chunk = _import_decode_chunk_data(p_byte_array, chunk_data_starts[json_chunk_index], chunk_data_sizes[json_chunk_index], (uint32_t)chunk_encodings[json_chunk_index]);
+		const EncodingFormat json_chunk_encoding = (EncodingFormat)(uint32_t)chunk_encodings[json_chunk_index];
+		const PackedByteArray json_chunk = _import_decode_chunk_data(p_byte_array, chunk_data_starts[json_chunk_index], chunk_data_sizes[json_chunk_index], json_chunk_encoding);
 		const String json_string = String::utf8(reinterpret_cast<const char *>(json_chunk.ptr()), json_chunk.size());
 		g4mf_json = JSON::parse_string(json_string);
 		ERR_FAIL_COND_V_MSG(g4mf_json.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to parse JSON chunk in G4MF byte array. File is corrupted.");
@@ -1437,7 +1440,8 @@ Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state,
 			continue;
 		}
 		ERR_FAIL_INDEX_V_MSG(chunk_index, chunk_data_starts.size(), ERR_INVALID_DATA, "G4MF import: Buffer chunk index " + itos(chunk_index) + " is out of range for binary file with " + itos(chunk_data_starts.size()) + " chunks. File is corrupted.");
-		PackedByteArray chunk_data_decoded = _import_decode_chunk_data(p_byte_array, chunk_data_starts[chunk_index], chunk_data_sizes[chunk_index], (uint32_t)chunk_encodings[chunk_index]);
+		const EncodingFormat chunk_encoding = (EncodingFormat)(uint32_t)chunk_encodings[chunk_index];
+		PackedByteArray chunk_data_decoded = _import_decode_chunk_data(p_byte_array, chunk_data_starts[chunk_index], chunk_data_sizes[chunk_index], chunk_encoding);
 		// The data has been read in now, so check that the size is at least the declared size, and truncate if larger.
 		const int64_t declared_decoded_byte_length = buffer_chunk_declared_decoded_byte_lengths[buffer_index];
 		if (chunk_data_decoded.size() < declared_decoded_byte_length) {
