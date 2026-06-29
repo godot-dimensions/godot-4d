@@ -83,6 +83,8 @@ public:
 	void poly_mesh_clear_cache(const bool p_normals_only = false);
 	Ref<ArrayPolyMesh4D> to_array_poly_mesh();
 
+	int32_t get_source_poly_cell_for_simplex_cell(const int32_t p_simplex_cell_index) const;
+
 	virtual Vector<Vector<PackedInt32Array>> get_poly_cell_indices();
 	virtual PackedVector4Array get_poly_cell_vertices();
 	virtual PackedVector4Array get_poly_cell_boundary_normals();

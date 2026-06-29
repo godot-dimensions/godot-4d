@@ -11,8 +11,8 @@ Vector<Rect4> _calculate_shape_rects(const TypedArray<CollisionShape4D> &p_shape
 	const int shape_count = p_shapes.size();
 	shape_rects.resize(shape_count);
 	for (int shape_index = 0; shape_index < shape_count; shape_index++) {
-		CollisionShape4D *shape = Object::cast_to<CollisionShape4D>(p_shapes[shape_index]);
-		shape_rects.set(shape_index, shape->get_rect_bounds());
+		CollisionShape4D *shape_node = Object::cast_to<CollisionShape4D>(p_shapes[shape_index]);
+		shape_rects.set(shape_index, shape_node->get_rect_bounds_global());
 	}
 	return shape_rects;
 }

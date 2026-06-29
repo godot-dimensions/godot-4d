@@ -3,6 +3,11 @@
 #include "editor_main_screen_4d.h"
 #include "editor_main_viewport_4d.h"
 
+#if GDEXTENSION
+#include <godot_cpp/classes/input_event_screen_drag.hpp>
+#include <godot_cpp/classes/input_event_screen_touch.hpp>
+#endif
+
 void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 	ERR_FAIL_COND(p_event.is_null());
 	Ref<InputEventMouseButton> mouse_button = p_event;
@@ -41,6 +46,18 @@ void EditorInputSurface4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 			_editor_main_viewport->viewport_mouse_input(mouse_motion);
 			return;
 		}
+		grab_focus();
+		return;
+	}
+	Ref<InputEventScreenTouch> screen_touch = p_event;
+	if (screen_touch.is_valid()) {
+		_editor_main_viewport->viewport_mouse_input(screen_touch);
+		grab_focus();
+		return;
+	}
+	Ref<InputEventScreenDrag> screen_drag = p_event;
+	if (screen_drag.is_valid()) {
+		_editor_main_viewport->viewport_mouse_input(screen_drag);
 		grab_focus();
 		return;
 	}

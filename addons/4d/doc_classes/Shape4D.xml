@@ -59,6 +59,14 @@
 				Callback method that should return whether two 4D shapes are exactly equal. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method is_equal_exact].
 			</description>
 		</method>
+		<method name="_raycast_intersects" qualifiers="virtual const">
+			<return type="Dictionary" />
+			<param index="0" name="local_from" type="Vector4" />
+			<param index="1" name="local_direction" type="Vector4" />
+			<description>
+				Callback method that should perform a raycast against the shape. See [method raycast_intersects] for details. Do not call this method. This can be overridden by derived classes when creating a custom shape type in GDScript or another scripting language.
+			</description>
+		</method>
 		<method name="_to_poly_mesh" qualifiers="virtual const">
 			<return type="PolyMesh4D" />
 			<param index="0" name="options" type="Dictionary" />
@@ -126,6 +134,19 @@
 			<param index="0" name="shape" type="Shape4D" />
 			<description>
 				Returns [code]true[/code] if the two 4D shapes are exactly equal. This is used to check if two shapes are the same type and have the same parameters. The specific check depends on the shape type. This function never uses approximate equality comparisons, only exact equality.
+			</description>
+		</method>
+		<method name="raycast_intersects" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="local_from" type="Vector4" />
+			<param index="1" name="local_direction" type="Vector4" />
+			<description>
+				Performs a raycast against the shape. The [param local_from] parameter is the starting point of the ray relative to the shape, and the [param local_direction] parameter is the direction of the ray relative to the shape. The returned [Dictionary] may contain the following keys:
+				- [code]"hit"[/code]: A boolean indicating whether the ray hit any part of the shape.
+				- [code]"distance"[/code]: The distance from the starting point to the hit point.
+				- [code]"normal"[/code]: The normal at the hit point, perpendicular to the surface.
+				- [code]"cell_index"[/code]: The index of the cell that was hit, for mesh-based shapes.
+				If the ray does not hit any part of the shape, the returned dictionary will be [code]{"hit": false}[/code].
 			</description>
 		</method>
 		<method name="to_poly_mesh" qualifiers="const">

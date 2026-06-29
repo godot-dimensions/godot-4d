@@ -120,6 +120,13 @@
 				[b]Note:[/b] The vertices returned by [method Mesh4D.get_vertices] may be longer than this array. This is because [method Mesh4D.get_vertices] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method Mesh4D.get_vertices] will always match this array, such that it is either a superset of this array, or identical to it.
 			</description>
 		</method>
+		<method name="get_source_poly_cell_for_simplex_cell" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="simplex_cell_index" type="int" />
+			<description>
+				Returns the index of the polyhedral surface cell from which the given simplex cell was derived. This is useful for mapping simplex cells back to their original polyhedral surface cells, for example when performing raycasts against the tetrahedralized mesh and wanting to know which polyhedral cell was hit.
+			</description>
+		</method>
 		<method name="poly_mesh_clear_cache">
 			<return type="void" />
 			<param index="0" name="normals_only" type="bool" default="false" />

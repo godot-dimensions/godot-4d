@@ -980,6 +980,13 @@ Ref<ArrayPolyMesh4D> PolyMesh4D::to_array_poly_mesh() {
 	return array_poly_mesh;
 }
 
+int32_t PolyMesh4D::get_source_poly_cell_for_simplex_cell(const int32_t p_simplex_cell_index) const {
+	if (p_simplex_cell_index < 0 || p_simplex_cell_index >= _simplex_cell_indices_source_poly_cells.size()) {
+		return -1;
+	}
+	return _simplex_cell_indices_source_poly_cells[p_simplex_cell_index];
+}
+
 Vector<Vector<PackedInt32Array>> PolyMesh4D::get_poly_cell_indices() {
 	TypedArray<Array> indices_bind;
 	GDVIRTUAL_CALL(_get_poly_cell_indices, indices_bind);
@@ -1292,6 +1299,8 @@ void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_poly_indices", "cell_dimension", "decomposition_dimension"), &PolyMesh4D::get_all_poly_cell_poly_indices_bind);
 	ClassDB::bind_method(D_METHOD("poly_mesh_clear_cache", "normals_only"), &PolyMesh4D::poly_mesh_clear_cache, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("to_array_poly_mesh"), &PolyMesh4D::to_array_poly_mesh);
+
+	ClassDB::bind_method(D_METHOD("get_source_poly_cell_for_simplex_cell", "simplex_cell_index"), &PolyMesh4D::get_source_poly_cell_for_simplex_cell);
 
 	ClassDB::bind_method(D_METHOD("get_poly_cell_indices"), &PolyMesh4D::get_poly_cell_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_vertices"), &PolyMesh4D::get_poly_cell_vertices);

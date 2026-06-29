@@ -10,13 +10,22 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="_get_rect_bounds" qualifiers="virtual const">
+		<method name="_get_rect_bounds_local" qualifiers="virtual const">
 			<return type="PackedVector4Array" />
 			<param index="0" name="inv_relative_to_basis" type="Projection" />
 			<param index="1" name="inv_relative_to_origin" type="Vector4" />
 			<description>
 				Callback method that should return the rectilinear bounding box of a node. Do not call this method. This can be overridden by derived classes when creating a custom node type in GDScript or another scripting language.
-				The returned value should be a [PackedVector4Array] with exactly two elements, position and size, representing a Rect4. The result should be relative to the given [Transform4D] stored as a [Projection] [Basis4D] basis and [Vector4] origin. The given values are actually the inverse transform, so you can use them to transform the object's points from global space to the target space. The returned value does not need to include the bounding boxes of any child nodes. This is the 4D equivalent of [method VisualInstance3D._get_aabb].
+				The returned value should be a [PackedVector4Array] with exactly two elements, position and size, representing a Rect4. The result should be relative to the given [Transform4D] stored as a [Projection] [Basis4D] basis and [Vector4] origin. The given values are actually the inverse transform, so you can use them to transform the object's points from local space to the target space. The returned value does not need to include the bounding boxes of any child nodes. This is the 4D equivalent of [method VisualInstance3D._get_aabb].
+			</description>
+		</method>
+		<method name="_raycast_intersects_local" qualifiers="virtual const">
+			<return type="Dictionary" />
+			<param index="0" name="local_from" type="Vector4" />
+			<param index="1" name="local_direction" type="Vector4" />
+			<param index="2" name="inside_is_zero" type="bool" />
+			<description>
+				Callback method that should perform a raycast against the node's own contents, not including any descendant nodes. See [method raycast_intersects_local] for details. Do not call this method. This can be overridden by derived classes when creating a custom node type in GDScript or another scripting language.
 			</description>
 		</method>
 		<method name="apply_scale">
@@ -54,20 +63,28 @@
 				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the transform values. Changing the members will not transform the Node4D unless set using [method set_global_transform]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
-		<method name="get_rect_bounds" qualifiers="const">
+		<method name="get_rect_bounds_global" qualifiers="const">
 			<return type="PackedVector4Array" />
 			<param index="0" name="inv_relative_to_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
 			<param index="1" name="inv_relative_to_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
 			<description>
-				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are actually the inverse transform, and are used to transform the object's points from global space to the target space. The returned value usually does not include the bounding boxes of any child nodes. This is the 4D equivalent of [method VisualInstance3D.get_aabb].
+				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are actually the inverse transform, and are used to transform the object's points from global space to the target space. This is equivalent to calling [method get_rect_bounds_local] with the relative transform composed with the global transform of the node. The returned value usually does not include the bounding boxes of any child nodes. This is the 4D equivalent of [method VisualInstance3D.get_aabb].
 			</description>
 		</method>
-		<method name="get_rect_bounds_recursive" qualifiers="const">
+		<method name="get_rect_bounds_global_recursive" qualifiers="const">
 			<return type="PackedVector4Array" />
 			<param index="0" name="inv_relative_to_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
 			<param index="1" name="inv_relative_to_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
 			<description>
-				Recursive version of [method get_rect_bounds] that includes descendant 4D nodes in the same transform hierarchy. Returns the rectilinear bounding box of this [Node4D] and all its descendants as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are actually the inverse transform, and are used to transform the object's points from global space to the target space.
+				Recursive version of [method get_rect_bounds_global] that includes descendant 4D nodes in the same transform hierarchy. Returns the rectilinear bounding box of this [Node4D] and all its descendants as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are actually the inverse transform, and are used to transform the object's points from global space to the target space.
+			</description>
+		</method>
+		<method name="get_rect_bounds_local" qualifiers="const">
+			<return type="PackedVector4Array" />
+			<param index="0" name="inv_relative_to_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<param index="1" name="inv_relative_to_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<description>
+				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are actually the inverse transform, and are used to transform the object's points from local space to the target space. The returned value usually does not include the bounding boxes of any child nodes.
 			</description>
 		</method>
 		<method name="get_rotation_degrees_euler">
@@ -114,6 +131,20 @@
 				If the node has a positive scale, this will be preserved when performing [method look_at]. Negative scales will become positive.
 				Operations take place in global space, which means that the node must be in the scene tree.
 				If [param use_model_front] is true, the +Z axis (asset front) is treated as forward (implies +X is left side) and points toward the target position. By default, the -Z axis (camera forward) is treated as forward (implies +X is right direction).
+			</description>
+		</method>
+		<method name="raycast_intersects_local" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="local_from" type="Vector4" />
+			<param index="1" name="local_direction" type="Vector4" />
+			<param index="2" name="inside_is_zero" type="bool" />
+			<description>
+				Performs a raycast against the node. The [param local_from] parameter is the starting point of the ray relative to the node, and the [param local_direction] parameter is the direction of the ray relative to the node. The returned [Dictionary] may contain the following keys:
+				- [code]"hit"[/code]: A boolean indicating whether the ray hit any part of the node.
+				- [code]"distance"[/code]: The distance from the starting point to the hit point.
+				- [code]"normal"[/code]: The normal at the hit point, perpendicular to the surface.
+				- [code]"cell_index"[/code]: The index of the cell that was hit, for nodes with tetrahedral meshes.
+				If the ray does not hit any part of the node, the returned dictionary will be [code]{"hit": false}[/code].
 			</description>
 		</method>
 		<method name="rotate_bivector_magnitude">

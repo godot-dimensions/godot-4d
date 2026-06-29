@@ -28,6 +28,8 @@ public:
 	virtual Rect4 get_rect_bounds(const Transform4D &p_to_target = Transform4D()) const;
 	PackedVector4Array get_rect_bounds_bind(const Projection &p_to_target_basis = Projection(), const Vector4 &p_to_target_offset = Vector4()) const;
 
+	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const;
+
 	virtual Vector4 get_nearest_point(const Vector4 &p_point) const;
 	virtual Vector4 get_support_point(const Vector4 &p_direction) const;
 	virtual bool has_point(const Vector4 &p_point) const;
@@ -41,6 +43,7 @@ public:
 	GDVIRTUAL0RC(real_t, _get_hypervolume);
 	GDVIRTUAL0RC(real_t, _get_surface_volume);
 	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds, const Projection &, const Vector4 &);
+	GDVIRTUAL2RC(Dictionary, _raycast_intersects, const Vector4 &, const Vector4 &);
 
 	GDVIRTUAL1RC(Vector4, _get_nearest_point, Vector4);
 	GDVIRTUAL1RC(Vector4, _get_support_point, Vector4);

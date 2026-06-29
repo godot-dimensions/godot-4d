@@ -19,12 +19,16 @@ Vector4 Plane4D::project(const Vector4 &p_point) const {
 	return p_point - normal * distance_to(p_point);
 }
 
-Variant Plane4D::intersect_ray(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction) const {
+real_t Plane4D::intersect_ray_factor(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction) const {
 	const real_t denominator = normal.dot(p_ray_direction);
 	if (Math::is_zero_approx(denominator)) {
-		return Variant();
+		return -Math_INF;
 	}
-	const real_t factor = (distance - normal.dot(p_ray_origin)) / denominator;
+	return (distance - normal.dot(p_ray_origin)) / denominator;
+}
+
+Variant Plane4D::intersect_ray_point(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction) const {
+	const real_t factor = intersect_ray_factor(p_ray_origin, p_ray_direction);
 	if (factor < 0.0) {
 		return Variant();
 	}

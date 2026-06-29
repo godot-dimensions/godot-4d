@@ -45,7 +45,7 @@
 			<param index="0" name="local_point" type="Vector4" />
 			<description>
 				Returns the signed distance from a point in 4D space to the surface of the tetrahedral mesh. The distance is negative if the point is inside the mesh, positive if outside, and zero if on the surface. If the function fails to calculate a distance, it will return [constant @GDScript.INF].
-				[b]Note:[/b] The [method populate_nearest_point_cache] function MUST be called at least once before calling this method.
+				[b]Note:[/b] The [method populate_inverse_metric_cache] function MUST be called at least once before calling this method.
 			</description>
 		</method>
 		<method name="get_simplex_cell_boundary_normals">
@@ -78,10 +78,32 @@
 				Gets the vertex normals of the tetrahedral cells. Vertex normals define how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be the same length as the [method get_simplex_cell_indices] array, or empty for no normals, or else the mesh is invalid.
 			</description>
 		</method>
-		<method name="populate_nearest_point_cache">
+		<method name="populate_inverse_metric_cache">
 			<return type="void" />
 			<description>
 				Populates the cache used for nearest-point calculations, such as in [method get_signed_distance_to_mesh]. This is used to speed up nearest-point calculations, to avoid having to recalculate the same data each time a nearest-point calculation is done. This needs to be rerun whenever the geometry of the mesh changes, such as when vertices or cells are modified, if future nearest-point calculations are expected.
+			</description>
+		</method>
+		<method name="raycast_intersects">
+			<return type="Dictionary" />
+			<param index="0" name="local_from" type="Vector4" />
+			<param index="1" name="local_direction" type="Vector4" />
+			<description>
+				Performs a raycast against the tetrahedral cells of the mesh. The [param local_from] parameter is the starting point of the ray relative to the mesh, and the [param local_direction] parameter is the direction of the ray relative to the mesh. The returned [Dictionary] may contain the following keys:
+				- [code]"hit"[/code]: A boolean indicating whether the ray hit any part of the mesh.
+				- [code]"distance"[/code]: The distance from the starting point to the hit point.
+				- [code]"normal"[/code]: The normal at the hit point, perpendicular to the surface.
+				- [code]"cell_index"[/code]: The index of the cell that was hit.
+				If the ray does not hit any part of the mesh, the returned dictionary will be [code]{"hit": false}[/code].
+			</description>
+		</method>
+		<method name="raycast_intersects_fast">
+			<return type="bool" />
+			<param index="0" name="local_from" type="Vector4" />
+			<param index="1" name="local_direction" type="Vector4" />
+			<description>
+				Performs a raycast against the tetrahedral cells of the mesh. The [param local_from] parameter is the starting point of the ray relative to the mesh, and the [param local_direction] parameter is the direction of the ray relative to the mesh.
+				Returns immediately with [code]true[/code] if the ray intersects any part of the mesh, or [code]false[/code] if it does not. This is a faster function than [method raycast_simplex_cells], which will keep going after the first hit, returning more information about the intersection, while this function will stop after any intersection is found.
 			</description>
 		</method>
 		<method name="tetra_mesh_clear_cache">

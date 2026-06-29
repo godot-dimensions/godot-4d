@@ -13,6 +13,8 @@
 #include "scene/main/viewport.h"
 #endif
 
+class Camera4D;
+
 // Class for the 4D editor viewport, which there may be up to 4 of.
 // Uses EditorCamera4D, EditorInputSurface4D, EditorViewportRotation4D,
 // and lots of other classes to handle the 4D editor viewport.
@@ -47,6 +49,8 @@ private:
 	Vector2 _get_warped_mouse_motion(const Ref<InputEvent> &p_ev_mouse_motion) const;
 	bool _should_mouse_motion_affect_4d(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const;
 	void _on_button_toggled(const bool p_toggled_on, const int p_option);
+	static void _gather_non_empty_visible_mesh_4d_nodes(Node *p_edited_scene_root, Node *p_from_node, Node *p_target_node, Vector<Node4D *> &r_nodes, Vector<Node *> &r_targets, Vector<Rect4> &r_rect_bounds);
+	static Node *_raycast_from_mouse(const Vector2 &p_mouse_position, const Camera4D *p_camera);
 	void _update_theme();
 
 protected:
@@ -63,7 +67,7 @@ public:
 	void navigation_pan(const Ref<InputEvent> &p_input_event);
 	void navigation_change_speed(const double p_speed_change);
 	void navigation_change_zoom(const double p_zoom_change);
-	void viewport_mouse_input(const Ref<InputEventMouse> &p_mouse_event);
+	void viewport_mouse_input(const Ref<InputEvent> &p_input_event);
 
 	void set_ground_view_axis(const Vector4::Axis p_axis);
 	void set_information_text(const String &p_text, const double p_auto_hide_time = 1.5);

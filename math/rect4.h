@@ -45,6 +45,10 @@ struct _NO_DISCARD_ Rect4 {
 		return size.x > 0.0f || size.y > 0.0f || size.z > 0.0f || size.w > 0.0f;
 	}
 
+	bool has_any_size() const {
+		return size.x != 0.0f || size.y != 0.0f || size.z != 0.0f || size.w != 0.0f;
+	}
+
 	Rect4 abs() const {
 		return Rect4(position + size.minf(0.0f), size.abs());
 	}
@@ -74,6 +78,8 @@ struct _NO_DISCARD_ Rect4 {
 	// Rect collision functions.
 	real_t continuous_collision_depth(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle, Vector4 *r_out_normal = nullptr) const;
 	bool continuous_collision_overlaps(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle) const;
+	bool raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction, const bool p_inside_is_zero, real_t *r_out_distance, Vector4 *r_out_normal) const;
+	Dictionary raycast_intersects_dict(const Vector4 &p_from, const Vector4 &p_direction, const bool p_inside_is_zero) const;
 
 	// Rect comparison functions.
 	bool encloses_exclusive(const Rect4 &p_other) const;

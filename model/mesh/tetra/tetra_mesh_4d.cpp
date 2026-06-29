@@ -1,6 +1,7 @@
 #include "tetra_mesh_4d.h"
 
 #include "../../../math/geometry_4d.h"
+#include "../../../math/plane_4d.h"
 #include "../../../math/vector_4d.h"
 #include "../material_4d.h"
 #include "array_tetra_mesh_4d.h"
@@ -16,105 +17,7 @@
 
 // Nearest point and signed distance.
 
-bool TetraMesh4D::_compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g01, const real_t p_g02, const real_t p_g11, const real_t p_g12, const real_t p_g22, real_t r_inv_symmetric[6]) {
-	// This is the 3x3 symmetric metric matrix G_ij = e_i · e_j for the tetrahedron basis.
-	// We store only its six unique entries and invert that packed matrix.
-	const real_t c00 = p_g11 * p_g22 - p_g12 * p_g12;
-	const real_t c01 = p_g02 * p_g12 - p_g01 * p_g22;
-	const real_t c02 = p_g01 * p_g12 - p_g02 * p_g11;
-	const real_t c11 = p_g00 * p_g22 - p_g02 * p_g02;
-	const real_t c12 = p_g02 * p_g01 - p_g00 * p_g12;
-	const real_t c22 = p_g00 * p_g11 - p_g01 * p_g01;
-	const real_t det = p_g00 * c00 + p_g01 * c01 + p_g02 * c02;
-	if (!Math::is_finite(det) || Math::is_equal_approx(det, (real_t)0.0)) {
-		return false;
-	}
-	const real_t inv_det = (real_t)1.0 / det;
-	r_inv_symmetric[0] = c00 * inv_det;
-	r_inv_symmetric[1] = c01 * inv_det;
-	r_inv_symmetric[2] = c02 * inv_det;
-	r_inv_symmetric[3] = c11 * inv_det;
-	r_inv_symmetric[4] = c12 * inv_det;
-	r_inv_symmetric[5] = c22 * inv_det;
-	return true;
-}
-
-void TetraMesh4D::_get_nearest_point_on_tetrahedron_internal(const PackedVector4Array &p_vertices, const PackedInt32Array &p_simplex_cell_indices, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const Vector4 &p_local_point, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared, bool &r_proj_inside) {
-	const int64_t simplex_tet_count = p_simplex_cell_indices.size() / 4;
-	ERR_FAIL_INDEX(p_tetrahedron_index, simplex_tet_count);
-	ERR_FAIL_COND_MSG(p_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_nearest_point_cache()` before calling this method.");
-	// These indices are guaranteed to be within bounds due to mesh validation.
-	const int32_t i0 = p_simplex_cell_indices[p_tetrahedron_index * 4 + 0];
-	const int32_t i1 = p_simplex_cell_indices[p_tetrahedron_index * 4 + 1];
-	const int32_t i2 = p_simplex_cell_indices[p_tetrahedron_index * 4 + 2];
-	const int32_t i3 = p_simplex_cell_indices[p_tetrahedron_index * 4 + 3];
-	const Vector4 vert0 = p_vertices[i0];
-	const Vector4 vert1 = p_vertices[i1];
-	const Vector4 vert2 = p_vertices[i2];
-	const Vector4 vert3 = p_vertices[i3];
-	const Vector4 edge1 = vert1 - vert0;
-	const Vector4 edge2 = vert2 - vert0;
-	const Vector4 edge3 = vert3 - vert0;
-	// Solve for the barycentric coordinates, which implicitly solves local to the plane of the tetrahedron.
-	real_t bary0, bary1, bary2, bary3;
-	{
-		const int64_t cache_offset = p_tetrahedron_index * 6;
-		const Vector4 local = p_local_point - vert0;
-		const real_t edge1_alignment = edge1.dot(local);
-		const real_t edge2_alignment = edge2.dot(local);
-		const real_t edge3_alignment = edge3.dot(local);
-		const real_t inv00 = p_nearest_tetra_inverse_metric_cache[cache_offset + 0];
-		const real_t inv01 = p_nearest_tetra_inverse_metric_cache[cache_offset + 1];
-		const real_t inv02 = p_nearest_tetra_inverse_metric_cache[cache_offset + 2];
-		const real_t inv11 = p_nearest_tetra_inverse_metric_cache[cache_offset + 3];
-		const real_t inv12 = p_nearest_tetra_inverse_metric_cache[cache_offset + 4];
-		const real_t inv22 = p_nearest_tetra_inverse_metric_cache[cache_offset + 5];
-		bary1 = inv00 * edge1_alignment + inv01 * edge2_alignment + inv02 * edge3_alignment;
-		bary2 = inv01 * edge1_alignment + inv11 * edge2_alignment + inv12 * edge3_alignment;
-		bary3 = inv02 * edge1_alignment + inv12 * edge2_alignment + inv22 * edge3_alignment;
-		bary0 = (real_t)1.0 - (bary1 + bary2 + bary3);
-	}
-	// Determine the nearest point and/or the min distance based on if it's inside or outside the tetrahedron.
-	Vector4 nearest_on_tet;
-	real_t min_dist_sq = Math_INF;
-	if (bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON) {
-		// In this case, the nearest point on the plane lands inside of the tetrahedron.
-		r_proj_inside = true;
-		nearest_on_tet = vert0 + edge1 * bary1 + edge2 * bary2 + edge3 * bary3;
-	} else {
-		r_proj_inside = false;
-		// In this case, the nearest point on the plane lands outside, so we need to check the triangle borders.
-		const Vector4 nearest_on_tri0 = Geometry4D::closest_point_on_triangle(vert1, vert2, vert3, p_local_point);
-		const Vector4 nearest_on_tri1 = Geometry4D::closest_point_on_triangle(vert0, vert2, vert3, p_local_point);
-		const Vector4 nearest_on_tri2 = Geometry4D::closest_point_on_triangle(vert0, vert1, vert3, p_local_point);
-		const Vector4 nearest_on_tri3 = Geometry4D::closest_point_on_triangle(vert0, vert1, vert2, p_local_point);
-		nearest_on_tet = nearest_on_tri0;
-		min_dist_sq = nearest_on_tri0.distance_squared_to(p_local_point);
-		const real_t dist_sq_tri1 = nearest_on_tri1.distance_squared_to(p_local_point);
-		if (dist_sq_tri1 < min_dist_sq) {
-			nearest_on_tet = nearest_on_tri1;
-			min_dist_sq = dist_sq_tri1;
-		}
-		const real_t dist_sq_tri2 = nearest_on_tri2.distance_squared_to(p_local_point);
-		if (dist_sq_tri2 < min_dist_sq) {
-			nearest_on_tet = nearest_on_tri2;
-			min_dist_sq = dist_sq_tri2;
-		}
-		const real_t dist_sq_tri3 = nearest_on_tri3.distance_squared_to(p_local_point);
-		if (dist_sq_tri3 < min_dist_sq) {
-			nearest_on_tet = nearest_on_tri3;
-			min_dist_sq = dist_sq_tri3;
-		}
-	}
-	// Write the outputs.
-	r_nearest_on_tet = nearest_on_tet;
-	if (min_dist_sq == Math_INF) {
-		min_dist_sq = nearest_on_tet.distance_squared_to(p_local_point);
-	}
-	r_distance_squared = min_dist_sq;
-}
-
-void TetraMesh4D::populate_nearest_point_cache() {
+void TetraMesh4D::populate_inverse_metric_cache() {
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "TetraMesh4D: Cannot populate closest-point cache for an invalid mesh.");
 	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
 	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
@@ -140,7 +43,7 @@ void TetraMesh4D::populate_nearest_point_cache() {
 		const real_t gram12 = edge2.dot(edge3);
 		const real_t gram22 = edge3.dot(edge3);
 		real_t inv_gram[6];
-		const bool valid = _compute_inverse_metric_3x3(gram00, gram01, gram02, gram11, gram12, gram22, inv_gram);
+		const bool valid = Geometry4D::compute_inverse_metric_3x3(gram00, gram01, gram02, gram11, gram12, gram22, inv_gram);
 		if (!valid) {
 			_nearest_tetra_inverse_metric_cache.clear();
 			ERR_PRINT("TetraMesh4D: Closest-point cache build failed because tetrahedron " + itos(simplex_tet_index) + " is degenerate or non-finite.");
@@ -157,7 +60,7 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
 	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
 	if (_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6) {
-		populate_nearest_point_cache();
+		populate_inverse_metric_cache();
 	}
 	ERR_FAIL_COND_V_MSG(_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6, Math_INF, "TetraMesh4D: Closest-point cache is invalid for this mesh.");
 	ERR_FAIL_COND_V_MSG(simplex_tet_count == 0, Math_INF, "TetraMesh4D: Cannot get signed distance to a mesh with zero tetrahedra.");
@@ -177,7 +80,11 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 		Vector4 nearest_on_tet;
 		real_t min_distance_sq = 0.0;
 		bool proj_inside = false;
-		_get_nearest_point_on_tetrahedron_internal(vertices, simplex_cell_indices, _nearest_tetra_inverse_metric_cache, p_local_point, tet_index, nearest_on_tet, min_distance_sq, proj_inside);
+		const Vector4 vert0 = vertices[simplex_cell_indices[tet_index * 4 + 0]];
+		const Vector4 vert1 = vertices[simplex_cell_indices[tet_index * 4 + 1]];
+		const Vector4 vert2 = vertices[simplex_cell_indices[tet_index * 4 + 2]];
+		const Vector4 vert3 = vertices[simplex_cell_indices[tet_index * 4 + 3]];
+		Geometry4D::get_nearest_point_on_tetrahedron_barycentric(vert0, vert1, vert2, vert3, p_local_point, _nearest_tetra_inverse_metric_cache, tet_index, nearest_on_tet, min_distance_sq, proj_inside);
 		const bool less_dist = min_distance_sq < best_distance_sq;
 		// If the projection is outside the tet, but the projected point is the same distance as what we
 		// already found, then we may have multiple candidates for the closest tet to this point.
@@ -250,7 +157,120 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 }
 
 real_t TetraMesh4D::get_signed_distance_to_mesh_bind(const Vector4 &p_local_point) {
-	return get_signed_distance_to_mesh(p_local_point);
+	return get_signed_distance_to_mesh(p_local_point, nullptr, nullptr);
+}
+
+bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vector4 &p_local_direction) {
+	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), false, "TetraMesh4D: Cannot raycast on an invalid mesh.");
+	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
+	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
+	if (simplex_tet_count == 0) {
+		return false; // No tetrahedra to raycast against.
+	}
+	ERR_FAIL_COND_V_MSG(_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6, false, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_inverse_metric_cache()` before calling `raycast_intersects_fast()`.");
+	const PackedVector4Array &vertices = get_vertices();
+	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
+	const int64_t boundary_normals_count = boundary_normals.size();
+	// Iterate through all tetrahedra to find any ray intersection.
+	for (int64_t tet_index = 0; tet_index < simplex_tet_count; tet_index++) {
+		Plane4D tet_plane;
+		if (simplex_tet_count == boundary_normals_count) {
+			tet_plane = Plane4D(boundary_normals[tet_index], vertices[simplex_cell_indices[tet_index * 4 + 0]]);
+		} else {
+			// Fallback in case the boundary normals are not available or are mismatched.
+			const Vector4 &pivot = vertices[simplex_cell_indices[tet_index * 4]];
+			const Vector4 &a = vertices[simplex_cell_indices[1 + tet_index * 4]];
+			const Vector4 &b = vertices[simplex_cell_indices[2 + tet_index * 4]];
+			const Vector4 &c = vertices[simplex_cell_indices[3 + tet_index * 4]];
+			const Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
+			tet_plane = Plane4D(perp.normalized(), pivot);
+		}
+		real_t tet_plane_intersection_factor = tet_plane.intersect_ray_factor(p_local_from, p_local_direction);
+		if (tet_plane_intersection_factor < 0.0f) {
+			continue; // No intersection with the plane of this tetrahedron.
+		}
+		// Check if this candidate intersection is inside the tetrahedron.
+		const Vector4 intersection_point = p_local_from + p_local_direction * tet_plane_intersection_factor;
+		// These indices are guaranteed to be within bounds due to mesh validation.
+		const int32_t i0 = simplex_cell_indices[tet_index * 4 + 0];
+		const int32_t i1 = simplex_cell_indices[tet_index * 4 + 1];
+		const int32_t i2 = simplex_cell_indices[tet_index * 4 + 2];
+		const int32_t i3 = simplex_cell_indices[tet_index * 4 + 3];
+		const Vector4 vert0 = vertices[i0];
+		const Vector4 vert1 = vertices[i1];
+		const Vector4 vert2 = vertices[i2];
+		const Vector4 vert3 = vertices[i3];
+		const bool hit = Geometry4D::is_point_inside_tetrahedron_barycentric(vert0, vert1, vert2, vert3, intersection_point, _nearest_tetra_inverse_metric_cache, tet_index);
+		if (hit) {
+			// For this fast version, we only care if there is any intersection, so we can return true immediately.
+			return true;
+		}
+	}
+	return false;
+}
+
+Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) {
+	Dictionary result;
+	result["hit"] = false;
+	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), result, "TetraMesh4D: Cannot raycast on an invalid mesh.");
+	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
+	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
+	if (simplex_tet_count == 0) {
+		return result; // No tetrahedra to raycast against.
+	}
+	ERR_FAIL_COND_V_MSG(_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6, result, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_inverse_metric_cache()` before calling `raycast_intersects()`.");
+	const PackedVector4Array &vertices = get_vertices();
+	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
+	const int64_t boundary_normals_count = boundary_normals.size();
+	Vector4 best_hit_normal = Vector4();
+	real_t best_distance = Math_INF;
+	int32_t best_tet_cell_index = -1;
+	// Iterate through all tetrahedra to find the closest ray intersection.
+	for (int64_t tet_index = 0; tet_index < simplex_tet_count; tet_index++) {
+		Plane4D tet_plane;
+		if (simplex_tet_count == boundary_normals_count) {
+			tet_plane = Plane4D(boundary_normals[tet_index], vertices[simplex_cell_indices[tet_index * 4 + 0]]);
+		} else {
+			// Fallback in case the boundary normals are not available or are mismatched.
+			const Vector4 &pivot = vertices[simplex_cell_indices[tet_index * 4]];
+			const Vector4 &a = vertices[simplex_cell_indices[1 + tet_index * 4]];
+			const Vector4 &b = vertices[simplex_cell_indices[2 + tet_index * 4]];
+			const Vector4 &c = vertices[simplex_cell_indices[3 + tet_index * 4]];
+			const Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
+			tet_plane = Plane4D(perp.normalized(), pivot);
+		}
+		real_t tet_plane_intersection_factor = tet_plane.intersect_ray_factor(p_local_from, p_local_direction);
+		if (tet_plane_intersection_factor < 0.0f) {
+			continue; // No intersection with the plane of this tetrahedron.
+		}
+		if (tet_plane_intersection_factor > best_distance) {
+			continue; // Worse than the best intersection found so far.
+		}
+		// Check if this candidate intersection is inside the tetrahedron.
+		const Vector4 intersection_point = p_local_from + p_local_direction * tet_plane_intersection_factor;
+		// These indices are guaranteed to be within bounds due to mesh validation.
+		const int32_t i0 = simplex_cell_indices[tet_index * 4 + 0];
+		const int32_t i1 = simplex_cell_indices[tet_index * 4 + 1];
+		const int32_t i2 = simplex_cell_indices[tet_index * 4 + 2];
+		const int32_t i3 = simplex_cell_indices[tet_index * 4 + 3];
+		const Vector4 vert0 = vertices[i0];
+		const Vector4 vert1 = vertices[i1];
+		const Vector4 vert2 = vertices[i2];
+		const Vector4 vert3 = vertices[i3];
+		const bool hit = Geometry4D::is_point_inside_tetrahedron_barycentric(vert0, vert1, vert2, vert3, intersection_point, _nearest_tetra_inverse_metric_cache, tet_index);
+		if (hit) {
+			best_hit_normal = tet_plane.normal;
+			best_distance = tet_plane_intersection_factor;
+			best_tet_cell_index = tet_index;
+		}
+	}
+	result["hit"] = best_tet_cell_index != -1;
+	if (best_tet_cell_index != -1) {
+		result["distance"] = best_distance;
+		result["normal"] = best_hit_normal;
+		result["cell_index"] = best_tet_cell_index;
+	}
+	return result;
 }
 
 void TetraMesh4D::tetra_mesh_clear_cache() {
@@ -579,8 +599,11 @@ void TetraMesh4D::update_cross_section_mesh() {
 
 void TetraMesh4D::_bind_methods() {
 	// Nearest point and distance.
-	ClassDB::bind_method(D_METHOD("populate_nearest_point_cache"), &TetraMesh4D::populate_nearest_point_cache);
+	ClassDB::bind_method(D_METHOD("populate_inverse_metric_cache"), &TetraMesh4D::populate_inverse_metric_cache);
 	ClassDB::bind_method(D_METHOD("get_signed_distance_to_mesh", "local_point"), &TetraMesh4D::get_signed_distance_to_mesh_bind);
+	// Raycast.
+	ClassDB::bind_method(D_METHOD("raycast_intersects_fast", "local_from", "local_direction"), &TetraMesh4D::raycast_intersects_fast);
+	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction"), &TetraMesh4D::raycast_intersects);
 	// Cache (validation is bound in base Mesh4D).
 	ClassDB::bind_method(D_METHOD("tetra_mesh_clear_cache"), &TetraMesh4D::tetra_mesh_clear_cache);
 	// Conversion.

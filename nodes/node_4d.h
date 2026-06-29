@@ -215,11 +215,17 @@ public:
 	void set_visible(const bool p_visible);
 
 	// Rect bounds.
-	virtual Rect4 get_rect_bounds(const Transform4D &p_inv_relative_to = Transform4D()) const;
-	PackedVector4Array get_rect_bounds_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
-	Rect4 get_rect_bounds_recursive(const Transform4D &p_inv_relative_to = Transform4D()) const;
-	PackedVector4Array get_rect_bounds_recursive_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
-	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds, const Projection &, const Vector4 &);
+	virtual Rect4 get_rect_bounds_local(const Transform4D &p_inv_relative_to = Transform4D()) const;
+	PackedVector4Array get_rect_bounds_local_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
+	Rect4 get_rect_bounds_global(const Transform4D &p_inv_relative_to = Transform4D()) const;
+	PackedVector4Array get_rect_bounds_global_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
+	Rect4 get_rect_bounds_global_recursive(const Transform4D &p_inv_relative_to = Transform4D()) const;
+	PackedVector4Array get_rect_bounds_global_recursive_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
+	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds_local, const Projection &, const Vector4 &);
+
+	// Raycasting.
+	virtual Dictionary raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const bool p_inside_is_zero) const;
+	GDVIRTUAL3RC(Dictionary, _raycast_intersects_local, const Vector4 &, const Vector4 &, bool);
 };
 
 VARIANT_ENUM_CAST(Node4D::RotationEditMode)

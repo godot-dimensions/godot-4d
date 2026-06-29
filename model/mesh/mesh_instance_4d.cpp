@@ -1,6 +1,7 @@
 #include "mesh_instance_4d.h"
 
 #include "../../render/rendering_server_4d.h"
+#include "tetra/tetra_mesh_4d.h"
 
 void MeshInstance4D::_notification(int p_what) {
 	switch (p_what) {
@@ -42,19 +43,29 @@ void MeshInstance4D::set_mesh(const Ref<Mesh4D> &p_mesh) {
 	_mesh = p_mesh;
 }
 
-Rect4 MeshInstance4D::get_rect_bounds(const Transform4D &p_inv_relative_to) const {
-	const Transform4D global_xform = get_global_transform();
-	Rect4 bounds = Rect4(p_inv_relative_to * global_xform.origin, Vector4());
+Rect4 MeshInstance4D::get_rect_bounds_local(const Transform4D &p_inv_relative_to) const {
+	Rect4 bounds = Rect4(p_inv_relative_to.origin, Vector4());
 	const Ref<Mesh4D> mesh = get_mesh();
 	if (mesh.is_null()) {
 		return bounds;
 	}
-	const Transform4D to_target = p_inv_relative_to * global_xform;
+	const Transform4D to_target = p_inv_relative_to;
 	const PackedVector4Array vertices = mesh->get_vertices();
 	for (int vert_index = 0; vert_index < vertices.size(); vert_index++) {
 		bounds = bounds.expand_to_point(to_target * vertices[vert_index]);
 	}
 	return bounds;
+}
+
+Dictionary MeshInstance4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const bool p_inside_is_zero) const {
+	const Ref<TetraMesh4D> tetra_mesh = _mesh;
+	if (tetra_mesh.is_valid()) {
+		// Use the full version for the general `MeshInstance4D::raycast_intersects_local` function, which returns the distance and normal of the hit point.
+		return tetra_mesh->raycast_intersects(p_local_from, p_local_direction);
+	}
+	// If the mesh is not a tetra mesh, fallback to using the local Rect4 bounds.
+	const Rect4 local_bounds = get_rect_bounds_local();
+	return local_bounds.raycast_intersects_dict(p_local_from, p_local_direction, p_inside_is_zero);
 }
 
 void MeshInstance4D::_bind_methods() {

@@ -7,8 +7,10 @@ class ConcaveMeshShape4D : public Shape4D {
 
 	PackedVector4Array _simplex_cells;
 	PackedVector4Array _normals;
+	PackedFloat64Array _inverse_metric_cache;
 
-	void _calculate_normals();
+	static PackedVector4Array _calculate_normals(const PackedVector4Array &p_simplex_cells);
+	static PackedFloat64Array _populate_inverse_metric_cache(const PackedVector4Array &p_simplex_cells);
 
 protected:
 	static void _bind_methods();
@@ -18,6 +20,10 @@ public:
 	void set_simplex_cells(const PackedVector4Array &p_simplex_cells);
 
 	virtual bool is_equal_exact(const Ref<Shape4D> &p_shape) const override;
+
+	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const override;
+
+	virtual Vector4 get_nearest_point(const Vector4 &p_point) const override;
 
 	virtual Ref<TetraMesh4D> to_tetra_mesh(const Dictionary &p_options = Dictionary()) const override;
 	virtual Ref<WireMesh4D> to_wire_mesh(const Dictionary &p_options = Dictionary()) const override;

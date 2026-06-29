@@ -59,4 +59,47 @@ TEST_CASE("[Rect4] Continuous Collision Depth") {
 	CHECK_MESSAGE(depth == 1.0f, "Rect4 continuous_collision_depth overlapping should be allowed to move out of the obstacle.");
 	CHECK_MESSAGE(normal == Vector4(0, 0, 0, 0), "Rect4 continuous_collision_depth should give a zero normal when there is no collision.");
 }
+
+TEST_CASE("[Rect4] Raycast from outside") {
+	const Rect4 unit_rect = Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1));
+	real_t distance;
+	Vector4 normal;
+	// Ray from outside, pointing at center.
+	bool hit = unit_rect.raycast_intersects(Vector4(-2, 0.5, 0.5, 0.5), Vector4(1, 0, 0, 0), false, &distance, &normal);
+	CHECK_MESSAGE(hit == true, "Raycast from outside should hit the box");
+	CHECK_MESSAGE(distance == doctest::Approx(2.0f), "Raycast distance should be 2.0");
+	CHECK_MESSAGE(normal == Vector4(-1, 0, 0, 0), "Normal should point backwards along X");
+	// Ray from outside, pointing at corner.
+	hit = unit_rect.raycast_intersects(Vector4(-1, -1, -1, -1), Vector4(1, 1, 1, 1).normalized(), false, &distance, &normal);
+	CHECK_MESSAGE(hit == true, "Raycast at corner should hit");
+	// Ray from outside, missing the box.
+	hit = unit_rect.raycast_intersects(Vector4(-1, 2, 0.5, 0.5), Vector4(1, 0, 0, 0), false, &distance, &normal);
+	CHECK_MESSAGE(hit == false, "Raycast missing the box should not hit");
+	// Ray parallel to box, pointing away.
+	hit = unit_rect.raycast_intersects(Vector4(2, 0.5, 0.5, 0.5), Vector4(1, 0, 0, 0), false, &distance, &normal);
+	CHECK_MESSAGE(hit == false, "Raycast pointing away should not hit");
+}
+
+TEST_CASE("[Rect4] Raycast from inside") {
+	const Rect4 unit_rect = Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1));
+	real_t distance;
+	Vector4 normal;
+	// When inside_is_zero=true, should return distance 0.
+	bool hit = unit_rect.raycast_intersects(Vector4(0.5, 0.5, 0.5, 0.5), Vector4(1, 0, 0, 0), true, &distance, &normal);
+	CHECK_MESSAGE(hit == true, "Raycast from inside should hit with inside_is_zero=true");
+	CHECK_MESSAGE(distance == doctest::Approx(0.0f), "Raycast from inside with inside_is_zero should have distance 0");
+}
+
+TEST_CASE("[Rect4] Raycast parallel to axes") {
+	const Rect4 unit_rect = Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1));
+	real_t distance;
+	Vector4 normal;
+	// Ray parallel to box, pointing along Y through center.
+	bool hit = unit_rect.raycast_intersects(Vector4(0.5, -1, 0.5, 0.5), Vector4(0, 1, 0, 0), false, &distance, &normal);
+	CHECK_MESSAGE(hit == true, "Ray through center should hit");
+	CHECK_MESSAGE(distance == doctest::Approx(1.0f), "Distance should be 1.0");
+	// Ray parallel to box, missing on one axis.
+	hit = unit_rect.raycast_intersects(Vector4(0.5, -1, 2, 0.5), Vector4(0, 1, 0, 0), false, &distance, &normal);
+	CHECK_MESSAGE(hit == false, "Ray missing on Z axis should not hit");
+}
 } // namespace TestRect4

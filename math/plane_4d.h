@@ -21,7 +21,8 @@ struct _NO_DISCARD_ Plane4D {
 
 	// Plane math functions.
 	Vector4 get_center() const { return normal * distance; }
-	Variant intersect_ray(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction) const;
+	real_t intersect_ray_factor(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction) const;
+	Variant intersect_ray_point(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction) const;
 	Variant intersect_line_segment(const Vector4 &p_begin, const Vector4 &p_end) const;
 	Plane4D normalized() const;
 

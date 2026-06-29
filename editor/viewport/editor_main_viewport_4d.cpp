@@ -1,5 +1,6 @@
 #include "editor_main_viewport_4d.h"
 
+#include "../../model/mesh/tetra/tetra_mesh_4d.h"
 #include "../../nodes/camera_4d.h"
 #include "editor_camera_4d.h"
 #include "editor_input_surface_4d.h"
@@ -10,6 +11,7 @@
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/editor_selection.hpp>
 #include <godot_cpp/classes/input_event_screen_drag.hpp>
+#include <godot_cpp/classes/input_event_screen_touch.hpp>
 #elif GODOT_MODULE
 #include "editor/editor_data.h"
 #include "editor/editor_interface.h"
@@ -164,13 +166,161 @@ void EditorMainViewport4D::navigation_change_zoom(const double p_zoom_change) {
 	set_information_text("Zoom: " + _viewport_4d_format_number(speed_and_zoom) + "m");
 }
 
-void EditorMainViewport4D::viewport_mouse_input(const Ref<InputEventMouse> &p_mouse_event) {
-	const Camera4D *camera = _editor_camera_4d->get_camera_readonly();
-	const bool used_by_gizmo = _transform_gizmo_4d->gizmo_mouse_input(p_mouse_event, camera);
-	if (used_by_gizmo) {
+// The "target" refers to which node should actually be selected when a given node is clicked.
+// If a mesh belongs to an instantiated scene, the target should be the top-level node of that scene, not the node with the mesh.
+void EditorMainViewport4D::_gather_non_empty_visible_mesh_4d_nodes(Node *p_edited_scene_root, Node *p_from_node, Node *p_target_node, Vector<Node4D *> &r_nodes, Vector<Node *> &r_targets, Vector<Rect4> &r_rect_bounds) {
+	if (p_from_node == nullptr) {
 		return;
 	}
-	// TODO: Try to make a selection if the transform gizmo didn't use the mouse.
+	// Handle self.
+	Node4D *node_4d = Object::cast_to<Node4D>(p_from_node);
+	if (node_4d != nullptr && node_4d->is_visible_in_tree()) {
+		const Rect4 rect_bounds = node_4d->get_rect_bounds_global();
+		if (rect_bounds.has_any_size()) {
+			r_nodes.append(node_4d);
+			r_targets.append(p_target_node);
+			r_rect_bounds.append(rect_bounds);
+		}
+	}
+	// Check if the target should propagate down to children or stay the same.
+	// We only target children when the passed-in nodes match, otherwise the target has already changed.
+	bool target_children;
+	if (p_from_node == p_edited_scene_root) {
+		// Always target children of the edited scene root, even for inherited scenes.
+		target_children = true;
+	} else {
+		target_children = p_from_node == p_target_node;
+		if (target_children) {
+			const bool is_root_of_a_scene = !p_from_node->get_scene_file_path().is_empty();
+			const bool is_editable = p_edited_scene_root->is_editable_instance(p_from_node);
+			// We also want to stop propagating if the node is the root of a non-editable scene instance.
+			target_children = !is_root_of_a_scene || is_editable;
+		}
+	}
+	const int child_count = p_from_node->get_child_count();
+	for (int i = 0; i < child_count; i++) {
+		Node *child_node = p_from_node->get_child(i);
+		Node *target_node = target_children ? child_node : p_target_node;
+		_gather_non_empty_visible_mesh_4d_nodes(p_edited_scene_root, child_node, target_node, r_nodes, r_targets, r_rect_bounds);
+	}
+}
+
+Node *EditorMainViewport4D::_raycast_from_mouse(const Vector2 &p_mouse_position, const Camera4D *p_camera) {
+	const Vector4 global_ray_origin = p_camera->viewport_to_world_ray_origin(p_mouse_position);
+	const Vector4 global_ray_direction = p_camera->viewport_to_world_ray_direction(p_mouse_position);
+	// Gather all meshes and other visible nodes in the scene.
+	Node *edited_scene_root = EditorInterface::get_singleton()->get_edited_scene_root();
+	if (edited_scene_root == nullptr) {
+		// Silently exit if there is no edited scene root. This can happen when the editor
+		// is first opened and no scene is loaded yet, or the user closed all scenes.
+		return nullptr;
+	}
+	Vector<Node4D *> nodes;
+	Vector<Node *> targets;
+	Vector<Rect4> rect_bounds; // Global space.
+	_gather_non_empty_visible_mesh_4d_nodes(edited_scene_root, edited_scene_root, edited_scene_root, nodes, targets, rect_bounds);
+	// First pass: Check the rect bounds of each node and exclude any that don't intersect the ray.
+	// This is a quick check to avoid doing more expensive raycasts than necessary.
+	for (int64_t i = nodes.size() - 1; i >= 0; i--) {
+		const Rect4 &rect_bound = rect_bounds[i];
+		bool raycast_intersects = rect_bound.raycast_intersects(global_ray_origin, global_ray_direction, true, nullptr, nullptr);
+		if (!raycast_intersects) {
+			nodes.remove_at(i);
+			targets.remove_at(i);
+			rect_bounds.remove_at(i);
+		}
+	}
+	// Cache inverse global transforms for each node to avoid recalculating them.
+	Vector<Transform4D> inverse_global_transforms;
+	for (int64_t i = 0; i < nodes.size(); i++) {
+		inverse_global_transforms.append(nodes[i]->get_global_transform().inverse());
+	}
+	// Second pass: For some types, perform fast checks before doing more expensive ones.
+	for (int64_t i = nodes.size() - 1; i >= 0; i--) {
+		Node4D *node_4d = nodes[i];
+		MeshInstance4D *mesh_instance_4d = Object::cast_to<MeshInstance4D>(node_4d);
+		if (mesh_instance_4d != nullptr) {
+			Ref<TetraMesh4D> tetra_mesh = mesh_instance_4d->get_mesh();
+			if (tetra_mesh.is_valid()) {
+				tetra_mesh->populate_inverse_metric_cache(); // This will exit quickly if already populated.
+				const Vector4 local_ray_origin = inverse_global_transforms[i].xform(global_ray_origin);
+				const Vector4 local_ray_direction = inverse_global_transforms[i].basis.xform(global_ray_direction).normalized();
+				bool hit = tetra_mesh->raycast_intersects_fast(local_ray_origin, local_ray_direction);
+				if (!hit) {
+					nodes.remove_at(i);
+					targets.remove_at(i);
+					rect_bounds.remove_at(i);
+					inverse_global_transforms.remove_at(i);
+				}
+			}
+		}
+	}
+	// Third pass: For nodes that intersected the ray, find the first hit along the ray.
+	Node *nearest_target_node = nullptr;
+	double nearest_distance = Math_INF;
+	for (int64_t i = nodes.size() - 1; i >= 0; i--) {
+		Node4D *node_4d = nodes[i];
+		const Vector4 local_ray_origin = inverse_global_transforms[i].xform(global_ray_origin);
+		const Vector4 local_ray_direction = inverse_global_transforms[i].basis.xform(global_ray_direction).normalized();
+		const Dictionary raycast_result = node_4d->raycast_intersects_local(local_ray_origin, local_ray_direction, false);
+		if (raycast_result.has("hit")) {
+			const bool hit = raycast_result["hit"];
+			if (hit && raycast_result.has("distance")) {
+				// Variant's float type is double, so use double here to avoid precision loss.
+				const double distance = raycast_result["distance"];
+				if (nearest_distance > distance) {
+					nearest_distance = distance;
+					nearest_target_node = targets[i];
+				}
+			}
+		}
+	}
+	return nearest_target_node;
+}
+
+// This uses InputEvent instead of InputEventMouse so that it can handle touch events as well.
+void EditorMainViewport4D::viewport_mouse_input(const Ref<InputEvent> &p_input_event) {
+	Ref<InputEventMouse> mouse_event = p_input_event;
+	Vector2 mouse_position;
+	const Camera4D *camera = _editor_camera_4d->get_camera_readonly();
+	int released_button_index = -1;
+	if (mouse_event.is_valid()) {
+		const bool used_by_gizmo = _transform_gizmo_4d->gizmo_mouse_input(mouse_event, camera);
+		if (used_by_gizmo) {
+			return;
+		}
+		// Try to make a selection if the transform gizmo didn't use the mouse.
+		Ref<InputEventMouseButton> mouse_button_event = mouse_event;
+		if (mouse_button_event.is_valid()) {
+			mouse_position = mouse_button_event->get_position();
+			if (mouse_button_event->is_released()) {
+				released_button_index = (int)mouse_button_event->get_button_index();
+			}
+		}
+	} else {
+		Ref<InputEventScreenTouch> touch_event = p_input_event;
+		if (touch_event.is_valid()) {
+			mouse_position = touch_event->get_position();
+			if (touch_event->is_released()) {
+				released_button_index = touch_event->get_index();
+			}
+		}
+	}
+	// If a mouse button was released (or a touch ended), try to select the node under the mouse.
+	if (released_button_index == (int)MOUSE_BUTTON_LEFT) {
+		Node *node_under_mouse = _raycast_from_mouse(mouse_position, camera);
+		EditorSelection *selection = EditorInterface::get_singleton()->get_selection();
+		if (node_under_mouse == nullptr) {
+			selection->clear();
+		} else {
+			if (mouse_event.is_valid() && (mouse_event->is_shift_pressed() || mouse_event->is_command_or_control_pressed())) {
+				selection->add_node(node_under_mouse);
+			} else {
+				selection->clear();
+				selection->add_node(node_under_mouse);
+			}
+		}
+	}
 }
 
 void EditorMainViewport4D::set_ground_view_axis(const Vector4::Axis p_axis) {

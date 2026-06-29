@@ -46,6 +46,21 @@ Rect4 PlaneShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	return Rect4(rect_start, rect_size);
 }
 
+Dictionary PlaneShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+	Dictionary result;
+	result["hit"] = false;
+	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "PlaneShape4D::raycast_intersects: Ray direction must be normalized.");
+	const Plane4D plane = get_plane_4d();
+	const real_t factor = plane.intersect_ray_factor(p_local_from, p_local_direction);
+	const bool hit = factor >= 0.0f;
+	result["hit"] = hit;
+	if (hit) {
+		result["distance"] = factor;
+		result["normal"] = p_local_from.y > 0.0f ? Vector4(0, 1, 0, 0) : Vector4(0, -1, 0, 0);
+	}
+	return result;
+}
+
 Vector4 PlaneShape4D::get_nearest_point(const Vector4 &p_point) const {
 	if (p_point.y <= 0.0f) {
 		return p_point;

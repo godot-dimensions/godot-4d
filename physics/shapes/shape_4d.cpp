@@ -41,6 +41,19 @@ PackedVector4Array Shape4D::get_rect_bounds_bind(const Projection &p_to_target_b
 	return PackedVector4Array({ bounds.position, bounds.size });
 }
 
+// Raycasting.
+
+Dictionary Shape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+	Dictionary result;
+	GDVIRTUAL_CALL(_raycast_intersects, p_local_from, p_local_direction, result);
+	if (!result.is_empty()) {
+		return result;
+	}
+	// Fallback implementation that uses get_rect_bounds to work for all shapes.
+	const Rect4 bounds = get_rect_bounds();
+	return bounds.raycast_intersects_dict(p_local_from, p_local_direction, false);
+}
+
 Vector4 Shape4D::get_nearest_point(const Vector4 &p_point) const {
 	Vector4 nearest_point;
 	GDVIRTUAL_CALL(_get_nearest_point, p_point, nearest_point);
@@ -87,6 +100,7 @@ void Shape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_hypervolume"), &Shape4D::get_hypervolume);
 	ClassDB::bind_method(D_METHOD("get_surface_volume"), &Shape4D::get_surface_volume);
 	ClassDB::bind_method(D_METHOD("get_rect_bounds", "to_target_basis", "to_target_origin"), &Shape4D::get_rect_bounds_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
+	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction"), &Shape4D::raycast_intersects);
 	ClassDB::bind_method(D_METHOD("get_nearest_point", "point"), &Shape4D::get_nearest_point);
 	ClassDB::bind_method(D_METHOD("get_support_point", "direction"), &Shape4D::get_support_point);
 	ClassDB::bind_method(D_METHOD("has_point", "point"), &Shape4D::has_point);
@@ -98,6 +112,7 @@ void Shape4D::_bind_methods() {
 	GDVIRTUAL_BIND(_get_hypervolume);
 	GDVIRTUAL_BIND(_get_surface_volume);
 	GDVIRTUAL_BIND(_get_rect_bounds, "inv_relative_to_basis", "inv_relative_to_origin");
+	GDVIRTUAL_BIND(_raycast_intersects, "local_from", "local_direction");
 	GDVIRTUAL_BIND(_get_nearest_point, "point");
 	GDVIRTUAL_BIND(_get_support_point, "direction");
 	GDVIRTUAL_BIND(_has_point, "point");

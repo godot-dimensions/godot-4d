@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../physics/shapes/orthoplex_shape_4d.h"
+#include "../../../physics/shapes/orthoplex_shape_4d.h"
 
 #include "tests/test_macros.h"
 

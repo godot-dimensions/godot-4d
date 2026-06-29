@@ -376,7 +376,7 @@ Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p
 	for (int i = 0; i < size; i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
-			bounds = bounds.merge(node_4d->get_rect_bounds_recursive(p_inv_relative_to));
+			bounds = bounds.merge(node_4d->get_rect_bounds_global_recursive(p_inv_relative_to));
 		}
 	}
 	return bounds;
@@ -455,7 +455,7 @@ Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const 
 		return Vector4();
 	}
 	const Plane4D plane = Plane4D(plane_normal.normalized(), 0.0);
-	const Variant intersection = plane.intersect_ray(p_ray_origin, p_ray_direction);
+	const Variant intersection = plane.intersect_ray_point(p_ray_origin, p_ray_direction);
 	if (intersection.get_type() == Variant::VECTOR4) {
 		return intersection;
 	}
@@ -616,7 +616,7 @@ Variant EditorTransformGizmo4D::_get_transform_raycast_value(const Vector4 &p_lo
 		case TRANSFORM_MOVE_SCREEN_RELATIVE:
 		case TRANSFORM_SCALE_UNIFORM: {
 			const Plane4D plane = Plane4D(p_local_camera_direction, 0.0);
-			return plane.intersect_ray(p_local_ray_origin, p_local_ray_direction);
+			return plane.intersect_ray_point(p_local_ray_origin, p_local_ray_direction);
 		} break;
 		case TRANSFORM_MOVE_X:
 		case TRANSFORM_SCALE_X:
@@ -1099,10 +1099,12 @@ bool EditorTransformGizmo4D::_gizmo_mouse_raycast(const Ref<InputEventMouse> &p_
 			if (_current_transformation != TRANSFORM_NONE) {
 				_begin_transformation(p_local_ray_origin, p_local_ray_direction, p_local_perp_direction, local_camera_direction);
 				_snap_settings->set_camera_distance(_old_gizmo_transform.origin.distance_to(p_camera->get_global_position()));
+				return true;
 			}
 		} else if (!mouse_button->is_pressed() && _current_transformation != TRANSFORM_NONE) {
 			// If we are transforming something and the user releases the click, end the transformation.
 			_end_transformation();
+			return true;
 		}
 		return false;
 	}

@@ -759,35 +759,57 @@ void Node4D::_propagate_visibility_changed() {
 
 // Rect bounds.
 
-Rect4 Node4D::get_rect_bounds(const Transform4D &p_inv_relative_to) const {
+Rect4 Node4D::get_rect_bounds_local(const Transform4D &p_inv_relative_to) const {
 	PackedVector4Array result;
-	GDVIRTUAL_CALL(_get_rect_bounds, p_inv_relative_to.basis, p_inv_relative_to.origin, result);
+	GDVIRTUAL_CALL(_get_rect_bounds_local, p_inv_relative_to.basis, p_inv_relative_to.origin, result);
 	if (result.size() != 2) {
-		return Rect4(p_inv_relative_to * get_global_position(), Vector4());
+		return Rect4(p_inv_relative_to.origin, Vector4());
 	}
 	return Rect4(result[0], result[1]);
 }
 
-PackedVector4Array Node4D::get_rect_bounds_bind(const Projection &p_inv_relative_to_basis, const Vector4 &p_inv_relative_to_origin) const {
-	Rect4 bounds = get_rect_bounds(Transform4D(p_inv_relative_to_basis, p_inv_relative_to_origin));
+PackedVector4Array Node4D::get_rect_bounds_local_bind(const Projection &p_basis, const Vector4 &p_offset) const {
+	Rect4 bounds = get_rect_bounds_local(Transform4D(p_basis, p_offset));
 	return PackedVector4Array({ bounds.position, bounds.size });
 }
 
-Rect4 Node4D::get_rect_bounds_recursive(const Transform4D &p_inv_relative_to) const {
-	Rect4 bounds = get_rect_bounds(p_inv_relative_to);
+Rect4 Node4D::get_rect_bounds_global(const Transform4D &p_inv_relative_to) const {
+	return get_rect_bounds_local(p_inv_relative_to * get_global_transform());
+}
+
+PackedVector4Array Node4D::get_rect_bounds_global_bind(const Projection &p_inv_relative_to_basis, const Vector4 &p_inv_relative_to_origin) const {
+	Rect4 bounds = get_rect_bounds_global(Transform4D(p_inv_relative_to_basis, p_inv_relative_to_origin));
+	return PackedVector4Array({ bounds.position, bounds.size });
+}
+
+Rect4 Node4D::get_rect_bounds_global_recursive(const Transform4D &p_inv_relative_to) const {
+	Rect4 bounds = get_rect_bounds_global(p_inv_relative_to);
 	const int child_count = get_child_count();
 	for (int i = 0; i < child_count; i++) {
 		Node4D *child_4d = Object::cast_to<Node4D>(get_child(i));
 		if (child_4d != nullptr) {
-			bounds = bounds.merge(child_4d->get_rect_bounds_recursive(p_inv_relative_to));
+			bounds = bounds.merge(child_4d->get_rect_bounds_global_recursive(p_inv_relative_to));
 		}
 	}
 	return bounds;
 }
 
-PackedVector4Array Node4D::get_rect_bounds_recursive_bind(const Projection &p_inv_relative_to_basis, const Vector4 &p_inv_relative_to_origin) const {
-	Rect4 bounds = get_rect_bounds_recursive(Transform4D(p_inv_relative_to_basis, p_inv_relative_to_origin));
+PackedVector4Array Node4D::get_rect_bounds_global_recursive_bind(const Projection &p_inv_relative_to_basis, const Vector4 &p_inv_relative_to_origin) const {
+	Rect4 bounds = get_rect_bounds_global_recursive(Transform4D(p_inv_relative_to_basis, p_inv_relative_to_origin));
 	return PackedVector4Array({ bounds.position, bounds.size });
+}
+
+// Raycasting.
+
+Dictionary Node4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const bool p_inside_is_zero) const {
+	Dictionary result;
+	GDVIRTUAL_CALL(_raycast_intersects_local, p_local_from, p_local_direction, p_inside_is_zero, result);
+	if (!result.is_empty()) {
+		return result;
+	}
+	// Fallback implementation that uses get_rect_bounds to determine if the ray intersects the bounding box of the node.
+	const Rect4 local_bounds = get_rect_bounds_local();
+	return local_bounds.raycast_intersects_dict(p_local_from, p_local_direction, p_inside_is_zero);
 }
 
 // Bindings.
@@ -886,9 +908,13 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_visible_in_tree"), &Node4D::is_visible_in_tree);
 	ClassDB::bind_method(D_METHOD("set_visible", "visible"), &Node4D::set_visible);
 	// Rect bounds.
-	ClassDB::bind_method(D_METHOD("get_rect_bounds", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
-	ClassDB::bind_method(D_METHOD("get_rect_bounds_recursive", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_recursive_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
-	GDVIRTUAL_BIND(_get_rect_bounds, "inv_relative_to_basis", "inv_relative_to_origin");
+	ClassDB::bind_method(D_METHOD("get_rect_bounds_local", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_local_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
+	ClassDB::bind_method(D_METHOD("get_rect_bounds_global", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_global_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
+	ClassDB::bind_method(D_METHOD("get_rect_bounds_global_recursive", "inv_relative_to_basis", "inv_relative_to_origin"), &Node4D::get_rect_bounds_global_recursive_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
+	GDVIRTUAL_BIND(_get_rect_bounds_local, "inv_relative_to_basis", "inv_relative_to_origin");
+	// Raycasting.
+	ClassDB::bind_method(D_METHOD("raycast_intersects_local", "local_from", "local_direction", "inside_is_zero"), &Node4D::raycast_intersects_local);
+	GDVIRTUAL_BIND(_raycast_intersects_local, "local_from", "local_direction", "inside_is_zero");
 
 #ifdef REAL_T_IS_DOUBLE
 #define PACKED_REAL_ARRAY Variant::PACKED_FLOAT64_ARRAY

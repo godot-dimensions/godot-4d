@@ -48,6 +48,15 @@ Rect4 BoxShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	return bounds;
 }
 
+Rect4 BoxShape4D::get_rect_bounds_fast() const {
+	const Vector4 half_extents = get_half_extents();
+	return Rect4(-half_extents, _size);
+}
+
+Dictionary BoxShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+	return get_rect_bounds_fast().raycast_intersects_dict(p_local_from, p_local_direction, false);
+}
+
 Vector4 BoxShape4D::get_nearest_point(const Vector4 &p_point) const {
 	const Vector4 half_extents = get_half_extents();
 	return Vector4(

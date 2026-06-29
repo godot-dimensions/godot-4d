@@ -14,9 +14,6 @@ class ArrayTetraMesh4D;
 class TetraMesh4D : public Mesh4D {
 	GDCLASS(TetraMesh4D, Mesh4D);
 
-	static bool _compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g01, const real_t p_g02, const real_t p_g11, const real_t p_g12, const real_t p_g22, real_t r_inv_symmetric[6]);
-	static void _get_nearest_point_on_tetrahedron_internal(const PackedVector4Array &p_vertices, const PackedInt32Array &p_simplex_cell_indices, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const Vector4 &p_local_point, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared, bool &r_proj_inside);
-
 protected:
 	static void _bind_methods();
 	PackedInt32Array _edge_indices_cache;
@@ -29,9 +26,13 @@ protected:
 
 public:
 	// Nearest point and signed distance.
-	virtual void populate_nearest_point_cache();
-	virtual real_t get_signed_distance_to_mesh(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_tet = nullptr, int *r_tetrahedron_index = nullptr);
+	void populate_inverse_metric_cache();
+	real_t get_signed_distance_to_mesh(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_tet, int *r_tetrahedron_index);
 	real_t get_signed_distance_to_mesh_bind(const Vector4 &p_local_point);
+
+	// Raycast.
+	bool raycast_intersects_fast(const Vector4 &p_local_from, const Vector4 &p_local_direction);
+	Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction);
 
 	// Cache and validation.
 	void tetra_mesh_clear_cache();

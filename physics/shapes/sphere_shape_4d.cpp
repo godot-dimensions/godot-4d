@@ -30,6 +30,41 @@ real_t SphereShape4D::get_surface_volume() const {
 	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius);
 }
 
+Dictionary SphereShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+	Dictionary result;
+	result["hit"] = false;
+	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "SphereShape4D::raycast_intersects: Ray direction must be normalized.");
+	// Disclaimer: This code was mostly AI-generated. I am not sure if it is correct, but it works in testing.
+	const real_t direction_len_sq = p_local_direction.dot(p_local_direction);
+	const real_t direction_dot_origin = p_local_direction.dot(p_local_from);
+	const real_t origin_len_sq = p_local_from.dot(p_local_from);
+	const real_t radius_squared = _radius * _radius;
+	// Discriminant of the quadratic equation.
+	const real_t discriminant = direction_dot_origin * direction_dot_origin - direction_len_sq * (origin_len_sq - radius_squared);
+	if (discriminant < 0.0f) {
+		return result; // No intersection.
+	}
+	const real_t sqrt_discriminant = Math::sqrt(discriminant);
+	const real_t distance_near = (-direction_dot_origin - sqrt_discriminant) / direction_len_sq;
+	const real_t distance_far = (-direction_dot_origin + sqrt_discriminant) / direction_len_sq;
+	real_t hit_distance = -Math_INF;
+	if (distance_near >= 0.0f) {
+		// Raycast from the outside hits the sphere at distance_near.
+		hit_distance = distance_near;
+	} else if (distance_far >= 0.0f) {
+		// Both inside and outside hit at distance_far, so it needs to come in an else after the distance_near check.
+		hit_distance = distance_far;
+	} else {
+		return result; // Ray is pointing away from sphere.
+	}
+	const Vector4 hit_point = p_local_from + p_local_direction * hit_distance;
+	const Vector4 normal = hit_point.normalized(); // Normal is the direction from center to hit point.
+	result["hit"] = true;
+	result["distance"] = hit_distance;
+	result["normal"] = normal;
+	return result;
+}
+
 bool SphereShape4D::has_point(const Vector4 &p_point) const {
 	return p_point.length_squared() <= _radius * _radius;
 }

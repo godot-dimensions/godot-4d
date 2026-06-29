@@ -406,6 +406,83 @@ bool Rect4::continuous_collision_overlaps(const Vector4 &p_relative_motion, cons
 	return false;
 }
 
+bool Rect4::raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction, const bool p_inside_is_zero, real_t *r_out_distance, Vector4 *r_out_normal) const {
+#ifdef MATH_CHECKS
+	if (unlikely(size.x < 0.0f || size.y < 0.0f || size.z < 0.0f || size.w < 0.0f)) {
+		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
+	}
+	ERR_FAIL_COND_V_MSG(!p_direction.is_normalized(), false, "Rect4::raycast_intersects: Ray direction must be normalized.");
+#endif // MATH_CHECKS
+	if (p_inside_is_zero && has_point(p_from)) {
+		// The ray starts inside the box, so we can return a distance of 0.0f.
+		if (r_out_distance != nullptr) {
+			*r_out_distance = 0.0f;
+		}
+		if (r_out_normal != nullptr) {
+			*r_out_normal = Vector4();
+		}
+		return true;
+	}
+	const Vector4 end = get_end();
+	real_t distance_min = -Math_INF;
+	real_t distance_max = Math_INF;
+	Vector4::Axis hit_axis = Vector4::Axis::AXIS_X;
+	for (uint8_t i = (uint8_t)0; i < (uint8_t)4; i++) {
+		if (p_direction[i] == 0.0f) {
+			// Ray is parallel in this axis, so there is no casting: just check if the from point is inside the box in this axis.
+			if (p_from[i] < position[i] || p_from[i] > end[i]) {
+				return false;
+			}
+		} else {
+			real_t low_ratio = (position[i] - p_from[i]) / p_direction[i];
+			real_t high_ratio = (end[i] - p_from[i]) / p_direction[i];
+			// Ray is not parallel in this axis, so we can calculate the intersection distances.
+			if (low_ratio > high_ratio) {
+				// Swap the ratios if they are in the wrong order.
+				SWAP(low_ratio, high_ratio);
+			}
+			if (low_ratio > distance_min) {
+				distance_min = low_ratio;
+				hit_axis = (Vector4::Axis)i;
+			}
+			if (high_ratio < distance_max) {
+				if (high_ratio < 0.0f) {
+					// The ray is pointing away from the box, so it will never hit.
+					return false;
+				}
+				distance_max = high_ratio;
+			}
+			if (distance_min > distance_max) {
+				// The ray misses the box.
+				return false;
+			}
+		}
+	}
+	// If we haven't returned false by now, then the ray hits the box.
+	if (r_out_distance != nullptr) {
+		*r_out_distance = distance_min;
+	}
+	if (r_out_normal != nullptr) {
+		Vector4 normal = Vector4();
+		normal[hit_axis] = (p_direction[hit_axis] >= 0.0f) ? -1.0f : 1.0f;
+		*r_out_normal = normal;
+	}
+	return true;
+}
+
+Dictionary Rect4::raycast_intersects_dict(const Vector4 &p_from, const Vector4 &p_direction, const bool p_inside_is_zero) const {
+	real_t distance = -Math_INF;
+	Vector4 normal = Vector4();
+	const bool hit_intersects = raycast_intersects(p_from, p_direction, p_inside_is_zero, &distance, &normal);
+	Dictionary result;
+	result["hit"] = hit_intersects;
+	if (hit_intersects) {
+		result["distance"] = distance;
+		result["normal"] = normal;
+	}
+	return result;
+}
+
 // Rect comparison functions.
 bool Rect4::encloses_exclusive(const Rect4 &p_other) const {
 	Vector4 end = get_end();

@@ -1,5 +1,6 @@
 #include "orthoplex_shape_4d.h"
 
+#include "../../math/plane_4d.h"
 #include "../../math/vector_4d.h"
 #include "../../model/mesh/poly/orthoplex_poly_mesh_4d.h"
 #include "../../model/mesh/tetra/orthoplex_tetra_mesh_4d.h"
@@ -46,6 +47,46 @@ Rect4 OrthoplexShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 		}
 	}
 	return bounds;
+}
+
+Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+	Dictionary result;
+	result["hit"] = false;
+	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "OrthoplexShape4D::raycast_intersects: Ray direction must be normalized.");
+	// Convert the raycast vectors into a space that assumes the orthoplex is of unit size.
+	const Vector4 ray_from = p_local_from / _size;
+	const Vector4 ray_direction = (p_local_direction / _size).normalized();
+	Vector4 best_normal = Vector4();
+	real_t best_distance = Math_INF;
+	// Iterate over the 16 planes of the orthoplex.
+	for (real_t x = -0.5f; x <= 0.5f; x += 1.0f) {
+		for (real_t y = -0.5f; y <= 0.5f; y += 1.0f) {
+			for (real_t z = -0.5f; z <= 0.5f; z += 1.0f) {
+				for (real_t w = -0.5f; w <= 0.5f; w += 1.0f) {
+					const Plane4D plane = Plane4D(Vector4(x, y, z, w), 0.5f);
+					const real_t factor = plane.intersect_ray_factor(ray_from, ray_direction);
+					if (factor >= 0.0f && factor < best_distance) {
+						const Vector4 hit_point_abs = (ray_from + ray_direction * factor).abs();
+						// Similar to has_point but does not scale by the size and has a slightly larger tolerance.
+						if ((hit_point_abs.x + hit_point_abs.y + hit_point_abs.z + hit_point_abs.w) <= 1.000001f) {
+							best_distance = factor;
+							best_normal = plane.normal;
+						}
+					}
+				}
+			}
+		}
+	}
+	const bool hit = best_distance != Math_INF;
+	result["hit"] = hit;
+	if (hit) {
+		const Vector4 hit_point_accounting_for_size = (ray_from + ray_direction * best_distance) * _size;
+		result["distance"] = p_local_from.distance_to(hit_point_accounting_for_size);
+		// Divide by the size again, aka multiply by the inverse of the size.
+		// Ex: Larger size on X means the "faces" point more in the YZW directions, so the normal is smaller in X.
+		result["normal"] = (best_normal * _size.inverse()).normalized();
+	}
+	return result;
 }
 
 Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_point) const {

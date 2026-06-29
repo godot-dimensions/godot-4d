@@ -17,9 +17,15 @@
 // Model
 #include "model/mesh/poly/test_poly_mesh_builder_4d.h"
 #include "model/mesh/tetra/test_array_tetra_mesh_4d.h"
+#include "model/mesh/tetra/test_tetra_mesh_4d.h"
 #include "model/mesh/wire/test_array_wire_mesh_4d.h"
 #include "model/mesh/wire/test_wire_material_4d.h"
 
 // Other
 #include "nodes/test_node_4d.h"
-#include "physics/test_orthoplex_shape_4d.h"
+
+// Physics
+#include "physics/shapes/test_box_shape_4d.h"
+#include "physics/shapes/test_capsule_shape_4d.h"
+#include "physics/shapes/test_orthoplex_shape_4d.h"
+#include "physics/shapes/test_sphere_shape_4d.h"

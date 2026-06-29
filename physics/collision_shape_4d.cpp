@@ -36,11 +36,11 @@ void CollisionShape4D::_notification(int p_what) {
 	}
 }
 
-Rect4 CollisionShape4D::get_rect_bounds(const Transform4D &p_inv_relative_to) const {
+Rect4 CollisionShape4D::get_rect_bounds_local(const Transform4D &p_inv_relative_to) const {
 	if (_shape.is_null()) {
-		return Rect4(p_inv_relative_to * get_global_position(), Vector4());
+		return Rect4(p_inv_relative_to.origin, Vector4());
 	}
-	return _shape->get_rect_bounds(p_inv_relative_to * get_global_transform());
+	return _shape->get_rect_bounds(p_inv_relative_to);
 }
 
 Transform4D CollisionShape4D::get_transform_to_collision_object() const {
@@ -55,6 +55,23 @@ Transform4D CollisionShape4D::get_transform_to_collision_object() const {
 		parent = parent->get_parent();
 	}
 	return transform_to_col_obj;
+}
+
+Dictionary CollisionShape4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const bool p_inside_is_zero) const {
+	if (_shape.is_valid()) {
+		if (p_inside_is_zero && _shape->has_point(p_local_from)) {
+			Dictionary inside_result;
+			inside_result["hit"] = true;
+			inside_result["distance"] = 0.0;
+			inside_result["normal"] = Vector4();
+			return inside_result;
+		}
+		return _shape->raycast_intersects(p_local_from, p_local_direction);
+	}
+	// If the CollisionShape4D has no shape, there is nothing for a raycast to hit.
+	Dictionary result;
+	result["hit"] = false;
+	return result;
 }
 
 Ref<PhysicsMaterial> CollisionShape4D::get_physics_material() const {
