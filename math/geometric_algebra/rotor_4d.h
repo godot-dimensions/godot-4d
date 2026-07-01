@@ -45,6 +45,7 @@ struct _NO_DISCARD_ Rotor4D {
 	// Rotation functions.
 	Basis4D to_basis() const;
 	real_t get_rotation_angle() const;
+	real_t get_simple_rotation_angle() const;
 	Bivector4D get_rotation_bivector_magnitude() const;
 	Bivector4D get_rotation_bivector_normal() const;
 	Basis4D rotate_basis(const Basis4D &p_basis) const;
