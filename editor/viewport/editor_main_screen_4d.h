@@ -95,6 +95,7 @@ private:
 	Marker4D *_origin_marker = nullptr;
 	Ref<ConfigFile> _4d_editor_config_file;
 	String _4d_editor_config_file_path = "";
+	EditorViewportCameraRotationAxisLock _rotation_axis_lock = EditorViewportCameraRotationAxisLock::FULLY_LOCKED;
 
 	double _information_label_auto_hide_time = 0.0;
 
@@ -114,6 +115,7 @@ protected:
 
 public:
 	void press_menu_item(const int p_option);
+	void set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock);
 	void set_viewport_layout(const int8_t p_viewport_count, const Side p_dominant_side = SIDE_TOP);
 
 	void setup(EditorUndoRedoManager *p_undo_redo_manager);

@@ -109,6 +109,8 @@ void EditorMainViewport4D::navigation_freelook(const Ref<InputEvent> &p_input_ev
 	}
 	if (_should_mouse_motion_affect_4d(p_input_event)) {
 		_editor_camera_4d->freelook_rotate_ground_basis(Basis4D::from_xw(-rotation_radians.x) * Basis4D::from_zw(rotation_radians.y));
+	} else if (_camera_uses_free_rotation) {
+		_editor_camera_4d->freelook_rotate_ground_basis(Basis4D::from_zx(-rotation_radians.x) * Basis4D::from_yz(-rotation_radians.y));
 	} else {
 		_editor_camera_4d->freelook_rotate_ground_basis_and_pitch(Basis4D::from_zx(-rotation_radians.x), -rotation_radians.y);
 	}
@@ -130,6 +132,8 @@ void EditorMainViewport4D::navigation_orbit(const Ref<InputEvent> &p_input_event
 	}
 	if (_should_mouse_motion_affect_4d(p_input_event)) {
 		_editor_camera_4d->orbit_rotate_ground_basis(Basis4D::from_xw(-rotation_radians.x) * Basis4D::from_zw(rotation_radians.y));
+	} else if (_camera_uses_free_rotation) {
+		_editor_camera_4d->orbit_rotate_ground_basis(Basis4D::from_zx(-rotation_radians.x) * Basis4D::from_yz(-rotation_radians.y));
 	} else {
 		_editor_camera_4d->orbit_rotate_ground_basis_and_pitch(Basis4D::from_zx(-rotation_radians.x), -rotation_radians.y);
 	}
@@ -323,8 +327,28 @@ void EditorMainViewport4D::viewport_mouse_input(const Ref<InputEvent> &p_input_e
 	}
 }
 
+void EditorMainViewport4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock) {
+	_rotation_axis_lock = p_axis_lock;
+}
+
 void EditorMainViewport4D::set_ground_view_axis(const Vector4::Axis p_axis) {
-	_editor_camera_4d->set_ground_view_axis(p_axis);
+	switch (_rotation_axis_lock) {
+		case EditorViewportCameraRotationAxisLock::FULLY_LOCKED: {
+			_camera_uses_free_rotation = false;
+		} break;
+		case EditorViewportCameraRotationAxisLock::FREE_GROUND_VIEW: {
+			_camera_uses_free_rotation = p_axis == Vector4::AXIS_Y;
+		} break;
+		case EditorViewportCameraRotationAxisLock::FULLY_FREE: {
+			_camera_uses_free_rotation = true;
+		} break;
+	}
+	// Holding Shift inverts the free rotation state, so that the user can temporarily override the axis lock policy.
+	const bool shift = Input::get_singleton()->is_key_pressed(KEY_SHIFT);
+	if (shift) {
+		_camera_uses_free_rotation = !_camera_uses_free_rotation;
+	}
+	_editor_camera_4d->set_ground_view_axis(p_axis, 0.5f, -0.5f, _camera_uses_free_rotation);
 	_viewport_rotation_4d->queue_redraw();
 }
 

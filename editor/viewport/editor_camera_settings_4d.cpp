@@ -1,5 +1,7 @@
 #include "editor_camera_settings_4d.h"
 
+#include "editor_main_screen_4d.h"
+
 void EditorCameraSettings4D::set_clip_near(const double p_clip_near) {
 	_clip_near = p_clip_near;
 	apply_to_cameras();
@@ -8,6 +10,12 @@ void EditorCameraSettings4D::set_clip_near(const double p_clip_near) {
 
 void EditorCameraSettings4D::set_clip_far(const double p_clip_far) {
 	_clip_far = p_clip_far;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+void EditorCameraSettings4D::set_rotation_axis_lock(const int p_rotation_axis_lock) {
+	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock)p_rotation_axis_lock;
 	apply_to_cameras();
 	write_to_config_file();
 }
@@ -64,7 +72,8 @@ void EditorCameraSettings4D::set_rendering_engine(const String &p_rendering_engi
 }
 
 void EditorCameraSettings4D::apply_to_cameras() const {
-	TypedArray<Node> cameras = _ancestor_of_cameras->find_children("*", "Camera4D", true, false);
+	_editor_main_screen->set_camera_rotation_axis_lock_policy(_rotation_axis_lock);
+	TypedArray<Node> cameras = _editor_main_screen->find_children("*", "Camera4D", true, false);
 	for (int i = 0; i < cameras.size(); i++) {
 		Camera4D *camera = Object::cast_to<Camera4D>(cameras[i]);
 		CRASH_COND(camera == nullptr);
@@ -81,12 +90,13 @@ void EditorCameraSettings4D::apply_to_cameras() const {
 	}
 }
 
-void EditorCameraSettings4D::setup(Node *p_ancestor_of_cameras, Ref<ConfigFile> &p_config_file, const String &p_config_file_path) {
-	_ancestor_of_cameras = p_ancestor_of_cameras;
+void EditorCameraSettings4D::setup(EditorMainScreen4D *p_editor_main_screen, Ref<ConfigFile> &p_config_file, const String &p_config_file_path) {
+	_editor_main_screen = p_editor_main_screen;
 	_4d_editor_config_file = p_config_file;
 	_4d_editor_config_file_path = p_config_file_path;
 	_clip_near = p_config_file->get_value("camera", "clip_near", _clip_near);
 	_clip_far = p_config_file->get_value("camera", "clip_far", _clip_far);
+	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock)(int)p_config_file->get_value("camera", "rotation_axis_lock", (int)_rotation_axis_lock);
 	_depth_fade_mode = (Camera4D::DepthFadeMode)(int)p_config_file->get_value("camera", "depth_fade_mode", _depth_fade_mode);
 	_w_fade_mode = (Camera4D::WFadeMode)(int)p_config_file->get_value("camera", "w_fade_mode", _w_fade_mode);
 	_w_fade_color_negative = p_config_file->get_value("camera", "w_fade_color_negative", _w_fade_color_negative);
@@ -107,6 +117,9 @@ void EditorCameraSettings4D::write_to_config_file() const {
 	}
 	if (!Math::is_equal_approx(_clip_far, 4000.0)) {
 		_4d_editor_config_file->set_value("camera", "clip_far", _clip_far);
+	}
+	if (_rotation_axis_lock != EditorViewportCameraRotationAxisLock::FULLY_LOCKED) {
+		_4d_editor_config_file->set_value("camera", "rotation_axis_lock", (int)_rotation_axis_lock);
 	}
 	if (_depth_fade_mode != Camera4D::DEPTH_FADE_DISABLED) {
 		_4d_editor_config_file->set_value("camera", "depth_fade_mode", (int)_depth_fade_mode);
@@ -173,6 +186,10 @@ void EditorCameraSettings4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_clip_far"), &EditorCameraSettings4D::get_clip_far);
 	ClassDB::bind_method(D_METHOD("set_clip_far", "clip_far"), &EditorCameraSettings4D::set_clip_far);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clip_far", PROPERTY_HINT_RANGE, "0.01,4000,0.01,or_greater,exp,suffix:m"), "set_clip_far", "get_clip_far");
+
+	ClassDB::bind_method(D_METHOD("get_rotation_axis_lock"), &EditorCameraSettings4D::get_rotation_axis_lock);
+	ClassDB::bind_method(D_METHOD("set_rotation_axis_lock", "rotation_axis_lock"), &EditorCameraSettings4D::set_rotation_axis_lock);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "rotation_axis_lock", PROPERTY_HINT_ENUM, "Fully Locked,Free Ground View,Fully Free"), "set_rotation_axis_lock", "get_rotation_axis_lock");
 
 	ClassDB::bind_method(D_METHOD("get_depth_fade_mode"), &EditorCameraSettings4D::get_depth_fade_mode);
 	ClassDB::bind_method(D_METHOD("set_depth_fade_mode", "depth_fade_mode"), &EditorCameraSettings4D::set_depth_fade_mode);

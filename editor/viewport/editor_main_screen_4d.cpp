@@ -170,7 +170,7 @@ void EditorMainScreen4D::_on_view_menu_id_pressed(const int p_id) {
 			_4d_editor_config_file->save(_4d_editor_config_file_path);
 		} break;
 		case VIEW_ITEM_CAMERA_SETTINGS: {
-			_camera_settings_dialog->popup_centered(Size2(400, 300) * EDSCALE);
+			_camera_settings_dialog->popup_centered(Size2(400, 360) * EDSCALE);
 		} break;
 	}
 }
@@ -278,12 +278,24 @@ void EditorMainScreen4D::press_menu_item(const int p_option) {
 	}
 }
 
+void EditorMainScreen4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock) {
+	// This function is named "policy" because it does not immediately change the camera's rotation axis lock,
+	// rather it sets the policy for how it will be handled the next time the user clicks on the rotation widget.
+	_rotation_axis_lock = p_axis_lock;
+	for (int i = 0; i < _MAX_VIEWPORTS; i++) {
+		if (_editor_main_viewports[i] != nullptr) {
+			_editor_main_viewports[i]->set_camera_rotation_axis_lock_policy(p_axis_lock);
+		}
+	}
+}
+
 void EditorMainScreen4D::set_viewport_layout(const int8_t p_viewport_count, const Side p_dominant_side) {
 	ERR_FAIL_COND(p_viewport_count > _MAX_VIEWPORTS);
 	for (int i = 0; i < p_viewport_count; i++) {
 		if (_editor_main_viewports[i] == nullptr) {
 			_editor_main_viewports[i] = memnew(EditorMainViewport4D);
 			_editor_main_viewports[i]->set_name(StringName("EditorMainViewport4D_" + itos(i)));
+			_editor_main_viewports[i]->set_camera_rotation_axis_lock_policy(_rotation_axis_lock);
 			_editor_main_viewports[i]->setup(this, _transform_gizmo_4d);
 			_editor_main_viewport_holder->add_child(_editor_main_viewports[i]);
 		}

@@ -12,12 +12,13 @@
 class EditorCameraSettings4D : public Object {
 	GDCLASS(EditorCameraSettings4D, Object);
 
-	Node *_ancestor_of_cameras = nullptr;
+	EditorMainScreen4D *_editor_main_screen = nullptr;
 
 	// Keep these default values in sync with the Camera4D defaults and the values in `write_to_config_file()`.
 	double _clip_near = 0.05;
 	double _clip_far = 4000.0;
 
+	EditorViewportCameraRotationAxisLock _rotation_axis_lock = EditorViewportCameraRotationAxisLock::FULLY_LOCKED;
 	Camera4D::DepthFadeMode _depth_fade_mode = Camera4D::DEPTH_FADE_DISABLED;
 	double _depth_fade_start = 25.0;
 
@@ -41,6 +42,9 @@ public:
 
 	double get_clip_far() const { return _clip_far; }
 	void set_clip_far(const double p_clip_far);
+
+	int get_rotation_axis_lock() const { return (int)_rotation_axis_lock; }
+	void set_rotation_axis_lock(const int p_rotation_axis_lock);
 
 	Camera4D::DepthFadeMode get_depth_fade_mode() const { return _depth_fade_mode; }
 	void set_depth_fade_mode(const Camera4D::DepthFadeMode p_depth_fade_mode);
@@ -67,6 +71,6 @@ public:
 	void set_rendering_engine(const String &p_rendering_engine);
 
 	void apply_to_cameras() const;
-	void setup(Node *p_ancestor_of_cameras, Ref<ConfigFile> &p_config_file, const String &p_config_file_path);
+	void setup(EditorMainScreen4D *p_editor_main_screen, Ref<ConfigFile> &p_config_file, const String &p_config_file_path);
 	void write_to_config_file() const;
 };

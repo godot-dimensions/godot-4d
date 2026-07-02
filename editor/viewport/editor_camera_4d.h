@@ -36,7 +36,7 @@ public:
 	void freelook_rotate_ground_basis_and_pitch(const Basis4D &p_ground_basis, const real_t p_pitch_angle);
 	void orbit_rotate_ground_basis(const Basis4D &p_ground_basis);
 	void orbit_rotate_ground_basis_and_pitch(const Basis4D &p_ground_basis, const real_t p_pitch_angle);
-	void set_ground_view_axis(const Vector4::Axis p_axis, const real_t p_yaw_angle = 0.5f, const real_t p_pitch_angle = -0.5f);
+	void set_ground_view_axis(const Vector4::Axis p_axis, const real_t p_yaw_angle = 0.5f, const real_t p_pitch_angle = -0.5f, const bool p_free_rotation = false);
 	void set_target_position(const Vector4 &p_position);
 	void set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up);
 

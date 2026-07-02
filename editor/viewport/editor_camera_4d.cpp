@@ -134,8 +134,7 @@ void EditorCamera4D::orbit_rotate_ground_basis_and_pitch(const Basis4D &p_ground
 	_update_camera_auto_orthographicness();
 }
 
-void EditorCamera4D::set_ground_view_axis(const Vector4::Axis p_axis, const real_t p_yaw_angle, const real_t p_pitch_angle) {
-	_pitch_angle = p_pitch_angle;
+void EditorCamera4D::set_ground_view_axis(const Vector4::Axis p_axis, const real_t p_yaw_angle, const real_t p_pitch_angle, const bool p_free_rotation) {
 	const real_t yaw_sin = Math::sin(p_yaw_angle);
 	const real_t yaw_cos = Math::cos(p_yaw_angle);
 	switch (p_axis) {
@@ -152,7 +151,14 @@ void EditorCamera4D::set_ground_view_axis(const Vector4::Axis p_axis, const real
 			_ground_basis = Basis4D(Vector4(yaw_cos, 0, -yaw_sin, 0), Vector4(0, 1, 0, 0), Vector4(yaw_sin, 0, yaw_cos, 0), Vector4(0, 0, 0, 1));
 		} break;
 	}
-	set_basis(_ground_basis * Basis4D::from_yz(_pitch_angle));
+	const Basis4D full_basis = _ground_basis * Basis4D::from_yz(p_pitch_angle);
+	if (p_free_rotation) {
+		_ground_basis = full_basis;
+		_pitch_angle = 0.0f;
+	} else {
+		_pitch_angle = p_pitch_angle;
+	}
+	set_basis(full_basis);
 	_update_camera_auto_orthographicness();
 }
 

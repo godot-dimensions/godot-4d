@@ -6,31 +6,31 @@ class Camera4D : public Node4D {
 	GDCLASS(Camera4D, Node4D);
 
 public:
-	enum KeepAspect {
+	enum KeepAspect : int8_t {
 		KEEP_WIDTH = 0,
 		KEEP_HEIGHT = 1,
 	};
 
-	enum ProjectionType4D {
+	enum ProjectionType4D : int8_t {
 		PROJECTION4D_ORTHOGRAPHIC = 0,
 		PROJECTION4D_PERSPECTIVE_4D = 1,
 		PROJECTION4D_PERSPECTIVE_3D = 2,
 		PROJECTION4D_PERSPECTIVE_DUAL = 3,
 	};
 
-	enum ViewAngleType {
+	enum ViewAngleType : int8_t {
 		VIEW_ANGLE_FOCAL_LENGTH = 0,
 		VIEW_ANGLE_FIELD_OF_VIEW = 1,
 	};
 
-	enum DepthFadeMode {
+	enum DepthFadeMode : int8_t {
 		DEPTH_FADE_DISABLED = 0,
 		DEPTH_FADE_DISTANCE = 1,
 		DEPTH_FADE_XYZ_ONLY = 2,
 		DEPTH_FADE_Z_ONLY = 3,
 	};
 
-	enum WFadeMode {
+	enum WFadeMode : int8_t {
 		W_FADE_DISABLED = 0,
 		W_FADE_TRANSPARENCY = 1,
 		W_FADE_HUE_SHIFT = 2,
