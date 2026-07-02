@@ -299,7 +299,7 @@ void EditorViewportRotation4D::_process_click(int p_index, Vector2 p_position, b
 			if (_focused_target.secondary_axis_number > -1) {
 				_editor_main_viewport->set_orthogonal_view_plane(Vector4::Axis(_focused_target.primary_axis_number), Vector4::Axis(_focused_target.secondary_axis_number));
 			} else {
-				_editor_main_viewport->set_ground_view_axis(Vector4::Axis(_focused_target.primary_axis_number % 4));
+				_editor_main_viewport->set_ground_view_axis(Vector4::Axis(_focused_target.primary_axis_number));
 			}
 			_update_focus();
 		}
@@ -367,18 +367,18 @@ void EditorViewportRotation4D::_update_theme() {
 void EditorViewportRotation4D::GDEXTMOD_GUI_INPUT(const Ref<InputEvent> &p_event) {
 	ERR_FAIL_COND(p_event.is_null());
 
-	// Mouse events
+	// Mouse events.
 	const Ref<InputEventMouseButton> mb = p_event;
 	if (mb.is_valid() && mb->get_button_index() == MOUSE_BUTTON_LEFT) {
-		_process_click(100, mb->get_position(), mb->is_pressed());
+		_process_click(MOUSE_SENTINEL_INDEX, mb->get_position(), mb->is_pressed());
 	}
 
 	const Ref<InputEventMouseMotion> mm = p_event;
 	if (mm.is_valid()) {
-		_process_drag(mm, 100, mm->get_global_position());
+		_process_drag(mm, MOUSE_SENTINEL_INDEX, mm->get_global_position());
 	}
 
-	// Touch events
+	// Touch events.
 	const Ref<InputEventScreenTouch> screen_touch = p_event;
 	if (screen_touch.is_valid()) {
 		_process_click(screen_touch->get_index(), screen_touch->get_position(), screen_touch->is_pressed());

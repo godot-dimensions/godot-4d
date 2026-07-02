@@ -913,22 +913,6 @@ Error G4MFDocument4D::_import_parse_buffer_views(Ref<G4MFState4D> p_g4mf_state, 
 }
 
 Error G4MFDocument4D::_import_parse_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	if (p_g4mf_json.has("bufferViews")) {
-		Array json_buffer_views = p_g4mf_json["bufferViews"];
-		const int buffer_view_count = json_buffer_views.size();
-		if (buffer_view_count == 0) {
-			return OK; // No buffer views to parse.
-		}
-		TypedArray<G4MFBufferView4D> buffer_views;
-		buffer_views.resize(buffer_view_count);
-		for (int i = 0; i < buffer_view_count; i++) {
-			const Dictionary json_buffer_view = json_buffer_views[i];
-			Ref<G4MFBufferView4D> buffer_view = G4MFBufferView4D::from_dictionary(json_buffer_view);
-			ERR_FAIL_COND_V_MSG(buffer_view.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse buffer view. Aborting file import.");
-			buffer_views[i] = buffer_view;
-		}
-		p_g4mf_state->set_g4mf_buffer_views(buffer_views);
-	}
 	if (p_g4mf_json.has("accessors")) {
 		Array json_accessors = p_g4mf_json["accessors"];
 		const int accessor_count = json_accessors.size();
@@ -1484,7 +1468,7 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 
 Node *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state) {
 	// Ensure all models have a reference to this document (the working document may have changed).
-	TypedArray<G4MFModel4D> state_g4mf_files = p_g4mf_state->get_g4mf_files();
+	TypedArray<G4MFFileReference4D> state_g4mf_files = p_g4mf_state->get_g4mf_files();
 	for (int i = 0; i < state_g4mf_files.size(); i++) {
 		Ref<G4MFModel4D> g4mf_model = state_g4mf_files[i];
 		if (g4mf_model.is_valid()) {

@@ -8,6 +8,8 @@
 class EditorViewportRotation4D : public Control {
 	GDCLASS(EditorViewportRotation4D, Control);
 
+	static constexpr int MOUSE_SENTINEL_INDEX = 100; // Distinguish from touch events.
+
 	enum HitType2D {
 		HIT_TYPE_NONE,
 		HIT_TYPE_BACKGROUND,
