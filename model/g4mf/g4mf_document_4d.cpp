@@ -512,7 +512,7 @@ PackedByteArray G4MFDocument4D::_export_encode_chunk_data(Ref<G4MFState4D> p_g4m
 	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF export: Invalid, unknown, or unsupported encoding format. Cannot export G4MF file.");
 }
 
-PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state) {
+PackedByteArray G4MFDocument4D::_export_write_to_byte_array_internal(const Ref<G4MFState4D> &p_g4mf_state) {
 	ERR_FAIL_COND_V_MSG(!_is_encoding_format_supported(_encoding_format), PackedByteArray(), "G4MF export: Invalid, unknown, or unsupported encoding format. Cannot export G4MF file.");
 	Dictionary g4mf_json = p_g4mf_state->get_g4mf_json();
 	ERR_FAIL_COND_V(!g4mf_json.has("asset"), PackedByteArray());
@@ -547,11 +547,12 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 	ERR_FAIL_COND_V(json_string.length() < 25, PackedByteArray()); // Minimum possible valid JSON is `{"asset":{"dimension":4}}` (25 bytes).
 	const PackedByteArray json_encoded = _export_encode_chunk_data(p_g4mf_state, json_string.to_utf8_buffer());
 	const uint64_t json_encoded_size = json_encoded.size();
-	uint64_t total_file_size = 32 + json_encoded_size;
+	constexpr uint64_t CHUNK_HEADER_SIZE = 16;
+	constexpr uint64_t FILE_HEADER_SIZE = 16;
+	uint64_t total_file_size = FILE_HEADER_SIZE + CHUNK_HEADER_SIZE + json_encoded_size;
 	Vector<PackedByteArray> buffers_encoded;
 	if (should_embed_buffers && !state_buffers.is_empty()) {
 		// We can skip several of the checks because they are handled in the previous block.
-		Array json_buffers = g4mf_json["buffers"];
 		const int state_buffers_size = state_buffers.size();
 		buffers_encoded.resize(state_buffers_size);
 		for (int i = 0; i < state_buffers_size; i++) {
@@ -561,7 +562,7 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 			// The start of each chunk needs to be padded to 16 bytes, so pad the previous chunk to 16 bytes if needed.
 			total_file_size = _ceiling_division(total_file_size, 16) * 16;
 			const PackedByteArray buffer_encoded = _export_encode_chunk_data(p_g4mf_state, state_buffers[i]);
-			total_file_size += 16 + buffer_encoded.size();
+			total_file_size += CHUNK_HEADER_SIZE + buffer_encoded.size();
 			buffers_encoded.set(i, buffer_encoded);
 		}
 	}
@@ -603,7 +604,7 @@ PackedByteArray G4MFDocument4D::_export_encode_as_byte_array(const Ref<G4MFState
 			padded_json = true;
 			const PackedByteArray buffer_encoded = buffers_encoded[buffer_index];
 			const uint64_t buffer_encoded_size = buffer_encoded.size();
-			*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x424F4C42; // "BLOB"
+			*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)0x424F4C42; // ASCII string "BLOB" in little-endian.
 			write_offset += 4;
 			*(uint32_t *)(file_bytes_ptrw + write_offset) = (uint32_t)_encoding_format;
 			write_offset += 4;
@@ -640,18 +641,13 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 	PackedInt64Array chunk_data_starts;
 	int64_t json_chunk_index = -1;
 	uint64_t chunk_starts_read_offset = p_file->get_position();
-	while (chunk_starts_read_offset + 15 < file_total_length) {
+	while (chunk_starts_read_offset + CHUNK_ALIGNMENT_BITMASK < file_total_length) {
 		p_file->seek(chunk_starts_read_offset);
 		const uint32_t chunk_type = p_file->get_32();
 		if (json_chunk_index == -1 && chunk_type == (uint32_t)0x4E4F534A) { // ASCII string "JSON" in little-endian.
 			json_chunk_index = chunk_data_starts.size();
 		}
 		const uint32_t chunk_encoding = p_file->get_32();
-		if (!_is_encoding_format_supported((EncodingFormat)chunk_encoding)) {
-			const String friendly = _uint32_to_ascii_string(chunk_encoding, false);
-			const String number_hex = String::num_uint64(chunk_encoding, 16, true);
-			ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "G4MF import: Support for reading \"" + friendly + "\" (0x" + number_hex + ") encoded data is not implemented. Godot 4D cannot import this G4MF file.");
-		}
 		chunk_encodings.append((int64_t)chunk_encoding);
 		const uint64_t chunk_size = p_file->get_64();
 		const uint64_t padded_chunk_size = (chunk_size + CHUNK_ALIGNMENT_BITMASK) & ~CHUNK_ALIGNMENT_BITMASK;
@@ -670,7 +666,13 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 	{
 		p_file->seek(chunk_data_starts[json_chunk_index]);
 		const PackedByteArray json_chunk_encoded = p_file->get_buffer(chunk_data_sizes[json_chunk_index]);
-		const EncodingFormat json_chunk_encoding_format = (EncodingFormat)(uint32_t)chunk_encodings[json_chunk_index];
+		const uint32_t json_chunk_encoding_uint32 = (uint32_t)chunk_encodings[json_chunk_index];
+		const EncodingFormat json_chunk_encoding_format = (EncodingFormat)json_chunk_encoding_uint32;
+		if (!_is_encoding_format_supported(json_chunk_encoding_format)) {
+			const String friendly = _uint32_to_ascii_string(json_chunk_encoding_uint32, false);
+			const String number_hex = String::num_uint64(json_chunk_encoding_uint32, 16, true);
+			ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "G4MF import: Support for reading \"" + friendly + "\" (0x" + number_hex + ") encoded data is not implemented. Godot 4D cannot import this G4MF file.");
+		}
 		const PackedByteArray json_chunk = _import_decode_chunk_data(json_chunk_encoded, (int64_t)0, chunk_data_sizes[json_chunk_index], json_chunk_encoding_format);
 		const String json_string = String::utf8(reinterpret_cast<const char *>(json_chunk.ptr()), json_chunk.size());
 		g4mf_json = JSON::parse_string(json_string);
@@ -690,7 +692,13 @@ Error G4MFDocument4D::_import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_stat
 		ERR_FAIL_INDEX_V_MSG(chunk_index, chunk_data_starts.size(), ERR_INVALID_DATA, "G4MF import: Buffer chunk index " + itos(chunk_index) + " is out of range for binary file with " + itos(chunk_data_starts.size()) + " chunks. File is corrupted.");
 		p_file->seek(chunk_data_starts[chunk_index]);
 		const PackedByteArray chunk_data_encoded = p_file->get_buffer(chunk_data_sizes[chunk_index]);
-		const EncodingFormat chunk_encoding_format = (EncodingFormat)(uint32_t)chunk_encodings[chunk_index];
+		const uint32_t chunk_encoding_uint32 = (uint32_t)chunk_encodings[chunk_index];
+		const EncodingFormat chunk_encoding_format = (EncodingFormat)chunk_encoding_uint32;
+		if (!_is_encoding_format_supported(chunk_encoding_format)) {
+			const String friendly = _uint32_to_ascii_string(chunk_encoding_uint32, false);
+			const String number_hex = String::num_uint64(chunk_encoding_uint32, 16, true);
+			ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "G4MF import: Support for reading \"" + friendly + "\" (0x" + number_hex + ") encoded data is not implemented. Godot 4D cannot import this G4MF file.");
+		}
 		PackedByteArray chunk_data_decoded = _import_decode_chunk_data(chunk_data_encoded, (int64_t)0, chunk_data_sizes[chunk_index], chunk_encoding_format);
 		// The data has been read in now, so check that the size is at least the declared size, and truncate if larger.
 		const int64_t declared_decoded_byte_length = buffer_chunk_declared_decoded_byte_lengths[buffer_index];
@@ -763,90 +771,91 @@ PackedByteArray G4MFDocument4D::_import_decode_chunk_data(const PackedByteArray 
 // The callers use different APIs (FileAccess vs PackedByteArray) so we need to keep the output of this function generic.
 Error G4MFDocument4D::_import_parse_buffers(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json, PackedInt64Array *r_chunk_indices, PackedInt64Array *r_decoded_byte_lengths) {
 	p_g4mf_state->set_external_data_mode(G4MFState4D::EXTERNAL_DATA_MODE_EMBED_EVERYTHING);
-	if (p_g4mf_json.has("buffers")) {
-		const Array json_buffers = p_g4mf_json["buffers"];
-		const int64_t buffer_count = json_buffers.size();
-		if (buffer_count == 0) {
-			return OK; // No buffers to parse.
-		}
-		TypedArray<PackedByteArray> buffers = p_g4mf_state->get_g4mf_buffers();
-		if (buffers.size() < buffer_count) {
-			buffers.resize(buffer_count);
-		}
-		if (r_chunk_indices != nullptr) {
-			r_chunk_indices->resize_uninitialized(buffer_count);
-			r_decoded_byte_lengths->resize_uninitialized(buffer_count);
-			for (int64_t i = 0; i < buffer_count; i++) {
-				r_chunk_indices->set(i, -1);
-				r_decoded_byte_lengths->set(i, -1);
-			}
-		}
-		for (int64_t i = 0; i < buffer_count; i++) {
-			const Dictionary json_buffer = json_buffers[i];
-			ERR_FAIL_COND_V_MSG(!json_buffer.has("byteLength"), ERR_INVALID_DATA, "G4MF import: Buffer is missing required field 'byteLength'. Aborting file import.");
-			// If the buffer is encoded, this refers to the byte length after decoding.
-			const int64_t declared_decoded_byte_length = json_buffer["byteLength"];
-			if (r_decoded_byte_lengths != nullptr) {
-				r_decoded_byte_lengths->set(i, declared_decoded_byte_length);
-			}
-			uint32_t encoding_indicator = 0;
-			if (json_buffer.has("encoding")) {
-				const String encoding_str = json_buffer["encoding"];
-				encoding_indicator = _ascii_string_to_uint32(encoding_str);
-			}
-			PackedByteArray buffer = buffers[i];
-			if (json_buffer.has("uri")) {
-				const String uri = json_buffer["uri"];
-				if (uri.begins_with("data:")) {
-					PackedStringArray split = uri.split(";base64,", true, 1);
-					ERR_FAIL_COND_V_MSG(split.size() != 2, ERR_INVALID_DATA, "G4MF import: Buffer URI is malformed. Expected 'data:application/octet-stream;base64,<base64 data>'. Aborting file import.");
-					const PackedByteArray raw_data = CoreBind::Marshalls::get_singleton()->base64_to_raw(split[1]);
-					buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), (EncodingFormat)encoding_indicator);
-				} else {
-					// Infer the external data mode on import in case the user wishes to round-trip the G4MF file back out of Godot later.
-					p_g4mf_state->set_external_data_mode(G4MFState4D::EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS);
-					const String buffer_path = p_g4mf_state->get_g4mf_base_path().path_join(uri);
-					Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::READ);
-					if (file.is_valid()) {
-						const PackedByteArray raw_data = file->get_buffer(file->get_length());
-						buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), (EncodingFormat)encoding_indicator);
-						file->close();
-					} else {
-						// The file is not valid, but only fail if the buffer is empty. It may have been filled by a chunk.
-						ERR_FAIL_COND_V_MSG(buffer.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to open buffer file: " + buffer_path + ". Aborting file import.");
-					}
-				}
-				// The data has been read in now, so check that the size is at least the declared size, and truncate if larger.
-				if (buffer.size() < declared_decoded_byte_length) {
-					ERR_FAIL_COND_V_MSG(buffer.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to read buffer data. Aborting file import.");
-					ERR_FAIL_V_MSG(ERR_INVALID_DATA, "G4MF import: Buffer size is not at least the declared size. Aborting file import.");
-				}
-				buffer.resize(declared_decoded_byte_length);
-			} else if (json_buffer.has("chunk")) {
-				if (r_chunk_indices != nullptr) {
-					r_chunk_indices->set(i, (int64_t)json_buffer["chunk"]);
-				} else { // Text-based G4MF file.
-					ERR_FAIL_V_MSG(ERR_INVALID_DATA, "G4MF import: Buffer contains 'chunk' field in a text-based G4MF file. File is invalid. Aborting file import.");
-				}
-			} else {
-				// Fallback behavior: If the buffer is missing both 'uri' and 'chunk', use implicit indices for chunks.
-				if (r_chunk_indices != nullptr) {
-					WARN_PRINT("G4MF import: Buffer is missing both 'uri' and 'chunk' fields. Using fallback behavior.");
-					// Buffer 0 -> chunk 1, buffer 1 -> chunk 2, etc (chunk 0 is the JSON chunk).
-					r_chunk_indices->set(i, i + 1);
-				} else { // Text-based G4MF file.
-					ERR_FAIL_V_MSG(ERR_INVALID_DATA, "G4MF import: Buffer is missing 'uri' field required for a text-based G4MF file. File is invalid. Aborting file import.");
-				}
-			}
-			buffers[i] = buffer;
-		}
-		p_g4mf_state->set_g4mf_buffers(buffers);
+	if (!p_g4mf_json.has("buffers")) {
+		return OK; // No buffers to parse.
 	}
+	const Array json_buffers = p_g4mf_json["buffers"];
+	const int64_t buffer_count = json_buffers.size();
+	if (buffer_count == 0) {
+		return OK; // No buffers to parse.
+	}
+	TypedArray<PackedByteArray> buffers = p_g4mf_state->get_g4mf_buffers();
+	if (buffers.size() < buffer_count) {
+		buffers.resize(buffer_count);
+	}
+	if (r_chunk_indices != nullptr) {
+		r_chunk_indices->resize_uninitialized(buffer_count);
+		r_decoded_byte_lengths->resize_uninitialized(buffer_count);
+		for (int64_t i = 0; i < buffer_count; i++) {
+			r_chunk_indices->set(i, -1);
+			r_decoded_byte_lengths->set(i, -1);
+		}
+	}
+	for (int64_t buffer_index = 0; buffer_index < buffer_count; buffer_index++) {
+		const Dictionary json_buffer = json_buffers[buffer_index];
+		ERR_FAIL_COND_V_MSG(!json_buffer.has("byteLength"), ERR_INVALID_DATA, "G4MF import: Buffer is missing required field 'byteLength'. Aborting file import.");
+		// If the buffer is encoded, this refers to the byte length after decoding.
+		const int64_t declared_decoded_byte_length = json_buffer["byteLength"];
+		if (r_decoded_byte_lengths != nullptr) {
+			r_decoded_byte_lengths->set(buffer_index, declared_decoded_byte_length);
+		}
+		uint32_t encoding_indicator = 0;
+		if (json_buffer.has("encoding")) {
+			const String encoding_str = json_buffer["encoding"];
+			encoding_indicator = _ascii_string_to_uint32(encoding_str);
+		}
+		PackedByteArray buffer = buffers[buffer_index];
+		if (json_buffer.has("uri")) {
+			const String uri = json_buffer["uri"];
+			if (uri.begins_with("data:")) {
+				PackedStringArray split = uri.split(";base64,", true, 1);
+				ERR_FAIL_COND_V_MSG(split.size() != 2, ERR_INVALID_DATA, "G4MF import: Buffer URI is malformed. Expected 'data:application/octet-stream;base64,<base64 data>'. Aborting file import.");
+				const PackedByteArray raw_data = CoreBind::Marshalls::get_singleton()->base64_to_raw(split[1]);
+				buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), (EncodingFormat)encoding_indicator);
+			} else {
+				// Infer the external data mode on import in case the user wishes to round-trip the G4MF file back out of Godot later.
+				p_g4mf_state->set_external_data_mode(G4MFState4D::EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS);
+				const String buffer_path = p_g4mf_state->get_g4mf_base_path().path_join(uri);
+				Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::READ);
+				if (file.is_valid()) {
+					const PackedByteArray raw_data = file->get_buffer(file->get_length());
+					buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), (EncodingFormat)encoding_indicator);
+					file->close();
+				} else {
+					// The file is not valid, but only fail if the buffer is empty. It may have been filled by a chunk.
+					ERR_FAIL_COND_V_MSG(buffer.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to open buffer file: " + buffer_path + ". Aborting file import.");
+				}
+			}
+			// The data has been read in now, so check that the size is at least the declared size, and truncate if larger.
+			if (buffer.size() < declared_decoded_byte_length) {
+				ERR_FAIL_COND_V_MSG(buffer.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to read buffer data. Aborting file import.");
+				ERR_FAIL_V_MSG(ERR_INVALID_DATA, "G4MF import: Buffer size is not at least the declared size. Aborting file import.");
+			}
+			buffer.resize(declared_decoded_byte_length);
+		} else if (json_buffer.has("chunk")) {
+			if (r_chunk_indices != nullptr) {
+				r_chunk_indices->set(buffer_index, (int64_t)json_buffer["chunk"]);
+			} else { // Text-based G4MF file.
+				ERR_FAIL_V_MSG(ERR_INVALID_DATA, "G4MF import: Buffer contains 'chunk' field in a text-based G4MF file. File is invalid. Aborting file import.");
+			}
+		} else {
+			// Fallback behavior: If the buffer is missing both 'uri' and 'chunk', use implicit indices for chunks.
+			if (r_chunk_indices != nullptr) {
+				WARN_PRINT("G4MF import: Buffer is missing both 'uri' and 'chunk' fields. Using fallback behavior.");
+				// Buffer 0 -> chunk 1, buffer 1 -> chunk 2, etc (chunk 0 is the JSON chunk).
+				r_chunk_indices->set(buffer_index, buffer_index + 1);
+			} else { // Text-based G4MF file.
+				ERR_FAIL_V_MSG(ERR_INVALID_DATA, "G4MF import: Buffer is missing 'uri' field required for a text-based G4MF file. File is invalid. Aborting file import.");
+			}
+		}
+		buffers[buffer_index] = buffer;
+	}
+	p_g4mf_state->set_g4mf_buffers(buffers);
 	return OK;
 }
 
 // Note: This function excludes parsing buffers, because those need to be done in sync with
-// file loading, and therefore are handled separately in `_import_parse_and_fill_buffers()`.
+// file loading, and therefore are handled separately in `_import_parse_buffers()` above.
 Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	// Parse low-level structures first since higher-level structures depend on them.
 	Error err = _import_parse_asset_header(p_g4mf_state, p_g4mf_json);
@@ -893,42 +902,44 @@ Error G4MFDocument4D::_import_parse_asset_header(Ref<G4MFState4D> p_g4mf_state, 
 }
 
 Error G4MFDocument4D::_import_parse_buffer_views(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	if (p_g4mf_json.has("bufferViews")) {
-		Array json_buffer_views = p_g4mf_json["bufferViews"];
-		const int buffer_view_count = json_buffer_views.size();
-		if (buffer_view_count == 0) {
-			return OK; // No buffer views to parse.
-		}
-		TypedArray<G4MFBufferView4D> buffer_views;
-		buffer_views.resize(buffer_view_count);
-		for (int i = 0; i < buffer_view_count; i++) {
-			const Dictionary json_buffer_view = json_buffer_views[i];
-			Ref<G4MFBufferView4D> buffer_view = G4MFBufferView4D::from_dictionary(json_buffer_view);
-			ERR_FAIL_COND_V_MSG(buffer_view.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse buffer view. Aborting file import.");
-			buffer_views[i] = buffer_view;
-		}
-		p_g4mf_state->set_g4mf_buffer_views(buffer_views);
+	if (!p_g4mf_json.has("bufferViews")) {
+		return OK; // No buffer views to parse.
 	}
+	Array json_buffer_views = p_g4mf_json["bufferViews"];
+	const int buffer_view_count = json_buffer_views.size();
+	if (buffer_view_count == 0) {
+		return OK; // No buffer views to parse.
+	}
+	TypedArray<G4MFBufferView4D> buffer_views;
+	buffer_views.resize(buffer_view_count);
+	for (int i = 0; i < buffer_view_count; i++) {
+		const Dictionary json_buffer_view = json_buffer_views[i];
+		Ref<G4MFBufferView4D> buffer_view = G4MFBufferView4D::from_dictionary(json_buffer_view);
+		ERR_FAIL_COND_V_MSG(buffer_view.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse buffer view. Aborting file import.");
+		buffer_views[i] = buffer_view;
+	}
+	p_g4mf_state->set_g4mf_buffer_views(buffer_views);
 	return OK;
 }
 
 Error G4MFDocument4D::_import_parse_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	if (p_g4mf_json.has("accessors")) {
-		Array json_accessors = p_g4mf_json["accessors"];
-		const int accessor_count = json_accessors.size();
-		if (accessor_count == 0) {
-			return OK; // No accessors to parse.
-		}
-		TypedArray<G4MFAccessor4D> accessors;
-		accessors.resize(accessor_count);
-		for (int i = 0; i < accessor_count; i++) {
-			const Dictionary json_accessor = json_accessors[i];
-			Ref<G4MFAccessor4D> accessor = G4MFAccessor4D::from_dictionary(json_accessor);
-			ERR_FAIL_COND_V_MSG(accessor.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse accessor. Aborting file import.");
-			accessors[i] = accessor;
-		}
-		p_g4mf_state->set_g4mf_accessors(accessors);
+	if (!p_g4mf_json.has("accessors")) {
+		return OK; // No accessors to parse.
 	}
+	Array json_accessors = p_g4mf_json["accessors"];
+	const int accessor_count = json_accessors.size();
+	if (accessor_count == 0) {
+		return OK; // No accessors to parse.
+	}
+	TypedArray<G4MFAccessor4D> accessors;
+	accessors.resize(accessor_count);
+	for (int i = 0; i < accessor_count; i++) {
+		const Dictionary json_accessor = json_accessors[i];
+		Ref<G4MFAccessor4D> accessor = G4MFAccessor4D::from_dictionary(json_accessor);
+		ERR_FAIL_COND_V_MSG(accessor.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse accessor. Aborting file import.");
+		accessors[i] = accessor;
+	}
+	p_g4mf_state->set_g4mf_accessors(accessors);
 	return OK;
 }
 
@@ -1328,7 +1339,7 @@ PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4
 		err = _export_serialize_buffer_data_to_uri(p_g4mf_state, false);
 		ERR_FAIL_COND_V_MSG(err != OK, PackedByteArray(), "G4MF export: Failed to serialize G4MF buffer data.");
 	}
-	return _export_encode_as_byte_array(p_g4mf_state);
+	return _export_write_to_byte_array_internal(p_g4mf_state);
 }
 
 Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
@@ -1361,7 +1372,7 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 			ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF buffer data.");
 			// Else, don't call `_export_serialize_buffer_data_to_uri` because the buffers will be serialized as binary blob chunks.
 		}
-		const PackedByteArray json_bytes = _export_encode_as_byte_array(p_g4mf_state);
+		const PackedByteArray json_bytes = _export_write_to_byte_array_internal(p_g4mf_state);
 		file->store_buffer(json_bytes);
 	}
 	return OK;
@@ -1385,20 +1396,19 @@ Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state,
 	PackedInt64Array chunk_data_sizes;
 	PackedInt64Array chunk_data_starts;
 	int64_t json_chunk_index = -1;
-	uint64_t chunk_starts_read_offset = read_offset;
-	while (chunk_starts_read_offset + 15 < byte_array_size) {
-		const uint32_t chunk_type = *(uint32_t *)(byte_array_ptr + chunk_starts_read_offset);
+	while (read_offset + CHUNK_ALIGNMENT_BITMASK < byte_array_size) {
+		const uint32_t chunk_type = *(uint32_t *)(byte_array_ptr + read_offset);
 		if (json_chunk_index == -1 && chunk_type == (uint32_t)0x4E4F534A) { // ASCII string "JSON" in little-endian.
 			json_chunk_index = chunk_data_starts.size();
 		}
-		const uint32_t chunk_encoding = *(uint32_t *)(byte_array_ptr + (size_t)chunk_starts_read_offset + (size_t)4);
+		const uint32_t chunk_encoding = *(uint32_t *)(byte_array_ptr + (size_t)read_offset + (size_t)4);
 		chunk_encodings.append((int64_t)chunk_encoding);
-		const uint64_t chunk_size = *(uint64_t *)(byte_array_ptr + (size_t)chunk_starts_read_offset + (size_t)8);
+		const uint64_t chunk_size = *(uint64_t *)(byte_array_ptr + (size_t)read_offset + (size_t)8);
 		chunk_data_sizes.append((int64_t)chunk_size);
-		chunk_starts_read_offset += (uint64_t)16;
-		chunk_data_starts.append((int64_t)chunk_starts_read_offset);
+		read_offset += (uint64_t)16;
+		chunk_data_starts.append((int64_t)read_offset);
 		const uint64_t padded_chunk_size = (chunk_size + CHUNK_ALIGNMENT_BITMASK) & ~CHUNK_ALIGNMENT_BITMASK;
-		chunk_starts_read_offset += padded_chunk_size;
+		read_offset += padded_chunk_size;
 	}
 	ERR_FAIL_COND_V_MSG(json_chunk_index == -1, ERR_INVALID_DATA, "G4MF import: No JSON chunk found in G4MF byte array. File is corrupted.");
 	// Read the JSON chunk.

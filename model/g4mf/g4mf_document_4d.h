@@ -45,7 +45,7 @@ private:
 	static String _export_pretty_print_inline(const Variant &p_variant);
 	static String _export_pretty_print_json(const Dictionary &p_g4mf_json);
 	PackedByteArray _export_encode_chunk_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data);
-	PackedByteArray _export_encode_as_byte_array(const Ref<G4MFState4D> &p_g4mf_state);
+	PackedByteArray _export_write_to_byte_array_internal(const Ref<G4MFState4D> &p_g4mf_state);
 
 	// Import process.
 	Error _import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_state, const Ref<FileAccess> &p_file);
