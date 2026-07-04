@@ -123,7 +123,7 @@ void G4MFMaterial4D::_append_geometry_binding(TypedArray<G4MFMeshSurfaceBindingG
 int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Material4D> &p_material, const bool p_deduplicate) {
 	Ref<G4MFMaterial4D> g4mf_material;
 	g4mf_material.instantiate();
-	g4mf_material->set_name(p_material->get_name());
+	g4mf_material->set_item_name(p_material->get_name());
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
 	const PackedColorArray albedo_colors = p_material->get_albedo_color_array();
 	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY && albedo_colors.size() > 0) {

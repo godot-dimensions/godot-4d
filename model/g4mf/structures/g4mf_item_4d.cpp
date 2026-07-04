@@ -4,8 +4,31 @@ String G4MFItem4D::get_item_name() const {
 	return get_name();
 }
 
-void G4MFItem4D::set_item_name(const String &p_name) {
-	set_name(p_name);
+void G4MFItem4D::set_item_name(const String &p_desired_name) {
+	set_name(sanitize_item_name(p_desired_name));
+}
+
+String G4MFItem4D::sanitize_item_name(const String &p_desired_name) {
+	String sanitized_name = p_desired_name;
+	// Sanitize the name in-place by replacing characters which are invalid in G4MF item names.
+	// Item names may be used for node names and serializing to disk so we need to broadly disallow any of these.
+	// G4MF's rules: All names in a G4MF file MUST NOT contain control characters or any of the
+	// following characters: ", #, *, ., :, |, ?, @, <, >, {, }, [, ], /, literal \, and literal %.
+	// Remove ASCII and Unicode control characters (0-31 and 127-159 inclusive).
+	for (int32_t char_index = 0; char_index < sanitized_name.length(); char_index++) {
+		uint32_t char_code = sanitized_name[char_index];
+		if ((/*char_code >= 0 &&*/ char_code <= 31) ||
+				char_code == '"' || char_code == '#' || char_code == '*' || char_code == '.' ||
+				char_code == ':' || char_code == '|' || char_code == '?' || char_code == '@' ||
+				char_code == '<' || char_code == '>' || char_code == '{' || char_code == '}' ||
+				char_code == '[' || char_code == ']' || char_code == '/' || char_code == '\\' ||
+				char_code == '%' || (char_code >= 127 && char_code <= 159)) {
+			const String char_str = String::chr(char_code);
+			WARN_PRINT(vformat("G4MFItem4D: The name '%s' contains a disallowed character '%s' (char code %d). Replacing with '_'.", p_desired_name, char_str, char_code));
+			sanitized_name[char_index] = '_';
+		}
+	}
+	return sanitized_name;
 }
 
 Variant G4MFItem4D::get_additional_data(const StringName &p_extension_name) {
@@ -22,7 +45,7 @@ void G4MFItem4D::set_additional_data(const StringName &p_extension_name, Variant
 
 void G4MFItem4D::read_item_entries_from_dictionary(const Dictionary &p_dict) {
 	if (p_dict.has("name")) {
-		set_name(p_dict["name"]);
+		set_item_name(p_dict["name"]);
 	}
 	if (p_dict.has("extras")) {
 		set_meta("extras", p_dict["extras"]);
@@ -204,6 +227,7 @@ void G4MFItem4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("read_item_entries_from_dictionary", "dict"), &G4MFItem4D::read_item_entries_from_dictionary);
 	ClassDB::bind_method(D_METHOD("write_item_entries_to_dictionary"), &G4MFItem4D::write_item_entries_to_dictionary);
 
+	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("sanitize_item_name", "desired_name"), &G4MFItem4D::sanitize_item_name);
 	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("int32_array_to_json_array", "int32_array"), &G4MFItem4D::int32_array_to_json_array);
 	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("json_array_to_int32_array", "json_array"), &G4MFItem4D::json_array_to_int32_array);
 

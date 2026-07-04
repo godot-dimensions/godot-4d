@@ -21,7 +21,8 @@ protected:
 
 public:
 	String get_item_name() const;
-	void set_item_name(const String &p_name);
+	void set_item_name(const String &p_desired_name);
+	static String sanitize_item_name(const String &p_desired_name);
 
 	Variant get_additional_data(const StringName &p_extension_name);
 	bool has_additional_data(const StringName &p_extension_name);

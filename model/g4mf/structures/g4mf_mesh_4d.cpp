@@ -190,7 +190,7 @@ int G4MFMesh4D::export_convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, co
 			}
 		}
 	}
-	g4mf_mesh->set_name(p_mesh->get_name());
+	g4mf_mesh->set_item_name(p_mesh->get_name());
 	state_meshes.append(g4mf_mesh);
 	p_g4mf_state->set_g4mf_meshes(state_meshes);
 	return state_mesh_count;

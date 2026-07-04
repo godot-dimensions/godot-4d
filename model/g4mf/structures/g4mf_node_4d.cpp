@@ -61,7 +61,7 @@ Ref<G4MFNode4D> G4MFNode4D::from_godot_node_basic(Ref<G4MFState4D> p_g4mf_state,
 	g4mf_node.instantiate();
 	ERR_FAIL_NULL_V(p_godot_node, g4mf_node);
 	// Note: The name will be reserved as a unique name later in `G4MFState4D::append_g4mf_node()`.
-	g4mf_node->set_name(p_godot_node->get_name());
+	g4mf_node->set_item_name(p_godot_node->get_name());
 	const Node4D *godot_node_4d = Object::cast_to<Node4D>(p_godot_node);
 	if (godot_node_4d) {
 		g4mf_node->set_transform(godot_node_4d->get_transform());

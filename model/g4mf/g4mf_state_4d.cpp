@@ -3,7 +3,8 @@
 int G4MFState4D::append_g4mf_node(Ref<G4MFNode4D> p_node) {
 	const String requested_name = p_node->get_name();
 	if (!requested_name.is_empty()) {
-		p_node->set_name(reserve_unique_name(requested_name));
+		// Use set_name here, not set_item_name, because we sanitize before reserving.
+		p_node->set_name(reserve_unique_name(G4MFItem4D::sanitize_item_name(requested_name)));
 	}
 	const int node_index = _g4mf_nodes.size();
 	_g4mf_nodes.push_back(p_node);

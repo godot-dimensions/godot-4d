@@ -179,7 +179,7 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 	Ref<G4MFShape4D> ret;
 	ret.instantiate();
 	ERR_FAIL_COND_V_MSG(p_shape.is_null(), ret, "The given Shape4D was null, cannot convert to G4MFShape4D.");
-	ret->set_name(p_shape->get_name());
+	ret->set_item_name(p_shape->get_name());
 	const Ref<BoxShape4D> box_shape = p_shape;
 	if (box_shape.is_valid()) {
 		ret->set_base_size(box_shape->get_size());
