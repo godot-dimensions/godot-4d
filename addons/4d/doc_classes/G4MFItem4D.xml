@@ -45,6 +45,13 @@
 				Reads general G4MF item properties from the given [Dictionary] and apply it to this item. This only considers the [code]"name"[/code] and [code]"extras"[/code] keys. The [code]"name"[/code] is set as the [member item_name] of the item. The [code]"extras"[/code] key is copied to the [Object] metadata, which can be retrieved with [code].get_meta("extras")[/code].
 			</description>
 		</method>
+		<method name="sanitize_item_name" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="desired_name" type="String" />
+			<description>
+				Sanitizes the given [param desired_name] to be a valid G4MF item name. This is used when exporting a G4MF file to ensure that the item names only use characters considered valid by the G4MF specification.
+			</description>
+		</method>
 		<method name="set_additional_data">
 			<return type="void" />
 			<param index="0" name="extension_name" type="StringName" />

@@ -30,7 +30,6 @@ bool Geometry4D::compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g
 
 void Geometry4D::get_nearest_point_on_tetrahedron_barycentric(const Vector4 &p_vert0, const Vector4 &p_vert1, const Vector4 &p_vert2, const Vector4 &p_vert3, const Vector4 &p_point, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared, bool &r_proj_inside) {
 	ERR_FAIL_COND_MSG(p_nearest_tetra_inverse_metric_cache.size() < p_tetrahedron_index * 6 + 6, "Geometry4D::get_nearest_point_on_tetrahedron_barycentric: Inverse metric cache is too small for the given tetrahedron index.");
-	// These indices are guaranteed to be within bounds due to mesh validation.
 	const Vector4 edge1 = p_vert1 - p_vert0;
 	const Vector4 edge2 = p_vert2 - p_vert0;
 	const Vector4 edge3 = p_vert3 - p_vert0;
@@ -53,20 +52,20 @@ void Geometry4D::get_nearest_point_on_tetrahedron_barycentric(const Vector4 &p_v
 		bary3 = inv02 * edge1_alignment + inv12 * edge2_alignment + inv22 * edge3_alignment;
 		bary0 = (real_t)1.0 - (bary1 + bary2 + bary3);
 	}
+	// The point is inside the tetrahedron if all barycentric coordinates are non-negative (allowing for a small epsilon).
+	const bool proj_inside = bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON;
 	// Determine the nearest point and/or the min distance based on if it's inside or outside the tetrahedron.
 	Vector4 nearest_on_tet;
 	real_t min_dist_sq = Math_INF;
-	if (bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON) {
+	if (proj_inside) {
 		// In this case, the nearest point on the plane lands inside of the tetrahedron.
-		r_proj_inside = true;
 		nearest_on_tet = p_vert0 + edge1 * bary1 + edge2 * bary2 + edge3 * bary3;
 	} else {
-		r_proj_inside = false;
 		// In this case, the nearest point on the plane lands outside, so we need to check the triangle borders.
-		const Vector4 nearest_on_tri0 = Geometry4D::closest_point_on_triangle(p_vert1, p_vert2, p_vert3, p_point);
-		const Vector4 nearest_on_tri1 = Geometry4D::closest_point_on_triangle(p_vert0, p_vert2, p_vert3, p_point);
-		const Vector4 nearest_on_tri2 = Geometry4D::closest_point_on_triangle(p_vert0, p_vert1, p_vert3, p_point);
-		const Vector4 nearest_on_tri3 = Geometry4D::closest_point_on_triangle(p_vert0, p_vert1, p_vert2, p_point);
+		const Vector4 nearest_on_tri0 = closest_point_on_triangle(p_vert1, p_vert2, p_vert3, p_point);
+		const Vector4 nearest_on_tri1 = closest_point_on_triangle(p_vert0, p_vert2, p_vert3, p_point);
+		const Vector4 nearest_on_tri2 = closest_point_on_triangle(p_vert0, p_vert1, p_vert3, p_point);
+		const Vector4 nearest_on_tri3 = closest_point_on_triangle(p_vert0, p_vert1, p_vert2, p_point);
 		nearest_on_tet = nearest_on_tri0;
 		min_dist_sq = nearest_on_tri0.distance_squared_to(p_point);
 		const real_t dist_sq_tri1 = nearest_on_tri1.distance_squared_to(p_point);
@@ -86,6 +85,7 @@ void Geometry4D::get_nearest_point_on_tetrahedron_barycentric(const Vector4 &p_v
 		}
 	}
 	// Write the outputs.
+	r_proj_inside = proj_inside;
 	r_nearest_on_tet = nearest_on_tet;
 	if (min_dist_sq == Math_INF) {
 		min_dist_sq = nearest_on_tet.distance_squared_to(p_point);
@@ -94,7 +94,7 @@ void Geometry4D::get_nearest_point_on_tetrahedron_barycentric(const Vector4 &p_v
 }
 
 bool Geometry4D::is_point_inside_tetrahedron_barycentric(const Vector4 &p_vert0, const Vector4 &p_vert1, const Vector4 &p_vert2, const Vector4 &p_vert3, const Vector4 &p_point, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const int64_t p_tetrahedron_index) {
-	ERR_FAIL_COND_V_MSG(p_nearest_tetra_inverse_metric_cache.size() < p_tetrahedron_index * 6 + 6, false, "Geometry4D::get_nearest_point_on_tetrahedron_barycentric: Inverse metric cache is too small for the given tetrahedron index.");
+	ERR_FAIL_COND_V_MSG(p_nearest_tetra_inverse_metric_cache.size() < p_tetrahedron_index * 6 + 6, false, "Geometry4D::is_point_inside_tetrahedron_barycentric: Inverse metric cache is too small for the given tetrahedron index.");
 	const Vector4 edge1 = p_vert1 - p_vert0;
 	const Vector4 edge2 = p_vert2 - p_vert0;
 	const Vector4 edge3 = p_vert3 - p_vert0;
