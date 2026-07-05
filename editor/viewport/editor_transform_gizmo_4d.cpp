@@ -370,13 +370,13 @@ void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_came
 	}
 }
 
-Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p_inv_relative_to) const {
+Rect4 EditorTransformGizmo4D::_get_rect_bounds_of_selection(const Transform4D &p_to_target) const {
 	Rect4 bounds;
 	const int size = _selected_top_nodes.size();
 	for (int i = 0; i < size; i++) {
 		Node4D *node_4d = Object::cast_to<Node4D>(_selected_top_nodes[i]);
 		if (node_4d != nullptr) {
-			bounds = bounds.merge(node_4d->get_rect_bounds_global_recursive(p_inv_relative_to));
+			bounds = bounds.merge(node_4d->get_rect_bounds_global_recursive(p_to_target));
 		}
 	}
 	return bounds;

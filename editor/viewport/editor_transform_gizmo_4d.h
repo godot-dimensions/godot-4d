@@ -113,7 +113,7 @@ private:
 	void _on_undo_redo_version_changed();
 	void _update_gizmo_transform();
 	void _update_gizmo_mesh_transform(const Camera4D *p_camera);
-	Rect4 _get_rect_bounds_of_selection(const Transform4D &p_inv_relative_to) const;
+	Rect4 _get_rect_bounds_of_selection(const Transform4D &p_to_target) const;
 	static String _get_transform_part_simple_action_name(const TransformPart p_part);
 
 	// Highlighting functions, used when not transforming.

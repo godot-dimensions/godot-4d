@@ -215,11 +215,11 @@ public:
 	void set_visible(const bool p_visible);
 
 	// Rect bounds.
-	virtual Rect4 get_rect_bounds_local(const Transform4D &p_inv_relative_to = Transform4D()) const;
+	virtual Rect4 get_rect_bounds_local(const Transform4D &p_to_target = Transform4D()) const;
 	PackedVector4Array get_rect_bounds_local_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
-	Rect4 get_rect_bounds_global(const Transform4D &p_inv_relative_to = Transform4D()) const;
+	Rect4 get_rect_bounds_global(const Transform4D &p_to_target = Transform4D()) const;
 	PackedVector4Array get_rect_bounds_global_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
-	Rect4 get_rect_bounds_global_recursive(const Transform4D &p_inv_relative_to = Transform4D()) const;
+	Rect4 get_rect_bounds_global_recursive(const Transform4D &p_to_target = Transform4D()) const;
 	PackedVector4Array get_rect_bounds_global_recursive_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
 	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds_local, const Projection &, const Vector4 &);
 

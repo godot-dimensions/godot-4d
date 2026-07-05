@@ -38,7 +38,7 @@ public:
 	void set_collision_mask_value(int p_layer_number, bool p_value);
 	bool get_collision_mask_value(int p_layer_number) const;
 
-	virtual Rect4 get_rect_bounds_local(const Transform4D &p_inv_relative_to = Transform4D()) const override;
+	virtual Rect4 get_rect_bounds_local(const Transform4D &p_to_target = Transform4D()) const override;
 	virtual Dictionary raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const bool p_inside_is_zero) const override;
 	Transform4D get_transform_to_collision_object() const;
 

@@ -12,11 +12,11 @@
 	<methods>
 		<method name="_get_rect_bounds_local" qualifiers="virtual const">
 			<return type="PackedVector4Array" />
-			<param index="0" name="inv_relative_to_basis" type="Projection" />
-			<param index="1" name="inv_relative_to_origin" type="Vector4" />
+			<param index="0" name="to_target_basis" type="Projection" />
+			<param index="1" name="to_target_origin" type="Vector4" />
 			<description>
 				Callback method that should return the rectilinear bounding box of a node. Do not call this method. This can be overridden by derived classes when creating a custom node type in GDScript or another scripting language.
-				The returned value should be a [PackedVector4Array] with exactly two elements, position and size, representing a Rect4. The result should be relative to the given [Transform4D] stored as a [Projection] [Basis4D] basis and [Vector4] origin. The given values are actually the inverse transform, so you can use them to transform the object's points from local space to the target space. The returned value does not need to include the bounding boxes of any child nodes. This is the 4D equivalent of [method VisualInstance3D._get_aabb].
+				The returned value should be a [PackedVector4Array] with exactly two elements, position and size, representing a Rect4. The result should be relative to the given [Transform4D] stored as a [Projection] [Basis4D] basis and [Vector4] origin. The given parameters are used to transform the object's points from global space into a target space, which means that if the target space is a transform inside the global space, these parameters will be the inverse of that transform. The returned value does not need to include the bounding boxes of any child nodes. This is the 4D equivalent of [method VisualInstance3D._get_aabb].
 			</description>
 		</method>
 		<method name="_raycast_intersects_local" qualifiers="virtual const">
@@ -65,26 +65,26 @@
 		</method>
 		<method name="get_rect_bounds_global" qualifiers="const">
 			<return type="PackedVector4Array" />
-			<param index="0" name="inv_relative_to_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
-			<param index="1" name="inv_relative_to_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="0" name="to_target_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<param index="1" name="to_target_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
 			<description>
-				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are actually the inverse transform, and are used to transform the object's points from global space to the target space. This is equivalent to calling [method get_rect_bounds_local] with the relative transform composed with the global transform of the node. The returned value usually does not include the bounding boxes of any child nodes. This is the 4D equivalent of [method VisualInstance3D.get_aabb].
+				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are used to transform the object's points from global space into a target space, which means that if the target space is a transform inside the global space, these parameters need to be the inverse of that transform. This is equivalent to calling [method get_rect_bounds_local] with the relative transform composed with the global transform of the node. The returned value usually does not include the bounding boxes of any child nodes. This is the 4D equivalent of [method VisualInstance3D.get_aabb].
 			</description>
 		</method>
 		<method name="get_rect_bounds_global_recursive" qualifiers="const">
 			<return type="PackedVector4Array" />
-			<param index="0" name="inv_relative_to_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
-			<param index="1" name="inv_relative_to_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="0" name="to_target_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<param index="1" name="to_target_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
 			<description>
-				Recursive version of [method get_rect_bounds_global] that includes descendant 4D nodes in the same transform hierarchy. Returns the rectilinear bounding box of this [Node4D] and all its descendants as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are actually the inverse transform, and are used to transform the object's points from global space to the target space.
+				Recursive version of [method get_rect_bounds_global] that includes descendant 4D nodes in the same transform hierarchy. Returns the rectilinear bounding box of this [Node4D] and all its descendants as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are used to transform the object's points from global space into a target space, which means that if the target space is a transform inside the global space, these parameters need to be the inverse of that transform.
 			</description>
 		</method>
 		<method name="get_rect_bounds_local" qualifiers="const">
 			<return type="PackedVector4Array" />
-			<param index="0" name="inv_relative_to_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
-			<param index="1" name="inv_relative_to_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="0" name="to_target_basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<param index="1" name="to_target_origin" type="Vector4" default="Vector4(0, 0, 0, 0)" />
 			<description>
-				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are actually the inverse transform, and are used to transform the object's points from local space to the target space. The returned value usually does not include the bounding boxes of any child nodes.
+				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are used to transform the object's points from local space into a target space, which means that if the target space is a transform inside the global space, these parameters need to be the inverse of that transform. The returned value usually does not include the bounding boxes of any child nodes.
 			</description>
 		</method>
 		<method name="get_rotation_degrees_euler">

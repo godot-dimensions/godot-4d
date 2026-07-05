@@ -36,11 +36,11 @@ void CollisionShape4D::_notification(int p_what) {
 	}
 }
 
-Rect4 CollisionShape4D::get_rect_bounds_local(const Transform4D &p_inv_relative_to) const {
+Rect4 CollisionShape4D::get_rect_bounds_local(const Transform4D &p_to_target) const {
 	if (_shape.is_null()) {
-		return Rect4(p_inv_relative_to.origin, Vector4());
+		return Rect4(p_to_target.origin, Vector4());
 	}
-	return _shape->get_rect_bounds(p_inv_relative_to);
+	return _shape->get_rect_bounds(p_to_target);
 }
 
 Transform4D CollisionShape4D::get_transform_to_collision_object() const {

@@ -43,13 +43,13 @@ void MeshInstance4D::set_mesh(const Ref<Mesh4D> &p_mesh) {
 	_mesh = p_mesh;
 }
 
-Rect4 MeshInstance4D::get_rect_bounds_local(const Transform4D &p_inv_relative_to) const {
-	Rect4 bounds = Rect4(p_inv_relative_to.origin, Vector4());
+Rect4 MeshInstance4D::get_rect_bounds_local(const Transform4D &p_to_target) const {
+	Rect4 bounds = Rect4(p_to_target.origin, Vector4());
 	const Ref<Mesh4D> mesh = get_mesh();
 	if (mesh.is_null()) {
 		return bounds;
 	}
-	const Transform4D to_target = p_inv_relative_to;
+	const Transform4D to_target = p_to_target;
 	const PackedVector4Array vertices = mesh->get_vertices();
 	for (int vert_index = 0; vert_index < vertices.size(); vert_index++) {
 		bounds = bounds.expand_to_point(to_target * vertices[vert_index]);
