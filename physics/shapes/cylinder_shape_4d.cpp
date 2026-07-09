@@ -20,34 +20,6 @@ real_t CylinderShape4D::get_hypervolume() const {
 	return (4.0f * Math_PI / 3.0f) * (_radius * _radius * _radius * _height);
 }
 
-Vector4 CylinderShape4D::get_nearest_point(const Vector4 &p_point) const {
-	const real_t half_height = _height * 0.5f;
-	Vector4 nearest = Vector4(p_point.x, 0.0f, p_point.z, p_point.w);
-	const real_t near_len_sq = nearest.length_squared();
-	if (near_len_sq > _radius * _radius) {
-		nearest *= _radius / Math::sqrt(near_len_sq);
-	}
-	if (p_point.y > half_height) {
-		nearest.y = half_height;
-	} else if (p_point.y < -half_height) {
-		nearest.y = -half_height;
-	} else {
-		nearest.y = p_point.y;
-	}
-	return nearest;
-}
-
-Vector4 CylinderShape4D::get_support_point(const Vector4 &p_direction) const {
-	const real_t half_height = _height * 0.5f;
-	Vector4 support = Vector4(p_direction.x, 0.0f, p_direction.z, p_direction.w).normalized() * _radius;
-	support.y = (p_direction.y > 0.0f) ? half_height : -half_height;
-	return support;
-}
-
-real_t CylinderShape4D::get_surface_volume() const {
-	return (8.0 * Math_PI / 3.0) * (_radius * _radius * _radius) + (4.0 * Math_PI) * (_radius * _radius * _height);
-}
-
 Dictionary CylinderShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
 	Dictionary result;
 	result["hit"] = false;
@@ -163,8 +135,66 @@ Dictionary CylinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 	return result;
 }
 
-bool CylinderShape4D::has_point(const Vector4 &p_point) const {
-	Vector4 abs_point = p_point.abs();
+real_t CylinderShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	const real_t half_height = _height * 0.5f;
+	Vector4 nearest = Vector4(p_local_point.x, 0.0f, p_local_point.z, p_local_point.w);
+	const real_t flat_length = nearest.length();
+	const real_t radial_signed_distance = flat_length - _radius;
+	const real_t vertical_signed_distance = Math::abs(p_local_point.y) - half_height;
+	const real_t abs_radial_signed_distance = Math::abs(radial_signed_distance);
+	const real_t abs_vertical_signed_distance = Math::abs(vertical_signed_distance);
+	if (r_nearest_point_on_surface != nullptr) {
+		if (radial_signed_distance > 0.0f || abs_radial_signed_distance >= abs_vertical_signed_distance) {
+			if (flat_length == 0.0f) {
+				nearest = Vector4(_radius, 0.0f, 0.0f, 0.0f);
+			} else {
+				nearest *= _radius / flat_length;
+			}
+		}
+		if (vertical_signed_distance > 0.0f || abs_vertical_signed_distance > abs_radial_signed_distance) {
+			nearest.y = (p_local_point.y > 0.0f) ? half_height : -half_height;
+		} else {
+			nearest.y = p_local_point.y;
+		}
+		*r_nearest_point_on_surface = nearest;
+	}
+	// Return the smallest signed distance, which corresponds to the closest surface.
+	if (abs_vertical_signed_distance < abs_radial_signed_distance) {
+		return vertical_signed_distance;
+	}
+	return radial_signed_distance;
+}
+
+Vector4 CylinderShape4D::get_nearest_point(const Vector4 &p_local_point) const {
+	const real_t half_height = _height * 0.5f;
+	Vector4 nearest = Vector4(p_local_point.x, 0.0f, p_local_point.z, p_local_point.w);
+	const real_t near_len_sq = nearest.length_squared();
+	if (near_len_sq > _radius * _radius) {
+		nearest *= _radius / Math::sqrt(near_len_sq);
+	}
+	if (p_local_point.y > half_height) {
+		nearest.y = half_height;
+	} else if (p_local_point.y < -half_height) {
+		nearest.y = -half_height;
+	} else {
+		nearest.y = p_local_point.y;
+	}
+	return nearest;
+}
+
+Vector4 CylinderShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	const real_t half_height = _height * 0.5f;
+	Vector4 support = Vector4(p_local_direction.x, 0.0f, p_local_direction.z, p_local_direction.w).normalized() * _radius;
+	support.y = (p_local_direction.y > 0.0f) ? half_height : -half_height;
+	return support;
+}
+
+real_t CylinderShape4D::get_surface_volume() const {
+	return (8.0 * Math_PI / 3.0) * (_radius * _radius * _radius) + (4.0 * Math_PI) * (_radius * _radius * _height);
+}
+
+bool CylinderShape4D::has_point(const Vector4 &p_local_point) const {
+	Vector4 abs_point = p_local_point.abs();
 	if (abs_point.y > _height * 0.5f) {
 		return false;
 	}

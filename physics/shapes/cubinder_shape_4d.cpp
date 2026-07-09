@@ -50,46 +50,6 @@ real_t CubinderShape4D::get_surface_volume() const {
 	return Math_TAU * _radius * _height * _thickness + Math_PI * _radius * _radius * (_height + _thickness);
 }
 
-Vector4 CubinderShape4D::get_nearest_point(const Vector4 &p_point) const {
-	const real_t half_height = _height * (real_t)0.5;
-	const real_t half_thickness = _thickness * (real_t)0.5;
-	Vector4 nearest = Vector4(p_point.x, 0.0f, p_point.z, 0.0f);
-	const real_t length_sq = nearest.length_squared();
-	if (length_sq > _radius * _radius) {
-		nearest = nearest * _radius / Math::sqrt(length_sq);
-	}
-	nearest.y = CLAMP(p_point.y, -half_height, half_height);
-	nearest.w = CLAMP(p_point.w, -half_thickness, half_thickness);
-	return nearest;
-}
-
-Vector4 CubinderShape4D::get_support_point(const Vector4 &p_direction) const {
-	const real_t half_height = _height * (real_t)0.5;
-	const real_t half_thickness = _thickness * (real_t)0.5;
-	Vector4 support = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-	if (p_direction.x != 0.0f || p_direction.z != 0.0f) {
-		Vector2 circle_dir = Vector2(p_direction.x, p_direction.z).normalized() * _radius;
-		support.x = circle_dir.x;
-		support.z = circle_dir.y;
-	}
-	support.y = (p_direction.y > 0.0f) ? half_height : -half_height;
-	support.w = (p_direction.w > 0.0f) ? half_thickness : -half_thickness;
-	return support;
-}
-
-bool CubinderShape4D::has_point(const Vector4 &p_point) const {
-	Vector4 abs_point = p_point.abs();
-	if (abs_point.y > _height * 0.5f) {
-		return false;
-	}
-	abs_point.y = 0.0f;
-	if (abs_point.w > _thickness * 0.5f) {
-		return false;
-	}
-	abs_point.w = 0.0f;
-	return abs_point.length_squared() <= _radius * _radius;
-}
-
 Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
 	Dictionary result;
 	result["hit"] = false;
@@ -269,6 +229,87 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 		}
 	}
 	return result;
+}
+
+real_t CubinderShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	const real_t half_height = _height * 0.5f;
+	const real_t half_thickness = _thickness * 0.5f;
+	Vector4 nearest = Vector4(p_local_point.x, 0.0f, p_local_point.z, 0.0f);
+	const real_t flat_length = nearest.length();
+	const real_t radial_signed_distance = flat_length - _radius;
+	const real_t vertical_signed_distance = Math::abs(p_local_point.y) - half_height;
+	const real_t thickness_signed_distance = Math::abs(p_local_point.w) - half_thickness;
+	const real_t abs_radial_signed_distance = Math::abs(radial_signed_distance);
+	const real_t abs_vertical_signed_distance = Math::abs(vertical_signed_distance);
+	const real_t abs_thickness_signed_distance = Math::abs(thickness_signed_distance);
+	if (r_nearest_point_on_surface != nullptr) {
+		if (radial_signed_distance > 0.0f || abs_radial_signed_distance >= abs_vertical_signed_distance || abs_radial_signed_distance >= abs_thickness_signed_distance) {
+			if (flat_length == 0.0f) {
+				nearest = Vector4(_radius, 0.0f, 0.0f, 0.0f);
+			} else {
+				nearest *= _radius / flat_length;
+			}
+		}
+		if (vertical_signed_distance > 0.0f || abs_vertical_signed_distance > abs_radial_signed_distance) {
+			nearest.y = (p_local_point.y > 0.0f) ? half_height : -half_height;
+		} else {
+			nearest.y = p_local_point.y;
+		}
+		if (thickness_signed_distance > 0.0f || abs_thickness_signed_distance > abs_radial_signed_distance) {
+			nearest.w = (p_local_point.w > 0.0f) ? half_thickness : -half_thickness;
+		} else {
+			nearest.w = p_local_point.w;
+		}
+		*r_nearest_point_on_surface = nearest;
+	}
+	// Return the smallest signed distance, which corresponds to the closest surface.
+	if (abs_thickness_signed_distance < abs_radial_signed_distance && abs_thickness_signed_distance < abs_vertical_signed_distance) {
+		return thickness_signed_distance;
+	}
+	if (abs_vertical_signed_distance < abs_radial_signed_distance) {
+		return vertical_signed_distance;
+	}
+	return radial_signed_distance;
+}
+
+Vector4 CubinderShape4D::get_nearest_point(const Vector4 &p_local_point) const {
+	const real_t half_height = _height * (real_t)0.5;
+	const real_t half_thickness = _thickness * (real_t)0.5;
+	Vector4 nearest = Vector4(p_local_point.x, 0.0f, p_local_point.z, 0.0f);
+	const real_t length_sq = nearest.length_squared();
+	if (length_sq > _radius * _radius) {
+		nearest = nearest * _radius / Math::sqrt(length_sq);
+	}
+	nearest.y = CLAMP(p_local_point.y, -half_height, half_height);
+	nearest.w = CLAMP(p_local_point.w, -half_thickness, half_thickness);
+	return nearest;
+}
+
+Vector4 CubinderShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	const real_t half_height = _height * (real_t)0.5;
+	const real_t half_thickness = _thickness * (real_t)0.5;
+	Vector4 support = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+	if (p_local_direction.x != 0.0f || p_local_direction.z != 0.0f) {
+		Vector2 circle_dir = Vector2(p_local_direction.x, p_local_direction.z).normalized() * _radius;
+		support.x = circle_dir.x;
+		support.z = circle_dir.y;
+	}
+	support.y = (p_local_direction.y > 0.0f) ? half_height : -half_height;
+	support.w = (p_local_direction.w > 0.0f) ? half_thickness : -half_thickness;
+	return support;
+}
+
+bool CubinderShape4D::has_point(const Vector4 &p_local_point) const {
+	Vector4 abs_point = p_local_point.abs();
+	if (abs_point.y > _height * 0.5f) {
+		return false;
+	}
+	abs_point.y = 0.0f;
+	if (abs_point.w > _thickness * 0.5f) {
+		return false;
+	}
+	abs_point.w = 0.0f;
+	return abs_point.length_squared() <= _radius * _radius;
 }
 
 bool CubinderShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {

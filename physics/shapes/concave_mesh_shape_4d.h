@@ -10,7 +10,7 @@ class ConcaveMeshShape4D : public Shape4D {
 	PackedFloat64Array _inverse_metric_cache;
 
 	static PackedVector4Array _calculate_normals(const PackedVector4Array &p_simplex_cells);
-	static PackedFloat64Array _populate_inverse_metric_cache(const PackedVector4Array &p_simplex_cells);
+	static PackedFloat64Array _calculate_inverse_metric_cache(const PackedVector4Array &p_simplex_cells);
 
 protected:
 	static void _bind_methods();
@@ -23,7 +23,10 @@ public:
 
 	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const override;
 
-	virtual Vector4 get_nearest_point(const Vector4 &p_point) const override;
+	virtual Vector4 get_nearest_point(const Vector4 &p_local_point) const override;
+	virtual Vector4 get_support_point(const Vector4 &p_local_direction) const override;
+	// Concave shapes do not have any points by definition, they are not solid and not necessarily manifold.
+	virtual bool has_point(const Vector4 &p_local_point) const override { return false; }
 
 	virtual Ref<TetraMesh4D> to_tetra_mesh(const Dictionary &p_options = Dictionary()) const override;
 	virtual Ref<WireMesh4D> to_wire_mesh(const Dictionary &p_options = Dictionary()) const override;

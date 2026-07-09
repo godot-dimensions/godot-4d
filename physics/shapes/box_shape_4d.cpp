@@ -57,26 +57,53 @@ Dictionary BoxShape4D::raycast_intersects(const Vector4 &p_local_from, const Vec
 	return get_rect_bounds_fast().raycast_intersects_dict(p_local_from, p_local_direction, false);
 }
 
-Vector4 BoxShape4D::get_nearest_point(const Vector4 &p_point) const {
+real_t BoxShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
 	const Vector4 half_extents = get_half_extents();
-	return Vector4(
-			CLAMP(p_point.x, -half_extents.x, half_extents.x),
-			CLAMP(p_point.y, -half_extents.y, half_extents.y),
-			CLAMP(p_point.z, -half_extents.z, half_extents.z),
-			CLAMP(p_point.w, -half_extents.w, half_extents.w));
+	const Vector4 abs_point = p_local_point.abs();
+	const Vector4 abs_to_surface = abs_point - half_extents;
+	const Vector4 abs_to_surface_abs = abs_to_surface.abs();
+	real_t nearest_distance_signed = Math_INF;
+	real_t nearest_distance_abs = Math_INF;
+	int8_t nearest_axis = 0;
+	for (int8_t axis = 0; axis < 4; axis++) {
+		if (abs_to_surface_abs[axis] < nearest_distance_abs) {
+			nearest_distance_signed = abs_to_surface[axis];
+			nearest_distance_abs = abs_to_surface_abs[axis];
+			nearest_axis = axis;
+		}
+	}
+	if (r_nearest_point_on_surface != nullptr) {
+		Vector4 nearest_point = Vector4(
+				CLAMP(p_local_point.x, -half_extents.x, half_extents.x),
+				CLAMP(p_local_point.y, -half_extents.y, half_extents.y),
+				CLAMP(p_local_point.z, -half_extents.z, half_extents.z),
+				CLAMP(p_local_point.w, -half_extents.w, half_extents.w));
+		nearest_point[nearest_axis] = (p_local_point[nearest_axis] > 0.0f) ? half_extents[nearest_axis] : -half_extents[nearest_axis];
+		*r_nearest_point_on_surface = nearest_point;
+	}
+	return nearest_distance_signed;
 }
 
-Vector4 BoxShape4D::get_support_point(const Vector4 &p_direction) const {
+Vector4 BoxShape4D::get_nearest_point(const Vector4 &p_local_point) const {
 	const Vector4 half_extents = get_half_extents();
 	return Vector4(
-			(p_direction.x > 0.0f) ? half_extents.x : -half_extents.x,
-			(p_direction.y > 0.0f) ? half_extents.y : -half_extents.y,
-			(p_direction.z > 0.0f) ? half_extents.z : -half_extents.z,
-			(p_direction.w > 0.0f) ? half_extents.w : -half_extents.w);
+			CLAMP(p_local_point.x, -half_extents.x, half_extents.x),
+			CLAMP(p_local_point.y, -half_extents.y, half_extents.y),
+			CLAMP(p_local_point.z, -half_extents.z, half_extents.z),
+			CLAMP(p_local_point.w, -half_extents.w, half_extents.w));
 }
 
-bool BoxShape4D::has_point(const Vector4 &p_point) const {
-	const Vector4 abs_point = p_point.abs();
+Vector4 BoxShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	const Vector4 half_extents = get_half_extents();
+	return Vector4(
+			(p_local_direction.x > 0.0f) ? half_extents.x : -half_extents.x,
+			(p_local_direction.y > 0.0f) ? half_extents.y : -half_extents.y,
+			(p_local_direction.z > 0.0f) ? half_extents.z : -half_extents.z,
+			(p_local_direction.w > 0.0f) ? half_extents.w : -half_extents.w);
+}
+
+bool BoxShape4D::has_point(const Vector4 &p_local_point) const {
+	const Vector4 abs_point = p_local_point.abs();
 	const Vector4 half_extents = get_half_extents();
 	return abs_point.x <= half_extents.x && abs_point.y <= half_extents.y && abs_point.z <= half_extents.z && abs_point.w <= half_extents.w;
 }

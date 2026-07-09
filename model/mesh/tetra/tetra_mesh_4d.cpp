@@ -167,7 +167,8 @@ bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vec
 	if (simplex_tet_count == 0) {
 		return false; // No tetrahedra to raycast against.
 	}
-	ERR_FAIL_COND_V_MSG(_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6, false, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_inverse_metric_cache()` before calling `raycast_intersects_fast()`.");
+	const PackedFloat64Array &inverse_metric_cache = _nearest_tetra_inverse_metric_cache;
+	ERR_FAIL_COND_V_MSG(inverse_metric_cache.size() != simplex_tet_count * 6, false, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_inverse_metric_cache()` before calling `raycast_intersects_fast()`.");
 	const PackedVector4Array &vertices = get_vertices();
 	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
 	const int64_t boundary_normals_count = boundary_normals.size();
@@ -200,7 +201,7 @@ bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vec
 		const Vector4 vert1 = vertices[i1];
 		const Vector4 vert2 = vertices[i2];
 		const Vector4 vert3 = vertices[i3];
-		const bool hit = Geometry4D::is_point_inside_tetrahedron_barycentric(vert0, vert1, vert2, vert3, intersection_point, _nearest_tetra_inverse_metric_cache, tet_index);
+		const bool hit = Geometry4D::is_point_inside_tetrahedron_barycentric(vert0, vert1, vert2, vert3, intersection_point, inverse_metric_cache, tet_index);
 		if (hit) {
 			// For this fast version, we only care if there is any intersection, so we can return true immediately.
 			return true;
@@ -218,7 +219,8 @@ Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Ve
 	if (simplex_tet_count == 0) {
 		return result; // No tetrahedra to raycast against.
 	}
-	ERR_FAIL_COND_V_MSG(_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6, result, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_inverse_metric_cache()` before calling `raycast_intersects()`.");
+	const PackedFloat64Array &inverse_metric_cache = _nearest_tetra_inverse_metric_cache;
+	ERR_FAIL_COND_V_MSG(inverse_metric_cache.size() != simplex_tet_count * 6, result, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_inverse_metric_cache()` before calling `raycast_intersects()`.");
 	const PackedVector4Array &vertices = get_vertices();
 	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
 	const int64_t boundary_normals_count = boundary_normals.size();
@@ -257,7 +259,7 @@ Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Ve
 		const Vector4 vert1 = vertices[i1];
 		const Vector4 vert2 = vertices[i2];
 		const Vector4 vert3 = vertices[i3];
-		const bool hit = Geometry4D::is_point_inside_tetrahedron_barycentric(vert0, vert1, vert2, vert3, intersection_point, _nearest_tetra_inverse_metric_cache, tet_index);
+		const bool hit = Geometry4D::is_point_inside_tetrahedron_barycentric(vert0, vert1, vert2, vert3, intersection_point, inverse_metric_cache, tet_index);
 		if (hit) {
 			best_hit_normal = tet_plane.normal;
 			best_distance = tet_plane_intersection_factor;

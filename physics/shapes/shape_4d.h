@@ -30,9 +30,12 @@ public:
 
 	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const;
 
-	virtual Vector4 get_nearest_point(const Vector4 &p_point) const;
-	virtual Vector4 get_support_point(const Vector4 &p_direction) const;
-	virtual bool has_point(const Vector4 &p_point) const;
+	virtual real_t get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface = nullptr) const;
+	real_t get_signed_distance_to_surface_bind(const Vector4 &p_local_point) const;
+
+	virtual Vector4 get_nearest_point(const Vector4 &p_local_point) const;
+	virtual Vector4 get_support_point(const Vector4 &p_local_direction) const;
+	virtual bool has_point(const Vector4 &p_local_point) const;
 
 	virtual bool is_equal_exact(const Ref<Shape4D> &p_shape) const;
 
@@ -44,6 +47,8 @@ public:
 	GDVIRTUAL0RC(real_t, _get_surface_volume);
 	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds, const Projection &, const Vector4 &);
 	GDVIRTUAL2RC(Dictionary, _raycast_intersects, const Vector4 &, const Vector4 &);
+
+	GDVIRTUAL1RC(real_t, _get_signed_distance_to_surface, const Vector4 &);
 
 	GDVIRTUAL1RC(Vector4, _get_nearest_point, Vector4);
 	GDVIRTUAL1RC(Vector4, _get_support_point, Vector4);

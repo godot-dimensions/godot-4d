@@ -32,7 +32,7 @@ real_t OrthoplexShape4D::get_hypervolume() const {
 real_t OrthoplexShape4D::get_surface_volume() const {
 	// Surcell volume of regular orthoplex is (4*sqrt(2)/3) * edge_length ^ 3, but we have size instead of edge length.
 	// To convert we need to divide by sqrt(2) 3 times, so 1/(2*sqrt(2)), the sqrt(2)s cancel out, so (4/3)*(1/2) = 2/3.
-	// Then since we have each axis separate, we need to add a quarter 4 times, so (2/3)*(1/4) = 1/6.
+	// Then since we have each axis separate, we need to multiply by a quarter 4 times, so (2/3)*(1/4) = 1/6.
 	return (1.0 / 6.0) * (_size.x * _size.y * _size.z + _size.x * _size.y * _size.w + _size.x * _size.z * _size.w + _size.y * _size.z * _size.w);
 }
 
@@ -89,20 +89,39 @@ Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, con
 	return result;
 }
 
-Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_point) const {
-	return Vector4D::limit_length_taxicab(p_point / _size, 0.5) * _size;
+real_t OrthoplexShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	if (p_local_point == Vector4(0.0f, 0.0f, 0.0f, 0.0f)) {
+		if (r_nearest_point_on_surface != nullptr) {
+			*r_nearest_point_on_surface = Vector4(0.5f * _size.x, 0.0f, 0.0f, 0.0f);
+		}
+		return -0.5f * _size.x;
+	}
+	const Vector4 abs_scaled_point = p_local_point.abs() / _size;
+	const real_t scaled_signed_distance = (abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w) - 1.0f;
+	const real_t adjust_per_axis = scaled_signed_distance * -0.25f;
+	Vector4 nearest_point = abs_scaled_point + Vector4(adjust_per_axis, adjust_per_axis, adjust_per_axis, adjust_per_axis);
+	nearest_point *= (p_local_point.sign() * _size);
+	if (r_nearest_point_on_surface != nullptr) {
+		*r_nearest_point_on_surface = nearest_point;
+	}
+	const real_t distance = p_local_point.distance_to(nearest_point);
+	return (scaled_signed_distance < 0.0f) ? -distance : distance;
 }
 
-Vector4 OrthoplexShape4D::get_support_point(const Vector4 &p_direction) const {
-	const Vector4 abs_dir = p_direction.abs();
+Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_local_point) const {
+	return Vector4D::limit_length_taxicab(p_local_point / _size, 0.5) * _size;
+}
+
+Vector4 OrthoplexShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	const Vector4 abs_dir = p_local_direction.abs();
 	const Vector4::Axis longest_axis = abs_dir.max_axis_index();
 	Vector4 support = Vector4();
-	support[longest_axis] = (p_direction[longest_axis] > 0.0f) ? _size[longest_axis] * 0.5f : -_size[longest_axis] * 0.5f;
+	support[longest_axis] = (p_local_direction[longest_axis] > 0.0f) ? _size[longest_axis] * 0.5f : -_size[longest_axis] * 0.5f;
 	return support;
 }
 
-bool OrthoplexShape4D::has_point(const Vector4 &p_point) const {
-	const Vector4 abs_scaled_point = p_point.abs() / _size;
+bool OrthoplexShape4D::has_point(const Vector4 &p_local_point) const {
+	const Vector4 abs_scaled_point = p_local_point.abs() / _size;
 	return (abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w) <= 1.0f;
 }
 

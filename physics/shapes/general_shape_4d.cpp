@@ -293,9 +293,9 @@ Rect4 GeneralShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	return rect_bounds;
 }
 
-Vector4 GeneralShape4D::get_nearest_point(const Vector4 &p_point) const {
+Vector4 GeneralShape4D::get_nearest_point(const Vector4 &p_local_point) const {
 	const Vector4 half_extents = get_base_half_extents();
-	Vector4 local_offset_abs = p_point.abs();
+	Vector4 local_offset_abs = p_local_point.abs();
 	Vector4 nearest_point_abs = Vector4();
 	// First, account for the base box.
 	for (int i = 0; i < 4; i++) {
@@ -353,17 +353,17 @@ Vector4 GeneralShape4D::get_nearest_point(const Vector4 &p_point) const {
 			local_offset_abs[axis] -= rescaled_offset_value;
 		}
 	}
-	return nearest_point_abs * p_point.sign();
+	return nearest_point_abs * p_local_point.sign();
 }
 
-Vector4 GeneralShape4D::get_support_point(const Vector4 &p_direction) const {
+Vector4 GeneralShape4D::get_support_point(const Vector4 &p_local_direction) const {
 	// First, account for the base box.
 	const Vector4 half_extents = get_base_half_extents();
 	Vector4 support = Vector4(
-			(p_direction.x > 0.0f) ? half_extents.x : -half_extents.x,
-			(p_direction.y > 0.0f) ? half_extents.y : -half_extents.y,
-			(p_direction.z > 0.0f) ? half_extents.z : -half_extents.z,
-			(p_direction.w > 0.0f) ? half_extents.w : -half_extents.w);
+			(p_local_direction.x > 0.0f) ? half_extents.x : -half_extents.x,
+			(p_local_direction.y > 0.0f) ? half_extents.y : -half_extents.y,
+			(p_local_direction.z > 0.0f) ? half_extents.z : -half_extents.z,
+			(p_local_direction.w > 0.0f) ? half_extents.w : -half_extents.w);
 	// Next, check the curves, if any. Note: This does not handle Steinmetz solids, or any other case of curves sharing axes.
 	const int64_t curve_count = _curves.size();
 	for (int64_t curve_index = 0; curve_index < curve_count; curve_index++) {
@@ -380,7 +380,7 @@ Vector4 GeneralShape4D::get_support_point(const Vector4 &p_direction) const {
 				const int axis = used_axes[used_index];
 				const real_t radius_squared = radii[axis] * radii[axis];
 				ellipsoid_support[axis] = radius_squared;
-				ellipsoid_support_len_squared += (p_direction[axis] * p_direction[axis]) * radius_squared;
+				ellipsoid_support_len_squared += (p_local_direction[axis] * p_local_direction[axis]) * radius_squared;
 			}
 			ellipsoid_support /= Math::sqrt(ellipsoid_support_len_squared);
 		} else {
@@ -389,18 +389,18 @@ Vector4 GeneralShape4D::get_support_point(const Vector4 &p_direction) const {
 				const int axis = used_axes[used_index];
 				const double radius_pow = Math::pow((double)radii[axis], exponent);
 				ellipsoid_support[axis] = radius_pow;
-				ellipsoid_support_len_pow += Math::pow((double)p_direction[axis], exponent) * radius_pow;
+				ellipsoid_support_len_pow += Math::pow((double)p_local_direction[axis], exponent) * radius_pow;
 			}
 			ellipsoid_support /= Math::pow((double)ellipsoid_support_len_pow, 1.0 / exponent);
 		}
-		support += p_direction * ellipsoid_support;
+		support += p_local_direction * ellipsoid_support;
 	}
 	return support;
 }
 
-bool GeneralShape4D::has_point(const Vector4 &p_point) const {
+bool GeneralShape4D::has_point(const Vector4 &p_local_point) const {
 	const Vector4 half_extents = get_base_half_extents();
-	Vector4 local_offset_abs = p_point.abs();
+	Vector4 local_offset_abs = p_local_point.abs();
 	// First, account for the base box.
 	for (int i = 0; i < 4; i++) {
 		if (local_offset_abs[i] > half_extents[i]) {

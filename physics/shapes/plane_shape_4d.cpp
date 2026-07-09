@@ -61,38 +61,45 @@ Dictionary PlaneShape4D::raycast_intersects(const Vector4 &p_local_from, const V
 	return result;
 }
 
-Vector4 PlaneShape4D::get_nearest_point(const Vector4 &p_point) const {
-	if (p_point.y <= 0.0f) {
-		return p_point;
+real_t PlaneShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	if (r_nearest_point_on_surface != nullptr) {
+		*r_nearest_point_on_surface = Vector4(p_local_point.x, 0.0f, p_local_point.z, p_local_point.w);
 	}
-	return Vector4(p_point.x, 0.0f, p_point.z, p_point.w);
+	return p_local_point.y;
 }
 
-Vector4 PlaneShape4D::get_support_point(const Vector4 &p_direction) const {
+Vector4 PlaneShape4D::get_nearest_point(const Vector4 &p_local_point) const {
+	if (p_local_point.y <= 0.0f) {
+		return p_local_point;
+	}
+	return Vector4(p_local_point.x, 0.0f, p_local_point.z, p_local_point.w);
+}
+
+Vector4 PlaneShape4D::get_support_point(const Vector4 &p_local_direction) const {
 	Vector4 support_point = Vector4(0, 0, 0, 0);
-	if (p_direction.x > CMP_EPSILON) {
+	if (p_local_direction.x > CMP_EPSILON) {
 		support_point.x = PLANE_WIDTH;
-	} else if (p_direction.x < -CMP_EPSILON) {
+	} else if (p_local_direction.x < -CMP_EPSILON) {
 		support_point.x = -PLANE_WIDTH;
 	}
-	if (p_direction.z > CMP_EPSILON) {
+	if (p_local_direction.z > CMP_EPSILON) {
 		support_point.z = PLANE_WIDTH;
-	} else if (p_direction.z < -CMP_EPSILON) {
+	} else if (p_local_direction.z < -CMP_EPSILON) {
 		support_point.z = -PLANE_WIDTH;
 	}
-	if (p_direction.w > CMP_EPSILON) {
+	if (p_local_direction.w > CMP_EPSILON) {
 		support_point.w = PLANE_WIDTH;
-	} else if (p_direction.w < -CMP_EPSILON) {
+	} else if (p_local_direction.w < -CMP_EPSILON) {
 		support_point.w = -PLANE_WIDTH;
 	}
-	if (p_direction.y < -CMP_EPSILON) {
+	if (p_local_direction.y < -CMP_EPSILON) {
 		support_point.y = -PLANE_WIDTH;
 	}
 	return support_point;
 }
 
-bool PlaneShape4D::has_point(const Vector4 &p_point) const {
-	return p_point.y <= 0.0f;
+bool PlaneShape4D::has_point(const Vector4 &p_local_point) const {
+	return p_local_point.y <= 0.0f;
 }
 
 bool PlaneShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {

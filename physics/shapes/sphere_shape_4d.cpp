@@ -14,22 +14,6 @@ real_t SphereShape4D::get_hypervolume() const {
 	return (0.125 * Math_TAU * Math_TAU) * (_radius * _radius * _radius * _radius);
 }
 
-Vector4 SphereShape4D::get_nearest_point(const Vector4 &p_point) const {
-	const real_t length_sq = p_point.length_squared();
-	if (length_sq <= _radius * _radius) {
-		return p_point;
-	}
-	return p_point * (_radius / Math::sqrt(length_sq));
-}
-
-Vector4 SphereShape4D::get_support_point(const Vector4 &p_direction) const {
-	return p_direction.normalized() * _radius;
-}
-
-real_t SphereShape4D::get_surface_volume() const {
-	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius);
-}
-
 Dictionary SphereShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
 	Dictionary result;
 	result["hit"] = false;
@@ -65,8 +49,37 @@ Dictionary SphereShape4D::raycast_intersects(const Vector4 &p_local_from, const 
 	return result;
 }
 
-bool SphereShape4D::has_point(const Vector4 &p_point) const {
-	return p_point.length_squared() <= _radius * _radius;
+real_t SphereShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	const real_t length_sq = p_local_point.length_squared();
+	const real_t center_distance = Math::sqrt(length_sq);
+	if (r_nearest_point_on_surface != nullptr) {
+		if (length_sq == 0.0) {
+			*r_nearest_point_on_surface = Vector4(_radius, 0.0, 0.0, 0.0); // Arbitrary point on the surface.
+		} else {
+			*r_nearest_point_on_surface = p_local_point * (_radius / center_distance);
+		}
+	}
+	return center_distance - _radius;
+}
+
+Vector4 SphereShape4D::get_nearest_point(const Vector4 &p_local_point) const {
+	const real_t length_sq = p_local_point.length_squared();
+	if (length_sq <= _radius * _radius) {
+		return p_local_point;
+	}
+	return p_local_point * (_radius / Math::sqrt(length_sq));
+}
+
+Vector4 SphereShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	return p_local_direction.normalized() * _radius;
+}
+
+real_t SphereShape4D::get_surface_volume() const {
+	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius);
+}
+
+bool SphereShape4D::has_point(const Vector4 &p_local_point) const {
+	return p_local_point.length_squared() <= _radius * _radius;
 }
 
 bool SphereShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {

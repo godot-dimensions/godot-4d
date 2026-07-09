@@ -24,51 +24,6 @@ void CapsuleShape4D::set_radius(const real_t p_radius) {
 	_radius = p_radius;
 }
 
-real_t CapsuleShape4D::get_hypervolume() const {
-	return (0.125 * Math_TAU * Math_TAU) * (_radius * _radius * _radius * _radius) + (2.0f * Math_TAU / 3.0f) * (_radius * _radius * _radius * _height);
-}
-
-Vector4 CapsuleShape4D::get_nearest_point(const Vector4 &p_point) const {
-	const real_t half_mid_height = get_mid_height() * 0.5f;
-	if (p_point.y > half_mid_height) {
-		Vector4 nearest = Vector4(p_point.x, p_point.y - half_mid_height, p_point.z, p_point.w);
-		const real_t near_len_sq = nearest.length_squared();
-		if (near_len_sq > _radius * _radius) {
-			nearest *= _radius / Math::sqrt(near_len_sq);
-		}
-		nearest.y += half_mid_height;
-		return nearest;
-	}
-	if (p_point.y < -half_mid_height) {
-		Vector4 nearest = Vector4(p_point.x, p_point.y + half_mid_height, p_point.z, p_point.w);
-		const real_t near_len_sq = nearest.length_squared();
-		if (near_len_sq > _radius * _radius) {
-			nearest *= _radius / Math::sqrt(near_len_sq);
-		}
-		nearest.y -= half_mid_height;
-		return nearest;
-	}
-	// Point's Y coordinate is within the capsule's height.
-	Vector4 nearest = Vector4(p_point.x, 0.0f, p_point.z, p_point.w);
-	const real_t near_len_sq = nearest.length_squared();
-	if (near_len_sq > _radius * _radius) {
-		nearest *= _radius / Math::sqrt(near_len_sq);
-	}
-	nearest.y = p_point.y;
-	return nearest;
-}
-
-Vector4 CapsuleShape4D::get_support_point(const Vector4 &p_direction) const {
-	const real_t half_mid_height = _height * 0.5f - _radius;
-	Vector4 nearest = p_direction.normalized() * _radius;
-	nearest.y += (p_direction.y > 0.0f) ? half_mid_height : -half_mid_height;
-	return nearest;
-}
-
-real_t CapsuleShape4D::get_surface_volume() const {
-	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius) + (2.0 * Math_TAU) * (_radius * _radius * _height);
-}
-
 Dictionary CapsuleShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
 	Dictionary result;
 	result["hit"] = false;
@@ -182,8 +137,82 @@ Dictionary CapsuleShape4D::raycast_intersects(const Vector4 &p_local_from, const
 	return result;
 }
 
-bool CapsuleShape4D::has_point(const Vector4 &p_point) const {
-	Vector4 abs_point = p_point.abs();
+real_t CapsuleShape4D::get_hypervolume() const {
+	return (0.125 * Math_TAU * Math_TAU) * (_radius * _radius * _radius * _radius) + (2.0f * Math_TAU / 3.0f) * (_radius * _radius * _radius * _height);
+}
+
+real_t CapsuleShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	const real_t half_mid_height = get_mid_height() * 0.5f;
+	Vector4 sphere_relative = p_local_point;
+	if (p_local_point.y > half_mid_height) {
+		sphere_relative.y -= half_mid_height;
+	} else if (p_local_point.y < -half_mid_height) {
+		sphere_relative.y += half_mid_height;
+	} else {
+		sphere_relative.y = 0.0f;
+	}
+	const real_t sphere_center_distance = sphere_relative.length();
+	if (r_nearest_point_on_surface != nullptr) {
+		if (sphere_center_distance == 0.0f) {
+			sphere_relative = Vector4(_radius, 0.0f, 0.0f, 0.0f); // Arbitrary point on the surface.
+		} else {
+			sphere_relative *= _radius / sphere_center_distance;
+		}
+		if (p_local_point.y > half_mid_height) {
+			sphere_relative.y += half_mid_height;
+		} else if (p_local_point.y < -half_mid_height) {
+			sphere_relative.y -= half_mid_height;
+		} else {
+			sphere_relative.y = p_local_point.y;
+		}
+		*r_nearest_point_on_surface = sphere_relative;
+	}
+	return sphere_center_distance - _radius;
+}
+
+Vector4 CapsuleShape4D::get_nearest_point(const Vector4 &p_local_point) const {
+	const real_t half_mid_height = get_mid_height() * 0.5f;
+	if (p_local_point.y > half_mid_height) {
+		Vector4 nearest = Vector4(p_local_point.x, p_local_point.y - half_mid_height, p_local_point.z, p_local_point.w);
+		const real_t near_len_sq = nearest.length_squared();
+		if (near_len_sq > _radius * _radius) {
+			nearest *= _radius / Math::sqrt(near_len_sq);
+		}
+		nearest.y += half_mid_height;
+		return nearest;
+	}
+	if (p_local_point.y < -half_mid_height) {
+		Vector4 nearest = Vector4(p_local_point.x, p_local_point.y + half_mid_height, p_local_point.z, p_local_point.w);
+		const real_t near_len_sq = nearest.length_squared();
+		if (near_len_sq > _radius * _radius) {
+			nearest *= _radius / Math::sqrt(near_len_sq);
+		}
+		nearest.y -= half_mid_height;
+		return nearest;
+	}
+	// Point's Y coordinate is within the capsule's height.
+	Vector4 nearest = Vector4(p_local_point.x, 0.0f, p_local_point.z, p_local_point.w);
+	const real_t near_len_sq = nearest.length_squared();
+	if (near_len_sq > _radius * _radius) {
+		nearest *= _radius / Math::sqrt(near_len_sq);
+	}
+	nearest.y = p_local_point.y;
+	return nearest;
+}
+
+Vector4 CapsuleShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	const real_t half_mid_height = _height * 0.5f - _radius;
+	Vector4 nearest = p_local_direction.normalized() * _radius;
+	nearest.y += (p_local_direction.y > 0.0f) ? half_mid_height : -half_mid_height;
+	return nearest;
+}
+
+real_t CapsuleShape4D::get_surface_volume() const {
+	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius) + (2.0 * Math_TAU) * (_radius * _radius * _height);
+}
+
+bool CapsuleShape4D::has_point(const Vector4 &p_local_point) const {
+	Vector4 abs_point = p_local_point.abs();
 	const real_t half_mid_height = get_mid_height() * 0.5f;
 	if (abs_point.y > half_mid_height) {
 		abs_point.y -= half_mid_height;

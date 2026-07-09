@@ -21,7 +21,7 @@ PackedVector4Array ConcaveMeshShape4D::_calculate_normals(const PackedVector4Arr
 	return new_normals;
 }
 
-PackedFloat64Array ConcaveMeshShape4D::_populate_inverse_metric_cache(const PackedVector4Array &p_simplex_cells) {
+PackedFloat64Array ConcaveMeshShape4D::_calculate_inverse_metric_cache(const PackedVector4Array &p_simplex_cells) {
 	const int64_t simplex_tet_count = p_simplex_cells.size() / 4;
 	PackedFloat64Array new_inverse_metric_cache;
 	new_inverse_metric_cache.resize(simplex_tet_count * 6);
@@ -59,12 +59,14 @@ PackedFloat64Array ConcaveMeshShape4D::_populate_inverse_metric_cache(const Pack
 void ConcaveMeshShape4D::set_simplex_cells(const PackedVector4Array &p_simplex_cells) {
 	ERR_FAIL_COND_MSG(p_simplex_cells.size() % 4 != 0, "ConcaveMeshShape4D: Simplexes must be a multiple of 4 (every 4 vertices form a simplex cell).");
 	const PackedVector4Array new_normals = _calculate_normals(p_simplex_cells);
-	const PackedFloat64Array new_inv_metric_cache = _populate_inverse_metric_cache(p_simplex_cells);
+	const PackedFloat64Array new_inverse_metric_cache = _calculate_inverse_metric_cache(p_simplex_cells);
+	const int64_t simplex_tet_count = p_simplex_cells.size() / 4;
+	ERR_FAIL_COND_MSG(new_inverse_metric_cache.size() != simplex_tet_count * 6, "ConcaveMeshShape4D: Closest-point cache build failed because one or more tetrahedra are degenerate or non-finite.");
 	// Thread safety: Update all of these at once, so that any other thread reading them will see all of them get updated at once.
 	// Note that these sequential writes are not guaranteed to be atomic, but it's a very low chance. Consider modifying this if it becomes a problem.
 	_simplex_cells = p_simplex_cells;
 	_normals = new_normals;
-	_inverse_metric_cache = new_inv_metric_cache;
+	_inverse_metric_cache = new_inverse_metric_cache;
 }
 
 bool ConcaveMeshShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
@@ -89,9 +91,9 @@ Dictionary ConcaveMeshShape4D::raycast_intersects(const Vector4 &p_local_from, c
 	if (simplex_tet_count == 0) {
 		return result; // No tetrahedra to raycast against.
 	}
-	CRASH_COND(inverse_metric_cache.size() != simplex_tet_count * 6); // Must be populated before raycasting.
+	CRASH_COND(inverse_metric_cache.size() != simplex_tet_count * 6); // Guaranteed to be populated by `set_simplex_cells()`.
 	const int64_t boundary_normals_count = normals.size();
-	CRASH_COND(boundary_normals_count != simplex_tet_count); // Must be populated before raycasting.
+	CRASH_COND(boundary_normals_count != simplex_tet_count); // Guaranteed to be populated by `set_simplex_cells()`.
 	Vector4 best_hit_normal = Vector4();
 	real_t best_distance = Math_INF;
 	int32_t best_tet_cell_index = -1;
@@ -123,7 +125,7 @@ Dictionary ConcaveMeshShape4D::raycast_intersects(const Vector4 &p_local_from, c
 	return result;
 }
 
-Vector4 ConcaveMeshShape4D::get_nearest_point(const Vector4 &p_point) const {
+Vector4 ConcaveMeshShape4D::get_nearest_point(const Vector4 &p_local_point) const {
 	// CoW, cheap layer of thread safety.
 	const PackedFloat64Array inverse_metric_cache = _inverse_metric_cache;
 	const PackedVector4Array simplex_cells = _simplex_cells;
@@ -131,7 +133,7 @@ Vector4 ConcaveMeshShape4D::get_nearest_point(const Vector4 &p_point) const {
 	// Check if the data is valid before proceeding with the raycast.
 	const int64_t simplex_tet_count = simplex_cells.size() / 4;
 	ERR_FAIL_COND_V_MSG(simplex_tet_count == 0, Vector4(), "ConcaveMeshShape4D: Cannot get nearest point on a mesh shape with zero tetrahedra.");
-	CRASH_COND(inverse_metric_cache.size() != simplex_tet_count * 6); // Must be populated before getting the nearest point.
+	CRASH_COND(inverse_metric_cache.size() != simplex_tet_count * 6); // Guaranteed to be populated by `set_simplex_cells()`.
 	// Iterate over all tetrahedra to find the nearest point on the mesh, keeping track of the best one.
 	constexpr int32_t MAX_CANDIDATE_TETS = 8;
 	Vector4 best_candidate_points_on_tet[MAX_CANDIDATE_TETS];
@@ -150,7 +152,7 @@ Vector4 ConcaveMeshShape4D::get_nearest_point(const Vector4 &p_point) const {
 		const Vector4 vert1 = simplex_cells[tet_index * 4 + 1];
 		const Vector4 vert2 = simplex_cells[tet_index * 4 + 2];
 		const Vector4 vert3 = simplex_cells[tet_index * 4 + 3];
-		Geometry4D::get_nearest_point_on_tetrahedron_barycentric(vert0, vert1, vert2, vert3, p_point, inverse_metric_cache, tet_index, nearest_on_tet, min_distance_sq, proj_inside);
+		Geometry4D::get_nearest_point_on_tetrahedron_barycentric(vert0, vert1, vert2, vert3, p_local_point, inverse_metric_cache, tet_index, nearest_on_tet, min_distance_sq, proj_inside);
 		const bool less_dist = min_distance_sq < best_distance_sq;
 		// If the projection is outside the tet, but the projected point is the same distance as what we
 		// already found, then we may have multiple candidates for the closest tet to this point.
@@ -189,7 +191,7 @@ Vector4 ConcaveMeshShape4D::get_nearest_point(const Vector4 &p_point) const {
 		for (int32_t candidate_num = 0; candidate_num < best_candidate_tet_count; candidate_num++) {
 			const int32_t candidate_tet = best_candidate_tets[candidate_num];
 			const Vector4 candidate_point_on_tet = best_candidate_points_on_tet[candidate_num];
-			const Vector4 tet_point_dir_to_target = (p_point - candidate_point_on_tet).normalized();
+			const Vector4 tet_point_dir_to_target = (p_local_point - candidate_point_on_tet).normalized();
 			const Vector4 normal = normals[candidate_tet];
 			const real_t dot_abs = Math::abs(tet_point_dir_to_target.dot(normal));
 			if (dot_abs > best_dot_abs) {
@@ -199,6 +201,20 @@ Vector4 ConcaveMeshShape4D::get_nearest_point(const Vector4 &p_point) const {
 		}
 	}
 	return best_point_on_tet;
+}
+
+Vector4 ConcaveMeshShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	Vector4 farthest_point = Vector4();
+	real_t farthest_distance = -Math_INF;
+	for (int64_t i = 0; i < _simplex_cells.size(); i++) {
+		const Vector4 &point = _simplex_cells[i];
+		const real_t distance = point.dot(p_local_direction);
+		if (distance > farthest_distance) {
+			farthest_distance = distance;
+			farthest_point = point;
+		}
+	}
+	return farthest_point;
 }
 
 Ref<TetraMesh4D> ConcaveMeshShape4D::to_tetra_mesh(const Dictionary &p_options) const {

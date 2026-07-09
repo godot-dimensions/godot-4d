@@ -8,34 +8,49 @@ Rect4 RayShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	return rect_bounds;
 }
 
-Vector4 RayShape4D::get_nearest_point(const Vector4 &p_point) const {
+Dictionary RayShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+	Dictionary result;
+	// A 1D ray in 4D space will basically never intersect with another 1D ray in 4D space.
+	result["hit"] = false;
+	return result;
+}
+
+real_t RayShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	const Vector4 nearest_point = get_nearest_point(p_local_point);
+	if (r_nearest_point_on_surface != nullptr) {
+		*r_nearest_point_on_surface = nearest_point;
+	}
+	return (p_local_point - nearest_point).length();
+}
+
+Vector4 RayShape4D::get_nearest_point(const Vector4 &p_local_point) const {
 	real_t clamped_y;
 	if (likely(_ray_target_y < 0.0f)) {
-		clamped_y = CLAMP(p_point.y, _ray_target_y, 0.0f);
+		clamped_y = CLAMP(p_local_point.y, _ray_target_y, 0.0f);
 	} else {
-		clamped_y = CLAMP(p_point.y, 0.0f, _ray_target_y);
+		clamped_y = CLAMP(p_local_point.y, 0.0f, _ray_target_y);
 	}
 	return Vector4(0.0f, clamped_y, 0.0f, 0.0f);
 }
 
-Vector4 RayShape4D::get_support_point(const Vector4 &p_direction) const {
-	if (p_direction.y > 0.0f) {
+Vector4 RayShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	if (p_local_direction.y > 0.0f) {
 		return Vector4(0, 0, 0, 0);
 	}
 	return Vector4(0, _ray_target_y, 0, 0);
 }
 
-bool RayShape4D::has_point(const Vector4 &p_point) const {
-	if (!(Math::is_zero_approx(p_point.x) && Math::is_zero_approx(p_point.z) && Math::is_zero_approx(p_point.w))) {
+bool RayShape4D::has_point(const Vector4 &p_local_point) const {
+	if (!(Math::is_zero_approx(p_local_point.x) && Math::is_zero_approx(p_local_point.z) && Math::is_zero_approx(p_local_point.w))) {
 		return false;
 	}
 	real_t clamped_y;
 	if (likely(_ray_target_y < 0.0f)) {
-		clamped_y = CLAMP(p_point.y, _ray_target_y, 0.0f);
+		clamped_y = CLAMP(p_local_point.y, _ray_target_y, 0.0f);
 	} else {
-		clamped_y = CLAMP(p_point.y, 0.0f, _ray_target_y);
+		clamped_y = CLAMP(p_local_point.y, 0.0f, _ray_target_y);
 	}
-	return Math::is_equal_approx(p_point.y, clamped_y);
+	return Math::is_equal_approx(p_local_point.y, clamped_y);
 }
 
 bool RayShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {

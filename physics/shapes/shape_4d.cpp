@@ -54,21 +54,37 @@ Dictionary Shape4D::raycast_intersects(const Vector4 &p_local_from, const Vector
 	return bounds.raycast_intersects_dict(p_local_from, p_local_direction, false);
 }
 
-Vector4 Shape4D::get_nearest_point(const Vector4 &p_point) const {
+real_t Shape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	real_t signed_distance = 0.0;
+	GDVIRTUAL_CALL(_get_signed_distance_to_surface, p_local_point, signed_distance);
+	if (r_nearest_point_on_surface != nullptr) {
+		if (signed_distance < 0.0) {
+			WARN_PRINT("Shape4D::get_signed_distance_to_surface: The nearest point on the surface may be incorrect for this custom shape.");
+		}
+		*r_nearest_point_on_surface = get_nearest_point(p_local_point);
+	}
+	return signed_distance;
+}
+
+real_t Shape4D::get_signed_distance_to_surface_bind(const Vector4 &p_local_point) const {
+	return get_signed_distance_to_surface(p_local_point, nullptr);
+}
+
+Vector4 Shape4D::get_nearest_point(const Vector4 &p_local_point) const {
 	Vector4 nearest_point;
-	GDVIRTUAL_CALL(_get_nearest_point, p_point, nearest_point);
+	GDVIRTUAL_CALL(_get_nearest_point, p_local_point, nearest_point);
 	return nearest_point;
 }
 
-Vector4 Shape4D::get_support_point(const Vector4 &p_direction) const {
+Vector4 Shape4D::get_support_point(const Vector4 &p_local_direction) const {
 	Vector4 support_point;
-	GDVIRTUAL_CALL(_get_support_point, p_direction, support_point);
+	GDVIRTUAL_CALL(_get_support_point, p_local_direction, support_point);
 	return support_point;
 }
 
-bool Shape4D::has_point(const Vector4 &p_point) const {
+bool Shape4D::has_point(const Vector4 &p_local_point) const {
 	bool has = false;
-	GDVIRTUAL_CALL(_has_point, p_point, has);
+	GDVIRTUAL_CALL(_has_point, p_local_point, has);
 	return has;
 }
 

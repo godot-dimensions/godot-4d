@@ -300,12 +300,21 @@ Rect4 HeightMapShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	return rect_bounds;
 }
 
-Vector4 HeightMapShape4D::get_nearest_point(const Vector4 &p_point) const {
-	// TODO: This is not optimal, but it gives good results for mostly flat heightmaps.
-	return Vector4(p_point.x, get_height_vec4(p_point), p_point.z, p_point.w);
+real_t HeightMapShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	// This is not the optimal "most-nearest" point, but it gives good results for mostly flat heightmaps, and may be the desired behavior for many use cases.
+	const real_t height = get_height_vec4(p_local_point);
+	if (r_nearest_point_on_surface) {
+		*r_nearest_point_on_surface = Vector4(p_local_point.x, height, p_local_point.z, p_local_point.w);
+	}
+	return p_local_point.y - height;
 }
 
-Vector4 HeightMapShape4D::get_support_point(const Vector4 &p_direction) const {
+Vector4 HeightMapShape4D::get_nearest_point(const Vector4 &p_local_point) const {
+	// This is not the optimal "most-nearest" point, but it gives good results for mostly flat heightmaps, and may be the desired behavior for many use cases.
+	return Vector4(p_local_point.x, get_height_vec4(p_local_point), p_local_point.z, p_local_point.w);
+}
+
+Vector4 HeightMapShape4D::get_support_point(const Vector4 &p_local_direction) const {
 	const Vector3 start_flat_physical_pos = _get_start_physical_offset();
 	Vector4 best_point = Vector4(0, 0, 0, 0);
 	real_t best_dot = -1e20;
@@ -315,7 +324,7 @@ Vector4 HeightMapShape4D::get_support_point(const Vector4 &p_direction) const {
 				const Vector3 data_flat_physical_pos = Vector3(i, j, k) * _grid_spacing + start_flat_physical_pos;
 				const int64_t index = _get_height_index_nocheck(i, j, k);
 				const Vector4 local_point = Vector4(data_flat_physical_pos.x, _height_data[index], data_flat_physical_pos.y, data_flat_physical_pos.z);
-				const real_t dot = p_direction.dot(local_point);
+				const real_t dot = p_local_direction.dot(local_point);
 				if (dot > best_dot) {
 					best_dot = dot;
 					best_point = local_point;
@@ -326,13 +335,13 @@ Vector4 HeightMapShape4D::get_support_point(const Vector4 &p_direction) const {
 	return best_point;
 }
 
-bool HeightMapShape4D::has_point(const Vector4 &p_point) const {
-	const real_t height = get_height_vec4(p_point);
+bool HeightMapShape4D::has_point(const Vector4 &p_local_point) const {
+	const real_t height = get_height_vec4(p_local_point);
 	if (!Math::is_finite(height)) {
 		// If the height is not finite, treat it as if the point is not contained.
 		return false;
 	}
-	return p_point.y <= height;
+	return p_local_point.y <= height;
 }
 
 bool HeightMapShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {

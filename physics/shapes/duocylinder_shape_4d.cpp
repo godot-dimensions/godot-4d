@@ -21,30 +21,6 @@ real_t DuocylinderShape4D::get_hypervolume() const {
 	return (Math_PI * Math_PI) * _radius_xy * _radius_xy * _radius_zw * _radius_zw;
 }
 
-Vector4 DuocylinderShape4D::get_nearest_point(const Vector4 &p_point) const {
-	Vector2 xy = Vector2(p_point.x, p_point.y);
-	const real_t xy_len_sq = xy.length_squared();
-	if (xy_len_sq > _radius_xy * _radius_xy) {
-		xy *= _radius_xy / Math::sqrt(xy_len_sq);
-	}
-	Vector2 zw = Vector2(p_point.z, p_point.w);
-	const real_t zw_len_sq = zw.length_squared();
-	if (zw_len_sq > _radius_zw * _radius_zw) {
-		zw *= _radius_zw / Math::sqrt(zw_len_sq);
-	}
-	return Vector4(xy.x, xy.y, zw.x, zw.y);
-}
-
-Vector4 DuocylinderShape4D::get_support_point(const Vector4 &p_direction) const {
-	const Vector2 support_xy = Vector2(p_direction.x, p_direction.y).normalized() * _radius_xy;
-	const Vector2 support_zw = Vector2(p_direction.z, p_direction.w).normalized() * _radius_zw;
-	return Vector4(support_xy.x, support_xy.y, support_zw.x, support_zw.y);
-}
-
-real_t DuocylinderShape4D::get_surface_volume() const {
-	return (2.0 * Math_PI * Math_PI) * _radius_xy * _radius_zw * (_radius_xy + _radius_zw);
-}
-
 Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
 	Dictionary result;
 	result["hit"] = false;
@@ -120,9 +96,64 @@ Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, c
 	return result;
 }
 
-bool DuocylinderShape4D::has_point(const Vector4 &p_point) const {
-	const bool in_xy = p_point.x * p_point.x + p_point.y * p_point.y <= _radius_xy * _radius_xy;
-	const bool in_zw = p_point.z * p_point.z + p_point.w * p_point.w <= _radius_zw * _radius_zw;
+real_t DuocylinderShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
+	const Vector4 xy_point = Vector4(p_local_point.x, p_local_point.y, 0.0f, 0.0f);
+	const Vector4 zw_point = Vector4(0.0f, 0.0f, p_local_point.z, p_local_point.w);
+	const real_t xy_len_sq = xy_point.length_squared();
+	const real_t zw_len_sq = zw_point.length_squared();
+	if (xy_len_sq < zw_len_sq) {
+		const real_t xy_len = Math::sqrt(xy_len_sq);
+		const real_t xy_signed_distance = xy_len - _radius_xy;
+		if (r_nearest_point_on_surface) {
+			if (xy_len == 0.0f) {
+				*r_nearest_point_on_surface = Vector4(_radius_xy, 0.0f, p_local_point.z, p_local_point.w);
+			} else {
+				const real_t xy_adjust = _radius_xy / xy_len;
+				*r_nearest_point_on_surface = Vector4(xy_point.x * xy_adjust, xy_point.y * xy_adjust, p_local_point.z, p_local_point.w);
+			}
+		}
+		return xy_signed_distance;
+	}
+	const real_t zw_len = Math::sqrt(zw_len_sq);
+	const real_t zw_signed_distance = zw_len - _radius_zw;
+	if (r_nearest_point_on_surface) {
+		if (zw_len == 0.0f) {
+			*r_nearest_point_on_surface = Vector4(p_local_point.x, p_local_point.y, _radius_zw, 0.0f);
+		} else {
+			const real_t zw_adjust = _radius_zw / zw_len;
+			*r_nearest_point_on_surface = Vector4(p_local_point.x, p_local_point.y, zw_point.z * zw_adjust, zw_point.w * zw_adjust);
+		}
+	}
+	return zw_signed_distance;
+}
+
+Vector4 DuocylinderShape4D::get_nearest_point(const Vector4 &p_local_point) const {
+	Vector2 xy = Vector2(p_local_point.x, p_local_point.y);
+	const real_t xy_len_sq = xy.length_squared();
+	if (xy_len_sq > _radius_xy * _radius_xy) {
+		xy *= _radius_xy / Math::sqrt(xy_len_sq);
+	}
+	Vector2 zw = Vector2(p_local_point.z, p_local_point.w);
+	const real_t zw_len_sq = zw.length_squared();
+	if (zw_len_sq > _radius_zw * _radius_zw) {
+		zw *= _radius_zw / Math::sqrt(zw_len_sq);
+	}
+	return Vector4(xy.x, xy.y, zw.x, zw.y);
+}
+
+Vector4 DuocylinderShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	const Vector2 support_xy = Vector2(p_local_direction.x, p_local_direction.y).normalized() * _radius_xy;
+	const Vector2 support_zw = Vector2(p_local_direction.z, p_local_direction.w).normalized() * _radius_zw;
+	return Vector4(support_xy.x, support_xy.y, support_zw.x, support_zw.y);
+}
+
+real_t DuocylinderShape4D::get_surface_volume() const {
+	return (2.0 * Math_PI * Math_PI) * _radius_xy * _radius_zw * (_radius_xy + _radius_zw);
+}
+
+bool DuocylinderShape4D::has_point(const Vector4 &p_local_point) const {
+	const bool in_xy = p_local_point.x * p_local_point.x + p_local_point.y * p_local_point.y <= _radius_xy * _radius_xy;
+	const bool in_zw = p_local_point.z * p_local_point.z + p_local_point.w * p_local_point.w <= _radius_zw * _radius_zw;
 	return in_xy && in_zw;
 }
 
