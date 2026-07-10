@@ -224,7 +224,7 @@ public:
 	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds_local, const Projection &, const Vector4 &);
 
 	// Raycasting.
-	virtual Dictionary raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const bool p_inside_is_zero) const;
+	virtual Dictionary raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF, const bool p_inside_is_zero = false) const;
 	GDVIRTUAL3RC(Dictionary, _raycast_intersects_local, const Vector4 &, const Vector4 &, bool);
 };
 

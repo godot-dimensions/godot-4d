@@ -57,11 +57,12 @@ Rect4 MeshInstance4D::get_rect_bounds_local(const Transform4D &p_to_target) cons
 	return bounds;
 }
 
-Dictionary MeshInstance4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const bool p_inside_is_zero) const {
+Dictionary MeshInstance4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	const Ref<TetraMesh4D> tetra_mesh = _mesh;
 	if (tetra_mesh.is_valid()) {
 		// Use the full version for the general `MeshInstance4D::raycast_intersects_local` function, which returns the distance and normal of the hit point.
-		return tetra_mesh->raycast_intersects(p_local_from, p_local_direction);
+		// This code path ignores the `p_inside_is_zero` parameter, since tetra meshes are concave and have no true concept of "inside" or "outside" the mesh.
+		return tetra_mesh->raycast_intersects(p_local_from, p_local_direction, p_max_distance);
 	}
 	// If the mesh is not a tetra mesh, fallback to using the local Rect4 bounds.
 	const Rect4 local_bounds = get_rect_bounds_local();

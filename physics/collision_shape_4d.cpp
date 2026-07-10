@@ -57,7 +57,7 @@ Transform4D CollisionShape4D::get_transform_to_collision_object() const {
 	return transform_to_col_obj;
 }
 
-Dictionary CollisionShape4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const bool p_inside_is_zero) const {
+Dictionary CollisionShape4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	if (_shape.is_valid()) {
 		if (p_inside_is_zero && _shape->has_point(p_local_from)) {
 			Dictionary inside_result;
@@ -66,7 +66,7 @@ Dictionary CollisionShape4D::raycast_intersects_local(const Vector4 &p_local_fro
 			inside_result["normal"] = Vector4();
 			return inside_result;
 		}
-		return _shape->raycast_intersects(p_local_from, p_local_direction);
+		return _shape->raycast_intersects(p_local_from, p_local_direction, p_max_distance, p_inside_is_zero);
 	}
 	// If the CollisionShape4D has no shape, there is nothing for a raycast to hit.
 	Dictionary result;

@@ -21,13 +21,20 @@ real_t DuocylinderShape4D::get_hypervolume() const {
 	return (Math_PI * Math_PI) * _radius_xy * _radius_xy * _radius_zw * _radius_zw;
 }
 
-Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	Dictionary result;
 	result["hit"] = false;
 	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "DuocylinderShape4D::raycast_intersects: Ray direction must be normalized.");
+	if (p_inside_is_zero && has_point(p_local_from)) {
+		result["hit"] = true;
+		result["distance"] = 0.0f;
+		result["normal"] = Vector4(0.0, 0.0, 0.0, 0.0);
+		result["point"] = p_local_from;
+		return result;
+	}
 	// Perform two ray-circle intersection tests, one for the XY circle and one for the ZW circle.
 	Vector4 best_normal = Vector4();
-	real_t best_distance = Math_INF;
+	real_t best_distance = p_max_distance;
 	// Check XY circle intersection.
 	const Vector2 xy_point = Vector2(p_local_from.x, p_local_from.y);
 	const Vector2 xy_dir = Vector2(p_local_direction.x, p_local_direction.y);
@@ -88,7 +95,7 @@ Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, c
 			}
 		}
 	}
-	if (best_distance < Math_INF) {
+	if (best_distance < p_max_distance) {
 		result["hit"] = true;
 		result["distance"] = best_distance;
 		result["normal"] = best_normal;

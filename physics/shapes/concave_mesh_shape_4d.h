@@ -21,7 +21,7 @@ public:
 
 	virtual bool is_equal_exact(const Ref<Shape4D> &p_shape) const override;
 
-	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const override;
+	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF, const bool p_inside_is_zero = false) const override;
 
 	virtual Vector4 get_nearest_point(const Vector4 &p_local_point) const override;
 	virtual Vector4 get_support_point(const Vector4 &p_local_direction) const override;

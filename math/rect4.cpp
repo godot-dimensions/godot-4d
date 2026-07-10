@@ -470,7 +470,7 @@ bool Rect4::raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction
 	return true;
 }
 
-Dictionary Rect4::raycast_intersects_dict(const Vector4 &p_from, const Vector4 &p_direction, const bool p_inside_is_zero) const {
+Dictionary Rect4::raycast_intersects_dict(const Vector4 &p_from, const Vector4 &p_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	real_t distance = -Math_INF;
 	Vector4 normal = Vector4();
 	const bool hit_intersects = raycast_intersects(p_from, p_direction, p_inside_is_zero, &distance, &normal);
@@ -479,6 +479,7 @@ Dictionary Rect4::raycast_intersects_dict(const Vector4 &p_from, const Vector4 &
 	if (hit_intersects) {
 		result["distance"] = distance;
 		result["normal"] = normal;
+		result["point"] = p_from + p_direction * distance;
 	}
 	return result;
 }

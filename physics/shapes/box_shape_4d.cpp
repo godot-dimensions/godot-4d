@@ -53,8 +53,18 @@ Rect4 BoxShape4D::get_rect_bounds_fast() const {
 	return Rect4(-half_extents, _size);
 }
 
-Dictionary BoxShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
-	return get_rect_bounds_fast().raycast_intersects_dict(p_local_from, p_local_direction, false);
+Dictionary BoxShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
+	const Rect4 bounds = get_rect_bounds_fast();
+	if (p_inside_is_zero && bounds.has_point(p_local_from)) {
+		Dictionary inside_result;
+		inside_result["hit"] = true;
+		inside_result["distance"] = 0.0f;
+		inside_result["normal"] = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+		inside_result["point"] = p_local_from;
+		return inside_result;
+	}
+	// Pass false here because we handle the inside case above (avoid unnecessary calls and checks).
+	return bounds.raycast_intersects_dict(p_local_from, p_local_direction, p_max_distance, false);
 }
 
 real_t BoxShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {

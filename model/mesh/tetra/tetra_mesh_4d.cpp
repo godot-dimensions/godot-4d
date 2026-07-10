@@ -160,7 +160,7 @@ real_t TetraMesh4D::get_signed_distance_to_mesh_bind(const Vector4 &p_local_poin
 	return get_signed_distance_to_mesh(p_local_point, nullptr, nullptr);
 }
 
-bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vector4 &p_local_direction) {
+bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance) {
 	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), false, "TetraMesh4D: Cannot raycast on an invalid mesh.");
 	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
 	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
@@ -190,6 +190,9 @@ bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vec
 		if (tet_plane_intersection_factor < 0.0f) {
 			continue; // No intersection with the plane of this tetrahedron.
 		}
+		if (tet_plane_intersection_factor >= p_max_distance) {
+			continue; // Intersection is beyond the maximum distance.
+		}
 		// Check if this candidate intersection is inside the tetrahedron.
 		const Vector4 intersection_point = p_local_from + p_local_direction * tet_plane_intersection_factor;
 		// These indices are guaranteed to be within bounds due to mesh validation.
@@ -210,7 +213,7 @@ bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vec
 	return false;
 }
 
-Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) {
+Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance) {
 	Dictionary result;
 	result["hit"] = false;
 	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), result, "TetraMesh4D: Cannot raycast on an invalid mesh.");
@@ -225,7 +228,7 @@ Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Ve
 	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
 	const int64_t boundary_normals_count = boundary_normals.size();
 	Vector4 best_hit_normal = Vector4();
-	real_t best_distance = Math_INF;
+	real_t best_distance = p_max_distance;
 	int32_t best_tet_cell_index = -1;
 	// Iterate through all tetrahedra to find the closest ray intersection.
 	for (int64_t tet_index = 0; tet_index < simplex_tet_count; tet_index++) {
@@ -604,8 +607,8 @@ void TetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("populate_inverse_metric_cache"), &TetraMesh4D::populate_inverse_metric_cache);
 	ClassDB::bind_method(D_METHOD("get_signed_distance_to_mesh", "local_point"), &TetraMesh4D::get_signed_distance_to_mesh_bind);
 	// Raycast.
-	ClassDB::bind_method(D_METHOD("raycast_intersects_fast", "local_from", "local_direction"), &TetraMesh4D::raycast_intersects_fast);
-	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction"), &TetraMesh4D::raycast_intersects);
+	ClassDB::bind_method(D_METHOD("raycast_intersects_fast", "local_from", "local_direction", "max_distance"), &TetraMesh4D::raycast_intersects_fast, DEFVAL(Math_INF));
+	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction", "max_distance"), &TetraMesh4D::raycast_intersects, DEFVAL(Math_INF));
 	// Cache (validation is bound in base Mesh4D).
 	ClassDB::bind_method(D_METHOD("tetra_mesh_clear_cache"), &TetraMesh4D::tetra_mesh_clear_cache);
 	// Conversion.

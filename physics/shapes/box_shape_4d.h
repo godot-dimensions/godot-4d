@@ -22,7 +22,7 @@ public:
 	virtual Rect4 get_rect_bounds(const Transform4D &p_to_target = Transform4D()) const override;
 	Rect4 get_rect_bounds_fast() const;
 
-	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const override;
+	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF, const bool p_inside_is_zero = false) const override;
 
 	virtual real_t get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface = nullptr) const override;
 

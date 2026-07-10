@@ -50,7 +50,7 @@ real_t CubinderShape4D::get_surface_volume() const {
 	return Math_TAU * _radius * _height * _thickness + Math_PI * _radius * _radius * (_height + _thickness);
 }
 
-Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	Dictionary result;
 	result["hit"] = false;
 	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "CubinderShape4D::raycast_intersects: Ray direction must be normalized.");
@@ -61,20 +61,28 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 	const real_t half_thickness = _thickness * 0.5f;
 	// Ray-infinite-cylinder intersection in the XZ plane.
 	const Vector4 radial_point = Vector4(p_local_from.x, 0.0f, p_local_from.z, 0.0f);
-	const Vector4 radial_dir = Vector4(p_local_direction.x, 0.0f, p_local_direction.z, 0.0f);
-	const real_t radial_dir_len_sq = radial_dir.length_squared();
-	const real_t radial_point_dot_radial_dir = radial_point.dot(radial_dir);
 	const real_t radial_point_len_sq = radial_point.length_squared();
 	const real_t radius_sq = _radius * _radius;
 	// Check if starting point is inside the cubinder (radially and within YW bounds).
 	const bool start_inside = radial_point_len_sq <= radius_sq && Math::abs(p_local_from.y) <= half_height && Math::abs(p_local_from.w) <= half_thickness;
+	if (p_inside_is_zero && start_inside) {
+		result["hit"] = true;
+		result["distance"] = 0.0f;
+		result["normal"] = Vector4(0.0, 0.0, 0.0, 0.0);
+		result["point"] = p_local_from;
+		return result;
+	}
+	const Vector4 radial_dir = Vector4(p_local_direction.x, 0.0f, p_local_direction.z, 0.0f);
+	const real_t radial_dir_len_sq = radial_dir.length_squared();
+	const real_t radial_point_dot_radial_dir = radial_point.dot(radial_dir);
+	Vector4 best_normal = Vector4();
+	real_t best_distance = p_max_distance;
+	// Check if the ray is parallel to the cubinder axes (Y and/or W axes).
 	if (radial_dir_len_sq <= CMP_EPSILON2) {
-		// Ray moves only along Y and/or W axes, parallel to the cubinder axis.
+		// Ray moves only along Y and/or W axes, parallel to the cubinder axes.
 		// Check if we're inside the cylinder radially.
 		if (radial_point_len_sq <= radius_sq && (Math::abs(p_local_direction.y) > CMP_EPSILON2 || Math::abs(p_local_direction.w) > CMP_EPSILON2)) {
 			// We're inside radially, so we'll hit a Y or W cap.
-			real_t best_distance = Math_INF;
-			Vector4 best_normal = Vector4();
 			// Check Y caps.
 			if (Math::abs(p_local_direction.y) > CMP_EPSILON2) {
 				const real_t distance_to_y_cap = (p_local_direction.y > 0.0f) ? (half_height - p_local_from.y) / p_local_direction.y : (-half_height - p_local_from.y) / p_local_direction.y;
@@ -97,12 +105,14 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 					}
 				}
 			}
-			if (best_distance < Math_INF) {
+			if (best_distance < p_max_distance) {
 				result["hit"] = true;
 				result["distance"] = best_distance;
 				result["normal"] = best_normal;
+				result["point"] = p_local_from + p_local_direction * best_distance;
 			}
 		}
+		// Regardless of whether we hit the surface or not, return here, because the ray is perpendicular to the curved surface.
 		return result;
 	}
 	const real_t discriminant = radial_point_dot_radial_dir * radial_point_dot_radial_dir - radial_dir_len_sq * (radial_point_len_sq - radius_sq);
@@ -119,6 +129,7 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 				// Exit through curved surface.
 				const Vector4 hit_radial = Vector4(exit_point.x, 0.0f, exit_point.z, 0.0f);
 				const Vector4 normal = hit_radial.normalized();
+				best_distance = distance_to_exit;
 				result["hit"] = true;
 				result["distance"] = distance_to_exit;
 				result["normal"] = normal;
@@ -126,8 +137,6 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 			}
 		}
 		// Exit point is outside YW bounds, check rectangular caps.
-		real_t best_distance = Math_INF;
-		Vector4 best_normal = Vector4();
 		if (Math::abs(p_local_direction.y) > CMP_EPSILON2) {
 			const real_t distance_to_y_cap = (p_local_direction.y > 0.0f) ? (half_height - p_local_from.y) / p_local_direction.y : (-half_height - p_local_from.y) / p_local_direction.y;
 			if (distance_to_y_cap >= 0.0f && distance_to_y_cap < best_distance) {
@@ -150,82 +159,86 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 				}
 			}
 		}
-		if (best_distance < Math_INF) {
+		if (best_distance < p_max_distance) {
 			result["hit"] = true;
 			result["distance"] = best_distance;
 			result["normal"] = best_normal;
+			result["point"] = p_local_from + p_local_direction * best_distance;
 		}
-	} else {
-		// Ray starts outside.
-		real_t best_distance = Math_INF;
-		Vector4 best_normal = Vector4();
-		// Check all four rectangular caps.
-		if (Math::abs(p_local_direction.y) > CMP_EPSILON2) {
-			// Try Y caps (positive and negative).
-			const real_t distance_to_y_cap_pos = (half_height - p_local_from.y) / p_local_direction.y;
-			if (distance_to_y_cap_pos >= 0.0f) {
-				const Vector4 cap_point = p_local_from + p_local_direction * distance_to_y_cap_pos;
-				const Vector4 cap_radial = Vector4(cap_point.x, 0.0f, cap_point.z, 0.0f);
-				if (cap_radial.length_squared() <= radius_sq && Math::abs(cap_point.w) <= half_thickness) {
-					best_distance = distance_to_y_cap_pos;
-					best_normal = Vector4(0, 1, 0, 0);
-					result["hit"] = true;
-					result["distance"] = distance_to_y_cap_pos;
-					result["normal"] = best_normal;
-				}
-			}
-			const real_t distance_to_y_cap_neg = (-half_height - p_local_from.y) / p_local_direction.y;
-			if (distance_to_y_cap_neg >= 0.0f && distance_to_y_cap_neg < best_distance) {
-				const Vector4 cap_point = p_local_from + p_local_direction * distance_to_y_cap_neg;
-				const Vector4 cap_radial = Vector4(cap_point.x, 0.0f, cap_point.z, 0.0f);
-				if (cap_radial.length_squared() <= radius_sq && Math::abs(cap_point.w) <= half_thickness) {
-					best_distance = distance_to_y_cap_neg;
-					best_normal = Vector4(0, -1, 0, 0);
-					result["hit"] = true;
-					result["distance"] = distance_to_y_cap_neg;
-					result["normal"] = best_normal;
-				}
-			}
-		}
-		if (Math::abs(p_local_direction.w) > CMP_EPSILON2) {
-			// Try W caps (positive and negative).
-			const real_t distance_to_w_cap_pos = (half_thickness - p_local_from.w) / p_local_direction.w;
-			if (distance_to_w_cap_pos >= 0.0f && distance_to_w_cap_pos < best_distance) {
-				const Vector4 cap_point = p_local_from + p_local_direction * distance_to_w_cap_pos;
-				const Vector4 cap_radial = Vector4(cap_point.x, 0.0f, cap_point.z, 0.0f);
-				if (cap_radial.length_squared() <= radius_sq && Math::abs(cap_point.y) <= half_height) {
-					best_distance = distance_to_w_cap_pos;
-					best_normal = Vector4(0, 0, 0, 1);
-					result["hit"] = true;
-					result["distance"] = distance_to_w_cap_pos;
-					result["normal"] = best_normal;
-				}
-			}
-			const real_t distance_to_w_cap_neg = (-half_thickness - p_local_from.w) / p_local_direction.w;
-			if (distance_to_w_cap_neg >= 0.0f && distance_to_w_cap_neg < best_distance) {
-				const Vector4 cap_point = p_local_from + p_local_direction * distance_to_w_cap_neg;
-				const Vector4 cap_radial = Vector4(cap_point.x, 0.0f, cap_point.z, 0.0f);
-				if (cap_radial.length_squared() <= radius_sq && Math::abs(cap_point.y) <= half_height) {
-					best_distance = distance_to_w_cap_neg;
-					best_normal = Vector4(0, 0, 0, -1);
-					result["hit"] = true;
-					result["distance"] = distance_to_w_cap_neg;
-					result["normal"] = best_normal;
-				}
-			}
-		}
-		// Check curved surface entrance (only if no cap hit or curved surface is closer).
-		const real_t distance_to_entrance = (-radial_point_dot_radial_dir - sqrt_discriminant) / radial_dir_len_sq;
-		if (distance_to_entrance >= 0.0f && distance_to_entrance < best_distance) {
-			const Vector4 entrance_point = p_local_from + p_local_direction * distance_to_entrance;
-			if (Math::abs(entrance_point.y) <= half_height && Math::abs(entrance_point.w) <= half_thickness) {
-				// Entrance through curved surface.
-				const Vector4 hit_radial = Vector4(entrance_point.x, 0.0f, entrance_point.z, 0.0f);
-				const Vector4 normal = hit_radial.normalized();
+		// Regardless of whether we hit the surface or not, return here, because we started inside and this is the end of that case.
+		return result;
+	}
+	// Ray starts outside.
+	// Check all four rectangular caps.
+	if (Math::abs(p_local_direction.y) > CMP_EPSILON2) {
+		// Try Y caps (positive and negative).
+		const real_t distance_to_y_cap_pos = (half_height - p_local_from.y) / p_local_direction.y;
+		if (distance_to_y_cap_pos >= 0.0f && distance_to_y_cap_pos < best_distance) {
+			const Vector4 cap_point = p_local_from + p_local_direction * distance_to_y_cap_pos;
+			const Vector4 cap_radial = Vector4(cap_point.x, 0.0f, cap_point.z, 0.0f);
+			if (cap_radial.length_squared() <= radius_sq && Math::abs(cap_point.w) <= half_thickness) {
+				best_distance = distance_to_y_cap_pos;
+				best_normal = Vector4(0, 1, 0, 0);
 				result["hit"] = true;
-				result["distance"] = distance_to_entrance;
-				result["normal"] = normal;
+				result["distance"] = distance_to_y_cap_pos;
+				result["normal"] = best_normal;
 			}
+		}
+		const real_t distance_to_y_cap_neg = (-half_height - p_local_from.y) / p_local_direction.y;
+		if (distance_to_y_cap_neg >= 0.0f && distance_to_y_cap_neg < best_distance) {
+			const Vector4 cap_point = p_local_from + p_local_direction * distance_to_y_cap_neg;
+			const Vector4 cap_radial = Vector4(cap_point.x, 0.0f, cap_point.z, 0.0f);
+			if (cap_radial.length_squared() <= radius_sq && Math::abs(cap_point.w) <= half_thickness) {
+				best_distance = distance_to_y_cap_neg;
+				best_normal = Vector4(0, -1, 0, 0);
+				result["hit"] = true;
+				result["distance"] = distance_to_y_cap_neg;
+				result["normal"] = best_normal;
+			}
+		}
+	}
+	if (Math::abs(p_local_direction.w) > CMP_EPSILON2) {
+		// Try W caps (positive and negative).
+		const real_t distance_to_w_cap_pos = (half_thickness - p_local_from.w) / p_local_direction.w;
+		if (distance_to_w_cap_pos >= 0.0f && distance_to_w_cap_pos < best_distance) {
+			const Vector4 cap_point = p_local_from + p_local_direction * distance_to_w_cap_pos;
+			const Vector4 cap_radial = Vector4(cap_point.x, 0.0f, cap_point.z, 0.0f);
+			if (cap_radial.length_squared() <= radius_sq && Math::abs(cap_point.y) <= half_height) {
+				best_distance = distance_to_w_cap_pos;
+				best_normal = Vector4(0, 0, 0, 1);
+				result["hit"] = true;
+				result["distance"] = distance_to_w_cap_pos;
+				result["normal"] = best_normal;
+				result["point"] = cap_point;
+			}
+		}
+		const real_t distance_to_w_cap_neg = (-half_thickness - p_local_from.w) / p_local_direction.w;
+		if (distance_to_w_cap_neg >= 0.0f && distance_to_w_cap_neg < best_distance) {
+			const Vector4 cap_point = p_local_from + p_local_direction * distance_to_w_cap_neg;
+			const Vector4 cap_radial = Vector4(cap_point.x, 0.0f, cap_point.z, 0.0f);
+			if (cap_radial.length_squared() <= radius_sq && Math::abs(cap_point.y) <= half_height) {
+				best_distance = distance_to_w_cap_neg;
+				best_normal = Vector4(0, 0, 0, -1);
+				result["hit"] = true;
+				result["distance"] = distance_to_w_cap_neg;
+				result["normal"] = best_normal;
+				result["point"] = cap_point;
+			}
+		}
+	}
+	// Check curved surface entrance (only if no cap hit or curved surface is closer).
+	const real_t distance_to_entrance = (-radial_point_dot_radial_dir - sqrt_discriminant) / radial_dir_len_sq;
+	if (distance_to_entrance >= 0.0f && distance_to_entrance < best_distance) {
+		const Vector4 entrance_point = p_local_from + p_local_direction * distance_to_entrance;
+		if (Math::abs(entrance_point.y) <= half_height && Math::abs(entrance_point.w) <= half_thickness) {
+			// Entrance through curved surface.
+			const Vector4 hit_radial = Vector4(entrance_point.x, 0.0f, entrance_point.z, 0.0f);
+			const Vector4 normal = hit_radial.normalized();
+			best_distance = distance_to_entrance;
+			result["hit"] = true;
+			result["distance"] = distance_to_entrance;
+			result["normal"] = normal;
+			result["point"] = entrance_point;
 		}
 	}
 	return result;

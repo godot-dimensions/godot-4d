@@ -31,8 +31,8 @@ public:
 	real_t get_signed_distance_to_mesh_bind(const Vector4 &p_local_point);
 
 	// Raycast.
-	bool raycast_intersects_fast(const Vector4 &p_local_from, const Vector4 &p_local_direction);
-	Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction);
+	bool raycast_intersects_fast(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF);
+	Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF);
 
 	// Cache and validation.
 	void tetra_mesh_clear_cache();

@@ -28,7 +28,7 @@ public:
 	virtual Rect4 get_rect_bounds(const Transform4D &p_to_target = Transform4D()) const;
 	PackedVector4Array get_rect_bounds_bind(const Projection &p_to_target_basis = Projection(), const Vector4 &p_to_target_offset = Vector4()) const;
 
-	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const;
+	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF, const bool p_inside_is_zero = false) const;
 
 	virtual real_t get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface = nullptr) const;
 	real_t get_signed_distance_to_surface_bind(const Vector4 &p_local_point) const;
@@ -46,7 +46,7 @@ public:
 	GDVIRTUAL0RC(real_t, _get_hypervolume);
 	GDVIRTUAL0RC(real_t, _get_surface_volume);
 	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds, const Projection &, const Vector4 &);
-	GDVIRTUAL2RC(Dictionary, _raycast_intersects, const Vector4 &, const Vector4 &);
+	GDVIRTUAL4RC(Dictionary, _raycast_intersects, const Vector4 &, const Vector4 &, real_t, bool);
 
 	GDVIRTUAL1RC(real_t, _get_signed_distance_to_surface, const Vector4 &);
 

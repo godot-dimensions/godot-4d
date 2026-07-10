@@ -49,15 +49,22 @@ Rect4 OrthoplexShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	return bounds;
 }
 
-Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	Dictionary result;
 	result["hit"] = false;
 	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "OrthoplexShape4D::raycast_intersects: Ray direction must be normalized.");
+	if (p_inside_is_zero && has_point(p_local_from)) {
+		result["hit"] = true;
+		result["distance"] = 0.0f;
+		result["normal"] = Vector4(0.0, 0.0, 0.0, 0.0);
+		result["point"] = p_local_from;
+		return result;
+	}
 	// Convert the raycast vectors into a space that assumes the orthoplex is of unit size.
 	const Vector4 ray_from = p_local_from / _size;
 	const Vector4 ray_direction = (p_local_direction / _size).normalized();
 	Vector4 best_normal = Vector4();
-	real_t best_distance = Math_INF;
+	real_t best_distance = p_max_distance;
 	// Iterate over the 16 planes of the orthoplex.
 	for (real_t x = -0.5f; x <= 0.5f; x += 1.0f) {
 		for (real_t y = -0.5f; y <= 0.5f; y += 1.0f) {
@@ -77,10 +84,11 @@ Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, con
 			}
 		}
 	}
-	const bool hit = best_distance != Math_INF;
+	const bool hit = best_distance > p_max_distance;
 	result["hit"] = hit;
 	if (hit) {
 		const Vector4 hit_point_accounting_for_size = (ray_from + ray_direction * best_distance) * _size;
+		result["point"] = hit_point_accounting_for_size;
 		result["distance"] = p_local_from.distance_to(hit_point_accounting_for_size);
 		// Divide by the size again, aka multiply by the inverse of the size.
 		// Ex: Larger size on X means the "faces" point more in the YZW directions, so the normal is smaller in X.

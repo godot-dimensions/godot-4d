@@ -88,6 +88,7 @@
 			<return type="Dictionary" />
 			<param index="0" name="local_from" type="Vector4" />
 			<param index="1" name="local_direction" type="Vector4" />
+			<param index="2" name="max_distance" type="float" default="inf" />
 			<description>
 				Performs a raycast against the tetrahedral cells of the mesh. The [param local_from] parameter is the starting point of the ray relative to the mesh, and the [param local_direction] parameter is the direction of the ray relative to the mesh. The returned [Dictionary] may contain the following keys:
 				- [code]"hit"[/code]: A boolean indicating whether the ray hit any part of the mesh.
@@ -101,6 +102,7 @@
 			<return type="bool" />
 			<param index="0" name="local_from" type="Vector4" />
 			<param index="1" name="local_direction" type="Vector4" />
+			<param index="2" name="max_distance" type="float" default="inf" />
 			<description>
 				Performs a raycast against the tetrahedral cells of the mesh. The [param local_from] parameter is the starting point of the ray relative to the mesh, and the [param local_direction] parameter is the direction of the ray relative to the mesh.
 				Returns immediately with [code]true[/code] if the ray intersects any part of the mesh, or [code]false[/code] if it does not. This is a faster function than [method raycast_simplex_cells], which will keep going after the first hit, returning more information about the intersection, while this function will stop after any intersection is found.

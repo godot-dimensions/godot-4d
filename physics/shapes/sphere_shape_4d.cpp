@@ -14,10 +14,17 @@ real_t SphereShape4D::get_hypervolume() const {
 	return (0.125 * Math_TAU * Math_TAU) * (_radius * _radius * _radius * _radius);
 }
 
-Dictionary SphereShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+Dictionary SphereShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	Dictionary result;
 	result["hit"] = false;
 	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "SphereShape4D::raycast_intersects: Ray direction must be normalized.");
+	if (p_inside_is_zero && has_point(p_local_from)) {
+		result["hit"] = true;
+		result["distance"] = 0.0f;
+		result["normal"] = Vector4(0.0, 0.0, 0.0, 0.0);
+		result["point"] = p_local_from;
+		return result;
+	}
 	// Disclaimer: This code was mostly AI-generated. I am not sure if it is correct, but it works in testing.
 	const real_t direction_len_sq = p_local_direction.dot(p_local_direction);
 	const real_t direction_dot_origin = p_local_direction.dot(p_local_from);
@@ -41,11 +48,15 @@ Dictionary SphereShape4D::raycast_intersects(const Vector4 &p_local_from, const 
 	} else {
 		return result; // Ray is pointing away from sphere.
 	}
+	if (hit_distance >= p_max_distance) {
+		return result; // Hit is beyond the max distance.
+	}
 	const Vector4 hit_point = p_local_from + p_local_direction * hit_distance;
 	const Vector4 normal = hit_point.normalized(); // Normal is the direction from center to hit point.
 	result["hit"] = true;
 	result["distance"] = hit_distance;
 	result["normal"] = normal;
+	result["point"] = hit_point;
 	return result;
 }
 

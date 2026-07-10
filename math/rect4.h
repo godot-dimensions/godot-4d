@@ -79,7 +79,7 @@ struct _NO_DISCARD_ Rect4 {
 	real_t continuous_collision_depth(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle, Vector4 *r_out_normal = nullptr) const;
 	bool continuous_collision_overlaps(const Vector4 &p_relative_velocity, const Rect4 &p_obstacle) const;
 	bool raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction, const bool p_inside_is_zero, real_t *r_out_distance, Vector4 *r_out_normal) const;
-	Dictionary raycast_intersects_dict(const Vector4 &p_from, const Vector4 &p_direction, const bool p_inside_is_zero) const;
+	Dictionary raycast_intersects_dict(const Vector4 &p_from, const Vector4 &p_direction, const real_t p_max_distance = Math_INF, const bool p_inside_is_zero = false) const;
 
 	// Rect comparison functions.
 	bool encloses_exclusive(const Rect4 &p_other) const;

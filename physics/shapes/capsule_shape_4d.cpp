@@ -24,16 +24,23 @@ void CapsuleShape4D::set_radius(const real_t p_radius) {
 	_radius = p_radius;
 }
 
-Dictionary CapsuleShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+Dictionary CapsuleShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	Dictionary result;
 	result["hit"] = false;
 	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "CapsuleShape4D::raycast_intersects: Ray direction must be normalized.");
+	if (p_inside_is_zero && has_point(p_local_from)) {
+		result["hit"] = true;
+		result["distance"] = 0.0f;
+		result["normal"] = Vector4(0.0, 0.0, 0.0, 0.0);
+		result["point"] = p_local_from;
+		return result;
+	}
 	// Capsule raycasting: sweep a sphere along the Y axis.
 	// The capsule is a cylinder of height (h - 2r) with hemispherical caps.
 	// Disclaimer: This code was mostly AI-generated. I am not sure if it is correct, but it works in testing.
 	const real_t half_mid_height = get_mid_height() * 0.5f;
 	const real_t radius_squared = _radius * _radius;
-	real_t best_distance = Math_INF;
+	real_t best_distance = p_max_distance;
 	Vector4 best_normal = Vector4();
 	// Ray-cylinder intersection (the middle part).
 	const Vector4 radial_point = Vector4(p_local_from.x, 0.0f, p_local_from.z, p_local_from.w);
@@ -129,10 +136,11 @@ Dictionary CapsuleShape4D::raycast_intersects(const Vector4 &p_local_from, const
 			}
 		}
 	}
-	if (best_distance < Math_INF) {
+	if (best_distance < p_max_distance) {
 		result["hit"] = true;
 		result["distance"] = best_distance;
 		result["normal"] = best_normal;
+		result["point"] = p_local_from + p_local_direction * best_distance;
 	}
 	return result;
 }

@@ -78,7 +78,7 @@ bool ConcaveMeshShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	return _simplex_cells == other_cells;
 }
 
-Dictionary ConcaveMeshShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+Dictionary ConcaveMeshShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	Dictionary result;
 	result["hit"] = false;
 	ERR_FAIL_COND_V_MSG(!p_local_direction.is_normalized(), result, "ConcaveMeshShape4D::raycast_intersects: Ray direction must be normalized.");

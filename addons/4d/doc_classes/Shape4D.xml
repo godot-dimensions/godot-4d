@@ -32,6 +32,14 @@
 				If this method is not overridden, the rect bounds will be calculated automatically based on the results of the [method _get_support_point] callback.
 			</description>
 		</method>
+		<method name="_get_signed_distance_to_surface" qualifiers="virtual const">
+			<return type="float" />
+			<param index="0" name="local_point" type="Vector4" />
+			<description>
+				Callback method that should return the signed distance from a given point to the surface of a 4D shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_signed_distance_to_surface].
+				If this method is not overridden, a positive-only distance to the nearest point via [code]get_nearest_point()[/code] will be used, which will be sub-optimal for points inside the shape.
+			</description>
+		</method>
 		<method name="_get_support_point" qualifiers="virtual const">
 			<return type="Vector4" />
 			<param index="0" name="direction" type="Vector4" />
@@ -63,6 +71,8 @@
 			<return type="Dictionary" />
 			<param index="0" name="local_from" type="Vector4" />
 			<param index="1" name="local_direction" type="Vector4" />
+			<param index="2" name="max_distance" type="float" />
+			<param index="3" name="inside_is_zero" type="bool" />
 			<description>
 				Callback method that should perform a raycast against the shape. See [method raycast_intersects] for details. Do not call this method. This can be overridden by derived classes when creating a custom shape type in GDScript or another scripting language.
 			</description>
@@ -109,6 +119,13 @@
 				Returns the rectilinear bounding box of this [Node4D] as a Rect4 stored in a [PackedVector4Array] (position, size), relative to the given Transform4D stored as a [Projection] [Basis4D] basis and [Vector4] origin. The parameters you provide are used to transform the shape's points directly from shape space to the target space.
 			</description>
 		</method>
+		<method name="get_signed_distance_to_surface" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="local_point" type="Vector4" />
+			<description>
+				Returns the signed distance from a given point to the surface of the 4D shape. The distance is negative if the point is inside the shape, positive if it is outside, and zero if it is on the surface. Some shapes will never return a negative value, only returning a positive or zero distance.
+			</description>
+		</method>
 		<method name="get_support_point" qualifiers="const">
 			<return type="Vector4" />
 			<param index="0" name="direction" type="Vector4" />
@@ -140,11 +157,14 @@
 			<return type="Dictionary" />
 			<param index="0" name="local_from" type="Vector4" />
 			<param index="1" name="local_direction" type="Vector4" />
+			<param index="2" name="max_distance" type="float" />
+			<param index="3" name="inside_is_zero" type="bool" />
 			<description>
 				Performs a raycast against the shape. The [param local_from] parameter is the starting point of the ray relative to the shape, and the [param local_direction] parameter is the direction of the ray relative to the shape. The returned [Dictionary] may contain the following keys:
 				- [code]"hit"[/code]: A boolean indicating whether the ray hit any part of the shape.
 				- [code]"distance"[/code]: The distance from the starting point to the hit point.
 				- [code]"normal"[/code]: The normal at the hit point, perpendicular to the surface.
+				- [code]"point"[/code]: The point of intersection. This is the same as [code]local_from + local_direction * distance[/code].
 				- [code]"cell_index"[/code]: The index of the cell that was hit, for mesh-based shapes.
 				If the ray does not hit any part of the shape, the returned dictionary will be [code]{"hit": false}[/code].
 			</description>

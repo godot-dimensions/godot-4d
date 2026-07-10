@@ -8,7 +8,7 @@ Rect4 RayShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
 	return rect_bounds;
 }
 
-Dictionary RayShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction) const {
+Dictionary RayShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	Dictionary result;
 	// A 1D ray in 4D space will basically never intersect with another 1D ray in 4D space.
 	result["hit"] = false;
