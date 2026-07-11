@@ -84,7 +84,7 @@ Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, con
 			}
 		}
 	}
-	const bool hit = best_distance > p_max_distance;
+	const bool hit = best_distance < p_max_distance;
 	result["hit"] = hit;
 	if (hit) {
 		const Vector4 hit_point_accounting_for_size = (ray_from + ray_direction * best_distance) * _size;

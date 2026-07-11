@@ -38,6 +38,9 @@ void PhysicsServer4D::register_area(Area4D *p_area_node) {
 		return;
 	}
 	_scene_tree = p_area_node->get_tree();
+	if (_scene_tree == nullptr) {
+		return;
+	}
 	_scene_tree->connect(StringName("physics_frame"), callable_mp(this, &PhysicsServer4D::_physics_process));
 	_is_physics_process_connected = true;
 }

@@ -2,6 +2,7 @@
 
 #include "../../math/geometric_algebra/rotor_4d.h"
 #include "../../math/vector_4d.h"
+#include "../bodies/character_body_4d.h"
 #include "../bodies/rigid_body_4d.h"
 #include "../collision_shape_4d.h"
 #include "physics_server_4d.h"
@@ -63,27 +64,42 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obs
 	const Vector<Rect4> &moving_shape_rects = get_body_shape_rects(p_moving_body, moving_shapes);
 	const TypedArray<PhysicsBody4D> &obstacle_body_nodes = PhysicsServer4D::get_singleton()->get_physics_body_nodes();
 	const int obstacle_body_count = obstacle_body_nodes.size();
-	// Calculation the ratio of the desired motion that can be taken before hitting an obstacle.
+	// Calculate the ratio of the desired motion that can be taken before hitting an obstacle.
 	real_t travel_ratio = 1.0f;
 	Vector4 r_out_normal;
 	for (int obstacle_body_index = 0; obstacle_body_index < obstacle_body_count; obstacle_body_index++) {
 		PhysicsBody4D *obstacle_body_node = Object::cast_to<PhysicsBody4D>(obstacle_body_nodes[obstacle_body_index]);
+		if (obstacle_body_node == nullptr) {
+			continue;
+		}
 		if (obstacle_body_node == p_moving_body) {
 			continue; // Don't collide with ourself.
 		}
+		CharacterBody4D *obstacle_character_body = Object::cast_to<CharacterBody4D>(obstacle_body_node);
 		RigidBody4D *obstacle_rigid_body = Object::cast_to<RigidBody4D>(obstacle_body_node);
 		const TypedArray<CollisionShape4D> &obstacle_body_shapes = obstacle_body_node->get_collision_shapes();
 		const Vector<Rect4> &obstacle_shape_rects = get_body_shape_rects(obstacle_body_node, obstacle_body_shapes);
 		// Iterate through both sets of shapes and check for collisions.
 		for (int moving_shape_index = 0; moving_shape_index < moving_shape_rects.size(); moving_shape_index++) {
 			CollisionShape4D *moving_shape = Object::cast_to<CollisionShape4D>(moving_shapes[moving_shape_index]);
+			if (moving_shape == nullptr) {
+				continue;
+			}
 			const Rect4 &moving_shape_rect = moving_shape_rects[moving_shape_index];
 			for (int obstacle_shape_index = 0; obstacle_shape_index < obstacle_shape_rects.size(); obstacle_shape_index++) {
 				CollisionShape4D *obstacle_shape = Object::cast_to<CollisionShape4D>(obstacle_body_shapes[obstacle_shape_index]);
+				if (obstacle_shape == nullptr) {
+					continue;
+				}
 				if (moving_shape->get_collision_mask() & obstacle_shape->get_collision_layer()) {
 					const Rect4 &obstacle_shape_rect = obstacle_shape_rects[obstacle_shape_index];
-					// The CCD function operates with a relative velocity, so we can check for rigid bodies and use their velocity.
-					const Vector4 relative_motion = obstacle_rigid_body ? (p_motion - obstacle_rigid_body->get_linear_velocity() * _physics_delta_time) : p_motion;
+					// The CCD function operates with a relative velocity, so we can check for body types and use their velocity.
+					Vector4 relative_motion = p_motion;
+					if (obstacle_character_body != nullptr) {
+						relative_motion -= obstacle_character_body->get_linear_velocity() * _physics_delta_time;
+					} else if (obstacle_rigid_body != nullptr) {
+						relative_motion -= obstacle_rigid_body->get_linear_velocity() * _physics_delta_time;
+					}
 					Vector4 this_normal;
 					const real_t this_ratio = moving_shape_rect.continuous_collision_depth(relative_motion, obstacle_shape_rect, &this_normal);
 					if (this_ratio < travel_ratio) {
