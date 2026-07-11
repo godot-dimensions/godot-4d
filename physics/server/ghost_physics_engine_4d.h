@@ -7,13 +7,13 @@
 class GhostPhysicsEngine4D : public PhysicsEngine4D {
 	GDCLASS(GhostPhysicsEngine4D, PhysicsEngine4D);
 
-	void _step_dynamic_rigid_body(RigidBody4D *p_moving_body, double p_delta);
+	void _step_dynamic_rigid_body(RigidBody4D *p_moving_body, const double p_delta_time);
 
 protected:
 	static void _bind_methods() {}
 
 public:
-	virtual Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body, Vector4 p_motion, bool p_test_only) override;
-	virtual void move_area(Area4D *p_area, Vector4 p_motion) override;
-	virtual void physics_process(double p_delta) override;
+	virtual Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body, const Vector4 &p_motion, const bool p_test_only) override;
+	virtual void move_area(Area4D *p_area, const Vector4 &p_motion) override;
+	virtual void physics_process(const double p_delta_time) override;
 };

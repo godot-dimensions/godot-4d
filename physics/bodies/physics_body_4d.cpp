@@ -27,7 +27,7 @@ Vector4 PhysicsBody4D::get_gravity() const {
 	return gravity;
 }
 
-Ref<KinematicCollision4D> PhysicsBody4D::move_and_collide(Vector4 p_motion, bool p_test_only) {
+Ref<KinematicCollision4D> PhysicsBody4D::move_and_collide(const Vector4 &p_motion, const bool p_test_only) {
 	return PhysicsServer4D::get_singleton()->move_and_collide(this, p_motion, p_test_only);
 }
 

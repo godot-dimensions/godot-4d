@@ -12,5 +12,5 @@ protected:
 
 public:
 	Vector4 get_gravity() const;
-	Ref<KinematicCollision4D> move_and_collide(Vector4 p_motion, bool p_test_only = false);
+	Ref<KinematicCollision4D> move_and_collide(const Vector4 &p_motion, const bool p_test_only = false);
 };

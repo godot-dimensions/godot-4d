@@ -29,7 +29,7 @@
 		</method>
 		<method name="_physics_process" qualifiers="virtual">
 			<return type="void" />
-			<param index="0" name="delta" type="float" />
+			<param index="0" name="delta_time" type="float" />
 			<description>
 				Callback method that runs once per physics frame at the start of each physics frame. Physics engines should step forward the motion of dynamic rigid bodies based on its linear velocity and angular velocity. Physics engines should grab the list of other physics objects from the physics server and check for overlaps with the body, informing any area nodes when entering or exiting them, and resolving collisions with other physics bodies.
 			</description>

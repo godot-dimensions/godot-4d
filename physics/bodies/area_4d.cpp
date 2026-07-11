@@ -13,7 +13,7 @@ void Area4D::_notification(int p_what) {
 	}
 }
 
-void Area4D::move_area(Vector4 p_motion) {
+void Area4D::move_area(const Vector4 &p_motion) {
 	PhysicsServer4D::get_singleton()->move_area(this, p_motion);
 }
 

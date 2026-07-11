@@ -23,11 +23,11 @@ protected:
 	static void _bind_methods();
 
 public:
-	virtual Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body, Vector4 p_motion, bool p_test_only);
-	virtual void move_area(Area4D *p_area, Vector4 p_motion);
-	virtual void physics_process(double p_delta);
+	virtual Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body, const Vector4 &p_motion, const bool p_test_only);
+	virtual void move_area(Area4D *p_area, const Vector4 &p_motion);
+	virtual void physics_process(const double p_delta_time);
 
-	GDVIRTUAL3R(Ref<KinematicCollision4D>, _move_and_collide, PhysicsBody4D *, Vector4, bool);
-	GDVIRTUAL2(_move_area, Area4D *, Vector4);
+	GDVIRTUAL3R(Ref<KinematicCollision4D>, _move_and_collide, PhysicsBody4D *, const Vector4 &, bool);
+	GDVIRTUAL2(_move_area, Area4D *, const Vector4 &);
 	GDVIRTUAL1(_physics_process, double);
 };

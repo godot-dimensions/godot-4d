@@ -102,7 +102,7 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obs
 	return ret;
 }
 
-HashSet<Area4D *> AxisAlignedBoxPhysicsEngine4D::_step_dynamic_rigid_body(RigidBody4D *p_moving_body, double p_delta) {
+HashSet<Area4D *> AxisAlignedBoxPhysicsEngine4D::_step_dynamic_rigid_body(RigidBody4D *p_moving_body, const double p_delta_time) {
 	const Vector4 start_global_position = p_moving_body->get_global_position();
 	// Used for determining overlaps with Area4D nodes.
 	const TypedArray<Area4D> &area_nodes = PhysicsServer4D::get_singleton()->get_area_nodes();
@@ -112,7 +112,7 @@ HashSet<Area4D *> AxisAlignedBoxPhysicsEngine4D::_step_dynamic_rigid_body(RigidB
 	Vector4 actual_motion = Vector4();
 	{
 		Vector4 linear_velocity = p_moving_body->get_linear_velocity();
-		Vector4 desired_motion = linear_velocity * p_delta;
+		Vector4 desired_motion = linear_velocity * p_delta_time;
 		Vector<Rect4> current_moving_shape_rects = _area_and_body_rects[p_moving_body];
 		constexpr int MAX_RIGID_BODY_ITERATIONS = 10;
 		for (int iteration = 0; iteration < MAX_RIGID_BODY_ITERATIONS; iteration++) {
@@ -167,7 +167,7 @@ HashSet<Area4D *> AxisAlignedBoxPhysicsEngine4D::_step_dynamic_rigid_body(RigidB
 	return overlapping_areas;
 }
 
-Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::move_and_collide(PhysicsBody4D *p_moving_body, Vector4 p_motion, bool p_test_only) {
+Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::move_and_collide(PhysicsBody4D *p_moving_body, const Vector4 &p_motion, const bool p_test_only) {
 	// Calculate the motion.
 	const Vector<Rect4> &moving_shape_rects = get_body_shape_rects(p_moving_body, p_moving_body->get_collision_shapes());
 	Ref<KinematicCollision4D> collision = _check_motion_until_obstacle(p_moving_body, moving_shape_rects, p_motion);
@@ -208,7 +208,7 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::move_and_collide(Physic
 	return collision;
 }
 
-void AxisAlignedBoxPhysicsEngine4D::move_area(Area4D *p_moving_area, Vector4 p_motion) {
+void AxisAlignedBoxPhysicsEngine4D::move_area(Area4D *p_moving_area, const Vector4 &p_motion) {
 	p_moving_area->set_global_position(p_moving_area->get_global_position() + p_motion);
 	const Vector<Rect4> &moving_shape_rects_before = _area_and_body_rects[p_moving_area];
 	Vector<Rect4> moving_area_rects_after = _calculate_shape_rects(p_moving_area->get_collision_shapes());
@@ -253,8 +253,8 @@ void AxisAlignedBoxPhysicsEngine4D::move_area(Area4D *p_moving_area, Vector4 p_m
 	_area_and_body_rects[p_moving_area] = moving_area_rects_after;
 }
 
-void AxisAlignedBoxPhysicsEngine4D::physics_process(double p_delta) {
-	_physics_delta_time = p_delta;
+void AxisAlignedBoxPhysicsEngine4D::physics_process(const double p_delta_time) {
+	_physics_delta_time = p_delta_time;
 	// Recalculate rects for all areas and bodies each frame, just in case they changed.
 	_area_and_body_rects.clear();
 	const TypedArray<Area4D> &area_nodes = PhysicsServer4D::get_singleton()->get_area_nodes();
@@ -276,7 +276,7 @@ void AxisAlignedBoxPhysicsEngine4D::physics_process(double p_delta) {
 	for (int body_index = 0; body_index < body_nodes.size(); body_index++) {
 		RigidBody4D *rigid_body = Object::cast_to<RigidBody4D>(body_nodes[body_index]);
 		if (rigid_body) {
-			HashSet<Area4D *> overlapping_areas = _step_dynamic_rigid_body(rigid_body, p_delta);
+			HashSet<Area4D *> overlapping_areas = _step_dynamic_rigid_body(rigid_body, p_delta_time);
 			// Check for overlaps with areas. The HashSet tell us which areas overlap
 			// via the whole CCD motion, but we need to check before and after.
 			for (Area4D *area_node : overlapping_areas) {

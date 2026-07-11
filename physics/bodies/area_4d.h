@@ -10,5 +10,5 @@ protected:
 	void _notification(int p_what);
 
 public:
-	void move_area(Vector4 p_motion);
+	void move_area(const Vector4 &p_motion);
 };
