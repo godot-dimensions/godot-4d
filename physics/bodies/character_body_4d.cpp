@@ -36,7 +36,7 @@ TypedArray<KinematicCollision4D> CharacterBody4D::move_and_slide() {
 				const real_t angle = Vector4D::angle_to(_up_direction, normal);
 				if (angle < _floor_max_angle) {
 					_is_on_floor = true;
-				} else if (angle > Math_TAU - _floor_max_angle) {
+				} else if (angle > Math_PI - _floor_max_angle) {
 					_is_on_ceiling = true;
 				} else {
 					_is_on_wall = true;

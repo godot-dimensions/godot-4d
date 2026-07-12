@@ -10,6 +10,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_ancestor_collision_object" qualifiers="const">
+			<return type="CollisionObject4D" />
+			<description>
+				Returns the ancestor [CollisionObject4D] node that owns this CollisionShape4D. If this node is not in the scene tree, this will return [code]null[/code]. If this node is in the scene tree, but there is no ancestor CollisionObject4D, this will return the global static body, which is a special object that represents the static world; freeing this node will cause a crash.
+			</description>
+		</method>
 		<method name="get_hypervolume" qualifiers="const">
 			<return type="float" />
 			<description>

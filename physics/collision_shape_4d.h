@@ -17,17 +17,20 @@ class CollisionShape4D : public Node4D {
 
 	Ref<Shape4D> _shape;
 	Ref<PhysicsMaterial> _physics_material;
-	CollisionObject4D *_collision_object = nullptr;
+	CollisionObject4D *_ancestor_collision_object = nullptr;
 	uint32_t _collision_layer = 1;
 	uint32_t _collision_mask = 1;
 
-	CollisionObject4D *_get_ancestor_collision_object() const;
+	CollisionObject4D *_find_ancestor_collision_object() const;
 
 protected:
 	static void _bind_methods();
 	void _notification(int p_what);
 
 public:
+	CollisionObject4D *get_ancestor_collision_object() const;
+	Transform4D get_transform_to_collision_object() const;
+
 	// Layers and masks are per-shape.
 	void set_collision_layer(uint32_t p_layer) { _collision_layer = p_layer; }
 	uint32_t get_collision_layer() const { return _collision_layer; }
@@ -40,7 +43,6 @@ public:
 
 	virtual Rect4 get_rect_bounds_local(const Transform4D &p_to_target = Transform4D()) const override;
 	virtual Dictionary raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF, const bool p_inside_is_zero = false) const override;
-	Transform4D get_transform_to_collision_object() const;
 
 	Ref<PhysicsMaterial> get_physics_material() const;
 	void set_physics_material(const Ref<PhysicsMaterial> &p_physics_material);

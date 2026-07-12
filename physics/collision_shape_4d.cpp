@@ -3,12 +3,29 @@
 #include "bodies/collision_object_4d.h"
 #include "server/physics_server_4d.h"
 
-CollisionObject4D *CollisionShape4D::_get_ancestor_collision_object() const {
+void CollisionShape4D::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE: {
+			_ancestor_collision_object = _find_ancestor_collision_object();
+			if (_ancestor_collision_object) {
+				_ancestor_collision_object->register_collision_shape(this);
+			}
+		} break;
+		case NOTIFICATION_EXIT_TREE: {
+			if (_ancestor_collision_object) {
+				_ancestor_collision_object->unregister_collision_shape(this);
+			}
+			_ancestor_collision_object = nullptr;
+		} break;
+	}
+}
+
+CollisionObject4D *CollisionShape4D::_find_ancestor_collision_object() const {
 	Node *parent = get_parent();
 	while (parent) {
 		Node4D *parent_4d = Object::cast_to<Node4D>(parent);
 		if (unlikely(!parent_4d)) {
-			return PhysicsServer4D::get_or_create_global_static_body();
+			break;
 		}
 		CollisionObject4D *co = Object::cast_to<CollisionObject4D>(parent);
 		if (likely(co)) {
@@ -19,34 +36,14 @@ CollisionObject4D *CollisionShape4D::_get_ancestor_collision_object() const {
 	return PhysicsServer4D::get_or_create_global_static_body();
 }
 
-void CollisionShape4D::_notification(int p_what) {
-	switch (p_what) {
-		case NOTIFICATION_ENTER_TREE: {
-			_collision_object = _get_ancestor_collision_object();
-			if (_collision_object) {
-				_collision_object->register_collision_shape(this);
-			}
-		} break;
-		case NOTIFICATION_EXIT_TREE: {
-			if (_collision_object) {
-				_collision_object->unregister_collision_shape(this);
-			}
-			_collision_object = nullptr;
-		} break;
-	}
-}
-
-Rect4 CollisionShape4D::get_rect_bounds_local(const Transform4D &p_to_target) const {
-	if (_shape.is_null()) {
-		return Rect4(p_to_target.origin, Vector4());
-	}
-	return _shape->get_rect_bounds(p_to_target);
+CollisionObject4D *CollisionShape4D::get_ancestor_collision_object() const {
+	return _ancestor_collision_object;
 }
 
 Transform4D CollisionShape4D::get_transform_to_collision_object() const {
 	Transform4D transform_to_col_obj = get_transform();
 	Node *parent = get_parent();
-	while (parent != _collision_object) {
+	while (parent != _ancestor_collision_object) {
 		Node4D *parent_4d = Object::cast_to<Node4D>(parent);
 		if (unlikely(!parent_4d)) {
 			break;
@@ -55,6 +52,13 @@ Transform4D CollisionShape4D::get_transform_to_collision_object() const {
 		parent = parent->get_parent();
 	}
 	return transform_to_col_obj;
+}
+
+Rect4 CollisionShape4D::get_rect_bounds_local(const Transform4D &p_to_target) const {
+	if (_shape.is_null()) {
+		return Rect4(p_to_target.origin, Vector4());
+	}
+	return _shape->get_rect_bounds(p_to_target);
 }
 
 Dictionary CollisionShape4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
@@ -123,6 +127,8 @@ bool CollisionShape4D::has_global_point(const Vector4 &p_point) const {
 }
 
 void CollisionShape4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_ancestor_collision_object"), &CollisionShape4D::get_ancestor_collision_object);
+
 	ClassDB::bind_method(D_METHOD("get_hypervolume"), &CollisionShape4D::get_hypervolume);
 	ClassDB::bind_method(D_METHOD("get_nearest_global_point", "point"), &CollisionShape4D::get_nearest_global_point);
 	ClassDB::bind_method(D_METHOD("get_support_global_point", "direction"), &CollisionShape4D::get_support_global_point);
