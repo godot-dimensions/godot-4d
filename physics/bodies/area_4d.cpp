@@ -22,6 +22,6 @@ void Area4D::_bind_methods() {
 
 	ADD_SIGNAL(MethodInfo("area_entered_self", PropertyInfo(Variant::OBJECT, "area", PROPERTY_HINT_RESOURCE_TYPE, "Area4D")));
 	ADD_SIGNAL(MethodInfo("area_exited_self", PropertyInfo(Variant::OBJECT, "area", PROPERTY_HINT_RESOURCE_TYPE, "Area4D")));
-	ADD_SIGNAL(MethodInfo("body_entered_area", PropertyInfo(Variant::OBJECT, "body", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsBody4D")));
-	ADD_SIGNAL(MethodInfo("body_exited_area", PropertyInfo(Variant::OBJECT, "body", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsBody4D")));
+	ADD_SIGNAL(MethodInfo("body_entered_self", PropertyInfo(Variant::OBJECT, "body", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsBody4D")));
+	ADD_SIGNAL(MethodInfo("body_exited_self", PropertyInfo(Variant::OBJECT, "body", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsBody4D")));
 }

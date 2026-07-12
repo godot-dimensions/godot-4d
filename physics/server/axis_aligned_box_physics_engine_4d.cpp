@@ -210,12 +210,12 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::move_and_collide(Physic
 		if (_do_moving_shapes_overlap(moving_shape_rects, static_area_rects, p_motion * travel_ratio)) {
 			if (!_do_static_shapes_overlap(moving_shape_rects, static_area_rects)) {
 				// If they overlap during the motion, but didn't before, emit the entered signals.
-				area_node->emit_signal(StringName("body_entered_area"), p_moving_body);
+				area_node->emit_signal(StringName("body_entered_self"), p_moving_body);
 				p_moving_body->emit_signal(StringName("self_entered_area"), area_node);
 			}
 			if (!_do_static_shapes_overlap(moving_rects_after, static_area_rects)) {
 				// If they overlap during the motion, but don't after, emit the exited signals.
-				area_node->emit_signal(StringName("body_exited_area"), p_moving_body);
+				area_node->emit_signal(StringName("body_exited_self"), p_moving_body);
 				p_moving_body->emit_signal(StringName("self_exited_area"), area_node);
 			}
 		}
@@ -257,12 +257,12 @@ void AxisAlignedBoxPhysicsEngine4D::move_area(Area4D *p_moving_area, const Vecto
 			if (!_do_static_shapes_overlap(moving_shape_rects_before, static_body_rects)) {
 				// If they overlap during the motion, but didn't before, emit the entered signals.
 				static_body_node->emit_signal(StringName("self_entered_area"), p_moving_area);
-				p_moving_area->emit_signal(StringName("body_entered_area"), static_body_node);
+				p_moving_area->emit_signal(StringName("body_entered_self"), static_body_node);
 			}
 			if (!_do_static_shapes_overlap(moving_area_rects_after, static_body_rects)) {
 				// If they overlap during the motion, but don't after, emit the exited signals.
 				static_body_node->emit_signal(StringName("self_exited_area"), p_moving_area);
-				p_moving_area->emit_signal(StringName("body_exited_area"), static_body_node);
+				p_moving_area->emit_signal(StringName("body_exited_self"), static_body_node);
 			}
 		}
 	}
@@ -293,18 +293,18 @@ void AxisAlignedBoxPhysicsEngine4D::physics_process(const double p_delta_time) {
 		RigidBody4D *rigid_body = Object::cast_to<RigidBody4D>(body_nodes[body_index]);
 		if (rigid_body) {
 			HashSet<Area4D *> overlapping_areas = _step_dynamic_rigid_body(rigid_body, p_delta_time);
-			// Check for overlaps with areas. The HashSet tell us which areas overlap
+			// Check for overlaps with areas. The HashSet tells us which areas overlap
 			// via the whole CCD motion, but we need to check before and after.
 			for (Area4D *area_node : overlapping_areas) {
 				const Vector<Rect4> &area_rects = _area_and_body_rects[area_node];
 				if (!_do_static_shapes_overlap(_area_and_body_rects[rigid_body], area_rects)) {
 					// If they overlap during the motion, but didn't before, emit the entered signals.
-					area_node->emit_signal(StringName("body_entered_area"), rigid_body);
+					area_node->emit_signal(StringName("body_entered_self"), rigid_body);
 					rigid_body->emit_signal(StringName("self_entered_area"), area_node);
 				}
 				if (!_do_static_shapes_overlap(_rigid_body_rect_queue[rigid_body], area_rects)) {
 					// If they overlap during the motion, but don't after, emit the exited signals.
-					area_node->emit_signal(StringName("body_exited_area"), rigid_body);
+					area_node->emit_signal(StringName("body_exited_self"), rigid_body);
 					rigid_body->emit_signal(StringName("self_exited_area"), area_node);
 				}
 			}

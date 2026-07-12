@@ -30,13 +30,13 @@
 				Emitted when another Area4D exits this Area4D using the [method move_area] method. Only the static Area4D will have this signal emitted. The moving Area4D will have the [signal CollisionObject4D.self_exited_area] signal emitted instead. If you need to listen to both, you can connect to both signals to the same function.
 			</description>
 		</signal>
-		<signal name="body_entered_area">
+		<signal name="body_entered_self">
 			<param index="0" name="body" type="PhysicsBody4D" />
 			<description>
 				Emitted when a PhysicsBody4D enters this Area4D using a method such as [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or the movement of a [RigidBody4D]. Also emitted when this Area4D moves onto a [PhysicsBody4D] using the [method move_area] method.
 			</description>
 		</signal>
-		<signal name="body_exited_area">
+		<signal name="body_exited_self">
 			<param index="0" name="body" type="PhysicsBody4D" />
 			<description>
 				Emitted when a PhysicsBody4D exits this Area4D using a method such as [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or the movement of a [RigidBody4D]. Also emitted when this Area4D moves off of a [PhysicsBody4D] using the [method move_area] method.
