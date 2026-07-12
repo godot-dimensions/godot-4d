@@ -155,16 +155,36 @@ Basis4D Rotor4D::to_basis() const {
 	return basis.orthonormalized();
 }
 
-real_t Rotor4D::get_rotation_angle() const {
+real_t Rotor4D::get_simple_rotation_angle() const {
 	return 2.0f * Math::atan2(parts.bivector.length(), s);
 }
 
-Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
-	return parts.bivector * get_rotation_angle();
+// Should be moved to bivector
+real_t Rotor4D::get_rotation_angle() const {
+	return 2.0f * get_rotation_bivector_magnitude().length();
 }
 
+// Should remove _magnitude from the name
+Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
+	real_t a = s * s;
+	real_t b = -(xy * xy + xz * xz + xw * xw + yz * yz + yw * yw + zw * zw);
+	real_t c = xyzw * xyzw;
+	real_t y1 = b + sqrt(b * b - 4 * a * c) / (2 * a);
+	// real_t y2 = b - sqrt(b*b - 4*a*c) / (2*a)
+	Rotor4D bi = Rotor4D(0, xy, xz, xw, yz, yw, zw, 0);
+	real_t splitc = s / (s * s - xyzw * xyzw);
+	real_t splitd = -c * (xyzw / s);
+	SplitComplex4D split = SplitComplex4D(splitc, splitd);
+	Rotor4D rot1 = (bi * split).reverse();
+	rot1.s += 1;
+	Rotor4D rot2 = rot1.reverse() * *this;
+
+	return Math::acos(rot1.s) * rot1.parts.bivector.normalized() + Math::acos(rot2.s) * rot2.parts.bivector.normalized();
+}
+
+// Should be removed
 Bivector4D Rotor4D::get_rotation_bivector_normal() const {
-	return parts.bivector.normalized();
+	return get_rotation_bivector_magnitude().normalized();
 }
 
 Basis4D Rotor4D::rotate_basis(const Basis4D &p_basis) const {
@@ -219,6 +239,7 @@ Vector4 Rotor4D::sandwich(const Vector4 &p_vec, const Rotor4D &p_right) const {
 	);
 }
 
+// Need to test these against an implementation using rotor exp and log to check validity
 Rotor4D Rotor4D::slerp(Rotor4D p_to, const real_t p_weight) const {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D::identity(), "The start Rotor4D " + operator String() + " must be normalized.");
@@ -271,7 +292,7 @@ real_t Rotor4D::length_squared() const {
 SplitComplex4D Rotor4D::split_magnitude_squared() const {
 	SplitComplex4D result;
 	result.s = s * s + xy * xy + xz * xz + xw * xw + yz * yz + yw * yw + zw * zw + xyzw * xyzw; // Scalar
-	result.xyzw = s * xyzw - xy * zw + xz * yw - xw * yz - yz * xw + yw * xz - zw * xy + xyzw * s; // XYZW
+	result.xyzw = 2 * (s * xyzw - xy * zw + xz * yw - xw * yz); // XYZW
 	return result;
 }
 
@@ -284,7 +305,8 @@ Rotor4D Rotor4D::normalized() const {
 }
 
 bool Rotor4D::is_normalized() const {
-	return Math::is_equal_approx(length_squared(), (real_t)1.0);
+	const SplitComplex4D split = split_magnitude_squared();
+	return Math::is_equal_approx(split.s, (real_t)1.0) && Math::is_equal_approx(split.xyzw, (real_t)0.0);
 }
 
 bool Rotor4D::is_simple_rotation() const {
@@ -318,12 +340,31 @@ Rotor4D Rotor4D::from_basis(const Basis4D &p_basis) {
 	return from_zx(euler.zx) * from_zw(euler.zw) * from_xw(euler.xw) * from_yz(euler.yz) * from_xy(euler.xy) * from_wy(euler.wy);
 }
 
+// Should be renamed to something that includes exp
 Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
-	const real_t length_angle = p_bivector.length();
-	if (Math::is_zero_approx(length_angle)) {
-		return identity();
-	}
-	return from_bivector_normal_angle(p_bivector / length_angle, length_angle);
+	const real_t il = 0.5 * (p_bivector.xw + p_bivector.yz);
+	const real_t jl = 0.5 * (p_bivector.yw - p_bivector.xz);
+	const real_t kl = 0.5 * (p_bivector.zw + p_bivector.xy);
+	const real_t ir = 0.5 * (p_bivector.xw - p_bivector.yz);
+	const real_t jr = 0.5 * (p_bivector.yw + p_bivector.xz);
+	const real_t kr = 0.5 * (p_bivector.zw - p_bivector.xy);
+
+	Bivector4D left = Bivector4D(kl, -jl, il, il, jl, kl);
+	Bivector4D right = Bivector4D(-kr, jr, ir, -ir, jr, kr);
+
+	real_t l = left.length();
+	real_t r = right.length();
+
+	left *= (Math::sin(l) / l);
+	right *= (Math::sin(r) / r);
+
+	l = Math::cos(l);
+	r = Math::cos(r);
+
+	const Rotor4D L = Rotor4D(l, left, 0);
+	const Rotor4D R = Rotor4D(r, right, 0);
+
+	return L * R;
 }
 
 Rotor4D Rotor4D::from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle) {
