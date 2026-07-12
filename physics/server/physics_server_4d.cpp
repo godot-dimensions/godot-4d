@@ -70,6 +70,10 @@ void PhysicsServer4D::unregister_physics_body(PhysicsBody4D *p_physics_body_node
 }
 
 Ref<PhysicsEngine4D> PhysicsServer4D::_get_physics_engine(const String &p_name) const {
+	if (_physics_engines.is_empty()) {
+		ERR_PRINT("PhysicsServer4D: No physics engines are registered.");
+		return Ref<PhysicsEngine4D>();
+	}
 	if (_physics_engines.has(p_name)) {
 		return _physics_engines[p_name];
 	}
@@ -124,14 +128,28 @@ String PhysicsServer4D::get_current_physics_engine_name() const {
 }
 
 void PhysicsServer4D::set_current_physics_engine_name(const String &p_name) {
+	if (p_name == _current_physics_engine_name) {
+		return;
+	}
+	if (p_name.is_empty()) {
+		_current_physics_engine_name = "";
+		_current_physics_engine = Ref<PhysicsEngine4D>();
+		return;
+	}
+	if (_physics_engines.is_empty()) {
+		_current_physics_engine_name = "";
+		_current_physics_engine = Ref<PhysicsEngine4D>();
+		ERR_PRINT("PhysicsServer4D: No physics engines are registered.");
+		return;
+	}
 	if (_physics_engines.has(p_name)) {
 		_current_physics_engine_name = p_name;
 		_current_physics_engine = _physics_engines[p_name];
-	} else {
-		WARN_PRINT("Physics engine '" + p_name + "' not registered. The first registered engine will be used as a fallback.");
-		_current_physics_engine_name = _physics_engines.begin()->key;
-		_current_physics_engine = _physics_engines.begin()->value;
+		return;
 	}
+	_current_physics_engine_name = _physics_engines.begin()->key;
+	_current_physics_engine = _physics_engines.begin()->value;
+	WARN_PRINT("Physics engine '" + p_name + "' not registered. The first registered engine will be used as a fallback.");
 }
 
 bool PhysicsServer4D::get_active() const {
@@ -170,6 +188,11 @@ PhysicsServer4D::~PhysicsServer4D() {
 		memdelete(_global_static_body_for_bodyless_shapes);
 		_global_static_body_for_bodyless_shapes = nullptr;
 	}
+	_area_nodes.clear();
+	_physics_body_nodes.clear();
+	_physics_engines.clear();
+	_current_physics_engine.unref();
+	_scene_tree = nullptr;
 }
 
 void PhysicsServer4D::_bind_methods() {

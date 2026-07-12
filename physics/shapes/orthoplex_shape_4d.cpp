@@ -64,7 +64,7 @@ Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, con
 	const Vector4 ray_from = p_local_from / _size;
 	const Vector4 ray_direction = (p_local_direction / _size).normalized();
 	Vector4 best_normal = Vector4();
-	real_t best_distance = p_max_distance;
+	real_t best_distance = Math_INF;
 	// Iterate over the 16 planes of the orthoplex.
 	for (real_t x = -0.5f; x <= 0.5f; x += 1.0f) {
 		for (real_t y = -0.5f; y <= 0.5f; y += 1.0f) {
@@ -84,12 +84,14 @@ Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, con
 			}
 		}
 	}
+	// The distance above is in the scaled space, so we need to return it to the original space and calculate a new distance.
+	const Vector4 hit_point_accounting_for_size = (ray_from + ray_direction * best_distance) * _size;
+	best_distance = p_local_from.distance_to(hit_point_accounting_for_size);
 	const bool hit = best_distance < p_max_distance;
 	result["hit"] = hit;
 	if (hit) {
-		const Vector4 hit_point_accounting_for_size = (ray_from + ray_direction * best_distance) * _size;
 		result["point"] = hit_point_accounting_for_size;
-		result["distance"] = p_local_from.distance_to(hit_point_accounting_for_size);
+		result["distance"] = best_distance;
 		// Divide by the size again, aka multiply by the inverse of the size.
 		// Ex: Larger size on X means the "faces" point more in the YZW directions, so the normal is smaller in X.
 		result["normal"] = (best_normal * _size.inverse()).normalized();
