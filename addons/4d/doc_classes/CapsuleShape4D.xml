@@ -15,14 +15,18 @@
 		<link title="Wikipedia Implicit Surface">https://en.wikipedia.org/wiki/Implicit_surface</link>
 	</tutorials>
 	<members>
-		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">
-			The full height of the capsule in meters in the Y direction, including the hemispheres at both ends. This is the value that is stored internally.
+		<member name="full_height" type="float" setter="set_full_height" getter="get_full_height" default="2.0">
+			The full height of the capsule in meters in the Y direction, including the hemispheres at both ends.
+		</member>
+		<member name="height_is_full" type="bool" setter="set_height_is_full" getter="get_height_is_full" default="true">
+			If [code]true[/code], the [member full_height] is displayed in the editor, and the backing property stores the [member full_height] of the capsule. Updates to the [member radius] will keep [member full_height] constant, but will change the [member mid_height].
+			If [code]false[/code], the [member mid_height] is displayed in the editor, and the backing property stores the [member mid_height] of the capsule. Updates to the [member radius] will keep [member mid_height] constant, but will change the [member full_height].
 		</member>
 		<member name="mid_height" type="float" setter="set_mid_height" getter="get_mid_height">
 			The mid height of the capsule in meters in the Y direction, excluding the hemispheres at both ends. This is a wrapper around [member height] and [member radius] for situations where you want to use the mid height instead of the full height.
 		</member>
 		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
-			The radius of the capsule in meters in the XZW directions. This is the value that is stored internally.
+			The radius of the capsule in meters in the XZW directions.
 		</member>
 	</members>
 </class>

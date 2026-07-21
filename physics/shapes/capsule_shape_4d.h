@@ -5,21 +5,27 @@
 class CapsuleShape4D : public Shape4D {
 	GDCLASS(CapsuleShape4D, Shape4D);
 
-	real_t _height = 2.0f;
 	real_t _radius = 0.5f;
+	real_t _height = 2.0f;
+	// If true, _height is the full height of the capsule. If false, _height is the mid-height of the capsule.
+	bool _height_is_full = true;
 
 protected:
 	static void _bind_methods();
+	void _validate_property(PropertyInfo &p_property) const;
 
 public:
-	real_t get_height() const;
-	void set_height(const real_t p_height);
+	real_t get_radius() const;
+	void set_radius(const real_t p_radius);
+
+	real_t get_full_height() const;
+	void set_full_height(const real_t p_full_height);
 
 	real_t get_mid_height() const;
 	void set_mid_height(const real_t p_mid_height);
 
-	real_t get_radius() const;
-	void set_radius(const real_t p_radius);
+	bool get_height_is_full() const;
+	void set_height_is_full(const bool p_height_is_full);
 
 	virtual real_t get_hypervolume() const override;
 	virtual real_t get_surface_volume() const override;

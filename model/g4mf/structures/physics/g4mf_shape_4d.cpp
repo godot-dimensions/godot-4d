@@ -90,7 +90,7 @@ Ref<Shape4D> G4MFShape4D::_generate_shape_from_general() const {
 							Ref<CapsuleShape4D> capsule_shape;
 							capsule_shape.instantiate();
 							capsule_shape->set_radius(curve_radius);
-							capsule_shape->set_height(_base_size.y);
+							capsule_shape->set_mid_height(_base_size.y);
 							return capsule_shape;
 						}
 					}
@@ -231,8 +231,8 @@ Ref<G4MFShape4D> G4MFShape4D::convert_shape(Ref<G4MFState4D> p_g4mf_state, const
 	}
 	const Ref<CapsuleShape4D> capsule_shape = p_shape;
 	if (capsule_shape.is_valid()) {
-		const real_t capsule_height = capsule_shape->get_height();
-		ret->set_base_size(Vector4(0.0, capsule_height, 0.0, 0.0));
+		const real_t capsule_mid_height = capsule_shape->get_mid_height();
+		ret->set_base_size(Vector4(0.0, capsule_mid_height, 0.0, 0.0));
 		const real_t capsule_radius = capsule_shape->get_radius();
 		curve->set_radii(Vector4(capsule_radius, capsule_radius, capsule_radius, capsule_radius));
 		ret->_curves.append(curve);

@@ -9,7 +9,7 @@ TEST_CASE("[CapsuleShape4D] Raycast from outside - cylinder middle") {
 	Ref<CapsuleShape4D> capsule;
 	capsule.instantiate();
 	capsule->set_radius(1.0f);
-	capsule->set_height(2.0f);
+	capsule->set_full_height(2.0f);
 	// Ray from outside pointing at cylinder middle along X axis.
 	Dictionary result = capsule->raycast_intersects(Vector4(-2, 0, 0, 0), Vector4(1, 0, 0, 0).normalized());
 	CHECK_MESSAGE((bool)result["hit"] == true, "Raycast from outside should hit capsule cylinder middle");
@@ -20,7 +20,7 @@ TEST_CASE("[CapsuleShape4D] Raycast from outside - cap") {
 	Ref<CapsuleShape4D> capsule;
 	capsule.instantiate();
 	capsule->set_radius(1.0f);
-	capsule->set_height(2.0f);
+	capsule->set_full_height(2.0f);
 	// Ray from outside pointing at positive Y cap.
 	Dictionary result = capsule->raycast_intersects(Vector4(0, 3, 0, 0), Vector4(0, -1, 0, 0).normalized());
 	CHECK_MESSAGE((bool)result["hit"] == true, "Raycast from outside should hit capsule cap");
@@ -33,7 +33,7 @@ TEST_CASE("[CapsuleShape4D] Raycast from inside") {
 	Ref<CapsuleShape4D> capsule;
 	capsule.instantiate();
 	capsule->set_radius(1.0f);
-	capsule->set_height(2.0f);
+	capsule->set_full_height(2.0f);
 	// Ray from inside center - behavior when starting inside is well-defined but complex.
 	// Just verify it returns a hit (may be exit face or may have other semantics).
 	Dictionary result = capsule->raycast_intersects(Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0).normalized());
@@ -44,7 +44,7 @@ TEST_CASE("[CapsuleShape4D] Raycast missing") {
 	Ref<CapsuleShape4D> capsule;
 	capsule.instantiate();
 	capsule->set_radius(1.0f);
-	capsule->set_height(2.0f);
+	capsule->set_full_height(2.0f);
 	// Ray missing the capsule.
 	Dictionary result = capsule->raycast_intersects(Vector4(-2, 3, 0, 0), Vector4(1, 0, 0, 0).normalized());
 	CHECK_MESSAGE((bool)result["hit"] == false, "Raycast missing capsule should not hit");

@@ -1,27 +1,60 @@
 #include "capsule_shape_4d.h"
 
-real_t CapsuleShape4D::get_height() const {
-	return _height;
-}
-
-void CapsuleShape4D::set_height(const real_t p_height) {
-	_height = p_height;
-}
-
-real_t CapsuleShape4D::get_mid_height() const {
-	return _height - _radius * 2.0f;
-}
-
-void CapsuleShape4D::set_mid_height(const real_t p_mid_height) {
-	_height = p_mid_height + _radius * 2.0f;
-}
-
 real_t CapsuleShape4D::get_radius() const {
 	return _radius;
 }
 
 void CapsuleShape4D::set_radius(const real_t p_radius) {
 	_radius = p_radius;
+}
+
+real_t CapsuleShape4D::get_full_height() const {
+	if (_height_is_full) {
+		return _height;
+	}
+	return _height + _radius * 2.0f;
+}
+
+void CapsuleShape4D::set_full_height(const real_t p_full_height) {
+	if (_height_is_full) {
+		_height = p_full_height;
+	} else {
+		_height = p_full_height - _radius * 2.0f;
+	}
+}
+
+real_t CapsuleShape4D::get_mid_height() const {
+	if (_height_is_full) {
+		return _height - _radius * 2.0f;
+	}
+	return _height;
+}
+
+void CapsuleShape4D::set_mid_height(const real_t p_mid_height) {
+	if (_height_is_full) {
+		_height = p_mid_height + _radius * 2.0f;
+	} else {
+		_height = p_mid_height;
+	}
+}
+
+bool CapsuleShape4D::get_height_is_full() const {
+	return _height_is_full;
+}
+
+void CapsuleShape4D::set_height_is_full(const bool p_height_is_full) {
+	if (p_height_is_full == _height_is_full) {
+		return;
+	}
+	_height_is_full = p_height_is_full;
+	if (p_height_is_full) {
+		// Convert from mid-height to full height.
+		_height += _radius * 2.0f;
+	} else {
+		// Convert from full height to mid-height.
+		_height -= _radius * 2.0f;
+	}
+	notify_property_list_changed();
 }
 
 Dictionary CapsuleShape4D::raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
@@ -146,7 +179,8 @@ Dictionary CapsuleShape4D::raycast_intersects(const Vector4 &p_local_from, const
 }
 
 real_t CapsuleShape4D::get_hypervolume() const {
-	return (0.125 * Math_TAU * Math_TAU) * (_radius * _radius * _radius * _radius) + (2.0f * Math_TAU / 3.0f) * (_radius * _radius * _radius * _height);
+	const real_t mid_height = get_mid_height();
+	return (0.125 * Math_TAU * Math_TAU) * (_radius * _radius * _radius * _radius) + (2.0f * Math_TAU / 3.0f) * (_radius * _radius * _radius * mid_height);
 }
 
 real_t CapsuleShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
@@ -209,14 +243,15 @@ Vector4 CapsuleShape4D::get_nearest_point(const Vector4 &p_local_point) const {
 }
 
 Vector4 CapsuleShape4D::get_support_point(const Vector4 &p_local_direction) const {
-	const real_t half_mid_height = _height * 0.5f - _radius;
+	const real_t half_mid_height = get_mid_height() * 0.5f;
 	Vector4 nearest = p_local_direction.normalized() * _radius;
 	nearest.y += (p_local_direction.y > 0.0f) ? half_mid_height : -half_mid_height;
 	return nearest;
 }
 
 real_t CapsuleShape4D::get_surface_volume() const {
-	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius) + (2.0 * Math_TAU) * (_radius * _radius * _height);
+	const real_t mid_height = get_mid_height();
+	return (0.5 * Math_TAU * Math_TAU) * (_radius * _radius * _radius) + (2.0 * Math_TAU) * (_radius * _radius * mid_height);
 }
 
 bool CapsuleShape4D::has_point(const Vector4 &p_local_point) const {
@@ -235,19 +270,35 @@ bool CapsuleShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	if (capsule_shape.is_null()) {
 		return false;
 	}
-	return _height == capsule_shape->get_height() && _radius == capsule_shape->get_radius();
+	return _height == capsule_shape->_height && _radius == capsule_shape->_radius && _height_is_full == capsule_shape->_height_is_full;
 }
 
 void CapsuleShape4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_height"), &CapsuleShape4D::get_height);
-	ClassDB::bind_method(D_METHOD("set_height", "height"), &CapsuleShape4D::set_height);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height", PROPERTY_HINT_NONE, "suffix:m"), "set_height", "get_height");
-
-	ClassDB::bind_method(D_METHOD("get_mid_height"), &CapsuleShape4D::get_mid_height);
-	ClassDB::bind_method(D_METHOD("set_mid_height", "mid_height"), &CapsuleShape4D::set_mid_height);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mid_height", PROPERTY_HINT_NONE, "suffix:m", PROPERTY_USAGE_NONE), "set_mid_height", "get_mid_height");
-
 	ClassDB::bind_method(D_METHOD("get_radius"), &CapsuleShape4D::get_radius);
 	ClassDB::bind_method(D_METHOD("set_radius", "radius"), &CapsuleShape4D::set_radius);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_NONE, "suffix:m"), "set_radius", "get_radius");
+
+	ClassDB::bind_method(D_METHOD("get_full_height"), &CapsuleShape4D::get_full_height);
+	ClassDB::bind_method(D_METHOD("set_full_height", "full_height"), &CapsuleShape4D::set_full_height);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "full_height", PROPERTY_HINT_NONE, "suffix:m"), "set_full_height", "get_full_height");
+
+	ClassDB::bind_method(D_METHOD("get_mid_height"), &CapsuleShape4D::get_mid_height);
+	ClassDB::bind_method(D_METHOD("set_mid_height", "mid_height"), &CapsuleShape4D::set_mid_height);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mid_height", PROPERTY_HINT_NONE, "suffix:m"), "set_mid_height", "get_mid_height");
+
+	ClassDB::bind_method(D_METHOD("get_height_is_full"), &CapsuleShape4D::get_height_is_full);
+	ClassDB::bind_method(D_METHOD("set_height_is_full", "height_is_full"), &CapsuleShape4D::set_height_is_full);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "height_is_full"), "set_height_is_full", "get_height_is_full");
+}
+
+void CapsuleShape4D::_validate_property(PropertyInfo &p_property) const {
+	if (_height_is_full) {
+		if (p_property.name == StringName("mid_height")) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	} else {
+		if (p_property.name == StringName("full_height")) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	}
 }

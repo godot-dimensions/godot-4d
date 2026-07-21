@@ -53,7 +53,11 @@ void PhysicsServer4D::unregister_area(Area4D *p_area_node) {
 void PhysicsServer4D::register_physics_body(PhysicsBody4D *p_physics_body_node) {
 	ERR_FAIL_NULL_MSG(p_physics_body_node, "PhysicsServer4D: Cannot register a null PhysicsBody4D node.");
 	_physics_body_nodes.append(p_physics_body_node);
+	// The first time a physics body in the tree is registered, connect to the scene tree's "physics_frame" signal to process physics.
 	if (likely(_is_physics_process_connected)) {
+		return;
+	}
+	if (!p_physics_body_node->is_inside_tree()) {
 		return;
 	}
 	_scene_tree = p_physics_body_node->get_tree();

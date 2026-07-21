@@ -33,7 +33,7 @@ CollisionObject4D *CollisionShape4D::_find_ancestor_collision_object() const {
 		}
 		parent = parent->get_parent();
 	}
-	return PhysicsServer4D::get_or_create_global_static_body();
+	return PhysicsServer4D::get_singleton()->get_or_create_global_static_body();
 }
 
 CollisionObject4D *CollisionShape4D::get_ancestor_collision_object() const {

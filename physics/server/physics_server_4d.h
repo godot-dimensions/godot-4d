@@ -61,8 +61,8 @@ public:
 
 	TypedArray<Area4D> get_area_nodes() const;
 	TypedArray<PhysicsBody4D> get_physics_body_nodes() const;
+	CollisionObject4D *get_or_create_global_static_body();
 
-	static CollisionObject4D *get_or_create_global_static_body();
 	static PhysicsServer4D *get_singleton() { return _singleton; }
 	PhysicsServer4D() { _singleton = this; }
 	~PhysicsServer4D();
