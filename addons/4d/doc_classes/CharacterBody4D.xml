@@ -30,10 +30,12 @@
 		</method>
 		<method name="move_and_slide">
 			<return type="KinematicCollision4D[]" />
+			<param index="0" name="delta_time" type="float" default="-1.0" />
 			<description>
 				Moves the body based on [member linear_velocity]. If the body collides with another, it will slide along the other body rather than stop immediately.
 				If a collision occurs, this will modify [member linear_velocity]. Regardless of a collision, this will update the states of [method is_on_floor], [method is_on_ceiling], and [method is_on_wall].
 				Returns an array of [KinematicCollision4D] objects, one for each collision that occurred in the sliding. If there was no collision, the array will be empty.
+				The [code]delta_time[/code] parameter can be used to override the physics step's delta time, such as when manipulating physics objects from outside [method Node._physics_process]. This may be omitted when called from within [method Node._physics_process]: when the value is negative, it will automatically use the physics step's delta time.
 			</description>
 		</method>
 	</methods>

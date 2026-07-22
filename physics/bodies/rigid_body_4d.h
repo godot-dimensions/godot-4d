@@ -15,22 +15,22 @@ protected:
 	static void _bind_methods();
 
 public:
-	void apply_acceleration(const Vector4 &p_acceleration);
-	void apply_local_acceleration(const Vector4 &p_local_acceleration);
+	void apply_acceleration(const Vector4 &p_acceleration, const double p_delta_time = -1.0);
+	void apply_local_acceleration(const Vector4 &p_local_acceleration, const double p_delta_time = -1.0);
 
-	void apply_force(const Vector4 &p_force, const Vector4 &p_position_offset = Vector4());
+	void apply_force(const Vector4 &p_force, const Vector4 &p_position_offset = Vector4(), const double p_delta_time = -1.0);
 	void apply_impulse(const Vector4 &p_impulse, const Vector4 &p_position_offset = Vector4());
-	void apply_local_force(const Vector4 &p_local_force, const Vector4 &p_local_position_offset = Vector4());
+	void apply_local_force(const Vector4 &p_local_force, const Vector4 &p_local_position_offset = Vector4(), const double p_delta_time = -1.0);
 	void apply_local_impulse(const Vector4 &p_local_impulse, const Vector4 &p_local_position_offset = Vector4());
 
-	void apply_torque(const Bivector4D &p_torque);
+	void apply_torque(const Bivector4D &p_torque, const double p_delta_time = -1.0);
 	void apply_torque_impulse(const Bivector4D &p_torque_impulse);
-	void apply_local_torque(const Bivector4D &p_torque);
+	void apply_local_torque(const Bivector4D &p_torque, const double p_delta_time = -1.0);
 	void apply_local_torque_impulse(const Bivector4D &p_torque_impulse);
 
-	void apply_torque_bind(const AABB &p_torque);
+	void apply_torque_bind(const AABB &p_torque, const double p_delta_time = -1.0);
 	void apply_torque_impulse_bind(const AABB &p_torque_impulse);
-	void apply_local_torque_bind(const AABB &p_torque);
+	void apply_local_torque_bind(const AABB &p_torque, const double p_delta_time = -1.0);
 	void apply_local_torque_impulse_bind(const AABB &p_torque_impulse);
 
 	Vector4 get_scaled_gravity() const;

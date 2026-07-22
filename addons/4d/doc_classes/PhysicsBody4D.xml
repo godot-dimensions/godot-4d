@@ -19,8 +19,10 @@
 			<return type="KinematicCollision4D" />
 			<param index="0" name="motion" type="Vector4" />
 			<param index="1" name="test_only" type="bool" default="false" />
+			<param index="2" name="delta_time" type="float" default="-1.0" />
 			<description>
 				Moves the body by the given motion offset in 4D space, and collides it with other physics objects in the scene. If another solid objects is in the way, the body will stop moving. If the [param test_only] parameter is [code]true[/code], the body will not move but information about the collision that would have occurred will be returned.
+				The [code]delta_time[/code] parameter can be used to override the physics step's delta time, such as when manipulating physics objects from outside [method Node._physics_process]. This may be omitted when called from within [method Node._physics_process]: when the value is negative, it will automatically use the physics step's delta time.
 			</description>
 		</method>
 	</methods>

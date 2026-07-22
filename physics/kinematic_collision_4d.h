@@ -18,7 +18,7 @@ class KinematicCollision4D : public RefCounted {
 	CollisionShape4D *_obstacle_shape_node = nullptr;
 	Vector4 _normal = Vector4();
 	Vector4 _relative_velocity = Vector4();
-	real_t _travel_ratio = 0.0f;
+	real_t _travel_ratio = 1.0f; // The default represents no collision, so 100% of the motion was completed.
 
 protected:
 	static void _bind_methods();

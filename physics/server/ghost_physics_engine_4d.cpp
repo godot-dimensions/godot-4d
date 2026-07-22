@@ -10,7 +10,7 @@ void GhostPhysicsEngine4D::_step_dynamic_rigid_body(RigidBody4D *p_moving_body, 
 	p_moving_body->set_global_basis(rotor.rotate_basis(p_moving_body->get_global_basis()));
 }
 
-Ref<KinematicCollision4D> GhostPhysicsEngine4D::move_and_collide(PhysicsBody4D *p_body, const Vector4 &p_motion, const bool p_test_only) {
+Ref<KinematicCollision4D> GhostPhysicsEngine4D::move_and_collide(PhysicsBody4D *p_body, const Vector4 &p_motion, const bool p_test_only, const double p_delta_time) {
 	Ref<KinematicCollision4D> ret;
 	ret.instantiate();
 	if (p_test_only) {

@@ -27,13 +27,13 @@ Vector4 PhysicsBody4D::get_gravity() const {
 	return gravity;
 }
 
-Ref<KinematicCollision4D> PhysicsBody4D::move_and_collide(const Vector4 &p_motion, const bool p_test_only) {
-	return PhysicsServer4D::get_singleton()->move_and_collide(this, p_motion, p_test_only);
+Ref<KinematicCollision4D> PhysicsBody4D::move_and_collide(const Vector4 &p_motion, const bool p_test_only, const double p_delta_time) {
+	return PhysicsServer4D::get_singleton()->move_and_collide(this, p_motion, p_test_only, p_delta_time);
 }
 
 void PhysicsBody4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_gravity"), &PhysicsBody4D::get_gravity);
-	ClassDB::bind_method(D_METHOD("move_and_collide", "motion", "test_only"), &PhysicsBody4D::move_and_collide, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("move_and_collide", "motion", "test_only", "delta_time"), &PhysicsBody4D::move_and_collide, DEFVAL(false), DEFVAL(-1.0));
 
 	ADD_SIGNAL(MethodInfo("body_impacted_self", PropertyInfo(Variant::OBJECT, "body", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsBody4D"), PropertyInfo(Variant::OBJECT, "kinematic_collision", PROPERTY_HINT_RESOURCE_TYPE, "KinematicCollision4D")));
 	ADD_SIGNAL(MethodInfo("self_impacted_body", PropertyInfo(Variant::OBJECT, "body", PROPERTY_HINT_RESOURCE_TYPE, "PhysicsBody4D"), PropertyInfo(Variant::OBJECT, "kinematic_collision", PROPERTY_HINT_RESOURCE_TYPE, "KinematicCollision4D")));

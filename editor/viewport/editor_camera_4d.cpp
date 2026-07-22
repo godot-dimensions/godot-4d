@@ -5,23 +5,23 @@
 void EditorCamera4D::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_PROCESS: {
-			const real_t delta = (real_t)get_process_delta_time();
+			const real_t delta_time = (real_t)get_process_delta_time();
 			// Interpolate camera Z position for the speed and zoom level.
 			const real_t zoom_inertia = EDITOR_GET("editors/3d/navigation_feel/zoom_inertia");
 			const real_t current_z = _camera->get_position().z;
 			const real_t target_z = _target_speed_and_zoom;
-			const real_t new_z = Math::lerp(current_z, target_z, MIN((real_t)1.0f, delta / zoom_inertia));
+			const real_t new_z = Math::lerp(current_z, target_z, MIN((real_t)1.0f, delta_time / zoom_inertia));
 			// For speed, use the same logic as zoom, except we want to preserve the camera's global position during freelook.
 			if (Input::get_singleton()->is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)) {
 				const Vector4 camera_position = _camera->get_global_position();
 				_camera->set_position(Vector4(0.0f, 0.0f, new_z, 0.0f));
 				_target_position += camera_position - _camera->get_global_position();
-				_process_freelook_movement(delta);
+				_process_freelook_movement(delta_time);
 			} else {
 				// For the orbit camera, interpolate towards the target position.
 				_camera->set_position(Vector4(0.0f, 0.0f, new_z, 0.0f));
 				const real_t translation_inertia = EDITOR_GET("editors/3d/navigation_feel/translation_inertia");
-				set_position(get_position().lerp(_target_position, delta / translation_inertia));
+				set_position(get_position().lerp(_target_position, delta_time / translation_inertia));
 			}
 			_camera->set_orthographic_size(new_z);
 		} break;

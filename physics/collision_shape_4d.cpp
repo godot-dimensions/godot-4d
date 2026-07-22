@@ -68,6 +68,7 @@ Dictionary CollisionShape4D::raycast_intersects_local(const Vector4 &p_local_fro
 			inside_result["hit"] = true;
 			inside_result["distance"] = 0.0;
 			inside_result["normal"] = Vector4();
+			inside_result["point"] = p_local_from;
 			return inside_result;
 		}
 		return _shape->raycast_intersects(p_local_from, p_local_direction, p_max_distance, p_inside_is_zero);
@@ -96,8 +97,8 @@ void CollisionShape4D::set_shape(const Ref<Shape4D> &p_shape) {
 
 real_t CollisionShape4D::get_hypervolume() const {
 	ERR_FAIL_COND_V(_shape.is_null(), 0.0);
-	const real_t scale = get_global_basis().get_uniform_scale();
-	return scale * _shape->get_hypervolume();
+	const Vector4 scale = get_global_basis().get_scale();
+	return (scale.x * scale.y * scale.z * scale.w) * _shape->get_hypervolume();
 }
 
 Vector4 CollisionShape4D::get_nearest_global_point(const Vector4 &p_point) const {
@@ -116,8 +117,9 @@ Vector4 CollisionShape4D::get_support_global_point(const Vector4 &p_direction) c
 
 real_t CollisionShape4D::get_surface_volume() const {
 	ERR_FAIL_COND_V(_shape.is_null(), 0.0);
+	// NOTE: This won't work correctly for non-uniform scaling.
 	const real_t scale = get_global_basis().get_uniform_scale();
-	return scale * _shape->get_surface_volume();
+	return (scale * scale * scale) * _shape->get_surface_volume();
 }
 
 bool CollisionShape4D::has_global_point(const Vector4 &p_point) const {

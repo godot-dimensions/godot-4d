@@ -39,7 +39,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body_node, const Vector4 &p_motion, const bool p_test_only = false);
+	Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body_node, const Vector4 &p_motion, const bool p_test_only = false, const double p_delta_time = -1.0);
 	void move_area(Area4D *p_area_node, const Vector4 &p_motion);
 
 	void register_area(Area4D *p_area_node);

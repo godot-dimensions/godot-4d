@@ -1,21 +1,24 @@
 #include "rigid_body_4d.h"
 
-void RigidBody4D::apply_acceleration(const Vector4 &p_acceleration) {
+void RigidBody4D::apply_acceleration(const Vector4 &p_acceleration, const double p_delta_time) {
+	const double delta_time = p_delta_time < 0.0 ? get_physics_process_delta_time() : p_delta_time;
 	// Acceleration is in m/s^2, so multiplying that by s gives m/s for velocity.
-	const Vector4 velocity_change = p_acceleration * get_physics_process_delta_time();
+	const Vector4 velocity_change = p_acceleration * delta_time;
 	_linear_velocity += velocity_change;
 }
 
-void RigidBody4D::apply_local_acceleration(const Vector4 &p_local_acceleration) {
+void RigidBody4D::apply_local_acceleration(const Vector4 &p_local_acceleration, const double p_delta_time) {
 	const Basis4D global_basis = get_global_basis();
+	const double delta_time = p_delta_time < 0.0 ? get_physics_process_delta_time() : p_delta_time;
 	// Acceleration is in m/s^2, so multiplying that by s gives m/s for velocity.
-	const Vector4 velocity_change = global_basis.xform(p_local_acceleration * get_physics_process_delta_time());
+	const Vector4 velocity_change = global_basis.xform(p_local_acceleration * delta_time);
 	_linear_velocity += velocity_change;
 }
 
-void RigidBody4D::apply_force(const Vector4 &p_force, const Vector4 &p_position_offset) {
+void RigidBody4D::apply_force(const Vector4 &p_force, const Vector4 &p_position_offset, const double p_delta_time) {
+	const double delta_time = p_delta_time < 0.0 ? get_physics_process_delta_time() : p_delta_time;
 	// Force is in kg*m/s^2, so multiplying that by s/kg gives m/s for velocity.
-	const Vector4 velocity_change = p_force * (get_physics_process_delta_time() / _mass);
+	const Vector4 velocity_change = p_force * (delta_time / _mass);
 	_linear_velocity += velocity_change;
 	// A force at a position may also cause a torque.
 	if (p_position_offset != Vector4()) {
@@ -35,10 +38,11 @@ void RigidBody4D::apply_impulse(const Vector4 &p_impulse, const Vector4 &p_posit
 	}
 }
 
-void RigidBody4D::apply_local_force(const Vector4 &p_local_force, const Vector4 &p_local_position_offset) {
+void RigidBody4D::apply_local_force(const Vector4 &p_local_force, const Vector4 &p_local_position_offset, const double p_delta_time) {
 	const Basis4D global_basis = get_global_basis();
+	const double delta_time = p_delta_time < 0.0 ? get_physics_process_delta_time() : p_delta_time;
 	// Force is in kg*m/s^2, so multiplying that by s/kg gives m/s for velocity.
-	const Vector4 velocity_change = global_basis.xform(p_local_force * (get_physics_process_delta_time() / _mass));
+	const Vector4 velocity_change = global_basis.xform(p_local_force * (delta_time / _mass));
 	_linear_velocity += velocity_change;
 	// A force at a position may also cause a torque.
 	if (p_local_position_offset != Vector4()) {
@@ -61,37 +65,39 @@ void RigidBody4D::apply_local_impulse(const Vector4 &p_local_impulse, const Vect
 	}
 }
 
-void RigidBody4D::apply_torque(const Bivector4D &p_torque) {
+void RigidBody4D::apply_torque(const Bivector4D &p_torque, const double p_delta_time) {
 	// TODO: None of the code in this class considers the inertia tensor.
 	// Non-trivial physical objects can be rotated more easily in different directions.
 	// However, for now, this works pretty well, and works perfectly for simple objects (boxes, spheres, etc).
-	_angular_velocity += p_torque / _mass;
+	const double delta_time = p_delta_time < 0.0 ? get_physics_process_delta_time() : p_delta_time;
+	_angular_velocity += p_torque * (delta_time / _mass);
 }
 
 void RigidBody4D::apply_torque_impulse(const Bivector4D &p_torque_impulse) {
 	_angular_velocity += p_torque_impulse / _mass;
 }
 
-void RigidBody4D::apply_local_torque(const Bivector4D &p_torque) {
-	Basis4D global_basis = get_global_basis();
-	_angular_velocity += global_basis.rotate_bivector(p_torque) / _mass;
+void RigidBody4D::apply_local_torque(const Bivector4D &p_torque, const double p_delta_time) {
+	const Basis4D global_basis = get_global_basis();
+	const double delta_time = p_delta_time < 0.0 ? get_physics_process_delta_time() : p_delta_time;
+	_angular_velocity += global_basis.rotate_bivector(p_torque * delta_time) / _mass;
 }
 
 void RigidBody4D::apply_local_torque_impulse(const Bivector4D &p_torque_impulse) {
-	Basis4D global_basis = get_global_basis();
+	const Basis4D global_basis = get_global_basis();
 	_angular_velocity += global_basis.rotate_bivector(p_torque_impulse) / _mass;
 }
 
-void RigidBody4D::apply_torque_bind(const AABB &p_torque) {
-	apply_torque(p_torque);
+void RigidBody4D::apply_torque_bind(const AABB &p_torque, const double p_delta_time) {
+	apply_torque(p_torque, p_delta_time);
 }
 
 void RigidBody4D::apply_torque_impulse_bind(const AABB &p_torque_impulse) {
 	apply_torque_impulse(p_torque_impulse);
 }
 
-void RigidBody4D::apply_local_torque_bind(const AABB &p_torque) {
-	apply_local_torque(p_torque);
+void RigidBody4D::apply_local_torque_bind(const AABB &p_torque, const double p_delta_time) {
+	apply_local_torque(p_torque, p_delta_time);
 }
 
 void RigidBody4D::apply_local_torque_impulse_bind(const AABB &p_torque_impulse) {
@@ -160,17 +166,17 @@ void RigidBody4D::set_angular_velocity_degrees_bind(const AABB &p_angular_veloci
 }
 
 void RigidBody4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("apply_acceleration", "acceleration"), &RigidBody4D::apply_acceleration);
-	ClassDB::bind_method(D_METHOD("apply_local_acceleration", "local_acceleration"), &RigidBody4D::apply_local_acceleration);
+	ClassDB::bind_method(D_METHOD("apply_acceleration", "acceleration", "delta_time"), &RigidBody4D::apply_acceleration, DEFVAL(-1.0));
+	ClassDB::bind_method(D_METHOD("apply_local_acceleration", "local_acceleration", "delta_time"), &RigidBody4D::apply_local_acceleration, DEFVAL(-1.0));
 
-	ClassDB::bind_method(D_METHOD("apply_force", "force", "position_offset"), &RigidBody4D::apply_force, DEFVAL(Vector4()));
+	ClassDB::bind_method(D_METHOD("apply_force", "force", "position_offset", "delta_time"), &RigidBody4D::apply_force, DEFVAL(Vector4()), DEFVAL(-1.0));
 	ClassDB::bind_method(D_METHOD("apply_impulse", "impulse", "position_offset"), &RigidBody4D::apply_impulse, DEFVAL(Vector4()));
-	ClassDB::bind_method(D_METHOD("apply_local_force", "local_force", "local_position_offset"), &RigidBody4D::apply_local_force, DEFVAL(Vector4()));
+	ClassDB::bind_method(D_METHOD("apply_local_force", "local_force", "local_position_offset", "delta_time"), &RigidBody4D::apply_local_force, DEFVAL(Vector4()), DEFVAL(-1.0));
 	ClassDB::bind_method(D_METHOD("apply_local_impulse", "local_impulse", "local_position_offset"), &RigidBody4D::apply_local_impulse, DEFVAL(Vector4()));
 
-	ClassDB::bind_method(D_METHOD("apply_torque", "torque"), &RigidBody4D::apply_torque_bind);
+	ClassDB::bind_method(D_METHOD("apply_torque", "torque", "delta_time"), &RigidBody4D::apply_torque_bind, DEFVAL(-1.0));
 	ClassDB::bind_method(D_METHOD("apply_torque_impulse", "torque_impulse"), &RigidBody4D::apply_torque_impulse_bind);
-	ClassDB::bind_method(D_METHOD("apply_local_torque", "torque"), &RigidBody4D::apply_local_torque_bind);
+	ClassDB::bind_method(D_METHOD("apply_local_torque", "torque", "delta_time"), &RigidBody4D::apply_local_torque_bind, DEFVAL(-1.0));
 	ClassDB::bind_method(D_METHOD("apply_local_torque_impulse", "torque_impulse"), &RigidBody4D::apply_local_torque_impulse_bind);
 
 	ClassDB::bind_method(D_METHOD("get_scaled_gravity"), &RigidBody4D::get_scaled_gravity);

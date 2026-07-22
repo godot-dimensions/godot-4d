@@ -4,7 +4,8 @@
 		A 4D physics body that is moved by a dynamic physics simulation using forces and impulses.
 	</brief_description>
 	<description>
-		RigidBody4D must be interacted with in sync with physics process, such as the [method Node._physics_process] callback.
+		RigidBody4D should be interacted with in sync with physics process, such as the [method Node._physics_process] callback.
+		The [code]delta_time[/code] parameter of many of these functions can be used to override the physics step's delta time, such as when manipulating physics objects from outside [method Node._physics_process]. This may be omitted when called from within [method Node._physics_process]: when the value is negative, it will automatically use the physics step's delta time.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -12,6 +13,7 @@
 		<method name="apply_acceleration">
 			<return type="void" />
 			<param index="0" name="acceleration" type="Vector4" />
+			<param index="1" name="delta_time" type="float" default="-1.0" />
 			<description>
 				Applies an acceleration to the body. The acceleration is in global coordinates, in meters per second squared (m/s²).
 			</description>
@@ -20,6 +22,7 @@
 			<return type="void" />
 			<param index="0" name="force" type="Vector4" />
 			<param index="1" name="position_offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="2" name="delta_time" type="float" default="-1.0" />
 			<description>
 				Applies a force to the body at the given position offset. Both the force and position offset are in global coordinates relative to the body's origin (the tails of the vectors are at the body's origin).
 				The position offset is in meters (m), while the force is in Newtons (kg·m/s²). This function must only be called from within physics process callbacks, because it uses the physics step's delta time to calculate the force's effect on the body.
@@ -37,6 +40,7 @@
 		<method name="apply_local_acceleration">
 			<return type="void" />
 			<param index="0" name="local_acceleration" type="Vector4" />
+			<param index="1" name="delta_time" type="float" default="-1.0" />
 			<description>
 				Applies a local acceleration to the body. The acceleration is in the body's local coordinates, in meters per second squared (m/s²).
 			</description>
@@ -45,6 +49,7 @@
 			<return type="void" />
 			<param index="0" name="local_force" type="Vector4" />
 			<param index="1" name="local_position_offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="2" name="delta_time" type="float" default="-1.0" />
 			<description>
 				Applies a local force to the body at the given local position offset. Both the local force and local position offset are in the body's local coordinates. This function is useful for making a body apply a force to itself, such as a thruster on a spaceship.
 				The position offset is in meters (m), while the force is in Newtons (kg·m/s²). This function must only be called from within physics process callbacks, because it uses the physics step's delta time to calculate the force's effect on the body.
@@ -62,6 +67,7 @@
 		<method name="apply_local_torque">
 			<return type="void" />
 			<param index="0" name="torque" type="AABB" />
+			<param index="1" name="delta_time" type="float" default="-1.0" />
 			<description>
 				Applies a local torque to the body. The torque is in the body's local coordinates. This function is useful for making a body apply a torque to itself, such as a spinning wheel.
 				The torque is in Newton-meters (kg·m²/s²). This function must only be called from within physics process callbacks, because it uses the physics step's delta time to calculate the torque's effect on the body.
@@ -80,6 +86,7 @@
 		<method name="apply_torque">
 			<return type="void" />
 			<param index="0" name="torque" type="AABB" />
+			<param index="1" name="delta_time" type="float" default="-1.0" />
 			<description>
 				Applies a torque to the body. The torque is in global coordinates. This function is useful for making a body apply a torque to itself, such as a spinning wheel.
 				The torque is in Newton-meters (kg·m²/s²). This function must only be called from within physics process callbacks, because it uses the physics step's delta time to calculate the torque's effect on the body.

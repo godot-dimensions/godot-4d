@@ -7,7 +7,7 @@
 #include "../collision_shape_4d.h"
 #include "physics_server_4d.h"
 
-Vector<Rect4> _calculate_shape_rects(const TypedArray<CollisionShape4D> &p_shapes) {
+Vector<Rect4> AxisAlignedBoxPhysicsEngine4D::_calculate_shape_rects(const TypedArray<CollisionShape4D> &p_shapes) {
 	Vector<Rect4> shape_rects;
 	const int shape_count = p_shapes.size();
 	shape_rects.resize(shape_count);
@@ -18,12 +18,20 @@ Vector<Rect4> _calculate_shape_rects(const TypedArray<CollisionShape4D> &p_shape
 	return shape_rects;
 }
 
-bool _do_moving_shapes_overlap(const Vector<Rect4> &p_moving_shape_rects, const Vector<Rect4> &p_obstacle_shape_rects, const Vector4 &p_motion) {
+bool AxisAlignedBoxPhysicsEngine4D::_do_moving_shapes_overlap(const Vector<Rect4> &p_moving_shape_rects, const TypedArray<CollisionShape4D> &p_moving_shapes, const Vector<Rect4> &p_obstacle_shape_rects, const TypedArray<CollisionShape4D> &p_obstacle_shapes, const Vector4 &p_motion, const bool p_moving_shapes_are_detector) {
 	const int shape_count_a = p_moving_shape_rects.size();
 	const int shape_count_b = p_obstacle_shape_rects.size();
 	for (int shape_index_a = 0; shape_index_a < shape_count_a; shape_index_a++) {
 		const Rect4 &shape_rect_a = p_moving_shape_rects[shape_index_a];
 		for (int shape_index_b = 0; shape_index_b < shape_count_b; shape_index_b++) {
+			CollisionShape4D *detector_shape = Object::cast_to<CollisionShape4D>(p_moving_shapes_are_detector ? p_moving_shapes[shape_index_a] : p_obstacle_shapes[shape_index_b]);
+			CollisionShape4D *detected_shape = Object::cast_to<CollisionShape4D>(p_moving_shapes_are_detector ? p_obstacle_shapes[shape_index_b] : p_moving_shapes[shape_index_a]);
+			if (detector_shape != nullptr && detected_shape != nullptr) {
+				const bool do_layers_overlap = detector_shape->get_collision_mask() & detected_shape->get_collision_layer();
+				if (!do_layers_overlap) {
+					continue;
+				}
+			}
 			const Rect4 &shape_rect_b = p_obstacle_shape_rects[shape_index_b];
 			if (shape_rect_a.continuous_collision_overlaps(p_motion, shape_rect_b)) {
 				return true;
@@ -33,12 +41,20 @@ bool _do_moving_shapes_overlap(const Vector<Rect4> &p_moving_shape_rects, const 
 	return false;
 }
 
-bool _do_static_shapes_overlap(const Vector<Rect4> &p_shape_rects_a, const Vector<Rect4> &p_shape_rects_b) {
+bool AxisAlignedBoxPhysicsEngine4D::_do_static_shapes_overlap(const Vector<Rect4> &p_shape_rects_a, const TypedArray<CollisionShape4D> &p_shapes_a, const Vector<Rect4> &p_shape_rects_b, const TypedArray<CollisionShape4D> &p_shapes_b, const bool p_shapes_a_are_detector) {
 	const int shape_count_a = p_shape_rects_a.size();
 	const int shape_count_b = p_shape_rects_b.size();
 	for (int shape_index_a = 0; shape_index_a < shape_count_a; shape_index_a++) {
 		const Rect4 &shape_rect_a = p_shape_rects_a[shape_index_a];
 		for (int shape_index_b = 0; shape_index_b < shape_count_b; shape_index_b++) {
+			CollisionShape4D *detector_shape = Object::cast_to<CollisionShape4D>(p_shapes_a_are_detector ? p_shapes_a[shape_index_a] : p_shapes_b[shape_index_b]);
+			CollisionShape4D *detected_shape = Object::cast_to<CollisionShape4D>(p_shapes_a_are_detector ? p_shapes_b[shape_index_b] : p_shapes_a[shape_index_a]);
+			if (detector_shape != nullptr && detected_shape != nullptr) {
+				const bool do_layers_overlap = detector_shape->get_collision_mask() & detected_shape->get_collision_layer();
+				if (!do_layers_overlap) {
+					continue;
+				}
+			}
 			const Rect4 &shape_rect_b = p_shape_rects_b[shape_index_b];
 			// Inclusive is required here to pair well with the behavior of the continuous collision function.
 			if (shape_rect_a.intersects_inclusive(shape_rect_b)) {
@@ -56,12 +72,11 @@ const Vector<Rect4> &AxisAlignedBoxPhysicsEngine4D::get_body_shape_rects(Collisi
 	return _area_and_body_rects[p_moving_body];
 }
 
-Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obstacle(CollisionObject4D *p_moving_body, const Vector<Rect4> &p_moving_rects, const Vector4 &p_motion) {
+Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obstacle(CollisionObject4D *p_moving_body, const Vector<Rect4> &p_moving_rects, const Vector4 &p_motion, const double p_delta_time) {
 	Ref<KinematicCollision4D> ret;
 	ret.instantiate();
 	// Get information about bodies.
 	const TypedArray<CollisionShape4D> &moving_shapes = p_moving_body->get_collision_shapes();
-	const Vector<Rect4> &moving_shape_rects = get_body_shape_rects(p_moving_body, moving_shapes);
 	const TypedArray<PhysicsBody4D> &obstacle_body_nodes = PhysicsServer4D::get_singleton()->get_physics_body_nodes();
 	const int obstacle_body_count = obstacle_body_nodes.size();
 	// Calculate the ratio of the desired motion that can be taken before hitting an obstacle.
@@ -80,25 +95,26 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obs
 		const TypedArray<CollisionShape4D> &obstacle_body_shapes = obstacle_body_node->get_collision_shapes();
 		const Vector<Rect4> &obstacle_shape_rects = get_body_shape_rects(obstacle_body_node, obstacle_body_shapes);
 		// Iterate through both sets of shapes and check for collisions.
-		for (int moving_shape_index = 0; moving_shape_index < moving_shape_rects.size(); moving_shape_index++) {
+		for (int moving_shape_index = 0; moving_shape_index < p_moving_rects.size(); moving_shape_index++) {
 			CollisionShape4D *moving_shape = Object::cast_to<CollisionShape4D>(moving_shapes[moving_shape_index]);
 			if (moving_shape == nullptr) {
 				continue;
 			}
-			const Rect4 &moving_shape_rect = moving_shape_rects[moving_shape_index];
+			const Rect4 &moving_shape_rect = p_moving_rects[moving_shape_index];
 			for (int obstacle_shape_index = 0; obstacle_shape_index < obstacle_shape_rects.size(); obstacle_shape_index++) {
 				CollisionShape4D *obstacle_shape = Object::cast_to<CollisionShape4D>(obstacle_body_shapes[obstacle_shape_index]);
 				if (obstacle_shape == nullptr) {
 					continue;
 				}
-				if (moving_shape->get_collision_mask() & obstacle_shape->get_collision_layer()) {
+				const bool do_layers_overlap = moving_shape->get_collision_mask() & obstacle_shape->get_collision_layer();
+				if (do_layers_overlap) {
 					const Rect4 &obstacle_shape_rect = obstacle_shape_rects[obstacle_shape_index];
 					// The CCD function operates with a relative velocity, so we can check for body types and use their velocity.
 					Vector4 relative_motion = p_motion;
 					if (obstacle_character_body != nullptr) {
-						relative_motion -= obstacle_character_body->get_linear_velocity() * _physics_delta_time;
+						relative_motion -= obstacle_character_body->get_linear_velocity() * p_delta_time;
 					} else if (obstacle_rigid_body != nullptr) {
-						relative_motion -= obstacle_rigid_body->get_linear_velocity() * _physics_delta_time;
+						relative_motion -= obstacle_rigid_body->get_linear_velocity() * p_delta_time;
 					}
 					Vector4 this_normal;
 					const real_t this_ratio = moving_shape_rect.continuous_collision_depth(relative_motion, obstacle_shape_rect, &this_normal);
@@ -107,7 +123,9 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obs
 						r_out_normal = this_normal; // We remember the normal only from the nearest collision.
 						ret->set_moving_shape_node(moving_shape);
 						ret->set_obstacle_shape_node(obstacle_shape);
-						ret->set_relative_velocity(relative_motion / _physics_delta_time);
+						if (p_delta_time != 0.0) {
+							ret->set_relative_velocity(relative_motion / p_delta_time);
+						}
 					}
 				}
 			}
@@ -119,6 +137,7 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::_check_motion_until_obs
 }
 
 HashSet<Area4D *> AxisAlignedBoxPhysicsEngine4D::_step_dynamic_rigid_body(RigidBody4D *p_moving_body, const double p_delta_time) {
+	const TypedArray<CollisionShape4D> &moving_shapes = p_moving_body->get_collision_shapes();
 	const Vector4 start_global_position = p_moving_body->get_global_position();
 	// Used for determining overlaps with Area4D nodes.
 	const TypedArray<Area4D> &area_nodes = PhysicsServer4D::get_singleton()->get_area_nodes();
@@ -129,10 +148,12 @@ HashSet<Area4D *> AxisAlignedBoxPhysicsEngine4D::_step_dynamic_rigid_body(RigidB
 	{
 		Vector4 linear_velocity = p_moving_body->get_linear_velocity();
 		Vector4 desired_motion = linear_velocity * p_delta_time;
+		// In this case, use direct access to the HashMap instead of the `get_body_shape_rects()` function,
+		// since we know that the rects have just been calculated at the top of `physics_process()`.
 		Vector<Rect4> current_moving_shape_rects = _area_and_body_rects[p_moving_body];
 		constexpr int MAX_RIGID_BODY_ITERATIONS = 10;
 		for (int iteration = 0; iteration < MAX_RIGID_BODY_ITERATIONS; iteration++) {
-			Ref<KinematicCollision4D> collision = _check_motion_until_obstacle(p_moving_body, current_moving_shape_rects, desired_motion);
+			Ref<KinematicCollision4D> collision = _check_motion_until_obstacle(p_moving_body, current_moving_shape_rects, desired_motion, p_delta_time);
 			Vector4 motion_this_iteration;
 			real_t travel_ratio = collision->get_travel_ratio();
 			if (travel_ratio == 1.0f) {
@@ -165,28 +186,31 @@ HashSet<Area4D *> AxisAlignedBoxPhysicsEngine4D::_step_dynamic_rigid_body(RigidB
 				if (overlapping_areas.has(area_node)) {
 					continue; // Already overlapping, no need to check again.
 				}
-				const Vector<Rect4> &area_rects = _area_and_body_rects[area_node];
-				if (_do_moving_shapes_overlap(current_moving_shape_rects, area_rects, motion_this_iteration)) {
+				const TypedArray<CollisionShape4D> &static_shapes = area_node->get_collision_shapes();
+				const Vector<Rect4> &static_rects = get_body_shape_rects(area_node, static_shapes);
+				if (_do_moving_shapes_overlap(current_moving_shape_rects, moving_shapes, static_rects, static_shapes, motion_this_iteration, false)) {
 					overlapping_areas.insert(area_node);
 				}
 			}
 			// Update the position and current shape rects for next iteration.
 			p_moving_body->set_global_position(start_global_position + actual_motion);
-			current_moving_shape_rects = _calculate_shape_rects(p_moving_body->get_collision_shapes());
+			current_moving_shape_rects = _calculate_shape_rects(moving_shapes);
 			if (desired_motion.is_zero_approx()) {
 				break;
 			}
 		}
 		p_moving_body->set_linear_velocity(linear_velocity);
-		_rigid_body_rect_queue[p_moving_body] = current_moving_shape_rects;
+		_dynamic_rigid_body_rect_queue[p_moving_body] = current_moving_shape_rects;
 	}
 	return overlapping_areas;
 }
 
-Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::move_and_collide(PhysicsBody4D *p_moving_body, const Vector4 &p_motion, const bool p_test_only) {
+Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::move_and_collide(PhysicsBody4D *p_moving_body, const Vector4 &p_motion, const bool p_test_only, const double p_delta_time) {
+	const TypedArray<CollisionShape4D> &moving_shapes = p_moving_body->get_collision_shapes();
+	const double delta_time = p_delta_time < 0.0 ? _most_recent_physics_delta_time : p_delta_time;
 	// Calculate the motion.
-	const Vector<Rect4> &moving_shape_rects = get_body_shape_rects(p_moving_body, p_moving_body->get_collision_shapes());
-	Ref<KinematicCollision4D> collision = _check_motion_until_obstacle(p_moving_body, moving_shape_rects, p_motion);
+	const Vector<Rect4> &moving_rects_before = get_body_shape_rects(p_moving_body, moving_shapes);
+	Ref<KinematicCollision4D> collision = _check_motion_until_obstacle(p_moving_body, moving_rects_before, p_motion, delta_time);
 	if (p_test_only) {
 		return collision;
 	}
@@ -201,19 +225,20 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::move_and_collide(Physic
 	// We still need a proper depenetration algorithm to fix already-overlapping objects.
 	Vector4 safe_margin = collision->get_normal() * PHYSICS_4D_SAFE_MARGIN;
 	p_moving_body->set_global_position(p_moving_body->get_global_position() + p_motion * travel_ratio + safe_margin);
-	Vector<Rect4> moving_rects_after = _calculate_shape_rects(p_moving_body->get_collision_shapes());
+	Vector<Rect4> moving_rects_after = _calculate_shape_rects(moving_shapes);
 	// Check for overlaps with areas.
 	const TypedArray<Area4D> &area_nodes = PhysicsServer4D::get_singleton()->get_area_nodes();
 	for (int area_index = 0; area_index < area_nodes.size(); area_index++) {
 		Area4D *area_node = Object::cast_to<Area4D>(area_nodes[area_index]);
-		const Vector<Rect4> &static_area_rects = _area_and_body_rects[area_node];
-		if (_do_moving_shapes_overlap(moving_shape_rects, static_area_rects, p_motion * travel_ratio)) {
-			if (!_do_static_shapes_overlap(moving_shape_rects, static_area_rects)) {
+		const TypedArray<CollisionShape4D> &static_shapes = area_node->get_collision_shapes();
+		const Vector<Rect4> &static_rects = get_body_shape_rects(area_node, static_shapes);
+		if (_do_moving_shapes_overlap(moving_rects_before, moving_shapes, static_rects, static_shapes, p_motion * travel_ratio, false)) {
+			if (!_do_static_shapes_overlap(moving_rects_before, moving_shapes, static_rects, static_shapes, false)) {
 				// If they overlap during the motion, but didn't before, emit the entered signals.
 				area_node->emit_signal(StringName("body_entered_self"), p_moving_body);
 				p_moving_body->emit_signal(StringName("self_entered_area"), area_node);
 			}
-			if (!_do_static_shapes_overlap(moving_rects_after, static_area_rects)) {
+			if (!_do_static_shapes_overlap(moving_rects_after, moving_shapes, static_rects, static_shapes, false)) {
 				// If they overlap during the motion, but don't after, emit the exited signals.
 				area_node->emit_signal(StringName("body_exited_self"), p_moving_body);
 				p_moving_body->emit_signal(StringName("self_exited_area"), area_node);
@@ -225,9 +250,11 @@ Ref<KinematicCollision4D> AxisAlignedBoxPhysicsEngine4D::move_and_collide(Physic
 }
 
 void AxisAlignedBoxPhysicsEngine4D::move_area(Area4D *p_moving_area, const Vector4 &p_motion) {
+	const TypedArray<CollisionShape4D> &moving_shapes = p_moving_area->get_collision_shapes();
+	const Vector<Rect4> &moving_rects_before = get_body_shape_rects(p_moving_area, moving_shapes);
+	// Area nodes are not stopped by anything, so we can just move them and check for overlaps after.
 	p_moving_area->set_global_position(p_moving_area->get_global_position() + p_motion);
-	const Vector<Rect4> &moving_shape_rects_before = _area_and_body_rects[p_moving_area];
-	Vector<Rect4> moving_area_rects_after = _calculate_shape_rects(p_moving_area->get_collision_shapes());
+	const Vector<Rect4> moving_rects_after = _calculate_shape_rects(moving_shapes);
 	// Check for overlaps with bodies and other areas.
 	const TypedArray<Area4D> &area_nodes = PhysicsServer4D::get_singleton()->get_area_nodes();
 	for (int area_index = 0; area_index < area_nodes.size(); area_index++) {
@@ -235,14 +262,15 @@ void AxisAlignedBoxPhysicsEngine4D::move_area(Area4D *p_moving_area, const Vecto
 		if (static_area_node == p_moving_area) {
 			continue; // Don't collide with ourself.
 		}
-		const Vector<Rect4> &static_area_rects = _area_and_body_rects[static_area_node];
-		if (_do_moving_shapes_overlap(moving_shape_rects_before, static_area_rects, p_motion)) {
-			if (!_do_static_shapes_overlap(moving_shape_rects_before, static_area_rects)) {
+		const TypedArray<CollisionShape4D> &static_shapes = static_area_node->get_collision_shapes();
+		const Vector<Rect4> &static_rects = get_body_shape_rects(static_area_node, static_shapes);
+		if (_do_moving_shapes_overlap(moving_rects_before, moving_shapes, static_rects, static_shapes, p_motion, false)) {
+			if (!_do_static_shapes_overlap(moving_rects_before, moving_shapes, static_rects, static_shapes, false)) {
 				// If they overlap during the motion, but didn't before, emit the entered signals.
 				static_area_node->emit_signal(StringName("area_entered_self"), p_moving_area);
 				p_moving_area->emit_signal(StringName("self_entered_area"), static_area_node);
 			}
-			if (!_do_static_shapes_overlap(moving_area_rects_after, static_area_rects)) {
+			if (!_do_static_shapes_overlap(moving_rects_after, moving_shapes, static_rects, static_shapes, false)) {
 				// If they overlap during the motion, but don't after, emit the exited signals.
 				static_area_node->emit_signal(StringName("area_exited_self"), p_moving_area);
 				p_moving_area->emit_signal(StringName("self_exited_area"), static_area_node);
@@ -252,25 +280,26 @@ void AxisAlignedBoxPhysicsEngine4D::move_area(Area4D *p_moving_area, const Vecto
 	const TypedArray<PhysicsBody4D> &body_nodes = PhysicsServer4D::get_singleton()->get_physics_body_nodes();
 	for (int body_index = 0; body_index < body_nodes.size(); body_index++) {
 		PhysicsBody4D *static_body_node = Object::cast_to<PhysicsBody4D>(body_nodes[body_index]);
-		const Vector<Rect4> &static_body_rects = _area_and_body_rects[static_body_node];
-		if (_do_moving_shapes_overlap(moving_shape_rects_before, static_body_rects, p_motion)) {
-			if (!_do_static_shapes_overlap(moving_shape_rects_before, static_body_rects)) {
+		const TypedArray<CollisionShape4D> &static_shapes = static_body_node->get_collision_shapes();
+		const Vector<Rect4> &static_rects = get_body_shape_rects(static_body_node, static_shapes);
+		if (_do_moving_shapes_overlap(moving_rects_before, moving_shapes, static_rects, static_shapes, p_motion, true)) {
+			if (!_do_static_shapes_overlap(moving_rects_before, moving_shapes, static_rects, static_shapes, true)) {
 				// If they overlap during the motion, but didn't before, emit the entered signals.
 				static_body_node->emit_signal(StringName("self_entered_area"), p_moving_area);
 				p_moving_area->emit_signal(StringName("body_entered_self"), static_body_node);
 			}
-			if (!_do_static_shapes_overlap(moving_area_rects_after, static_body_rects)) {
+			if (!_do_static_shapes_overlap(moving_rects_after, moving_shapes, static_rects, static_shapes, true)) {
 				// If they overlap during the motion, but don't after, emit the exited signals.
 				static_body_node->emit_signal(StringName("self_exited_area"), p_moving_area);
 				p_moving_area->emit_signal(StringName("body_exited_self"), static_body_node);
 			}
 		}
 	}
-	_area_and_body_rects[p_moving_area] = moving_area_rects_after;
+	_area_and_body_rects[p_moving_area] = moving_rects_after;
 }
 
 void AxisAlignedBoxPhysicsEngine4D::physics_process(const double p_delta_time) {
-	_physics_delta_time = p_delta_time;
+	_most_recent_physics_delta_time = p_delta_time;
 	// Recalculate rects for all areas and bodies each frame, just in case they changed.
 	_area_and_body_rects.clear();
 	const TypedArray<Area4D> &area_nodes = PhysicsServer4D::get_singleton()->get_area_nodes();
@@ -292,17 +321,21 @@ void AxisAlignedBoxPhysicsEngine4D::physics_process(const double p_delta_time) {
 	for (int body_index = 0; body_index < body_nodes.size(); body_index++) {
 		RigidBody4D *rigid_body = Object::cast_to<RigidBody4D>(body_nodes[body_index]);
 		if (rigid_body) {
+			const TypedArray<CollisionShape4D> &moving_shapes = rigid_body->get_collision_shapes();
 			HashSet<Area4D *> overlapping_areas = _step_dynamic_rigid_body(rigid_body, p_delta_time);
 			// Check for overlaps with areas. The HashSet tells us which areas overlap
 			// via the whole CCD motion, but we need to check before and after.
 			for (Area4D *area_node : overlapping_areas) {
-				const Vector<Rect4> &area_rects = _area_and_body_rects[area_node];
-				if (!_do_static_shapes_overlap(_area_and_body_rects[rigid_body], area_rects)) {
+				const TypedArray<CollisionShape4D> &static_shapes = area_node->get_collision_shapes();
+				// In this case, use direct access to the HashMap instead of the `get_body_shape_rects()` function,
+				// since we know that the rects have just been calculated at the top of this function.
+				const Vector<Rect4> &static_rects = _area_and_body_rects[area_node];
+				if (!_do_static_shapes_overlap(_area_and_body_rects[rigid_body], moving_shapes, static_rects, static_shapes, false)) {
 					// If they overlap during the motion, but didn't before, emit the entered signals.
 					area_node->emit_signal(StringName("body_entered_self"), rigid_body);
 					rigid_body->emit_signal(StringName("self_entered_area"), area_node);
 				}
-				if (!_do_static_shapes_overlap(_rigid_body_rect_queue[rigid_body], area_rects)) {
+				if (!_do_static_shapes_overlap(_dynamic_rigid_body_rect_queue[rigid_body], moving_shapes, static_rects, static_shapes, false)) {
 					// If they overlap during the motion, but don't after, emit the exited signals.
 					area_node->emit_signal(StringName("body_exited_self"), rigid_body);
 					rigid_body->emit_signal(StringName("self_exited_area"), area_node);
@@ -310,11 +343,11 @@ void AxisAlignedBoxPhysicsEngine4D::physics_process(const double p_delta_time) {
 			}
 		}
 	}
-	// Update rects for rigid bodies from queue. Doing this separately from stepping
-	// allows rigid bodies to move next to each other and hit each other, with the
+	// Update rects for dynamic rigid bodies from queue. Doing this separately from stepping
+	// allows dynamic rigid bodies to move next to each other and hit each other, with the
 	// same behavior regardless of the order they are processed in.
-	for (const KeyValue<RigidBody4D *, Vector<Rect4>> &item : _rigid_body_rect_queue) {
+	for (const KeyValue<RigidBody4D *, Vector<Rect4>> &item : _dynamic_rigid_body_rect_queue) {
 		_area_and_body_rects[item.key] = item.value;
 	}
-	_rigid_body_rect_queue.clear();
+	_dynamic_rigid_body_rect_queue.clear();
 }

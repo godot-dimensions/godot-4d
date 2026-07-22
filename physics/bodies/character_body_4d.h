@@ -21,7 +21,7 @@ public:
 	bool is_on_floor() const { return _is_on_floor; }
 	bool is_on_wall() const { return _is_on_wall; }
 
-	TypedArray<KinematicCollision4D> move_and_slide();
+	TypedArray<KinematicCollision4D> move_and_slide(const double p_delta_time = -1.0);
 
 	real_t get_floor_max_angle() const { return _floor_max_angle; }
 	void set_floor_max_angle(const real_t p_floor_max_angle) { _floor_max_angle = p_floor_max_angle; }

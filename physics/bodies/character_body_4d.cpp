@@ -10,17 +10,22 @@
 
 constexpr int MAX_MOVE_AND_SLIDE_ITERATIONS = 10;
 
-TypedArray<KinematicCollision4D> CharacterBody4D::move_and_slide() {
-	// Hack in order to work with calling from _process as well as from _physics_process. Copied from CharacterBody3D.
-	const double delta = Engine::get_singleton()->is_in_physics_frame() ? get_physics_process_delta_time() : get_process_delta_time();
+TypedArray<KinematicCollision4D> CharacterBody4D::move_and_slide(const double p_delta_time) {
+	double delta_time;
+	if (p_delta_time < 0.0) {
+		// Hack in order to work with calling from _process as well as from _physics_process. Copied from CharacterBody3D.
+		delta_time = Engine::get_singleton()->is_in_physics_frame() ? get_physics_process_delta_time() : get_process_delta_time();
+	} else {
+		delta_time = p_delta_time;
+	}
 	TypedArray<KinematicCollision4D> collisions;
 	_is_on_ceiling = false;
 	_is_on_floor = false;
 	_is_on_wall = false;
 	{
-		Vector4 desired_motion = _linear_velocity * delta;
+		Vector4 desired_motion = _linear_velocity * delta_time;
 		for (int iteration = 0; iteration < MAX_MOVE_AND_SLIDE_ITERATIONS; iteration++) {
-			Ref<KinematicCollision4D> collision = move_and_collide(desired_motion);
+			Ref<KinematicCollision4D> collision = move_and_collide(desired_motion, false, delta_time);
 			const real_t travel_ratio = collision->get_travel_ratio();
 			if (travel_ratio == 1.0f) {
 				// This last move_and_collide call moved us the rest of the way, with no collisions.
@@ -66,7 +71,7 @@ void CharacterBody4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_on_floor"), &CharacterBody4D::is_on_floor);
 	ClassDB::bind_method(D_METHOD("is_on_wall"), &CharacterBody4D::is_on_wall);
 
-	ClassDB::bind_method(D_METHOD("move_and_slide"), &CharacterBody4D::move_and_slide);
+	ClassDB::bind_method(D_METHOD("move_and_slide", "delta_time"), &CharacterBody4D::move_and_slide, DEFVAL(-1.0));
 
 	ClassDB::bind_method(D_METHOD("get_floor_max_angle"), &CharacterBody4D::get_floor_max_angle);
 	ClassDB::bind_method(D_METHOD("set_floor_max_angle", "floor_max_angle"), &CharacterBody4D::set_floor_max_angle);

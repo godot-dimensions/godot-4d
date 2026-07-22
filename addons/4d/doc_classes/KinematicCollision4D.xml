@@ -42,7 +42,7 @@
 		<member name="relative_velocity" type="Vector4" setter="set_relative_velocity" getter="get_relative_velocity" default="Vector4(0, 0, 0, 0)">
 			The relative velocity between the two colliding objects. Not guaranteed to be correct for [CharacterBody4D] nodes since those are allowed to be calculated out of sync with physics process, but is always correct for [RigidBody4D] nodes and static [PhysicsBody4D] nodes including [StaticBody4D] and non-moving [CharacterBody4D] nodes.
 		</member>
-		<member name="travel_ratio" type="float" setter="set_travel_ratio" getter="get_travel_ratio" default="0.0">
+		<member name="travel_ratio" type="float" setter="set_travel_ratio" getter="get_travel_ratio" default="1.0">
 			The ratio of the motion that was completed before the collision occurred. A value of [code]1.0[/code] means the full motion occurred, while a value of [code]0.0[/code] means no motion occurred (the moving object immediately hit the obstacle).
 		</member>
 	</members>

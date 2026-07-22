@@ -19,10 +19,10 @@ void PhysicsServer4D::_physics_process() {
 	_current_physics_engine->physics_process(delta_time);
 }
 
-Ref<KinematicCollision4D> PhysicsServer4D::move_and_collide(PhysicsBody4D *p_body_node, const Vector4 &p_motion, const bool p_test_only) {
+Ref<KinematicCollision4D> PhysicsServer4D::move_and_collide(PhysicsBody4D *p_body_node, const Vector4 &p_motion, const bool p_test_only, const double p_delta_time) {
 	ERR_FAIL_NULL_V_MSG(p_body_node, Ref<KinematicCollision4D>(), "PhysicsServer4D: Cannot move a null PhysicsBody4D node.");
 	ERR_FAIL_COND_V_MSG(_current_physics_engine.is_null(), Ref<KinematicCollision4D>(), "PhysicsServer4D: No physics engine is set.");
-	return _current_physics_engine->move_and_collide(p_body_node, p_motion, p_test_only);
+	return _current_physics_engine->move_and_collide(p_body_node, p_motion, p_test_only, p_delta_time);
 }
 
 void PhysicsServer4D::move_area(Area4D *p_area_node, const Vector4 &p_motion) {

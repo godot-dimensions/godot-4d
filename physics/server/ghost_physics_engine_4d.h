@@ -13,7 +13,7 @@ protected:
 	static void _bind_methods() {}
 
 public:
-	virtual Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body, const Vector4 &p_motion, const bool p_test_only) override;
+	virtual Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body, const Vector4 &p_motion, const bool p_test_only, const double p_delta_time) override;
 	virtual void move_area(Area4D *p_area, const Vector4 &p_motion) override;
 	virtual void physics_process(const double p_delta_time) override;
 };

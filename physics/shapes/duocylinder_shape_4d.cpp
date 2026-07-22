@@ -52,7 +52,9 @@ Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, c
 		const real_t discriminant_xy = xy_point_dot_xy_dir * xy_point_dot_xy_dir - xy_dir_len_sq * (xy_point_dot_xy_point - _radius_xy * _radius_xy);
 		if (discriminant_xy >= 0.0f) {
 			const real_t sqrt_discriminant_xy = Math::sqrt(discriminant_xy);
-			const real_t xy_distance = (-xy_point_dot_xy_dir - sqrt_discriminant_xy) / xy_dir_len_sq;
+			const real_t xy_distance_near = (-xy_point_dot_xy_dir - sqrt_discriminant_xy) / xy_dir_len_sq;
+			const real_t xy_distance_far = (-xy_point_dot_xy_dir + sqrt_discriminant_xy) / xy_dir_len_sq;
+			const real_t xy_distance = xy_distance_near >= 0.0f ? xy_distance_near : xy_distance_far;
 			if (xy_distance >= 0.0f) {
 				const Vector4 hit_point = p_local_from + p_local_direction * xy_distance;
 				const Vector2 zw_check = Vector2(hit_point.z, hit_point.w);
@@ -83,7 +85,9 @@ Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, c
 		const real_t discriminant_zw = zw_point_dot_zw_dir * zw_point_dot_zw_dir - zw_dir_len_sq * (zw_point_dot_zw_point - _radius_zw * _radius_zw);
 		if (discriminant_zw >= 0.0f) {
 			const real_t sqrt_discriminant_zw = Math::sqrt(discriminant_zw);
-			const real_t zw_distance = (-zw_point_dot_zw_dir - sqrt_discriminant_zw) / zw_dir_len_sq;
+			const real_t zw_distance_near = (-zw_point_dot_zw_dir - sqrt_discriminant_zw) / zw_dir_len_sq;
+			const real_t zw_distance_far = (-zw_point_dot_zw_dir + sqrt_discriminant_zw) / zw_dir_len_sq;
+			const real_t zw_distance = zw_distance_near >= 0.0f ? zw_distance_near : zw_distance_far;
 			if (zw_distance >= 0.0f && zw_distance < best_distance) {
 				const Vector4 hit_point = p_local_from + p_local_direction * zw_distance;
 				const Vector2 xy_check = Vector2(hit_point.x, hit_point.y);
@@ -99,6 +103,7 @@ Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, c
 		result["hit"] = true;
 		result["distance"] = best_distance;
 		result["normal"] = best_normal;
+		result["point"] = p_local_from + p_local_direction * best_distance;
 	}
 	return result;
 }
