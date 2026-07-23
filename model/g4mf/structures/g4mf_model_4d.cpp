@@ -68,6 +68,8 @@ Error G4MFModel4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) 
 		_model_g4mf_state.instantiate();
 		_model_g4mf_state->set_external_data_mode(p_g4mf_state->get_external_data_mode());
 		if (file_uri_only.is_empty()) {
+			// Embedded models resolve any of their own relative external
+			// references beside the containing G4MF file, unless overridden.
 			_model_g4mf_state->set_g4mf_base_path(main_base_path);
 			err = model_g4mf_document->import_read_from_byte_array(_model_g4mf_state, file_data);
 		} else {
@@ -236,7 +238,17 @@ Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_sta
 	}
 	// Use the MIME type determined above as-is, and use the file extension to determine the path and name.
 	set_mime_type(mime_type);
-	const String target_uri = get_file_uri() + file_extension;
+	String target_uri = get_file_uri();
+	if (target_uri.is_empty()) {
+		target_uri = get_item_name();
+		if (target_uri.is_empty()) {
+			int64_t index_of_self = p_g4mf_state->get_g4mf_files().find(this);
+			target_uri = "model" + String::num_int64(index_of_self);
+		}
+	}
+	if (!target_uri.ends_with(file_extension)) {
+		target_uri += file_extension;
+	}
 	const String file_path = p_g4mf_state->get_g4mf_base_path().path_join(target_uri);
 	if (!should_separate_model_files || target_uri.contains("/")) {
 		set_item_name(p_g4mf_state->reserve_unique_name(target_uri.get_file()));

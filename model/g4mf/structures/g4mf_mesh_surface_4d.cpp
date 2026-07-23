@@ -4,9 +4,26 @@
 #include "../g4mf_state_4d.h"
 
 bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const {
-	return (_simplexes_accessor_index == p_other->get_simplexes_accessor_index() &&
-			_edges_accessor_index == p_other->get_edges_accessor_index() &&
-			_polytope_simplexes == p_other->get_polytope_simplexes());
+	if (p_other.is_null()) {
+		return false;
+	}
+	if (_edges_accessor_index != p_other->get_edges_accessor_index() ||
+			_material_index != p_other->get_material_index() ||
+			_seams_accessor_index != p_other->get_seams_accessor_index() ||
+			_simplexes_accessor_index != p_other->get_simplexes_accessor_index() ||
+			_polytope_simplexes != p_other->get_polytope_simplexes() ||
+			_geometry_accessor_indices != p_other->get_geometry_accessor_indices() ||
+			_normals_binding.is_valid() != p_other->get_normals_binding().is_valid() ||
+			_texture_map_binding.is_valid() != p_other->get_texture_map_binding().is_valid()) {
+		return false;
+	}
+	if (_normals_binding.is_valid() && !_normals_binding->is_equal_exact(p_other->get_normals_binding())) {
+		return false;
+	}
+	if (_texture_map_binding.is_valid() && !_texture_map_binding->is_equal_exact(p_other->get_texture_map_binding())) {
+		return false;
+	}
+	return true;
 }
 
 void G4MFMeshSurface4D::convert_separated_geometry_into_packed(const Ref<G4MFState4D> &p_g4mf_state, const Vector<Vector<PackedInt32Array>> &p_separated_geometry, const bool p_deduplicate) {

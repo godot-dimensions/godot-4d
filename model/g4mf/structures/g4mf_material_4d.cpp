@@ -4,6 +4,9 @@
 #include "../g4mf_state_4d.h"
 
 bool G4MFMaterial4D::is_equal_exact(const Ref<G4MFMaterial4D> &p_other) const {
+	if (p_other.is_null()) {
+		return false;
+	}
 	if ((_base_color_channel.is_valid() != p_other->get_base_color_channel().is_valid()) ||
 			(_emissive_channel.is_valid() != p_other->get_emissive_channel().is_valid()) ||
 			(_normal_channel.is_valid() != p_other->get_normal_channel().is_valid()) ||
@@ -38,7 +41,7 @@ Ref<TetraMaterial4D> G4MFMaterial4D::generate_tetra_material(const Ref<G4MFState
 		const Ref<G4MFMeshSurfaceBinding4D> base_color_binding = _base_color_channel->get_element_map_binding();
 		if (base_color_binding.is_valid()) {
 			const PackedColorArray original_colors = base_color_binding->load_values_as_colors(p_g4mf_state);
-			if (base_color_binding->get_per_simplex_accessor_index() != 0) {
+			if (base_color_binding->get_per_simplex_accessor_index() >= 0) {
 				PackedInt32Array simplex_indices = base_color_binding->load_per_simplex_indices(p_g4mf_state);
 				PackedColorArray simplex_colors;
 				simplex_colors.resize(simplex_indices.size());

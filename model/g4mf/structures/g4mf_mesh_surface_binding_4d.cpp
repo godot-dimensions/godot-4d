@@ -3,19 +3,27 @@
 #include "../g4mf_state_4d.h"
 
 bool G4MFMeshSurfaceBindingGeometry4D::is_equal_exact(const Ref<G4MFMeshSurfaceBindingGeometry4D> &p_other) const {
+	if (p_other.is_null()) {
+		return false;
+	}
 	return (_indices_accessor_index == p_other->get_indices_accessor_index() &&
 			_decompose_dimension == p_other->get_decompose_dimension() &&
 			_geometry_dimension == p_other->get_geometry_dimension());
 }
 
 PackedInt32Array G4MFMeshSurfaceBindingGeometry4D::load_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedInt32Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_indices_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_indices_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedInt32Array());
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 bool G4MFMeshSurfaceBinding4D::is_equal_exact(const Ref<G4MFMeshSurfaceBinding4D> &p_other) const {
+	if (p_other.is_null()) {
+		return false;
+	}
 	const TypedArray<G4MFMeshSurfaceBindingGeometry4D> other_geometry_decompositions = p_other->get_geometry_bindings();
 	if (_geometry_bindings.size() != other_geometry_decompositions.size()) {
 		return false;
@@ -23,7 +31,7 @@ bool G4MFMeshSurfaceBinding4D::is_equal_exact(const Ref<G4MFMeshSurfaceBinding4D
 	for (int i = 0; i < _geometry_bindings.size(); i++) {
 		const Ref<G4MFMeshSurfaceBindingGeometry4D> geom = _geometry_bindings[i];
 		const Ref<G4MFMeshSurfaceBindingGeometry4D> other = other_geometry_decompositions[i];
-		if (!geom->is_equal_exact(other)) {
+		if (geom.is_null() || other.is_null() || !geom->is_equal_exact(other)) {
 			return false;
 		}
 	}
@@ -37,6 +45,9 @@ PackedInt32Array G4MFMeshSurfaceBinding4D::load_geometry_binding_indices(const R
 	int accessor_index = -1;
 	for (int i = 0; i < _geometry_bindings.size(); i++) {
 		const Ref<G4MFMeshSurfaceBindingGeometry4D> geom = _geometry_bindings[i];
+		if (geom.is_null()) {
+			continue;
+		}
 		if (geom->get_geometry_dimension() == p_geometry_dimension && geom->get_decompose_dimension() == p_decompose_dimension) {
 			accessor_index = geom->get_indices_accessor_index();
 			break;
@@ -48,48 +59,61 @@ PackedInt32Array G4MFMeshSurfaceBinding4D::load_geometry_binding_indices(const R
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedInt32Array());
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 PackedInt32Array G4MFMeshSurfaceBinding4D::load_per_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedInt32Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_per_simplex_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_per_simplex_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedInt32Array());
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 PackedInt32Array G4MFMeshSurfaceBinding4D::load_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedInt32Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_simplexes_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_simplexes_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedInt32Array());
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 Array G4MFMeshSurfaceBinding4D::load_values_as_variants(const Ref<G4MFState4D> &p_g4mf_state, const Variant::Type p_variant_type) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_values_accessor_index, state_accessors.size(), Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_values_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), Array());
 	return accessor->decode_variants_from_bytes(p_g4mf_state, p_variant_type);
 }
 
 PackedColorArray G4MFMeshSurfaceBinding4D::load_values_as_colors(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedColorArray());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_values_accessor_index, state_accessors.size(), PackedColorArray());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_values_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedColorArray());
 	return accessor->decode_colors_from_bytes(p_g4mf_state);
 }
 
 PackedVector3Array G4MFMeshSurfaceBinding4D::load_values_as_vector3s(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedVector3Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_values_accessor_index, state_accessors.size(), PackedVector3Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_values_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedVector3Array());
 	return accessor->decode_vector3s_from_bytes(p_g4mf_state);
 }
 
 PackedVector4Array G4MFMeshSurfaceBinding4D::load_values_as_vector4s(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedVector4Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_values_accessor_index, state_accessors.size(), PackedVector4Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_values_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedVector4Array());
 	return accessor->decode_vector4s_from_bytes(p_g4mf_state);
 }
 

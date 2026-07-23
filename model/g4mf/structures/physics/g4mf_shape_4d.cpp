@@ -31,9 +31,15 @@ bool G4MFShape4D::is_equal_exact(const Ref<G4MFShape4D> &p_other) const {
 	for (int i = 0; i < _curves.size(); ++i) {
 		Ref<GeneralShapeCurve4D> this_curve = _curves[i];
 		Ref<GeneralShapeCurve4D> other_curve = p_other->_curves[i];
-		if (!this_curve->is_equal_exact(other_curve)) {
+		if (this_curve.is_null() || other_curve.is_null() || !this_curve->is_equal_exact(other_curve)) {
 			return false;
 		}
+	}
+	if (_grid_size != p_other->_grid_size) {
+		return false;
+	}
+	if (_grid_spacing != p_other->_grid_spacing) {
+		return false;
 	}
 	if (_heights_accessor_index != p_other->_heights_accessor_index) {
 		return false;
@@ -48,9 +54,11 @@ bool G4MFShape4D::is_equal_exact(const Ref<G4MFShape4D> &p_other) const {
 }
 
 PackedFloat64Array G4MFShape4D::load_heights(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedFloat64Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_heights_accessor_index, state_accessors.size(), PackedFloat64Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_heights_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedFloat64Array());
 	return accessor->decode_float64s_from_bytes(p_g4mf_state);
 }
 

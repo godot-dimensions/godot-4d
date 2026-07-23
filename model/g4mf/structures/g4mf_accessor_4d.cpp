@@ -35,14 +35,22 @@ void G4MFAccessor4D::_minimal_component_bits_for_double(const double p_value, ui
 	if (r_float_bits == 32 && !_double_bits_equal((double)(float)p_value, p_value)) {
 		r_float_bits = 64;
 	}
-	const int64_t as_int = (int64_t)p_value;
-	if (p_value != (double)as_int) {
+	// Converting a non-finite or out-of-range floating-point value to an integer
+	// is undefined behavior in C++. The upper bound is 2^63 because INT64_MAX
+	// rounds to 2^63 when represented as a double.
+	if (!Math::is_finite(p_value) || p_value < (double)INT64_MIN || p_value >= 9223372036854775808.0) {
+		r_int_bits = CANT_USE_COMP_TYPE;
+		r_uint_bits = CANT_USE_COMP_TYPE;
+		return;
+	}
+	const int64_t value_as_int = (int64_t)p_value;
+	if (p_value != (double)value_as_int) {
 		// Can't be represented as an int, so just set these to a very big number.
 		r_int_bits = CANT_USE_COMP_TYPE;
 		r_uint_bits = CANT_USE_COMP_TYPE;
 		return;
 	}
-	_minimal_component_bits_for_int64(as_int, r_int_bits, r_uint_bits);
+	_minimal_component_bits_for_int64(value_as_int, r_int_bits, r_uint_bits);
 }
 
 void G4MFAccessor4D::_minimal_component_bits_for_int64(const int64_t p_value, uint32_t &r_int_bits, uint32_t &r_uint_bits) {
@@ -80,7 +88,7 @@ String G4MFAccessor4D::_minimal_component_type_given_bits(const uint32_t p_float
 		return String("int") + String::num_uint64(p_int_bits);
 	}
 	// Prefer unsigned ints if all are equally efficient.
-	return String("uint") + String::num_uint64(p_int_bits);
+	return String("uint") + String::num_uint64(p_uint_bits);
 }
 
 // Private decode functions. Use `decode_variants_from_bytes` publicly.
@@ -514,7 +522,9 @@ PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4
 	ERR_FAIL_INDEX_V_MSG(_buffer_view_index, state_buffer_views.size(), PackedByteArray(), "G4MF import: The buffer view index is out of bounds. Returning an empty byte array.");
 	const Ref<G4MFBufferView4D> buffer_view = state_buffer_views[_buffer_view_index];
 	const PackedByteArray raw_bytes = buffer_view->read_buffer_view_data(p_g4mf_state);
-	ERR_FAIL_COND_V_MSG(raw_bytes.size() % get_bytes_per_vector() != 0, PackedByteArray(), "G4MF import: The buffer view size was not a multiple of the vector size. Returning an empty byte array.");
+	const int64_t bytes_per_vector = get_bytes_per_vector();
+	ERR_FAIL_COND_V_MSG(bytes_per_vector <= 0, PackedByteArray(), "G4MF import: Failed to determine the number of bytes per vector. Returning an empty byte array.");
+	ERR_FAIL_COND_V_MSG((raw_bytes.size() % bytes_per_vector) != 0, PackedByteArray(), "G4MF import: The buffer view size was not a multiple of the vector size. Returning an empty byte array.");
 	return raw_bytes;
 }
 

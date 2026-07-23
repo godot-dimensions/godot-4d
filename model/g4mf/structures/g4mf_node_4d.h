@@ -79,7 +79,7 @@ public:
 
 	// This split is needed by G4MFDocument4D for models, so we can skip the "components" for the model instance node.
 	static Ref<G4MFNode4D> from_godot_node_basic(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
-	void from_godot_node_components(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
+	void export_convert_godot_node_functionality(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
 	// However, for the exposed version, we can just make a single function that wraps both of those.
 	static Ref<G4MFNode4D> from_godot_node(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node);
 

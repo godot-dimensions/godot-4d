@@ -5,9 +5,11 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/marshalls.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #elif GODOT_MODULE
 #include "core/config/project_settings.h"
+#include "core/core_bind.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #endif
@@ -15,6 +17,12 @@
 PackedByteArray G4MFFileReference4D::read_file_data(const Ref<G4MFState4D> &p_g4mf_state) const {
 	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), PackedByteArray());
 	if (!_file_uri.is_empty()) {
+		if (_file_uri.begins_with("data:")) {
+			const int base64_marker = _file_uri.find(";base64,");
+			ERR_FAIL_COND_V_MSG(base64_marker == -1, PackedByteArray(), "G4MF import: Only base64-encoded data URIs are currently supported.");
+			const String payload = _file_uri.substr(base64_marker + 8);
+			return CoreBind::Marshalls::get_singleton()->base64_to_raw(payload);
+		}
 		const String path = p_g4mf_state->get_g4mf_base_path().path_join(_file_uri);
 		Ref<DirAccess> dir = DirAccess::open(p_g4mf_state->get_g4mf_base_path());
 		if (dir.is_valid() && dir->file_exists(_file_uri)) {

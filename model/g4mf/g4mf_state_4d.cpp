@@ -3,8 +3,8 @@
 int G4MFState4D::append_g4mf_node(Ref<G4MFNode4D> p_node) {
 	const String requested_name = p_node->get_name();
 	if (!requested_name.is_empty()) {
-		// Use set_name here, not set_item_name, because we sanitize before reserving.
-		p_node->set_name(reserve_unique_name(G4MFItem4D::sanitize_item_name(requested_name)));
+		// Use set_name here, not set_item_name, because reserve_unique_name sanitizes before reserving.
+		p_node->set_name(reserve_unique_name(requested_name));
 	}
 	const int node_index = _g4mf_nodes.size();
 	_g4mf_nodes.push_back(p_node);
@@ -25,15 +25,16 @@ int G4MFState4D::get_node_index(const Node4D *p_node) {
 }
 
 String G4MFState4D::reserve_unique_name(const String &p_requested_name, const bool p_show_warning) {
-	String unique_name = p_requested_name;
+	const String sanitized_name = G4MFItem4D::sanitize_item_name(p_requested_name);
+	String unique_name = sanitized_name;
 	if (_unique_names.has(unique_name)) {
 		uint64_t discriminator = 2;
 		while (_unique_names.has(unique_name)) {
-			unique_name = p_requested_name + String::num_uint64(discriminator);
+			unique_name = sanitized_name + String::num_uint64(discriminator);
 			discriminator++;
 		}
 		if (p_show_warning) {
-			WARN_PRINT("G4MFState4D: The requested name " + p_requested_name + " is already in use. The name " + unique_name + " will be used instead.");
+			WARN_PRINT("G4MFState4D: The requested name " + p_requested_name + " (sanitized to " + sanitized_name + ") is already in use. The name " + unique_name + " will be used instead.");
 		}
 	}
 	_unique_names.insert(unique_name);

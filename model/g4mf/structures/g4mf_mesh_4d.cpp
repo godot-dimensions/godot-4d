@@ -33,6 +33,8 @@ bool G4MFMesh4D::can_generate_poly_meshes_for_all_surfaces() const {
 			return false;
 		}
 	}
+	// For the use cases of this function, also return true if there are zero surfaces,
+	// but that is a degenerate case, since the spec requires at least one surface per mesh.
 	return true;
 }
 
@@ -43,6 +45,8 @@ bool G4MFMesh4D::can_generate_tetra_meshes_for_all_surfaces() const {
 			return false;
 		}
 	}
+	// For the use cases of this function, also return true if there are zero surfaces,
+	// but that is a degenerate case, since the spec requires at least one surface per mesh.
 	return true;
 }
 
@@ -58,6 +62,9 @@ G4MFMesh4D::MeshFormat G4MFMesh4D::get_compatible_mesh_format(MeshFormat p_prefe
 }
 
 bool G4MFMesh4D::is_equal_exact(const Ref<G4MFMesh4D> &p_other) const {
+	if (p_other.is_null()) {
+		return false;
+	}
 	const TypedArray<G4MFMeshSurface4D> other_surfaces = p_other->get_surfaces();
 	const int surfaces_count = _surfaces.size();
 	if (surfaces_count != other_surfaces.size()) {

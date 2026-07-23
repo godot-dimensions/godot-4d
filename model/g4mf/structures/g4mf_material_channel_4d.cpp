@@ -3,16 +3,27 @@
 #include "../g4mf_state_4d.h"
 
 bool G4MFMaterialChannel4D::is_equal_exact(const Ref<G4MFMaterialChannel4D> &p_other) const {
+	if (p_other.is_null()) {
+		return false;
+	}
 	if (_factor != p_other->get_factor()) {
 		return false;
 	}
 	if (_texture_index != p_other->get_texture_index()) {
 		return false;
 	}
-	if (_element_map_binding != p_other->get_element_map_binding()) {
+	const Ref<G4MFMeshSurfaceBinding4D> other_element_map_binding = p_other->get_element_map_binding();
+	if (_element_map_binding.is_valid() != other_element_map_binding.is_valid()) {
 		return false;
 	}
-	if (_texture_map_binding != p_other->get_texture_map_binding()) {
+	if (_element_map_binding.is_valid() && !_element_map_binding->is_equal_exact(other_element_map_binding)) {
+		return false;
+	}
+	const Ref<G4MFMeshSurfaceBinding4D> other_texture_map_binding = p_other->get_texture_map_binding();
+	if (_texture_map_binding.is_valid() != other_texture_map_binding.is_valid()) {
+		return false;
+	}
+	if (_texture_map_binding.is_valid() && !_texture_map_binding->is_equal_exact(other_texture_map_binding)) {
 		return false;
 	}
 	return true;

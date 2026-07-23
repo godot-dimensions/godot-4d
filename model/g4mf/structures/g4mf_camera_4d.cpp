@@ -23,6 +23,7 @@ Camera4D *G4MFCamera4D::generate_camera_4d() const {
 Ref<G4MFCamera4D> G4MFCamera4D::convert_camera_4d(const Camera4D *p_camera) {
 	Ref<G4MFCamera4D> ret;
 	ret.instantiate();
+	ERR_FAIL_NULL_V(p_camera, ret);
 	if (p_camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
 		ret->set_projection_type("orthographic");
 	}

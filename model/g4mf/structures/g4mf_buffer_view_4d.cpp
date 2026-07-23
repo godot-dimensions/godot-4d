@@ -14,6 +14,11 @@ void G4MFBufferView4D::set_byte_length(const int64_t p_byte_length) {
 
 PackedByteArray G4MFBufferView4D::read_buffer_view_data(const Ref<G4MFState4D> &p_g4mf_state) const {
 	PackedByteArray ret;
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ret);
+	if (_byte_length == 0) {
+		return ret;
+	}
+	ERR_FAIL_COND_V(_byte_length < 0, ret);
 	const TypedArray<PackedByteArray> state_buffers = p_g4mf_state->get_g4mf_buffers();
 	ERR_FAIL_INDEX_V(_buffer_index, state_buffers.size(), ret);
 	const PackedByteArray buffer = state_buffers[_buffer_index];
@@ -26,6 +31,7 @@ PackedByteArray G4MFBufferView4D::read_buffer_view_data(const Ref<G4MFState4D> &
 
 int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_input_data, const int64_t p_alignment, const bool p_deduplicate, const int p_buffer_index) {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), -1);
+	ERR_FAIL_COND_V_MSG(p_alignment < 1, -1, "Buffer view alignment must be at least 1 byte.");
 	ERR_FAIL_COND_V_MSG(p_buffer_index < 0, -1, "Buffer index must be greater than or equal to zero.");
 	// Check for duplicate buffer views before adding a new one.
 	TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_g4mf_buffer_views();
@@ -60,8 +66,10 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 		}
 	}
 	state_buffer.resize(byte_offset + input_data_size);
-	uint8_t *buffer_ptr = state_buffer.ptrw();
-	memcpy(buffer_ptr + byte_offset, p_input_data.ptr(), input_data_size);
+	if (input_data_size > 0) {
+		uint8_t *buffer_ptr = state_buffer.ptrw();
+		memcpy(buffer_ptr + byte_offset, p_input_data.ptr(), input_data_size);
+	}
 	state_buffers[p_buffer_index] = state_buffer;
 	p_g4mf_state->set_g4mf_buffers(state_buffers);
 	// Create a new G4MFBufferView4D that references the new buffer.

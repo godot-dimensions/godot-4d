@@ -41,14 +41,19 @@ NodePath G4MFNode4D::get_scene_node_path(const Ref<G4MFState4D> &p_g4mf_state) c
 // Returns the global transform of this node relative to the root node of the scene.
 Transform4D G4MFNode4D::get_scene_global_transform(const Ref<G4MFState4D> &p_g4mf_state) const {
 	Transform4D global_transform = _transform;
-	if (_parent_index < 0) {
+	if (_parent_index <= 0 || p_g4mf_state.is_null()) {
 		return global_transform;
 	}
 	const TypedArray<G4MFNode4D> all_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	const int g4mf_node_count = all_g4mf_nodes.size();
 	int current_ancestor = _parent_index;
+	// Avoid cycles. This is pedantic because G4MF forbids cycles, but we want to be robust against malformed G4MF files.
+	PackedInt32Array visited_ancestors;
+	// This is not >= 0 because we are calculating the global transform relative to the root node, which is at index 0.
 	while (current_ancestor > 0) {
 		ERR_FAIL_INDEX_V(current_ancestor, g4mf_node_count, global_transform);
+		ERR_FAIL_COND_V(visited_ancestors.has(current_ancestor), global_transform);
+		visited_ancestors.append(current_ancestor);
 		const Ref<G4MFNode4D> current_g4mf_node = all_g4mf_nodes[current_ancestor];
 		global_transform = current_g4mf_node->get_transform() * global_transform;
 		current_ancestor = current_g4mf_node->get_parent_index();
@@ -70,7 +75,7 @@ Ref<G4MFNode4D> G4MFNode4D::from_godot_node_basic(Ref<G4MFState4D> p_g4mf_state,
 	return g4mf_node;
 }
 
-void G4MFNode4D::from_godot_node_components(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node) {
+void G4MFNode4D::export_convert_godot_node_functionality(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node) {
 	ERR_FAIL_NULL(p_godot_node);
 	if (p_godot_node->has_meta(StringName("extras"))) {
 		set_meta(StringName("extras"), p_godot_node->get_meta(StringName("extras")));
@@ -102,7 +107,7 @@ void G4MFNode4D::from_godot_node_components(Ref<G4MFState4D> p_g4mf_state, const
 
 Ref<G4MFNode4D> G4MFNode4D::from_godot_node(Ref<G4MFState4D> p_g4mf_state, const Node *p_godot_node) {
 	Ref<G4MFNode4D> g4mf_node = from_godot_node_basic(p_g4mf_state, p_godot_node);
-	g4mf_node->from_godot_node_components(p_g4mf_state, p_godot_node);
+	g4mf_node->export_convert_godot_node_functionality(p_g4mf_state, p_godot_node);
 	return g4mf_node;
 }
 
