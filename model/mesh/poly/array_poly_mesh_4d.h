@@ -92,9 +92,9 @@ public:
 	void merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 
 	// Getters and setters.
-	HashMap<Vector2i, Vector<PackedVector4Array>> get_all_poly_cell_normals() const { return _all_poly_cell_normals; }
+	HashMap<Vector2i, Vector<PackedVector4Array>> get_all_poly_cell_normals() const;
 	void set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals);
-	HashMap<Vector2i, Vector<PackedVector3Array>> get_all_poly_cell_texture_maps() const { return _all_poly_cell_texture_maps; }
+	HashMap<Vector2i, Vector<PackedVector3Array>> get_all_poly_cell_texture_maps() const;
 	void set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vector<PackedVector3Array>> &p_all_poly_cell_texture_maps);
 
 #if GODOT_HAS_TYPED_DICTIONARY

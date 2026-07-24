@@ -1154,7 +1154,7 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 			}
 		}
 		output_poly_cell_indices.append(dim_output);
-		poly_cell_index_remaps.append(dim_index_remap);
+		poly_cell_index_remaps.append(HashMap<int32_t, int32_t>(dim_index_remap));
 	}
 	// Write back deduplicated geometry now so that get_all_poly_cell_poly_indices reads the new arrays
 	// when computing the post-dedup sub-element orderings for remapping data bindings.
@@ -1757,6 +1757,14 @@ void ArrayPolyMesh4D::merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vect
 }
 
 // Getters and setters.
+
+HashMap<Vector2i, Vector<PackedVector4Array>> ArrayPolyMesh4D::get_all_poly_cell_normals() const {
+	return HashMap<Vector2i, Vector<PackedVector4Array>>(_all_poly_cell_normals);
+}
+
+HashMap<Vector2i, Vector<PackedVector3Array>> ArrayPolyMesh4D::get_all_poly_cell_texture_maps() const {
+	return HashMap<Vector2i, Vector<PackedVector3Array>>(_all_poly_cell_texture_maps);
+}
 
 void ArrayPolyMesh4D::set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals) {
 	_all_poly_cell_normals = HashMap<Vector2i, Vector<PackedVector4Array>>(p_all_poly_cell_normals);
