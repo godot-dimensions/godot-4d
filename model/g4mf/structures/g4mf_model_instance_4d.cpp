@@ -35,6 +35,7 @@ Node *G4MFModelInstance4D::import_instantiate_model(const Ref<G4MFState4D> &p_g4
 		ret->set_editable_instance(node, true);
 		const Dictionary node_override = _node_overrides[node_name];
 		// TODO: Node overrides.
+		(void)node_override; // Explicitly ignore unused variable warning by casting into the void.
 	}
 	if (!_node_additional_children.is_empty()) {
 		const TypedArray<G4MFNode4D> &parent_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();

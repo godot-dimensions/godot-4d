@@ -30,12 +30,23 @@
 		return;                              \
 	}
 #elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 8
 #define ERR_FAIL_COND_SHOW_DIALOG(cond, msg)                           \
 	if (cond) {                                                        \
 		print_error(TTR(msg));                                         \
 		EditorNode::get_singleton()->show_accept(TTR(msg), TTR("OK")); \
 		return;                                                        \
 	}
+#else
+// Godot 4.8 replaces `show_accept` with `show_warning`.
+// https://github.com/godotengine/godot/pull/119281
+#define ERR_FAIL_COND_SHOW_DIALOG(cond, msg)                            \
+	if (cond) {                                                         \
+		print_error(TTR(msg));                                          \
+		EditorNode::get_singleton()->show_warning(TTR(msg), TTR("OK")); \
+		return;                                                         \
+	}
+#endif
 #endif
 
 void EditorExportDialogG4MF4D::_popup_g4mf_export_dialog() {

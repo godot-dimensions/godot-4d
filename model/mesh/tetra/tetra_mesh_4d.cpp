@@ -524,6 +524,7 @@ void TetraMesh4D::update_cross_section_mesh() {
 
 	const PackedVector4Array cell_positions = get_simplex_cell_positions();
 	const PackedVector4Array cell_normals = get_simplex_cell_boundary_normals();
+	(void)cell_normals; // Unused for now, should be used for smooth shading in the future.
 	PackedVector3Array cell_tex_map = get_simplex_cell_texture_map();
 	if (cell_tex_map.size() != cell_positions.size()) {
 		if (cell_tex_map.size() == 0) {
