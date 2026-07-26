@@ -78,6 +78,7 @@ using namespace godot;
 // Prior to Godot 4.5, the vector resize API did not clarify whether it was initializing new elements or not.
 // See https://github.com/godotengine/godot/pull/104522
 #define resize_initialized resize
+#define resize_uninitialized resize
 
 // As of Godot 4.5, we can use constexpr for vectors, but 4.4 and earlier don't support constexpr for vectors.
 #define USE_CONST_NOT_CONSTEXPR_FOR_VECTORS 1
@@ -110,6 +111,30 @@ using namespace godot;
 #ifndef Math_NAN
 #define Math_NAN std::numeric_limits<double>::quiet_NaN()
 #endif // Math_INF
+
+#ifndef ABS
+#define ABS Math::abs
+#endif // ABS
+
+#ifndef Math_E
+#define Math_E Math::E
+#endif // Math_E
+
+#ifndef Math_PI
+#define Math_PI Math::PI
+#endif // Math_PI
+
+#ifndef Math_SQRT12
+#define Math_SQRT12 Math::SQRT12
+#endif // Math_SQRT12
+
+#ifndef Math_SQRT2
+#define Math_SQRT2 Math::SQRT2
+#endif // Math_SQRT2
+
+#ifndef Math_TAU
+#define Math_TAU Math::TAU
+#endif // Math_TAU
 
 #ifndef _NO_DISCARD_
 #define _NO_DISCARD_ [[nodiscard]]
