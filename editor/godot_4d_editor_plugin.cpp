@@ -127,7 +127,8 @@ void Godot4DEditorPlugin::_notification(int p_what) {
 			remove_import_plugin(_off_poly_4d_importer);
 			remove_import_plugin(_off_tetra_4d_importer);
 			remove_import_plugin(_off_wire_4d_importer);
-			_g4mf_export_dialog->queue_free();
+			_g4mf_export_dialog->cleanup_export_dialog();
+			memdelete(_g4mf_export_dialog);
 		} break;
 	}
 }

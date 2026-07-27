@@ -17,14 +17,24 @@
 #include "scene/gui/popup_menu.h"
 #endif
 
-class EditorExportDialogG4MF4D : public EditorFileDialog {
-	GDCLASS(EditorExportDialogG4MF4D, EditorFileDialog);
+// Not actually a dialog, but manages two of them: the settings dialog and the file dialog.
+class EditorExportDialogG4MF4D : public Object {
+	GDCLASS(EditorExportDialogG4MF4D, Object);
 
 	Ref<G4MFDocument4D> _g4mf_document;
 	Ref<EditorExportSettingsG4MF4D> _export_settings;
 	EditorInspector *_settings_inspector = nullptr;
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 2 && GODOT_VERSION_MINOR <= 5
+	// Added in https://github.com/godotengine/godot/pull/79313 for Godot 4.2.
+	// Removed in https://github.com/godotengine/godot/pull/111162 for Godot 4.6.
+	EditorInspector *_settings_inspector_side_menu = nullptr;
+#endif
 
-	void _popup_g4mf_export_dialog();
+	ConfirmationDialog *_settings_dialog = nullptr;
+	EditorFileDialog *_file_dialog = nullptr;
+
+	void _popup_g4mf_export_settings_dialog();
+	void _popup_g4mf_export_file_dialog();
 	void _export_scene_as_g4mf(const String &p_path);
 
 protected:
@@ -32,4 +42,5 @@ protected:
 
 public:
 	void setup(PopupMenu *p_export_menu);
+	void cleanup_export_dialog();
 };

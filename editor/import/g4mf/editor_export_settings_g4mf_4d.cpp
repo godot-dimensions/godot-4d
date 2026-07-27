@@ -24,8 +24,10 @@ void EditorExportSettingsG4MF4D::set_max_nested_scene_depth(const int p_max_nest
 	_g4mf_document->set_max_nested_scene_depth(p_max_nested_scene_depth);
 }
 
-void EditorExportSettingsG4MF4D::setup(Ref<G4MFDocument4D> p_g4mf_document) {
+void EditorExportSettingsG4MF4D::setup_for_scene(const Ref<G4MFDocument4D> &p_g4mf_document, Node *p_scene_root) {
 	_g4mf_document = p_g4mf_document;
+	// TODO: Add conditional nested scene handling, extension-provided image formats, extension-provided properties, etc.
+	// See `EditorSceneExporterGLTFSettings::generate_property_list` for the general style of how to do this.
 }
 
 void EditorExportSettingsG4MF4D::_bind_methods() {
@@ -40,6 +42,4 @@ void EditorExportSettingsG4MF4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_max_nested_scene_depth"), &EditorExportSettingsG4MF4D::get_max_nested_scene_depth);
 	ClassDB::bind_method(D_METHOD("set_max_nested_scene_depth", "max_nested_scene_depth"), &EditorExportSettingsG4MF4D::set_max_nested_scene_depth);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "nested_scene_handling", PROPERTY_HINT_ENUM, "Allow Nested:-1,Merge into Single File:0,Merge into Flat Hierarchy:1"), "set_max_nested_scene_depth", "get_max_nested_scene_depth");
-
-	ClassDB::bind_method(D_METHOD("setup", "g4mf_document"), &EditorExportSettingsG4MF4D::setup);
 }
