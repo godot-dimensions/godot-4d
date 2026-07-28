@@ -161,15 +161,16 @@ Ref<WireMesh4D> G4MFMesh4D::import_generate_wire_mesh(const Ref<G4MFState4D> &p_
 
 Ref<Mesh4D> G4MFMesh4D::import_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface) const {
 	const G4MFMesh4D::MeshFormat preferred_mesh_format = p_g4mf_state->get_preferred_mesh_format();
-	const bool use_poly_mesh = preferred_mesh_format == G4MFMesh4D::MESH_FORMAT_POLYTOPE && can_generate_poly_meshes_for_all_surfaces();
-	if (use_poly_mesh) {
-		return import_generate_poly_mesh(p_g4mf_state);
+	const G4MFMesh4D::MeshFormat compatible_mesh_format = get_compatible_mesh_format(preferred_mesh_format);
+	switch (compatible_mesh_format) {
+		case G4MFMesh4D::MESH_FORMAT_POLYTOPE:
+			return import_generate_poly_mesh(p_g4mf_state);
+		case G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL:
+			return import_generate_tetra_mesh(p_g4mf_state);
+		case G4MFMesh4D::MESH_FORMAT_WIREFRAME:
+			return import_generate_wire_mesh(p_g4mf_state);
 	}
-	const bool use_tetra_mesh = preferred_mesh_format != G4MFMesh4D::MESH_FORMAT_WIREFRAME && can_generate_tetra_meshes_for_all_surfaces();
-	if (use_tetra_mesh) {
-		return import_generate_tetra_mesh(p_g4mf_state);
-	}
-	return import_generate_wire_mesh(p_g4mf_state);
+	ERR_FAIL_V_MSG(Ref<Mesh4D>(), "G4MFMesh4D.import_generate_mesh: No compatible mesh format found for the mesh.");
 }
 
 int G4MFMesh4D::export_convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate) {
