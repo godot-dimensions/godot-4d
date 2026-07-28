@@ -387,6 +387,11 @@ Ref<PolyMesh4D> CubinderShape4D::to_poly_mesh(const Dictionary &p_options) const
 	HashSet<int32_t> seam_face_indices;
 	for (int64_t face_index = 0; face_index < face_vertex_indices.size(); face_index++) {
 		const PackedInt32Array &face = face_vertex_indices[face_index];
+		// The N-gon circular caps are always seams. Every other face has 4 vertices.
+		if (face.size() != 4) {
+			seam_face_indices.insert(face_index);
+			continue;
+		}
 		const Vector4 &vert1 = poly_vertices[face[1]];
 		const Vector4 &vert3 = poly_vertices[face[3]];
 		// Seam face if exactly one of Y or W differs between diagonally-opposite vertices.
