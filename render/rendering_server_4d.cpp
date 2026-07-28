@@ -97,9 +97,9 @@ void RenderingServer4D::_render_frame() {
 		// Now that we have a rendering engine selected, set up its properties.
 		rendering_engine->setup_for_viewport_if_needed(viewport);
 		rendering_engine->set_camera(camera0);
+		emit_signal("pre_render", camera0, viewport, rendering_engine);
 		TypedArray<MeshInstance4D> visible_mesh_instances = _get_visible_mesh_instances();
 		rendering_engine->set_mesh_instances(visible_mesh_instances);
-		emit_signal("pre_render", camera0, viewport, rendering_engine);
 		rendering_engine->calculate_relative_transforms();
 		rendering_engine->render_frame();
 	}
