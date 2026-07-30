@@ -165,8 +165,9 @@ void CrossSectionRenderingEngine4D::cleanup_for_viewport() {
 	// Detach the custom world from the viewport BEFORE freeing RS resources,
 	// so any VisualInstance3D nodes in the viewport re-register in the
 	// default world rather than our soon-to-be-freed scenario.
-	if (_cross_section_world_3d.is_valid() && get_viewport() != nullptr) {
-		get_viewport()->set_world_3d(Ref<World3D>());
+	Viewport *viewport = get_viewport();
+	if (_cross_section_world_3d.is_valid() && viewport != nullptr) {
+		viewport->set_world_3d(Ref<World3D>());
 	}
 	_cleanup_render_resources();
 }

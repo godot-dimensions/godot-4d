@@ -13,19 +13,19 @@
 		<method name="is_on_ceiling" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] if the body collided with the ceiling on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member up_direction] and [member floor_max_angle] are used to determine whether a surface is a "ceiling" or not.
+				Returns [code]true[/code] if the body collided with the ceiling on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member local_up_direction] and [member floor_max_angle] are used to determine whether a surface is a "ceiling" or not.
 			</description>
 		</method>
 		<method name="is_on_floor" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] if the body collided with the floor on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member up_direction] and [member floor_max_angle] are used to determine whether a surface is a "floor" or not.
+				Returns [code]true[/code] if the body collided with the floor on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member local_up_direction] and [member floor_max_angle] are used to determine whether a surface is a "floor" or not.
 			</description>
 		</method>
 		<method name="is_on_wall" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] if the body collided with a wall on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member up_direction] and [member floor_max_angle] are used to determine whether a surface is a "wall" or not.
+				Returns [code]true[/code] if the body collided with a wall on the last call of [method move_and_slide]. Otherwise, returns [code]false[/code]. The [member local_up_direction] and [member floor_max_angle] are used to determine whether a surface is a "wall" or not.
 			</description>
 		</method>
 		<method name="move_and_slide">
@@ -35,22 +35,62 @@
 				Moves the body based on [member linear_velocity]. If the body collides with another, it will slide along the other body rather than stop immediately.
 				If a collision occurs, this will modify [member linear_velocity]. Regardless of a collision, this will update the states of [method is_on_floor], [method is_on_ceiling], and [method is_on_wall].
 				Returns an array of [KinematicCollision4D] objects, one for each collision that occurred in the sliding. If there was no collision, the array will be empty.
-				The [code]delta_time[/code] parameter can be used to override the physics step's delta time, such as when manipulating physics objects from outside [method Node._physics_process]. This may be omitted when called from within [method Node._physics_process]: when the value is negative, it will automatically use the physics step's delta time.
+				The [param delta_time] parameter can be used to override the physics step's delta time, such as when manipulating physics objects from outside [method Node._physics_process]. This may be omitted when called from within [method Node._physics_process]: when the value is negative, it will automatically use the physics step's delta time.
+			</description>
+		</method>
+		<method name="try_snap_to_surface">
+			<return type="bool" />
+			<param index="0" name="snap_motion" type="Vector4" />
+			<param index="1" name="allowed_surface_type" type="int" enum="CharacterBody4D.SurfaceType" default="0" />
+			<param index="2" name="delta_time" type="float" default="-1.0" />
+			<description>
+				Try to snap the character body to a surface by the amount specified by [param snap_motion]. The length of this vector overrides the [member snap_distance] property for this call; the [member snap_distance] is used for internal calls during [method move_and_slide].
+				The [param allowed_surface_type] parameter can be used to restrict which types of surfaces are allowed to snap to, or either omit it or set it to [constant SURFACE_TYPE_ANY] to allow snapping to any surface type.
+				The [param delta_time] parameter can be used to override the physics step's delta time, such as when manipulating physics objects from outside [method Node._physics_process]. This may be omitted when called from within [method Node._physics_process]: when the value is negative, it will automatically use the physics step's delta time.
 			</description>
 		</method>
 	</methods>
 	<members>
-		<member name="floor_max_angle" type="float" setter="set_floor_max_angle" getter="get_floor_max_angle" default="1.5707964">
+		<member name="floor_max_angle" type="float" setter="set_floor_max_angle" getter="get_floor_max_angle" default="0.7853982">
 			Maximum angle (in radians) where a slope is considered a floor (or a ceiling), rather than a wall, when calling [method move_and_slide]. The default value equals 45 degrees.
 		</member>
 		<member name="linear_velocity" type="Vector4" setter="set_linear_velocity" getter="get_linear_velocity" default="Vector4(0, 0, 0, 0)">
 			The global linear velocity of the body as a 4D vector. The length of the vector corresponds to the speed in meters per second. This is used when calling [method move_and_slide], intended to be edited by the user before calling [method move_and_slide], and will be modified by [method move_and_slide] if a collision happens.
 		</member>
-		<member name="up_direction" type="Vector4" setter="set_up_direction" getter="get_up_direction" default="Vector4(0, 1, 0, 0)">
-			Vector pointing upwards, used to determine what is a wall and what is a floor (or a ceiling) when calling [method move_and_slide]. The default value is a unit vector in the +Y direction. This vector should be normalized, except that it may be zero if it is desired to treat all surfaces as walls.
+		<member name="local_up_direction" type="Vector4" setter="set_local_up_direction" getter="get_local_up_direction" default="Vector4(0, 1, 0, 0)">
+			Vector pointing locally upwards, relative to the character body's local axes. It is used to determine what is a wall, ceiling, or floor when calling [method move_and_slide]. The default value is a unit vector in the +Y direction. This vector should be normalized, except that it may be zero if it is desired to treat all surfaces as walls.
+		</member>
+		<member name="snap_distance" type="float" setter="set_snap_distance" getter="get_snap_distance" default="0.1">
+			The distance to snap to a surface when calling [method move_and_slide]. Only effective if any of the [member snap_to_ceiling], [member snap_to_floor], or [member snap_to_wall] properties are enabled. The default value is 0.1 meters, matching Godot's CharacterBody3D default snap distance.
+		</member>
+		<member name="snap_to_ceiling" type="bool" setter="set_snap_to_ceiling" getter="get_snap_to_ceiling" default="false">
+			Whether to snap to ceilings when calling [method move_and_slide]. Only effective if [member snap_distance] is greater than zero. The default value is [code]false[/code], which is suitable for most character movement.
+			If multiple snap directions are possible, they are calculated in the order of wall, then ceiling, then floor. Therefore, the character will tend to be snapped closest to the floor, as long as it is within the [member snap_distance] of the floor after performing wall and ceiling snapping.
+		</member>
+		<member name="snap_to_floor" type="bool" setter="set_snap_to_floor" getter="get_snap_to_floor" default="true">
+			Whether to snap to floors when calling [method move_and_slide]. Only effective if [member snap_distance] is greater than zero. The default value is [code]true[/code], which is suitable for most character movement.
+			If multiple snap directions are possible, they are calculated in the order of wall, then ceiling, then floor. Therefore, the character will tend to be snapped closest to the floor, as long as it is within the [member snap_distance] of the floor after performing wall and ceiling snapping.
+		</member>
+		<member name="snap_to_wall" type="bool" setter="set_snap_to_wall" getter="get_snap_to_wall" default="false">
+			Whether to snap to walls when calling [method move_and_slide]. Only effective if [member snap_distance] is greater than zero. The default value is [code]false[/code], which is suitable for most character movement.
+			If multiple snap directions are possible, they are calculated in the order of wall, then ceiling, then floor. Therefore, the character will tend to be snapped closest to the floor, as long as it is within the [member snap_distance] of the floor after performing wall and ceiling snapping.
 		</member>
 		<member name="use_bounce" type="bool" setter="set_use_bounce" getter="get_use_bounce" default="true">
 			If [code]true[/code], the body will take into consideration the [PhysicsMaterial]s of the [CollisionShape4D] nodes, and calculate if the body should bounce when colliding with them. By default, this is enabled, but [CollisionShape4D] nodes do not have a [PhysicsMaterial] by default, and a [PhysicsMaterial] is not bouncy by default, so this will only have an effect if [PhysicsMaterial]s are used and set to be bouncy. If [code]false[/code], the body will always slide, ignoring the [PhysicsMaterial]s.
 		</member>
 	</members>
+	<constants>
+		<constant name="SURFACE_TYPE_ANY" value="0" enum="SurfaceType">
+			Any surface type. It could be a wall, ceiling, floor, or it means the up direction is zero, so the surface type cannot be determined. This is used in [method try_snap_to_surface] to allow snapping to any surface type.
+		</constant>
+		<constant name="SURFACE_TYPE_WALL" value="1" enum="SurfaceType">
+			Wall surface type, defined as when the angle between the surface normal and the up direction is greater than or equal to [member floor_max_angle] and less than or equal to 180 degrees minus [member floor_max_angle]. This is used in [method try_snap_to_surface] to restrict snapping to walls only.
+		</constant>
+		<constant name="SURFACE_TYPE_CEILING" value="2" enum="SurfaceType">
+			Ceiling surface type, defined as the angle between the surface normal and the up direction being greater than 180 degrees minus [member floor_max_angle]. This is used in [method try_snap_to_surface] to restrict snapping to ceilings only.
+		</constant>
+		<constant name="SURFACE_TYPE_FLOOR" value="3" enum="SurfaceType">
+			Floor surface type, defined as the angle between the surface normal and the up direction being less than [member floor_max_angle]. This is used in [method try_snap_to_surface] to restrict snapping to floors only.
+		</constant>
+	</constants>
 </class>
