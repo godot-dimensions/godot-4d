@@ -354,12 +354,27 @@ real_t Rect4::continuous_collision_depth(const Vector4 &p_relative_motion, const
 		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
 	}
 #endif // MATH_CHECKS
-	const Vector4 end = get_end();
-	Vector4 low_ratios = (p_obstacle.position - end) / (p_relative_motion);
-	Vector4 high_ratios = (p_obstacle.get_end() - position) / (p_relative_motion);
+	const Vector4 self_end = get_end();
+	const Vector4 obstacle_end = p_obstacle.get_end();
+	Vector4 low_ratios;
+	Vector4 high_ratios;
 	for (int i = 0; i < 4; i++) {
-		if (p_relative_motion[i] < 0.0f) {
-			SWAP(low_ratios[i], high_ratios[i]);
+		if (p_relative_motion[i] == 0.0f) {
+			if (position[i] > obstacle_end[i] || self_end[i] < p_obstacle.position[i]) {
+				// No collision is possible in this axis, so we can return early.
+				if (r_out_normal) {
+					*r_out_normal = Vector4();
+				}
+				return 1.0f;
+			}
+			low_ratios[i] = -Math_INF;
+			high_ratios[i] = Math_INF;
+		} else {
+			low_ratios[i] = (p_obstacle.position[i] - self_end[i]) / (p_relative_motion[i]);
+			high_ratios[i] = (obstacle_end[i] - position[i]) / (p_relative_motion[i]);
+			if (p_relative_motion[i] < 0.0f) {
+				SWAP(low_ratios[i], high_ratios[i]);
+			}
 		}
 	}
 	const real_t low_ratio = MAX(MAX(low_ratios.x, low_ratios.y), MAX(low_ratios.z, low_ratios.w));
@@ -390,12 +405,24 @@ bool Rect4::continuous_collision_overlaps(const Vector4 &p_relative_motion, cons
 		ERR_PRINT("Rect4 size is negative, this is not supported. Use Rect4.abs() to get a Rect4 with a positive size.");
 	}
 #endif // MATH_CHECKS
-	const Vector4 end = get_end();
-	Vector4 low_ratios = (p_obstacle.position - end) / (p_relative_motion);
-	Vector4 high_ratios = (p_obstacle.get_end() - position) / (p_relative_motion);
+	const Vector4 self_end = get_end();
+	const Vector4 obstacle_end = p_obstacle.get_end();
+	Vector4 low_ratios;
+	Vector4 high_ratios;
 	for (int i = 0; i < 4; i++) {
-		if (p_relative_motion[i] < 0.0f) {
-			SWAP(low_ratios[i], high_ratios[i]);
+		if (p_relative_motion[i] == 0.0f) {
+			if (position[i] > obstacle_end[i] || self_end[i] < p_obstacle.position[i]) {
+				// No collision is possible in this axis, so we can return early.
+				return false;
+			}
+			low_ratios[i] = -Math_INF;
+			high_ratios[i] = Math_INF;
+		} else {
+			low_ratios[i] = (p_obstacle.position[i] - self_end[i]) / (p_relative_motion[i]);
+			high_ratios[i] = (obstacle_end[i] - position[i]) / (p_relative_motion[i]);
+			if (p_relative_motion[i] < 0.0f) {
+				SWAP(low_ratios[i], high_ratios[i]);
+			}
 		}
 	}
 	const real_t low_ratio = MAX(MAX(low_ratios.x, low_ratios.y), MAX(low_ratios.z, low_ratios.w));

@@ -25,6 +25,9 @@ TEST_CASE("[Rect4] Continuous Collision Depth") {
 	depth = unit_rect.continuous_collision_depth(Vector4(0, 0, 0, 5), offset_3w_rect, &normal);
 	CHECK_MESSAGE(depth == doctest::Approx(0.4f), "Rect4 continuous_collision_depth with high motion should be stopped by the obstacle.");
 	CHECK_MESSAGE(normal == Vector4(0, 0, 0, -1), "Rect4 continuous_collision_depth should give the correct normal.");
+	depth = unit_rect.continuous_collision_depth(Vector4(-0.0f, -0.0f, -0.0f, 5), offset_3w_rect, &normal);
+	CHECK_MESSAGE(depth == doctest::Approx(0.4f), "Rect4 continuous_collision_depth with negative zero components should be stopped by the obstacle.");
+	CHECK_MESSAGE(normal == Vector4(0, 0, 0, -1), "Rect4 continuous_collision_depth with negative zero components should give the correct normal.");
 	depth = unit_rect.continuous_collision_depth(Vector4(0, 0, 0, -5), offset_3w_rect, &normal);
 	CHECK_MESSAGE(depth == 1.0f, "Rect4 continuous_collision_depth with motion away from the obstacle should not be stopped.");
 	CHECK_MESSAGE(normal == Vector4(0, 0, 0, 0), "Rect4 continuous_collision_depth should give a zero normal when there is no collision.");
@@ -58,6 +61,15 @@ TEST_CASE("[Rect4] Continuous Collision Depth") {
 	depth = unit_rect.continuous_collision_depth(Vector4(2, 0, 0, 0), overlap_neg_x_rect, &normal);
 	CHECK_MESSAGE(depth == 1.0f, "Rect4 continuous_collision_depth overlapping should be allowed to move out of the obstacle.");
 	CHECK_MESSAGE(normal == Vector4(0, 0, 0, 0), "Rect4 continuous_collision_depth should give a zero normal when there is no collision.");
+}
+
+TEST_CASE("[Rect4] Continuous Collision Overlaps") {
+	const Rect4 unit_rect = Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1));
+	const Rect4 offset_3w_rect = Rect4(Vector4(0, 0, 0, 3), Vector4(1, 1, 1, 1));
+	bool overlaps = unit_rect.continuous_collision_overlaps(Vector4(-0.0f, -0.0f, -0.0f, 5), offset_3w_rect);
+	CHECK_MESSAGE(overlaps, "Rect4 continuous_collision_overlaps with negative zero components should overlap the obstacle.");
+	overlaps = unit_rect.continuous_collision_overlaps(Vector4(-0.0f, -0.0f, -0.0f, -5), offset_3w_rect);
+	CHECK_MESSAGE(!overlaps, "Rect4 continuous_collision_overlaps with negative zero components and motion away should not overlap the obstacle.");
 }
 
 TEST_CASE("[Rect4] Raycast from outside") {
