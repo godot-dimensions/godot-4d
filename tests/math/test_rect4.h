@@ -100,6 +100,24 @@ TEST_CASE("[Rect4] Raycast from inside") {
 	bool hit = unit_rect.raycast_intersects(Vector4(0.5, 0.5, 0.5, 0.5), Vector4(1, 0, 0, 0), true, &distance, &normal);
 	CHECK_MESSAGE(hit == true, "Raycast from inside should hit with inside_is_zero=true");
 	CHECK_MESSAGE(distance == doctest::Approx(0.0f), "Raycast from inside with inside_is_zero should have distance 0");
+	// When inside_is_zero=false, the ray should hit the forward exit surface, not the entry surface behind the origin.
+	hit = unit_rect.raycast_intersects(Vector4(0.5, 0.5, 0.5, 0.5), Vector4(1, 0, 0, 0), false, &distance, &normal);
+	CHECK_MESSAGE(hit == true, "Raycast from inside should hit with inside_is_zero=false");
+	CHECK_MESSAGE(distance == doctest::Approx(0.5f), "Raycast from inside should return the distance to the forward exit surface");
+	CHECK_MESSAGE(normal == Vector4(1, 0, 0, 0), "Raycast from inside should return the outward normal of the exit surface");
+}
+
+TEST_CASE("[Rect4] Raycast max distance is exclusive") {
+	const Rect4 unit_rect = Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1));
+	const Vector4 origin = Vector4(-2, 0.5, 0.5, 0.5);
+	const Vector4 direction = Vector4(1, 0, 0, 0);
+	Dictionary result = unit_rect.raycast_intersects_dict(origin, direction, 1.999, false);
+	CHECK_FALSE((bool)result["hit"]);
+	result = unit_rect.raycast_intersects_dict(origin, direction, 2.0, false);
+	CHECK_FALSE((bool)result["hit"]);
+	result = unit_rect.raycast_intersects_dict(origin, direction, 2.001, false);
+	REQUIRE((bool)result["hit"]);
+	CHECK((double)result["distance"] == doctest::Approx(2.0));
 }
 
 TEST_CASE("[Rect4] Raycast parallel to axes") {

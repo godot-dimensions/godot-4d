@@ -25,6 +25,7 @@
 #include "nodes/test_node_4d.h"
 
 // Physics
+#include "physics/server/test_physics_server_4d.h"
 #include "physics/shapes/test_box_shape_4d.h"
 #include "physics/shapes/test_capsule_shape_4d.h"
 #include "physics/shapes/test_orthoplex_shape_4d.h"

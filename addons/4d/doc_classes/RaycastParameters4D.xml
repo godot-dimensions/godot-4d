@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RaycastParameters4D" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Parameters for 4D raycasting operations.
+	</brief_description>
+	<description>
+		RaycastParameters4D contains the parameters used as input for raycasting operations in 4D space. It is used as the input for [method PhysicsServer4D.raycast_physics_objects].
+		The [member global_ray_direction] and [member global_ray_origin] properties must be specified for the raycast to work. All of the other properties are optional and have default values suitable for most use cases: raycasting against bodies but not areas, a collision mask that includes all layers, a maximum distance of infinity, not excluding any nodes, and skipping inside collisions or otherwise not treating inside collisions as zero distance.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_exclude_nodes" qualifiers="const">
+			<return type="Node4D[]" />
+			<description>
+				Returns the list of nodes to exclude from the raycast. Any node in this list will be ignored during the raycast operation. The nodes may be either [CollisionObject4D] nodes to exclude whole bodies and areas, or [CollisionShape4D] nodes to exclude specific shapes, any other node types will be ignored.
+				The returned array is a copy, so modifying it will not affect the RaycastParameters4D object. To modify the list of excluded nodes, use [method set_exclude_nodes] on the new or updated array.
+			</description>
+		</method>
+		<method name="set_exclude_nodes">
+			<return type="void" />
+			<param index="0" name="exclude_nodes" type="Node4D[]" />
+			<description>
+				Sets the list of nodes to exclude from the raycast. Any node in this list will be ignored during the raycast operation. The nodes may be either [CollisionObject4D] nodes to exclude whole bodies and areas, or [CollisionShape4D] nodes to exclude specific shapes, any other node types will be ignored.
+				The provided array is copied, so modifying it after calling this method will not affect the RaycastParameters4D object. To retrieve the current list of excluded nodes, use [method get_exclude_nodes]. To modify the array, call this function again with a new or updated array.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="collide_with_areas" type="bool" setter="set_collide_with_areas" getter="get_collide_with_areas" default="false">
+			Whether the raycast should check for collisions with areas. If set to [code]true[/code], the raycast will check [Area4D] nodes and their shapes for raycast collisions. If set to [code]false[/code] (default), the raycast will ignore areas. This must not be set to [code]false[/code] at the same time as [member collide_with_bodies] being set to [code]false[/code], or the raycast will never hit anything.
+		</member>
+		<member name="collide_with_bodies" type="bool" setter="set_collide_with_bodies" getter="get_collide_with_bodies" default="true">
+			Whether the raycast should check for collisions with bodies. If set to [code]true[/code] (default), the raycast will check [PhysicsBody4D] nodes and their shapes for raycast collisions. If set to [code]false[/code], the raycast will ignore bodies. This must not be set to [code]false[/code] at the same time as [member collide_with_areas] being set to [code]false[/code], or the raycast will never hit anything.
+		</member>
+		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="4294967295">
+			The collision mask for the raycast, which layers to consider for collisions. The raycast will only check for collisions with objects that are on at least one of the layers specified in this mask. The default value is [code]0xFFFFFFFF[/code], which includes all layers. This must not be set to [code]0[/code], or the raycast will never hit anything. This is an unsigned 32-bit integer, so it cannot be negative or greater than [code]0xFFFFFFFF[/code].
+			This uses the same layer system as [CollisionShape4D]. The editor hints for this property will show the 3D physics layers, so edit the 3D physics layers in the Project Settings to change the layer names for 4D physics.
+		</member>
+		<member name="global_ray_direction" type="Vector4" setter="set_global_ray_direction" getter="get_global_ray_direction" default="Vector4(0, 0, 0, 0)">
+			The direction of the ray in global space. This vector MUST be normalized (length of [code]1.0[/code]), or the raycast will fail.
+		</member>
+		<member name="global_ray_origin" type="Vector4" setter="set_global_ray_origin" getter="get_global_ray_origin" default="Vector4(0, 0, 0, 0)">
+			The origin or position of the ray in global space.
+		</member>
+		<member name="inside_is_skip" type="bool" setter="set_inside_is_skip" getter="get_inside_is_skip" default="true">
+			Whether the raycast should skip collisions that start inside a shape. If set to [code]true[/code] (default), the raycast will ignore any shapes that contain the ray's origin point.
+			If set to [code]false[/code], the raycast will check for collisions with shapes that contain the ray's origin point. The distance will be zero if [member inside_is_zero] is [code]true[/code], or the distance will be the distance to the exit point of the shape if [member inside_is_zero] is [code]false[/code].
+			[b]Note:[/b] Concave shapes such as [ConcaveMeshShape4D] do not have a well-defined inside, so this property will have no effect on concave shapes.
+		</member>
+		<member name="inside_is_zero" type="bool" setter="set_inside_is_zero" getter="get_inside_is_zero" default="false">
+			Whether the raycast should treat collisions that start inside a shape as a zero distance hit. This property has no effect if [member inside_is_skip] is [code]true[/code], because the raycast will skip any shapes that contain the ray's origin point.
+			If [member inside_is_skip] is [code]false[/code], and this property is set to [code]true[/code], the raycast will return a hit with a distance of [code]0.0[/code] if the ray starts inside a shape. If this property is set to [code]false[/code], the raycast will return information about the exit point of the shape.
+			[b]Note:[/b] Concave shapes such as [ConcaveMeshShape4D] do not have a well-defined inside, so this property will have no effect on concave shapes.
+		</member>
+		<member name="max_distance" type="float" setter="set_max_distance" getter="get_max_distance" default="inf">
+			The exclusive maximum distance the ray should check for collisions. If set to [constant @GDScript.INF] (default), the ray is an infinite ray and will check for collisions without any distance limit, within the limitations of floating point numbers. If set to a finite value, this must be positive, not zero or negative, or the raycast will fail.
+		</member>
+	</members>
+</class>

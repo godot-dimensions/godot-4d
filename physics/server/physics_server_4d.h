@@ -2,6 +2,7 @@
 
 #include "../bodies/rigid_body_4d.h"
 #include "physics_engine_4d.h"
+#include "raycast_parameters_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_map.hpp>
@@ -33,6 +34,14 @@ class PhysicsServer4D : public Object {
 	bool _is_physics_process_connected = false;
 	void _physics_process();
 
+	struct RaycastCandidate {
+		Transform4D global_transform;
+		CollisionShape4D *collision_shape = nullptr;
+		double distance = Math_INF;
+	};
+
+	void _raycast_shapes_fast_rect4(const Ref<RaycastParameters4D> &p_raycast_parameters, CollisionObject4D *p_col_obj_node, Vector<RaycastCandidate> &r_candidates) const;
+
 protected:
 	static CollisionObject4D *_global_static_body_for_bodyless_shapes;
 	static PhysicsServer4D *_singleton;
@@ -41,6 +50,8 @@ protected:
 public:
 	Ref<KinematicCollision4D> move_and_collide(PhysicsBody4D *p_body_node, const Vector4 &p_motion, const bool p_test_only = false, const double p_delta_time = -1.0);
 	void move_area(Area4D *p_area_node, const Vector4 &p_motion);
+
+	Dictionary raycast_physics_objects(const Ref<RaycastParameters4D> &p_raycast_parameters);
 
 	void register_area(Area4D *p_area_node);
 	void unregister_area(Area4D *p_area_node);

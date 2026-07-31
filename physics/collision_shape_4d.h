@@ -55,4 +55,5 @@ public:
 	Vector4 get_support_global_point(const Vector4 &p_direction) const;
 	real_t get_surface_volume() const;
 	bool has_global_point(const Vector4 &p_point) const;
+	bool has_local_point(const Vector4 &p_point) const;
 };

@@ -128,6 +128,11 @@ bool CollisionShape4D::has_global_point(const Vector4 &p_point) const {
 	return _shape->has_point(global_to_local * p_point);
 }
 
+bool CollisionShape4D::has_local_point(const Vector4 &p_point) const {
+	ERR_FAIL_COND_V(_shape.is_null(), false);
+	return _shape->has_point(p_point);
+}
+
 void CollisionShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_ancestor_collision_object"), &CollisionShape4D::get_ancestor_collision_object);
 
@@ -136,6 +141,7 @@ void CollisionShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_support_global_point", "direction"), &CollisionShape4D::get_support_global_point);
 	ClassDB::bind_method(D_METHOD("get_surface_volume"), &CollisionShape4D::get_surface_volume);
 	ClassDB::bind_method(D_METHOD("has_global_point", "point"), &CollisionShape4D::has_global_point);
+	ClassDB::bind_method(D_METHOD("has_local_point", "point"), &CollisionShape4D::has_local_point);
 
 	ClassDB::bind_method(D_METHOD("get_shape"), &CollisionShape4D::get_shape);
 	ClassDB::bind_method(D_METHOD("set_shape", "shape"), &CollisionShape4D::set_shape);

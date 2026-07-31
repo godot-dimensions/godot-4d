@@ -28,6 +28,22 @@
 				Returns a list of all [PhysicsEngine4D] names that have been registered with the physics server using [method register_physics_engine].
 			</description>
 		</method>
+		<method name="raycast_physics_objects">
+			<return type="Dictionary" />
+			<param index="0" name="raycast_parameters" type="RaycastParameters4D" />
+			<description>
+				Performs a raycast in the scene using the provided [RaycastParameters4D] and returns a Dictionary with the results. See [RaycastParameters4D] for details on how to configure the raycast.
+				The Dictionary may contain various keys depending on what was hit. If the function errors, the returned Dictionary will be empty: [code]{}[/code]. If no hit was found, the returned Dictionary will be [code]{"hit": false}[/code].
+				If a hit was found, the Dictionary will contain all of the keys provided by the responsible [method Node4D.raycast_intersects_local] and [method Shape4D.raycast_intersects] functions, including [code]"hit"[/code], [code]"distance"[/code], [code]"normal"[/code], [code]"point"[/code], and more. See the documentation for those functions for details on what keys may be present in the returned Dictionary.
+				The [code]"distance"[/code], [code]"normal"[/code], and [code]"point"[/code] keys are local to the shape, exactly as the shape's raycast function returned them. Since this PhysicsServer4D function accepts global inputs, it also calculates global outputs, which are provided in separate [code]"global_"[/code] prefixed keys in the returned Dictionary:
+				- [code]"global_distance"[/code]: The distance from the ray's origin to the hit point in global space.
+				- [code]"global_normal"[/code]: The normal of the hit surface in global space. Only present if the shape-local [code]"normal"[/code] key is also present.
+				- [code]"global_point"[/code]: The hit point's position in global space. Only present if the shape-local [code]"point"[/code] key is also present.
+				Additionally, if a hit was found, the returned Dictionary will have the following keys added to it by this function:
+				- [code]"body"[/code]: The [CollisionObject4D] node that was hit, which may be a [PhysicsBody4D] or an [Area4D].
+				- [code]"shape"[/code]: The [CollisionShape4D] node that was hit, a member of the [code]"body"[/code] node (usually a descendant of it).
+			</description>
+		</method>
 		<method name="register_physics_engine">
 			<return type="void" />
 			<param index="0" name="name" type="String" />

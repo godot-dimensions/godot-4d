@@ -59,7 +59,7 @@ Dictionary PlaneShape4D::raycast_intersects(const Vector4 &p_local_from, const V
 	}
 	const Plane4D plane = get_plane_4d();
 	const real_t factor = plane.intersect_ray_factor(p_local_from, p_local_direction);
-	const bool hit = factor >= 0.0f;
+	const bool hit = factor >= 0.0f && factor < p_max_distance;
 	result["hit"] = hit;
 	if (hit) {
 		result["distance"] = factor;

@@ -68,6 +68,7 @@ def get_doc_classes():
 		"PhysicsEngine4D",
 		"PhysicsServer4D",
 		"PlaneShape4D",
+		"RaycastParameters4D",
 		"RayShape4D",
 		"RigidBody4D",
 		"Shape4D",

@@ -6,7 +6,7 @@
 	<description>
 		Abstract base class for 4D physics objects. This includes solid bodies that derive from [PhysicsBody4D], and non-solid [Area4D] nodes that can be used as a sensor/trigger for detecting objects. All [CollisionObject4D] nodes must have [CollisionShape4D] nodes as children to give them shapes. All [CollisionObject4D] nodes have signals that can be used to detect when they overlap [Area4D] nodes.
 		[b]Note:[/b] If the [Node4D] positions are set manually, bypassing the physics system, the signals will not be emitted, and the collision will not be detected. Prefer using the physics methods to move objects, such as [method Area4D.move_area], [method PhysicsBody4D.move_and_collide], [method CharacterBody4D.move_and_slide], or applying forces to a [RigidBody4D].
-		[b]Warning:[/b] When scaled, this node will likely not behave as expected. It is advised to keep this node unscaled and adjust its collision shapes instead.
+		[b]Warning:[/b] Do not scale CollisionObject4D nodes, as it will cause problems with physics. Instead, change the size of the [Shape4D] resources on the [CollisionShape4D] nodes in this body. The transformation basis of a CollisionObject4D node should always be orthonormal, meaning unscaled and unskewed.
 	</description>
 	<tutorials>
 	</tutorials>

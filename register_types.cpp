@@ -130,6 +130,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(Math4D);
 		GDREGISTER_CLASS(Vector4D);
 		// Physics.
+		GDREGISTER_CLASS(RaycastParameters4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsEngine4D);
 		GDREGISTER_CLASS(PhysicsServer4D);
 		// Render.

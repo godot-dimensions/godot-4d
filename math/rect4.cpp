@@ -453,7 +453,8 @@ bool Rect4::raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction
 	const Vector4 end = get_end();
 	real_t distance_min = -Math_INF;
 	real_t distance_max = Math_INF;
-	Vector4::Axis hit_axis = Vector4::Axis::AXIS_X;
+	Vector4::Axis distance_min_axis = Vector4::Axis::AXIS_X;
+	Vector4::Axis distance_max_axis = Vector4::Axis::AXIS_X;
 	for (uint8_t i = (uint8_t)0; i < (uint8_t)4; i++) {
 		if (p_direction[i] == 0.0f) {
 			// Ray is parallel in this axis, so there is no casting: just check if the from point is inside the box in this axis.
@@ -470,7 +471,7 @@ bool Rect4::raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction
 			}
 			if (low_ratio > distance_min) {
 				distance_min = low_ratio;
-				hit_axis = (Vector4::Axis)i;
+				distance_min_axis = (Vector4::Axis)i;
 			}
 			if (high_ratio < distance_max) {
 				if (high_ratio < 0.0f) {
@@ -478,6 +479,7 @@ bool Rect4::raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction
 					return false;
 				}
 				distance_max = high_ratio;
+				distance_max_axis = (Vector4::Axis)i;
 			}
 			if (distance_min > distance_max) {
 				// The ray misses the box.
@@ -486,12 +488,16 @@ bool Rect4::raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction
 		}
 	}
 	// If we haven't returned false by now, then the ray hits the box.
+	const bool hit_from_inside = distance_min < 0.0f;
+	const real_t hit_distance = hit_from_inside ? distance_max : distance_min;
+	const Vector4::Axis hit_axis = hit_from_inside ? distance_max_axis : distance_min_axis;
 	if (r_out_distance != nullptr) {
-		*r_out_distance = distance_min;
+		*r_out_distance = hit_distance;
 	}
 	if (r_out_normal != nullptr) {
 		Vector4 normal = Vector4();
-		normal[hit_axis] = (p_direction[hit_axis] >= 0.0f) ? -1.0f : 1.0f;
+		const real_t direction_sign = (p_direction[hit_axis] >= 0.0f) ? 1.0f : -1.0f;
+		normal[hit_axis] = hit_from_inside ? direction_sign : -direction_sign;
 		*r_out_normal = normal;
 	}
 	return true;
@@ -500,7 +506,7 @@ bool Rect4::raycast_intersects(const Vector4 &p_from, const Vector4 &p_direction
 Dictionary Rect4::raycast_intersects_dict(const Vector4 &p_from, const Vector4 &p_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
 	real_t distance = -Math_INF;
 	Vector4 normal = Vector4();
-	const bool hit_intersects = raycast_intersects(p_from, p_direction, p_inside_is_zero, &distance, &normal);
+	const bool hit_intersects = raycast_intersects(p_from, p_direction, p_inside_is_zero, &distance, &normal) && distance < p_max_distance;
 	Dictionary result;
 	result["hit"] = hit_intersects;
 	if (hit_intersects) {

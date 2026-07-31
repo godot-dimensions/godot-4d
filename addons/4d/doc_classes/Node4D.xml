@@ -144,6 +144,7 @@
 				- [code]"hit"[/code]: A boolean indicating whether the ray hit any part of the node.
 				- [code]"distance"[/code]: The distance from the starting point to the hit point.
 				- [code]"normal"[/code]: The normal at the hit point, perpendicular to the surface.
+				- [code]"point"[/code]: The point of intersection. This is the same as [code]local_from + local_direction * distance[/code].
 				- [code]"cell_index"[/code]: The index of the cell that was hit, for nodes with tetrahedral meshes.
 				If the ray does not hit any part of the node, the returned dictionary will be [code]{"hit": false}[/code].
 			</description>

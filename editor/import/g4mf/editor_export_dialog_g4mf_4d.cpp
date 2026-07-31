@@ -4,6 +4,7 @@
 #include "../../../model/g4mf/g4mf_state_4d.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/editor_file_system.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #define GDEXTMOD_GET_RESOURCE_FILESYSTEM get_resource_filesystem
@@ -71,9 +72,11 @@ void EditorExportDialogG4MF4D::_popup_g4mf_export_file_dialog() {
 	Node *scene_root = editor_interface->get_edited_scene_root();
 	ERR_FAIL_COND_SHOW_DIALOG(scene_root == nullptr, "G4MF error: Cannot export scene without a root node.");
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 2 && GODOT_VERSION_MINOR <= 5
+#if GODOT_MODULE
 	// Force the inspector to refresh its display of the export settings by editing null first.
 	_settings_inspector_side_menu->edit(nullptr);
 	_settings_inspector_side_menu->edit(_export_settings.ptr());
+#endif // GODOT_MODULE
 #endif
 	// Set the file dialog's file name to the scene name.
 	String filename = scene_root->get_scene_file_path().get_file().get_basename();

@@ -191,7 +191,7 @@ void CharacterBody4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_snap_distance"), &CharacterBody4D::get_snap_distance);
 	ClassDB::bind_method(D_METHOD("set_snap_distance", "snap_distance"), &CharacterBody4D::set_snap_distance);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "snap_distance", PROPERTY_HINT_RANGE, "0,100,0.01"), "set_snap_distance", "get_snap_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "snap_distance", PROPERTY_HINT_RANGE, "0,100,0.01,or_greater"), "set_snap_distance", "get_snap_distance");
 
 	ClassDB::bind_method(D_METHOD("get_linear_velocity"), &CharacterBody4D::get_linear_velocity);
 	ClassDB::bind_method(D_METHOD("set_linear_velocity", "linear_velocity"), &CharacterBody4D::set_linear_velocity);
