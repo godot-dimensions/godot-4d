@@ -21,6 +21,7 @@ class RenderingServer4D : public Object {
 	TypedArray<MeshInstance4D> _get_visible_mesh_instances() const;
 	bool _is_render_frame_connected = false;
 	void _render_frame();
+	void _request_godot_redraw();
 
 protected:
 	static RenderingServer4D *singleton;
