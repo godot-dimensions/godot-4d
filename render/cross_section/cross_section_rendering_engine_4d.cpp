@@ -18,17 +18,14 @@ void CrossSectionRenderingEngine4D::render_frame() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
 	ERR_FAIL_NULL(get_camera());
 	ERR_FAIL_NULL(get_viewport());
+	_current_pass++;
 	update_camera();
 	// Maps global to cameral-local, aka world space to view space.
 	TypedArray<MeshInstance4D> mesh_instances = get_mesh_instances();
 	TypedArray<Projection> modelview_basises = get_mesh_relative_basises();
 	PackedVector4Array modelview_origins = get_mesh_relative_positions();
-	int64_t instances_allocated = _instances_3d.size();
-	if (mesh_instances.size() > instances_allocated) {
-		_instances_3d.resize(mesh_instances.size());
-	}
-	int64_t instance_index = 0;
 	for (int mesh_index = 0; mesh_index < mesh_instances.size(); mesh_index++) {
+		// Get the MeshInstance4D and its Mesh4D, skipping if either is invalid.
 		MeshInstance4D *mesh_instance = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
 		ERR_CONTINUE(mesh_instance == nullptr);
 
@@ -39,17 +36,25 @@ void CrossSectionRenderingEngine4D::render_frame() {
 		Ref<Mesh> mesh_3d = mesh_4d->get_cross_section_mesh();
 		ERR_CONTINUE(!mesh_3d.is_valid());
 
-		if (instances_allocated <= instance_index) {
-			_instances_3d.set(instances_allocated++, create_instance());
+		// This is a valid MeshInstance4D with a valid Mesh4D and a valid cross-section Mesh3D.
+		// Get or create an Instance3D for this MeshInstance4D, and update if needed.
+		const ObjectID mi_object_id = ObjectID(mesh_instance->get_instance_id());
+		if (!_instances_3d.has(mi_object_id)) {
+			_instances_3d[mi_object_id] = Instance3D();
+			_instances_3d[mi_object_id].instance = create_instance();
 		}
-		RID instance_3d = _instances_3d[instance_index];
-
-		RenderingServer::get_singleton()->instance_set_base(instance_3d, mesh_3d->get_rid());
+		Instance3D &instance_3d = _instances_3d[mi_object_id];
+		const RID base_3d_rid = mesh_3d->get_rid();
+		if (instance_3d.base != base_3d_rid) {
+			instance_3d.base = base_3d_rid;
+			RenderingServer::get_singleton()->instance_set_base(instance_3d.instance, base_3d_rid);
+		}
 
 		Ref<Material4D> material_4d = mesh_instance->get_active_material();
 		if (!material_4d.is_valid()) {
 			material_4d = mesh_4d->get_fallback_material();
 		}
+		RID override_material_rid_3d = RID();
 		if (material_4d.is_valid()) {
 			Ref<PolyMaterial4D> poly_material_4d = material_4d;
 			if (poly_material_4d.is_valid()) {
@@ -60,26 +65,36 @@ void CrossSectionRenderingEngine4D::render_frame() {
 			}
 			Ref<Material> override_material_3d = material_4d->get_cross_section_material();
 			ERR_CONTINUE(!override_material_3d.is_valid());
-			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d, 0, override_material_3d->get_rid());
+			override_material_rid_3d = override_material_3d->get_rid();
+		}
+		if (instance_3d.material != override_material_rid_3d) {
+			instance_3d.material = override_material_rid_3d;
+			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d.instance, 0, override_material_rid_3d);
 		}
 
 		Projection modelview_basis = modelview_basises[mesh_index];
 		Vector4 modelview_origin = modelview_origins[mesh_index];
 		// TODO Need to split out view matrix to support multiple viewports, currently the same for all viewports. Either instance per viewport or pack view matrix in camera attributes.
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_origin", modelview_origin);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_origin", modelview_origin);
 		// Can't pass a mat4 through instance uniforms, need to break up into columns.
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_x", modelview_basis.columns[0]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_y", modelview_basis.columns[1]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_z", modelview_basis.columns[2]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_w", modelview_basis.columns[3]);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_basis_x", modelview_basis.columns[0]);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_basis_y", modelview_basis.columns[1]);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_basis_z", modelview_basis.columns[2]);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_basis_w", modelview_basis.columns[3]);
 
-		instance_index++;
+		instance_3d.last_used_pass = _current_pass;
 	}
-	for (int i = instance_index; i < _instances_3d.size(); i++) {
-		RID instance = _instances_3d[i];
-		RenderingServer::get_singleton()->free_rid(instance);
+	Vector<ObjectID> instance_ids_to_erase;
+	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::Instance3D> &pair : _instances_3d) {
+		const Instance3D &instance_3d = pair.value;
+		if (instance_3d.last_used_pass != _current_pass) {
+			RenderingServer::get_singleton()->free_rid(instance_3d.instance);
+			instance_ids_to_erase.append(pair.key);
+		}
 	}
-	_instances_3d.resize(instance_index);
+	for (const ObjectID &instance_id : instance_ids_to_erase) {
+		_instances_3d.erase(instance_id);
+	}
 }
 
 RID CrossSectionRenderingEngine4D::create_instance() {
@@ -146,9 +161,10 @@ void CrossSectionRenderingEngine4D::_cleanup_render_resources() {
 		_cross_section_camera = RID();
 		return;
 	}
-	for (const RID &instance : _instances_3d) {
-		if (instance.is_valid()) {
-			rendering_server->free_rid(instance);
+	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::Instance3D> &pair : _instances_3d) {
+		const Instance3D &instance_3d = pair.value;
+		if (instance_3d.instance.is_valid()) {
+			rendering_server->free_rid(instance_3d.instance);
 		}
 	}
 	_instances_3d.clear();
