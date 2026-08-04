@@ -261,19 +261,23 @@ Node *EditorMainViewport4D::_raycast_from_mouse(const Vector2 &p_mouse_position,
 	}
 	// Third pass: For nodes that intersected the ray, find the first hit along the ray.
 	Node *nearest_target_node = nullptr;
-	double nearest_distance = Math_INF;
+	double nearest_global_distance = Math_INF;
 	for (int64_t i = nodes.size() - 1; i >= 0; i--) {
 		Node4D *node_4d = nodes[i];
 		const Vector4 local_ray_origin = inverse_global_transforms[i].xform(global_ray_origin);
-		const Vector4 local_ray_direction = inverse_global_transforms[i].basis.xform(global_ray_direction).normalized();
-		const Dictionary raycast_result = node_4d->raycast_intersects_local(local_ray_origin, local_ray_direction, false);
+		const Vector4 local_ray_direction_non_norm = inverse_global_transforms[i].basis.xform(global_ray_direction);
+		const real_t local_units_per_global_unit = local_ray_direction_non_norm.length();
+		const Vector4 local_ray_direction = local_ray_direction_non_norm / local_units_per_global_unit;
+		const real_t local_max_distance = nearest_global_distance * local_units_per_global_unit;
+		const Dictionary raycast_result = node_4d->raycast_intersects_local(local_ray_origin, local_ray_direction, local_max_distance, false);
 		if (raycast_result.has("hit")) {
 			const bool hit = raycast_result["hit"];
 			if (hit && raycast_result.has("distance")) {
 				// Variant's float type is double, so use double here to avoid precision loss.
-				const double distance = raycast_result["distance"];
-				if (nearest_distance > distance) {
-					nearest_distance = distance;
+				const double local_distance = raycast_result["distance"];
+				const double global_distance = local_distance / local_units_per_global_unit;
+				if (nearest_global_distance > global_distance) {
+					nearest_global_distance = global_distance;
 					nearest_target_node = targets[i];
 				}
 			}

@@ -16,6 +16,7 @@
 
 // Model
 #include "model/mesh/poly/test_poly_mesh_builder_4d.h"
+#include "model/mesh/test_mesh_instance_4d.h"
 #include "model/mesh/tetra/test_array_tetra_mesh_4d.h"
 #include "model/mesh/tetra/test_tetra_mesh_4d.h"
 #include "model/mesh/wire/test_array_wire_mesh_4d.h"

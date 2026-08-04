@@ -66,7 +66,7 @@ Dictionary MeshInstance4D::raycast_intersects_local(const Vector4 &p_local_from,
 	}
 	// If the mesh is not a tetra mesh, fallback to using the local Rect4 bounds.
 	const Rect4 local_bounds = get_rect_bounds_local();
-	return local_bounds.raycast_intersects_dict(p_local_from, p_local_direction, p_inside_is_zero);
+	return local_bounds.raycast_intersects_dict(p_local_from, p_local_direction, p_max_distance, p_inside_is_zero);
 }
 
 void MeshInstance4D::_bind_methods() {
