@@ -7,24 +7,39 @@
 
 bool Geometry4D::compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g01, const real_t p_g02, const real_t p_g11, const real_t p_g12, const real_t p_g22, real_t r_inv_symmetric[6]) {
 	// This is the 3x3 symmetric metric matrix G_ij = e_i · e_j for the tetrahedron basis.
-	// We store only its six unique entries and invert that packed matrix.
-	const real_t c00 = p_g11 * p_g22 - p_g12 * p_g12;
-	const real_t c01 = p_g02 * p_g12 - p_g01 * p_g22;
-	const real_t c02 = p_g01 * p_g12 - p_g02 * p_g11;
-	const real_t c11 = p_g00 * p_g22 - p_g02 * p_g02;
-	const real_t c12 = p_g02 * p_g01 - p_g00 * p_g12;
-	const real_t c22 = p_g00 * p_g11 - p_g01 * p_g01;
-	const real_t det = p_g00 * c00 + p_g01 * c01 + p_g02 * c02;
-	if (!Math::is_finite(det) || Math::is_equal_approx(det, (real_t)0.0)) {
+	// Normalize each basis vector before checking the determinant so that valid small tetrahedra
+	// are not mistaken for degenerate ones. The normalized metric is a correlation matrix.
+	if (unlikely(!Math::is_finite(p_g00) || !Math::is_finite(p_g11) || !Math::is_finite(p_g22) || p_g00 <= 0.0f || p_g11 <= 0.0f || p_g22 <= 0.0f)) {
+		return false;
+	}
+	const real_t inv_len0 = 1.0f / Math::sqrt(p_g00);
+	const real_t inv_len1 = 1.0f / Math::sqrt(p_g11);
+	const real_t inv_len2 = 1.0f / Math::sqrt(p_g22);
+	const real_t n01 = p_g01 * inv_len0 * inv_len1;
+	const real_t n02 = p_g02 * inv_len0 * inv_len2;
+	const real_t n12 = p_g12 * inv_len1 * inv_len2;
+	const real_t c00 = 1.0f - n12 * n12;
+	const real_t c01 = n02 * n12 - n01;
+	const real_t c02 = n01 * n12 - n02;
+	const real_t c11 = 1.0f - n02 * n02;
+	const real_t c12 = n02 * n01 - n12;
+	const real_t c22 = 1.0f - n01 * n01;
+	const real_t det = c00 + n01 * c01 + n02 * c02;
+	if (unlikely(!Math::is_finite(det) || det <= CMP_EPSILON)) {
 		return false;
 	}
 	const real_t inv_det = (real_t)1.0 / det;
-	r_inv_symmetric[0] = c00 * inv_det;
-	r_inv_symmetric[1] = c01 * inv_det;
-	r_inv_symmetric[2] = c02 * inv_det;
-	r_inv_symmetric[3] = c11 * inv_det;
-	r_inv_symmetric[4] = c12 * inv_det;
-	r_inv_symmetric[5] = c22 * inv_det;
+	r_inv_symmetric[0] = c00 * inv_det * inv_len0 * inv_len0;
+	r_inv_symmetric[1] = c01 * inv_det * inv_len0 * inv_len1;
+	r_inv_symmetric[2] = c02 * inv_det * inv_len0 * inv_len2;
+	r_inv_symmetric[3] = c11 * inv_det * inv_len1 * inv_len1;
+	r_inv_symmetric[4] = c12 * inv_det * inv_len1 * inv_len2;
+	r_inv_symmetric[5] = c22 * inv_det * inv_len2 * inv_len2;
+	for (int i = 0; i < 6; i++) {
+		if (unlikely(!Math::is_finite(r_inv_symmetric[i]))) {
+			return false;
+		}
+	}
 	return true;
 }
 

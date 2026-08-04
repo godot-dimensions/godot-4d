@@ -104,8 +104,10 @@ Ref<WireMesh4D> Mesh4D::to_wire_mesh() {
 }
 
 Ref<ArrayMesh> Mesh4D::get_cross_section_mesh() {
-	if (_is_cross_section_mesh_dirty || _cross_section_mesh.is_null()) {
+	if (_cross_section_mesh.is_null()) {
 		_cross_section_mesh.instantiate();
+	}
+	if (_is_cross_section_mesh_dirty) {
 		const String mesh_path_or_name = get_path().is_empty() ? get_name() : get_path();
 		const String cross_section_hint = mesh_path_or_name + String(" Cross-Section Mesh");
 		_cross_section_mesh->set_name(cross_section_hint);

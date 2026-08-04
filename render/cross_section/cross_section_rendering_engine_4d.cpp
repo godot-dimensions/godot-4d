@@ -45,7 +45,8 @@ void CrossSectionRenderingEngine4D::render_frame() {
 		}
 		Instance3D &instance_3d = _instances_3d[mi_object_id];
 		const RID base_3d_rid = mesh_3d->get_rid();
-		if (instance_3d.base != base_3d_rid) {
+		const bool base_changed = instance_3d.base != base_3d_rid;
+		if (base_changed) {
 			instance_3d.base = base_3d_rid;
 			RenderingServer::get_singleton()->instance_set_base(instance_3d.instance, base_3d_rid);
 		}
@@ -67,7 +68,8 @@ void CrossSectionRenderingEngine4D::render_frame() {
 			ERR_CONTINUE(!override_material_3d.is_valid());
 			override_material_rid_3d = override_material_3d->get_rid();
 		}
-		if (instance_3d.material != override_material_rid_3d) {
+		// Godot clears surface override materials when an instance's base changes.
+		if (base_changed || instance_3d.material != override_material_rid_3d) {
 			instance_3d.material = override_material_rid_3d;
 			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d.instance, 0, override_material_rid_3d);
 		}
