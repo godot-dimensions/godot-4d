@@ -49,9 +49,11 @@ protected:
 	Color _albedo_color = Color(1, 1, 1, 1);
 	ColorSourceFlags _albedo_source_flags = COLOR_SOURCE_FLAG_SINGLE_COLOR;
 	Ref<ShaderMaterial> _cross_section_material;
+	Ref<ShaderMaterial> _projected_material;
 
 	// Update _cross_section_material to match current settings on the material, skip if _cross_section_material is null.
 	virtual void update_cross_section_material();
+	virtual void update_projected_material(); // Maybe these should just be merged.
 
 public:
 	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh);
@@ -70,6 +72,7 @@ public:
 	void resize_albedo_color_array(const int64_t p_size, const Color &p_fill_color = Color(1, 1, 1, 1));
 
 	Ref<ShaderMaterial> get_cross_section_material();
+	Ref<ShaderMaterial> get_projected_material();
 };
 
 VARIANT_ENUM_CAST(Material4D::ColorSourceFlags);

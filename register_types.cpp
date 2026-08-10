@@ -68,6 +68,7 @@
 
 // Render.
 #include "render/cross_section/cross_section_rendering_engine_4d.h"
+#include "render/projected/projected_rendering_engine_4d.h"
 #include "render/rendering_engine_4d.h"
 #include "render/rendering_server_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
@@ -244,6 +245,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
 		rendering_server->register_rendering_engine(memnew(WireframeCanvasRenderingEngine4D));
 		rendering_server->register_rendering_engine(memnew(CrossSectionRenderingEngine4D));
+		rendering_server->register_rendering_engine(memnew(ProjectedRenderingEngine4D));
 		add_godot_singleton("RenderingServer4D", rendering_server);
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {

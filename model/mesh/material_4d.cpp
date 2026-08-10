@@ -119,6 +119,7 @@ void Material4D::set_albedo_source_flags(const ColorSourceFlags p_albedo_source_
 	_albedo_source_flags = p_albedo_source_flags;
 	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
+	update_projected_material();
 }
 
 Color Material4D::get_albedo_color() const {
@@ -129,6 +130,7 @@ void Material4D::set_albedo_color(const Color &p_albedo_color) {
 	_albedo_color = p_albedo_color;
 	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
+	update_projected_material();
 }
 
 PackedColorArray Material4D::get_albedo_color_array() const {
@@ -139,12 +141,14 @@ void Material4D::set_albedo_color_array(const PackedColorArray &p_albedo_color_a
 	_albedo_color_array = p_albedo_color_array;
 	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
+	update_projected_material();
 }
 
 void Material4D::append_albedo_color(const Color &p_albedo_color) {
 	_albedo_color_array.push_back(p_albedo_color);
 	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
+	update_projected_material();
 }
 
 void Material4D::resize_albedo_color_array(const int64_t p_size, const Color &p_fill_color) {
@@ -155,6 +159,7 @@ void Material4D::resize_albedo_color_array(const int64_t p_size, const Color &p_
 	}
 	_edge_albedo_color_cache.clear();
 	update_cross_section_material();
+	update_projected_material();
 }
 
 Ref<ShaderMaterial> Material4D::get_cross_section_material() {
@@ -167,7 +172,20 @@ Ref<ShaderMaterial> Material4D::get_cross_section_material() {
 	return _cross_section_material;
 }
 
+Ref<ShaderMaterial> Material4D::get_projected_material() {
+	if (_projected_material.is_null()) {
+		_projected_material.instantiate();
+		const String material_path_or_name = get_path().is_empty() ? get_name() : get_path();
+		_projected_material->set_name(material_path_or_name + String(" Projected Material"));
+		update_projected_material();
+	}
+	return _projected_material;
+}
+
 void Material4D::update_cross_section_material() {
+}
+
+void Material4D::update_projected_material() {
 }
 
 void Material4D::_bind_methods() {
@@ -187,6 +205,7 @@ void Material4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("resize_albedo_color_array", "size", "fill_color"), &Material4D::resize_albedo_color_array, DEFVAL(Color(1, 1, 1, 1)));
 
 	ClassDB::bind_method(D_METHOD("get_cross_section_material"), &Material4D::get_cross_section_material);
+	ClassDB::bind_method(D_METHOD("get_projected_material"), &Material4D::get_projected_material);
 
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_SINGLE_COLOR);
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_PER_VERT);

@@ -1,6 +1,7 @@
 #include "tetra_material_4d.h"
 
 #include "../../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
+#include "../../../render/projected/tetra_projected_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
 
 #if GDEXTENSION
@@ -150,6 +151,7 @@ Ref<Texture3D> TetraMaterial4D::get_albedo_texture_3d() const {
 void TetraMaterial4D::set_albedo_texture_3d(const Ref<Texture3D> &p_albedo_texture_3d) {
 	_albedo_texture_3d = p_albedo_texture_3d;
 	update_cross_section_material();
+	update_projected_material();
 }
 
 void TetraMaterial4D::update_cross_section_material() {
@@ -177,6 +179,32 @@ void TetraMaterial4D::update_cross_section_material() {
 	_cross_section_material->set_shader_parameter("albedo_texture", albedo_texture);
 }
 
+void TetraMaterial4D::update_projected_material() {
+	if (_projected_material.is_null()) {
+		return;
+	}
+	if (_projected_material->get_shader().is_null()) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
+		// In Godot 4.4+, preload the projected shaders. In Godot 4.3, lazy-load them when needed.
+		if (_projected_shader.is_null()) {
+			const String rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
+			if (rendering_method == "gl_compatibility") {
+				// TODO: check whether this does indeed apply to projected rendering too. This is just copied from the cross-section rendering.
+				ERR_FAIL_MSG("4D projected rendering is not supported in Godot 4.3 in the compatibility renderer. Please upgrade to Godot 4.4 or later, or switch to a Vulkan-based rendering method to use 4D projected rendering.");
+			}
+			init_shaders();
+		}
+#endif
+		_projected_material->set_shader(_projected_shader);
+	}
+	const ColorSourceFlags flags = get_albedo_source_flags();
+	const Color albedo = (flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) ? _albedo_color : Color(1.0, 1.0, 1.0);
+	// Setting to a Nil variant resets to the default texture, which is white.
+	const Variant albedo_texture = (flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW) ? Variant(_albedo_texture_3d) : Variant();
+	_projected_material->set_shader_parameter("albedo", albedo);
+	_projected_material->set_shader_parameter("albedo_texture", albedo_texture);
+}
+
 void TetraMaterial4D::_validate_property(PropertyInfo &p_property) const {
 	if (p_property.name == StringName("albedo_color")) {
 		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
@@ -192,18 +220,24 @@ TetraMaterial4D::TetraMaterial4D() {
 }
 
 Ref<Shader> TetraMaterial4D::_cross_section_shader;
+Ref<Shader> TetraMaterial4D::_projected_shader;
 
 void TetraMaterial4D::init_shaders() {
 	_cross_section_shader.instantiate();
 	_cross_section_shader->set_name(String("Tetra Cross-Section Shader"));
 	_cross_section_shader->set_code(tetra_cross_section_shader_shader_glsl);
+	_projected_shader.instantiate();
+	_projected_shader->set_name(String("Tetra Projected Shader"));
+	_projected_shader->set_code(tetra_projected_shader_shader_glsl);
 	if (RenderingServer::get_singleton() != nullptr) {
 		RenderingServer::get_singleton()->shader_set_path_hint(_cross_section_shader->get_rid(), String("Tetra Cross-Section Shader"));
+		RenderingServer::get_singleton()->shader_set_path_hint(_projected_shader->get_rid(), String("Tetra Projected Shader"));
 	}
 }
 
 void TetraMaterial4D::cleanup_shaders() {
 	_cross_section_shader.unref();
+	_projected_shader.unref();
 }
 
 void TetraMaterial4D::_bind_methods() {

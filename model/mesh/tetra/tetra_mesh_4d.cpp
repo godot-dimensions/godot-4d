@@ -597,6 +597,14 @@ void TetraMesh4D::update_cross_section_mesh() {
 		surface_tool->add_vertex(Vector3(3.0, uvw2.z, uvw3.z));
 		surface_tool->add_vertex(Vector3(4.0, uvw2.z, uvw3.z));
 		surface_tool->add_vertex(Vector3(5.0, uvw2.z, uvw3.z));
+
+		surface_tool->add_vertex(Vector3(6.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(7.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(8.0, uvw2.z, uvw3.z));
+
+		surface_tool->add_vertex(Vector3(9.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(10.0, uvw2.z, uvw3.z));
+		surface_tool->add_vertex(Vector3(11.0, uvw2.z, uvw3.z));
 	}
 	surface_tool->commit(_cross_section_mesh);
 
