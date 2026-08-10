@@ -83,6 +83,7 @@
 #include "editor/godot_4d_editor_plugin.h"
 #include "editor/import/off/editor_import_plugin_off_base.h"
 #include "editor/import/off/editor_import_plugin_off_mesh_3d.h"
+#include "editor/import/off/editor_import_plugin_off_poly_4d.h"
 #include "editor/import/off/editor_import_plugin_off_scene.h"
 #include "editor/import/off/editor_import_plugin_off_tetra_4d.h"
 #include "editor/import/off/editor_import_plugin_off_wire_4d.h"
@@ -92,6 +93,7 @@
 #include "editor/viewport/editor_main_screen_4d.h"
 #include "editor/viewport/editor_main_viewport_4d.h"
 #include "editor/viewport/editor_transform_gizmo_4d.h"
+#include "editor/viewport/editor_transform_snap_settings_4d.h"
 #include "editor/viewport/editor_viewport_rotation_4d.h"
 
 #include <godot_cpp/classes/editor_plugin_registration.hpp>
@@ -258,6 +260,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorImportPluginG4MFScene4D);
 		GDREGISTER_CLASS(EditorImportPluginOFFBase);
 		GDREGISTER_CLASS(EditorImportPluginOFFMesh3D);
+		GDREGISTER_CLASS(EditorImportPluginOFFPoly4D);
 		GDREGISTER_CLASS(EditorImportPluginOFFScene);
 		GDREGISTER_CLASS(EditorImportPluginOFFTetra4D);
 		GDREGISTER_CLASS(EditorImportPluginOFFWire4D);
@@ -265,6 +268,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorMainScreen4D);
 		GDREGISTER_CLASS(EditorMainViewport4D);
 		GDREGISTER_CLASS(EditorTransformGizmo4D);
+		GDREGISTER_CLASS(EditorTransformSnapSettings4D);
 		GDREGISTER_CLASS(EditorViewportRotation4D);
 		GDREGISTER_CLASS(Godot4DEditorPlugin);
 #elif GODOT_MODULE

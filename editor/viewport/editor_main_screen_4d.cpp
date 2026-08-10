@@ -98,7 +98,9 @@ void EditorMainScreen4D::_on_transform_settings_menu_id_pressed(const int p_id) 
 		}
 		_4d_editor_config_file->save(_4d_editor_config_file_path);
 	} else if (p_id == TRANSFORM_SETTING_CONFIGURE_SNAP) {
-		_snap_settings_dialog->popup_centered(Size2(400, 450) * EDSCALE);
+		if (_snap_settings_dialog != nullptr) {
+			_snap_settings_dialog->popup_centered(Size2(400, 450) * EDSCALE);
+		}
 	}
 }
 
@@ -471,10 +473,11 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	view_menu_popup->connect(StringName("id_pressed"), callable_mp(this, &EditorMainScreen4D::_on_view_menu_id_pressed));
 	_toolbar_hbox->add_child(memnew(VSeparator));
 
-#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
-	// Set up the camera settings dialog as long as this is Godot >= 4.4.
+	// Always create the camera settings object, even without the dialog, as it's needed for RenderingEngine4D selection.
 	_camera_settings = memnew(EditorCameraSettings4D);
 	_camera_settings->setup(this, _4d_editor_config_file, _4d_editor_config_file_path);
+#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
+	// Set up the camera settings dialog as long as this is Godot >= 4.4.
 	_camera_settings_dialog = memnew(ConfirmationDialog);
 	_camera_settings_dialog->set_name(StringName("CameraSettingsDialog"));
 	_camera_settings_dialog->set_title(TTR("Editor Camera Settings"));

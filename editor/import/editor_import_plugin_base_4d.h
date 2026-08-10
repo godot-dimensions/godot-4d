@@ -46,6 +46,10 @@ public:
 	virtual bool _get_option_visibility(const String &p_path, const StringName &p_option_name, const Dictionary &p_options) const override {
 		return true;
 	}
+	// These need to be overridden in derived classes, but GDExtension complains if they are not implemented here,
+	// so we implement these only in GDExtension, but force derived classes to override them in module builds.
+	virtual String _get_importer_name() const override { return String(); }
+	virtual PackedStringArray _get_recognized_extensions() const override { return PackedStringArray(); }
 #elif GODOT_MODULE
 	virtual void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const override {}
 	virtual bool get_option_visibility(const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const override {
