@@ -151,21 +151,21 @@ void RenderingServer4D::register_camera(Camera4D *p_camera) {
 	_viewport_cameras[viewport] = cameras;
 	p_camera->make_current();
 	// Is this also the first time any Camera4D has been registered? If so, connect to the RenderingServer's frame signal.
-	if (_is_render_frame_connected) {
+	if (_are_render_frame_and_process_frame_connected) {
 		return;
 	}
 	RenderingServer *godot_rendering_server = RenderingServer::get_singleton();
 	ERR_FAIL_NULL(godot_rendering_server);
+	SceneTree *godot_scene_tree = p_camera->get_tree();
+	ERR_FAIL_NULL(godot_scene_tree);
 	godot_rendering_server->connect(StringName("frame_pre_draw"), callable_mp(this, &RenderingServer4D::_render_frame));
-	_is_render_frame_connected = true;
 	// Connect to the SceneTree's process_frame signal, so we can request a redraw every tick.
 	// This is necessary because the RenderingServer will not redraw the viewport if it thinks nothing has changed.
 	// There are a ton of things that will need a redraw, to the point that it is easier to just request a redraw
 	// every tick, rather than slow each tick down with a thousand calls to `_request_godot_redraw()` each tick.
 	// This will result in increased resource usage when idle, but more FPS when actively running, it's a tradeoff.
-	SceneTree *godot_scene_tree = p_camera->get_tree();
-	ERR_FAIL_NULL(godot_scene_tree);
 	godot_scene_tree->connect(StringName("process_frame"), callable_mp(this, &RenderingServer4D::_request_godot_redraw));
+	_are_render_frame_and_process_frame_connected = true;
 }
 
 void RenderingServer4D::unregister_camera(Camera4D *p_camera) {
@@ -186,7 +186,8 @@ void RenderingServer4D::unregister_camera(Camera4D *p_camera) {
 			}
 		}
 		_viewport_cameras.erase(viewport);
-		if (_is_render_frame_connected && _viewport_cameras.is_empty()) {
+		if (_are_render_frame_and_process_frame_connected && _viewport_cameras.is_empty()) {
+			// If there are no more 4D cameras on any Viewport, we can disconnect the signals to put RenderingServer4D to sleep.
 			RenderingServer *godot_rendering_server = RenderingServer::get_singleton();
 			if (godot_rendering_server != nullptr) {
 				const Callable render_callable = callable_mp(this, &RenderingServer4D::_render_frame);
@@ -194,7 +195,14 @@ void RenderingServer4D::unregister_camera(Camera4D *p_camera) {
 					godot_rendering_server->disconnect(StringName("frame_pre_draw"), render_callable);
 				}
 			}
-			_is_render_frame_connected = false;
+			SceneTree *godot_scene_tree = p_camera->get_tree();
+			if (godot_scene_tree != nullptr) {
+				const Callable redraw_callable = callable_mp(this, &RenderingServer4D::_request_godot_redraw);
+				if (godot_scene_tree->is_connected(StringName("process_frame"), redraw_callable)) {
+					godot_scene_tree->disconnect(StringName("process_frame"), redraw_callable);
+				}
+			}
+			_are_render_frame_and_process_frame_connected = false;
 		}
 	}
 }

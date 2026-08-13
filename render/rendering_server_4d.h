@@ -19,7 +19,7 @@ class RenderingServer4D : public Object {
 
 	Ref<RenderingEngine4D> _get_rendering_engine(const String &p_friendly_name) const;
 	TypedArray<MeshInstance4D> _get_visible_mesh_instances() const;
-	bool _is_render_frame_connected = false;
+	bool _are_render_frame_and_process_frame_connected = false;
 	void _render_frame();
 	void _request_godot_redraw();
 
