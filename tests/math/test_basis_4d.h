@@ -26,6 +26,12 @@ TEST_CASE("[Basis4D] Conversion") {
 	CHECK_MESSAGE(basis_3d == Basis(2, 6, 10, 3, 7, 11, 4, 8, 12), "Basis4D to_3d should work as expected.");
 	Basis4D basis_no_w = Basis4D(2, 3, 4, 0, 6, 7, 8, 0, 10, 11, 12, 0, 0, 0, 0, 1);
 	CHECK_MESSAGE(Basis4D::from_3d(basis_3d) == basis_no_w, "Basis4D from_3d should work as expected.");
+
+	const Basis4D tilted_z = Basis4D::from_zw(0.5f);
+	const Basis z_dominant_3d = tilted_z.to_3d_orthonormalize_z_dominant();
+	const Vector3 expected_z = Vector3(tilted_z.z.x, tilted_z.z.y, tilted_z.z.z).normalized();
+	CHECK_MESSAGE(z_dominant_3d.get_column(2).is_equal_approx(expected_z), "Z-dominant conversion should preserve the projected Z axis used by SpotLight3D.");
+	CHECK_MESSAGE(z_dominant_3d.determinant() == doctest::Approx(1.0f), "Z-dominant conversion should return an orthonormal 3D basis.");
 }
 
 TEST_CASE("[Basis4D] Rotate Bivector") {

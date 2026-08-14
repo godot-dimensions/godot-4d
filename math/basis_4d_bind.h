@@ -81,6 +81,7 @@ public:
 	// Conversion.
 	static Projection from_3d(const Basis &p_from_3d);
 	static Basis to_3d(const Projection &p_from_4d, const bool p_orthonormalized = false);
+	static Basis to_3d_orthonormalize_z_dominant(const Projection &p_from_4d);
 	static Projection from_array(const PackedRealArray &p_from_array);
 	static PackedRealArray to_array(const Projection &p_from_basis);
 
