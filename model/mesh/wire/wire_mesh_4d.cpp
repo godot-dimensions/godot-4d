@@ -10,7 +10,7 @@
 
 void WireMesh4D::wire_mesh_clear_cache() {
 	_edge_positions_cache.clear();
-	mark_cross_section_mesh_dirty();
+	mark_mesh_bounds_and_cross_section_dirty();
 }
 
 PackedVector4Array WireMesh4D::get_edge_positions() {

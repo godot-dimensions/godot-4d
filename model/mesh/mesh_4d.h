@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../math/rect4.h"
 #include "material_4d.h"
 
 #if GDEXTENSION
@@ -14,9 +15,11 @@ class WireMesh4D;
 class Mesh4D : public Resource {
 	GDCLASS(Mesh4D, Resource);
 
+	Rect4 _rect_bounds;
 	Ref<Material4D> _material;
 	bool _is_mesh_data_valid = false;
 	bool _is_cross_section_mesh_dirty = true;
+	bool _is_rect_bounds_dirty = true;
 
 protected:
 	// Slightly under the 32-bit integer limit to avoid overflows.
@@ -28,6 +31,10 @@ protected:
 	// Call when the mesh is modified to indicate that
 	// the 3D mesh used for cross-section rendering needs to be updated.
 	void mark_cross_section_mesh_dirty() { _is_cross_section_mesh_dirty = true; }
+	void mark_mesh_bounds_and_cross_section_dirty() {
+		_is_cross_section_mesh_dirty = true;
+		_is_rect_bounds_dirty = true;
+	}
 	// Called when the cross-section mesh is requested and the cross-section mesh has been marked dirty.
 	// Update the mesh referenced by _cross_section_mesh to match the current state of the mesh.
 	virtual void update_cross_section_mesh();
@@ -42,6 +49,8 @@ public:
 
 	Ref<ArrayWireMesh4D> to_array_wire_mesh();
 	virtual Ref<WireMesh4D> to_wire_mesh();
+
+	Rect4 get_rect_bounds();
 	// Returns a reference to the mesh used for cross-section rendering.
 	Ref<ArrayMesh> get_cross_section_mesh();
 

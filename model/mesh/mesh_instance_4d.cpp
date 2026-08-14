@@ -44,17 +44,11 @@ void MeshInstance4D::set_mesh(const Ref<Mesh4D> &p_mesh) {
 }
 
 Rect4 MeshInstance4D::get_rect_bounds_local(const Transform4D &p_to_target) const {
-	Rect4 bounds = Rect4(p_to_target.origin, Vector4());
 	const Ref<Mesh4D> mesh = get_mesh();
 	if (mesh.is_null()) {
-		return bounds;
+		return Rect4(p_to_target.origin, Vector4());
 	}
-	const Transform4D to_target = p_to_target;
-	const PackedVector4Array vertices = mesh->get_vertices();
-	for (int vert_index = 0; vert_index < vertices.size(); vert_index++) {
-		bounds = bounds.expand_to_point(to_target * vertices[vert_index]);
-	}
-	return bounds;
+	return p_to_target.xform_rect(mesh->get_rect_bounds());
 }
 
 Dictionary MeshInstance4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
