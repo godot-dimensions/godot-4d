@@ -110,7 +110,7 @@
 		<member name="projection_type" type="int" setter="set_projection_type" getter="get_projection_type" enum="Camera4D.ProjectionType4D" default="1">
 			The type of projection to use for 4D to 2D projection. If [constant PROJECTION4D_ORTHOGRAPHIC], both 4D to 3D and 3D to 2D are projected orthographically. If [constant PROJECTION4D_PERSPECTIVE_4D], 4D to 3D is projected with perspective. If [constant PROJECTION4D_PERSPECTIVE_3D], 3D to 2D is projected with perspective.
 		</member>
-		<member name="rendering_engine" type="String" setter="set_rendering_engine" getter="get_rendering_engine" default="&quot;&quot;">
+		<member name="rendering_engine_name" type="String" setter="set_rendering_engine_name" getter="get_rendering_engine_name" default="&quot;&quot;">
 			The rendering engine to use. Rendering engines must extend [RenderingEngine4D] and be registered with [method RenderingServer4D.register_rendering_engine] to be available as an option.
 		</member>
 		<member name="view_angle_type" type="int" setter="set_view_angle_type" getter="get_view_angle_type" enum="Camera4D.ViewAngleType" default="0">

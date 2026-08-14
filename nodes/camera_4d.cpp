@@ -3,7 +3,7 @@
 #include "../render/rendering_server_4d.h"
 
 void Camera4D::_validate_property(PropertyInfo &p_property) const {
-	if (p_property.name == StringName("rendering_engine")) {
+	if (p_property.name == StringName("rendering_engine_name")) {
 		PackedStringArray rendering_engine_names = RenderingServer4D::get_singleton()->get_rendering_engine_names();
 		p_property.hint_string = String(",").join(rendering_engine_names);
 	} else if (p_property.name == StringName("view_angle_type")) {
@@ -166,12 +166,12 @@ Vector2 Camera4D::world_to_viewport(const Vector4 &p_global_position) const {
 	return (projected * pixel_size + viewport_size) * 0.5f;
 }
 
-String Camera4D::get_rendering_engine() const {
-	return _rendering_engine;
+String Camera4D::get_rendering_engine_name() const {
+	return _rendering_engine_name;
 }
 
-void Camera4D::set_rendering_engine(const String &p_rendering_engine) {
-	_rendering_engine = p_rendering_engine;
+void Camera4D::set_rendering_engine_name(const String &p_rendering_engine_name) {
+	_rendering_engine_name = p_rendering_engine_name;
 }
 
 Camera4D::KeepAspect Camera4D::get_keep_aspect() const {
@@ -319,10 +319,10 @@ void Camera4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("world_to_viewport_local_normal", "local_position"), &Camera4D::world_to_viewport_local_normal);
 	ClassDB::bind_method(D_METHOD("world_to_viewport", "global_position"), &Camera4D::world_to_viewport);
 
-	ClassDB::bind_method(D_METHOD("get_rendering_engine"), &Camera4D::get_rendering_engine);
-	ClassDB::bind_method(D_METHOD("set_rendering_engine", "rendering_engine"), &Camera4D::set_rendering_engine);
+	ClassDB::bind_method(D_METHOD("get_rendering_engine_name"), &Camera4D::get_rendering_engine_name);
+	ClassDB::bind_method(D_METHOD("set_rendering_engine_name", "rendering_engine_name"), &Camera4D::set_rendering_engine_name);
 	// The property hint string will be filled out when _validate_property is called.
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "rendering_engine", PROPERTY_HINT_ENUM, ""), "set_rendering_engine", "get_rendering_engine");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "rendering_engine_name", PROPERTY_HINT_ENUM, ""), "set_rendering_engine_name", "get_rendering_engine_name");
 
 	ClassDB::bind_method(D_METHOD("get_keep_aspect"), &Camera4D::get_keep_aspect);
 	ClassDB::bind_method(D_METHOD("set_keep_aspect", "keep_aspect"), &Camera4D::set_keep_aspect);

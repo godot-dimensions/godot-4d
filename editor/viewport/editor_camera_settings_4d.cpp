@@ -64,8 +64,8 @@ void EditorCameraSettings4D::set_w_fade_slope(const double p_w_fade_slope) {
 	write_to_config_file();
 }
 
-void EditorCameraSettings4D::set_rendering_engine(const String &p_rendering_engine) {
-	_rendering_engine = p_rendering_engine;
+void EditorCameraSettings4D::set_rendering_engine_name(const String &p_rendering_engine_name) {
+	_rendering_engine_name = p_rendering_engine_name;
 	notify_property_list_changed();
 	apply_to_cameras();
 	write_to_config_file();
@@ -86,7 +86,7 @@ void EditorCameraSettings4D::apply_to_cameras() const {
 		camera->set_w_fade_color_positive(_w_fade_color_positive);
 		camera->set_w_fade_distance(_w_fade_distance);
 		camera->set_w_fade_slope(_w_fade_slope);
-		camera->set_rendering_engine(_rendering_engine);
+		camera->set_rendering_engine_name(_rendering_engine_name);
 	}
 }
 
@@ -103,7 +103,8 @@ void EditorCameraSettings4D::setup(EditorMainScreen4D *p_editor_main_screen, Ref
 	_w_fade_color_positive = p_config_file->get_value("camera", "w_fade_color_positive", _w_fade_color_positive);
 	_w_fade_distance = p_config_file->get_value("camera", "w_fade_distance", _w_fade_distance);
 	_w_fade_slope = p_config_file->get_value("camera", "w_fade_slope", _w_fade_slope);
-	_rendering_engine = p_config_file->get_value("camera", "rendering_engine", _rendering_engine);
+	// Keep this in sync with `EditorMainScreen4D::_update_rendering_engine_menu()`.
+	_rendering_engine_name = p_config_file->get_value("camera", "rendering_engine_name", _rendering_engine_name);
 	apply_to_cameras();
 }
 
@@ -142,15 +143,15 @@ void EditorCameraSettings4D::write_to_config_file() const {
 	if (!Math::is_equal_approx(_w_fade_slope, 1.0)) {
 		_4d_editor_config_file->set_value("camera", "w_fade_slope", _w_fade_slope);
 	}
-	if (!_rendering_engine.is_empty()) {
-		_4d_editor_config_file->set_value("camera", "rendering_engine", _rendering_engine);
+	if (!_rendering_engine_name.is_empty()) {
+		_4d_editor_config_file->set_value("camera", "rendering_engine_name", _rendering_engine_name);
 	}
 	_4d_editor_config_file->save(_4d_editor_config_file_path);
 }
 
 void EditorCameraSettings4D::_validate_property(PropertyInfo &p_property) const {
 	if (p_property.name == StringName("clip_far")) {
-		if (_rendering_engine == "Wireframe Canvas" && _depth_fade_mode == Camera4D::DEPTH_FADE_DISABLED) {
+		if (_rendering_engine_name == "Wireframe Canvas" && _depth_fade_mode == Camera4D::DEPTH_FADE_DISABLED) {
 			p_property.usage = PROPERTY_USAGE_NONE;
 		}
 	} else if (p_property.name == StringName("depth_fade_start")) {

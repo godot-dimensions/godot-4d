@@ -17,7 +17,6 @@ class RenderingServer4D : public Object {
 	// We could add a "World4D" class in the future if we want to add this feature, but it's not necessary for now.
 	Vector<MeshInstance4D *> _mesh_instances;
 
-	Ref<RenderingEngine4D> _get_rendering_engine(const String &p_friendly_name) const;
 	TypedArray<MeshInstance4D> _get_visible_mesh_instances() const;
 	bool _are_render_frame_and_process_frame_connected = false;
 	void _render_frame();
@@ -28,8 +27,6 @@ protected:
 	static void _bind_methods();
 
 public:
-	bool is_currently_preferring_wireframe_meshes(Viewport *p_viewport) const;
-
 	void register_camera(Camera4D *p_camera);
 	void unregister_camera(Camera4D *p_camera);
 	void make_camera_current(Camera4D *p_camera);
@@ -42,6 +39,7 @@ public:
 	void register_rendering_engine(const Ref<RenderingEngine4D> &p_engine);
 	void unregister_rendering_engine(const String &p_friendly_name);
 	PackedStringArray get_rendering_engine_names() const;
+	Ref<RenderingEngine4D> get_rendering_engine_from_name(const String &p_friendly_name) const;
 
 	static RenderingServer4D *get_singleton() { return singleton; }
 	RenderingServer4D() { singleton = this; }

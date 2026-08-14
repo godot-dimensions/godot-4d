@@ -18,18 +18,6 @@
 #endif
 #endif
 
-Ref<RenderingEngine4D> RenderingServer4D::_get_rendering_engine(const String &p_friendly_name) const {
-	if (_rendering_engines.has(p_friendly_name)) {
-		return _rendering_engines[p_friendly_name];
-	}
-	// Fallback to the first registered rendering engine. If the name is empty,
-	// treat it as "auto" and do not print a warning. Else, print a warning.
-	if (!p_friendly_name.is_empty()) {
-		WARN_PRINT("Rendering engine '" + p_friendly_name + "' not registered. Using the first registered engine.");
-	}
-	return _rendering_engines.begin()->value;
-}
-
 RenderingServer4D::~RenderingServer4D() {
 	for (const KeyValue<Viewport *, Vector<Camera4D *>> &E : _viewport_cameras) {
 		Viewport *viewport = E.key;
@@ -82,15 +70,15 @@ void RenderingServer4D::_render_frame() {
 		}
 #endif // TOOLS_ENABLED
 		ERR_FAIL_COND_MSG(_rendering_engines.is_empty(), "No 4D rendering engines registered. 4D rendering will not occur.");
-		Ref<RenderingEngine4D> rendering_engine = _get_rendering_engine(camera0->get_rendering_engine());
-		if (viewport->has_meta("last_rendering_engine_4d")) {
-			Variant last_rendering_engine_variant = viewport->get_meta("last_rendering_engine_4d");
+		Ref<RenderingEngine4D> rendering_engine = get_rendering_engine_from_name(camera0->get_rendering_engine_name());
+		if (viewport->has_meta("last_rendering_engine_name_4d")) {
+			Variant last_rendering_engine_variant = viewport->get_meta("last_rendering_engine_name_4d");
 			if (last_rendering_engine_variant.get_type() == Variant::STRING) {
 				const String last_rendering_engine_name = last_rendering_engine_variant;
 				const String next_rendering_engine_name = rendering_engine->get_friendly_name();
 				if (next_rendering_engine_name != last_rendering_engine_name) {
-					Ref<RenderingEngine4D> last_rendering_engine_4d = _get_rendering_engine(last_rendering_engine_name);
-					last_rendering_engine_4d->cleanup_for_viewport_if_needed(viewport);
+					Ref<RenderingEngine4D> last_rendering_engine_name_4d = get_rendering_engine_from_name(last_rendering_engine_name);
+					last_rendering_engine_name_4d->cleanup_for_viewport_if_needed(viewport);
 				}
 			}
 		}
@@ -103,13 +91,6 @@ void RenderingServer4D::_render_frame() {
 		rendering_engine->calculate_relative_transforms();
 		rendering_engine->render_frame();
 	}
-}
-
-bool RenderingServer4D::is_currently_preferring_wireframe_meshes(Viewport *p_viewport) const {
-	ERR_FAIL_NULL_V(p_viewport, false);
-	Camera4D *camera = get_current_camera(p_viewport);
-	Ref<RenderingEngine4D> rendering_engine = _get_rendering_engine(camera->get_rendering_engine());
-	return rendering_engine->prefers_wireframe_meshes();
 }
 
 void RenderingServer4D::_request_godot_redraw() {
@@ -291,6 +272,18 @@ PackedStringArray RenderingServer4D::get_rendering_engine_names() const {
 		i++;
 	}
 	return engine_names;
+}
+
+Ref<RenderingEngine4D> RenderingServer4D::get_rendering_engine_from_name(const String &p_friendly_name) const {
+	if (_rendering_engines.has(p_friendly_name)) {
+		return _rendering_engines[p_friendly_name];
+	}
+	// Fallback to the first registered rendering engine. If the name is empty,
+	// treat it as "auto" and do not print a warning. Else, print a warning.
+	if (!p_friendly_name.is_empty()) {
+		WARN_PRINT("Rendering engine '" + p_friendly_name + "' not registered. Using the first registered engine.");
+	}
+	return _rendering_engines.begin()->value;
 }
 
 RenderingServer4D *RenderingServer4D::singleton = nullptr;

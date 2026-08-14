@@ -30,7 +30,7 @@ class EditorCameraSettings4D : public Object {
 
 	Ref<ConfigFile> _4d_editor_config_file;
 	String _4d_editor_config_file_path = "";
-	String _rendering_engine = "";
+	String _rendering_engine_name = "";
 
 protected:
 	static void _bind_methods();
@@ -68,7 +68,7 @@ public:
 	void set_w_fade_slope(const double p_w_fade_slope);
 
 	// Only a setter because the source of truth for this should be the rendering engine menu.
-	void set_rendering_engine(const String &p_rendering_engine);
+	void set_rendering_engine_name(const String &p_rendering_engine_name);
 
 	void apply_to_cameras() const;
 	void setup(EditorMainScreen4D *p_editor_main_screen, Ref<ConfigFile> &p_config_file, const String &p_config_file_path);
