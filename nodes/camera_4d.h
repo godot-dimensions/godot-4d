@@ -47,8 +47,8 @@ private:
 	WFadeMode _w_fade_mode = W_FADE_TRANSPARENCY;
 
 	// These have wrappers with trig functions, so let's use double to avoid precision loss.
-	double _focal_length_4d = 1.0;
-	double _focal_length_3d = 1.0;
+	double _focal_length_4d = 1.25;
+	double _focal_length_3d = 1.25;
 
 	Color _w_fade_color_negative = Color(0.0f, 0.5f, 1.0f);
 	Color _w_fade_color_positive = Color(1.0f, 0.5f, 0.0f);

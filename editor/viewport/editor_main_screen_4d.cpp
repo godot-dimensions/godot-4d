@@ -172,7 +172,7 @@ void EditorMainScreen4D::_on_view_menu_id_pressed(const int p_id) {
 			_4d_editor_config_file->save(_4d_editor_config_file_path);
 		} break;
 		case VIEW_ITEM_CAMERA_SETTINGS: {
-			_camera_settings_dialog->popup_centered(Size2(400, 360) * EDSCALE);
+			_camera_settings_dialog->popup_centered(Size2(400, 420) * EDSCALE);
 		} break;
 	}
 }
