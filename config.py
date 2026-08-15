@@ -23,6 +23,11 @@ def get_doc_classes():
 		"Rotor4D",
 		"Transform4D",
 		"Vector4D",
+		# Light.
+		"DirectionalLight4D",
+		"Light4D",
+		"OmniLight4D",
+		"SpotLight4D",
 		# Mesh.
 		"ArrayPolyMesh4D",
 		"ArrayTetraMesh4D",
