@@ -372,8 +372,9 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_toggle_mode(true);
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_theme_type_variation("FlatButton");
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_tooltip_text(TTR("(T) If pressed, use the object's local rotation for the gizmo. Else, transform in global space."));
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->connect("toggled", callable_mp(this, &EditorMainScreen4D::_on_button_toggled).bind(TOOLBAR_BUTTON_USE_LOCAL_ROTATION));
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->connect(StringName("toggled"), callable_mp(this, &EditorMainScreen4D::_on_button_toggled).bind(TOOLBAR_BUTTON_USE_LOCAL_ROTATION));
 	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]);
+	_toolbar_hbox->add_child(memnew(VSeparator));
 
 	// All viewports share one gizmo and origin marker.
 	_transform_gizmo_4d = memnew(EditorTransformGizmo4D);

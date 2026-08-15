@@ -121,7 +121,7 @@ inline void remove_godot_singleton(const StringName &p_singleton_name) {
 
 void initialize_4d_module(ModuleInitializationLevel p_level) {
 	// Note: Classes MUST be registered in inheritance order.
-	// When the inheritance doesn't matter, alphabetical order is used.
+	// When the inheritance doesn't matter, dependency order, then alphabetical order is used.
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
 		// General.
 		GDREGISTER_CLASS(godot_4d_bind::Basis4D);
@@ -149,8 +149,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Virtual classes.
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
-		GDREGISTER_CLASS(PolyMaterial4D);
 		GDREGISTER_CLASS(TetraMaterial4D);
+		GDREGISTER_CLASS(PolyMaterial4D);
 		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
@@ -158,6 +158,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PolyMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
+		// Material initialization.
 #if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
 		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
 		WireMaterial4D::init_shaders();

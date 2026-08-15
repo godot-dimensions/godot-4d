@@ -78,7 +78,7 @@ void RenderingEngine4D::set_mesh_relative_positions(PackedVector4Array p_mesh_re
 	_mesh_relative_positions = p_mesh_relative_positions;
 }
 
-bool RenderingEngine4D::prefers_wireframe_meshes() {
+bool RenderingEngine4D::prefers_wireframe_meshes() const {
 	bool prefers_wireframe = false;
 	GDVIRTUAL_CALL(_prefers_wireframe_meshes, prefers_wireframe);
 	return prefers_wireframe;

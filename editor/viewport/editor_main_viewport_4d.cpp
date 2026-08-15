@@ -2,6 +2,7 @@
 
 #include "../../model/mesh/tetra/tetra_mesh_4d.h"
 #include "../../nodes/camera_4d.h"
+#include "../../render/rendering_server_4d.h"
 #include "editor_camera_4d.h"
 #include "editor_input_surface_4d.h"
 #include "editor_transform_gizmo_4d.h"
@@ -89,6 +90,12 @@ PackedColorArray EditorMainViewport4D::get_axis_colors() const {
 
 Basis4D EditorMainViewport4D::get_view_camera_basis() const {
 	return _editor_camera_4d->get_basis();
+}
+
+Ref<RenderingEngine4D> EditorMainViewport4D::get_rendering_engine() const {
+	const String rendering_engine_name = _editor_camera_4d->get_camera_readonly()->get_rendering_engine_name();
+	const Ref<RenderingEngine4D> rendering_engine = RenderingServer4D::get_singleton()->get_rendering_engine_from_name(rendering_engine_name);
+	return rendering_engine;
 }
 
 bool EditorMainViewport4D::_should_mouse_motion_affect_4d(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const {

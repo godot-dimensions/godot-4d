@@ -14,6 +14,7 @@
 #endif
 
 class Camera4D;
+class RenderingEngine4D;
 
 // Class for the 4D editor viewport, which there may be up to 4 of.
 // Uses EditorCamera4D, EditorInputSurface4D, EditorViewportRotation4D,
@@ -64,6 +65,8 @@ public:
 	PackedColorArray get_axis_colors() const;
 	Basis4D get_view_camera_basis() const;
 	EditorCamera4D *get_editor_camera_4d() const { return _editor_camera_4d; }
+	Ref<RenderingEngine4D> get_rendering_engine() const;
+
 	void navigation_freelook(const Ref<InputEvent> &p_input_event);
 	void navigation_orbit(const Ref<InputEvent> &p_input_event);
 	void navigation_pan(const Ref<InputEvent> &p_input_event);

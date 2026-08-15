@@ -23,7 +23,7 @@
 				Returns the unique friendly name of the rendering engine. This is used by [RenderingServer4D] to identify the rendering engine for a viewport, and is displayed in the editor. It should be a short, human-readable name that describes the rendering engine. This MUST be unique across all registered rendering engines.
 			</description>
 		</method>
-		<method name="_prefers_wireframe_meshes" qualifiers="virtual">
+		<method name="_prefers_wireframe_meshes" qualifiers="virtual const">
 			<return type="bool" />
 			<description>
 				Callback method to determine if the rendering engine prefers meshes to be wireframe. Used by the editor to display wireframe meshes as gizmos when using this rendering engine.

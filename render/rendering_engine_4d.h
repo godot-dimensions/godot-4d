@@ -55,13 +55,14 @@ public:
 	void cleanup_for_viewport_if_needed(Viewport *p_for_viewport);
 
 	virtual String get_friendly_name() const;
-	virtual bool prefers_wireframe_meshes();
+	virtual bool prefers_wireframe_meshes() const;
+
 	virtual void setup_for_viewport();
 	virtual void cleanup_for_viewport();
 	virtual void render_frame();
 
 	GDVIRTUAL0RC(String, _get_friendly_name);
-	GDVIRTUAL0R(bool, _prefers_wireframe_meshes);
+	GDVIRTUAL0RC(bool, _prefers_wireframe_meshes);
 	GDVIRTUAL0(_setup_for_viewport);
 	GDVIRTUAL0(_cleanup_for_viewport);
 	GDVIRTUAL0(_render_frame);

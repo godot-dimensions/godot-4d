@@ -28,6 +28,7 @@
 #define MODULE_OVERRIDE
 #define resize_initialized resize
 #define resize_uninitialized resize
+#define RSE RenderingServer
 #define TTR(m_text) m_text
 #define USE_CONST_NOT_CONSTEXPR_FOR_VECTORS 1
 #define VariantUtilityFunctions UtilityFunctions
@@ -60,6 +61,10 @@ using namespace godot;
 // Prior to Godot 4.7, Input enums were located in the Input class,
 // but in 4.7 they were moved to a separate InputClassEnums namespace.
 #define InputClassEnums Input
+
+// Prior to Godot 4.7, RenderingServer enums were in RenderingServer,
+// but in 4.7 they were moved to a separate RenderingServerEnums (RSE) namespace.
+#define RSE RenderingServer
 #endif
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6

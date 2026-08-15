@@ -15,7 +15,7 @@ protected:
 
 public:
 	virtual String get_friendly_name() const override { return "Wireframe Canvas"; }
-	virtual bool prefers_wireframe_meshes() override { return true; }
+	virtual bool prefers_wireframe_meshes() const override { return true; }
 	virtual void setup_for_viewport() override;
 	virtual void cleanup_for_viewport() override;
 	virtual void render_frame() override;
