@@ -5,12 +5,14 @@
 #include <vector>
 
 void RenderingEngine4D::calculate_relative_transforms() {
-	const int mesh_count = _mesh_instances.size();
+	const Transform4D camera_inverse_transform = _camera->get_global_transform().inverse();
+	// Meshes.
+	const int mesh_count = _mesh_instance_object_ids.size();
 	_mesh_relative_basises.resize(mesh_count);
 	_mesh_relative_positions.resize(mesh_count);
-	const Transform4D camera_inverse_transform = _camera->get_global_transform().inverse();
-	for (int i = 0; i < _mesh_instances.size(); i++) {
-		const MeshInstance4D *mesh_instance = (const MeshInstance4D *)(const Object *)_mesh_instances[i];
+	for (int64_t i = 0; i < _mesh_instance_object_ids.size(); i++) {
+		const ObjectID mesh_instance_object_id = (ObjectID)_mesh_instance_object_ids[i];
+		const MeshInstance4D *mesh_instance = Object::cast_to<const MeshInstance4D>(ObjectDB::get_instance(mesh_instance_object_id));
 		const Transform4D relative_transform = camera_inverse_transform * mesh_instance->get_global_transform();
 		_mesh_relative_basises[i] = relative_transform.basis.operator Projection();
 		_mesh_relative_positions.set(i, relative_transform.origin);
@@ -22,9 +24,10 @@ void RenderingEngine4D::_sort_meshes_by_relative_z() {
 	// Can't use Godot's types to do this operation easily, so we'll use the standard library instead.
 	// See https://github.com/godotengine/godot/pull/77213 for a discussion on adding sort to Dictionary and HashMap.
 	std::vector<std::tuple<Variant, Variant, Vector4>> combined;
-	combined.reserve(_mesh_instances.size());
-	for (int i = 0; i < _mesh_instances.size(); ++i) {
-		combined.emplace_back(_mesh_instances[i], _mesh_relative_basises[i], _mesh_relative_positions[i]);
+	const int64_t mesh_count = _mesh_instance_object_ids.size();
+	combined.reserve(mesh_count);
+	for (int64_t i = 0; i < mesh_count; ++i) {
+		combined.emplace_back(_mesh_instance_object_ids[i], _mesh_relative_basises[i], _mesh_relative_positions[i]);
 	}
 	// Sort the vector of tuples based on the Z position.
 	std::sort(combined.begin(), combined.end(), [](const auto &a, const auto &b) {
@@ -32,50 +35,22 @@ void RenderingEngine4D::_sort_meshes_by_relative_z() {
 	});
 	// Unpack the sorted tuples back into the original arrays
 	for (size_t i = 0; i < combined.size(); ++i) {
-		_mesh_instances[i] = std::get<0>(combined[i]);
+		_mesh_instance_object_ids.set(i, std::get<0>(combined[i]));
 		_mesh_relative_basises[i] = std::get<1>(combined[i]);
 		_mesh_relative_positions.set(i, std::get<2>(combined[i]));
 	}
-}
-
-Viewport *RenderingEngine4D::get_viewport() const {
-	return _viewport;
 }
 
 void RenderingEngine4D::set_viewport(Viewport *p_viewport) {
 	_viewport = p_viewport;
 }
 
-Camera4D *RenderingEngine4D::get_camera() const {
-	return _camera;
-}
-
 void RenderingEngine4D::set_camera(Camera4D *p_camera) {
 	_camera = p_camera;
 }
 
-TypedArray<MeshInstance4D> RenderingEngine4D::get_mesh_instances() const {
-	return _mesh_instances;
-}
-
-void RenderingEngine4D::set_mesh_instances(TypedArray<MeshInstance4D> p_mesh_instances) {
-	_mesh_instances = p_mesh_instances;
-}
-
-TypedArray<Projection> RenderingEngine4D::get_mesh_relative_basises() const {
-	return _mesh_relative_basises;
-}
-
-void RenderingEngine4D::set_mesh_relative_basises(TypedArray<Projection> p_mesh_relative_basises) {
-	_mesh_relative_basises = p_mesh_relative_basises;
-}
-
-PackedVector4Array RenderingEngine4D::get_mesh_relative_positions() const {
-	return _mesh_relative_positions;
-}
-
-void RenderingEngine4D::set_mesh_relative_positions(PackedVector4Array p_mesh_relative_positions) {
-	_mesh_relative_positions = p_mesh_relative_positions;
+void RenderingEngine4D::set_mesh_instance_object_ids(PackedInt64Array p_mesh_instance_object_ids) {
+	_mesh_instance_object_ids = p_mesh_instance_object_ids;
 }
 
 bool RenderingEngine4D::prefers_wireframe_meshes() const {
@@ -124,24 +99,11 @@ void RenderingEngine4D::render_frame() {
 
 void RenderingEngine4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_viewport"), &RenderingEngine4D::get_viewport);
-	ClassDB::bind_method(D_METHOD("set_viewport", "viewport"), &RenderingEngine4D::set_viewport);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "viewport", PROPERTY_HINT_RESOURCE_TYPE, "Viewport"), "set_viewport", "get_viewport");
-
 	ClassDB::bind_method(D_METHOD("get_camera"), &RenderingEngine4D::get_camera);
-	ClassDB::bind_method(D_METHOD("set_camera", "camera"), &RenderingEngine4D::set_camera);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "camera", PROPERTY_HINT_RESOURCE_TYPE, "Camera4D"), "set_camera", "get_camera");
 
-	ClassDB::bind_method(D_METHOD("get_mesh_instances"), &RenderingEngine4D::get_mesh_instances);
-	ClassDB::bind_method(D_METHOD("set_mesh_instances", "mesh_instances"), &RenderingEngine4D::set_mesh_instances);
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_instances"), "set_mesh_instances", "get_mesh_instances");
-
+	ClassDB::bind_method(D_METHOD("get_mesh_instance_object_ids"), &RenderingEngine4D::get_mesh_instance_object_ids);
 	ClassDB::bind_method(D_METHOD("get_mesh_relative_basises"), &RenderingEngine4D::get_mesh_relative_basises);
-	ClassDB::bind_method(D_METHOD("set_mesh_relative_basises", "mesh_relative_basises"), &RenderingEngine4D::set_mesh_relative_basises);
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_relative_basises"), "set_mesh_relative_basises", "get_mesh_relative_basises");
-
 	ClassDB::bind_method(D_METHOD("get_mesh_relative_positions"), &RenderingEngine4D::get_mesh_relative_positions);
-	ClassDB::bind_method(D_METHOD("set_mesh_relative_positions", "mesh_relative_positions"), &RenderingEngine4D::set_mesh_relative_positions);
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_relative_positions"), "set_mesh_relative_positions", "get_mesh_relative_positions");
 
 	GDVIRTUAL_BIND(_get_friendly_name);
 	GDVIRTUAL_BIND(_prefers_wireframe_meshes);

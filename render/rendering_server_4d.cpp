@@ -35,18 +35,19 @@ RenderingServer4D::~RenderingServer4D() {
 	singleton = nullptr;
 }
 
-TypedArray<MeshInstance4D> RenderingServer4D::_get_visible_mesh_instances() const {
-	TypedArray<MeshInstance4D> visible_mesh_instances;
+PackedInt64Array RenderingServer4D::_get_visible_mesh_instance_object_ids() const {
+	PackedInt64Array visible_mesh_instance_object_ids;
 	for (int i = 0; i < _mesh_instances.size(); i++) {
 		MeshInstance4D *mesh_instance = (MeshInstance4D *)(Object *)_mesh_instances[i];
+		CRASH_COND_MSG(mesh_instance == nullptr, "MeshInstance4D is null. This should never happen.");
 		if (mesh_instance->is_visible_in_tree()) {
 			Ref<Mesh4D> mesh = mesh_instance->get_mesh();
 			if (mesh.is_valid() && mesh->is_mesh_data_valid()) {
-				visible_mesh_instances.append(mesh_instance);
+				visible_mesh_instance_object_ids.append(mesh_instance->get_instance_id());
 			}
 		}
 	}
-	return visible_mesh_instances;
+	return visible_mesh_instance_object_ids;
 }
 
 void RenderingServer4D::_render_frame() {
@@ -86,8 +87,8 @@ void RenderingServer4D::_render_frame() {
 		rendering_engine->setup_for_viewport_if_needed(viewport);
 		rendering_engine->set_camera(camera0);
 		emit_signal("pre_render", camera0, viewport, rendering_engine);
-		TypedArray<MeshInstance4D> visible_mesh_instances = _get_visible_mesh_instances();
-		rendering_engine->set_mesh_instances(visible_mesh_instances);
+		PackedInt64Array visible_mesh_instance_object_ids = _get_visible_mesh_instance_object_ids();
+		rendering_engine->set_mesh_instance_object_ids(visible_mesh_instance_object_ids);
 		rendering_engine->calculate_relative_transforms();
 		rendering_engine->render_frame();
 	}

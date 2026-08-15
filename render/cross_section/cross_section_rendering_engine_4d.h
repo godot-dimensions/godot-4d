@@ -15,21 +15,23 @@ class CrossSectionRenderingEngine4D : public RenderingEngine4D {
 	GDCLASS(CrossSectionRenderingEngine4D, RenderingEngine4D);
 
 private:
-	struct Instance3D {
-		RID instance;
+	struct MeshRenderInstance3D {
 		RID base;
+		RID instance;
 		RID material;
 		uint64_t last_used_pass = 0;
 	};
-	HashMap<ObjectID, Instance3D> _instances_3d;
+	HashMap<ObjectID, MeshRenderInstance3D> _mesh_instances_3d;
 
 	RID _cross_section_camera = RID();
 	Ref<World3D> _cross_section_world_3d;
 	uint64_t _current_pass = 0;
 
-	void update_camera();
-	RID create_instance();
+	RID _create_mesh_render_instance_3d();
 	void _cleanup_render_resources();
+
+	void _update_camera();
+	void _update_mesh_instances();
 
 protected:
 	static void _bind_methods() {}

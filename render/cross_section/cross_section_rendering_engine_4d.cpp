@@ -14,105 +14,17 @@
 #endif
 #endif
 
-void CrossSectionRenderingEngine4D::render_frame() {
-	ERR_FAIL_NULL(RenderingServer::get_singleton());
-	ERR_FAIL_NULL(get_camera());
-	ERR_FAIL_NULL(get_viewport());
-	_current_pass++;
-	update_camera();
-	// Maps global to cameral-local, aka world space to view space.
-	TypedArray<MeshInstance4D> mesh_instances = get_mesh_instances();
-	TypedArray<Projection> modelview_basises = get_mesh_relative_basises();
-	PackedVector4Array modelview_origins = get_mesh_relative_positions();
-	for (int mesh_index = 0; mesh_index < mesh_instances.size(); mesh_index++) {
-		// Get the MeshInstance4D and its Mesh4D, skipping if either is invalid.
-		MeshInstance4D *mesh_instance = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
-		ERR_CONTINUE(mesh_instance == nullptr);
-
-		Ref<Mesh4D> mesh_4d = mesh_instance->get_mesh();
-		if (!mesh_4d.is_valid()) {
-			continue;
-		}
-		Ref<Mesh> mesh_3d = mesh_4d->get_cross_section_mesh();
-		ERR_CONTINUE(!mesh_3d.is_valid());
-
-		// This is a valid MeshInstance4D with a valid Mesh4D and a valid cross-section Mesh3D.
-		// Get or create an Instance3D for this MeshInstance4D, and update if needed.
-		const ObjectID mi_object_id = ObjectID(mesh_instance->get_instance_id());
-		if (!_instances_3d.has(mi_object_id)) {
-			_instances_3d[mi_object_id] = Instance3D();
-			_instances_3d[mi_object_id].instance = create_instance();
-		}
-		Instance3D &instance_3d = _instances_3d[mi_object_id];
-		const RID base_3d_rid = mesh_3d->get_rid();
-		const bool base_changed = instance_3d.base != base_3d_rid;
-		if (base_changed) {
-			instance_3d.base = base_3d_rid;
-			RenderingServer::get_singleton()->instance_set_base(instance_3d.instance, base_3d_rid);
-		}
-
-		Ref<Material4D> material_4d = mesh_instance->get_active_material();
-		if (!material_4d.is_valid()) {
-			material_4d = mesh_4d->get_fallback_material();
-		}
-		RID override_material_rid_3d = RID();
-		if (material_4d.is_valid()) {
-			Ref<PolyMaterial4D> poly_material_4d = material_4d;
-			if (poly_material_4d.is_valid()) {
-				Ref<TetraMesh4D> poly_mesh_4d_or_poly_derived_tetra_mesh_4d = mesh_4d;
-				if (poly_mesh_4d_or_poly_derived_tetra_mesh_4d.is_valid()) {
-					poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
-				}
-			}
-			Ref<Material> override_material_3d = material_4d->get_cross_section_material();
-			ERR_CONTINUE(!override_material_3d.is_valid());
-			override_material_rid_3d = override_material_3d->get_rid();
-		}
-		// Godot clears surface override materials when an instance's base changes.
-		if (base_changed || instance_3d.material != override_material_rid_3d) {
-			instance_3d.material = override_material_rid_3d;
-			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d.instance, 0, override_material_rid_3d);
-		}
-
-		Projection modelview_basis = modelview_basises[mesh_index];
-		Vector4 modelview_origin = modelview_origins[mesh_index];
-		// TODO Need to split out view matrix to support multiple viewports, currently the same for all viewports. Either instance per viewport or pack view matrix in camera attributes.
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_origin", modelview_origin);
-		// Can't pass a mat4 through instance uniforms, need to break up into columns.
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_basis_x", modelview_basis.columns[0]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_basis_y", modelview_basis.columns[1]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_basis_z", modelview_basis.columns[2]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d.instance, "modelview_basis_w", modelview_basis.columns[3]);
-
-		instance_3d.last_used_pass = _current_pass;
-	}
-	Vector<ObjectID> instance_ids_to_erase;
-	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::Instance3D> &pair : _instances_3d) {
-		const Instance3D &instance_3d = pair.value;
-		if (instance_3d.last_used_pass != _current_pass) {
-			RenderingServer::get_singleton()->free_rid(instance_3d.instance);
-			instance_ids_to_erase.append(pair.key);
-		}
-	}
-	for (const ObjectID &instance_id : instance_ids_to_erase) {
-		_instances_3d.erase(instance_id);
-	}
-}
-
-RID CrossSectionRenderingEngine4D::create_instance() {
+RID CrossSectionRenderingEngine4D::_create_mesh_render_instance_3d() {
 	ERR_FAIL_NULL_V(RenderingServer::get_singleton(), RID());
 	RID instance = RenderingServer::get_singleton()->instance_create();
 	if (!_cross_section_world_3d.is_valid()) {
 		_cross_section_world_3d.instantiate();
 	}
 	RenderingServer::get_singleton()->instance_set_scenario(instance, _cross_section_world_3d->get_scenario());
-
-	// Vertex data on the mesh is wack. Culling will not work.
-	RenderingServer::get_singleton()->instance_set_ignore_culling(instance, true);
 	return instance;
 }
 
-void CrossSectionRenderingEngine4D::update_camera() {
+void CrossSectionRenderingEngine4D::_update_camera() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
 	if (!_cross_section_camera.is_valid()) {
 		ERR_FAIL_NULL(get_viewport());
@@ -135,10 +47,106 @@ void CrossSectionRenderingEngine4D::update_camera() {
 			RenderingServer::get_singleton()->camera_set_perspective(_cross_section_camera, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
 		} break;
 		case Camera4D::PROJECTION4D_PERSPECTIVE_DUAL: {
-			WARN_PRINT_ONCE("Dual-perspective is not supported by the Cross-section renderer. Use PESPECTIVE_3D, PERSPECTIVE_4D, or ORTHOGRAPHIC instead.");
+			WARN_PRINT_ONCE("Dual-perspective is not supported by the Cross-section renderer. Use PERSPECTIVE_3D, PERSPECTIVE_4D, or ORTHOGRAPHIC instead.");
 			RenderingServer::get_singleton()->camera_set_perspective(_cross_section_camera, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
 		} break;
 	}
+}
+
+void CrossSectionRenderingEngine4D::_update_mesh_instances() {
+	// Maps global to cameral-local, aka world space to view space.
+	const PackedInt64Array mesh_instance_4d_object_ids = get_mesh_instance_object_ids();
+	const TypedArray<Projection> modelview_basises = get_mesh_relative_basises();
+	const PackedVector4Array modelview_origins = get_mesh_relative_positions();
+	for (int64_t mesh_index = 0; mesh_index < mesh_instance_4d_object_ids.size(); mesh_index++) {
+		// Get the MeshInstance4D and its Mesh4D, skipping if either is invalid.
+		const ObjectID mesh_instance_4d_object_id = (ObjectID)mesh_instance_4d_object_ids[mesh_index];
+		MeshInstance4D *mesh_instance_4d = Object::cast_to<MeshInstance4D>(ObjectDB::get_instance(mesh_instance_4d_object_id));
+		ERR_CONTINUE(mesh_instance_4d == nullptr);
+
+		Ref<Mesh4D> mesh_4d = mesh_instance_4d->get_mesh();
+		if (!mesh_4d.is_valid()) {
+			continue;
+		}
+		Ref<Mesh> mesh_3d = mesh_4d->get_cross_section_mesh();
+		ERR_CONTINUE(!mesh_3d.is_valid());
+
+		// This is a valid MeshInstance4D with a valid Mesh4D and a valid cross-section Mesh3D.
+		// Get or create an MeshRenderInstance3D for this MeshInstance4D, and update if needed.
+		if (!_mesh_instances_3d.has(mesh_instance_4d_object_id)) {
+			_mesh_instances_3d[mesh_instance_4d_object_id] = MeshRenderInstance3D();
+			_mesh_instances_3d[mesh_instance_4d_object_id].instance = _create_mesh_render_instance_3d();
+		}
+		MeshRenderInstance3D &mesh_render_instance_3d = _mesh_instances_3d[mesh_instance_4d_object_id];
+		const RID base_3d_rid = mesh_3d->get_rid();
+		const bool base_changed = mesh_render_instance_3d.base != base_3d_rid;
+		if (base_changed) {
+			mesh_render_instance_3d.base = base_3d_rid;
+			RenderingServer::get_singleton()->instance_set_base(mesh_render_instance_3d.instance, base_3d_rid);
+		}
+
+		Ref<Material4D> material_4d = mesh_instance_4d->get_active_material();
+		if (!material_4d.is_valid()) {
+			material_4d = mesh_4d->get_fallback_material();
+		}
+		RID override_material_rid_3d = RID();
+		if (material_4d.is_valid()) {
+			Ref<PolyMaterial4D> poly_material_4d = material_4d;
+			if (poly_material_4d.is_valid()) {
+				Ref<TetraMesh4D> poly_mesh_4d_or_poly_derived_tetra_mesh_4d = mesh_4d;
+				if (poly_mesh_4d_or_poly_derived_tetra_mesh_4d.is_valid()) {
+					poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
+				}
+			}
+			Ref<Material> override_material_3d = material_4d->get_cross_section_material();
+			ERR_CONTINUE(!override_material_3d.is_valid());
+			override_material_rid_3d = override_material_3d->get_rid();
+		}
+		// Godot clears surface override materials when an instance's base changes.
+		if (base_changed || mesh_render_instance_3d.material != override_material_rid_3d) {
+			mesh_render_instance_3d.material = override_material_rid_3d;
+			RenderingServer::get_singleton()->instance_set_surface_override_material(mesh_render_instance_3d.instance, 0, override_material_rid_3d);
+		}
+
+		Projection modelview_basis = modelview_basises[mesh_index];
+		Vector4 modelview_origin = modelview_origins[mesh_index];
+		// The proxy Mesh3D stores 4D data in its ordinary vertex channels, so its automatically
+		// calculated AABB is unrelated to the positions produced by the cross-section shader.
+		// Supply conservative camera-relative bounds for frustum culling and light pairing.
+		const Rect4 bounds_4d = mesh_instance_4d->get_rect_bounds_local(Transform4D(modelview_basis, modelview_origin));
+		const AABB bounds_3d = AABB(Vector3(bounds_4d.position.x, bounds_4d.position.y, bounds_4d.position.z), Vector3(bounds_4d.size.x, bounds_4d.size.y, bounds_4d.size.z));
+		RenderingServer::get_singleton()->instance_set_custom_aabb(mesh_render_instance_3d.instance, bounds_3d);
+		// TODO Need to split out view matrix to support multiple viewports, currently the same for all viewports. Either instance per viewport or pack view matrix in camera attributes.
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_origin", modelview_origin);
+		// Can't pass a mat4 through instance uniforms, need to break up into columns.
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_x", modelview_basis.columns[0]);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_y", modelview_basis.columns[1]);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_z", modelview_basis.columns[2]);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_w", modelview_basis.columns[3]);
+
+		mesh_render_instance_3d.last_used_pass = _current_pass;
+	}
+	// Delete any meshes that are not currently visible and active in the scene.
+	Vector<ObjectID> mesh_instance_ids_to_erase;
+	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::MeshRenderInstance3D> &pair : _mesh_instances_3d) {
+		const MeshRenderInstance3D &instance_3d = pair.value;
+		if (instance_3d.last_used_pass != _current_pass) {
+			RenderingServer::get_singleton()->free_rid(instance_3d.instance);
+			mesh_instance_ids_to_erase.append(pair.key);
+		}
+	}
+	for (const ObjectID &mesh_instance_id : mesh_instance_ids_to_erase) {
+		_mesh_instances_3d.erase(mesh_instance_id);
+	}
+}
+
+void CrossSectionRenderingEngine4D::render_frame() {
+	ERR_FAIL_NULL(RenderingServer::get_singleton());
+	ERR_FAIL_NULL(get_camera());
+	ERR_FAIL_NULL(get_viewport());
+	_current_pass++;
+	_update_camera();
+	_update_mesh_instances();
 }
 
 void CrossSectionRenderingEngine4D::setup_for_viewport() {
@@ -159,17 +167,17 @@ void CrossSectionRenderingEngine4D::setup_for_viewport() {
 void CrossSectionRenderingEngine4D::_cleanup_render_resources() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	if (rendering_server == nullptr) {
-		_instances_3d.clear();
+		_mesh_instances_3d.clear();
 		_cross_section_camera = RID();
 		return;
 	}
-	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::Instance3D> &pair : _instances_3d) {
-		const Instance3D &instance_3d = pair.value;
+	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::MeshRenderInstance3D> &pair : _mesh_instances_3d) {
+		const MeshRenderInstance3D &instance_3d = pair.value;
 		if (instance_3d.instance.is_valid()) {
 			rendering_server->free_rid(instance_3d.instance);
 		}
 	}
-	_instances_3d.clear();
+	_mesh_instances_3d.clear();
 	if (_cross_section_camera.is_valid()) {
 		rendering_server->free_rid(_cross_section_camera);
 		_cross_section_camera = RID();

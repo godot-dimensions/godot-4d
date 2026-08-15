@@ -30,9 +30,9 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 	Vector<PackedColorArray> edge_colors_to_draw;
 	PackedFloat32Array edge_thicknesses_to_draw;
 	Vector<PackedVector2Array> edge_vertices_to_draw;
-	TypedArray<MeshInstance4D> mesh_instances = get_mesh_instances();
-	TypedArray<Projection> mesh_relative_basises = get_mesh_relative_basises();
-	PackedVector4Array mesh_relative_positions = get_mesh_relative_positions();
+	const PackedInt64Array mesh_instance_object_ids = get_mesh_instance_object_ids();
+	const TypedArray<Projection> mesh_relative_basises = get_mesh_relative_basises();
+	const PackedVector4Array mesh_relative_positions = get_mesh_relative_positions();
 	const bool camera_has_perspective = camera->get_projection_type() != Camera4D::PROJECTION4D_ORTHOGRAPHIC;
 	const bool camera_has_w_fading = camera->get_w_fade_mode() != Camera4D::W_FADE_DISABLED;
 	const bool camera_has_w_fade_hue_shift = camera->get_w_fade_mode() & Camera4D::W_FADE_HUE_SHIFT;
@@ -43,8 +43,9 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 	const real_t camera_w_fade_slope = camera->get_w_fade_slope();
 	const real_t camera_clip_depth_far = camera->get_clip_far();
 	const real_t camera_depth_fade_start = camera->get_depth_fade_start();
-	for (int mesh_index = 0; mesh_index < mesh_instances.size(); mesh_index++) {
-		MeshInstance4D *mesh_inst = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
+	for (int64_t mesh_index = 0; mesh_index < mesh_instance_object_ids.size(); mesh_index++) {
+		const ObjectID mesh_instance_object_id = (ObjectID)mesh_instance_object_ids[mesh_index];
+		MeshInstance4D *mesh_inst = Object::cast_to<MeshInstance4D>(ObjectDB::get_instance(mesh_instance_object_id));
 		ERR_CONTINUE(mesh_inst == nullptr);
 		const Ref<Material4D> material = mesh_inst->get_active_material();
 		Projection mesh_relative_basis = mesh_relative_basises[mesh_index];

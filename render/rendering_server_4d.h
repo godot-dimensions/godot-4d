@@ -17,7 +17,7 @@ class RenderingServer4D : public Object {
 	// We could add a "World4D" class in the future if we want to add this feature, but it's not necessary for now.
 	Vector<MeshInstance4D *> _mesh_instances;
 
-	TypedArray<MeshInstance4D> _get_visible_mesh_instances() const;
+	PackedInt64Array _get_visible_mesh_instance_object_ids() const;
 	bool _are_render_frame_and_process_frame_connected = false;
 	void _render_frame();
 	void _request_godot_redraw();
