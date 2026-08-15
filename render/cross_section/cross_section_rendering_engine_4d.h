@@ -38,6 +38,7 @@ protected:
 
 public:
 	virtual String get_friendly_name() const override { return "Cross-section"; }
+	virtual bool supports_lighting() const override { return true; }
 	virtual void setup_for_viewport() override;
 	virtual void cleanup_for_viewport() override;
 	virtual void render_frame() override;

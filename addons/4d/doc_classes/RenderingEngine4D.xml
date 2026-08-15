@@ -20,13 +20,13 @@
 		<method name="_get_friendly_name" qualifiers="virtual const">
 			<return type="String" />
 			<description>
-				Returns the unique friendly name of the rendering engine. This is used by [RenderingServer4D] to identify the rendering engine for a viewport, and is displayed in the editor. It should be a short, human-readable name that describes the rendering engine. This MUST be unique across all registered rendering engines.
+				Callback method that should return the unique friendly name of the rendering engine. This is used by [RenderingServer4D] to identify the rendering engine for a viewport, and is displayed in the editor. It should be a short, human-readable name that describes the rendering engine. This MUST be unique across all registered rendering engines.
 			</description>
 		</method>
 		<method name="_prefers_wireframe_meshes" qualifiers="virtual const">
 			<return type="bool" />
 			<description>
-				Callback method to determine if the rendering engine prefers meshes to be wireframe. Used by the editor to display wireframe meshes as gizmos when using this rendering engine.
+				Callback method to determine if the rendering engine prefers meshes to be wireframe. Used to decide which type of optimized meshes should be supplied in the scene, such as for editor gizmos: [WireMesh4D] if [code]true[/code], or [TetraMesh4D] if [code]false[/code]. Non-optimized [PolyMesh4D] meshes are slower, but will display optimally in both wireframe and non-wireframe rendering engines.
 			</description>
 		</method>
 		<method name="_render_frame" qualifiers="virtual">
@@ -41,16 +41,29 @@
 				Callback method to set up the rendering engine for a viewport. This method is called by [RenderingServer4D] once per viewport before calling [method _render_frame] for the first time for that viewport. In this function, only [member viewport] may be accessed. All other properties must not be accessed inside this function as they may contain stale data from other viewports or be null/empty.
 			</description>
 		</method>
+		<method name="_supports_lighting" qualifiers="virtual const">
+			<return type="bool" />
+			<description>
+				Callback method to determine if the rendering engine supports lighting. Used by the editor to display lighting options when using this rendering engine.
+			</description>
+		</method>
 		<method name="get_camera" qualifiers="const">
 			<return type="Camera4D" />
 			<description>
 				Returns the [Camera4D] node currently being rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame].
 			</description>
 		</method>
+		<method name="get_friendly_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the unique friendly name of the rendering engine. This is used by [RenderingServer4D] to identify the rendering engine for a viewport, and is displayed in the editor. It should be a short, human-readable name that describes the rendering engine. This MUST be unique across all registered rendering engines.
+			</description>
+		</method>
 		<method name="get_mesh_instance_object_ids" qualifiers="const">
 			<return type="PackedInt64Array" />
 			<description>
-				Returns an array of [ObjectID]s (packed in a [PackedInt64Array]) of visible [MeshInstance4D] nodes to be rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_relative_basises] and [member mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.
+				Returns an array of ObjectIDs (packed in a [PackedInt64Array]) of visible [MeshInstance4D] nodes to be rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_relative_basises] and [member mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.
+				To convert the ObjectIDs to [MeshInstance4D] nodes, in GDScript use [method @GlobalScope.instance_from_id], or in C++ use [code]ObjectDB::get_instance((ObjectID)arr[index])[/code], or preferably as separate statements use [code]const ObjectID oid = (ObjectID)arr[index]; ObjectDB::get_instance(oid)[/code] (an explicit cast to [code]ObjectID[/code] is required in C++).
 			</description>
 		</method>
 		<method name="get_mesh_relative_basises" qualifiers="const">
@@ -69,6 +82,18 @@
 			<return type="Viewport" />
 			<description>
 				Returns the [Viewport] that the rendering engine is rendering to. This will be set by [RenderingServer4D] before calling [method _setup_for_viewport].
+			</description>
+		</method>
+		<method name="prefers_wireframe_meshes" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the rendering engine prefers meshes to be wireframe. Used to decide which type of optimized meshes should be supplied in the scene, such as for editor gizmos: [WireMesh4D] if [code]true[/code], or [TetraMesh4D] if [code]false[/code]. Non-optimized [PolyMesh4D] meshes are slower, but will display optimally in both wireframe and non-wireframe rendering engines.
+			</description>
+		</method>
+		<method name="supports_lighting" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the rendering engine supports lighting. Used by the editor to display lighting options when using this rendering engine.
 			</description>
 		</method>
 	</methods>

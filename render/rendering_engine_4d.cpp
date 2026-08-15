@@ -59,6 +59,12 @@ bool RenderingEngine4D::prefers_wireframe_meshes() const {
 	return prefers_wireframe;
 }
 
+bool RenderingEngine4D::supports_lighting() const {
+	bool supports_lighting = true;
+	GDVIRTUAL_CALL(_supports_lighting, supports_lighting);
+	return supports_lighting;
+}
+
 String RenderingEngine4D::get_friendly_name() const {
 	String friendly_name;
 	GDVIRTUAL_CALL(_get_friendly_name, friendly_name);
@@ -98,6 +104,10 @@ void RenderingEngine4D::render_frame() {
 }
 
 void RenderingEngine4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_friendly_name"), &RenderingEngine4D::get_friendly_name);
+	ClassDB::bind_method(D_METHOD("prefers_wireframe_meshes"), &RenderingEngine4D::prefers_wireframe_meshes);
+	ClassDB::bind_method(D_METHOD("supports_lighting"), &RenderingEngine4D::supports_lighting);
+
 	ClassDB::bind_method(D_METHOD("get_viewport"), &RenderingEngine4D::get_viewport);
 	ClassDB::bind_method(D_METHOD("get_camera"), &RenderingEngine4D::get_camera);
 
@@ -107,6 +117,7 @@ void RenderingEngine4D::_bind_methods() {
 
 	GDVIRTUAL_BIND(_get_friendly_name);
 	GDVIRTUAL_BIND(_prefers_wireframe_meshes);
+	GDVIRTUAL_BIND(_supports_lighting);
 	GDVIRTUAL_BIND(_setup_for_viewport);
 	GDVIRTUAL_BIND(_cleanup_for_viewport);
 	GDVIRTUAL_BIND(_render_frame);

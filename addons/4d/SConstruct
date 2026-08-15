@@ -25,8 +25,8 @@ env.Append(
         "../../physics/server",
         "../../physics/shapes",
         "../../render",
+        "../../render/cross_section",
         "../../render/wireframe_canvas",
-        "../../render/cross_section"
     ]
 )
 
@@ -52,8 +52,8 @@ sources = (
     + Glob("../../physics/server/*.cpp")
     + Glob("../../physics/shapes/*.cpp")
     + Glob("../../render/*.cpp")
-    + Glob("../../render/wireframe_canvas/*.cpp")
     + Glob("../../render/cross_section/*.cpp")
+    + Glob("../../render/wireframe_canvas/*.cpp")
 )
 
 

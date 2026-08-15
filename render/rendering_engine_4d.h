@@ -53,6 +53,7 @@ public:
 
 	virtual String get_friendly_name() const;
 	virtual bool prefers_wireframe_meshes() const;
+	virtual bool supports_lighting() const;
 
 	virtual void setup_for_viewport();
 	virtual void cleanup_for_viewport();
@@ -60,6 +61,7 @@ public:
 
 	GDVIRTUAL0RC(String, _get_friendly_name);
 	GDVIRTUAL0RC(bool, _prefers_wireframe_meshes);
+	GDVIRTUAL0RC(bool, _supports_lighting);
 	GDVIRTUAL0(_setup_for_viewport);
 	GDVIRTUAL0(_cleanup_for_viewport);
 	GDVIRTUAL0(_render_frame);

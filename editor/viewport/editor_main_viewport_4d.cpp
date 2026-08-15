@@ -13,7 +13,9 @@
 #include <godot_cpp/classes/editor_selection.hpp>
 #include <godot_cpp/classes/input_event_screen_drag.hpp>
 #include <godot_cpp/classes/input_event_screen_touch.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #elif GODOT_MODULE
+#include "core/config/project_settings.h"
 #include "editor/editor_data.h"
 #include "editor/editor_interface.h"
 #endif
@@ -48,6 +50,16 @@ void EditorMainViewport4D::_update_theme() {
 	_axis_colors.push_back(get_theme_color(StringName("axis_z_color"), StringName("Editor")));
 	_axis_colors.push_back(Color(0.9f, 0.75f, 0.1f)); // W axis color.
 	_transform_gizmo_4d->theme_changed(_axis_colors);
+}
+
+void EditorMainViewport4D::_project_settings_changed() {
+	ERR_FAIL_NULL(_sub_viewport);
+	ProjectSettings *project_settings = ProjectSettings::get_singleton();
+	ERR_FAIL_NULL(project_settings);
+	// Keep the 4D sub-viewport settings in sync with the project settings.
+	_sub_viewport->set_transparent_background(project_settings->get_setting("rendering/viewport/transparent_background"));
+	_sub_viewport->set_use_hdr_2d(project_settings->get_setting("rendering/viewport/hdr_2d"));
+	_sub_viewport->set_use_debanding(project_settings->get_setting("rendering/anti_aliasing/quality/use_debanding"));
 }
 
 void EditorMainViewport4D::_notification(int p_what) {
@@ -391,6 +403,8 @@ void EditorMainViewport4D::setup(EditorMainScreen4D *p_editor_main_screen, Edito
 
 	_sub_viewport = memnew(SubViewport);
 	_sub_viewport_container->add_child(_sub_viewport);
+	_project_settings_changed();
+	ProjectSettings::get_singleton()->connect(StringName("settings_changed"), callable_mp(this, &EditorMainViewport4D::_project_settings_changed));
 
 	_information_label = memnew(Label);
 	_information_label->set_anchors_and_offsets_preset(Control::PRESET_BOTTOM_WIDE);
