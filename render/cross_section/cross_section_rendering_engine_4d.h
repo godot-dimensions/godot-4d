@@ -11,6 +11,8 @@
 #include "scene/resources/3d/world_3d.h"
 #endif
 
+class EnvironmentRenderBridge4DTo3D;
+
 class CrossSectionRenderingEngine4D : public RenderingEngine4D {
 	GDCLASS(CrossSectionRenderingEngine4D, RenderingEngine4D);
 
@@ -25,6 +27,7 @@ private:
 
 	RID _cross_section_camera = RID();
 	Ref<World3D> _cross_section_world_3d;
+	EnvironmentRenderBridge4DTo3D *_cross_section_environment_bridge = nullptr;
 	uint64_t _current_pass = 0;
 
 	RID _create_mesh_render_instance_3d();

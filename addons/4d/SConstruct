@@ -26,6 +26,8 @@ env.Append(
         "../../physics/shapes",
         "../../render",
         "../../render/cross_section",
+        "../../render/environment",
+        "../../render/environment/sky",
         "../../render/wireframe_canvas",
     ]
 )
@@ -53,6 +55,8 @@ sources = (
     + Glob("../../physics/shapes/*.cpp")
     + Glob("../../render/*.cpp")
     + Glob("../../render/cross_section/*.cpp")
+    + Glob("../../render/environment/*.cpp")
+    + Glob("../../render/environment/sky/*.cpp")
     + Glob("../../render/wireframe_canvas/*.cpp")
 )
 
@@ -140,6 +144,9 @@ env["BUILDERS"]["GLSL_HEADER"] = Builder(
 
 env.GLSL_HEADER("../../render/cross_section/tetra_cross_section_shader.glsl")
 env.GLSL_HEADER("../../render/cross_section/wireframe_cross_section_shader.glsl")
+env.GLSL_HEADER("../../render/environment/sky/gradient_sky_shader.glsl")
+env.GLSL_HEADER("../../render/environment/sky/physical_sky_shader.glsl")
+env.GLSL_HEADER("../../render/environment/sky/plain_sky_shader.glsl")
 
 target_file_path = "../../editor/icons/editor_4d_icons.gen.h"
 icon_sources = Glob("icons/4D.svg") + Glob("icons/Node4D.svg")

@@ -38,7 +38,7 @@
 		<method name="_setup_for_viewport" qualifiers="virtual">
 			<return type="void" />
 			<description>
-				Callback method to set up the rendering engine for a viewport. This method is called by [RenderingServer4D] once per viewport before calling [method _render_frame] for the first time for that viewport. In this function, only [member viewport] may be accessed. All other properties must not be accessed inside this function as they may contain stale data from other viewports or be null/empty.
+				Callback method to set up the rendering engine for a viewport. This method is called by [RenderingServer4D] once per viewport before calling [method _render_frame] for the first time for that viewport. In this function, only [method get_viewport] may be accessed. All other properties must not be accessed inside this function as they may contain stale data from other viewports or be null/empty.
 			</description>
 		</method>
 		<method name="_supports_lighting" qualifiers="virtual const">
@@ -62,20 +62,20 @@
 		<method name="get_mesh_instance_object_ids" qualifiers="const">
 			<return type="PackedInt64Array" />
 			<description>
-				Returns an array of ObjectIDs (packed in a [PackedInt64Array]) of visible [MeshInstance4D] nodes to be rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_relative_basises] and [member mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.
+				Returns an array of ObjectIDs (packed in a [PackedInt64Array]) of visible [MeshInstance4D] nodes to be rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [method get_mesh_relative_basises] and [method get_mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.
 				To convert the ObjectIDs to [MeshInstance4D] nodes, in GDScript use [method @GlobalScope.instance_from_id], or in C++ use [code]ObjectDB::get_instance((ObjectID)arr[index])[/code], or preferably as separate statements use [code]const ObjectID oid = (ObjectID)arr[index]; ObjectDB::get_instance(oid)[/code] (an explicit cast to [code]ObjectID[/code] is required in C++).
 			</description>
 		</method>
 		<method name="get_mesh_relative_basises" qualifiers="const">
 			<return type="Projection[]" />
 			<description>
-				Returns the basis part of the mesh transform relative to the camera. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_instances] and [member mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.
+				Returns the basis part of the mesh transform relative to the camera. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [method get_mesh_instance_object_ids] and [method get_mesh_relative_positions] arrays, and each index of each array will correspond to the mesh at that index.
 			</description>
 		</method>
 		<method name="get_mesh_relative_positions" qualifiers="const">
 			<return type="PackedVector4Array" />
 			<description>
-				Returns the position part of the mesh transform relative to the camera. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [member mesh_instances] and [member mesh_relative_basises] arrays, and each index of each array will correspond to the mesh at that index.
+				Returns the position part of the mesh transform relative to the camera. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [method get_mesh_instance_object_ids] and [method get_mesh_relative_basises] arrays, and each index of each array will correspond to the mesh at that index.
 			</description>
 		</method>
 		<method name="get_viewport" qualifiers="const">

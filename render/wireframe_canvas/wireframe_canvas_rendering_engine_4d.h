@@ -2,6 +2,9 @@
 
 #include "../rendering_engine_4d.h"
 
+class Material4D;
+class Mesh4D;
+
 // Trivial CPU-based renderer that draws wireframes to a Control-based canvas.
 // Very inefficient, but easy to implement, and even once we have a better
 // renderer, this can still be useful for testing and debugging.

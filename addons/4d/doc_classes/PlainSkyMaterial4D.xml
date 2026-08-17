@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PlainSkyMaterial4D" inherits="SkyMaterial4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D sky material that uses one solid color.
+	</brief_description>
+	<description>
+		A plain 4D sky that displays one color in every direction and provides that color as sky ambient lighting. It does not render suns or respond to [DirectionalLight4D] nodes.
+	</description>
+	<tutorials>
+		<link title="OMI_environment_sky specification">https://github.com/omigroup/gltf-extensions/blob/main/extensions/2.0/OMI_environment_sky/README.md</link>
+	</tutorials>
+	<members>
+		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color(0, 0, 0, 1)">
+			The solid color displayed throughout the sky and supplied as sky ambient lighting.
+		</member>
+	</members>
+</class>

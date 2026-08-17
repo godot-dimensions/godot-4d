@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SkyMaterial4D" inherits="ShaderMaterial" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for 4D sky materials.
+	</brief_description>
+	<description>
+		A [ShaderMaterial] used by [WorldEnvironment4D] to draw a sky and provide sky ambient lighting. [SkyMaterial4D] is intended as an abstract base; use [GradientSkyMaterial4D], [PhysicalSkyMaterial4D], [PlainSkyMaterial4D], or a custom subclass.
+		For custom materials, assign a [Shader] with [code]shader_type sky[/code]. The cross-section renderer evaluates the visible sky with [code]vec4(EYEDIR, 0.0)[/code] and supplies the following camera-relative uniforms when they are declared by the shader:
+		- [code]vec4 world_up_direction_4d[/code]
+		- [code]vec4 light0_direction_4d[/code] through [code]light3_direction_4d[/code]
+		- [code]vec4 light0_color[/code] through [code]light3_color[/code]
+		- [code]float light0_energy[/code] through [code]light3_energy[/code]
+		- [code]float light0_angular_radius_radians[/code] through [code]light3_angular_radius_radians[/code]
+		- [code]bool light0_enabled[/code] through [code]light3_enabled[/code]
+		The renderer creates a private material, copies the custom material's shader parameters, and then supplies these view-dependent uniforms immediately before rendering. This allows one [WorldEnvironment4D] to render correctly from multiple 4D cameras.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="energy_multiplier" type="float" setter="set_energy_multiplier" getter="get_energy_multiplier" default="1.0">
+			The sky's overall brightness multiplier. Higher values result in a brighter background and sky ambient lighting.
+		</member>
+	</members>
+</class>

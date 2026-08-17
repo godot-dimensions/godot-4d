@@ -7,6 +7,7 @@
 #include "../../model/mesh/wire/box_wire_mesh_4d.h"
 #include "../../model/mesh/wire/wire_material_4d.h"
 #include "../../model/mesh/wire/wire_mesh_builder_4d.h"
+#include "../../nodes/camera_4d.h"
 #include "../../render/rendering_server_4d.h"
 #include "editor_camera_4d.h"
 #include "editor_main_viewport_4d.h"

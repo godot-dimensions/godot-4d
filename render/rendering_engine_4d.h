@@ -1,17 +1,21 @@
 #pragma once
 
-#include "../model/mesh/mesh_instance_4d.h"
-#include "../nodes/camera_4d.h"
+#include "../godot_4d_defines.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/variant/typed_array.hpp>
+
+#include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "core/object/ref_counted.h"
 #include "core/variant/typed_array.h"
 #include "scene/main/viewport.h"
 #endif
+
+class Camera4D;
+class MeshInstance4D;
 
 class RenderingEngine4D : public RefCounted {
 	GDCLASS(RenderingEngine4D, RefCounted);

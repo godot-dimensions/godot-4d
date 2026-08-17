@@ -72,6 +72,12 @@
 #include "render/rendering_server_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
 
+// Environment.
+#include "render/environment/sky/gradient_sky_material_4d.h"
+#include "render/environment/sky/physical_sky_material_4d.h"
+#include "render/environment/sky/plain_sky_material_4d.h"
+#include "render/environment/world_environment_4d.h"
+
 #if GDEXTENSION
 #include <godot_cpp/classes/engine.hpp>
 // GDExtension has a nervous breakdown whenever singleton or casted classes are not registered.
@@ -158,11 +164,21 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PolyMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
+		// Register as virtual so it is hidden from resource creation dialogs while
+		// remaining constructible through user-defined GDScript subclasses.
+		GDREGISTER_VIRTUAL_CLASS(SkyMaterial4D);
+		GDREGISTER_CLASS(GradientSkyMaterial4D);
+		GDREGISTER_CLASS(PhysicalSkyMaterial4D);
+		GDREGISTER_CLASS(PlainSkyMaterial4D);
+		GDREGISTER_CLASS(WorldEnvironment4D);
 		// Material initialization.
 #if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
 		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
 		WireMaterial4D::init_shaders();
 		TetraMaterial4D::init_shaders();
+		GradientSkyMaterial4D::init_shader();
+		PhysicalSkyMaterial4D::init_shader();
+		PlainSkyMaterial4D::init_shader();
 #endif
 		// Initialize fallback materials in the opposite order from when they will later be destroyed.
 		WireMesh4D::init_fallback_material();
@@ -306,6 +322,9 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		// Clean up fallback materials and shaders in the opposite order of their creation.
 		TetraMesh4D::cleanup_fallback_material();
 		WireMesh4D::cleanup_fallback_material();
+		PlainSkyMaterial4D::cleanup_shader();
+		PhysicalSkyMaterial4D::cleanup_shader();
+		GradientSkyMaterial4D::cleanup_shader();
 		TetraMaterial4D::cleanup_shaders();
 		WireMaterial4D::cleanup_shaders();
 	}

@@ -28,6 +28,12 @@ def get_doc_classes():
 		"Light4D",
 		"OmniLight4D",
 		"SpotLight4D",
+		# Environment.
+		"WorldEnvironment4D",
+		"SkyMaterial4D",
+		"GradientSkyMaterial4D",
+		"PhysicalSkyMaterial4D",
+		"PlainSkyMaterial4D",
 		# Mesh.
 		"ArrayPolyMesh4D",
 		"ArrayTetraMesh4D",

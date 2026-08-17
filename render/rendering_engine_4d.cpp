@@ -1,5 +1,9 @@
 #include "rendering_engine_4d.h"
 
+#include "../model/mesh/mesh_instance_4d.h"
+#include "../nodes/camera_4d.h"
+#include "environment/world_environment_4d.h"
+
 #include <algorithm>
 #include <tuple>
 #include <vector>

@@ -7,11 +7,14 @@
 #include <godot_cpp/templates/vector.hpp>
 #endif
 
+class WorldEnvironment4D;
+
 class RenderingServer4D : public Object {
 	GDCLASS(RenderingServer4D, Object);
 
 	HashMap<String, Ref<RenderingEngine4D>> _rendering_engines;
 	HashMap<Viewport *, Vector<Camera4D *>> _viewport_cameras;
+	HashMap<Viewport *, Vector<WorldEnvironment4D *>> _viewport_world_environments;
 	// For 3D, Godot has "World3D" which meshes are added to. Cameras in the same world can see the same meshes.
 	// For 4D, we will use a simpler approach, just have one global array of meshes which all cameras can see.
 	// We could add a "World4D" class in the future if we want to add this feature, but it's not necessary for now.
@@ -40,6 +43,13 @@ public:
 	void unregister_rendering_engine(const String &p_friendly_name);
 	PackedStringArray get_rendering_engine_names() const;
 	Ref<RenderingEngine4D> get_rendering_engine_from_name(const String &p_friendly_name) const;
+
+	void register_world_environment(WorldEnvironment4D *p_world_environment);
+	void unregister_world_environment(WorldEnvironment4D *p_world_environment);
+	void make_world_environment_current(WorldEnvironment4D *p_world_environment);
+	void clear_world_environment_current(WorldEnvironment4D *p_world_environment);
+	WorldEnvironment4D *get_current_world_environment(Viewport *p_viewport) const;
+	WorldEnvironment4D *get_current_world_environment_for_camera(Camera4D *p_camera) const; // Internal use only, do not expose.
 
 	static RenderingServer4D *get_singleton() { return singleton; }
 	RenderingServer4D() { singleton = this; }

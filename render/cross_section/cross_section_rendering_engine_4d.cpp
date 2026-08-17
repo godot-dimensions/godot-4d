@@ -3,6 +3,7 @@
 #include "../../model/mesh/mesh_instance_4d.h"
 #include "../../model/mesh/poly/poly_material_4d.h"
 #include "../../nodes/camera_4d.h"
+#include "../environment/render_bridge_4d_to_3d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/rendering_server.hpp>
@@ -146,6 +147,9 @@ void CrossSectionRenderingEngine4D::render_frame() {
 	ERR_FAIL_NULL(get_viewport());
 	_current_pass++;
 	_update_camera();
+	if (_cross_section_environment_bridge != nullptr) {
+		_cross_section_environment_bridge->update_environment(get_camera());
+	}
 	_update_mesh_instances();
 }
 
@@ -155,6 +159,10 @@ void CrossSectionRenderingEngine4D::setup_for_viewport() {
 	if (!_cross_section_world_3d.is_valid()) {
 		_cross_section_world_3d.instantiate();
 	}
+	if (_cross_section_environment_bridge == nullptr) {
+		_cross_section_environment_bridge = memnew(EnvironmentRenderBridge4DTo3D);
+	}
+	_cross_section_environment_bridge->setup_environment_resources(_cross_section_world_3d);
 	Viewport *viewport = get_viewport();
 	// Avoids a weird error from the current scenario on viewport not being initialized. Should ideally be handled by set_world_3d.
 	RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), _cross_section_world_3d->get_scenario());
@@ -181,6 +189,11 @@ void CrossSectionRenderingEngine4D::_cleanup_render_resources() {
 	if (_cross_section_camera.is_valid()) {
 		rendering_server->free_rid(_cross_section_camera);
 		_cross_section_camera = RID();
+	}
+	if (_cross_section_environment_bridge != nullptr) {
+		_cross_section_environment_bridge->cleanup_render_resources();
+		memdelete(_cross_section_environment_bridge);
+		_cross_section_environment_bridge = nullptr;
 	}
 	// Explicitly free the World3D so its scenario RID (and any remaining
 	// instances inside it) are released while the RenderingServer is alive.

@@ -1,5 +1,6 @@
 #include "wireframe_canvas_rendering_engine_4d.h"
 
+#include "../../model/mesh/mesh_instance_4d.h"
 #include "../../model/mesh/wire/wire_material_4d.h"
 #include "wireframe_render_canvas_4d.h"
 

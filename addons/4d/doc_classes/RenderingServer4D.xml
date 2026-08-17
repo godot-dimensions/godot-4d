@@ -17,6 +17,13 @@
 				Returns the current [Camera4D] for the given [Viewport]. If the viewport has no Camera4Ds, or no Camera4D is set as current, this method will return [code]null[/code].
 			</description>
 		</method>
+		<method name="get_current_world_environment" qualifiers="const">
+			<return type="WorldEnvironment4D" />
+			<param index="0" name="viewport" type="Viewport" />
+			<description>
+				Returns the current [WorldEnvironment4D] for the given [Viewport]. If the viewport has no WorldEnvironment4Ds, or no WorldEnvironment4D is set as current, this method will return [code]null[/code].
+			</description>
+		</method>
 		<method name="get_rendering_engine_names" qualifiers="const">
 			<return type="PackedStringArray" />
 			<description>
