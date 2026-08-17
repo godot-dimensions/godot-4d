@@ -6,6 +6,7 @@
 #include "editor_camera_4d.h"
 #include "editor_camera_settings_4d.h"
 #include "editor_main_viewport_4d.h"
+#include "editor_preview_environment_4d.h"
 #include "editor_transform_gizmo_4d.h"
 #include "editor_viewport_rotation_4d.h"
 
@@ -208,6 +209,10 @@ void EditorMainScreen4D::_update_rendering_engine_menu() {
 		_rendering_engine_menu_popup->set_item_checked(index + 1, true); // +1 because of the "Automatic" item.
 		_camera_settings->set_rendering_engine_name(rendering_engine_name);
 	}
+	ERR_FAIL_NULL(_editor_main_viewports[0]);
+	const Ref<RenderingEngine4D> rendering_engine = _editor_main_viewports[0]->get_rendering_engine();
+	ERR_FAIL_COND(rendering_engine.is_null());
+	_preview_environment->set_visible(rendering_engine->supports_lighting());
 }
 
 void EditorMainScreen4D::_update_theme() {
@@ -375,6 +380,10 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->connect(StringName("toggled"), callable_mp(this, &EditorMainScreen4D::_on_button_toggled).bind(TOOLBAR_BUTTON_USE_LOCAL_ROTATION));
 	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]);
 	_toolbar_hbox->add_child(memnew(VSeparator));
+
+	_preview_environment = memnew(EditorPreviewEnvironment4D);
+	_preview_environment->setup(this, p_undo_redo_manager, _4d_editor_config_file, _4d_editor_config_file_path);
+	_toolbar_hbox->add_child(_preview_environment);
 
 	// All viewports share one gizmo and origin marker.
 	_transform_gizmo_4d = memnew(EditorTransformGizmo4D);

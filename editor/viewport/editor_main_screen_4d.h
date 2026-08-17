@@ -79,6 +79,7 @@ public:
 
 private:
 	Button *_toolbar_buttons[TOOLBAR_BUTTON_MAX] = { nullptr };
+	EditorPreviewEnvironment4D *_preview_environment = nullptr;
 	MenuButton *_transform_settings_menu = nullptr;
 	MenuButton *_layout_menu = nullptr;
 	MenuButton *_view_menu = nullptr;

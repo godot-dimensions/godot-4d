@@ -55,6 +55,7 @@ class EditorCameraSettings4D;
 class EditorInputSurface4D;
 class EditorMainScreen4D;
 class EditorMainViewport4D;
+class EditorPreviewEnvironment4D;
 class EditorTransformGizmo4D;
 class EditorViewportRotation4D;
 
