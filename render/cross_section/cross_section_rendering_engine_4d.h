@@ -17,6 +17,16 @@ class CrossSectionRenderingEngine4D : public RenderingEngine4D {
 	GDCLASS(CrossSectionRenderingEngine4D, RenderingEngine4D);
 
 private:
+	// Terminology: "LightRenderInstance3D" is this struct. "Light3DRenderInstance" is what the struct holds.
+	struct LightRenderInstance3D {
+		// RenderingServer supports reuse of light RIDs, but we can't make use of this for 4D lights.
+		// Each base + instance pair must be unique to the combination of rendering engine and 4D light node.
+		RID base;
+		RID instance;
+		uint64_t last_used_pass = 0;
+	};
+	HashMap<ObjectID, LightRenderInstance3D> _lights_3d;
+
 	struct MeshRenderInstance3D {
 		RID base;
 		RID instance;
@@ -30,10 +40,12 @@ private:
 	EnvironmentRenderBridge4DTo3D *_cross_section_environment_bridge = nullptr;
 	uint64_t _current_pass = 0;
 
+	void _create_light_render_instance_3d(const ObjectID p_light_4d_node_object_id);
 	RID _create_mesh_render_instance_3d();
 	void _cleanup_render_resources();
 
 	void _update_camera();
+	void _update_lights();
 	void _update_mesh_instances();
 
 protected:

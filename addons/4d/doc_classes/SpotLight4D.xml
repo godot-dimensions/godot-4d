@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SpotLight4D" inherits="Light4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D spotlight, such as a flashlight.
+	</brief_description>
+	<description>
+		A spotlight is a type of [Light4D] node that emits light in a specific direction, in the shape of a 4D cone. The light is attenuated through the distance. This attenuation can be configured by changing the energy, range, and attenuation properties of [Light4D] and [SpotLight4D].
+		Light is emitted in the local -Z direction of the node's global 4D basis.
+		[b]Note:[/b] Unlike Godot's 3D lights, 4D lights include the [Node4D]'s global uniform scale when rendered. See [member Node4D.global_uniform_scale].
+		[b]Note:[/b] Shadows in the cross-section renderer do not account for off-slice objects obstructing the light. Manual culling, such as room-based culling, may be helpful to avoid lights in another local-W-offset room affecting the current room's lighting.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="spot_angle_attenuation" type="float" setter="set_spot_angle_attenuation" getter="get_spot_angle_attenuation" default="1.0">
+			The spotlight's [i]angular[/i] attenuation curve. This controls how the light's intensity falls off from the center of the cone to the edge of the cone. There is no physically accurate value for this property, it may be set to any value for artistic purposes.
+			Values near [code]0.0[/code] will sharpen the edge of the cone, bringing more of the cone into full brightness. Values near [code]1.0[/code] will result in a smooth falloff from the center of the cone to the edge. Values higher than [code]1.0[/code] will result in a more rapid falloff, with most of the cone being dimmer than the center.
+		</member>
+		<member name="spot_angle_degrees" type="float" setter="set_spot_angle_degrees" getter="get_spot_angle_degrees" default="45.0">
+			The spotlight's angle in degrees. This is the angular radius, meaning the angle from the local -Z axis, the cone's center, to the edge of the cone. The default angular radius of 45 degrees corresponds to a cone with an angular diameter of 90 degrees.
+		</member>
+		<member name="spot_light_size_meters" type="float" setter="set_spot_light_size_meters" getter="get_spot_light_size_meters" default="0.0">
+			The simulated size of the light in meters, affecting shading and shadows. Increasing this value simulates a 4D spherical light, expanding the size of specular highlights. If shadows are enabled, a penumbra is rendered, making shadows appear blurrier.
+			[b]Note:[/b] Unlike [member Light3D.light_size], [member spot_light_size_meters] is affected by the [Node4D]'s global uniform scale.
+			[b]Note:[/b] When this value is greater than [code]0.0[/code], and the light is not exactly in the 3D slice, the results will not be physically accurate to 4D lighting. It will become less accurate the farther the light is from the 3D slice, tending towards a point light.
+		</member>
+		<member name="spot_range_attenuation" type="float" setter="set_spot_range_attenuation" getter="get_spot_range_attenuation" default="3.0">
+			Controls the distance attenuation function for the spotlight.
+			A value of [code]0.0[/code] will maintain a constant brightness through most of the range, but smoothly attenuate the light at the edge of the range. Use a value of [code]3.0[/code] for physically accurate 4D lights, as it results in the proper inverse-cube attenuation. For artistic purposes, a value of [code]2.0[/code] will likely produce a more visually pleasing result, but going lower is not recommended.
+			[b]Note:[/b] Setting attenuation to [code]3.0[/code] or higher may result in distant objects receiving minimal light, even within range.
+			[b]Note:[/b] Using negative values or values higher than [code]10.0[/code] may lead to unexpected results.
+		</member>
+		<member name="spot_range_meters" type="float" setter="set_spot_range_meters" getter="get_spot_range_meters" default="10.0">
+			The maximum 4D range that can be reached by the spotlight, in meters. Note that the effectively lit area may appear to be smaller depending on the [member spot_range_attenuation] in use. No matter the [member spot_range_attenuation] in use, the light will never reach anything outside this range.
+			[b]Note:[/b] Unlike [member SpotLight3D.spot_range], [member spot_range_meters] is affected by the [Node4D]'s global uniform scale.
+		</member>
+	</members>
+</class>

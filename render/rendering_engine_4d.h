@@ -29,6 +29,10 @@ class RenderingEngine4D : public RefCounted {
 	Viewport *_viewport = nullptr;
 	Camera4D *_camera = nullptr;
 
+	PackedInt64Array _light_object_ids;
+	TypedArray<Projection> _light_relative_basises;
+	PackedVector4Array _light_relative_positions;
+
 	PackedInt64Array _mesh_instance_object_ids;
 	TypedArray<Projection> _mesh_relative_basises;
 	PackedVector4Array _mesh_relative_positions;
@@ -46,6 +50,11 @@ public:
 
 	Camera4D *get_camera() const { return _camera; }
 	void set_camera(Camera4D *p_camera); // Internal use only, do not expose.
+
+	PackedInt64Array get_light_object_ids() const { return _light_object_ids; }
+	void set_light_object_ids(PackedInt64Array p_light_object_ids); // Internal use only, do not expose.
+	TypedArray<Projection> get_light_relative_basises() const { return _light_relative_basises; }
+	PackedVector4Array get_light_relative_positions() const { return _light_relative_positions; }
 
 	PackedInt64Array get_mesh_instance_object_ids() const { return _mesh_instance_object_ids; }
 	void set_mesh_instance_object_ids(PackedInt64Array p_mesh_instance_object_ids); // Internal use only, do not expose.

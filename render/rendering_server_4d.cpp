@@ -2,6 +2,7 @@
 
 #include "../model/mesh/mesh_instance_4d.h"
 #include "../nodes/camera_4d.h"
+#include "../nodes/light/light_4d.h"
 #include "environment/world_environment_4d.h"
 
 #ifdef TOOLS_ENABLED
@@ -46,6 +47,18 @@ RenderingServer4D::~RenderingServer4D() {
 	_viewport_world_environments.clear();
 	_rendering_engines.clear();
 	singleton = nullptr;
+}
+
+PackedInt64Array RenderingServer4D::_get_visible_light_object_ids() const {
+	PackedInt64Array visible_light_object_ids;
+	for (int i = 0; i < _lights.size(); i++) {
+		Light4D *light = (Light4D *)(Object *)_lights[i];
+		CRASH_COND_MSG(light == nullptr, "Light4D is null. This should never happen.");
+		if (light->is_visible_in_tree()) {
+			visible_light_object_ids.append(light->get_instance_id());
+		}
+	}
+	return visible_light_object_ids;
 }
 
 PackedInt64Array RenderingServer4D::_get_visible_mesh_instance_object_ids() const {
@@ -100,6 +113,8 @@ void RenderingServer4D::_render_frame() {
 		rendering_engine->setup_for_viewport_if_needed(viewport);
 		rendering_engine->set_camera(camera0);
 		emit_signal("pre_render", camera0, viewport, rendering_engine);
+		PackedInt64Array visible_light_object_ids = _get_visible_light_object_ids();
+		rendering_engine->set_light_object_ids(visible_light_object_ids);
 		PackedInt64Array visible_mesh_instance_object_ids = _get_visible_mesh_instance_object_ids();
 		rendering_engine->set_mesh_instance_object_ids(visible_mesh_instance_object_ids);
 		rendering_engine->calculate_relative_transforms();
@@ -251,6 +266,18 @@ Camera4D *RenderingServer4D::get_current_camera(Viewport *p_viewport) const {
 		return camera0;
 	}
 	return nullptr;
+}
+
+void RenderingServer4D::register_light(Light4D *p_light) {
+	ERR_FAIL_NULL(p_light);
+	ERR_FAIL_COND_MSG(_lights.has(p_light), "Light4D is already registered.");
+	_lights.append(p_light);
+}
+
+void RenderingServer4D::unregister_light(Light4D *p_light) {
+	ERR_FAIL_NULL(p_light);
+	ERR_FAIL_COND_MSG(!_lights.has(p_light), "Light4D is not registered.");
+	_lights.erase(p_light);
 }
 
 void RenderingServer4D::register_mesh_instance(MeshInstance4D *p_mesh_instance) {

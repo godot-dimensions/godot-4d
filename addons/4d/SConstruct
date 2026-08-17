@@ -11,6 +11,7 @@ env.Append(
         "../../math",
         "../../math/geometric_algebra",
         "../../nodes",
+        "../../nodes/light",
         "../../model",
         "../../model/g4mf",
         "../../model/g4mf/structures",
@@ -39,6 +40,7 @@ sources = (
     + Glob("../../math/*.cpp")
     + Glob("../../math/geometric_algebra/*.cpp")
     + Glob("../../nodes/*.cpp")
+    + Glob("../../nodes/light/*.cpp")
     + Glob("../../resources/*.cpp")
     + Glob("../../model/*.cpp")
     + Glob("../../model/g4mf/*.cpp")
@@ -142,6 +144,7 @@ env["BUILDERS"]["GLSL_HEADER"] = Builder(
     suffix="glsl.gen.h",
 )
 
+env.GLSL_HEADER("../../render/cross_section/tetra_cross_section_light_shader.glsl")
 env.GLSL_HEADER("../../render/cross_section/tetra_cross_section_shader.glsl")
 env.GLSL_HEADER("../../render/cross_section/wireframe_cross_section_shader.glsl")
 env.GLSL_HEADER("../../render/environment/sky/gradient_sky_shader.glsl")

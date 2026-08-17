@@ -2,6 +2,7 @@
 
 #include "../model/mesh/mesh_instance_4d.h"
 #include "../nodes/camera_4d.h"
+#include "../nodes/light/light_4d.h"
 #include "environment/world_environment_4d.h"
 
 #include <algorithm>
@@ -10,6 +11,17 @@
 
 void RenderingEngine4D::calculate_relative_transforms() {
 	const Transform4D camera_inverse_transform = _camera->get_global_transform().inverse();
+	// Lights.
+	const int light_count = _light_object_ids.size();
+	_light_relative_basises.resize(light_count);
+	_light_relative_positions.resize(light_count);
+	for (int64_t i = 0; i < _light_object_ids.size(); i++) {
+		const ObjectID light_object_id = (ObjectID)_light_object_ids[i];
+		const Light4D *light = Object::cast_to<const Light4D>(ObjectDB::get_instance(light_object_id));
+		const Transform4D relative_transform = camera_inverse_transform * light->get_global_transform();
+		_light_relative_basises[i] = relative_transform.basis.operator Projection();
+		_light_relative_positions.set(i, relative_transform.origin);
+	}
 	// Meshes.
 	const int mesh_count = _mesh_instance_object_ids.size();
 	_mesh_relative_basises.resize(mesh_count);
@@ -51,6 +63,10 @@ void RenderingEngine4D::set_viewport(Viewport *p_viewport) {
 
 void RenderingEngine4D::set_camera(Camera4D *p_camera) {
 	_camera = p_camera;
+}
+
+void RenderingEngine4D::set_light_object_ids(PackedInt64Array p_light_object_ids) {
+	_light_object_ids = p_light_object_ids;
 }
 
 void RenderingEngine4D::set_mesh_instance_object_ids(PackedInt64Array p_mesh_instance_object_ids) {
@@ -114,6 +130,10 @@ void RenderingEngine4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_viewport"), &RenderingEngine4D::get_viewport);
 	ClassDB::bind_method(D_METHOD("get_camera"), &RenderingEngine4D::get_camera);
+
+	ClassDB::bind_method(D_METHOD("get_light_object_ids"), &RenderingEngine4D::get_light_object_ids);
+	ClassDB::bind_method(D_METHOD("get_light_relative_basises"), &RenderingEngine4D::get_light_relative_basises);
+	ClassDB::bind_method(D_METHOD("get_light_relative_positions"), &RenderingEngine4D::get_light_relative_positions);
 
 	ClassDB::bind_method(D_METHOD("get_mesh_instance_object_ids"), &RenderingEngine4D::get_mesh_instance_object_ids);
 	ClassDB::bind_method(D_METHOD("get_mesh_relative_basises"), &RenderingEngine4D::get_mesh_relative_basises);

@@ -21,6 +21,11 @@
 #include "model/mesh/wire/wire_mesh_4d.h"
 #include "physics/shapes/shape_4d.h"
 
+// Light.
+#include "nodes/light/directional_light_4d.h"
+#include "nodes/light/omni_light_4d.h"
+#include "nodes/light/spot_light_4d.h"
+
 // Model.
 #include "model/g4mf/g4mf_document_4d.h"
 #include "model/g4mf/structures/g4mf_model_4d.h"
@@ -164,6 +169,11 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PolyMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
+		// Light.
+		GDREGISTER_ABSTRACT_CLASS(Light4D);
+		GDREGISTER_CLASS(DirectionalLight4D);
+		GDREGISTER_CLASS(OmniLight4D);
+		GDREGISTER_CLASS(SpotLight4D);
 		// Register as virtual so it is hidden from resource creation dialogs while
 		// remaining constructible through user-defined GDScript subclasses.
 		GDREGISTER_VIRTUAL_CLASS(SkyMaterial4D);

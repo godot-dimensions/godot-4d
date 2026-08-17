@@ -1,6 +1,7 @@
 #include "render_bridge_4d_to_3d.h"
 
 #include "../../nodes/camera_4d.h"
+#include "../../nodes/light/directional_light_4d.h"
 #include "../rendering_server_4d.h"
 #include "world_environment_4d.h"
 
@@ -167,6 +168,38 @@ void EnvironmentRenderBridge4DTo3D::update_environment(Camera4D *p_camera) {
 		world_up_direction_4d = Vector4(0.0f, 1.0f, 0.0f, 0.0f);
 	}
 	_set_sky_shader_parameter("world_up_direction_4d", world_up_direction_4d);
+}
+
+void EnvironmentRenderBridge4DTo3D::update_suns(const PackedInt64Array &p_light_object_ids, const TypedArray<Projection> &p_light_relative_basises) {
+	if (_sky_material_4d_to_3d.is_null() || _sky_material_4d_to_3d->get_shader().is_null()) {
+		return; // Having no sky material is an expected state, so return silently without logging an error.
+	}
+	for (int64_t light_index = 0; light_index < MAX_SUNS; light_index++) {
+		_set_sky_shader_parameter(StringName("light" + itos(light_index) + "_enabled"), false);
+	}
+	ERR_FAIL_COND(p_light_object_ids.size() != p_light_relative_basises.size());
+	int64_t sky_light_index = 0;
+	for (int64_t light_index = 0; light_index < p_light_object_ids.size() && sky_light_index < MAX_SUNS; light_index++) {
+		const ObjectID light_object_id = (ObjectID)p_light_object_ids[light_index];
+		DirectionalLight4D *directional_light_4d = Object::cast_to<DirectionalLight4D>(ObjectDB::get_instance(light_object_id));
+		if (directional_light_4d == nullptr) {
+			continue;
+		}
+		Vector4 light_direction_4d = Basis4D(p_light_relative_basises[light_index]).z;
+		const real_t direction_length = light_direction_4d.length();
+		if (direction_length <= CMP_EPSILON) {
+			continue;
+		}
+		light_direction_4d /= direction_length;
+		const String parameter_prefix = "light" + itos(sky_light_index);
+		_set_sky_shader_parameter(StringName(parameter_prefix + String("_enabled")), true);
+		_set_sky_shader_parameter(StringName(parameter_prefix + String("_direction_4d")), light_direction_4d);
+		_set_sky_shader_parameter(StringName(parameter_prefix + String("_color")), directional_light_4d->get_light_color());
+		_set_sky_shader_parameter(StringName(parameter_prefix + String("_energy")), directional_light_4d->get_light_energy());
+		// This parameter uses the original 4D light's angular radius, not the cross-section 3D light's angular radius.
+		_set_sky_shader_parameter(StringName(parameter_prefix + String("_angular_radius_radians")), directional_light_4d->get_angular_radius_radians());
+		sky_light_index++;
+	}
 }
 
 void EnvironmentRenderBridge4DTo3D::cleanup_render_resources() {

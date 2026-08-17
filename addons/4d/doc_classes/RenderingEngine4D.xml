@@ -59,6 +59,25 @@
 				Returns the unique friendly name of the rendering engine. This is used by [RenderingServer4D] to identify the rendering engine for a viewport, and is displayed in the editor. It should be a short, human-readable name that describes the rendering engine. This MUST be unique across all registered rendering engines.
 			</description>
 		</method>
+		<method name="get_light_object_ids" qualifiers="const">
+			<return type="PackedInt64Array" />
+			<description>
+				Returns an array of ObjectIDs (packed in a [PackedInt64Array]) of visible [Light4D] nodes to be rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [method get_light_relative_basises] and [method get_light_relative_positions] arrays, and each index of each array will correspond to the light at that index.
+				To convert the ObjectIDs to [Light4D] nodes, in GDScript use [method @GlobalScope.instance_from_id], or in C++ use [code]ObjectDB::get_instance((ObjectID)arr[index])[/code], or preferably as separate statements use [code]const ObjectID oid = (ObjectID)arr[index]; ObjectDB::get_instance(oid)[/code] (an explicit cast to [code]ObjectID[/code] is required in C++).
+			</description>
+		</method>
+		<method name="get_light_relative_basises" qualifiers="const">
+			<return type="Projection[]" />
+			<description>
+				Returns the basis part of the light transform relative to the camera. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [method get_light_object_ids] and [method get_light_relative_positions] arrays, and each index of each array will correspond to the light at that index.
+			</description>
+		</method>
+		<method name="get_light_relative_positions" qualifiers="const">
+			<return type="PackedVector4Array" />
+			<description>
+				Returns the position part of the light transform relative to the camera. This will be set by [RenderingServer4D] before calling [method _render_frame]. The size of this array will match the size of the [method get_light_object_ids] and [method get_light_relative_basises] arrays, and each index of each array will correspond to the light at that index.
+			</description>
+		</method>
 		<method name="get_mesh_instance_object_ids" qualifiers="const">
 			<return type="PackedInt64Array" />
 			<description>

@@ -3,6 +3,7 @@
 #include "../../model/mesh/mesh_instance_4d.h"
 #include "../../model/mesh/poly/poly_material_4d.h"
 #include "../../nodes/camera_4d.h"
+#include "../../nodes/light/directional_light_4d.h"
 #include "../environment/render_bridge_4d_to_3d.h"
 
 #if GDEXTENSION
@@ -14,6 +15,28 @@
 #include "servers/rendering/rendering_server.h"
 #endif
 #endif
+
+void CrossSectionRenderingEngine4D::_create_light_render_instance_3d(const ObjectID p_light_4d_node_object_id) {
+	Light4D *light_4d = Object::cast_to<Light4D>(ObjectDB::get_instance(p_light_4d_node_object_id));
+	ERR_FAIL_NULL(light_4d);
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	ERR_FAIL_NULL(rendering_server);
+	if (!_cross_section_world_3d.is_valid()) {
+		_cross_section_world_3d.instantiate();
+	}
+	LightRenderInstance3D light_render_instance_3d;
+	light_render_instance_3d.base = light_4d->create_light_3d_render_base();
+	ERR_FAIL_COND_MSG(!light_render_instance_3d.base.is_valid(), "Unable to create a Light3D render base RID for a Light4D node.");
+	light_render_instance_3d.instance = rendering_server->instance_create();
+	if (!light_render_instance_3d.instance.is_valid()) {
+		rendering_server->free_rid(light_render_instance_3d.base);
+		ERR_FAIL_MSG("Unable to create a Light3D render instance RID for a Light4D node.");
+	}
+	rendering_server->instance_set_visible(light_render_instance_3d.instance, false);
+	rendering_server->instance_set_base(light_render_instance_3d.instance, light_render_instance_3d.base);
+	rendering_server->instance_set_scenario(light_render_instance_3d.instance, _cross_section_world_3d->get_scenario());
+	_lights_3d[p_light_4d_node_object_id] = light_render_instance_3d;
+}
 
 RID CrossSectionRenderingEngine4D::_create_mesh_render_instance_3d() {
 	ERR_FAIL_NULL_V(RenderingServer::get_singleton(), RID());
@@ -51,6 +74,48 @@ void CrossSectionRenderingEngine4D::_update_camera() {
 			WARN_PRINT_ONCE("Dual-perspective is not supported by the Cross-section renderer. Use PERSPECTIVE_3D, PERSPECTIVE_4D, or ORTHOGRAPHIC instead.");
 			RenderingServer::get_singleton()->camera_set_perspective(_cross_section_camera, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
 		} break;
+	}
+}
+
+void CrossSectionRenderingEngine4D::_update_lights() {
+	const PackedInt64Array light_object_ids = get_light_object_ids();
+	const TypedArray<Projection> light_relative_basises = get_light_relative_basises();
+	const PackedVector4Array light_relative_positions = get_light_relative_positions();
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	ERR_FAIL_NULL(rendering_server);
+	ERR_FAIL_COND(light_relative_basises.size() != light_object_ids.size());
+	ERR_FAIL_COND(light_relative_positions.size() != light_object_ids.size());
+	for (int64_t light_index = 0; light_index < light_object_ids.size(); light_index++) {
+		const ObjectID light_object_id = (ObjectID)light_object_ids[light_index];
+		Light4D *light_4d = Object::cast_to<Light4D>(ObjectDB::get_instance(light_object_id));
+		ERR_CONTINUE(light_4d == nullptr);
+		if (!_lights_3d.has(light_object_id)) {
+			_create_light_render_instance_3d(light_object_id);
+			ERR_CONTINUE(!_lights_3d.has(light_object_id));
+		}
+		LightRenderInstance3D &light_render_instance_3d = _lights_3d[light_object_id]; // Mutable reference.
+		const Projection light_relative_basis = light_relative_basises[light_index];
+		const Vector4 light_relative_position = light_relative_positions[light_index];
+		const bool visible_in_slice = light_4d->update_light_3d_render_base(light_relative_basis, light_relative_position, light_render_instance_3d.base);
+		rendering_server->instance_set_visible(light_render_instance_3d.instance, visible_in_slice);
+		if (visible_in_slice) {
+			const Transform3D light_transform_3d = Transform3D(Basis4D(light_relative_basis).to_3d_orthonormalize_z_dominant(), Vector3(light_relative_position.x, light_relative_position.y, light_relative_position.z));
+			rendering_server->instance_set_transform(light_render_instance_3d.instance, light_transform_3d);
+		}
+		light_render_instance_3d.last_used_pass = _current_pass;
+	}
+	// Delete any lights that are not currently visible and active in the scene.
+	Vector<ObjectID> light_instance_ids_to_erase;
+	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::LightRenderInstance3D> &light_pair : _lights_3d) {
+		const LightRenderInstance3D &light_instance_3d = light_pair.value;
+		if (light_instance_3d.last_used_pass != _current_pass) {
+			rendering_server->free_rid(light_instance_3d.instance);
+			rendering_server->free_rid(light_instance_3d.base);
+			light_instance_ids_to_erase.append(light_pair.key);
+		}
+	}
+	for (const ObjectID &light_object_id : light_instance_ids_to_erase) {
+		_lights_3d.erase(light_object_id);
 	}
 }
 
@@ -147,8 +212,10 @@ void CrossSectionRenderingEngine4D::render_frame() {
 	ERR_FAIL_NULL(get_viewport());
 	_current_pass++;
 	_update_camera();
+	_update_lights();
 	if (_cross_section_environment_bridge != nullptr) {
 		_cross_section_environment_bridge->update_environment(get_camera());
+		_cross_section_environment_bridge->update_suns(get_light_object_ids(), get_light_relative_basises());
 	}
 	_update_mesh_instances();
 }
@@ -175,10 +242,21 @@ void CrossSectionRenderingEngine4D::setup_for_viewport() {
 void CrossSectionRenderingEngine4D::_cleanup_render_resources() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	if (rendering_server == nullptr) {
+		_lights_3d.clear();
 		_mesh_instances_3d.clear();
 		_cross_section_camera = RID();
 		return;
 	}
+	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::LightRenderInstance3D> &pair : _lights_3d) {
+		const LightRenderInstance3D &light_3d = pair.value;
+		if (light_3d.instance.is_valid()) {
+			rendering_server->free_rid(light_3d.instance);
+		}
+		if (light_3d.base.is_valid()) {
+			rendering_server->free_rid(light_3d.base);
+		}
+	}
+	_lights_3d.clear();
 	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::MeshRenderInstance3D> &pair : _mesh_instances_3d) {
 		const MeshRenderInstance3D &instance_3d = pair.value;
 		if (instance_3d.instance.is_valid()) {

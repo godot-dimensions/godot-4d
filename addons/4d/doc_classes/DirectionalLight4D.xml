@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DirectionalLight4D" inherits="Light4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Directional light from a distance, as from the Sun.
+	</brief_description>
+	<description>
+		A directional light is a type of [Light4D] node that models an infinite number of parallel rays covering the entire 4D scene. It is used for lights with strong intensity that are located far away from the scene to model sunlight or moonlight.
+		Light is emitted in the local -Z direction of the node's global 4D basis. The position of the node is ignored; only the basis is used to determine the light direction.
+		[b]Note:[/b] Shadows in the cross-section renderer do not account for off-slice objects obstructing the light. For directional lights, making the light come down from straight above can work around this problem. Additionally, manual culling, such as room-based culling, may be helpful to avoid lights in another local-W-offset room affecting the current room's lighting.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="angular_radius_degrees" type="float" setter="set_angular_radius_degrees" getter="get_angular_radius_degrees" default="0.57295775">
+			The angular radius of the light source in degrees. A larger angle produces a larger disk in supported sky materials, softer specular highlights, and softer shadows.
+		</member>
+		<member name="angular_radius_radians" type="float" setter="set_angular_radius_radians" getter="get_angular_radius_radians" default="0.01">
+			The angular radius of the light source in radians. A larger angle produces a larger disk in supported sky materials, softer specular highlights, and softer shadows.
+		</member>
+	</members>
+</class>

@@ -38,5 +38,6 @@ class EnvironmentRenderBridge4DTo3D : public Object {
 public:
 	void setup_environment_resources(const Ref<World3D> &p_cross_section_world_3d);
 	void update_environment(Camera4D *p_camera);
+	void update_suns(const PackedInt64Array &p_light_object_ids, const TypedArray<Projection> &p_light_relative_basises);
 	void cleanup_render_resources();
 };
