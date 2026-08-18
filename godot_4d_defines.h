@@ -103,7 +103,8 @@ using namespace godot;
 #define Math_TAU Math::TAU
 #endif
 
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 5)
+// While TypedDictionary is available in Godot 4.4 and later, the C++ API is incomplete, missing iterators. So we can't use it until Godot 4.5.
 #define GODOT_HAS_TYPED_DICTIONARY 1
 #endif
 
