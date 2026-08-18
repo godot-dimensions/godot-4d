@@ -34,6 +34,7 @@ def get_doc_classes():
 		"GradientSkyMaterial4D",
 		"PhysicalSkyMaterial4D",
 		"PlainSkyMaterial4D",
+		"VolumetricCloudMaterial4D",
 		# Mesh.
 		"ArrayPolyMesh4D",
 		"ArrayTetraMesh4D",

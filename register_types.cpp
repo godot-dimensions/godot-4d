@@ -78,6 +78,7 @@
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
 
 // Environment.
+#include "render/environment/cloud/volumetric_cloud_material_4d.h"
 #include "render/environment/sky/gradient_sky_material_4d.h"
 #include "render/environment/sky/physical_sky_material_4d.h"
 #include "render/environment/sky/plain_sky_material_4d.h"
@@ -180,6 +181,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(GradientSkyMaterial4D);
 		GDREGISTER_CLASS(PhysicalSkyMaterial4D);
 		GDREGISTER_CLASS(PlainSkyMaterial4D);
+		GDREGISTER_CLASS(VolumetricCloudMaterial4D);
 		GDREGISTER_CLASS(WorldEnvironment4D);
 		// Material initialization.
 #if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
@@ -189,6 +191,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GradientSkyMaterial4D::init_shader();
 		PhysicalSkyMaterial4D::init_shader();
 		PlainSkyMaterial4D::init_shader();
+		VolumetricCloudMaterial4D::init_shaders();
 #endif
 		// Initialize fallback materials in the opposite order from when they will later be destroyed.
 		WireMesh4D::init_fallback_material();
@@ -332,6 +335,7 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		// Clean up fallback materials and shaders in the opposite order of their creation.
 		TetraMesh4D::cleanup_fallback_material();
 		WireMesh4D::cleanup_fallback_material();
+		VolumetricCloudMaterial4D::cleanup_shaders();
 		PlainSkyMaterial4D::cleanup_shader();
 		PhysicalSkyMaterial4D::cleanup_shader();
 		GradientSkyMaterial4D::cleanup_shader();

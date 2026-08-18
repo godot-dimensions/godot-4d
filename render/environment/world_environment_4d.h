@@ -2,6 +2,7 @@
 
 #include "../../nodes/node_4d.h"
 #include "../../render/environment/sky/sky_material_4d.h"
+#include "cloud/volumetric_cloud_material_4d.h"
 
 class WorldEnvironment4D : public Node4D {
 	GDCLASS(WorldEnvironment4D, Node4D);
@@ -17,6 +18,7 @@ public:
 
 private:
 	Ref<SkyMaterial4D> _sky_material;
+	Ref<VolumetricCloudMaterial4D> _cloud_material;
 	Color _ambient_light_color = Color(0.0, 0.0, 0.0, 1.0);
 	float _ambient_light_sky_contribution = 1.0f;
 	float _tonemap_exposure = 1.0f;
@@ -39,6 +41,8 @@ public:
 
 	Ref<SkyMaterial4D> get_sky_material() const { return _sky_material; }
 	void set_sky_material(const Ref<SkyMaterial4D> &p_sky_material) { _sky_material = p_sky_material; }
+	Ref<VolumetricCloudMaterial4D> get_cloud_material() const { return _cloud_material; }
+	void set_cloud_material(const Ref<VolumetricCloudMaterial4D> &p_cloud_material) { _cloud_material = p_cloud_material; }
 
 	Color get_ambient_light_color() const { return _ambient_light_color; }
 	void set_ambient_light_color(const Color &p_ambient_light_color) { _ambient_light_color = p_ambient_light_color; }

@@ -69,6 +69,9 @@ void WorldEnvironment4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sky_material"), &WorldEnvironment4D::get_sky_material);
 	ClassDB::bind_method(D_METHOD("set_sky_material", "sky_material"), &WorldEnvironment4D::set_sky_material);
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "sky_material", PROPERTY_HINT_RESOURCE_TYPE, "SkyMaterial4D"), "set_sky_material", "get_sky_material");
+	ClassDB::bind_method(D_METHOD("get_cloud_material"), &WorldEnvironment4D::get_cloud_material);
+	ClassDB::bind_method(D_METHOD("set_cloud_material", "cloud_material"), &WorldEnvironment4D::set_cloud_material);
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "cloud_material", PROPERTY_HINT_RESOURCE_TYPE, "VolumetricCloudMaterial4D"), "set_cloud_material", "get_cloud_material");
 
 	ADD_GROUP("Ambient Light", "ambient_light_");
 	ClassDB::bind_method(D_METHOD("get_ambient_light_color"), &WorldEnvironment4D::get_ambient_light_color);

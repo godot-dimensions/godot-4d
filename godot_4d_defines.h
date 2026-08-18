@@ -26,6 +26,7 @@
 #define GET_NODE_TYPE(m_parent, m_type, m_path) m_parent->get_node<m_type>(NodePath(m_path))
 #define InputClassEnums Input
 #define MODULE_OVERRIDE
+#define PROPERTY_HINT_GROUP_ENABLE PROPERTY_HINT_NONE
 #define resize_initialized resize
 #define resize_uninitialized resize
 #define RSE RenderingServer
@@ -79,6 +80,9 @@ using namespace godot;
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
 // In Godot 4.5 and later, namespaces were capitalized: core_bind -> CoreBind.
 #define CoreBind core_bind
+
+// In Godot 4.5 and later, the "PROPERTY_HINT_GROUP_ENABLE" property hint was added.
+#define PROPERTY_HINT_GROUP_ENABLE PROPERTY_HINT_NONE
 
 // Prior to Godot 4.5, the vector resize API did not clarify whether it was initializing new elements or not.
 // See https://github.com/godotengine/godot/pull/104522

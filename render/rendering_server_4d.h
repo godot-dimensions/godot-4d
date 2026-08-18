@@ -21,6 +21,8 @@ class RenderingServer4D : public Object {
 	// We could add a "World4D" class in the future if we want to add this feature, but it's not necessary for now.
 	Vector<Light4D *> _lights;
 	Vector<MeshInstance4D *> _mesh_instances;
+	double _render_time_base = 0.0;
+	uint64_t _last_render_time_base_ticks_usec = 0;
 
 	PackedInt64Array _get_visible_light_object_ids() const;
 	PackedInt64Array _get_visible_mesh_instance_object_ids() const;
@@ -56,8 +58,10 @@ public:
 	void clear_world_environment_current(WorldEnvironment4D *p_world_environment);
 	WorldEnvironment4D *get_current_world_environment(Viewport *p_viewport) const;
 	WorldEnvironment4D *get_current_world_environment_for_camera(Camera4D *p_camera) const; // Internal use only, do not expose.
+	double get_render_time() const;
+	void set_render_time(const double p_render_time);
 
 	static RenderingServer4D *get_singleton() { return singleton; }
-	RenderingServer4D() { singleton = this; }
+	RenderingServer4D();
 	~RenderingServer4D();
 };

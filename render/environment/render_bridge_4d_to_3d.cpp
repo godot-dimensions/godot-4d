@@ -5,9 +5,33 @@
 #include "../rendering_server_4d.h"
 #include "world_environment_4d.h"
 
+static constexpr double CLOUD_NOISE_PERIOD = 289.0;
+static constexpr double CLOUD_SHAPE_OCTAVE_2_LACUNARITY = 2.03;
+static constexpr double CLOUD_SHAPE_OCTAVE_3_LACUNARITY = CLOUD_SHAPE_OCTAVE_2_LACUNARITY * 2.01;
+
+static Vector4 calculate_cloud_wind_offset(const Vector4 &p_wind_velocity, double p_time, double p_noise_scale) {
+	const double normalized_time = p_time / MAX(p_noise_scale, 0.0001);
+	// Perform each modulo in double precision before constructing the float-backed Vector4.
+	// Multiplying a Vector4 by an epoch-sized time before calling Vector4::posmod() would
+	// already have discarded the time precision that these compact offsets are meant to retain.
+	return Vector4(
+			Math::fposmod(double(p_wind_velocity.x) * normalized_time, CLOUD_NOISE_PERIOD),
+			Math::fposmod(double(p_wind_velocity.y) * normalized_time, CLOUD_NOISE_PERIOD),
+			Math::fposmod(double(p_wind_velocity.z) * normalized_time, CLOUD_NOISE_PERIOD),
+			Math::fposmod(double(p_wind_velocity.w) * normalized_time, CLOUD_NOISE_PERIOD));
+}
+
 bool EnvironmentRenderBridge4DTo3D::_is_renderer_sky_shader_parameter(const StringName &p_name) {
 	const String name = p_name;
-	return name == String("world_up_direction_4d") || name.begins_with("light0_") || name.begins_with("light1_") || name.begins_with("light2_") || name.begins_with("light3_");
+	return name == String("world_up_direction_4d") ||
+			name == String("cloud_camera_position_4d") ||
+			name == String("cloud_camera_basis_4d") ||
+			name == String("cloud_evolution_cos_sin") ||
+			name == String("cloud_shape_wind_offset_4d") ||
+			name == String("cloud_shape_octave_2_wind_offset_4d") ||
+			name == String("cloud_shape_octave_3_wind_offset_4d") ||
+			name == String("cloud_detail_wind_offset_4d") ||
+			name.begins_with("light0_") || name.begins_with("light1_") || name.begins_with("light2_") || name.begins_with("light3_");
 }
 
 void EnvironmentRenderBridge4DTo3D::_set_background_uses_sky(const bool p_enabled, const bool p_force_update) {
@@ -41,25 +65,17 @@ void EnvironmentRenderBridge4DTo3D::_set_sky_shader_parameter(const StringName &
 	_sky_material_4d_to_3d->set_shader_parameter(p_name, p_value);
 }
 
-bool EnvironmentRenderBridge4DTo3D::_sync_sky_material(const Ref<SkyMaterial4D> &p_sky_material_source) {
-	ERR_FAIL_COND_V(p_sky_material_source.is_null(), false);
-	ERR_FAIL_COND_V(_sky_material_4d_to_3d.is_null(), false);
-	const Ref<Shader> source_shader = p_sky_material_source->get_shader();
-	if (_sky_material_source_4d != p_sky_material_source || _sky_material_4d_to_3d->get_shader() != source_shader) {
-		_sky_material_source_4d = p_sky_material_source;
-		_sky_shader_parameter_cache.clear();
-		_sky_material_4d_to_3d->set_shader(source_shader);
-	}
-	if (source_shader.is_null()) {
-		return false;
-	}
+void EnvironmentRenderBridge4DTo3D::_copy_material_shader_parameters(const Ref<ShaderMaterial> &p_source_material) {
+	ERR_FAIL_COND(p_source_material.is_null());
+	const Ref<Shader> source_shader = p_source_material->get_shader();
+	ERR_FAIL_COND(source_shader.is_null());
 #if GDEXTENSION
 	const Array shader_uniforms = source_shader->get_shader_uniform_list();
 	for (int uniform_index = 0; uniform_index < shader_uniforms.size(); uniform_index++) {
 		const Dictionary uniform = shader_uniforms[uniform_index];
 		const StringName uniform_name = uniform["name"];
 		if (!_is_renderer_sky_shader_parameter(uniform_name)) {
-			_set_sky_shader_parameter(uniform_name, p_sky_material_source->get_shader_parameter(uniform_name));
+			_set_sky_shader_parameter(uniform_name, p_source_material->get_shader_parameter(uniform_name));
 		}
 	}
 #elif GODOT_MODULE
@@ -67,10 +83,41 @@ bool EnvironmentRenderBridge4DTo3D::_sync_sky_material(const Ref<SkyMaterial4D> 
 	source_shader->get_shader_uniform_list(&shader_uniforms);
 	for (const PropertyInfo &uniform : shader_uniforms) {
 		if (!_is_renderer_sky_shader_parameter(uniform.name)) {
-			_set_sky_shader_parameter(uniform.name, p_sky_material_source->get_shader_parameter(uniform.name));
+			_set_sky_shader_parameter(uniform.name, p_source_material->get_shader_parameter(uniform.name));
 		}
 	}
 #endif
+}
+
+bool EnvironmentRenderBridge4DTo3D::_sync_environment_materials(const Ref<SkyMaterial4D> &p_sky_material_source, const Ref<VolumetricCloudMaterial4D> &p_cloud_material_source) {
+	ERR_FAIL_COND_V(_sky_material_4d_to_3d.is_null(), false);
+	Ref<Shader> combined_shader;
+	bool clouds_supported = false;
+	if (p_cloud_material_source.is_valid()) {
+		combined_shader = p_cloud_material_source->get_shader_for_sky_material(p_sky_material_source);
+		clouds_supported = combined_shader.is_valid();
+		if (!clouds_supported && p_sky_material_source.is_valid()) {
+			WARN_PRINT_ONCE("VolumetricCloudMaterial4D currently supports GradientSkyMaterial4D, PhysicalSkyMaterial4D, PlainSkyMaterial4D, or no base sky. Rendering the custom SkyMaterial4D without clouds.");
+		}
+	}
+	if (combined_shader.is_null() && p_sky_material_source.is_valid()) {
+		combined_shader = p_sky_material_source->get_shader();
+	}
+	if (_sky_material_source_4d != p_sky_material_source || _cloud_material_source_4d != p_cloud_material_source || _sky_material_4d_to_3d->get_shader() != combined_shader) {
+		_sky_material_source_4d = p_sky_material_source;
+		_cloud_material_source_4d = p_cloud_material_source;
+		_sky_shader_parameter_cache.clear();
+		_sky_material_4d_to_3d->set_shader(combined_shader);
+	}
+	if (combined_shader.is_null()) {
+		return false;
+	}
+	if (p_sky_material_source.is_valid()) {
+		_copy_material_shader_parameters(p_sky_material_source);
+	}
+	if (clouds_supported) {
+		_copy_material_shader_parameters(p_cloud_material_source);
+	}
 	return true;
 }
 
@@ -97,13 +144,17 @@ void EnvironmentRenderBridge4DTo3D::update_environment(Camera4D *p_camera) {
 	WorldEnvironment4D *world_environment_4d = rendering_server_4d->get_current_world_environment_for_camera(p_camera);
 	if (world_environment_4d == nullptr) {
 		_set_background_uses_sky(false);
+		if (_cross_section_sky_3d->get_process_mode() != Sky::PROCESS_MODE_AUTOMATIC) {
+			_cross_section_sky_3d->set_process_mode(Sky::PROCESS_MODE_AUTOMATIC);
+		}
 		// _set_background_uses_sky() may return early if the previous environment also had no sky,
 		// but a missing WorldEnvironment4D must disable the previous environment's ambient color.
 		if (_cross_section_environment_3d->get_ambient_source() != Environment::AMBIENT_SOURCE_DISABLED) {
 			_cross_section_environment_3d->set_ambient_source(Environment::AMBIENT_SOURCE_DISABLED);
 		}
-		if (_sky_material_source_4d.is_valid()) {
+		if (_sky_material_source_4d.is_valid() || _cloud_material_source_4d.is_valid() || _sky_material_4d_to_3d->get_shader().is_valid()) {
 			_sky_material_source_4d.unref();
+			_cloud_material_source_4d.unref();
 			_sky_shader_parameter_cache.clear();
 			_sky_material_4d_to_3d->set_shader(Ref<Shader>());
 		}
@@ -128,12 +179,15 @@ void EnvironmentRenderBridge4DTo3D::update_environment(Camera4D *p_camera) {
 	if (_cross_section_environment_3d->get_tonemap_white() != world_environment_4d->get_tonemap_white()) {
 		_cross_section_environment_3d->set_tonemap_white(world_environment_4d->get_tonemap_white());
 	}
-	Ref<SkyMaterial4D> sky_material = world_environment_4d->get_sky_material();
-	bool sky_material_synced = false;
-	if (sky_material.is_valid()) {
-		sky_material_synced = _sync_sky_material(sky_material);
+	const Ref<SkyMaterial4D> sky_material = world_environment_4d->get_sky_material();
+	const Ref<VolumetricCloudMaterial4D> cloud_material = world_environment_4d->get_cloud_material();
+	const bool clouds_supported = cloud_material.is_valid() && cloud_material->get_shader_for_sky_material(sky_material).is_valid();
+	const bool environment_materials_synced = _sync_environment_materials(sky_material, cloud_material);
+	_set_background_uses_sky(environment_materials_synced);
+	const Sky::ProcessMode sky_process_mode = clouds_supported && cloud_material->is_animated() ? Sky::PROCESS_MODE_REALTIME : Sky::PROCESS_MODE_AUTOMATIC;
+	if (_cross_section_sky_3d->get_process_mode() != sky_process_mode) {
+		_cross_section_sky_3d->set_process_mode(sky_process_mode);
 	}
-	_set_background_uses_sky(sky_material_synced);
 	if (_cross_section_environment_3d->get_ambient_light_color() != world_environment_4d->get_ambient_light_color()) {
 		_cross_section_environment_3d->set_ambient_light_color(world_environment_4d->get_ambient_light_color());
 	}
@@ -141,19 +195,20 @@ void EnvironmentRenderBridge4DTo3D::update_environment(Camera4D *p_camera) {
 	if (_cross_section_environment_3d->get_ambient_light_sky_contribution() != ambient_sky_contribution) {
 		_cross_section_environment_3d->set_ambient_light_sky_contribution(ambient_sky_contribution);
 	}
-	const Environment::AmbientSource ambient_source = sky_material_synced ? Environment::AMBIENT_SOURCE_SKY : Environment::AMBIENT_SOURCE_COLOR;
+	const Environment::AmbientSource ambient_source = environment_materials_synced ? Environment::AMBIENT_SOURCE_SKY : Environment::AMBIENT_SOURCE_COLOR;
 	if (_cross_section_environment_3d->get_ambient_source() != ambient_source) {
 		_cross_section_environment_3d->set_ambient_source(ambient_source);
 	}
 	// With no sky material, reproduce the ordinary ambient color/sky blend by treating the missing sky as black.
 	// Scaling the energy applies the blend after the ambient color has been converted to linear color space.
-	const float ambient_light_energy = sky_material_synced ? 1.0f : 1.0f - ambient_sky_contribution;
+	const float ambient_light_energy = environment_materials_synced ? 1.0f : 1.0f - ambient_sky_contribution;
 	if (_cross_section_environment_3d->get_ambient_light_energy() != ambient_light_energy) {
 		_cross_section_environment_3d->set_ambient_light_energy(ambient_light_energy);
 	}
-	if (!sky_material_synced) {
-		if (_sky_material_source_4d.is_valid() || _sky_material_4d_to_3d->get_shader().is_valid()) {
+	if (!environment_materials_synced) {
+		if (_sky_material_source_4d.is_valid() || _cloud_material_source_4d.is_valid() || _sky_material_4d_to_3d->get_shader().is_valid()) {
 			_sky_material_source_4d.unref();
+			_cloud_material_source_4d.unref();
 			_sky_shader_parameter_cache.clear();
 			_sky_material_4d_to_3d->set_shader(Ref<Shader>());
 		}
@@ -168,6 +223,21 @@ void EnvironmentRenderBridge4DTo3D::update_environment(Camera4D *p_camera) {
 		world_up_direction_4d = Vector4(0.0f, 1.0f, 0.0f, 0.0f);
 	}
 	_set_sky_shader_parameter("world_up_direction_4d", world_up_direction_4d);
+	if (clouds_supported) {
+		const Transform4D camera_relative_to_environment = world_environment_4d->get_global_transform().inverse() * p_camera->get_global_transform();
+		_set_sky_shader_parameter("cloud_camera_position_4d", camera_relative_to_environment.origin);
+		_set_sky_shader_parameter("cloud_camera_basis_4d", (Projection)camera_relative_to_environment.basis);
+		const double cloud_time = cloud_material->is_animated() ? rendering_server_4d->get_render_time() : 0.0;
+		const double evolution_angle = Math::fposmod(cloud_time * double(cloud_material->get_evolution_speed()), double(Math_TAU));
+		const Vector2 evolution_cos_sin = Vector2((real_t)Math::cos(evolution_angle), (real_t)Math::sin(evolution_angle));
+		const Vector4 wind_velocity = cloud_material->get_wind_velocity();
+		const double shape_scale = cloud_material->get_shape_scale();
+		_set_sky_shader_parameter("cloud_evolution_cos_sin", evolution_cos_sin);
+		_set_sky_shader_parameter("cloud_shape_wind_offset_4d", calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale));
+		_set_sky_shader_parameter("cloud_shape_octave_2_wind_offset_4d", calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale / CLOUD_SHAPE_OCTAVE_2_LACUNARITY));
+		_set_sky_shader_parameter("cloud_shape_octave_3_wind_offset_4d", calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale / CLOUD_SHAPE_OCTAVE_3_LACUNARITY));
+		_set_sky_shader_parameter("cloud_detail_wind_offset_4d", calculate_cloud_wind_offset(wind_velocity, cloud_time, cloud_material->get_detail_scale()));
+	}
 }
 
 void EnvironmentRenderBridge4DTo3D::update_suns(const PackedInt64Array &p_light_object_ids, const TypedArray<Projection> &p_light_relative_basises) {
@@ -209,6 +279,7 @@ void EnvironmentRenderBridge4DTo3D::cleanup_render_resources() {
 	_cross_section_environment_3d = Ref<Environment>();
 	_cross_section_sky_3d = Ref<Sky>();
 	_sky_material_source_4d = Ref<SkyMaterial4D>();
+	_cloud_material_source_4d = Ref<VolumetricCloudMaterial4D>();
 	_sky_material_4d_to_3d = Ref<ShaderMaterial>();
 	_sky_shader_parameter_cache.clear();
 	_background_uses_sky = false;

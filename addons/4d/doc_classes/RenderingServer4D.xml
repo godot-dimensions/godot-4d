@@ -45,6 +45,12 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="render_time" type="float" setter="set_render_time" getter="get_render_time">
+			The shared double-precision time in seconds used by time-based 4D rendering effects. It is initialized from the system's Unix time, then advanced using a monotonic clock so later system clock adjustments do not cause discontinuities. Set this property to synchronize the rendering clock over multiplayer or restore it from a saved game.
+			This clock advances independently of [member Engine.time_scale] and while the scene tree is paused.
+		</member>
+	</members>
 	<signals>
 		<signal name="pre_render">
 			<param index="0" name="camera" type="Camera4D" />

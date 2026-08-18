@@ -32,6 +32,9 @@
 		<member name="ambient_light_sky_contribution" type="float" setter="set_ambient_light_sky_contribution" getter="get_ambient_light_sky_contribution" default="1.0">
 			The ratio of contribution from the sky to the total ambient light, compared to [member ambient_light_color]. A value of [code]0.0[/code] means the sky contributes nothing to ambient light, with all ambient light coming from [member ambient_light_color]. A value of [code]1.0[/code] means the sky contributes all ambient light, with none coming from [member ambient_light_color]. A value in-between blends the two sources of ambient light.
 		</member>
+		<member name="cloud_material" type="VolumetricCloudMaterial4D" setter="set_cloud_material" getter="get_cloud_material">
+			The procedural volumetric cloud layer rendered over [member sky_material]. If [member sky_material] is not set, clouds are rendered over a black background.
+		</member>
 		<member name="current" type="bool" setter="set_current" getter="is_current" default="false">
 			If [code]true[/code], this is the current 4D environment for its viewport.
 		</member>

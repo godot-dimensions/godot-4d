@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VolumetricCloudMaterial4D" inherits="ShaderMaterial" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A procedural volumetric cloud layer for a 4D environment.
+	</brief_description>
+	<description>
+		[VolumetricCloudMaterial4D] defines a height-bounded 4D density field and samples the part of that field visible in the current 3D cross-section. Assign it to [member WorldEnvironment4D.cloud_material]. Moving or rotating a [Camera4D], including along W, changes the visible cloud cross-section.
+		The cloud density uses textureless 4D simplex noise, including a three-octave fractal for the dominant cloud shapes. [member wind_velocity] advects the field in four dimensions, while [member evolution_speed] rotates its sampling coordinates according to [member RenderingServer4D.render_time]. Lighting uses an ambient term and the first enabled [DirectionalLight4D], with approximate volumetric self-shadowing.
+		Clouds can be rendered over a [GradientSkyMaterial4D], [PhysicalSkyMaterial4D], [PlainSkyMaterial4D], or the black fallback used when no sky material is assigned. Automatic composition with custom [SkyMaterial4D] subclasses is not supported.
+		[b]Note:[/b] Forward+ and Mobile sample clouds in a quarter-resolution sky subpass. Compatibility uses a more expensive full-resolution fallback.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="affect_radiance" type="bool" setter="set_affect_radiance" getter="is_affecting_radiance" default="true">
+			If [code]true[/code], clouds are included in the sky radiance cubemap used for ambient light and reflections. Disable this to omit cloud sampling from cubemap passes. Animated sky uniforms can still cause Godot to update the cubemap every frame.
+		</member>
+		<member name="albedo_color" type="Color" setter="set_albedo_color" getter="get_albedo_color" default="Color(1, 1, 1, 1)">
+			The color that tints light scattered by the clouds.
+		</member>
+		<member name="ambient_color" type="Color" setter="set_ambient_color" getter="get_ambient_color" default="Color(0.42, 0.48, 0.58, 1)">
+			The color of the light scattered through the clouds independently of any [DirectionalLight4D].
+		</member>
+		<member name="ambient_intensity" type="float" setter="set_ambient_intensity" getter="get_ambient_intensity" default="0.45">
+			The intensity of [member ambient_color].
+		</member>
+		<member name="animation_enabled" type="bool" setter="set_animation_enabled" getter="is_animation_enabled" default="true">
+			If [code]true[/code], [member wind_velocity] and [member evolution_speed] animate the density field using [member RenderingServer4D.render_time]. Disable this for a static field and to avoid updating the cloud animation phase uniforms every frame. Camera movement still changes the visible 4D cross-section.
+		</member>
+		<member name="bottom_height" type="float" setter="set_bottom_height" getter="get_bottom_height" default="1000.0">
+			The bottom of the cloud layer, in meters along the local Y axis of the [WorldEnvironment4D].
+		</member>
+		<member name="coverage" type="float" setter="set_coverage" getter="get_coverage" default="0.5">
+			The portion of the coarse noise field that forms clouds. Higher values produce more continuous cloud cover.
+		</member>
+		<member name="density" type="float" setter="set_density" getter="get_density" default="1.0">
+			A multiplier for sampled cloud density. Higher values make clouds more opaque without changing their overall shape.
+		</member>
+		<member name="detail_scale" type="float" setter="set_detail_scale" getter="get_detail_scale" default="350.0">
+			The spatial scale, in meters, of the fine noise used to erode cloud shapes. Smaller values produce finer detail. To avoid undersampling artifacts, fine erosion fades out smoothly as the distance between cloud samples increases from this value to twice this value.
+		</member>
+		<member name="detail_strength" type="float" setter="set_detail_strength" getter="get_detail_strength" default="0.35">
+			How strongly fine noise erodes the coarse cloud shape. At [code]0.0[/code], the fine noise is not sampled.
+		</member>
+		<member name="distance_fade_curve" type="float" setter="set_distance_fade_curve" getter="get_distance_fade_curve" default="0.25">
+			The easing curve applied to the exponential distance extinction between [member distance_fade_start] and [member maximum_ray_distance]. Higher values make extinction begin more rapidly after the fade starts, while lower values preserve cloud density farther into the fade interval.
+		</member>
+		<member name="distance_fade_start" type="float" setter="set_distance_fade_start" getter="get_distance_fade_start" default="0.0">
+			The fraction of [member maximum_ray_distance] at which exponential distance extinction begins. At [code]0.0[/code], density fades over the entire ray. Values near [code]1.0[/code] postpone the fade until close to the hard ray cutoff.
+		</member>
+		<member name="evolution_speed" type="float" setter="set_evolution_speed" getter="get_evolution_speed" default="0.01">
+			The angular speed, in radians per second, at which the 4D noise coordinates rotate in the XW and YZ planes. This changes cloud shapes in addition to the translation from [member wind_velocity].
+		</member>
+		<member name="extinction_coefficient" type="float" setter="set_extinction_coefficient" getter="get_extinction_coefficient" default="0.002">
+			The Beer-Lambert extinction coefficient, in inverse meters. Higher values make a given cloud density absorb and scatter light over a shorter distance.
+		</member>
+		<member name="maximum_ray_distance" type="float" setter="set_maximum_ray_distance" getter="get_maximum_ray_distance" default="20000.0">
+			The maximum distance, in meters, over which the cloud layer is sampled. [member distance_fade_start] and [member distance_fade_curve] make density optically negligible before this hard cutoff.
+		</member>
+		<member name="phase_anisotropy" type="float" setter="set_phase_anisotropy" getter="get_phase_anisotropy" default="0.55">
+			Controls the directional bias of light scattering. Positive values concentrate scattered light around the direction of the sun, [code]0.0[/code] is isotropic, and negative values favor the opposite direction.
+		</member>
+		<member name="sampling_method" type="int" setter="set_sampling_method" getter="get_sampling_method" enum="VolumetricCloudMaterial4D.SamplingMethod" default="1">
+			The algorithm used to sample the cloud volume. See [enum SamplingMethod].
+		</member>
+		<member name="sampling_steps" type="int" setter="set_sampling_steps" getter="get_sampling_steps" default="64">
+			The number of steps used by [member sampling_method]. Higher values restore finer noise detail and improve integration accuracy while increasing GPU cost. With [constant SAMPLING_METHOD_WORLD_GRID], this determines the grid spacing, and the number of grid segments traversed by a ray also depends on its 4D direction. With [constant SAMPLING_METHOD_JITTERED_RAYMARCH], this is the exact number of intervals along the cloud-layer intersection.
+			[b]Caution:[/b] This value is the primary factor that affects the performance of cloud rendering. Increasing it can significantly reduce frame rate, especially values above 64, and especially when using [constant SAMPLING_METHOD_JITTERED_RAYMARCH]. Reduce this value to improve performance, and/or switch to [constant SAMPLING_METHOD_WORLD_GRID] which works better with lower sampling budgets.
+		</member>
+		<member name="shadow_distance" type="float" setter="set_shadow_distance" getter="get_shadow_distance" default="600.0">
+			The distance, in meters, from each occupied ray sample to the additional coarse density sample taken toward the sun.
+		</member>
+		<member name="shadow_strength" type="float" setter="set_shadow_strength" getter="get_shadow_strength" default="1.0">
+			A multiplier for approximate cloud self-shadowing. At [code]0.0[/code], the shadow density sample does not darken direct light.
+		</member>
+		<member name="shape_fractal_strength" type="float" setter="set_shape_fractal_strength" getter="get_shape_fractal_strength" default="0.5">
+			The amplitude multiplier between successive octaves of the dominant shape noise. At [code]0.0[/code], both additional shape octaves are skipped. At [code]0.5[/code], each octave contributes half as much as the preceding octave. Higher values make smaller cloud features more prominent. The evaluated octaves also depend on the sampling resolution; unresolved octaves are filtered toward their average value. The approximate shadow probe uses only the first octave.
+		</member>
+		<member name="shape_scale" type="float" setter="set_shape_scale" getter="get_shape_scale" default="1800.0">
+			The spatial scale, in meters, of the coarse noise that defines the main cloud shapes. Larger values produce larger cloud formations.
+		</member>
+		<member name="sun_intensity" type="float" setter="set_sun_intensity" getter="get_sun_intensity" default="1.0">
+			A multiplier for direct light scattered from the first enabled [DirectionalLight4D].
+		</member>
+		<member name="vertical_thickness" type="float" setter="set_vertical_thickness" getter="get_vertical_thickness" default="2500.0">
+			The vertical thickness of the cloud layer in meters.
+		</member>
+		<member name="wind_velocity" type="Vector4" setter="set_wind_velocity" getter="get_wind_velocity" default="Vector4(12, 0, 4, 2)">
+			The velocity, in meters per second, at which cloud features move through 4D space. A nonzero W component evolves the visible cross-section even when the camera and XYZ coordinates are stationary.
+		</member>
+	</members>
+	<constants>
+		<constant name="SAMPLING_METHOD_WORLD_GRID" value="0" enum="SamplingMethod">
+			Integrates cloud density along segments bounded by crossings of a stationary, world-aligned 4D grid. This method is faster and retains useful cloud structure at lower [member sampling_steps], making it suitable for performance-constrained settings and shorter cloud distances. The grid spacing is [member maximum_ray_distance] divided by [member sampling_steps]. Increasing [member maximum_ray_distance] without increasing [member sampling_steps] produces larger grid cells. These cells can appear as soft, blocky cloud shapes, especially at low [member coverage].
+		</constant>
+		<constant name="SAMPLING_METHOD_JITTERED_RAYMARCH" value="1" enum="SamplingMethod">
+			Divides each viewing ray's cloud-layer intersection into [member sampling_steps] intervals and offsets the sample positions per pixel. This method preserves finer variation along the viewing ray and scales better to long viewing distances, but is slower and intended for higher sampling budgets. Insufficient sampling density appears as grain, especially when the camera is inside the cloud layer.
+		</constant>
+	</constants>
+</class>

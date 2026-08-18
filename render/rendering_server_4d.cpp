@@ -11,6 +11,7 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/time.hpp>
 #ifdef TOOLS_ENABLED
 #include <godot_cpp/classes/editor_interface.hpp>
 #endif // TOOLS_ENABLED
@@ -19,6 +20,7 @@
 #include <godot_cpp/classes/window.hpp>
 #elif GODOT_MODULE
 #include "core/config/engine.h"
+#include "core/os/time.h"
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
 #endif // TOOLS_ENABLED
@@ -30,6 +32,14 @@
 #include "servers/rendering/rendering_server.h"
 #endif
 #endif
+
+RenderingServer4D::RenderingServer4D() {
+	singleton = this;
+	Time *time_singleton = Time::get_singleton();
+	ERR_FAIL_NULL(time_singleton);
+	_render_time_base = time_singleton->get_unix_time_from_system();
+	_last_render_time_base_ticks_usec = time_singleton->get_ticks_usec();
+}
 
 RenderingServer4D::~RenderingServer4D() {
 	for (const KeyValue<Viewport *, Vector<Camera4D *>> &E : _viewport_cameras) {
@@ -47,6 +57,24 @@ RenderingServer4D::~RenderingServer4D() {
 	_viewport_world_environments.clear();
 	_rendering_engines.clear();
 	singleton = nullptr;
+}
+
+double RenderingServer4D::get_render_time() const {
+	Time *time_singleton = Time::get_singleton();
+	ERR_FAIL_NULL_V(time_singleton, _render_time_base);
+	const uint64_t current_ticks_usec = time_singleton->get_ticks_usec();
+	if (current_ticks_usec < _last_render_time_base_ticks_usec) {
+		return _render_time_base;
+	}
+	return _render_time_base + double(current_ticks_usec - _last_render_time_base_ticks_usec) / 1000000.0;
+}
+
+void RenderingServer4D::set_render_time(double p_render_time) {
+	ERR_FAIL_COND_MSG(!Math::is_finite(p_render_time), "RenderingServer4D render_time must be finite.");
+	_render_time_base = p_render_time;
+	Time *time_singleton = Time::get_singleton();
+	ERR_FAIL_NULL(time_singleton);
+	_last_render_time_base_ticks_usec = time_singleton->get_ticks_usec();
 }
 
 PackedInt64Array RenderingServer4D::_get_visible_light_object_ids() const {
@@ -444,6 +472,9 @@ WorldEnvironment4D *RenderingServer4D::get_current_world_environment_for_camera(
 RenderingServer4D *RenderingServer4D::singleton = nullptr;
 
 void RenderingServer4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_render_time"), &RenderingServer4D::get_render_time);
+	ClassDB::bind_method(D_METHOD("set_render_time", "render_time"), &RenderingServer4D::set_render_time);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "render_time", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_render_time", "get_render_time");
 	ClassDB::bind_method(D_METHOD("get_current_camera", "viewport"), &RenderingServer4D::get_current_camera);
 	ClassDB::bind_method(D_METHOD("get_current_world_environment", "viewport"), &RenderingServer4D::get_current_world_environment);
 	ClassDB::bind_method(D_METHOD("register_rendering_engine", "engine"), &RenderingServer4D::register_rendering_engine);
