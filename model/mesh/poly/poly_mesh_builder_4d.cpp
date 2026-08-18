@@ -190,6 +190,9 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			if (next_dim_poly_index >= poly_cell_indices.size()) {
 				// This may only happen once per call to `extrude_linear`.
 				poly_cell_indices.resize_initialized(next_dim_poly_index + 1);
+				for (int i = poly_cell_indices.size(); i < next_dim_poly_index + 1; i++) {
+					poly_cell_indices.set(i, Vector<PackedInt32Array>());
+				}
 			}
 			Vector<PackedInt32Array> next_dim_cell_indices = poly_cell_indices[next_dim_poly_index];
 			PackedInt32Array next_dim_cell_to_extruded_cell;
@@ -1068,9 +1071,13 @@ Vector<PackedInt32Array> PolyMeshBuilder4D::_compose_triangles_into_faces(const 
 			}
 		}
 		// Iterate through the triangles, marking any we've dealt with already as visited.
+		const int64_t coplanar_tri_count = coplanar_tri_set.size();
 		Vector<bool> visited_triangles;
-		visited_triangles.resize_initialized(coplanar_tri_set.size());
-		for (int64_t triangle_seed = 0; triangle_seed < coplanar_tri_set.size(); triangle_seed++) {
+		visited_triangles.resize_initialized(coplanar_tri_count);
+		for (int64_t coplanar_tri_index = 0; coplanar_tri_index < coplanar_tri_count; coplanar_tri_index++) {
+			visited_triangles.set(coplanar_tri_index, false);
+		}
+		for (int64_t triangle_seed = 0; triangle_seed < coplanar_tri_count; triangle_seed++) {
 			if (visited_triangles[triangle_seed]) {
 				continue;
 			}

@@ -1210,10 +1210,16 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 		// Prepare a cache for inferred vertex texcoords for pivot overrides.
 		const PackedVector4Array poly_cell_vertices = get_poly_cell_vertices();
 		const PackedInt32Array poly_cell_boundary_pivot_overrides = get_poly_cell_boundary_pivot_overrides();
+		const int64_t cell_vert_count = cell_vert.size();
 		Vector<int8_t> cached_inference_state;
-		cached_inference_state.resize_initialized(cell_vert.size());
+		cached_inference_state.resize_initialized(cell_vert_count);
 		PackedVector3Array cached_inferred_texcoord;
-		cached_inferred_texcoord.resize(cell_vert.size());
+		cached_inferred_texcoord.resize(cell_vert_count);
+		// Explicitly initialize these to support older Godot versions that don't recognize `resize_initialized`.
+		for (int64_t cell_vert_index = 0; cell_vert_index < cell_vert_count; cell_vert_index++) {
+			cached_inference_state.set(cell_vert_index, (int8_t)0);
+			cached_inferred_texcoord.set(cell_vert_index, Vector3());
+		}
 		// Fill the texture map cache for each simplex cell using data from the corresponding source polytope cell.
 		_simplex_cell_uvw_texture_map_cache.resize(simplex_count * 4);
 		bool has_some_texture_map = false;
