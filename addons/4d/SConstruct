@@ -156,6 +156,7 @@ def add_glsl_header(source_path):
 
 
 add_glsl_header("../../render/3d/cross_section/tetra_cross_section_shader.glsl")
+add_glsl_header("../../render/3d/projected/normalize_transparency.glsl")
 add_glsl_header("../../render/3d/projected/tetra_projected_shader.glsl")
 add_glsl_header("../../render/3d/shaders/tetra_light_shader.glsl")
 add_glsl_header("../../render/3d/shaders/wireframe_shader_3d.glsl")
