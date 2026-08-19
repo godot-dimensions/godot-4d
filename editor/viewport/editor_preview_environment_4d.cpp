@@ -2,6 +2,7 @@
 
 #include "../../nodes/light/directional_light_4d.h"
 #include "../../render/environment/sky/gradient_sky_material_4d.h"
+#include "../../render/environment/sky/plain_sky_material_4d.h"
 #include "../../render/environment/world_environment_4d.h"
 
 #ifdef TOOLS_ENABLED
@@ -18,12 +19,8 @@
 #endif // TOOLS_ENABLED
 
 #if GDEXTENSION
-#include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
-#include <godot_cpp/classes/v_separator.hpp>
 #elif GODOT_MODULE
-#include "scene/gui/label.h"
-#include "scene/gui/separator.h"
 #include "scene/main/scene_tree.h"
 #endif
 
@@ -179,6 +176,7 @@ void EditorPreviewEnvironment4D::_reset_sun() {
 }
 
 void EditorPreviewEnvironment4D::_reset_environment() {
+	_environment_single_color->set_pick_color(Color(0.0f, 0.0f, 0.0f));
 	_environment_top_color->set_pick_color(Color(0.385f, 0.454f, 0.55f));
 	_environment_horizon_color->set_pick_color(Color(0.6463f, 0.6558f, 0.6708f));
 	_environment_bottom_color->set_pick_color(Color(0.2f, 0.169f, 0.133f));
@@ -197,21 +195,32 @@ void EditorPreviewEnvironment4D::apply_to_nodes() const {
 	_preview_sun->set_rotation(sun_rotation);
 	_preview_sun->set_light_color(_sun_color->get_pick_color());
 	_preview_sun->set_light_energy(_sun_energy->get_value());
-	Ref<GradientSkyMaterial4D> gradient_sky_material = _preview_world_environment->get_sky_material();
-	if (gradient_sky_material.is_null()) {
-		gradient_sky_material.instantiate();
-		_preview_world_environment->set_sky_material(gradient_sky_material);
+	if (_rendering_engine_supports_lighting) {
+		Ref<GradientSkyMaterial4D> gradient_sky_material = _preview_world_environment->get_sky_material();
+		if (gradient_sky_material.is_null()) {
+			gradient_sky_material.instantiate();
+			_preview_world_environment->set_sky_material(gradient_sky_material);
+		}
+		gradient_sky_material->set_top_color(_environment_top_color->get_pick_color());
+		gradient_sky_material->set_horizon_color(_environment_horizon_color->get_pick_color());
+		gradient_sky_material->set_bottom_color(_environment_bottom_color->get_pick_color());
+		gradient_sky_material->set_energy_multiplier(_environment_energy_multiplier->get_value());
+	} else {
+		Ref<PlainSkyMaterial4D> plain_sky_material = _preview_world_environment->get_sky_material();
+		if (plain_sky_material.is_null()) {
+			plain_sky_material.instantiate();
+			_preview_world_environment->set_sky_material(plain_sky_material);
+		}
+		plain_sky_material->set_color(_environment_single_color->get_pick_color());
 	}
-	gradient_sky_material->set_top_color(_environment_top_color->get_pick_color());
-	gradient_sky_material->set_horizon_color(_environment_horizon_color->get_pick_color());
-	gradient_sky_material->set_bottom_color(_environment_bottom_color->get_pick_color());
-	gradient_sky_material->set_energy_multiplier(_environment_energy_multiplier->get_value());
 }
 
 void EditorPreviewEnvironment4D::_update_environment(const bool p_toggled_ignored) {
 	if (_preview_sun != nullptr) {
 		const bool scene_has_directional_light = _edited_scene_contains("DirectionalLight4D");
 		_toggle_preview_sun_button->set_disabled(scene_has_directional_light);
+		_sun_settings_disabled_label->set_visible(scene_has_directional_light);
+		_sun_properties_vbox->set_visible(!scene_has_directional_light);
 		const bool preview_sunlight_enabled = is_visible_in_tree() && _toggle_preview_sun_button->is_pressed() && !scene_has_directional_light;
 		_preview_sun->set_visible(preview_sunlight_enabled);
 	}
@@ -228,6 +237,8 @@ void EditorPreviewEnvironment4D::_update_environment(const bool p_toggled_ignore
 	}
 	const bool scene_has_world_environment = !scene_world_environments.is_empty();
 	_toggle_preview_environment_button->set_disabled(scene_has_world_environment);
+	_environment_settings_disabled_label->set_visible(scene_has_world_environment);
+	_environment_properties_vbox->set_visible(!scene_has_world_environment);
 	const bool preview_environment_enabled = is_visible_in_tree() && _toggle_preview_environment_button->is_pressed() && !scene_has_world_environment;
 	if (preview_environment_enabled) {
 		_preview_world_environment->make_current();
@@ -255,9 +266,21 @@ void EditorPreviewEnvironment4D::_update_theme() {
 	// Set the minimum height of the color pickers.
 	const Size2 min_color_size = Size2(100.0f, 30.0f) * EDSCALE;
 	_sun_color->set_custom_minimum_size(min_color_size);
+	_environment_single_color->set_custom_minimum_size(min_color_size);
 	_environment_top_color->set_custom_minimum_size(min_color_size);
 	_environment_horizon_color->set_custom_minimum_size(min_color_size);
 	_environment_bottom_color->set_custom_minimum_size(min_color_size);
+}
+
+void EditorPreviewEnvironment4D::set_rendering_engine_supports_lighting(const bool p_supported) {
+	_rendering_engine_supports_lighting = p_supported;
+	_toggle_preview_sun_button->set_visible(p_supported);
+	_sun_column_vbox->set_visible(p_supported);
+	_sun_environment_separator->set_visible(p_supported);
+	_environment_single_color_label->set_visible(!p_supported);
+	_environment_single_color->set_visible(!p_supported);
+	_environment_lit_sky_properties_vbox->set_visible(p_supported);
+	apply_to_nodes();
 }
 
 void EditorPreviewEnvironment4D::setup(EditorMainScreen4D *p_editor_main_screen, EditorUndoRedoManager *p_undo_redo, const Ref<ConfigFile> &p_config_file, const String &p_config_file_path) {
@@ -297,16 +320,34 @@ void EditorPreviewEnvironment4D::setup(EditorMainScreen4D *p_editor_main_screen,
 	_sun_environment_popup = memnew(PopupPanel);
 	add_child(_sun_environment_popup);
 	HBoxContainer *sun_environment_hbox = memnew(HBoxContainer);
+	sun_environment_hbox->set_h_size_flags(SIZE_EXPAND_FILL);
+	sun_environment_hbox->set_v_size_flags(SIZE_EXPAND_FILL);
+	sun_environment_hbox->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
 	_sun_environment_popup->add_child(sun_environment_hbox);
+	constexpr float MIN_COLUMN_HEIGHT = 130.0f;
 
-	_sun_properties_vbox = memnew(VBoxContainer);
-	_sun_properties_vbox->set_custom_minimum_size(Size2(240.0f, 200.0f) * EDSCALE);
-	sun_environment_hbox->add_child(_sun_properties_vbox);
+	_sun_column_vbox = memnew(VBoxContainer);
+	_sun_column_vbox->set_custom_minimum_size(Size2(240.0f, MIN_COLUMN_HEIGHT) * EDSCALE);
+	_sun_column_vbox->set_v_size_flags(SIZE_EXPAND_FILL);
+	sun_environment_hbox->add_child(_sun_column_vbox);
 	Label *sun_title = memnew(Label);
 	sun_title->set_theme_type_variation("HeaderMedium");
 	sun_title->set_text(TTR("Preview Sun"));
 	sun_title->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-	_sun_properties_vbox->add_child(sun_title);
+	_sun_column_vbox->add_child(sun_title);
+
+	_sun_settings_disabled_label = memnew(Label);
+	// Translations may alter the placement of line breaks, keeping the lines at a limited width.
+	_sun_settings_disabled_label->set_text(TTR("Disabled because a\nDirectionalLight4D\nnode exists in the scene."));
+	_sun_settings_disabled_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD);
+	_sun_settings_disabled_label->set_h_size_flags(SIZE_EXPAND_FILL);
+	_sun_settings_disabled_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+	_sun_settings_disabled_label->set_visible(false);
+	_sun_column_vbox->add_child(_sun_settings_disabled_label);
+
+	_sun_properties_vbox = memnew(VBoxContainer);
+	_sun_properties_vbox->set_h_size_flags(SIZE_EXPAND_FILL);
+	_sun_column_vbox->add_child(_sun_properties_vbox);
 
 	Label *sun_altitude_label = memnew(Label);
 	sun_altitude_label->set_text(TTR("Angular Altitude"));
@@ -379,7 +420,8 @@ void EditorPreviewEnvironment4D::setup(EditorMainScreen4D *p_editor_main_screen,
 	_sun_energy->set_value(p_config_file->get_value("preview_environment", "sun_energy", 1.0));
 	_sun_energy->connect(StringName("value_changed"), callable_mp(this, &EditorPreviewEnvironment4D::_on_sun_energy_changed));
 	_sun_properties_vbox->add_child(_sun_energy);
-	_sun_properties_vbox->add_spacer(false);
+
+	_sun_properties_vbox->add_spacer(false)->set_v_size_flags(SIZE_EXPAND_FILL);
 	HBoxContainer *sun_action_hbox = memnew(HBoxContainer);
 	_sun_properties_vbox->add_child(sun_action_hbox);
 	Button *sun_reset_button = memnew(Button);
@@ -405,52 +447,80 @@ void EditorPreviewEnvironment4D::setup(EditorMainScreen4D *p_editor_main_screen,
 	_preview_world_environment->set_tonemapper(WorldEnvironment4D::TONE_MAPPER_FILMIC);
 	add_child(_preview_world_environment);
 
-	VSeparator *sun_environment_separator = memnew(VSeparator);
-	sun_environment_separator->set_custom_minimum_size(Size2(10.0f, 200.0f) * EDSCALE);
-	sun_environment_separator->set_v_size_flags(SIZE_EXPAND_FILL);
-	sun_environment_hbox->add_child(sun_environment_separator);
+	_sun_environment_separator = memnew(VSeparator);
+	_sun_environment_separator->set_custom_minimum_size(Size2(10.0f, MIN_COLUMN_HEIGHT) * EDSCALE);
+	_sun_environment_separator->set_v_size_flags(SIZE_EXPAND_FILL);
+	sun_environment_hbox->add_child(_sun_environment_separator);
 
-	_environment_properties_vbox = memnew(VBoxContainer);
-	_environment_properties_vbox->set_custom_minimum_size(Size2(200.0f, 200.0f) * EDSCALE);
-	sun_environment_hbox->add_child(_environment_properties_vbox);
+	_environment_column_vbox = memnew(VBoxContainer);
+	_environment_column_vbox->set_v_size_flags(SIZE_EXPAND_FILL);
+	_environment_column_vbox->set_custom_minimum_size(Size2(200.0f, MIN_COLUMN_HEIGHT) * EDSCALE);
+	sun_environment_hbox->add_child(_environment_column_vbox);
 	Label *environment_title = memnew(Label);
 	environment_title->set_theme_type_variation("HeaderMedium");
 	environment_title->set_text(TTR("Preview Environment"));
 	environment_title->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-	_environment_properties_vbox->add_child(environment_title);
+	_environment_column_vbox->add_child(environment_title);
+
+	_environment_settings_disabled_label = memnew(Label);
+	// Translations may alter the placement of line breaks, keeping the lines at a limited width.
+	_environment_settings_disabled_label->set_text(TTR("Disabled because a\nWorldEnvironment4D\nnode exists in the scene."));
+	_environment_settings_disabled_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD);
+	_environment_settings_disabled_label->set_h_size_flags(SIZE_EXPAND_FILL);
+	_environment_settings_disabled_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+	_environment_settings_disabled_label->set_visible(false);
+	_environment_column_vbox->add_child(_environment_settings_disabled_label);
+
+	_environment_properties_vbox = memnew(VBoxContainer);
+	_environment_properties_vbox->set_h_size_flags(SIZE_EXPAND_FILL);
+	_environment_column_vbox->add_child(_environment_properties_vbox);
+
+	_environment_single_color_label = memnew(Label);
+	_environment_single_color_label->set_text(TTR("Single Color"));
+	_environment_properties_vbox->add_child(_environment_single_color_label);
+	_environment_single_color = memnew(ColorPickerButton);
+	_environment_single_color->set_h_size_flags(SIZE_EXPAND_FILL);
+	_environment_single_color->set_edit_alpha(false);
+	_environment_single_color->set_pick_color(p_config_file->get_value("preview_environment", "single_color", Color(0.0f, 0.0f, 0.0f)));
+	_environment_single_color->connect(StringName("color_changed"), callable_mp(this, &EditorPreviewEnvironment4D::_on_environment_color_changed));
+	_environment_properties_vbox->add_child(_environment_single_color);
+
+	_environment_lit_sky_properties_vbox = memnew(VBoxContainer);
+	_environment_lit_sky_properties_vbox->set_h_size_flags(SIZE_EXPAND_FILL);
+	_environment_properties_vbox->add_child(_environment_lit_sky_properties_vbox);
 
 	// Keep these colors in sync with `gradient_sky_shader.glsl`,
 	// `GradientSkyMaterial4D`, and Godot's 3D `ProceduralSkyMaterial`.
 	Label *environment_top_color_label = memnew(Label);
 	environment_top_color_label->set_text(TTR("Top Color"));
-	_environment_properties_vbox->add_child(environment_top_color_label);
+	_environment_lit_sky_properties_vbox->add_child(environment_top_color_label);
 	_environment_top_color = memnew(ColorPickerButton);
 	_environment_top_color->set_h_size_flags(SIZE_EXPAND_FILL);
 	_environment_top_color->set_edit_alpha(false);
 	_environment_top_color->set_pick_color(p_config_file->get_value("preview_environment", "top_color", Color(0.385f, 0.454f, 0.55f)));
 	_environment_top_color->connect(StringName("color_changed"), callable_mp(this, &EditorPreviewEnvironment4D::_on_environment_color_changed));
-	_environment_properties_vbox->add_child(_environment_top_color);
+	_environment_lit_sky_properties_vbox->add_child(_environment_top_color);
 	Label *environment_horizon_color_label = memnew(Label);
 	environment_horizon_color_label->set_text(TTR("Horizon Color"));
-	_environment_properties_vbox->add_child(environment_horizon_color_label);
+	_environment_lit_sky_properties_vbox->add_child(environment_horizon_color_label);
 	_environment_horizon_color = memnew(ColorPickerButton);
 	_environment_horizon_color->set_h_size_flags(SIZE_EXPAND_FILL);
 	_environment_horizon_color->set_edit_alpha(false);
 	_environment_horizon_color->set_pick_color(p_config_file->get_value("preview_environment", "horizon_color", Color(0.6463f, 0.6558f, 0.6708f)));
 	_environment_horizon_color->connect(StringName("color_changed"), callable_mp(this, &EditorPreviewEnvironment4D::_on_environment_color_changed));
-	_environment_properties_vbox->add_child(_environment_horizon_color);
+	_environment_lit_sky_properties_vbox->add_child(_environment_horizon_color);
 	Label *environment_bottom_color_label = memnew(Label);
 	environment_bottom_color_label->set_text(TTR("Bottom Color"));
-	_environment_properties_vbox->add_child(environment_bottom_color_label);
+	_environment_lit_sky_properties_vbox->add_child(environment_bottom_color_label);
 	_environment_bottom_color = memnew(ColorPickerButton);
 	_environment_bottom_color->set_h_size_flags(SIZE_EXPAND_FILL);
 	_environment_bottom_color->set_edit_alpha(false);
 	_environment_bottom_color->set_pick_color(p_config_file->get_value("preview_environment", "bottom_color", Color(0.2f, 0.169f, 0.133f)));
 	_environment_bottom_color->connect(StringName("color_changed"), callable_mp(this, &EditorPreviewEnvironment4D::_on_environment_color_changed));
-	_environment_properties_vbox->add_child(_environment_bottom_color);
+	_environment_lit_sky_properties_vbox->add_child(_environment_bottom_color);
 	Label *environment_energy_multiplier_label = memnew(Label);
 	environment_energy_multiplier_label->set_text(TTR("Energy Multiplier"));
-	_environment_properties_vbox->add_child(environment_energy_multiplier_label);
+	_environment_lit_sky_properties_vbox->add_child(environment_energy_multiplier_label);
 	_environment_energy_multiplier = memnew(EditorSpinSlider);
 	_environment_energy_multiplier->set_min(0.1);
 	_environment_energy_multiplier->set_max(2.0);
@@ -460,8 +530,9 @@ void EditorPreviewEnvironment4D::setup(EditorMainScreen4D *p_editor_main_screen,
 	_environment_energy_multiplier->set_allow_lesser(true);
 	_environment_energy_multiplier->set_value(p_config_file->get_value("preview_environment", "energy_multiplier", 1.0));
 	_environment_energy_multiplier->connect(StringName("value_changed"), callable_mp(this, &EditorPreviewEnvironment4D::_on_environment_energy_multiplier_changed));
-	_environment_properties_vbox->add_child(_environment_energy_multiplier);
-	_environment_properties_vbox->add_spacer(false);
+	_environment_lit_sky_properties_vbox->add_child(_environment_energy_multiplier);
+
+	_environment_properties_vbox->add_spacer(false)->set_v_size_flags(SIZE_EXPAND_FILL);
 	HBoxContainer *environment_action_hbox = memnew(HBoxContainer);
 	_environment_properties_vbox->add_child(environment_action_hbox);
 	Button *environment_reset_button = memnew(Button);
@@ -505,6 +576,9 @@ void EditorPreviewEnvironment4D::write_to_config_file() const {
 	}
 	if (!Math::is_equal_approx(_sun_energy->get_value(), 1.0)) {
 		_4d_editor_config_file->set_value("preview_environment", "sun_energy", _sun_energy->get_value());
+	}
+	if (!_environment_single_color->get_pick_color().is_equal_approx(Color(0.0f, 0.0f, 0.0f))) {
+		_4d_editor_config_file->set_value("preview_environment", "single_color", _environment_single_color->get_pick_color());
 	}
 	if (!_environment_top_color->get_pick_color().is_equal_approx(Color(0.385f, 0.454f, 0.55f))) {
 		_4d_editor_config_file->set_value("preview_environment", "top_color", _environment_top_color->get_pick_color());

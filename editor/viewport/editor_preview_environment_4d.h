@@ -9,15 +9,19 @@
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/editor_spin_slider.hpp>
 #include <godot_cpp/classes/h_box_container.hpp>
+#include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/popup_panel.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
+#include <godot_cpp/classes/v_separator.hpp>
 #elif GODOT_MODULE
 #include "core/io/config_file.h"
 #include "editor/gui/editor_spin_slider.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/color_picker.h"
+#include "scene/gui/label.h"
 #include "scene/gui/popup.h"
+#include "scene/gui/separator.h"
 #endif
 
 class DirectionalLight4D;
@@ -30,6 +34,7 @@ class EditorPreviewEnvironment4D : public HBoxContainer {
 	EditorUndoRedoManager *_undo_redo = nullptr;
 	Ref<ConfigFile> _4d_editor_config_file;
 	String _4d_editor_config_file_path;
+	bool _rendering_engine_supports_lighting = false;
 
 	// Nodes in the scene.
 	DirectionalLight4D *_preview_sun = nullptr;
@@ -42,13 +47,23 @@ class EditorPreviewEnvironment4D : public HBoxContainer {
 
 	// The popup panel and its members.
 	PopupPanel *_sun_environment_popup = nullptr;
+	VSeparator *_sun_environment_separator = nullptr;
+
+	VBoxContainer *_sun_column_vbox = nullptr;
+	Label *_sun_settings_disabled_label = nullptr;
 	VBoxContainer *_sun_properties_vbox = nullptr;
 	EditorSpinSlider *_sun_angle_altitude = nullptr;
 	EditorSpinSlider *_sun_angle_azimuth_zx = nullptr;
 	EditorSpinSlider *_sun_angle_azimuth_zw = nullptr;
 	ColorPickerButton *_sun_color = nullptr;
 	EditorSpinSlider *_sun_energy = nullptr;
+
+	VBoxContainer *_environment_column_vbox = nullptr;
+	Label *_environment_settings_disabled_label = nullptr;
 	VBoxContainer *_environment_properties_vbox = nullptr;
+	Label *_environment_single_color_label = nullptr;
+	ColorPickerButton *_environment_single_color = nullptr;
+	VBoxContainer *_environment_lit_sky_properties_vbox = nullptr;
 	ColorPickerButton *_environment_top_color = nullptr;
 	ColorPickerButton *_environment_horizon_color = nullptr;
 	ColorPickerButton *_environment_bottom_color = nullptr;
@@ -75,6 +90,7 @@ protected:
 
 public:
 	void apply_to_nodes() const;
+	void set_rendering_engine_supports_lighting(const bool p_supported);
 	void setup(EditorMainScreen4D *p_editor_main_screen, EditorUndoRedoManager *p_undo_redo, const Ref<ConfigFile> &p_config_file, const String &p_config_file_path);
 	void write_to_config_file() const;
 };

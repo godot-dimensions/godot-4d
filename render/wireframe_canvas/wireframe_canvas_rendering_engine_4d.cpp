@@ -2,6 +2,9 @@
 
 #include "../../model/mesh/mesh_instance_4d.h"
 #include "../../model/mesh/wire/wire_material_4d.h"
+#include "../environment/sky/plain_sky_material_4d.h"
+#include "../environment/world_environment_4d.h"
+#include "../rendering_server_4d.h"
 #include "wireframe_render_canvas_4d.h"
 
 Color WireframeCanvasRenderingEngine4D::_get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index) {
@@ -27,7 +30,21 @@ void WireframeCanvasRenderingEngine4D::cleanup_for_viewport() {
 void WireframeCanvasRenderingEngine4D::render_frame() {
 	WireframeRenderCanvas4D *wire_canvas = GET_NODE_TYPE(get_viewport(), WireframeRenderCanvas4D, "WireframeRenderCanvas4D");
 	ERR_FAIL_NULL_MSG(wire_canvas, "WireframeCanvasRenderingEngine4D: Canvas was null.");
-	const Camera4D *camera = get_camera();
+	Camera4D *camera = get_camera();
+	ERR_FAIL_NULL(camera);
+	// Set the background color of the canvas to the current world environment's plain sky color, if available.
+	RenderingServer4D *rendering_server_4d = RenderingServer4D::get_singleton();
+	ERR_FAIL_NULL(rendering_server_4d);
+	WorldEnvironment4D *world_environment_4d = rendering_server_4d->get_current_world_environment_for_camera(camera);
+	Color background_color = Color(0.0f, 0.0f, 0.0f);
+	if (world_environment_4d != nullptr) {
+		Ref<PlainSkyMaterial4D> plain_sky_mat = world_environment_4d->get_sky_material();
+		if (plain_sky_mat.is_valid()) {
+			background_color = plain_sky_mat->get_color() * plain_sky_mat->get_energy_multiplier();
+		}
+	}
+	wire_canvas->set_background_color(background_color);
+	// Draw edges for each mesh instance in the scene.
 	Vector<PackedColorArray> edge_colors_to_draw;
 	PackedFloat32Array edge_thicknesses_to_draw;
 	Vector<PackedVector2Array> edge_vertices_to_draw;

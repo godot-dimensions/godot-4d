@@ -212,7 +212,7 @@ void EditorMainScreen4D::_update_rendering_engine_menu() {
 	ERR_FAIL_NULL(_editor_main_viewports[0]);
 	const Ref<RenderingEngine4D> rendering_engine = _editor_main_viewports[0]->get_rendering_engine();
 	ERR_FAIL_COND(rendering_engine.is_null());
-	_preview_environment->set_visible(rendering_engine->supports_lighting());
+	_preview_environment->set_rendering_engine_supports_lighting(rendering_engine->supports_lighting());
 }
 
 void EditorMainScreen4D::_update_theme() {
