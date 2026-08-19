@@ -3,10 +3,25 @@
 #include "../../model/mesh/mesh_instance_4d.h"
 #include "../../model/mesh/poly/poly_material_4d.h"
 #include "../../nodes/camera_4d.h"
+#include "normalize_transparency.glsl.gen.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/rendering_server.hpp>
+#include <godot_cpp/classes/uniform_set_cache_rd.hpp>
+#include <godot_cpp/classes/rd_shader_source.hpp>
+#include <godot_cpp/classes/rd_shader_spirv.hpp>
+#include <godot_cpp/classes/rd_uniform.hpp>
+#include <godot_cpp/variant/packed_byte_array.hpp>
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
+#include <godot_cpp/classes/project_settings.hpp>
+#endif
 #elif GODOT_MODULE
+#include "servers/rendering/rendering_device_binds.h"
+#include "servers/rendering/renderer_rd/uniform_set_cache_rd.h"
+#include "servers/rendering/renderer_rd/storage_rd/render_scene_buffers_rd.h"
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
+#include "core/config/project_settings.h"
+#endif
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
 #include "servers/rendering_server.h"
 #else
@@ -27,6 +42,42 @@
 		// Run the compute pipeline.
 		// Maybe some sort of synchronization thing?
 */
+
+void ProjectedRenderingEngine4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("normalize_image_callback", "effect_callback_type", "render_data"), &ProjectedRenderingEngine4D::normalize_image_callback);
+}
+
+ProjectedRenderingEngine4D::ProjectedRenderingEngine4D() {
+	RenderingDevice *rd = RenderingDevice::get_singleton();
+	if (rd == nullptr) {
+		// The compatibility renderer isn't compatible with projected rendering anyway.
+		return;
+	}
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	ERR_FAIL_NULL(rendering_server);
+	// shader_compile_spirv_from_source(Ref<RDShaderSource>)/shader_create_from_spirv(Ref<RDShaderSPIRV>)
+	// are exposed to GDExtension directly, but in engine-module C++ they're private (named
+	// _shader_compile_spirv_from_source/_shader_create_from_spirv; module code is expected to call
+	// the raw stage/string/Vector<uint8_t> overloads of the same public names instead). Calling them
+	// by name through the same Variant dispatch GDExtension and scripts use sidesteps that C++ access
+	// specifier, so the exact same code works in both builds.
+	Ref<RDShaderSource> shader_source;
+	shader_source.instantiate();
+	shader_source->set_stage_source(RenderingDevice::SHADER_STAGE_COMPUTE, normalize_transparency_shader_glsl);
+	Ref<RDShaderSPIRV> shader_spirv = rd->call("shader_compile_spirv_from_source", shader_source);
+	const String compile_error = shader_spirv->get_stage_compile_error(RenderingDevice::SHADER_STAGE_COMPUTE);
+	ERR_FAIL_COND_MSG(!compile_error.is_empty(), "ProjectedRenderingEngine4D: Failed to compile normalize_transparency.glsl: " + compile_error);
+	normalize_shader = rd->call("shader_create_from_spirv", shader_spirv);
+	normalize_pipeline = rd->compute_pipeline_create(normalize_shader);
+	normalize_compositor_effect = rendering_server->compositor_effect_create();
+	rendering_server->compositor_effect_set_callback(
+			normalize_compositor_effect,
+			RenderingServer::COMPOSITOR_EFFECT_CALLBACK_TYPE_POST_TRANSPARENT,
+			Callable(this, "normalize_image_callback"));
+	rendering_server->compositor_effect_set_enabled(normalize_compositor_effect, true); // It's only ever attached when it should be enabled.
+	normalize_compositor = rendering_server->compositor_create();
+	rendering_server->compositor_set_compositor_effects(normalize_compositor, TypedArray<RID>({ normalize_compositor_effect }));
+}
 
 void ProjectedRenderingEngine4D::render_frame() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
@@ -151,9 +202,51 @@ void ProjectedRenderingEngine4D::setup_for_viewport() {
 	if (_projected_camera.is_valid()) {
 		RenderingServer::get_singleton()->viewport_attach_camera(viewport->get_viewport_rid(), _projected_camera);
 	}
+	if (normalize_compositor.is_valid()) {
+		// Only Forward+ is supported. If a different renderer is selected, best avoid attaching
+		// the compositor to prevent error spam.
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
+		const String rendering_method = RenderingServer::get_singleton()->get_current_rendering_method();
+#else
+		const String rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
+#endif
+		if (rendering_method == "forward_plus") {
+			RenderingServer::get_singleton()->scenario_set_compositor(_projected_world_3d->get_scenario(), normalize_compositor);
+		} else {
+			WARN_PRINT_ONCE("ProjectedRenderingEngine4D is only compatible with the Forward+ rendering method, not " + rendering_method + ".");
+		}
+	}
+	viewport->set_transparent_background(true);
 }
 
 void ProjectedRenderingEngine4D::_cleanup_render_resources() {
+	cleanup_for_viewport();
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	if (normalize_compositor.is_valid()) {
+		rendering_server->free_rid(normalize_compositor);
+		normalize_compositor = RID();
+		rendering_server->free_rid(normalize_compositor_effect);
+		normalize_compositor_effect = RID();
+	}
+	RenderingDevice *rd = RenderingDevice::get_singleton();
+	if (normalize_pipeline.is_valid()) {
+		rd->free_rid(normalize_pipeline);
+		normalize_pipeline = RID();
+	}
+	if (normalize_shader.is_valid()) {
+		rd->free_rid(normalize_shader);
+		normalize_shader = RID();
+	}
+}
+
+void ProjectedRenderingEngine4D::cleanup_for_viewport() {
+	// Detach the custom world from the viewport BEFORE freeing RS resources,
+	// so any VisualInstance3D nodes in the viewport re-register in the
+	// default world rather than our soon-to-be-freed scenario.
+	Viewport *viewport = get_viewport();
+	if (_projected_world_3d.is_valid() && viewport != nullptr) {
+		viewport->set_world_3d(Ref<World3D>());
+	}
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	if (rendering_server == nullptr) {
 		_instances_3d.clear();
@@ -175,15 +268,56 @@ void ProjectedRenderingEngine4D::_cleanup_render_resources() {
 	_projected_world_3d = Ref<World3D>();
 }
 
-void ProjectedRenderingEngine4D::cleanup_for_viewport() {
-	// Detach the custom world from the viewport BEFORE freeing RS resources,
-	// so any VisualInstance3D nodes in the viewport re-register in the
-	// default world rather than our soon-to-be-freed scenario.
-	Viewport *viewport = get_viewport();
-	if (_projected_world_3d.is_valid() && viewport != nullptr) {
-		viewport->set_world_3d(Ref<World3D>());
+void ProjectedRenderingEngine4D::normalize_image_callback(int64_t p_effect_callback_type, RenderData *p_render_data) {
+	RenderingDevice *rd = RenderingDevice::get_singleton();
+	ERR_FAIL_NULL(rd);
+	ERR_FAIL_NULL(p_render_data);
+	RenderSceneBuffersRD *buffers = Object::cast_to<RenderSceneBuffersRD>(p_render_data->get_render_scene_buffers().ptr());
+	if (buffers) {
+		const Vector2i size = buffers->get_internal_size();
+		// Matches the shader's local_size of 8x8: round up so a partial workgroup still covers
+		// the last few rows/columns (the shader itself bounds-checks against params.size for those).
+		const uint32_t x_groups = (uint32_t(size.x) + 7) / 8;
+		const uint32_t y_groups = (uint32_t(size.y) + 7) / 8;
+		PackedByteArray push_constant;
+		push_constant.resize(16);
+		{
+			int32_t *push_constant_data = reinterpret_cast<int32_t *>(push_constant.ptrw());
+			push_constant_data[0] = size.x;
+			push_constant_data[1] = size.y;
+			push_constant_data[2] = 0;
+			push_constant_data[3] = 0;
+		}
+		for (uint32_t view = 0; view < buffers->get_view_count(); view++) {
+			Ref<RDUniform> uniform;
+			uniform.instantiate();
+			uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_IMAGE);
+			uniform->set_binding(0);
+			uniform->add_id(buffers->get_internal_texture(view));
+			const TypedArray<RDUniform> uniforms({ uniform });
+			// UniformSetCacheRD's C++ template get_cache() isn't reachable from GDExtension, so
+			// this uses its non-template, TypedArray-based equivalent instead - exposed under a
+			// different name in each build.
+#if GDEXTENSION
+			RID uniform_set = UniformSetCacheRD::get_cache(normalize_shader, 0, uniforms);
+#elif GODOT_MODULE
+			RID uniform_set = UniformSetCacheRD::get_cache_array(normalize_shader, 0, uniforms);
+#endif
+			RenderingDevice::ComputeListID compute_list = rd->compute_list_begin();
+			rd->compute_list_bind_compute_pipeline(compute_list, normalize_pipeline);
+			rd->compute_list_bind_uniform_set(compute_list, uniform_set, 0);
+			// compute_list_set_push_constant takes a PackedByteArray in GDExtension, but only a
+			// raw pointer is exposed to engine-module C++ (the PackedByteArray-based overload is
+			// private there, same split as the shader-compile methods in the constructor).
+#if GDEXTENSION
+			rd->compute_list_set_push_constant(compute_list, push_constant, push_constant.size());
+#elif GODOT_MODULE
+			rd->compute_list_set_push_constant(compute_list, push_constant.ptr(), push_constant.size());
+#endif
+			rd->compute_list_dispatch(compute_list, x_groups, y_groups, 1);
+			rd->compute_list_end();
+		}
 	}
-	_cleanup_render_resources();
 }
 
 ProjectedRenderingEngine4D::~ProjectedRenderingEngine4D() {

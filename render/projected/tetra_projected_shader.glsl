@@ -107,7 +107,7 @@ void vertex() {
 	};
 	// Compute flat normals.
 	vec4 normal4 = cross4(verts[1] - verts[0], verts[2] - verts[0], verts[3] - verts[0]);
-	bool back_face = dot(verts[0], normal4) <= 0.;
+	bool back_face = dot(verts[0], normal4) <= 0.; // This mustn't be computed from verts_proj alone, as that would give the wrong answer sometimes if a vertex is behind the camera.
 
 	int vertex_id = int(VERTEX.x);
 	int projection_case = get_projection_case(verts);

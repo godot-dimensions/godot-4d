@@ -137,6 +137,8 @@ void CrossSectionRenderingEngine4D::setup_for_viewport() {
 	if (_cross_section_camera.is_valid()) {
 		RenderingServer::get_singleton()->viewport_attach_camera(viewport->get_viewport_rid(), _cross_section_camera);
 	}
+	// ProjectedRenderingEngine4D turns this on; make sure it's off again when switching away from it.
+	viewport->set_transparent_background(false);
 }
 
 void CrossSectionRenderingEngine4D::_cleanup_render_resources() {

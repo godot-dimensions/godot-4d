@@ -14,6 +14,8 @@ void WireframeCanvasRenderingEngine4D::setup_for_viewport() {
 	WireframeRenderCanvas4D *wire_canvas = memnew(WireframeRenderCanvas4D);
 	wire_canvas->set_name("WireframeRenderCanvas4D");
 	get_viewport()->add_child(wire_canvas);
+	// ProjectedRenderingEngine4D turns this on; make sure it's off again when switching away from it.
+	get_viewport()->set_transparent_background(false);
 }
 
 void WireframeCanvasRenderingEngine4D::cleanup_for_viewport() {
