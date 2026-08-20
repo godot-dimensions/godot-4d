@@ -104,6 +104,7 @@
 #include "editor/viewport/editor_input_surface_4d.h"
 #include "editor/viewport/editor_main_screen_4d.h"
 #include "editor/viewport/editor_main_viewport_4d.h"
+#include "editor/viewport/editor_preview_environment_4d.h"
 #include "editor/viewport/editor_transform_gizmo_4d.h"
 #include "editor/viewport/editor_transform_snap_settings_4d.h"
 #include "editor/viewport/editor_viewport_rotation_4d.h"
@@ -297,6 +298,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorInputSurface4D);
 		GDREGISTER_CLASS(EditorMainScreen4D);
 		GDREGISTER_CLASS(EditorMainViewport4D);
+		GDREGISTER_CLASS(EditorPreviewEnvironment4D);
 		GDREGISTER_CLASS(EditorTransformGizmo4D);
 		GDREGISTER_CLASS(EditorTransformSnapSettings4D);
 		GDREGISTER_CLASS(EditorViewportRotation4D);

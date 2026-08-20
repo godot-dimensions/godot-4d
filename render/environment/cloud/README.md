@@ -30,6 +30,8 @@ Changing an animated sky uniform can cause Godot to update the sky radiance cube
 
 Automatic composition currently supports `GradientSkyMaterial4D`, `PhysicalSkyMaterial4D`, `PlainSkyMaterial4D`, and no base sky. A custom `SkyMaterial4D` remains usable by itself, but its arbitrary shader code cannot be automatically merged with the cloud shader.
 
+The generated C++ embeds each base-sky prefix, the shared noise and density code, the shared cloud rendering code, and each sky entry point as separate string literals. `VolumetricCloudMaterial4D` concatenates these pieces when it initializes its shaders. This keeps the repeated cloud implementation in two shared constants and keeps every generated literal below MSVC's size limit.
+
 ## References and attribution
 
 - Ian McEwan et al., [Efficient computational noise in GLSL](https://arxiv.org/abs/1204.1461).

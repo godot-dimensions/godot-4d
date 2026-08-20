@@ -3,13 +3,23 @@
 #include "../sky/gradient_sky_material_4d.h"
 #include "../sky/physical_sky_material_4d.h"
 #include "../sky/plain_sky_material_4d.h"
+#include "gradient_sky_with_volumetric_clouds_full_res_main.glsl.gen.h"
 #include "gradient_sky_with_volumetric_clouds_full_res_shader.glsl.gen.h"
+#include "gradient_sky_with_volumetric_clouds_main.glsl.gen.h"
 #include "gradient_sky_with_volumetric_clouds_shader.glsl.gen.h"
+#include "physical_sky_with_volumetric_clouds_full_res_main.glsl.gen.h"
 #include "physical_sky_with_volumetric_clouds_full_res_shader.glsl.gen.h"
+#include "physical_sky_with_volumetric_clouds_main.glsl.gen.h"
 #include "physical_sky_with_volumetric_clouds_shader.glsl.gen.h"
+#include "plain_sky_with_volumetric_clouds_full_res_main.glsl.gen.h"
 #include "plain_sky_with_volumetric_clouds_full_res_shader.glsl.gen.h"
+#include "plain_sky_with_volumetric_clouds_main.glsl.gen.h"
 #include "plain_sky_with_volumetric_clouds_shader.glsl.gen.h"
+#include "volumetric_cloud_density.glsl.gen.h"
+#include "volumetric_cloud_full_res_main.glsl.gen.h"
 #include "volumetric_cloud_full_res_shader.glsl.gen.h"
+#include "volumetric_cloud_main.glsl.gen.h"
+#include "volumetric_cloud_rendering.glsl.gen.h"
 #include "volumetric_cloud_shader.glsl.gen.h"
 
 #if GDEXTENSION
@@ -31,7 +41,13 @@ Ref<Shader> VolumetricCloudMaterial4D::_gradient_sky_full_res_shader;
 Ref<Shader> VolumetricCloudMaterial4D::_physical_sky_full_res_shader;
 Ref<Shader> VolumetricCloudMaterial4D::_plain_sky_full_res_shader;
 
-static void initialize_cloud_shader(Ref<Shader> &r_shader, const String &p_name, const char *p_code) {
+static String compose_cloud_shader(const char *p_shader_prefix, const char *p_sky_function) {
+	// Keep the large shared sections in separate C++ literals so GDExtension builds stay
+	// below MSVC's per-literal size limit without duplicating the cloud implementation.
+	return String(p_shader_prefix) + "\n" + volumetric_cloud_density_shader_glsl + volumetric_cloud_rendering_shader_glsl + "\n" + p_sky_function;
+}
+
+static void initialize_cloud_shader(Ref<Shader> &r_shader, const String &p_name, const String &p_code) {
 	r_shader.instantiate();
 	r_shader->set_name(p_name);
 	r_shader->set_code(p_code);
@@ -288,14 +304,14 @@ void VolumetricCloudMaterial4D::init_shaders() {
 	if (_cloud_only_shader.is_valid()) {
 		return;
 	}
-	initialize_cloud_shader(_cloud_only_shader, String("4D Volumetric Cloud Shader"), volumetric_cloud_shader_shader_glsl);
-	initialize_cloud_shader(_gradient_sky_shader, String("4D Gradient Sky with Volumetric Clouds Shader"), gradient_sky_with_volumetric_clouds_shader_shader_glsl);
-	initialize_cloud_shader(_physical_sky_shader, String("4D Physical Sky with Volumetric Clouds Shader"), physical_sky_with_volumetric_clouds_shader_shader_glsl);
-	initialize_cloud_shader(_plain_sky_shader, String("4D Plain Sky with Volumetric Clouds Shader"), plain_sky_with_volumetric_clouds_shader_shader_glsl);
-	initialize_cloud_shader(_cloud_only_full_res_shader, String("4D Full-Resolution Volumetric Cloud Shader"), volumetric_cloud_full_res_shader_shader_glsl);
-	initialize_cloud_shader(_gradient_sky_full_res_shader, String("4D Full-Resolution Gradient Sky with Volumetric Clouds Shader"), gradient_sky_with_volumetric_clouds_full_res_shader_shader_glsl);
-	initialize_cloud_shader(_physical_sky_full_res_shader, String("4D Full-Resolution Physical Sky with Volumetric Clouds Shader"), physical_sky_with_volumetric_clouds_full_res_shader_shader_glsl);
-	initialize_cloud_shader(_plain_sky_full_res_shader, String("4D Full-Resolution Plain Sky with Volumetric Clouds Shader"), plain_sky_with_volumetric_clouds_full_res_shader_shader_glsl);
+	initialize_cloud_shader(_cloud_only_shader, String("4D Volumetric Cloud Shader"), compose_cloud_shader(volumetric_cloud_shader_shader_glsl, volumetric_cloud_main_shader_glsl));
+	initialize_cloud_shader(_gradient_sky_shader, String("4D Gradient Sky with Volumetric Clouds Shader"), compose_cloud_shader(gradient_sky_with_volumetric_clouds_shader_shader_glsl, gradient_sky_with_volumetric_clouds_main_shader_glsl));
+	initialize_cloud_shader(_physical_sky_shader, String("4D Physical Sky with Volumetric Clouds Shader"), compose_cloud_shader(physical_sky_with_volumetric_clouds_shader_shader_glsl, physical_sky_with_volumetric_clouds_main_shader_glsl));
+	initialize_cloud_shader(_plain_sky_shader, String("4D Plain Sky with Volumetric Clouds Shader"), compose_cloud_shader(plain_sky_with_volumetric_clouds_shader_shader_glsl, plain_sky_with_volumetric_clouds_main_shader_glsl));
+	initialize_cloud_shader(_cloud_only_full_res_shader, String("4D Full-Resolution Volumetric Cloud Shader"), compose_cloud_shader(volumetric_cloud_full_res_shader_shader_glsl, volumetric_cloud_full_res_main_shader_glsl));
+	initialize_cloud_shader(_gradient_sky_full_res_shader, String("4D Full-Resolution Gradient Sky with Volumetric Clouds Shader"), compose_cloud_shader(gradient_sky_with_volumetric_clouds_full_res_shader_shader_glsl, gradient_sky_with_volumetric_clouds_full_res_main_shader_glsl));
+	initialize_cloud_shader(_physical_sky_full_res_shader, String("4D Full-Resolution Physical Sky with Volumetric Clouds Shader"), compose_cloud_shader(physical_sky_with_volumetric_clouds_full_res_shader_shader_glsl, physical_sky_with_volumetric_clouds_full_res_main_shader_glsl));
+	initialize_cloud_shader(_plain_sky_full_res_shader, String("4D Full-Resolution Plain Sky with Volumetric Clouds Shader"), compose_cloud_shader(plain_sky_with_volumetric_clouds_full_res_shader_shader_glsl, plain_sky_with_volumetric_clouds_full_res_main_shader_glsl));
 }
 
 void VolumetricCloudMaterial4D::cleanup_shaders() {

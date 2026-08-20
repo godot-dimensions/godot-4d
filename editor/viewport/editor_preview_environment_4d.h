@@ -86,6 +86,7 @@ class EditorPreviewEnvironment4D : public HBoxContainer {
 	void _update_theme();
 
 protected:
+	static void _bind_methods() {}
 	void _notification(int p_what);
 
 public:

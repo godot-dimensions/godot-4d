@@ -22,31 +22,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-highp vec4 simplex_mod289_4d(highp vec4 x) {
+// Use unique function names for each type. Do not use overloaded functions, as not all GLSL implementations support them.
+highp vec4 simplex_4d_mod289_vec4(highp vec4 x) {
 	return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
 
-highp float simplex_mod289_4d(highp float x) {
+highp float simplex_4d_mod289_float(highp float x) {
 	return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
 
-highp vec4 simplex_permute_4d(highp vec4 x) {
-	return simplex_mod289_4d(((x * 34.0) + 10.0) * x);
+highp vec4 simplex_4d_permute_vec4(highp vec4 x) {
+	return simplex_4d_mod289_vec4(((x * 34.0) + 10.0) * x);
 }
 
-highp float simplex_permute_4d(highp float x) {
-	return simplex_mod289_4d(((x * 34.0) + 10.0) * x);
+highp float simplex_4d_permute_float(highp float x) {
+	return simplex_4d_mod289_float(((x * 34.0) + 10.0) * x);
 }
 
-highp vec4 simplex_taylor_inverse_sqrt_4d(highp vec4 r) {
+highp vec4 simplex_4d_taylor_inverse_sqrt_vec4(highp vec4 r) {
 	return 1.79284291400159 - 0.85373472095314 * r;
 }
 
-highp float simplex_taylor_inverse_sqrt_4d(highp float r) {
+highp float simplex_4d_taylor_inverse_sqrt_float(highp float r) {
 	return 1.79284291400159 - 0.85373472095314 * r;
 }
 
-highp vec4 simplex_gradient_4d(highp float j, highp vec4 ip) {
+highp vec4 simplex_4d_gradient(highp float j, highp vec4 ip) {
 	const highp vec4 ones = vec4(1.0, 1.0, 1.0, -1.0);
 	highp vec4 p;
 	highp vec4 s;
@@ -58,7 +59,7 @@ highp vec4 simplex_gradient_4d(highp float j, highp vec4 ip) {
 	return p;
 }
 
-highp float simplex_noise_4d(highp vec4 v) {
+highp float simplex_4d_noise(highp vec4 v) {
 	const highp vec2 c = vec2(0.138196601125011, 0.309016994374947);
 
 	highp vec4 i = floor(v + dot(v, vec4(c.y)));
@@ -83,23 +84,23 @@ highp float simplex_noise_4d(highp vec4 v) {
 	highp vec4 x3 = x0 - i3 + c.x * 3.0;
 	highp vec4 x4 = x0 - 1.0 + c.x * 4.0;
 
-	i = simplex_mod289_4d(i);
-	highp float j0 = simplex_permute_4d(simplex_permute_4d(simplex_permute_4d(simplex_permute_4d(i.w) + i.z) + i.y) + i.x);
-	highp vec4 j1 = simplex_permute_4d(simplex_permute_4d(simplex_permute_4d(simplex_permute_4d(i.w + vec4(i1.w, i2.w, i3.w, 1.0)) + i.z + vec4(i1.z, i2.z, i3.z, 1.0)) + i.y + vec4(i1.y, i2.y, i3.y, 1.0)) + i.x + vec4(i1.x, i2.x, i3.x, 1.0));
+	i = simplex_4d_mod289_vec4(i);
+	highp float j0 = simplex_4d_permute_float(simplex_4d_permute_float(simplex_4d_permute_float(simplex_4d_permute_float(i.w) + i.z) + i.y) + i.x);
+	highp vec4 j1 = simplex_4d_permute_vec4(simplex_4d_permute_vec4(simplex_4d_permute_vec4(simplex_4d_permute_vec4(i.w + vec4(i1.w, i2.w, i3.w, 1.0)) + i.z + vec4(i1.z, i2.z, i3.z, 1.0)) + i.y + vec4(i1.y, i2.y, i3.y, 1.0)) + i.x + vec4(i1.x, i2.x, i3.x, 1.0));
 
 	const highp vec4 ip = vec4(1.0 / 294.0, 1.0 / 49.0, 1.0 / 7.0, 0.0);
-	highp vec4 p0 = simplex_gradient_4d(j0, ip);
-	highp vec4 p1 = simplex_gradient_4d(j1.x, ip);
-	highp vec4 p2 = simplex_gradient_4d(j1.y, ip);
-	highp vec4 p3 = simplex_gradient_4d(j1.z, ip);
-	highp vec4 p4 = simplex_gradient_4d(j1.w, ip);
+	highp vec4 p0 = simplex_4d_gradient(j0, ip);
+	highp vec4 p1 = simplex_4d_gradient(j1.x, ip);
+	highp vec4 p2 = simplex_4d_gradient(j1.y, ip);
+	highp vec4 p3 = simplex_4d_gradient(j1.z, ip);
+	highp vec4 p4 = simplex_4d_gradient(j1.w, ip);
 
-	highp vec4 norm = simplex_taylor_inverse_sqrt_4d(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+	highp vec4 norm = simplex_4d_taylor_inverse_sqrt_vec4(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
 	p0 *= norm.x;
 	p1 *= norm.y;
 	p2 *= norm.z;
 	p3 *= norm.w;
-	p4 *= simplex_taylor_inverse_sqrt_4d(dot(p4, p4));
+	p4 *= simplex_4d_taylor_inverse_sqrt_float(dot(p4, p4));
 
 	highp vec3 m0 = max(0.6 - vec3(dot(x0, x0), dot(x1, x1), dot(x2, x2)), 0.0);
 	highp vec2 m1 = max(0.6 - vec2(dot(x3, x3), dot(x4, x4)), 0.0);
