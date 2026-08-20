@@ -102,11 +102,11 @@ void CombinedRenderingEngine4D::_ensure_helpers_created() {
 
 		// Added after (and therefore drawn on top of) the cross-section rect, so the projected
 		// pass's normalized result blends over the cross-section result.
-		TextureRect *projected_rect = memnew(TextureRect);
-		projected_rect->set_texture(_projected_viewport->get_texture());
-		projected_rect->set_anchors_preset(Control::PRESET_FULL_RECT);
-		projected_rect->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-		_combine_canvas_layer->add_child(projected_rect);
+		_projected_rect = memnew(TextureRect);
+		_projected_rect->set_texture(_projected_viewport->get_texture());
+		_projected_rect->set_anchors_preset(Control::PRESET_FULL_RECT);
+		_projected_rect->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+		_combine_canvas_layer->add_child(_projected_rect);
 	}
 }
 
@@ -216,6 +216,7 @@ void CombinedRenderingEngine4D::_render_frame_callback() {
 	_sync_viewport_sizes();
 
 	Camera4D *camera = get_camera();
+	_projected_rect->set_modulate(Color(1.0, 1.0, 1.0, camera->get_projection_opacity()));
 	const PackedInt64Array light_object_ids = get_light_object_ids();
 	const PackedInt64Array mesh_instance_object_ids = get_mesh_instance_object_ids();
 

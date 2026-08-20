@@ -75,6 +75,15 @@ void ProjectedRenderingEngine4D::_render_frame_callback() {
 	ERR_FAIL_NULL(get_camera());
 	ERR_FAIL_NULL(get_viewport());
 	update_camera();
+	Camera4D *camera = get_camera();
+	const double camera_slope = camera->get_w_fade_slope();
+	const double camera_fade = camera->get_w_fade_distance();
+	// The shader's edge_falloff and plane_softness uniforms keep their original ranges
+	// ([1, inf) and (0, 1] respectively) - edge_falloff and plane_sharpness are the more
+	// user-friendly camera-facing versions ([0, inf) and [0, 1) respectively), converted here.
+	const double edge_falloff = camera->get_edge_falloff() + 1.0;
+	const double plane_softness = 1.0 - camera->get_plane_sharpness();
+	const double skewness = camera->get_skewness();
 	// Maps global to cameral-local, aka world space to view space.
 	PackedInt64Array mesh_instance_object_ids = get_mesh_instance_object_ids();
 	TypedArray<Projection> modelview_basises = get_mesh_relative_basises();
@@ -131,6 +140,11 @@ void ProjectedRenderingEngine4D::_render_frame_callback() {
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_y", modelview_basis.columns[1]);
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_z", modelview_basis.columns[2]);
 		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "modelview_basis_w", modelview_basis.columns[3]);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "camera_slope", camera_slope);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "camera_fade", camera_fade);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "edge_falloff", edge_falloff);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "plane_softness", plane_softness);
+		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(instance_3d, "skewness", skewness);
 
 		instance_index++;
 	}
@@ -273,6 +287,8 @@ void ProjectedRenderingEngine4D::_normalize_image_callback(int64_t p_effect_call
 	RenderingDevice *rd = rendering_server->get_rendering_device();
 	ERR_FAIL_NULL(rd);
 	ERR_FAIL_NULL(p_render_data);
+	Camera4D *camera = get_camera();
+	ERR_FAIL_NULL(camera);
 	RenderSceneBuffersRD *buffers = Object::cast_to<RenderSceneBuffersRD>(p_render_data->get_render_scene_buffers().ptr());
 	if (buffers) {
 		const Vector2i size = buffers->get_internal_size();
@@ -286,7 +302,8 @@ void ProjectedRenderingEngine4D::_normalize_image_callback(int64_t p_effect_call
 			int32_t *push_constant_data = reinterpret_cast<int32_t *>(push_constant.ptrw());
 			push_constant_data[0] = size.x;
 			push_constant_data[1] = size.y;
-			push_constant_data[2] = 0;
+			float *push_constant_float_data = reinterpret_cast<float *>(push_constant.ptrw());
+			push_constant_float_data[2] = (float)camera->get_projection_opacity_base();
 			push_constant_data[3] = 0;
 		}
 		for (uint32_t view = 0; view < buffers->get_view_count(); view++) {

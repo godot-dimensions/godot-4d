@@ -11,6 +11,12 @@ instance uniform vec4 modelview_basis_y;
 instance uniform vec4 modelview_basis_z;
 instance uniform vec4 modelview_basis_w;
 
+instance uniform float camera_slope = 1.0; // the tan of the angle of the view frustum in the W direction
+instance uniform float camera_fade = 0.0; // the orthographic-style width of the view frustum in W
+instance uniform float edge_falloff = 2.0; // how quickly to fade the opacity at the edges of the view frustum (1: not at all, 2: linear, up to infinity)
+instance uniform float plane_softness = 0.7; // how much the region around the slice plane is emphasized: 1 is no extra emphasis, the limit as it approaches 0 is like a cross-section view (but 0 isn't actually a valid value).
+instance uniform float skewness = 0.0; // -1 to 1. Not yet used.
+
 uniform vec4 albedo : source_color;
 uniform sampler3D albedo_texture : hint_default_white, source_color;
 // Clip-space depth from the cross-section pass.
@@ -19,12 +25,6 @@ uniform sampler3D albedo_texture : hint_default_white, source_color;
 uniform sampler2D cross_section_depth_texture : hint_default_black, filter_nearest;
 const float DEPTH_BIAS_CLIPSPACE = 1e-6; // to prevent z-fighting
 const float DEPTH_BIAS_VIEWSPACE = 1e-5;
-
-// TODO: make these uniforms.
-const float camera_slope = 1.0; // the tan of the angle of the view frustum in the W direction
-const float camera_fade = 0.0; // the orthographic-style width of the view frustum in W
-const float edge_falloff = 2.0; // how quickly to fade the opacity at the edges of the view frustum (1: not at all, 2: linear, up to infinity)
-const float plane_softness = 0.7; // how much the region around the slice plane is emphasized: 1 is no extra emphasis, the limit as it approaches 0 is like a cross-section view (but 0 isn't actually a valid value).
 
 // The built-in perspective correction isn't able to deal with the fact that each fragment corresponds to a whole line on the input tet, with multiple different z values. It's necessary to do some of the interpolation manually.
 // This re-interpolation is done between the center vertex, the other_center vertex (i.e. the other end of the line in the tet corresponding to the centre vertex in the triangle), and some point on the edge of the triangle not containing the centre vertex (which is interpolated correctly by the built-in interpolation between the two non-center vertices).
@@ -223,8 +223,10 @@ void fragment() {
 																																						: 1.;
 	vec4 end_position_1 = mix(position, other_position, line_end_1);
 	vec4 end_position_2 = mix(position, other_position, line_end_2);
-	float perspective_1 = end_position_1.z * camera_slope + camera_fade;
-	float perspective_2 = end_position_2.z * camera_slope + camera_fade;
+	// Godot's camera looks down -Z. Keep this denominator negative to preserve the endpoint
+	// orientation used by the signed density integral below, while its magnitude grows with depth.
+	float perspective_1 = end_position_1.z * camera_slope - camera_fade;
+	float perspective_2 = end_position_2.z * camera_slope - camera_fade;
 	float w_clip_1 = end_position_1.w / perspective_1;
 	float w_clip_2 = end_position_2.w / perspective_2;
 	float thickness = density_integral(w_clip_1) - density_integral(w_clip_2);
@@ -237,6 +239,6 @@ void fragment() {
 	vec3 other_uvw = mix(center_uvw + (uvw - center_uvw) / (1. - centerness), other_center_uvw, other_centerness);
 	vec3 middle_uvw = mix(uvw, other_uvw, middle_weight);
 	ALBEDO = albedo.rgb * texture(albedo_texture, middle_uvw).rgb * ((dot((vec4(NORMAL, 0.) * INV_VIEW_MATRIX).xyz, vec3(0., 1., 0.)) / 2.) + 0.5);
-	ALPHA = sqrt(thickness / 2.); // The sqrt is to compensate for a bug in the definition of Godot's add blend mode.
+	ALPHA = sqrt(max(thickness, 0.) / 2.); // The sqrt is to compensate for a bug in the definition of Godot's add blend mode.
 	ALBEDO *= ALPHA; // also compensating for the bug.
 }
