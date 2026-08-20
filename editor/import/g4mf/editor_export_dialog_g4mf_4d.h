@@ -17,6 +17,13 @@
 #include "scene/gui/popup_menu.h"
 #endif
 
+#if GODOT_MODULE && (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 2 && GODOT_VERSION_MINOR <= 5)
+// Added in https://github.com/godotengine/godot/pull/79313 for Godot 4.2.
+// Removed in https://github.com/godotengine/godot/pull/111162 for Godot 4.6.
+// Only enable in modules to avoid issues when loading old GDExtensions in new Godot versions.
+#define USE_EDITOR_FILE_DIALOG_SIDE_MENU 1
+#endif
+
 // Not actually a dialog, but manages two of them: the settings dialog and the file dialog.
 class EditorExportDialogG4MF4D : public Object {
 	GDCLASS(EditorExportDialogG4MF4D, Object);
@@ -24,9 +31,7 @@ class EditorExportDialogG4MF4D : public Object {
 	Ref<G4MFDocument4D> _g4mf_document;
 	Ref<EditorExportSettingsG4MF4D> _export_settings;
 	EditorInspector *_settings_inspector = nullptr;
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 2 && GODOT_VERSION_MINOR <= 5
-	// Added in https://github.com/godotengine/godot/pull/79313 for Godot 4.2.
-	// Removed in https://github.com/godotengine/godot/pull/111162 for Godot 4.6.
+#if USE_EDITOR_FILE_DIALOG_SIDE_MENU
 	EditorInspector *_settings_inspector_side_menu = nullptr;
 #endif
 

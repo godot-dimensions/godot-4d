@@ -71,12 +71,10 @@ void EditorExportDialogG4MF4D::_popup_g4mf_export_file_dialog() {
 	ERR_FAIL_NULL(editor_interface);
 	Node *scene_root = editor_interface->get_edited_scene_root();
 	ERR_FAIL_COND_SHOW_DIALOG(scene_root == nullptr, "G4MF error: Cannot export scene without a root node.");
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 2 && GODOT_VERSION_MINOR <= 5
-#if GODOT_MODULE
+#if USE_EDITOR_FILE_DIALOG_SIDE_MENU
 	// Force the inspector to refresh its display of the export settings by editing null first.
 	_settings_inspector_side_menu->edit(nullptr);
 	_settings_inspector_side_menu->edit(_export_settings.ptr());
-#endif // GODOT_MODULE
 #endif
 	// Set the file dialog's file name to the scene name.
 	String filename = scene_root->get_scene_file_path().get_file().get_basename();
@@ -127,7 +125,7 @@ void EditorExportDialogG4MF4D::setup(PopupMenu *p_export_menu) {
 	_export_settings->setup_for_scene(_g4mf_document, nullptr);
 	_settings_inspector = memnew(EditorInspector);
 	_settings_inspector->set_custom_minimum_size(Size2(350, 200) * EDSCALE);
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 2 && GODOT_VERSION_MINOR <= 5
+#if USE_EDITOR_FILE_DIALOG_SIDE_MENU
 	_settings_inspector_side_menu = memnew(EditorInspector);
 	_settings_inspector_side_menu->set_custom_minimum_size(Size2(350, 200) * EDSCALE);
 	_file_dialog->add_side_menu(_settings_inspector_side_menu, TTR("Export Settings:"));
@@ -159,7 +157,7 @@ void EditorExportDialogG4MF4D::cleanup_export_dialog() {
 		_settings_inspector->queue_free();
 		_settings_inspector = nullptr;
 	}
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 2 && GODOT_VERSION_MINOR <= 5
+#if USE_EDITOR_FILE_DIALOG_SIDE_MENU
 	if (_settings_inspector_side_menu) {
 		_settings_inspector_side_menu->queue_free();
 		_settings_inspector_side_menu = nullptr;
