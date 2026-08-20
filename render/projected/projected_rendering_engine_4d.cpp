@@ -79,6 +79,10 @@ ProjectedRenderingEngine4D::ProjectedRenderingEngine4D() {
 	rendering_server->compositor_set_compositor_effects(normalize_compositor, TypedArray<RID>({ normalize_compositor_effect }));
 }
 
+void ProjectedRenderingEngine4D::set_cross_section_depth_texture(const Variant &p_texture) {
+	_cross_section_depth_texture = p_texture;
+}
+
 void ProjectedRenderingEngine4D::render_frame() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
 	ERR_FAIL_NULL(get_camera());
@@ -123,9 +127,11 @@ void ProjectedRenderingEngine4D::render_frame() {
 					poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
 				}
 			}
-			Ref<Material> override_material_3d = material_4d->get_projected_material();
+			Ref<ShaderMaterial> override_material_3d = material_4d->get_projected_material();
 			ERR_CONTINUE(!override_material_3d.is_valid());
 			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d, 0, override_material_3d->get_rid());
+			// Always called even when _cross_section_depth_texture is NIL so that it is cleared if this engine is used alone.
+			override_material_3d->set_shader_parameter("cross_section_depth_texture", _cross_section_depth_texture);
 		}
 
 		Projection modelview_basis = modelview_basises[mesh_index];
@@ -246,6 +252,8 @@ void ProjectedRenderingEngine4D::cleanup_for_viewport() {
 	Viewport *viewport = get_viewport();
 	if (_projected_world_3d.is_valid() && viewport != nullptr) {
 		viewport->set_world_3d(Ref<World3D>());
+		// same workaround as in setup_for_viewport (needed for when this is used in the combined renderer)
+		RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), RID());
 	}
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	if (rendering_server == nullptr) {
@@ -275,10 +283,6 @@ void ProjectedRenderingEngine4D::normalize_image_callback(int64_t p_effect_callb
 	RenderSceneBuffersRD *buffers = Object::cast_to<RenderSceneBuffersRD>(p_render_data->get_render_scene_buffers().ptr());
 	if (buffers) {
 		const Vector2i size = buffers->get_internal_size();
-		// Matches the shader's local_size of 8x8: round up so a partial workgroup still covers
-		// the last few rows/columns (the shader itself bounds-checks against params.size for those).
-		const uint32_t x_groups = (uint32_t(size.x) + 7) / 8;
-		const uint32_t y_groups = (uint32_t(size.y) + 7) / 8;
 		PackedByteArray push_constant;
 		push_constant.resize(16);
 		{
@@ -314,7 +318,7 @@ void ProjectedRenderingEngine4D::normalize_image_callback(int64_t p_effect_callb
 #elif GODOT_MODULE
 			rd->compute_list_set_push_constant(compute_list, push_constant.ptr(), push_constant.size());
 #endif
-			rd->compute_list_dispatch(compute_list, x_groups, y_groups, 1);
+			rd->compute_list_dispatch_threads(compute_list, size.x, size.y, 1);
 			rd->compute_list_end();
 		}
 	}

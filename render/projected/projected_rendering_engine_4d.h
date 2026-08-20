@@ -24,6 +24,9 @@ private:
 	RID normalize_compositor;
 	RID normalize_compositor_effect;
 
+	// Sent from the combined rendering engine, or nil if projected rendering is used alone.
+	Variant _cross_section_depth_texture;
+
 	void update_camera();
 	RID create_instance();
 	void _cleanup_render_resources();
@@ -38,6 +41,7 @@ public:
 	virtual void cleanup_for_viewport() override;
 	virtual void render_frame() override;
 	void normalize_image_callback(int64_t p_effect_callback_type, RenderData *p_render_data);
+	void set_cross_section_depth_texture(const Variant &p_texture);
 
 	virtual ~ProjectedRenderingEngine4D();
 };

@@ -67,6 +67,7 @@
 #include "physics/shapes/sphere_shape_4d.h"
 
 // Render.
+#include "render/combined/combined_rendering_engine_4d.h"
 #include "render/cross_section/cross_section_rendering_engine_4d.h"
 #include "render/projected/projected_rendering_engine_4d.h"
 #include "render/rendering_engine_4d.h"
@@ -233,6 +234,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(WireframeRenderCanvas4D);
 		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
 		GDREGISTER_CLASS(CrossSectionRenderingEngine4D);
+		GDREGISTER_CLASS(ProjectedRenderingEngine4D);
+		GDREGISTER_CLASS(CombinedRenderingEngine4D);
 #endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
 #ifdef TOOLS_ENABLED
@@ -243,9 +246,17 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		add_godot_singleton("PhysicsServer4D", physics_server);
 		// Render.
 		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
+		Ref<CrossSectionRenderingEngine4D> cross_section_engine;
+		cross_section_engine.instantiate();
+		Ref<ProjectedRenderingEngine4D> projected_engine;
+		projected_engine.instantiate();
+		Ref<CombinedRenderingEngine4D> combined_engine;
+		combined_engine.instantiate();
+		combined_engine->set_inner_engines(cross_section_engine, projected_engine);
 		rendering_server->register_rendering_engine(memnew(WireframeCanvasRenderingEngine4D));
-		rendering_server->register_rendering_engine(memnew(CrossSectionRenderingEngine4D));
-		rendering_server->register_rendering_engine(memnew(ProjectedRenderingEngine4D));
+		rendering_server->register_rendering_engine(cross_section_engine);
+		rendering_server->register_rendering_engine(projected_engine);
+		rendering_server->register_rendering_engine(combined_engine);
 		add_godot_singleton("RenderingServer4D", rendering_server);
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {

@@ -11,6 +11,12 @@ instance uniform vec4 modelview_basis_w;
 
 uniform vec4 albedo : source_color;
 uniform sampler3D albedo_texture : hint_default_white, source_color;
+// Clip-space depth from the cross-section pass.
+// Defaults to 0 (the far plane, under Forward+'s reverse-Z convention) when there's no
+// cross-section pass to read from.
+uniform sampler2D cross_section_depth_texture : hint_default_black, filter_nearest;
+const float DEPTH_BIAS_CLIPSPACE = 1e-6; // to prevent z-fighting
+const float DEPTH_BIAS_VIEWSPACE = 1e-5;
 
 // TODO: make these uniforms.
 const float camera_slope = 1.0; // the tan of the angle of the view frustum in the W direction
@@ -221,7 +227,8 @@ void fragment() {
   vec4 other_position = mix(peripheral_position, other_center_position, other_centerness);
 	
 	float z_near_limit = from_homogeneous(INV_PROJECTION_MATRIX * vec4(0.,0.,1.,1.)).z; // 1 is near Z in clip space, so this is near Z in view space.
-	float z_far_limit = from_homogeneous(INV_PROJECTION_MATRIX * vec4(0.,0.,CLIP_SPACE_FAR ,1.)).z; // TODO: get this from the depth buffer produced by the cross-section renderer.
+	float cross_section_depth = texture(cross_section_depth_texture, SCREEN_UV).r + DEPTH_BIAS_CLIPSPACE;
+	float z_far_limit = from_homogeneous(INV_PROJECTION_MATRIX * vec4(0.,0.,cross_section_depth,1.)).z * (1. - DEPTH_BIAS_VIEWSPACE);
 	// the coordinates, within the line, of each end of the section of the line that may be visible.
 	float line_end_1 = position.z > z_near_limit ?
 			(position.z - z_near_limit) / (position.z - other_position.z) : // If this division is by 0, thickness will end up as NaN, which renders as 0, which is the correct answer in that case.

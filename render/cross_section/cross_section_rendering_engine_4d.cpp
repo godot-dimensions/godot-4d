@@ -170,6 +170,8 @@ void CrossSectionRenderingEngine4D::cleanup_for_viewport() {
 	Viewport *viewport = get_viewport();
 	if (_cross_section_world_3d.is_valid() && viewport != nullptr) {
 		viewport->set_world_3d(Ref<World3D>());
+		// same workaround as in setup_for_viewport (needed for when this is used in the combined renderer)
+		RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), RID());
 	}
 	_cleanup_render_resources();
 }
