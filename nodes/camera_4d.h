@@ -58,6 +58,11 @@ private:
 	double _clip_far = 4000.0;
 	double _w_fade_distance = 5.0;
 	double _w_fade_slope = 1.0;
+	double _edge_falloff = 1.0;
+	double _plane_sharpness = 0.3;
+	double _skewness = 0.0;
+	double _projection_opacity = 1.0;
+	double _projection_opacity_base = 1.0;
 	bool _is_current = false;
 
 protected:
@@ -126,6 +131,21 @@ public:
 
 	double get_w_fade_slope() const;
 	void set_w_fade_slope(const double p_w_fade_slope);
+
+	double get_edge_falloff() const;
+	void set_edge_falloff(const double p_edge_falloff);
+
+	double get_plane_sharpness() const;
+	void set_plane_sharpness(const double p_plane_sharpness);
+
+	double get_skewness() const;
+	void set_skewness(const double p_skewness);
+
+	double get_projection_opacity() const;
+	void set_projection_opacity(const double p_projection_opacity);
+
+	double get_projection_opacity_base() const;
+	void set_projection_opacity_base(const double p_projection_opacity_base);
 
 	DepthFadeMode get_depth_fade_mode() const { return _depth_fade_mode; }
 	void set_depth_fade_mode(const DepthFadeMode p_depth_fade_mode);

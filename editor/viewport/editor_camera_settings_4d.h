@@ -27,6 +27,11 @@ class EditorCameraSettings4D : public Object {
 	Color _w_fade_color_positive = Color(1.0f, 0.5f, 0.0f);
 	double _w_fade_distance = 5.0;
 	double _w_fade_slope = 1.0;
+	double _edge_falloff = 1.0;
+	double _plane_sharpness = 0.3;
+	double _skewness = 0.0;
+	double _projection_opacity = 1.0;
+	double _projection_opacity_base = 1.0;
 
 	Ref<ConfigFile> _4d_editor_config_file;
 	String _4d_editor_config_file_path = "";
@@ -66,6 +71,21 @@ public:
 
 	double get_w_fade_slope() const { return _w_fade_slope; }
 	void set_w_fade_slope(const double p_w_fade_slope);
+
+	double get_edge_falloff() const { return _edge_falloff; }
+	void set_edge_falloff(const double p_edge_falloff);
+
+	double get_plane_sharpness() const { return _plane_sharpness; }
+	void set_plane_sharpness(const double p_plane_sharpness);
+
+	double get_skewness() const { return _skewness; }
+	void set_skewness(const double p_skewness);
+
+	double get_projection_opacity() const { return _projection_opacity; }
+	void set_projection_opacity(const double p_projection_opacity);
+
+	double get_projection_opacity_base() const { return _projection_opacity_base; }
+	void set_projection_opacity_base(const double p_projection_opacity_base);
 
 	// Only a setter because the source of truth for this should be the rendering engine menu.
 	void set_rendering_engine(const String &p_rendering_engine);

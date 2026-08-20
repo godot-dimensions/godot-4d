@@ -95,11 +95,11 @@ void CombinedRenderingEngine4D::_ensure_helpers_created() {
 
 		// Added after (and therefore drawn on top of) the cross-section rect, so the projected
 		// pass's normalized result blends over the cross-section result.
-		TextureRect *projected_rect = memnew(TextureRect);
-		projected_rect->set_texture(_projected_viewport->get_texture());
-		projected_rect->set_anchors_preset(Control::PRESET_FULL_RECT);
-		projected_rect->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-		_combine_canvas_layer->add_child(projected_rect);
+		_projected_rect = memnew(TextureRect);
+		_projected_rect->set_texture(_projected_viewport->get_texture());
+		_projected_rect->set_anchors_preset(Control::PRESET_FULL_RECT);
+		_projected_rect->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+		_combine_canvas_layer->add_child(_projected_rect);
 	}
 }
 
@@ -194,6 +194,7 @@ void CombinedRenderingEngine4D::render_frame() {
 	_sync_viewport_sizes();
 
 	Camera4D *camera = get_camera();
+	_projected_rect->set_modulate(Color(1.0, 1.0, 1.0, camera->get_projection_opacity()));
 	TypedArray<MeshInstance4D> mesh_instances = get_mesh_instances();
 	TypedArray<Projection> mesh_relative_basises = get_mesh_relative_basises();
 	PackedVector4Array mesh_relative_positions = get_mesh_relative_positions();

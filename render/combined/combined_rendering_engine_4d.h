@@ -38,6 +38,7 @@ private:
 	SubViewport *_cross_section_viewport = nullptr;
 	SubViewport *_projected_viewport = nullptr;
 	CanvasLayer *_combine_canvas_layer = nullptr;
+	TextureRect *_projected_rect = nullptr;
 
 	// The cross-section pass's real depth buffer is a combined depth+stencil format with no
 	// Image::Format equivalent and no storage-image usage, so it can't be wrapped by Texture2DRD.

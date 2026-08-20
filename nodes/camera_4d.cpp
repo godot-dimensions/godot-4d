@@ -305,6 +305,46 @@ void Camera4D::set_w_fade_slope(const double p_w_fade_slope) {
 	_w_fade_slope = p_w_fade_slope;
 }
 
+double Camera4D::get_edge_falloff() const {
+	return _edge_falloff;
+}
+
+void Camera4D::set_edge_falloff(const double p_edge_falloff) {
+	_edge_falloff = p_edge_falloff;
+}
+
+double Camera4D::get_plane_sharpness() const {
+	return _plane_sharpness;
+}
+
+void Camera4D::set_plane_sharpness(const double p_plane_sharpness) {
+	_plane_sharpness = p_plane_sharpness;
+}
+
+double Camera4D::get_skewness() const {
+	return _skewness;
+}
+
+void Camera4D::set_skewness(const double p_skewness) {
+	_skewness = p_skewness;
+}
+
+double Camera4D::get_projection_opacity() const {
+	return _projection_opacity;
+}
+
+void Camera4D::set_projection_opacity(const double p_projection_opacity) {
+	_projection_opacity = p_projection_opacity;
+}
+
+double Camera4D::get_projection_opacity_base() const {
+	return _projection_opacity_base;
+}
+
+void Camera4D::set_projection_opacity_base(const double p_projection_opacity_base) {
+	_projection_opacity_base = p_projection_opacity_base;
+}
+
 void Camera4D::_bind_methods() {
 	// Be sure to keep the relevant properties in sync with EditorCameraSettings4D.
 	ClassDB::bind_method(D_METHOD("is_current"), &Camera4D::is_current);
@@ -385,6 +425,26 @@ void Camera4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_w_fade_slope"), &Camera4D::get_w_fade_slope);
 	ClassDB::bind_method(D_METHOD("set_w_fade_slope", "w_fade_slope"), &Camera4D::set_w_fade_slope);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.001,10,0.001,or_greater,or_less,exp"), "set_w_fade_slope", "get_w_fade_slope");
+
+	ClassDB::bind_method(D_METHOD("get_edge_falloff"), &Camera4D::get_edge_falloff);
+	ClassDB::bind_method(D_METHOD("set_edge_falloff", "edge_falloff"), &Camera4D::set_edge_falloff);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "edge_falloff", PROPERTY_HINT_RANGE, "0,5,0.01,or_greater"), "set_edge_falloff", "get_edge_falloff");
+
+	ClassDB::bind_method(D_METHOD("get_plane_sharpness"), &Camera4D::get_plane_sharpness);
+	ClassDB::bind_method(D_METHOD("set_plane_sharpness", "plane_sharpness"), &Camera4D::set_plane_sharpness);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "plane_sharpness", PROPERTY_HINT_RANGE, "0,0.99,0.001"), "set_plane_sharpness", "get_plane_sharpness");
+
+	ClassDB::bind_method(D_METHOD("get_skewness"), &Camera4D::get_skewness);
+	ClassDB::bind_method(D_METHOD("set_skewness", "skewness"), &Camera4D::set_skewness);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "skewness", PROPERTY_HINT_RANGE, "-1,1,0.001"), "set_skewness", "get_skewness");
+
+	ClassDB::bind_method(D_METHOD("get_projection_opacity"), &Camera4D::get_projection_opacity);
+	ClassDB::bind_method(D_METHOD("set_projection_opacity", "projection_opacity"), &Camera4D::set_projection_opacity);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "projection_opacity", PROPERTY_HINT_RANGE, "0,1,0.001"), "set_projection_opacity", "get_projection_opacity");
+
+	ClassDB::bind_method(D_METHOD("get_projection_opacity_base"), &Camera4D::get_projection_opacity_base);
+	ClassDB::bind_method(D_METHOD("set_projection_opacity_base", "projection_opacity_base"), &Camera4D::set_projection_opacity_base);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "projection_opacity_base", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,exp"), "set_projection_opacity_base", "get_projection_opacity_base");
 
 	ClassDB::bind_method(D_METHOD("get_depth_fade_mode"), &Camera4D::get_depth_fade_mode);
 	ClassDB::bind_method(D_METHOD("set_depth_fade_mode", "depth_fade_mode"), &Camera4D::set_depth_fade_mode);

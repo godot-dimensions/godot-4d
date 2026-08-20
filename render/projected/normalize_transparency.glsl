@@ -6,7 +6,8 @@ layout(rgba16f, set = 0, binding = 0) uniform image2D projected_frame;
 
 layout(push_constant, std430) uniform Params {
 	ivec2 size;
-	ivec2 reserved;
+	float opacity_base;
+	float reserved;
 }
 params;
 
@@ -16,7 +17,7 @@ void main() {
 		return;
 	}
 	vec4 color = imageLoad(projected_frame, uv);
-	color /= color.a + 1.0;
+	color /= color.a + params.opacity_base;
 	color.rgb /= color.a;
 	imageStore(projected_frame, uv, color);
 }
