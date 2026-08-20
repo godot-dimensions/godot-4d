@@ -2,7 +2,8 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(rgba16f, set = 0, binding = 0) uniform image2D projected_frame;
+layout(set = 0, binding = 0) uniform sampler2D depth_input;
+layout(r32f, set = 0, binding = 1) uniform image2D depth_output;
 
 layout(push_constant, std430) uniform Params {
 	ivec2 size;
@@ -15,8 +16,6 @@ void main() {
 	if (uv.x >= params.size.x || uv.y >= params.size.y) {
 		return;
 	}
-	vec4 color = imageLoad(projected_frame, uv);
-	color /= color.a + 1.0;
-	color.rgb /= color.a;
-	imageStore(projected_frame, uv, color);
+	float depth = texelFetch(depth_input, uv, 0).x;
+	imageStore(depth_output, uv, vec4(depth, 0.0, 0.0, 0.0));
 }

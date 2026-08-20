@@ -31,30 +31,12 @@
 #endif
 #endif
 
-/* notes for how to do the projection calculations in a compute shader:
-// some sort of setup function:
-	RenderingServer::get_singleton()->compositor_create();
-	// Add compositor effect subclass. It should have COMPOSITOR_EFFECT_CALLBACK_TYPE_PRE_OPAQUE.
-	RenderingDevice::get_singleton()->compute_pipeline_create(); //etc.
-
-// in the compositor effect's main function:
-	// for each 4D mesh:
-		// Get the 3D mesh's buffers from RendererRD::MeshStorage::get_singleton()->mesh_surface_get_vertex_arrays_and_format
-		// Bind the 3D vertex buffer and attribute buffer as outputs, and the 4D data buffer as the input.
-		// Run the compute pipeline.
-		// Maybe some sort of synchronization thing?
-*/
-
-void ProjectedRenderingEngine4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("normalize_image_callback", "effect_callback_type", "render_data"), &ProjectedRenderingEngine4D::normalize_image_callback);
-}
-
 ProjectedRenderingEngine4D::ProjectedRenderingEngine4D() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	ERR_FAIL_NULL(rendering_server);
 	RenderingDevice *rd = rendering_server->get_rendering_device();
 	if (rd == nullptr) {
-		// The compatibility renderer isn't compatible with projected rendering anyway.
+		// The Compatibility renderer isn't compatible with projected rendering anyway.
 		return;
 	}
 	// shader_compile_spirv_from_source(Ref<RDShaderSource>)/shader_create_from_spirv(Ref<RDShaderSPIRV>)
@@ -67,6 +49,7 @@ ProjectedRenderingEngine4D::ProjectedRenderingEngine4D() {
 	shader_source.instantiate();
 	shader_source->set_stage_source(RenderingDevice::SHADER_STAGE_COMPUTE, normalize_transparency_shader_glsl);
 	Ref<RDShaderSPIRV> shader_spirv = rd->call("shader_compile_spirv_from_source", shader_source);
+	ERR_FAIL_COND(shader_spirv.is_null());
 	const String compile_error = shader_spirv->get_stage_compile_error(RenderingDevice::SHADER_STAGE_COMPUTE);
 	ERR_FAIL_COND_MSG(!compile_error.is_empty(), "ProjectedRenderingEngine4D: Failed to compile normalize_transparency.glsl: " + compile_error);
 	normalize_shader = rd->call("shader_create_from_spirv", shader_spirv);
@@ -75,12 +58,16 @@ ProjectedRenderingEngine4D::ProjectedRenderingEngine4D() {
 	rendering_server->compositor_effect_set_callback(
 			normalize_compositor_effect,
 			RenderingServer::COMPOSITOR_EFFECT_CALLBACK_TYPE_POST_TRANSPARENT,
-			Callable(this, "normalize_image_callback"));
+			callable_mp(this, &ProjectedRenderingEngine4D::_normalize_image_callback));
 	rendering_server->compositor_effect_set_enabled(normalize_compositor_effect, true); // It's only ever attached when it should be enabled.
 	normalize_compositor = rendering_server->compositor_create();
 	TypedArray<RID> compositor_effects;
 	compositor_effects.push_back(normalize_compositor_effect);
 	rendering_server->compositor_set_compositor_effects(normalize_compositor, compositor_effects);
+}
+
+void ProjectedRenderingEngine4D::set_cross_section_depth_texture(const Variant &p_texture) {
+	_cross_section_depth_texture = p_texture;
 }
 
 void ProjectedRenderingEngine4D::_render_frame_callback() {
@@ -128,9 +115,11 @@ void ProjectedRenderingEngine4D::_render_frame_callback() {
 					poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
 				}
 			}
-			Ref<Material> override_material_3d = material_4d->get_projected_material_3d();
+			Ref<ShaderMaterial> override_material_3d = material_4d->get_projected_material_3d();
 			ERR_CONTINUE(!override_material_3d.is_valid());
 			RenderingServer::get_singleton()->instance_set_surface_override_material(instance_3d, 0, override_material_3d->get_rid());
+			// Always called even when _cross_section_depth_texture is NIL so that it is cleared if this engine is used alone.
+			override_material_3d->set_shader_parameter("cross_section_depth_texture", _cross_section_depth_texture);
 		}
 
 		Projection modelview_basis = modelview_basises[mesh_index];
@@ -254,6 +243,8 @@ void ProjectedRenderingEngine4D::cleanup_for_viewport() {
 	Viewport *viewport = get_viewport();
 	if (_projected_world_3d.is_valid() && viewport != nullptr) {
 		viewport->set_world_3d(Ref<World3D>());
+		// Same workaround as in setup_for_viewport, needed when this is used by the combined renderer.
+		RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), RID());
 	}
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	if (rendering_server == nullptr) {
@@ -276,7 +267,7 @@ void ProjectedRenderingEngine4D::cleanup_for_viewport() {
 	_projected_world_3d = Ref<World3D>();
 }
 
-void ProjectedRenderingEngine4D::normalize_image_callback(int64_t p_effect_callback_type, RenderData *p_render_data) {
+void ProjectedRenderingEngine4D::_normalize_image_callback(int64_t p_effect_callback_type, RenderData *p_render_data) {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	ERR_FAIL_NULL(rendering_server);
 	RenderingDevice *rd = rendering_server->get_rendering_device();
@@ -286,7 +277,7 @@ void ProjectedRenderingEngine4D::normalize_image_callback(int64_t p_effect_callb
 	if (buffers) {
 		const Vector2i size = buffers->get_internal_size();
 		// Matches the shader's local_size of 8x8: round up so a partial workgroup still covers
-		// the last few rows/columns (the shader itself bounds-checks against params.size for those).
+		// the last few rows or columns. The shader bounds-checks those extra invocations.
 		const uint32_t x_groups = (uint32_t(size.x) + 7) / 8;
 		const uint32_t y_groups = (uint32_t(size.y) + 7) / 8;
 		PackedByteArray push_constant;
