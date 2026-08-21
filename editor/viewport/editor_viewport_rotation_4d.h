@@ -2,7 +2,7 @@
 
 #include "editor_viewport_4d_defines.h"
 
-// Editor viewport rotation navigation gizmo (the thing in the top right corner).
+// Editor viewport rotation navigation widget (the thing in the top right corner).
 // Shows the current view rotation and allows the user to rotate the view.
 // Users can drag to spin like a ball, or click on an axis to make that perpendicular to the view.
 class EditorViewportRotation4D : public Control {

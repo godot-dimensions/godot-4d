@@ -85,7 +85,7 @@ if env["target"] == "editor":
     sources += Glob("../../editor/viewport/*.cpp")
 
 if env["platform"] == "windows":
-    if env["OBJSUFFIX"].endswith(".obj"):
+    if env["OBJSUFFIX"].endswith(".obj") and not env["OBJSUFFIX"].endswith(".o.obj"):
         env["OBJSUFFIX"] = env["OBJSUFFIX"][:-4] + ".o.obj"
 
 bin_path = "bin/"
