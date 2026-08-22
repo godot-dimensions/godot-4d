@@ -350,19 +350,19 @@ void EditorMainViewport4D::viewport_mouse_input(const Ref<InputEvent> &p_input_e
 	}
 }
 
-void EditorMainViewport4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock) {
+void EditorMainViewport4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock4D p_axis_lock) {
 	_rotation_axis_lock = p_axis_lock;
 }
 
 void EditorMainViewport4D::set_ground_view_axis(const Vector4::Axis p_axis) {
 	switch (_rotation_axis_lock) {
-		case EditorViewportCameraRotationAxisLock::FULLY_LOCKED: {
+		case EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED: {
 			_camera_uses_free_rotation = false;
 		} break;
-		case EditorViewportCameraRotationAxisLock::FREE_GROUND_VIEW: {
+		case EditorViewportCameraRotationAxisLock4D::FREE_GROUND_VIEW: {
 			_camera_uses_free_rotation = p_axis == Vector4::AXIS_Y;
 		} break;
-		case EditorViewportCameraRotationAxisLock::FULLY_FREE: {
+		case EditorViewportCameraRotationAxisLock4D::FULLY_FREE: {
 			_camera_uses_free_rotation = true;
 		} break;
 	}

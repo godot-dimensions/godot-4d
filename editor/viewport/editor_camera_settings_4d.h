@@ -20,7 +20,7 @@ class EditorCameraSettings4D : public Object {
 	double _clip_near = 0.05;
 	double _clip_far = 4000.0;
 
-	EditorViewportCameraRotationAxisLock _rotation_axis_lock = EditorViewportCameraRotationAxisLock::FULLY_LOCKED;
+	EditorViewportCameraRotationAxisLock4D _rotation_axis_lock = EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED;
 	Camera4D::DepthFadeMode _depth_fade_mode = Camera4D::DEPTH_FADE_DISABLED;
 	double _depth_fade_start = 25.0;
 

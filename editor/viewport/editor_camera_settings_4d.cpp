@@ -38,7 +38,7 @@ void EditorCameraSettings4D::set_clip_far(const double p_clip_far) {
 }
 
 void EditorCameraSettings4D::set_rotation_axis_lock(const int p_rotation_axis_lock) {
-	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock)p_rotation_axis_lock;
+	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock4D)p_rotation_axis_lock;
 	apply_to_cameras();
 	write_to_config_file();
 }
@@ -123,7 +123,7 @@ void EditorCameraSettings4D::setup(EditorMainScreen4D *p_editor_main_screen, Ref
 	_focal_length = p_config_file->get_value("camera", "focal_length", _focal_length);
 	_clip_near = p_config_file->get_value("camera", "clip_near", _clip_near);
 	_clip_far = p_config_file->get_value("camera", "clip_far", _clip_far);
-	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock)(int)p_config_file->get_value("camera", "rotation_axis_lock", (int)_rotation_axis_lock);
+	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock4D)(int)p_config_file->get_value("camera", "rotation_axis_lock", (int)_rotation_axis_lock);
 	_depth_fade_mode = (Camera4D::DepthFadeMode)(int)p_config_file->get_value("camera", "depth_fade_mode", _depth_fade_mode);
 	_w_fade_mode = (Camera4D::WFadeMode)(int)p_config_file->get_value("camera", "w_fade_mode", _w_fade_mode);
 	_w_fade_color_negative = p_config_file->get_value("camera", "w_fade_color_negative", _w_fade_color_negative);
@@ -152,7 +152,7 @@ void EditorCameraSettings4D::write_to_config_file() const {
 	if (!Math::is_equal_approx(_clip_far, 4000.0)) {
 		_4d_editor_config_file->set_value("camera", "clip_far", _clip_far);
 	}
-	if (_rotation_axis_lock != EditorViewportCameraRotationAxisLock::FULLY_LOCKED) {
+	if (_rotation_axis_lock != EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED) {
 		_4d_editor_config_file->set_value("camera", "rotation_axis_lock", (int)_rotation_axis_lock);
 	}
 	if (_depth_fade_mode != Camera4D::DEPTH_FADE_DISABLED) {

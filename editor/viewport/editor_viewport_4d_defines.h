@@ -59,7 +59,7 @@ class EditorPreviewEnvironment4D;
 class EditorTransformGizmo4D;
 class EditorViewportRotation4D;
 
-enum class EditorViewportCameraRotationAxisLock : int8_t {
+enum class EditorViewportCameraRotationAxisLock4D : int8_t {
 	FULLY_LOCKED,
 	FREE_GROUND_VIEW,
 	FULLY_FREE,

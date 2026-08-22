@@ -285,7 +285,7 @@ void EditorMainScreen4D::press_menu_item(const int p_option) {
 	}
 }
 
-void EditorMainScreen4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock) {
+void EditorMainScreen4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock4D p_axis_lock) {
 	// This function is named "policy" because it does not immediately change the camera's rotation axis lock,
 	// rather it sets the policy for how it will be handled the next time the user clicks on the rotation widget.
 	_rotation_axis_lock = p_axis_lock;
