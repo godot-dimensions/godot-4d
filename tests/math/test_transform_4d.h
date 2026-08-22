@@ -55,4 +55,32 @@ TEST_CASE("[Transform4D] Random Inversion") {
 		CHECK_MESSAGE(Transform4D().is_equal_approx(inverted * transform), "Transform4D inverted times transform should be the identity transform.");
 	}
 }
+TEST_CASE("[Transform4D] Xform Rect") {
+	// An identity transform must leave the rect untouched, including a rect that does not contain the origin.
+	const Transform4D identity = Transform4D();
+	const Rect4 offset_rect = Rect4(Vector4(5, 5, 5, 5), Vector4(1, 1, 1, 1));
+	Rect4 result = identity.xform_rect(offset_rect);
+	CHECK_MESSAGE(result.position == Vector4(5, 5, 5, 5), "Transform4D xform_rect by identity should not move the rect towards the origin.");
+	CHECK_MESSAGE(result.size == Vector4(1, 1, 1, 1), "Transform4D xform_rect by identity should not inflate the rect towards the origin.");
+
+	// A pure translation must move the rect without changing its size.
+	Transform4D translated = Transform4D();
+	translated.origin = Vector4(10, 20, 30, 40);
+	result = translated.xform_rect(offset_rect);
+	CHECK_MESSAGE(result.position == Vector4(15, 25, 35, 45), "Transform4D xform_rect should translate the rect position.");
+	CHECK_MESSAGE(result.size == Vector4(1, 1, 1, 1), "Transform4D xform_rect should not change the size for a pure translation.");
+
+	// A uniform scale about the origin scales both the position and the size.
+	Transform4D scaled = Transform4D();
+	scaled.basis = Basis4D::from_scale(Vector4(2, 2, 2, 2));
+	result = scaled.xform_rect(offset_rect);
+	CHECK_MESSAGE(result.position == Vector4(10, 10, 10, 10), "Transform4D xform_rect should scale the rect position.");
+	CHECK_MESSAGE(result.size == Vector4(2, 2, 2, 2), "Transform4D xform_rect should scale the rect size.");
+
+	// A rect straddling the origin still works, and the result must be the tight bounds of the corners.
+	const Rect4 straddling_rect = Rect4(Vector4(-1, -1, -1, -1), Vector4(2, 2, 2, 2));
+	result = identity.xform_rect(straddling_rect);
+	CHECK_MESSAGE(result.position == Vector4(-1, -1, -1, -1), "Transform4D xform_rect by identity should not move a rect that straddles the origin.");
+	CHECK_MESSAGE(result.size == Vector4(2, 2, 2, 2), "Transform4D xform_rect by identity should not resize a rect that straddles the origin.");
+}
 } // namespace TestTransform4D
