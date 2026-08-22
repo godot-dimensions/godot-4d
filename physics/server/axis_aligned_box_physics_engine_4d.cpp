@@ -56,8 +56,10 @@ bool AxisAlignedBoxPhysicsEngine4D::_do_static_shapes_overlap(const Vector<Rect4
 				}
 			}
 			const Rect4 &shape_rect_b = p_shape_rects_b[shape_index_b];
-			// Inclusive is required here to pair well with the behavior of the continuous collision function.
-			if (shape_rect_a.intersects_inclusive(shape_rect_b)) {
+			// Use the continuous collision function with no motion, so that this is the zero-motion case of
+			// `_do_moving_shapes_overlap` by construction and cannot drift away from it. The two must agree
+			// exactly, because the area enter/exit signals are emitted by comparing one against the other.
+			if (shape_rect_a.continuous_collision_overlaps(Vector4(), shape_rect_b)) {
 				return true;
 			}
 		}

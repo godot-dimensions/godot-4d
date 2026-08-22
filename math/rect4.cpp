@@ -1,5 +1,16 @@
 #include "rect4.h"
 
+// Returns true if the two intervals do not overlap, for an axis with no relative motion.
+// Touching endpoints only count as overlapping when one of the intervals is a single point,
+// so that a zero-thickness shape can still collide with what it is touching, while two solid
+// rects that merely share a face are free to slide along that face instead of being stopped.
+bool Rect4::_are_motionless_intervals_separated(const real_t p_self_start, const real_t p_self_end, const real_t p_obstacle_start, const real_t p_obstacle_end) {
+	if (p_self_start == p_self_end || p_obstacle_start == p_obstacle_end) {
+		return p_self_start > p_obstacle_end || p_self_end < p_obstacle_start;
+	}
+	return p_self_start >= p_obstacle_end || p_self_end <= p_obstacle_start;
+}
+
 // Basic math functions.
 Vector4 Rect4::get_longest_axis() const {
 	Vector4 longest_axis = Vector4(size.x, 0, 0, 0);
@@ -360,7 +371,7 @@ real_t Rect4::continuous_collision_depth(const Vector4 &p_relative_motion, const
 	Vector4 high_ratios;
 	for (int i = 0; i < 4; i++) {
 		if (p_relative_motion[i] == 0.0f) {
-			if (position[i] > obstacle_end[i] || self_end[i] < p_obstacle.position[i]) {
+			if (_are_motionless_intervals_separated(position[i], self_end[i], p_obstacle.position[i], obstacle_end[i])) {
 				// No collision is possible in this axis, so we can return early.
 				if (r_out_normal) {
 					*r_out_normal = Vector4();
@@ -411,7 +422,7 @@ bool Rect4::continuous_collision_overlaps(const Vector4 &p_relative_motion, cons
 	Vector4 high_ratios;
 	for (int i = 0; i < 4; i++) {
 		if (p_relative_motion[i] == 0.0f) {
-			if (position[i] > obstacle_end[i] || self_end[i] < p_obstacle.position[i]) {
+			if (_are_motionless_intervals_separated(position[i], self_end[i], p_obstacle.position[i], obstacle_end[i])) {
 				// No collision is possible in this axis, so we can return early.
 				return false;
 			}

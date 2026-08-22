@@ -3,6 +3,10 @@
 #include "../godot_4d_defines.h"
 
 struct _NO_DISCARD_ Rect4 {
+private:
+	static bool _are_motionless_intervals_separated(const real_t p_self_start, const real_t p_self_end, const real_t p_obstacle_start, const real_t p_obstacle_end);
+
+public:
 	Vector4 position = Vector4();
 	Vector4 size = Vector4();
 

@@ -198,6 +198,42 @@ TEST_CASE("[Rect4] Continuous Collision Depth") {
 	CHECK_MESSAGE(normal == Vector4(0, 0, 0, 0), "Rect4 continuous_collision_depth should give a zero normal when there is no collision.");
 }
 
+TEST_CASE("[Rect4] Continuous Collision Touching Faces") {
+	// A player resting exactly on a surface must be able to move along it. These rects share only
+	// the plane Y=0, so they have zero-hypervolume contact and can never overlap for any amount of motion.
+	const Rect4 player_rect = Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1));
+	const Rect4 floor_ahead_rect = Rect4(Vector4(1, -1, 0, 0), Vector4(2, 1, 1, 1));
+	Vector4 normal;
+	real_t depth = player_rect.continuous_collision_depth(Vector4(1, 0, 0, 0), floor_ahead_rect, &normal);
+	CHECK_MESSAGE(depth == 1.0f, "Rect4 continuous_collision_depth should not be stopped by a rect it only shares a face with.");
+	CHECK_MESSAGE(normal == Vector4(0, 0, 0, 0), "Rect4 continuous_collision_depth should give a zero normal when there is no collision.");
+	CHECK_MESSAGE(!player_rect.continuous_collision_overlaps(Vector4(1, 0, 0, 0), floor_ahead_rect), "Rect4 continuous_collision_overlaps should not overlap a rect it only shares a face with.");
+	// The same is true for motion parallel to the shared face, in which case the rects stay touching the whole time.
+	const Rect4 touching_x_rect = Rect4(Vector4(1, 0, 0, 0), Vector4(1, 1, 1, 1));
+	depth = player_rect.continuous_collision_depth(Vector4(0, 1, 0, 0), touching_x_rect, &normal);
+	CHECK_MESSAGE(depth == 1.0f, "Rect4 continuous_collision_depth should allow sliding along a shared face.");
+	CHECK_MESSAGE(!player_rect.continuous_collision_overlaps(Vector4(0, 1, 0, 0), touching_x_rect), "Rect4 continuous_collision_overlaps should agree with continuous_collision_depth when sliding along a shared face.");
+	// Moving into the shared face rather than along it must still collide.
+	depth = player_rect.continuous_collision_depth(Vector4(1, 0, 0, 0), touching_x_rect, &normal);
+	CHECK_MESSAGE(depth == 0.0f, "Rect4 continuous_collision_depth should be stopped when moving directly into a touching rect.");
+	CHECK_MESSAGE(normal == Vector4(-1, 0, 0, 0), "Rect4 continuous_collision_depth should give the correct normal when moving into a touching rect.");
+
+	// A zero-thickness rect must still collide with what it touches, so touching is inclusive when either rect is degenerate.
+	const Rect4 flat_z_rect = Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 0, 1));
+	const Rect4 solid_rect = Rect4(Vector4(3, 0, 0, 0), Vector4(1, 1, 1, 1));
+	depth = flat_z_rect.continuous_collision_depth(Vector4(4, 0, 0, 0), solid_rect, &normal);
+	CHECK_MESSAGE(depth == doctest::Approx(0.5f), "Rect4 continuous_collision_depth should let a zero-thickness rect collide with a solid rect.");
+	CHECK_MESSAGE(normal == Vector4(-1, 0, 0, 0), "Rect4 continuous_collision_depth should give the correct normal for a zero-thickness rect.");
+	// Two zero-thickness rects on the same plane also still collide with each other.
+	const Rect4 flat_z_ahead_rect = Rect4(Vector4(3, 0, 0, 0), Vector4(1, 1, 0, 1));
+	depth = flat_z_rect.continuous_collision_depth(Vector4(4, 0, 0, 0), flat_z_ahead_rect, &normal);
+	CHECK_MESSAGE(depth == doctest::Approx(0.5f), "Rect4 continuous_collision_depth should let two coplanar zero-thickness rects collide.");
+	// But a zero-thickness rect on a different plane must not collide.
+	const Rect4 flat_z_offset_rect = Rect4(Vector4(3, 0, 1, 0), Vector4(1, 1, 0, 1));
+	depth = flat_z_rect.continuous_collision_depth(Vector4(4, 0, 0, 0), flat_z_offset_rect, &normal);
+	CHECK_MESSAGE(depth == 1.0f, "Rect4 continuous_collision_depth should not collide two zero-thickness rects on different planes.");
+}
+
 TEST_CASE("[Rect4] Continuous Collision Overlaps") {
 	const Rect4 unit_rect = Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1));
 	const Rect4 offset_3w_rect = Rect4(Vector4(0, 0, 0, 3), Vector4(1, 1, 1, 1));
