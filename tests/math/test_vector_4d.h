@@ -61,6 +61,25 @@ TEST_CASE("[Vector4D] Limit Length") {
 			"Vector4 limit_length should work as expected.");
 }
 
+TEST_CASE("[Vector4D] Limit Length Taxicab") {
+	const Vector4 unchanged = Vector4D::limit_length_taxicab(Vector4(1, -2, 0.5, 0), 4.0);
+	CHECK_MESSAGE(
+			unchanged == Vector4(1, -2, 0.5, 0),
+			"Vector4D limit_length_taxicab should not change a vector within the limit.");
+	const Vector4 limited = Vector4D::limit_length_taxicab(Vector4(4, -2, 1, 0), 4.0);
+	CHECK_MESSAGE(
+			limited.is_equal_approx(Vector4(3, -1, 0, 0)),
+			"Vector4D limit_length_taxicab should take away length from each axis as equally as possible, preserving signs.");
+	const Vector4 limited_zeroed = Vector4D::limit_length_taxicab(Vector4(5, 1, 0, 0), 3.0);
+	CHECK_MESSAGE(
+			limited_zeroed.is_equal_approx(Vector4(3, 0, 0, 0)),
+			"Vector4D limit_length_taxicab should zero the shortest axes and take away more from the longest.");
+	const Vector4 limited_uniform = Vector4D::limit_length_taxicab(Vector4(2, 2, 2, 2));
+	CHECK_MESSAGE(
+			limited_uniform.is_equal_approx(Vector4(0.25, 0.25, 0.25, 0.25)),
+			"Vector4D limit_length_taxicab should default to a taxicab length of 1.0.");
+}
+
 TEST_CASE("[Vector4] Plane methods") {
 	const Vector4 vector = Vector4(1.2, 3.4, 5.6, 1.6);
 	const Vector4 vector_y = Vector4(0, 1, 0, 0);

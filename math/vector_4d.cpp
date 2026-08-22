@@ -115,12 +115,6 @@ Vector4 Vector4D::limit_length(const Vector4 &p_vector, const real_t p_len) {
 	return v;
 }
 
-void _sort_axes_max_to_min(const Vector4 &p_vector, Vector4::Axis *r_axes) {
-	std::sort(r_axes, r_axes + 4, [&p_vector](Vector4::Axis a, Vector4::Axis b) {
-		return p_vector[a] > p_vector[b];
-	});
-}
-
 Vector4 Vector4D::limit_length_taxicab(const Vector4 &p_vector, const real_t p_len) {
 	Vector4 abs_vector = p_vector.abs();
 	real_t taxicab_length = abs_vector.x + abs_vector.y + abs_vector.z + abs_vector.w;
@@ -130,7 +124,9 @@ Vector4 Vector4D::limit_length_taxicab(const Vector4 &p_vector, const real_t p_l
 	// Else, we need to take away length from each axis, as equally as possible.
 	// But we need to start with the shortest axis because it will be the first to reach 0.
 	Vector4::Axis axes[4] = { Vector4::Axis::AXIS_X, Vector4::Axis::AXIS_Y, Vector4::Axis::AXIS_Z, Vector4::Axis::AXIS_W };
-	_sort_axes_max_to_min(abs_vector, axes);
+	std::sort(axes, axes + 4, [&abs_vector](Vector4::Axis a, Vector4::Axis b) {
+		return abs_vector[a] > abs_vector[b];
+	});
 	taxicab_length -= p_len;
 	Vector4 limited = p_vector;
 	for (int i = 4; i > 0; i--) {
@@ -223,7 +219,7 @@ Vector4 Vector4D::slide(const Vector4 &p_vector, const Vector4 &p_normal) {
 
 Vector4 Vector4D::random_in_radius(const real_t p_radius) {
 	while (true) {
-		Vector4 random_point = Vector4(VariantUtilityFunctions::randf_range(-p_radius, p_radius), VariantUtilityFunctions::randf_range(-p_radius, p_radius), VariantUtilityFunctions::randf_range(-p_radius, p_radius), VariantUtilityFunctions::randf_range(-p_radius, p_radius));
+		Vector4 random_point = Vector4(VariantUtilityFunctions::randf_range(-1.0, 1.0), VariantUtilityFunctions::randf_range(-1.0, 1.0), VariantUtilityFunctions::randf_range(-1.0, 1.0), VariantUtilityFunctions::randf_range(-1.0, 1.0));
 		if (random_point.length_squared() <= 1.0f) {
 			return random_point * p_radius;
 		}
