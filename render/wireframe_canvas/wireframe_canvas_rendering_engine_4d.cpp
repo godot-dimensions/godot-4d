@@ -40,7 +40,10 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 	if (world_environment_4d != nullptr) {
 		Ref<PlainSkyMaterial4D> plain_sky_mat = world_environment_4d->get_sky_material();
 		if (plain_sky_mat.is_valid()) {
-			background_color = plain_sky_mat->get_color() * plain_sky_mat->get_energy_multiplier();
+			// Only scale RGB by the energy multiplier, don't scale the alpha channel.
+			const Color sky_color = plain_sky_mat->get_color();
+			const real_t energy_multiplier = plain_sky_mat->get_energy_multiplier();
+			background_color = Color(sky_color.r * energy_multiplier, sky_color.g * energy_multiplier, sky_color.b * energy_multiplier, 1.0f);
 		}
 	}
 	wire_canvas->set_background_color(background_color);
