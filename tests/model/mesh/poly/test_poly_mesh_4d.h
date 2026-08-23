@@ -132,6 +132,21 @@ TEST_CASE("[PolyMesh4D] Validate poly mesh data") {
 		ERR_PRINT_ON;
 	}
 
+	SUBCASE("4D cell whose first two 3D cells do not share a face is invalid") {
+		Ref<BoxPolyMesh4D> box;
+		box.instantiate();
+		Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+		// Cells 0 (-W) and 7 (+W) are opposite cells of the tesseract and share no face.
+		Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+		Vector<PackedInt32Array> hyper_cells = poly_cell_indices[2];
+		hyper_cells.set(0, PackedInt32Array{ 0, 7, 1, 2, 3, 4, 5, 6 });
+		poly_cell_indices.set(2, hyper_cells);
+		mesh->set_poly_cell_indices(poly_cell_indices);
+		ERR_PRINT_OFF;
+		CHECK_FALSE_MESSAGE(mesh->is_poly_mesh_data_valid(), "The first two 3D cells of a 4D cell must share a face.");
+		ERR_PRINT_ON;
+	}
+
 	SUBCASE("Boundary normals count must match boundary cell count") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		mesh->set_poly_cell_boundary_normals(PackedVector4Array{ Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1) });
@@ -339,6 +354,159 @@ TEST_CASE("[PolyMesh4D] Cell orientation is not affected by the edge order withi
 	}
 }
 
+TEST_CASE("[PolyMesh4D] Canonical span of 4D cells") {
+	// 4D cells use the general N-dimensional canonical span construction: one vertex of the
+	// first member off the shared "ridge" (the face shared by the first two 3D cells), the
+	// ridge's lowest vertex indices in ascending order, and one vertex of the second member
+	// off the ridge. Compute the expected span for the box hyper-cell from public API data.
+	Ref<BoxPolyMesh4D> box;
+	box.instantiate();
+	const Vector<Vector<PackedInt32Array>> box_indices = box->get_poly_cell_indices();
+	const PackedInt32Array hyper_cell = box_indices[2][0];
+	const PackedInt32Array &first_member = box_indices[1][hyper_cell[0]];
+	const PackedInt32Array &second_member = box_indices[1][hyper_cell[1]];
+	int32_t ridge_face = -1;
+	for (const int32_t first_member_face : first_member) {
+		if (second_member.has(first_member_face)) {
+			ridge_face = first_member_face;
+			break;
+		}
+	}
+	REQUIRE_MESSAGE(ridge_face != -1, "The first two cells of the box hyper-cell must share a face.");
+	const Vector<PackedInt32Array> face_vertices = box->get_all_poly_cell_vertex_indices(2, false);
+	const Vector<PackedInt32Array> cell_vertices = box->get_all_poly_cell_vertex_indices(3, false);
+	const PackedInt32Array ridge_face_vertices = face_vertices[ridge_face];
+	PackedInt32Array expected_ridge_span = ridge_face_vertices;
+	expected_ridge_span.sort();
+	expected_ridge_span.resize(3);
+	int32_t expected_first_extension = INT32_MAX;
+	for (const int32_t cell_vertex : cell_vertices[hyper_cell[0]]) {
+		if (!ridge_face_vertices.has(cell_vertex) && cell_vertex < expected_first_extension) {
+			expected_first_extension = cell_vertex;
+		}
+	}
+	int32_t expected_second_extension = INT32_MAX;
+	for (const int32_t cell_vertex : cell_vertices[hyper_cell[1]]) {
+		if (!ridge_face_vertices.has(cell_vertex) && cell_vertex < expected_second_extension) {
+			expected_second_extension = cell_vertex;
+		}
+	}
+	const PackedInt32Array expected_span = PackedInt32Array{ expected_first_extension, expected_ridge_span[0], expected_ridge_span[1], expected_ridge_span[2], expected_second_extension };
+
+	SUBCASE("The span is one vertex off the ridge, the ridge ascending, and one vertex off the other member") {
+		const Vector<PackedInt32Array> result = box->get_all_poly_cell_vertex_indices(4, true);
+		REQUIRE(result.size() == 1);
+		const PackedInt32Array &hyper_vertices = result[0];
+		REQUIRE(hyper_vertices.size() == 16);
+		for (int64_t i = 0; i < 5; i++) {
+			CHECK_MESSAGE(hyper_vertices[i] == expected_span[i], "The 4D cell's canonical span must follow the documented construction.");
+		}
+		CHECK_MESSAGE(hyper_vertices[1] < hyper_vertices[2], "The ridge vertices must be in ascending order.");
+		CHECK_MESSAGE(hyper_vertices[2] < hyper_vertices[3], "The ridge vertices must be in ascending order.");
+		for (int64_t i = 0; i < 16; i++) {
+			for (int64_t j = i + 1; j < 16; j++) {
+				CHECK_MESSAGE(hyper_vertices[i] != hyper_vertices[j], "The hyper-cell's vertex list must not contain duplicates.");
+			}
+		}
+	}
+
+	SUBCASE("Swapping the first two 3D cells of a 4D cell transposes the span's ends") {
+		Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+		Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+		Vector<PackedInt32Array> hyper_cells = poly_cell_indices[2];
+		PackedInt32Array swapped_hyper_cell = hyper_cells[0];
+		const int32_t temp = swapped_hyper_cell[0];
+		swapped_hyper_cell.set(0, swapped_hyper_cell[1]);
+		swapped_hyper_cell.set(1, temp);
+		hyper_cells.set(0, swapped_hyper_cell);
+		poly_cell_indices.set(2, hyper_cells);
+		mesh->set_poly_cell_indices(poly_cell_indices);
+		const Vector<PackedInt32Array> result = mesh->get_all_poly_cell_vertex_indices(4, true);
+		REQUIRE(result.size() == 1);
+		const PackedInt32Array &hyper_vertices = result[0];
+		REQUIRE(hyper_vertices.size() == 16);
+		// The ends swap while the ridge stays in place: one transposition, which is
+		// guaranteed to flip the orientation, making it controllable at the 4D cell's level.
+		CHECK(hyper_vertices[0] == expected_span[4]);
+		CHECK(hyper_vertices[1] == expected_span[1]);
+		CHECK(hyper_vertices[2] == expected_span[2]);
+		CHECK(hyper_vertices[3] == expected_span[3]);
+		CHECK(hyper_vertices[4] == expected_span[0]);
+	}
+
+	SUBCASE("The span does not depend on the order of members after the first two") {
+		Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+		Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+		Vector<PackedInt32Array> hyper_cells = poly_cell_indices[2];
+		hyper_cells.set(0, PackedInt32Array{ 0, 1, 7, 6, 5, 4, 3, 2 });
+		poly_cell_indices.set(2, hyper_cells);
+		mesh->set_poly_cell_indices(poly_cell_indices);
+		const Vector<PackedInt32Array> result = mesh->get_all_poly_cell_vertex_indices(4, true);
+		REQUIRE(result.size() == 1);
+		for (int64_t i = 0; i < 5; i++) {
+			CHECK_MESSAGE(result[0][i] == expected_span[i], "Reordering the trailing members must not change the canonical span.");
+		}
+	}
+
+	SUBCASE("The span does not depend on the internal order of lower-dimensional cells") {
+		// Rotate the ridge face's edge list, which preserves the winding but changes the storage.
+		{
+			Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+			Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+			Vector<PackedInt32Array> faces = poly_cell_indices[0];
+			const PackedInt32Array ridge_face_edges = faces[ridge_face];
+			PackedInt32Array rotated_edges;
+			for (int64_t i = 0; i < ridge_face_edges.size(); i++) {
+				rotated_edges.append(ridge_face_edges[(i + 1) % ridge_face_edges.size()]);
+			}
+			faces.set(ridge_face, rotated_edges);
+			poly_cell_indices.set(0, faces);
+			mesh->set_poly_cell_indices(poly_cell_indices);
+			const Vector<PackedInt32Array> result = mesh->get_all_poly_cell_vertex_indices(4, true);
+			REQUIRE(result.size() == 1);
+			for (int64_t i = 0; i < 5; i++) {
+				CHECK_MESSAGE(result[0][i] == expected_span[i], "Rotating the ridge face's edges must not change the 4D cell's canonical span.");
+			}
+		}
+		// Swap the ridge face's first two edges, which flips the face's own orientation.
+		{
+			Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+			Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+			Vector<PackedInt32Array> faces = poly_cell_indices[0];
+			PackedInt32Array swapped_edges = faces[ridge_face];
+			const int32_t temp = swapped_edges[0];
+			swapped_edges.set(0, swapped_edges[1]);
+			swapped_edges.set(1, temp);
+			faces.set(ridge_face, swapped_edges);
+			poly_cell_indices.set(0, faces);
+			mesh->set_poly_cell_indices(poly_cell_indices);
+			const Vector<PackedInt32Array> result = mesh->get_all_poly_cell_vertex_indices(4, true);
+			REQUIRE(result.size() == 1);
+			for (int64_t i = 0; i < 5; i++) {
+				CHECK_MESSAGE(result[0][i] == expected_span[i], "Flipping the ridge face's orientation must not change the 4D cell's canonical span.");
+			}
+		}
+		// Swap the first member cell's first two faces, which flips that 3D cell's orientation.
+		{
+			Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+			Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+			Vector<PackedInt32Array> cells = poly_cell_indices[1];
+			PackedInt32Array swapped_faces = cells[hyper_cell[0]];
+			const int32_t temp = swapped_faces[0];
+			swapped_faces.set(0, swapped_faces[1]);
+			swapped_faces.set(1, temp);
+			cells.set(hyper_cell[0], swapped_faces);
+			poly_cell_indices.set(1, cells);
+			mesh->set_poly_cell_indices(poly_cell_indices);
+			const Vector<PackedInt32Array> result = mesh->get_all_poly_cell_vertex_indices(4, true);
+			REQUIRE(result.size() == 1);
+			for (int64_t i = 0; i < 5; i++) {
+				CHECK_MESSAGE(result[0][i] == expected_span[i], "Flipping a member 3D cell's orientation must not change the 4D cell's canonical span.");
+			}
+		}
+	}
+}
+
 TEST_CASE("[PolyMesh4D] Simplex decomposition of a single tetrahedron cell") {
 	Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
@@ -498,11 +666,12 @@ TEST_CASE("[PolyMesh4D] Poly cell vertex indices by dimension") {
 		}
 	}
 	SUBCASE("Dimension 4 returns the vertices of the hyper-cell") {
-		// Note: The canonical span logic for 4D cells is known to be flawed and pending a rework,
-		// so this only checks the vertex counts without the canonical span, not span orientation.
 		const Vector<PackedInt32Array> result = box->get_all_poly_cell_vertex_indices(4, false);
 		REQUIRE(result.size() == 1);
 		CHECK(result[0].size() == 16);
+		const Vector<PackedInt32Array> with_span = box->get_all_poly_cell_vertex_indices(4, true);
+		REQUIRE(with_span.size() == 1);
+		CHECK(with_span[0].size() == 16);
 	}
 	SUBCASE("Dimension out of range fails gracefully") {
 		ERR_PRINT_OFF;
