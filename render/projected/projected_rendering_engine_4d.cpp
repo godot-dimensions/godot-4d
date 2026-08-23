@@ -307,7 +307,7 @@ void ProjectedRenderingEngine4D::normalize_image_callback(int64_t p_effect_callb
 			push_constant_data[1] = size.y;
 			float *push_constant_float_data = reinterpret_cast<float *>(push_constant.ptrw());
 			push_constant_float_data[2] = (float)camera->get_projection_opacity_base();
-			push_constant_data[3] = 0;
+			push_constant_data[3] = _cross_section_depth_texture.is_null() ? 0 : 1; // Transparency. _cross_section_depth_texture is set iff this is running as part of the combined renderer.
 		}
 		for (uint32_t view = 0; view < buffers->get_view_count(); view++) {
 			Ref<RDUniform> uniform;
