@@ -15,7 +15,7 @@ instance uniform float camera_slope = 1.0; // the tan of the angle of the view f
 instance uniform float camera_fade = 0.0; // the orthographic-style width of the view frustum in W
 instance uniform float edge_falloff = 2.0; // how quickly to fade the opacity at the edges of the view frustum (1: not at all, 2: linear, up to infinity)
 instance uniform float plane_softness = 0.7; // how much the region around the slice plane is emphasized: 1 is no extra emphasis, the limit as it approaches 0 is like a cross-section view (but 0 isn't actually a valid value).
-instance uniform float skewness = 0.0; // -1 to 1. Not yet used.
+instance uniform float skewness = 0.0; // -1 to 1. Offsets the perspective projection's forward direction in W.
 
 uniform vec4 albedo : source_color;
 uniform sampler3D albedo_texture : hint_default_white, source_color;
@@ -85,10 +85,10 @@ void vertex() {
 	mat4 modelview_basis = mat4(modelview_basis_x, modelview_basis_y, modelview_basis_z, modelview_basis_w);
 
 	vec4 verts[] = { CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3 };
-	verts[0] = (modelview_basis * verts[0]) + modelview_origin;
-	verts[1] = (modelview_basis * verts[1]) + modelview_origin;
-	verts[2] = (modelview_basis * verts[2]) + modelview_origin;
-	verts[3] = (modelview_basis * verts[3]) + modelview_origin;
+	for (int i = 0; i < 4; i++) {
+		verts[i] = (modelview_basis * verts[i]) + modelview_origin;
+		verts[i].z += verts[i].w * skewness;
+	}
 
 	vec3 uvws[] = { vec3(UV, COLOR.a), vec3(UV2, VERTEX.y), vec3(NORMAL.xy / NORMAL.z, VERTEX.z), COLOR.rgb };
 
@@ -101,6 +101,9 @@ void vertex() {
 	// Compute flat normals.
 	vec4 normal4 = perpendicular_4d(verts[1] - verts[0], verts[2] - verts[0], verts[3] - verts[0]);
 	bool back_face = dot(verts[0], normal4) <= 0.; // This mustn't be computed from verts_proj alone, as that would give the wrong answer sometimes if a vertex is behind the camera.
+	// The skewed normal is needed for the backface calculation because verts[0] is also skewed,
+	// but lighting needs the original normal. Undo z' = z + skewness * w using the transpose.
+	normal4.w += normal4.z * skewness;
 
 	int vertex_id = int(VERTEX.x);
 	int projection_case = get_projection_case(verts);
@@ -211,6 +214,9 @@ void fragment() {
 	vec4 peripheral_position = center_position + (position - center_position) / (1. - centerness);
 	float other_centerness = (centerness * center_position.z / other_center_position.z) / (centerness * center_position.z / other_center_position.z + (1. - centerness));
 	vec4 other_position = mix(peripheral_position, other_center_position, other_centerness);
+	// Undo the skewness transformation so it doesn't affect the frustum shape, opacity, and depth clipping.
+	position.z -= position.w * skewness;
+	other_position.z -= other_position.w * skewness;
 
 	float z_near_limit = from_homogeneous(INV_PROJECTION_MATRIX * vec4(0., 0., 1., 1.)).z; // 1 is near Z in clip space, so this is near Z in view space.
 	float cross_section_depth = texture(cross_section_depth_texture, SCREEN_UV).r + DEPTH_BIAS_CLIPSPACE;
