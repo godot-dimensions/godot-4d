@@ -101,6 +101,7 @@ private:
 	double _information_label_auto_hide_time = 0.0;
 
 	void _apply_4d_editor_settings();
+	void _free_camera_settings();
 	void _on_button_toggled(const bool p_toggled_on, const int p_option);
 	void _on_selection_changed();
 	void _on_transform_settings_menu_id_pressed(const int p_id);

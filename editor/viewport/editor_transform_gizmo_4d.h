@@ -127,8 +127,11 @@ private:
 	void _end_transformation();
 	void _process_transform(const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction, const Vector4 &p_local_camera_direction);
 
+	void _free_snap_settings();
+
 protected:
 	static void _bind_methods() {}
+	void _notification(int p_what);
 
 public:
 	EditorTransformSnapSettings4D *get_snap_settings() const { return _snap_settings; }

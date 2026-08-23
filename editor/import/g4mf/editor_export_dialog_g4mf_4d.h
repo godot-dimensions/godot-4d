@@ -37,6 +37,7 @@ class EditorExportDialogG4MF4D : public Object {
 
 	ConfirmationDialog *_settings_dialog = nullptr;
 	EditorFileDialog *_file_dialog = nullptr;
+	PopupMenu *_export_menu = nullptr;
 
 	void _popup_g4mf_export_settings_dialog();
 	void _popup_g4mf_export_file_dialog();

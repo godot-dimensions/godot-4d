@@ -1167,8 +1167,21 @@ void EditorTransformGizmo4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	p_undo_redo_manager->connect(StringName("version_changed"), callable_mp(this, &EditorTransformGizmo4D::_on_undo_redo_version_changed));
 }
 
-EditorTransformGizmo4D::~EditorTransformGizmo4D() {
+void EditorTransformGizmo4D::_notification(int p_what) {
+	if (p_what == NOTIFICATION_PREDELETE) {
+		_free_snap_settings();
+	}
+}
+
+void EditorTransformGizmo4D::_free_snap_settings() {
+	// The snap settings is an Object, so it needs to be freed manually.
 	if (_snap_settings != nullptr) {
 		memdelete(_snap_settings);
+		_snap_settings = nullptr;
 	}
+}
+
+EditorTransformGizmo4D::~EditorTransformGizmo4D() {
+	// Normally already done by NOTIFICATION_PREDELETE, this is just a last resort.
+	_free_snap_settings();
 }

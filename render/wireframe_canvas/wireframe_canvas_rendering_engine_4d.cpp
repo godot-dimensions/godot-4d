@@ -14,21 +14,40 @@ Color WireframeCanvasRenderingEngine4D::_get_material_edge_color(const Ref<Mater
 	return p_material->get_albedo_color_of_edge(p_edge_index, p_mesh);
 }
 
+WireframeRenderCanvas4D *WireframeCanvasRenderingEngine4D::_get_valid_render_canvas(const Viewport *p_viewport) {
+	if (p_viewport == nullptr) {
+		return nullptr;
+	}
+	// Find the canvas by type, not name, and skip any that are queued for deletion.
+	const int child_count = p_viewport->get_child_count();
+	for (int i = 0; i < child_count; i++) {
+		WireframeRenderCanvas4D *wire_canvas = Object::cast_to<WireframeRenderCanvas4D>(p_viewport->get_child(i));
+		if (wire_canvas != nullptr && !wire_canvas->is_queued_for_deletion()) {
+			return wire_canvas;
+		}
+	}
+	return nullptr;
+}
+
 void WireframeCanvasRenderingEngine4D::setup_for_viewport() {
 	WireframeRenderCanvas4D *wire_canvas = memnew(WireframeRenderCanvas4D);
-	wire_canvas->set_name("WireframeRenderCanvas4D");
+	wire_canvas->set_name(StringName("WireframeRenderCanvas4D"));
 	get_viewport()->add_child(wire_canvas);
 }
 
 void WireframeCanvasRenderingEngine4D::cleanup_for_viewport() {
-	WireframeRenderCanvas4D *wire_canvas = GET_NODE_TYPE(get_viewport(), WireframeRenderCanvas4D, "WireframeRenderCanvas4D");
-	if (wire_canvas) {
+	WireframeRenderCanvas4D *wire_canvas = _get_valid_render_canvas(get_viewport());
+	if (wire_canvas != nullptr) {
+		// This must be deferred instead of removing the child and freeing it now.
+		// Cleanup runs from Camera4D's NOTIFICATION_EXIT_TREE, at which point every
+		// ancestor of that camera is in the middle of propagating the tree exit and
+		// is blocked, so removing a child of the Viewport is not allowed yet.
 		wire_canvas->queue_free();
 	}
 }
 
 void WireframeCanvasRenderingEngine4D::render_frame() {
-	WireframeRenderCanvas4D *wire_canvas = GET_NODE_TYPE(get_viewport(), WireframeRenderCanvas4D, "WireframeRenderCanvas4D");
+	WireframeRenderCanvas4D *wire_canvas = _get_valid_render_canvas(get_viewport());
 	ERR_FAIL_NULL_MSG(wire_canvas, "WireframeCanvasRenderingEngine4D: Canvas was null.");
 	Camera4D *camera = get_camera();
 	ERR_FAIL_NULL(camera);

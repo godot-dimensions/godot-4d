@@ -27,5 +27,8 @@ TEST_CASE("[Node4D] Global Transform") {
 	CHECK_MESSAGE(child.get_global_rotation().is_equal_approx(Euler4D(0.1, Math_TAU / 4.0 + 0.2, 0.3)), "Node4D global rotation should work as expected.");
 	CHECK_MESSAGE(child.get_global_scale().is_equal_approx(Vector4(6, 6, 6, 6)), "Node4D global scale should work as expected.");
 	CHECK_MESSAGE(child.get_global_transform().is_equal_approx(parent_transform * child_transform), "Node4D global transform should work as expected.");
+
+	// These are stack-allocated, so unparent the child before it is destructed.
+	parent.remove_child(&child);
 }
 } // namespace TestNode4D

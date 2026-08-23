@@ -8,7 +8,11 @@ void Light4D::_notification(int p_what) {
 			RenderingServer4D::get_singleton()->register_light(this);
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
-			RenderingServer4D::get_singleton()->unregister_light(this);
+			// The singleton is already gone if the module was uninitialized first.
+			RenderingServer4D *rendering_server = RenderingServer4D::get_singleton();
+			if (rendering_server != nullptr) {
+				rendering_server->unregister_light(this);
+			}
 		} break;
 	}
 }

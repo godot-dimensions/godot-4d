@@ -8,7 +8,11 @@ void Area4D::_notification(int p_what) {
 			PhysicsServer4D::get_singleton()->register_area(this);
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
-			PhysicsServer4D::get_singleton()->unregister_area(this);
+			// The singleton is already gone if the module was uninitialized first.
+			PhysicsServer4D *physics_server = PhysicsServer4D::get_singleton();
+			if (physics_server != nullptr) {
+				physics_server->unregister_area(this);
+			}
 		} break;
 	}
 }

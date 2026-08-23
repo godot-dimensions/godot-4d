@@ -52,6 +52,20 @@ void Godot4DEditorPlugin::_add_4d_main_screen() {
 	}
 }
 
+void Godot4DEditorPlugin::_remove_4d_main_screen() {
+	if (_main_screen == nullptr) {
+		return;
+	}
+	// The main screen is a child of Godot's editor main screen, not of this plugin,
+	// so Godot will not free it for us, and we have to do so explicitly.
+	Node *parent = _main_screen->get_parent();
+	if (parent != nullptr) {
+		parent->remove_child(_main_screen);
+	}
+	memdelete(_main_screen);
+	_main_screen = nullptr;
+}
+
 void Godot4DEditorPlugin::_move_4d_main_screen_tab_button() const {
 	Control *editor = EditorInterface::get_singleton()->get_base_control();
 	ERR_FAIL_NULL(editor);
@@ -74,6 +88,10 @@ void Godot4DEditorPlugin::_move_4d_main_screen_tab_button() const {
 }
 
 void Godot4DEditorPlugin::_inject_4d_scene_button() {
+	if (_create_4d_scene_button != nullptr || !is_inside_tree()) {
+		// Already injected, or this deferred call outlived the plugin being in the tree.
+		return;
+	}
 	Control *editor = EditorInterface::get_singleton()->get_base_control();
 	ERR_FAIL_NULL(editor);
 	// Add a "4D Scene" button above the "User Interface" button, below the "3D Scene" button.
@@ -89,6 +107,21 @@ void Godot4DEditorPlugin::_inject_4d_scene_button() {
 	button_4d->connect(StringName("pressed"), callable_mp(this, &Godot4DEditorPlugin::_create_4d_scene));
 	beginner_node_shortcuts->add_child(button_4d);
 	beginner_node_shortcuts->move_child(button_4d, user_interface_scene->get_index());
+	_create_4d_scene_button = button_4d;
+}
+
+void Godot4DEditorPlugin::_remove_4d_scene_button() {
+	if (_create_4d_scene_button == nullptr) {
+		return;
+	}
+	// Same as the main screen: this button was injected into a part of the editor
+	// that Godot owns, so this plugin is responsible for taking it back out again.
+	Node *parent = _create_4d_scene_button->get_parent();
+	if (parent != nullptr) {
+		parent->remove_child(_create_4d_scene_button);
+	}
+	memdelete(_create_4d_scene_button);
+	_create_4d_scene_button = nullptr;
 }
 
 void Godot4DEditorPlugin::_create_4d_scene() {
@@ -128,11 +161,13 @@ void Godot4DEditorPlugin::_notification(int p_what) {
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
 			// Clean up in the opposite order of NOTIFICATION_ENTER_TREE.
+			_remove_4d_scene_button();
 			if (_g4mf_export_dialog != nullptr) {
 				_g4mf_export_dialog->cleanup_export_dialog();
 				memdelete(_g4mf_export_dialog);
 				_g4mf_export_dialog = nullptr;
 			}
+			_remove_4d_main_screen();
 			remove_import_plugin(_off_wire_4d_importer);
 			remove_import_plugin(_off_tetra_4d_importer);
 			remove_import_plugin(_off_poly_4d_importer);
@@ -165,7 +200,9 @@ bool Godot4DEditorPlugin::GDEXTMOD_HANDLES(Object *p_object) const {
 }
 
 void Godot4DEditorPlugin::GDEXTMOD_MAKE_VISIBLE(bool p_visible) {
-	_main_screen->set_visible(p_visible);
+	if (_main_screen != nullptr) {
+		_main_screen->set_visible(p_visible);
+	}
 }
 
 void Godot4DEditorPlugin::_bind_methods() {
