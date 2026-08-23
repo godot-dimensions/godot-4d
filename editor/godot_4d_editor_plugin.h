@@ -54,6 +54,7 @@ class Godot4DEditorPlugin : public EditorPlugin {
 	EditorExportDialogG4MF4D *_g4mf_export_dialog = nullptr;
 	EditorMainScreen4D *_main_screen = nullptr;
 
+	static Button *_find_button_by_text(Node *p_start, const String &p_text);
 	void _add_4d_main_screen();
 	void _move_4d_main_screen_tab_button() const;
 	void _inject_4d_scene_button();

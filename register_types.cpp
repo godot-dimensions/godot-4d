@@ -88,11 +88,9 @@
 #include <godot_cpp/classes/engine.hpp>
 // GDExtension has a nervous breakdown whenever singleton or casted classes are not registered.
 // We don't need to register these in principle, and we don't need it for a module, just for GDExtension.
-#include "physics/server/ghost_physics_engine_4d.h"
-#include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
+#include "render/environment/render_bridge_4d_to_3d.h"
 #include "render/wireframe_canvas/wireframe_render_canvas_4d.h"
 #ifdef TOOLS_ENABLED
-#include "editor/godot_4d_editor_plugin.h"
 #include "editor/import/off/editor_import_plugin_off_base.h"
 #include "editor/import/off/editor_import_plugin_off_mesh_3d.h"
 #include "editor/import/off/editor_import_plugin_off_poly_4d.h"
@@ -128,8 +126,11 @@ inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_ob
 	CoreBind::Engine::get_singleton()->register_singleton(p_singleton_name, p_object);
 }
 
-inline void remove_godot_singleton(const StringName &p_singleton_name) {
+inline void remove_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
 	CoreBind::Engine::get_singleton()->unregister_singleton(p_singleton_name);
+	if (p_object != nullptr) {
+		memdelete(p_object);
+	}
 }
 
 void initialize_4d_module(ModuleInitializationLevel p_level) {
@@ -158,26 +159,27 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(QuadSplitContainer);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Geometry4D", memnew(Geometry4D));
+		add_godot_singleton("Math4D", memnew(Math4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
 		// Virtual classes.
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
-		GDREGISTER_CLASS(TetraMaterial4D);
-		GDREGISTER_CLASS(PolyMaterial4D);
-		GDREGISTER_CLASS(WireMaterial4D);
 		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PolyMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(WireMesh4D);
+		// Materials.
+		GDREGISTER_CLASS(TetraMaterial4D);
+		GDREGISTER_CLASS(PolyMaterial4D);
+		GDREGISTER_CLASS(WireMaterial4D);
 		// Light.
 		GDREGISTER_ABSTRACT_CLASS(Light4D);
 		GDREGISTER_CLASS(DirectionalLight4D);
 		GDREGISTER_CLASS(OmniLight4D);
 		GDREGISTER_CLASS(SpotLight4D);
-		// Register as virtual so it is hidden from resource creation dialogs while
-		// remaining constructible through user-defined GDScript subclasses.
+		// Environment.
 		GDREGISTER_VIRTUAL_CLASS(SkyMaterial4D);
 		GDREGISTER_CLASS(GradientSkyMaterial4D);
 		GDREGISTER_CLASS(PhysicalSkyMaterial4D);
@@ -205,7 +207,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(BoxTetraMesh4D);
 		GDREGISTER_CLASS(BoxWireMesh4D);
 		GDREGISTER_CLASS(MeshInstance4D);
-		GDREGISTER_CLASS(OFFDocument4D);
 		GDREGISTER_CLASS(OrthoplexPolyMesh4D);
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);
@@ -215,6 +216,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
 		// Depends on mesh.
 		GDREGISTER_CLASS(Marker4D);
+		GDREGISTER_CLASS(OFFDocument4D);
 		// Physics.
 		GDREGISTER_CLASS(Area4D);
 		GDREGISTER_CLASS(BoxShape4D);
@@ -236,7 +238,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(RigidBody4D);
 		GDREGISTER_CLASS(SphereShape4D);
 		GDREGISTER_CLASS(StaticBody4D);
-		// G4MF (register in dependency order).
+		// G4MF.
 		GDREGISTER_CLASS(G4MFItem4D);
 		GDREGISTER_CLASS(G4MFBufferView4D);
 		GDREGISTER_CLASS(G4MFAccessor4D);
@@ -264,6 +266,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
 		GDREGISTER_CLASS(WireframeRenderCanvas4D);
 		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
+		// Must be registered before CrossSectionRenderingEngine4D, which owns and frees it.
+		GDREGISTER_CLASS(EnvironmentRenderBridge4DTo3D);
 		GDREGISTER_CLASS(CrossSectionRenderingEngine4D);
 #endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
@@ -281,11 +285,9 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 #ifdef GDEXTENSION
-		GDREGISTER_CLASS(EditorCamera4D);
-		GDREGISTER_CLASS(EditorCameraSettings4D);
-		GDREGISTER_CLASS(EditorCreate4DSceneButton);
-		GDREGISTER_CLASS(EditorExportDialogG4MF4D);
+		// Export and import.
 		GDREGISTER_CLASS(EditorExportSettingsG4MF4D);
+		GDREGISTER_CLASS(EditorExportDialogG4MF4D);
 		GDREGISTER_CLASS(EditorImportPluginBase4D);
 		GDREGISTER_CLASS(EditorImportPluginG4MFMesh4D);
 		GDREGISTER_CLASS(EditorImportPluginG4MFScene4D);
@@ -295,13 +297,18 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorImportPluginOFFScene);
 		GDREGISTER_CLASS(EditorImportPluginOFFTetra4D);
 		GDREGISTER_CLASS(EditorImportPluginOFFWire4D);
+		// Pieces of the editor viewport.
+		GDREGISTER_CLASS(EditorTransformSnapSettings4D);
+		GDREGISTER_CLASS(EditorCameraSettings4D);
+		GDREGISTER_CLASS(EditorCamera4D);
+		GDREGISTER_CLASS(EditorCreate4DSceneButton);
 		GDREGISTER_CLASS(EditorInputSurface4D);
-		GDREGISTER_CLASS(EditorMainScreen4D);
-		GDREGISTER_CLASS(EditorMainViewport4D);
 		GDREGISTER_CLASS(EditorPreviewEnvironment4D);
 		GDREGISTER_CLASS(EditorTransformGizmo4D);
-		GDREGISTER_CLASS(EditorTransformSnapSettings4D);
 		GDREGISTER_CLASS(EditorViewportRotation4D);
+		// Main editor plugin classes.
+		GDREGISTER_CLASS(EditorMainViewport4D);
+		GDREGISTER_CLASS(EditorMainScreen4D);
 		GDREGISTER_CLASS(Godot4DEditorPlugin);
 #elif GODOT_MODULE
 		EditorColorMap::add_conversion_color_pair("fff6a2", "ccc055");
@@ -324,20 +331,15 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 
 void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		remove_godot_singleton("Basis4D");
-		remove_godot_singleton("Geometry4D");
-		remove_godot_singleton("PhysicsServer4D");
-		remove_godot_singleton("RenderingServer4D");
-		remove_godot_singleton("Vector4D");
-		remove_godot_singleton("PolyMeshBuilder4D");
-		remove_godot_singleton("WireMeshBuilder4D");
-		memdelete(godot_4d_bind::Basis4D::get_singleton());
-		memdelete(Geometry4D::get_singleton());
-		memdelete(PhysicsServer4D::get_singleton());
-		memdelete(RenderingServer4D::get_singleton());
-		memdelete(Vector4D::get_singleton());
-		memdelete(PolyMeshBuilder4D::get_singleton());
-		memdelete(WireMeshBuilder4D::get_singleton());
+		// Unregister and free the singletons in the opposite order of registration.
+		remove_godot_singleton("RenderingServer4D", RenderingServer4D::get_singleton());
+		remove_godot_singleton("PhysicsServer4D", PhysicsServer4D::get_singleton());
+		remove_godot_singleton("WireMeshBuilder4D", WireMeshBuilder4D::get_singleton());
+		remove_godot_singleton("PolyMeshBuilder4D", PolyMeshBuilder4D::get_singleton());
+		remove_godot_singleton("Vector4D", Vector4D::get_singleton());
+		remove_godot_singleton("Math4D", Math4D::get_singleton());
+		remove_godot_singleton("Geometry4D", Geometry4D::get_singleton());
+		remove_godot_singleton("Basis4D", godot_4d_bind::Basis4D::get_singleton());
 		// Clean up fallback materials and shaders in the opposite order of their creation.
 		TetraMesh4D::cleanup_fallback_material();
 		WireMesh4D::cleanup_fallback_material();

@@ -38,6 +38,9 @@ class EnvironmentRenderBridge4DTo3D : public Object {
 	void _copy_material_shader_parameters(const Ref<ShaderMaterial> &p_source_material);
 	bool _sync_environment_materials(const Ref<SkyMaterial4D> &p_sky_material_source, const Ref<VolumetricCloudMaterial4D> &p_cloud_material_source);
 
+protected:
+	static void _bind_methods() {}
+
 public:
 	void setup_environment_resources(const Ref<World3D> &p_cross_section_world_3d);
 	void update_environment(Camera4D *p_camera);
