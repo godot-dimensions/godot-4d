@@ -133,11 +133,21 @@ inline void remove_godot_singleton(const StringName &p_singleton_name, Object *p
 	}
 }
 
+#if GDEXTENSION
+// The extension declares `set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE)`,
+// which is required to support reloading, but prevents using CORE or SERVERS initialization levels.
+#define MODULE_INITIALIZATION_LEVEL_CORE_OR_EARLIEST MODULE_INITIALIZATION_LEVEL_SCENE
+#elif GODOT_MODULE
+// The module can use CORE or SERVERS initialization levels. In modules, we want to
+// register as early as possible, so that other modules can depend on this module.
+#define MODULE_INITIALIZATION_LEVEL_CORE_OR_EARLIEST MODULE_INITIALIZATION_LEVEL_CORE
+#endif
+
 void initialize_4d_module(ModuleInitializationLevel p_level) {
-	// Note: Classes MUST be registered in inheritance order.
-	// When the inheritance doesn't matter, dependency order, then alphabetical order is used.
-	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
-		// General.
+	// Classes MUST be registered in inheritance order, then dependency order.
+	// When the inheritance and dependency doesn't matter, then alphabetical order is used.
+	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE_OR_EARLIEST) {
+		// Core math: must be first.
 		GDREGISTER_CLASS(godot_4d_bind::Basis4D);
 		GDREGISTER_CLASS(godot_4d_bind::Euler4D);
 		GDREGISTER_CLASS(godot_4d_bind::Rotor4D);
@@ -145,22 +155,21 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(Geometry4D);
 		GDREGISTER_CLASS(Math4D);
 		GDREGISTER_CLASS(Vector4D);
-		// Physics.
-		GDREGISTER_CLASS(RaycastParameters4D);
-		GDREGISTER_VIRTUAL_CLASS(PhysicsEngine4D);
-		GDREGISTER_CLASS(PhysicsServer4D);
-		// Render.
-		GDREGISTER_VIRTUAL_CLASS(RenderingEngine4D);
-		GDREGISTER_CLASS(RenderingServer4D);
-	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		// General.
-		GDREGISTER_CLASS(Node4D);
-		GDREGISTER_CLASS(Camera4D);
-		GDREGISTER_CLASS(QuadSplitContainer);
 		add_godot_singleton("Basis4D", memnew(godot_4d_bind::Basis4D));
 		add_godot_singleton("Geometry4D", memnew(Geometry4D));
 		add_godot_singleton("Math4D", memnew(Math4D));
 		add_godot_singleton("Vector4D", memnew(Vector4D));
+		// Core physics.
+		GDREGISTER_CLASS(RaycastParameters4D);
+		GDREGISTER_VIRTUAL_CLASS(PhysicsEngine4D);
+		GDREGISTER_CLASS(PhysicsServer4D);
+		// Core render.
+		GDREGISTER_VIRTUAL_CLASS(RenderingEngine4D);
+		GDREGISTER_CLASS(RenderingServer4D);
+		// General.
+		GDREGISTER_CLASS(Node4D);
+		GDREGISTER_CLASS(Camera4D);
+		GDREGISTER_CLASS(QuadSplitContainer);
 		// Virtual classes.
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
@@ -186,19 +195,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(PlainSkyMaterial4D);
 		GDREGISTER_CLASS(VolumetricCloudMaterial4D);
 		GDREGISTER_CLASS(WorldEnvironment4D);
-		// Material initialization.
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
-		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
-		WireMaterial4D::init_shaders();
-		TetraMaterial4D::init_shaders();
-		GradientSkyMaterial4D::init_shader();
-		PhysicalSkyMaterial4D::init_shader();
-		PlainSkyMaterial4D::init_shader();
-		VolumetricCloudMaterial4D::init_shaders();
-#endif
-		// Initialize fallback materials in the opposite order from when they will later be destroyed.
-		WireMesh4D::init_fallback_material();
-		TetraMesh4D::init_fallback_material();
 		// Mesh.
 		GDREGISTER_CLASS(ArrayPolyMesh4D);
 		GDREGISTER_CLASS(ArrayTetraMesh4D);
@@ -271,9 +267,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(CrossSectionRenderingEngine4D);
 #endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
-#ifdef TOOLS_ENABLED
-		physics_server->set_active(!Engine::get_singleton()->is_editor_hint());
-#endif // TOOLS_ENABLED
 		physics_server->register_physics_engine("AxisAlignedBoxPhysicsEngine4D", memnew(AxisAlignedBoxPhysicsEngine4D));
 		physics_server->register_physics_engine("GhostPhysicsEngine4D", memnew(GhostPhysicsEngine4D));
 		add_godot_singleton("PhysicsServer4D", physics_server);
@@ -282,8 +275,24 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		rendering_server->register_rendering_engine(memnew(WireframeCanvasRenderingEngine4D));
 		rendering_server->register_rendering_engine(memnew(CrossSectionRenderingEngine4D));
 		add_godot_singleton("RenderingServer4D", rendering_server);
+	}
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		// Material initialization.
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
+		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
+		WireMaterial4D::init_shaders();
+		TetraMaterial4D::init_shaders();
+		GradientSkyMaterial4D::init_shader();
+		PhysicalSkyMaterial4D::init_shader();
+		PlainSkyMaterial4D::init_shader();
+		VolumetricCloudMaterial4D::init_shaders();
+#endif
+		// Initialize fallback materials in the opposite order from when they will later be destroyed.
+		WireMesh4D::init_fallback_material();
+		TetraMesh4D::init_fallback_material();
 #ifdef TOOLS_ENABLED
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		PhysicsServer4D::get_singleton()->set_active(!Engine::get_singleton()->is_editor_hint());
 #ifdef GDEXTENSION
 		// Export and import.
 		GDREGISTER_CLASS(EditorExportSettingsG4MF4D);
@@ -331,15 +340,6 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 
 void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		// Unregister and free the singletons in the opposite order of registration.
-		remove_godot_singleton("RenderingServer4D", RenderingServer4D::get_singleton());
-		remove_godot_singleton("PhysicsServer4D", PhysicsServer4D::get_singleton());
-		remove_godot_singleton("WireMeshBuilder4D", WireMeshBuilder4D::get_singleton());
-		remove_godot_singleton("PolyMeshBuilder4D", PolyMeshBuilder4D::get_singleton());
-		remove_godot_singleton("Vector4D", Vector4D::get_singleton());
-		remove_godot_singleton("Math4D", Math4D::get_singleton());
-		remove_godot_singleton("Geometry4D", Geometry4D::get_singleton());
-		remove_godot_singleton("Basis4D", godot_4d_bind::Basis4D::get_singleton());
 		// Clean up fallback materials and shaders in the opposite order of their creation.
 		TetraMesh4D::cleanup_fallback_material();
 		WireMesh4D::cleanup_fallback_material();
@@ -349,5 +349,16 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		GradientSkyMaterial4D::cleanup_shader();
 		TetraMaterial4D::cleanup_shaders();
 		WireMaterial4D::cleanup_shaders();
+	}
+	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE_OR_EARLIEST) {
+		// Unregister and free the singletons in the opposite order of registration.
+		remove_godot_singleton("RenderingServer4D", RenderingServer4D::get_singleton());
+		remove_godot_singleton("PhysicsServer4D", PhysicsServer4D::get_singleton());
+		remove_godot_singleton("WireMeshBuilder4D", WireMeshBuilder4D::get_singleton());
+		remove_godot_singleton("PolyMeshBuilder4D", PolyMeshBuilder4D::get_singleton());
+		remove_godot_singleton("Vector4D", Vector4D::get_singleton());
+		remove_godot_singleton("Math4D", Math4D::get_singleton());
+		remove_godot_singleton("Geometry4D", Geometry4D::get_singleton());
+		remove_godot_singleton("Basis4D", godot_4d_bind::Basis4D::get_singleton());
 	}
 }
