@@ -4,6 +4,7 @@
 #include "depth_capture.glsl.gen.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/canvas_item_material.hpp>
 #include <godot_cpp/classes/rd_sampler_state.hpp>
 #include <godot_cpp/classes/rd_shader_source.hpp>
 #include <godot_cpp/classes/rd_shader_spirv.hpp>
@@ -17,6 +18,7 @@
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
 #elif GODOT_MODULE
+#include "scene/resources/canvas_item_material.h"
 #include "servers/rendering/renderer_rd/storage_rd/render_scene_buffers_rd.h"
 #include "servers/rendering/renderer_rd/uniform_set_cache_rd.h"
 #include "servers/rendering/rendering_device.h"
@@ -106,6 +108,10 @@ void CombinedRenderingEngine4D::_ensure_helpers_created() {
 		_projected_rect->set_texture(_projected_viewport->get_texture());
 		_projected_rect->set_anchors_preset(Control::PRESET_FULL_RECT);
 		_projected_rect->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+		Ref<CanvasItemMaterial> projected_rect_material;
+		projected_rect_material.instantiate();
+		projected_rect_material->set_blend_mode(CanvasItemMaterial::BLEND_MODE_PREMULT_ALPHA);
+		_projected_rect->set_material(projected_rect_material);
 		_combine_canvas_layer->add_child(_projected_rect);
 	}
 }
