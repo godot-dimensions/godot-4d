@@ -1489,10 +1489,15 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	}
 	// Merge poly cell indices.
 	for (int64_t dim_index = 0; dim_index < poly_cell_indices_dims; dim_index++) {
+		const int64_t other_count = other_poly_cell_indices_counts[dim_index];
+		if (other_count == 0) {
+			// The other mesh has nothing in this dimension, and may not even have this
+			// dimension at all, in which case indexing other_poly_cell_indices would crash.
+			continue;
+		}
 		Vector<PackedInt32Array> this_dim = _poly_cell_indices[dim_index];
 		const Vector<PackedInt32Array> &other_dim = other_poly_cell_indices[dim_index];
 		const int64_t start_count = start_poly_cell_indices_counts[dim_index];
-		const int64_t other_count = other_poly_cell_indices_counts[dim_index];
 		const int64_t end_count = start_count + other_count;
 		const int32_t adjust_items = (dim_index == 0) ? (start_edge_index_count / 2) : start_poly_cell_indices_counts[dim_index - 1];
 		this_dim.resize(end_count);
@@ -1505,8 +1510,9 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		}
 		_poly_cell_indices.set(dim_index, this_dim);
 	}
-	// Merge pivot overrides.
-	if (!_poly_cell_boundary_pivot_overrides.is_empty() || !other_poly_cell_boundary_pivot_overrides.is_empty()) {
+	// Merge pivot overrides. Note: Pivot overrides on a mesh without boundary cells are
+	// invalid data, so they are ignored here rather than indexing a non-existent dimension.
+	if (poly_cell_indices_dims > 1 && (!_poly_cell_boundary_pivot_overrides.is_empty() || !other_poly_cell_boundary_pivot_overrides.is_empty())) {
 		const int64_t start_required_amount = start_poly_cell_indices_counts[1];
 		const int64_t other_required_amount = other_poly_cell_indices_counts[1];
 		const int64_t start_current_amount = _poly_cell_boundary_pivot_overrides.size();
@@ -1733,6 +1739,110 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 					merged_texture_map.set(start_count + cell_index, other_texture_map_data[cell_index]);
 				}
 			}
+		}
+	}
+	// The merging above only iterates over the other mesh's data bindings. If this mesh has
+	// data bindings that the other mesh lacked, those are now missing entries for the merged
+	// geometry, which would make the merged mesh fail validation, so fill them in below.
+	Vector<PackedInt32Array> merged_cell_vertex_indices;
+	if (poly_cell_indices_dims > 1 && _all_poly_cell_normals.has(PER_CELL_KEY)) {
+		// Special case: Generate missing boundary normals based on the merged cell orientations.
+		Vector<PackedVector4Array> &merged_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY];
+		if (merged_boundary_normals.is_empty()) {
+			merged_boundary_normals.append(PackedVector4Array());
+		}
+		if (merged_boundary_normals[0].size() < _poly_cell_indices[1].size()) {
+			merged_cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
+			merged_boundary_normals.set(0, _compute_boundary_normals_based_on_cell_orientation(merged_cell_vertex_indices, true));
+		}
+	}
+	if (poly_cell_indices_dims > 1 && _all_poly_cell_normals.has(CELL_TO_VERT_KEY)) {
+		// Special case: Generate missing vertex normals as flat shading normals.
+		Vector<PackedVector4Array> &merged_vertex_normals = _all_poly_cell_normals[CELL_TO_VERT_KEY];
+		const int64_t merged_cell_count = _poly_cell_indices[1].size();
+		if (merged_vertex_normals.size() < merged_cell_count) {
+			if (merged_cell_vertex_indices.is_empty()) {
+				merged_cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
+			}
+			// Prefer the merged boundary normals when available, else use the cell orientations.
+			PackedVector4Array flat_boundary_normals;
+			if (_all_poly_cell_normals.has(PER_CELL_KEY) && !_all_poly_cell_normals[PER_CELL_KEY].is_empty() && _all_poly_cell_normals[PER_CELL_KEY][0].size() == merged_cell_count) {
+				flat_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
+			} else {
+				flat_boundary_normals = _compute_boundary_normals_based_on_cell_orientation(merged_cell_vertex_indices, false);
+			}
+			const int64_t start_count = merged_vertex_normals.size();
+			merged_vertex_normals.resize(merged_cell_count);
+			for (int64_t cell_index = start_count; cell_index < merged_cell_count; cell_index++) {
+				PackedVector4Array vertex_normals_for_cell;
+				vertex_normals_for_cell.resize(merged_cell_vertex_indices[cell_index].size());
+				const Vector4 cell_boundary_normal = flat_boundary_normals[cell_index];
+				for (int64_t vert_inst = 0; vert_inst < vertex_normals_for_cell.size(); vert_inst++) {
+					vertex_normals_for_cell.set(vert_inst, cell_boundary_normal);
+				}
+				merged_vertex_normals.set(cell_index, vertex_normals_for_cell);
+			}
+		}
+	}
+	// General case: Pad any remaining short normal bindings with empty data.
+	for (KeyValue<Vector2i, Vector<PackedVector4Array>> &normals_kv : _all_poly_cell_normals) {
+		const Vector2i key = normals_kv.key;
+		int64_t cell_count_for_geom_dim;
+		if (key.x == 0) {
+			cell_count_for_geom_dim = _poly_cell_vertices.size();
+		} else if (key.x == 1) {
+			cell_count_for_geom_dim = _edge_vertex_indices.size() / 2;
+		} else if ((key.x - 2) < _poly_cell_indices.size()) {
+			cell_count_for_geom_dim = _poly_cell_indices[key.x - 2].size();
+		} else {
+			continue; // Invalid binding for a dimension the merged mesh does not have.
+		}
+		Vector<PackedVector4Array> &merged_normals = normals_kv.value;
+		if (key.y == key.x) {
+			// Non-decomposed normals use a flat structure, so pad the flat array with zeroes.
+			if (merged_normals.is_empty()) {
+				merged_normals.append(PackedVector4Array());
+			}
+			if (merged_normals[0].size() < cell_count_for_geom_dim) {
+				WARN_PRINT("ArrayPolyMesh4D: The other mesh was missing normal entries for geometry dimension " + itos(key.x) + " and decomposition dimension " + itos(key.y) + ", but the original mesh has entries for this key. Filling missing entries with empty data while merging. Consider updating the other mesh with this data before merging to avoid this warning in the future.");
+				PackedVector4Array flat_merged_normals = merged_normals[0];
+				flat_merged_normals.resize(cell_count_for_geom_dim);
+				merged_normals.set(0, flat_merged_normals);
+			}
+		} else if (merged_normals.size() < cell_count_for_geom_dim) {
+			// Decomposed normals use a nested structure, so pad with empty arrays.
+			WARN_PRINT("ArrayPolyMesh4D: The other mesh was missing normal entries for geometry dimension " + itos(key.x) + " and decomposition dimension " + itos(key.y) + ", but the original mesh has entries for this key. Filling missing entries with empty data while merging. Consider updating the other mesh with this data before merging to avoid this warning in the future.");
+			merged_normals.resize(cell_count_for_geom_dim);
+		}
+	}
+	// Texture maps cannot be generated, so pad any short texture map bindings with empty data.
+	// Cells with empty texture map entries are valid, they are just unmapped.
+	for (KeyValue<Vector2i, Vector<PackedVector3Array>> &texture_map_kv : _all_poly_cell_texture_maps) {
+		const Vector2i key = texture_map_kv.key;
+		int64_t cell_count_for_geom_dim;
+		if (key.x == 0) {
+			cell_count_for_geom_dim = _poly_cell_vertices.size();
+		} else if (key.x == 1) {
+			cell_count_for_geom_dim = _edge_vertex_indices.size() / 2;
+		} else if ((key.x - 2) < _poly_cell_indices.size()) {
+			cell_count_for_geom_dim = _poly_cell_indices[key.x - 2].size();
+		} else {
+			continue; // Invalid binding for a dimension the merged mesh does not have.
+		}
+		Vector<PackedVector3Array> &merged_texture_map = texture_map_kv.value;
+		if (key.y == key.x) {
+			// Non-decomposed texture maps use a flat structure, so pad the flat array with zeroes.
+			if (merged_texture_map.is_empty()) {
+				merged_texture_map.append(PackedVector3Array());
+			}
+			if (merged_texture_map[0].size() < cell_count_for_geom_dim) {
+				PackedVector3Array flat_merged_texture_map = merged_texture_map[0];
+				flat_merged_texture_map.resize(cell_count_for_geom_dim);
+				merged_texture_map.set(0, flat_merged_texture_map);
+			}
+		} else if (merged_texture_map.size() < cell_count_for_geom_dim) {
+			// Decomposed texture maps use a nested structure, so pad with empty arrays.
+			merged_texture_map.resize(cell_count_for_geom_dim);
 		}
 	}
 	// Merge materials.

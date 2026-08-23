@@ -792,6 +792,89 @@ TEST_CASE("[ArrayPolyMesh4D] Merge meshes") {
 		CHECK((mesh->get_seam_face_indices_bind() == PackedInt32Array{ 4, 6 }));
 	}
 
+	SUBCASE("Merging a mesh with fewer dimensions does not crash") {
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		// A face-only mesh has one less poly cell dimension than a mesh with cells.
+		Ref<ArrayPolyMesh4D> other;
+		other.instantiate();
+		other->append_vertex(Vector4(10, 0, 0, 0));
+		other->append_vertex(Vector4(11, 0, 0, 0));
+		other->append_vertex(Vector4(10, 1, 0, 0));
+		other->append_edge_indices(0, 1);
+		other->append_edge_indices(0, 2);
+		other->append_edge_indices(1, 2);
+		other->append_poly_cell(2, PackedInt32Array{ 0, 2, 1 }, false);
+		mesh->merge_with(other, Transform4D());
+		CHECK(mesh->get_poly_cell_vertices().size() == 7);
+		CHECK(mesh->get_edge_indices().size() == 18);
+		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+		REQUIRE(poly_cell_indices.size() == 2);
+		REQUIRE(poly_cell_indices[0].size() == 5);
+		CHECK_MESSAGE((poly_cell_indices[0][4] == PackedInt32Array{ 6, 8, 7 }), "The merged face must reference the offset edges.");
+		CHECK(poly_cell_indices[1].size() == 1);
+		CHECK(mesh->is_poly_mesh_data_valid());
+	}
+
+	SUBCASE("Merging a mesh with more dimensions expands this mesh") {
+		Ref<ArrayPolyMesh4D> mesh;
+		mesh.instantiate();
+		mesh->append_vertex(Vector4(10, 0, 0, 0));
+		mesh->append_vertex(Vector4(11, 0, 0, 0));
+		mesh->append_vertex(Vector4(10, 1, 0, 0));
+		mesh->append_edge_indices(0, 1);
+		mesh->append_edge_indices(0, 2);
+		mesh->append_edge_indices(1, 2);
+		mesh->append_poly_cell(2, PackedInt32Array{ 0, 2, 1 }, false);
+		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
+		mesh->merge_with(other, Transform4D());
+		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+		REQUIRE(poly_cell_indices.size() == 2);
+		CHECK(poly_cell_indices[0].size() == 5);
+		REQUIRE(poly_cell_indices[1].size() == 1);
+		CHECK_MESSAGE((poly_cell_indices[1][0] == PackedInt32Array{ 1, 2, 3, 4 }), "The merged cell must reference the offset faces.");
+		CHECK(mesh->is_poly_mesh_data_valid());
+	}
+
+	SUBCASE("Merging generates missing boundary normals for the other mesh") {
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
+		mesh->calculate_boundary_normals();
+		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(10, 0, 0, 0)));
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE_MESSAGE(normals.size() == 2, "The other mesh's missing normals must be generated during the merge.");
+		CHECK(normals[0].is_equal_approx(Vector4(0, 0, 0, 1)));
+		CHECK_MESSAGE(normals[1].is_equal_approx(Vector4(0, 0, 0, 1)), "The generated normal must come from the cell orientation.");
+		CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "Merging two valid meshes must produce a valid mesh.");
+	}
+
+	SUBCASE("Merging generates missing vertex normals for the other mesh") {
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
+		mesh->set_flat_shading_normals();
+		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(10, 0, 0, 0)));
+		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_vertex_normals();
+		REQUIRE_MESSAGE(vertex_normals.size() == 2, "The other mesh's missing vertex normals must be generated during the merge.");
+		REQUIRE(vertex_normals[1].size() == 4);
+		for (int64_t vertex_in_cell = 0; vertex_in_cell < 4; vertex_in_cell++) {
+			CHECK_MESSAGE(vertex_normals[1][vertex_in_cell].is_equal_approx(Vector4(0, 0, 0, 1)), "The generated vertex normals must be flat shading normals.");
+		}
+		CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "Merging two valid meshes must produce a valid mesh.");
+	}
+
+	SUBCASE("Merging pads missing texture maps for the other mesh") {
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
+		Vector<PackedVector3Array> texture_map;
+		texture_map.push_back(PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) });
+		mesh->set_poly_cell_texture_map(texture_map);
+		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(10, 0, 0, 0)));
+		const Vector<PackedVector3Array> merged_texture_map = mesh->get_poly_cell_texture_map();
+		REQUIRE_MESSAGE(merged_texture_map.size() == 2, "The texture map must be padded to cover the merged cells.");
+		CHECK(merged_texture_map[0].size() == 4);
+		CHECK_MESSAGE(merged_texture_map[1].is_empty(), "The other mesh's cell must be padded as unmapped.");
+		CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "Merging two valid meshes must produce a valid mesh.");
+	}
+
 	SUBCASE("Merging a non-array poly mesh converts it") {
 		Ref<BoxPolyMesh4D> box;
 		box.instantiate();
