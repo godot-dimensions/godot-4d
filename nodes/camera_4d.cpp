@@ -145,7 +145,7 @@ Vector2 Camera4D::world_to_viewport_local_normal(const Vector4 &p_local_position
 	// Project from 4D to 3D.
 	Vector3 projected_point_3d;
 	if (bool(_projection_type & PROJECTION4D_PERSPECTIVE_4D)) {
-		projected_point_3d = Vector3(p_local_position.x, p_local_position.y, p_local_position.w) * (_focal_length_4d / p_local_position.z);
+		projected_point_3d = Vector3(p_local_position.x, p_local_position.y, p_local_position.w) * (_focal_length_4d / (p_local_position.z + p_local_position.w * _skewness));
 	} else {
 		projected_point_3d = Vector3(p_local_position.x, p_local_position.y, p_local_position.z);
 	}

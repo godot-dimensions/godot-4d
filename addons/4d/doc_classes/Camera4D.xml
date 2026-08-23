@@ -127,7 +127,7 @@
 		</member>
 		<member name="skewness" type="float" setter="set_skewness" getter="get_skewness" default="0.0">
 			Offsets the forward direction (as it is used in perspective projection) in the ±W direction, so it doesn't align with the camera's actual forward direction. The effect of this is that projections of objects on one side or the other of the cross-section plane will appear larger or smaller.
-			Currently unimplemented.
+			The actual limit of how high [member skewness] can be depends on other parameters. |[member skewness]| * [member w_fade_slope] should always be less than 1.
 		</member>
 		<member name="view_angle_type" type="int" setter="set_view_angle_type" getter="get_view_angle_type" enum="Camera4D.ViewAngleType" default="0">
 			Controls how the view angle or lens is defined: either focal length or field of view. Focal length is in meters, with a sensor size of 1 meter. Field of view is in radians, but is displayed as degrees in the inspector. This property is only used in the inspector, not at runtime.

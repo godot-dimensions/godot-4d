@@ -98,10 +98,10 @@ void vertex() {
 	mat4 modelview_basis = mat4(modelview_basis_x, modelview_basis_y, modelview_basis_z, modelview_basis_w);
 
 	vec4 verts[] = { CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3 };
-	verts[0] = (modelview_basis * verts[0]) + modelview_origin;
-	verts[1] = (modelview_basis * verts[1]) + modelview_origin;
-	verts[2] = (modelview_basis * verts[2]) + modelview_origin;
-	verts[3] = (modelview_basis * verts[3]) + modelview_origin;
+	for (int i = 0; i < 4; i++) {
+		verts[i] = (modelview_basis * verts[i]) + modelview_origin;
+		verts[i].z += verts[i].w * skewness;
+	}
 
 	vec3 uvws[] = { vec3(UV, COLOR.a), vec3(UV2, VERTEX.y), vec3(NORMAL.xy / NORMAL.z, VERTEX.z), COLOR.rgb };
 	
@@ -114,6 +114,7 @@ void vertex() {
 	// Compute flat normals.
 	vec4 normal4 = cross4(verts[1] - verts[0], verts[2] - verts[0], verts[3] - verts[0]);
 	bool back_face = dot(verts[0], normal4) <= 0.; // This mustn't be computed from verts_proj alone, as that would give the wrong answer sometimes if a vertex is behind the camera.
+	normal4.w -= normal4.z * skewness; // The skewed normal is needed for the backface calculation, (given that verts[0] is also skewed at this point) but the normal must be unskewed for lighting.
 
 	int vertex_id = int(VERTEX.x);
 	int projection_case = get_projection_case(verts);
@@ -225,6 +226,9 @@ void fragment() {
   vec4 peripheral_position = center_position + (position - center_position) / (1. - centerness);
   float other_centerness = (centerness * center_position.z / other_center_position.z) / (centerness * center_position.z / other_center_position.z + (1. - centerness));
   vec4 other_position = mix(peripheral_position, other_center_position, other_centerness);
+  // Undo the skewness transformation so it doesn't affect the frustum shape, opacity, and depth clipping.
+  position.z -= position.w * skewness;
+  other_position.z -= other_position.w * skewness;
 	
 	float z_near_limit = from_homogeneous(INV_PROJECTION_MATRIX * vec4(0.,0.,1.,1.)).z; // 1 is near Z in clip space, so this is near Z in view space.
 	float cross_section_depth = texture(cross_section_depth_texture, SCREEN_UV).r + DEPTH_BIAS_CLIPSPACE;
