@@ -331,7 +331,7 @@ void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, 
 	_all_poly_cell_normals.erase(CELL_TO_VERT_KEY);
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
-	if (p_recalculate_boundary_normals || !_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
+	if (p_recalculate_boundary_normals || !_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(p_mode);
 	}
 	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
@@ -359,7 +359,7 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
 	// Step 1: Prepare the data arrays which will be used by this function.
-	if (p_recalculate_boundary_normals || !_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
+	if (p_recalculate_boundary_normals || !_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(p_mode);
 	}
 	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
@@ -407,7 +407,7 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot make double sided because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot make double sided for an invalid mesh.");
-	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
+	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
 	}
 	Vector<PackedInt32Array> cell_face_indices = Vector<PackedInt32Array>(_poly_cell_indices[1]);
@@ -537,7 +537,7 @@ PackedInt32Array ArrayPolyMesh4D::make_single_volume_from_all_cells() const {
 void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radians, const bool p_discard_seams_within_islands) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate seam faces because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate seam faces for an invalid mesh.");
-	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
+	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
 	}
 	_seam_face_indices.clear();
@@ -594,7 +594,7 @@ void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radian
 		for (int64_t cell_index_index = 0; cell_index_index < cells_in_island.size(); cell_index_index++) {
 			const int32_t cell_index = cells_in_island[cell_index_index];
 			const PackedInt32Array &cell_faces = cell_face_indices[cell_index];
-			for (int64_t other_cell_index_index = cell_index + 1; other_cell_index_index < cells_in_island.size(); other_cell_index_index++) {
+			for (int64_t other_cell_index_index = cell_index_index + 1; other_cell_index_index < cells_in_island.size(); other_cell_index_index++) {
 				const int32_t other_cell_index = cells_in_island[other_cell_index_index];
 				const PackedInt32Array &other_cell_faces = cell_face_indices[other_cell_index];
 				int64_t index_in_self;
@@ -1052,9 +1052,10 @@ void ArrayPolyMesh4D::transform_texture_map(const Transform3D &p_transform) {
 
 void ArrayPolyMesh4D::deduplicate_all_elements() {
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot deduplicate elements of an invalid mesh.");
+	const bool has_boundary_cells = _poly_cell_indices.size() > 1;
 	// We need to ensure the boundary normals stay the same before and after deduplication,
 	// which means we need to start with boundary normals calculated from the original data.
-	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].size() != _poly_cell_indices[1].size()) {
+	if (has_boundary_cells && (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size())) {
 		calculate_boundary_normals();
 	}
 	// Snapshot the sub-element traversal order for all decomposed bindings BEFORE any deduplication.
@@ -1349,12 +1350,12 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 			remapped_poly_poly.insert(key, get_all_poly_cell_poly_indices(key.x, key.y));
 		}
 		// Now actually check on the boundary cells and see if their first two elements need swapping.
-		const PackedVector4Array &remapped_boundary_normals = output_poly_cell_normals[PER_CELL_KEY][0];
+		const PackedVector4Array remapped_boundary_normals = (output_poly_cell_normals.has(PER_CELL_KEY) && !output_poly_cell_normals[PER_CELL_KEY].is_empty()) ? output_poly_cell_normals[PER_CELL_KEY][0] : PackedVector4Array();
 		calculate_boundary_normals();
 		const PackedVector4Array &recalculated_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
 		Vector<PackedInt32Array> all_cell_face_indices = output_poly_cell_indices[1];
 		for (int64_t cell_index = 0; cell_index < recalculated_boundary_normals.size(); cell_index++) {
-			if (remapped_boundary_normals[cell_index].dot(recalculated_boundary_normals[cell_index]) < 0) {
+			if (cell_index < remapped_boundary_normals.size() && remapped_boundary_normals[cell_index].dot(recalculated_boundary_normals[cell_index]) < 0) {
 				// Swap the first two faces in the cell to flip the normal.
 				PackedInt32Array cell_face_indices = all_cell_face_indices[cell_index];
 				CRASH_COND(cell_face_indices.size() < 2);
@@ -1986,7 +1987,7 @@ void ArrayPolyMesh4D::set_poly_cell_indices_bind(const TypedArray<Array> &p_poly
 }
 
 PackedVector4Array ArrayPolyMesh4D::get_poly_cell_boundary_normals() {
-	if (!_all_poly_cell_normals.has(PER_CELL_KEY)) {
+	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty()) {
 		return PackedVector4Array();
 	}
 	return PackedVector4Array(_all_poly_cell_normals[PER_CELL_KEY][0]);

@@ -62,6 +62,54 @@ inline Ref<ArrayPolyMesh4D> make_two_tetrahedra_cells_mesh() {
 	return mesh;
 }
 
+// A closed ring of four tetrahedral cells around the shared edge 0-1, all flat in the w=0
+// hyperplane, with manually set boundary normals rotated by 30 degrees per cell from +W
+// toward +X. With the default 45 degree seam threshold, only the face shared by the first
+// and last cells (face 0, verts 0-1-2, at a 90 degree angle) becomes a seam, but the ring
+// stays connected as one island through the other three shared faces.
+// Vertices: 0:(0,0,0,0) 1:(1,0,0,0), ring: 2:(0,1,0,0) 3:(0,0,1,0) 4:(0,-1,0,0) 5:(0,0,-1,0)
+// Edges: 0:(0,1), 1-4: vertex 0 to ring, 5-8: vertex 1 to ring, 9-12: ring loop.
+// Faces: 0-3: shared faces {0,1,ring[i]}, 4-7: {0,ring[i],ring[i+1]}, 8-11: {1,ring[i],ring[i+1]}.
+inline Ref<ArrayPolyMesh4D> make_tetrahedron_ring_mesh() {
+	Ref<ArrayPolyMesh4D> mesh;
+	mesh.instantiate();
+	mesh->append_vertex(Vector4(0, 0, 0, 0));
+	mesh->append_vertex(Vector4(1, 0, 0, 0));
+	mesh->append_vertex(Vector4(0, 1, 0, 0));
+	mesh->append_vertex(Vector4(0, 0, 1, 0));
+	mesh->append_vertex(Vector4(0, -1, 0, 0));
+	mesh->append_vertex(Vector4(0, 0, -1, 0));
+	mesh->append_edge_indices(0, 1); // Edge 0.
+	for (int32_t i = 0; i < 4; i++) {
+		mesh->append_edge_indices(0, 2 + i); // Edges 1 to 4.
+	}
+	for (int32_t i = 0; i < 4; i++) {
+		mesh->append_edge_indices(1, 2 + i); // Edges 5 to 8.
+	}
+	for (int32_t i = 0; i < 4; i++) {
+		mesh->append_edge_indices(2 + i, 2 + (i + 1) % 4); // Edges 9 to 12.
+	}
+	for (int32_t i = 0; i < 4; i++) {
+		mesh->append_poly_cell(2, PackedInt32Array{ 0, 1 + i, 5 + i }, false); // Faces 0 to 3.
+	}
+	for (int32_t i = 0; i < 4; i++) {
+		mesh->append_poly_cell(2, PackedInt32Array{ 1 + i, 9 + i, 1 + (i + 1) % 4 }, false); // Faces 4 to 7.
+	}
+	for (int32_t i = 0; i < 4; i++) {
+		mesh->append_poly_cell(2, PackedInt32Array{ 5 + i, 9 + i, 5 + (i + 1) % 4 }, false); // Faces 8 to 11.
+	}
+	for (int32_t i = 0; i < 4; i++) {
+		mesh->append_poly_cell(3, PackedInt32Array{ i, (i + 1) % 4, 4 + i, 8 + i }, false);
+	}
+	PackedVector4Array normals;
+	for (int64_t i = 0; i < 4; i++) {
+		const double angle = i * (Math_PI / 6.0);
+		normals.append(Vector4(Math::sin(angle), 0, 0, Math::cos(angle)));
+	}
+	mesh->set_poly_cell_boundary_normals(normals);
+	return mesh;
+}
+
 inline Ref<ArrayPolyMesh4D> make_box_array_mesh() {
 	Ref<BoxPolyMesh4D> box;
 	box.instantiate();
@@ -428,6 +476,20 @@ TEST_CASE("[ArrayPolyMesh4D] Flat and smooth shading normals") {
 		}
 	}
 
+	SUBCASE("Flat shading recovers from an empty normals binding") {
+		// An empty binding for the boundary normals key can be set through the all-normals
+		// map setter, and must be treated the same as having no normals at all.
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		HashMap<Vector2i, Vector<PackedVector4Array>> degenerate_normals;
+		degenerate_normals.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedVector4Array>());
+		mesh->set_all_poly_cell_normals(degenerate_normals);
+		mesh->set_flat_shading_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
+		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_vertex_normals();
+		REQUIRE(vertex_normals.size() == 1);
+		REQUIRE(vertex_normals[0].size() == 4);
+		CHECK(vertex_normals[0][0].is_equal_approx(Vector4(0, 0, 0, 1)));
+	}
+
 	SUBCASE("Smooth shading respects seams as sharp borders") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		// All 24 box faces are seams at the default threshold, isolating each cell,
@@ -560,6 +622,31 @@ TEST_CASE("[ArrayPolyMesh4D] Seam faces") {
 		mesh->set_poly_cell_boundary_normals(PackedVector4Array{ Vector4(0, 0, 0, 1), Vector4(0, 0, 0, -1) });
 		mesh->calculate_seam_faces();
 		CHECK((mesh->get_seam_face_indices_bind() == PackedInt32Array{ 3 }));
+	}
+
+	SUBCASE("Discarding seams within islands removes seams that do not separate cells") {
+		// The ring's sharp joint (face 0) is a seam by angle, but the ring stays connected
+		// as one island through its other three joints, so the seam separates nothing.
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_ring_mesh();
+		mesh->calculate_seam_faces(Math_TAU / 8.0, false);
+		CHECK_MESSAGE((mesh->get_seam_face_indices_bind() == PackedInt32Array{ 0 }), "Only the face between the first and last ring cells is above the angle threshold.");
+		CHECK_MESSAGE(mesh->collect_all_islands().size() == 1, "The ring stays connected as one island through the other three shared faces.");
+		mesh->calculate_seam_faces(Math_TAU / 8.0, true);
+		CHECK_MESSAGE(mesh->get_seam_face_indices_bind().is_empty(), "A seam between two cells of the same island must be discarded.");
+	}
+
+	SUBCASE("Discarding seams within islands works for islands with offset cell indices") {
+		// Two disconnected rings: the second island's cell indices (4-7) differ from their
+		// positions within the island (0-3), which is a regression test for the discard loop
+		// confusing cell indices with positions in the island.
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_ring_mesh();
+		Ref<ArrayPolyMesh4D> other = make_tetrahedron_ring_mesh();
+		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(10, 0, 0, 0)));
+		mesh->calculate_seam_faces(Math_TAU / 8.0, false);
+		CHECK_MESSAGE((mesh->get_seam_face_indices_bind() == PackedInt32Array{ 0, 12 }), "Each ring has one seam face above the angle threshold.");
+		CHECK(mesh->collect_all_islands().size() == 2);
+		mesh->calculate_seam_faces(Math_TAU / 8.0, true);
+		CHECK_MESSAGE(mesh->get_seam_face_indices_bind().is_empty(), "Seams within islands must be discarded in every island, not only the first.");
 	}
 
 	SUBCASE("Seam setters and getters round trip") {
@@ -908,6 +995,46 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplicate all elements") {
 		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
 		REQUIRE(normals.size() == 1);
 		CHECK_MESSAGE(normals[0].is_equal_approx(Vector4(0, 0, 0, 1)), "Deduplication must preserve the boundary normal direction.");
+	}
+
+	SUBCASE("Deduplicating a mesh without boundary cells does not crash") {
+		// A face-only mesh has no 3D cells, so the boundary normal handling must be skipped.
+		Ref<ArrayPolyMesh4D> mesh;
+		mesh.instantiate();
+		mesh->append_vertex(Vector4(0, 0, 0, 0));
+		mesh->append_vertex(Vector4(1, 0, 0, 0));
+		mesh->append_vertex(Vector4(0, 1, 0, 0));
+		mesh->append_vertex(Vector4(0, 1, 0, 0), false); // Duplicate of vertex 2.
+		mesh->append_edge_indices(0, 1);
+		mesh->append_edge_indices(0, 2);
+		mesh->append_edge_indices(1, 2);
+		mesh->append_edge_indices(1, 3, false); // Becomes a duplicate of edge 2 (1, 2) after vertex dedup.
+		mesh->append_poly_cell(2, PackedInt32Array{ 0, 2, 1 }, false);
+		mesh->append_poly_cell(2, PackedInt32Array{ 2, 0, 1 }, false); // Duplicate of face 0.
+		mesh->deduplicate_all_elements();
+		CHECK(mesh->get_poly_cell_vertices().size() == 3);
+		CHECK(mesh->get_edge_indices().size() == 6);
+		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+		REQUIRE(poly_cell_indices.size() == 1);
+		CHECK(poly_cell_indices[0].size() == 1);
+		CHECK(mesh->is_poly_mesh_data_valid());
+	}
+
+	SUBCASE("Deduplication preserves custom boundary normals as the reference") {
+		// The cell orientation gives +W, but the custom normal says -W. Deduplication must
+		// keep the custom normal and align the cell orientation to it, instead of silently
+		// recalculating the reference normals from the orientation.
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		mesh->set_poly_cell_boundary_normals(PackedVector4Array{ Vector4(0, 0, 0, -1) });
+		mesh->append_vertex(Vector4(0, 0, 1, 0), false); // Duplicate of vertex 3.
+		mesh->append_edge_indices(2, 4, false); // Becomes a duplicate of edge 5 (2, 3) after vertex dedup.
+		mesh->deduplicate_all_elements();
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(normals.size() == 1);
+		CHECK_MESSAGE(normals[0].is_equal_approx(Vector4(0, 0, 0, -1)), "The custom boundary normal must be preserved.");
+		mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+		CHECK_MESSAGE(mesh->get_poly_cell_boundary_normals()[0].is_equal_approx(Vector4(0, 0, 0, -1)), "The cell orientation must be aligned to the custom normal.");
+		CHECK(mesh->is_poly_mesh_data_valid());
 	}
 
 	SUBCASE("Two merged boxes share an interface cell after deduplication") {

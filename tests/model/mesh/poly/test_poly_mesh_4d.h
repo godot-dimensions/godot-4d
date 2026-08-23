@@ -773,6 +773,66 @@ TEST_CASE("[PolyMesh4D] To array poly mesh") {
 	}
 }
 
+// Packs a sorted list of vertex indices into a single int64 key, for counting facets.
+inline int64_t facet_key(const PackedInt32Array &p_sorted_vertex_indices) {
+	int64_t key = 0;
+	for (int64_t i = 0; i < p_sorted_vertex_indices.size(); i++) {
+		key = (key << 16) | int64_t(p_sorted_vertex_indices[i] + 1);
+	}
+	return key;
+}
+
+TEST_CASE("[PolyMesh4D] Watertight simplex decomposition") {
+	// For a closed mesh, the boundary tetrahedra must form a crack-free simplicial complex,
+	// which holds if and only if every triangle facet is shared by exactly 2 tetrahedra. Any
+	// T-junction (two adjacent cells triangulating a shared face differently) breaks this
+	// count, so passing this proves that deformation (skinning, blend shapes, vertex shaders)
+	// cannot open cracks between the tetrahedra.
+	for (int shape = 0; shape < 2; shape++) {
+		Ref<PolyMesh4D> mesh;
+		if (shape == 0) {
+			Ref<BoxPolyMesh4D> box;
+			box.instantiate();
+			mesh = box;
+		} else {
+			Ref<OrthoplexPolyMesh4D> orthoplex;
+			orthoplex.instantiate();
+			mesh = orthoplex;
+		}
+		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+		REQUIRE(simplex_indices.size() % 4 == 0);
+		const int64_t simplex_count = simplex_indices.size() / 4;
+		REQUIRE(simplex_count > 0);
+		HashMap<int64_t, int32_t> facet_counts;
+		for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
+			for (int64_t drop_index = 0; drop_index < 4; drop_index++) {
+				PackedInt32Array facet;
+				for (int64_t i = 0; i < 4; i++) {
+					if (i == drop_index) {
+						continue;
+					}
+					facet.append(simplex_indices[simplex_index * 4 + i]);
+				}
+				facet.sort();
+				const int64_t key = facet_key(facet);
+				if (facet_counts.has(key)) {
+					facet_counts[key] = facet_counts[key] + 1;
+				} else {
+					facet_counts[key] = 1;
+				}
+			}
+		}
+		bool all_facets_shared_exactly_twice = true;
+		for (const KeyValue<int64_t, int32_t> &facet_kv : facet_counts) {
+			if (facet_kv.value != 2) {
+				all_facets_shared_exactly_twice = false;
+				break;
+			}
+		}
+		CHECK_MESSAGE(all_facets_shared_exactly_twice, "Every triangle facet of a closed mesh's tetrahedralization must be shared by exactly 2 tetrahedra (no cracks or T-junctions).");
+	}
+}
+
 TEST_CASE("[PolyMesh4D] Cache clearing keeps results consistent") {
 	Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 	const PackedInt32Array first_simplex_indices = mesh->get_simplex_cell_indices();
