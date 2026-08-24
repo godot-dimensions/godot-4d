@@ -953,8 +953,8 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	return ret;
 }
 
-// Everything below this line is `reconstruct_from_tetra_mesh` and
-// its dependent helper functions (and also bindings at the bottom).
+// All functions between here and `reconstruct_from_tetra_mesh` and are
+// the helper functions that `reconstruct_from_tetra_mesh` depends on.
 
 int64_t PolyMeshBuilder4D::_append_edge_indices_to_array(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate, PackedInt32Array &r_edge_vertex_indices) {
 	const int64_t edge_count = r_edge_vertex_indices.size() / 2;

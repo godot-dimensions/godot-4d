@@ -742,6 +742,12 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[1]]),
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[2]]),
 						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[3]]));
+				if (tet_perp.is_zero_approx()) {
+					// Skip zero-measure tetrahedra, which have no volume to render or collide with.
+					// These arise when a cell has collinear or coplanar chains of vertices, such as
+					// a cell bordering subdivided cells, conformed by referencing their sub-elements.
+					continue;
+				}
 				bool should_flip = false;
 				if (has_cell_boundary_normal && tet_perp.dot(cell_boundary_normal) < 0.0) {
 					should_flip = true;

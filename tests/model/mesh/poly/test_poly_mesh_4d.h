@@ -875,4 +875,143 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 		CHECK(face_vertex_indices[0].size() == 3);
 	}
 }
+
+TEST_CASE("[PolyMesh4D] Conformed and interior cells") {
+	SUBCASE("A cell with coplanar vertex chains decomposes without zero-measure tetrahedra") {
+		// A cube-shaped cell whose top face is subdivided into 4 sub-quads, so its 4 side
+		// faces are conformed into 5-edge loops with collinear vertex chains. The pivot
+		// override forces the tetrahedralization pivot to a vertex coplanar with the top
+		// side, which produces zero-measure tetrahedra that must be skipped.
+		Ref<ArrayPolyMesh4D> mesh;
+		mesh.instantiate();
+		PackedVector4Array vertices = {
+			Vector4(-1, -1, -1, 0),
+			Vector4(1, -1, -1, 0),
+			Vector4(1, 1, -1, 0),
+			Vector4(-1, 1, -1, 0),
+			Vector4(-1, -1, 1, 0),
+			Vector4(1, -1, 1, 0),
+			Vector4(1, 1, 1, 0),
+			Vector4(-1, 1, 1, 0),
+			Vector4(0, -1, 1, 0),
+			Vector4(1, 0, 1, 0),
+			Vector4(0, 1, 1, 0),
+			Vector4(-1, 0, 1, 0),
+			Vector4(0, 0, 1, 0),
+		};
+		mesh->set_poly_cell_vertices(vertices);
+		mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 2, 3, 0, 3, 0, 4, 1, 5, 2, 6, 3, 7, 4, 8, 5, 8, 5, 9, 6, 9, 6, 10, 7, 10, 4, 11, 7, 11, 8, 12, 9, 12, 10, 12, 11, 12 });
+		Vector<PackedInt32Array> faces;
+		faces.append(PackedInt32Array{ 0, 1, 2, 3 });
+		faces.append(PackedInt32Array{ 0, 5, 9, 8, 4 });
+		faces.append(PackedInt32Array{ 1, 6, 11, 10, 5 });
+		faces.append(PackedInt32Array{ 2, 7, 13, 12, 6 });
+		faces.append(PackedInt32Array{ 3, 4, 14, 15, 7 });
+		faces.append(PackedInt32Array{ 8, 16, 19, 14 });
+		faces.append(PackedInt32Array{ 9, 10, 17, 16 });
+		faces.append(PackedInt32Array{ 17, 11, 12, 18 });
+		faces.append(PackedInt32Array{ 19, 18, 13, 15 });
+		Vector<PackedInt32Array> cells;
+		cells.append(PackedInt32Array{ 0, 1, 2, 3, 4, 5, 6, 7, 8 });
+		mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ faces, cells });
+		mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ 8 });
+		CHECK(mesh->is_poly_mesh_data_valid());
+		const PackedVector4Array simplex_normals = mesh->get_simplex_cell_boundary_normals();
+		REQUIRE(simplex_normals.size() > 0);
+		for (int64_t simplex_index = 0; simplex_index < simplex_normals.size(); simplex_index++) {
+			CHECK_MESSAGE(!simplex_normals[simplex_index].is_zero_approx(), "Every emitted tetrahedron must have a nonzero normal.");
+		}
+		mesh->populate_inverse_metric_cache();
+		const real_t above_distance = mesh->get_signed_distance_to_mesh(Vector4(0, 0, 0, 1), nullptr, nullptr);
+		CHECK_MESSAGE(Math::abs(above_distance) == doctest::Approx(1.0), "The signed distance must work on a mesh with a conformed cell.");
+		const real_t beside_distance = mesh->get_signed_distance_to_mesh(Vector4(2, 0, 0, 0), nullptr, nullptr);
+		CHECK_MESSAGE(Math::abs(beside_distance) == doctest::Approx(1.0), "The signed distance must work on a mesh with a conformed cell.");
+	}
+	SUBCASE("Interior boundary cells shared by two volumetric cells generate no tetrahedra") {
+		// Two pentachora (4-simplexes) sharing a tetrahedron, with two volumetric cells.
+		// The shared tetrahedron is an interior boundary cell, excluded from rendering.
+		Ref<ArrayPolyMesh4D> mesh;
+		mesh.instantiate();
+		PackedVector4Array vertices = {
+			Vector4(0, 0, 0, 0),
+			Vector4(1, 0, 0, 0),
+			Vector4(0, 1, 0, 0),
+			Vector4(0, 0, 1, 0),
+			Vector4(0, 0, 0, 1),
+			Vector4(0.5, 0.5, 0.5, 0.5),
+		};
+		mesh->set_poly_cell_vertices(vertices);
+		// Edges are all vertex pairs except {0, 5}, since only those two are not connected.
+		PackedInt32Array edge_indices;
+		HashMap<int32_t, int32_t> edge_map;
+		for (int32_t a = 0; a < 6; a++) {
+			for (int32_t b = a + 1; b < 6; b++) {
+				if (a == 0 && b == 5) {
+					continue;
+				}
+				edge_map[a * 16 + b] = (int32_t)(edge_indices.size() / 2);
+				edge_indices.append(a);
+				edge_indices.append(b);
+			}
+		}
+		mesh->set_edge_vertex_indices(edge_indices);
+		// Faces are all vertex triples that do not contain both 0 and 5.
+		Vector<PackedInt32Array> faces;
+		HashMap<int32_t, int32_t> face_map;
+		for (int32_t a = 0; a < 6; a++) {
+			for (int32_t b = a + 1; b < 6; b++) {
+				for (int32_t c = b + 1; c < 6; c++) {
+					if (a == 0 && c == 5) {
+						continue;
+					}
+					face_map[(a * 16 + b) * 16 + c] = (int32_t)faces.size();
+					faces.append(PackedInt32Array{ edge_map[a * 16 + b], edge_map[b * 16 + c], edge_map[a * 16 + c] });
+				}
+			}
+		}
+		// The 3D cells are all vertex quadruples that do not contain both 0 and 5.
+		Vector<PackedInt32Array> cells;
+		int32_t shared_cell_index = -1;
+		PackedInt32Array volume_a_cells;
+		PackedInt32Array volume_b_cells;
+		for (int32_t a = 0; a < 6; a++) {
+			for (int32_t b = a + 1; b < 6; b++) {
+				for (int32_t c = b + 1; c < 6; c++) {
+					for (int32_t d = c + 1; d < 6; d++) {
+						if (a == 0 && d == 5) {
+							continue;
+						}
+						const int32_t cell_index = (int32_t)cells.size();
+						if (a == 1 && b == 2 && c == 3 && d == 4) {
+							shared_cell_index = cell_index;
+						}
+						if (d <= 4) {
+							volume_a_cells.append(cell_index);
+						}
+						if (a >= 1) {
+							volume_b_cells.append(cell_index);
+						}
+						cells.append(PackedInt32Array{
+								face_map[(a * 16 + b) * 16 + c],
+								face_map[(a * 16 + b) * 16 + d],
+								face_map[(a * 16 + c) * 16 + d],
+								face_map[(b * 16 + c) * 16 + d] });
+					}
+				}
+			}
+		}
+		REQUIRE(cells.size() == 9);
+		REQUIRE(shared_cell_index != -1);
+		Vector<PackedInt32Array> volumes;
+		volumes.append(volume_a_cells);
+		volumes.append(volume_b_cells);
+		mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ faces, cells, volumes });
+		CHECK(mesh->is_poly_mesh_data_valid());
+		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+		CHECK_MESSAGE(simplex_indices.size() == 8 * 4, "Only the 8 outer tetrahedral cells must decompose, into 1 tetrahedron each.");
+		for (int32_t simplex_index = 0; simplex_index < (int32_t)(simplex_indices.size() / 4); simplex_index++) {
+			CHECK_MESSAGE(mesh->get_source_poly_cell_for_simplex_cell(simplex_index) != shared_cell_index, "The interior boundary cell shared by both volumetric cells must generate no tetrahedra.");
+		}
+	}
+}
 } // namespace TestPolyMesh4D
