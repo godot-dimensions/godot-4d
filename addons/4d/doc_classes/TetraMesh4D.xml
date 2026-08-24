@@ -45,7 +45,7 @@
 			<param index="0" name="local_point" type="Vector4" />
 			<description>
 				Returns the signed distance from a point in 4D space to the surface of the tetrahedral mesh. The distance is negative if the point is inside the mesh, positive if outside, and zero if on the surface. If the function fails to calculate a distance, it will return [constant @GDScript.INF].
-				[b]Note:[/b] The [method populate_inverse_metric_cache] function MUST be called at least once before calling this method.
+				[b]Note:[/b] You are strongly encouraged to call [method populate_inverse_metric_cache] in advance of calling this method. If the cache is missing, this method will populate it automatically as a fallback, but relying on that is discouraged.
 			</description>
 		</method>
 		<method name="get_simplex_cell_boundary_normals">
@@ -81,7 +81,8 @@
 		<method name="populate_inverse_metric_cache">
 			<return type="void" />
 			<description>
-				Populates the cache used for nearest-point calculations, such as in [method get_signed_distance_to_mesh]. This is used to speed up nearest-point calculations, to avoid having to recalculate the same data each time a nearest-point calculation is done. This needs to be rerun whenever the geometry of the mesh changes, such as when vertices or cells are modified, if future nearest-point calculations are expected.
+				Populates the cache used for nearest-point and raycast calculations, such as in [method get_signed_distance_to_mesh], [method raycast_intersects], and [method raycast_intersects_fast]. This is used to speed up those calculations, to avoid having to recalculate the same data each time a calculation is done. This needs to be rerun whenever the geometry of the mesh changes, such as when vertices or cells are modified, if future calculations are expected.
+				You are strongly encouraged to call this function in advance of any nearest-point or raycast calculations. The raycast methods require the cache to be populated, and will fail with an error if it is not. [method get_signed_distance_to_mesh] will populate the cache automatically as a fallback, but relying on that is discouraged.
 			</description>
 		</method>
 		<method name="raycast_intersects">
@@ -96,6 +97,7 @@
 				- [code]"normal"[/code]: The normal at the hit point, perpendicular to the surface.
 				- [code]"cell_index"[/code]: The index of the cell that was hit.
 				If the ray does not hit any part of the mesh, the returned dictionary will be [code]{"hit": false}[/code].
+				[b]Note:[/b] The [method populate_inverse_metric_cache] function MUST be called at least once before calling this method.
 			</description>
 		</method>
 		<method name="raycast_intersects_fast">
@@ -105,7 +107,8 @@
 			<param index="2" name="max_distance" type="float" default="3.4e+38" />
 			<description>
 				Performs a raycast against the tetrahedral cells of the mesh. The [param local_from] parameter is the starting point of the ray relative to the mesh, and the [param local_direction] parameter is the direction of the ray relative to the mesh.
-				Returns immediately with [code]true[/code] if the ray intersects any part of the mesh, or [code]false[/code] if it does not. This is a faster function than [method raycast_simplex_cells], which will keep going after the first hit, returning more information about the intersection, while this function will stop after any intersection is found.
+				Returns immediately with [code]true[/code] if the ray intersects any part of the mesh, or [code]false[/code] if it does not. This is a faster function than [method raycast_intersects], which will keep going after the first hit, returning more information about the intersection, while this function will stop after any intersection is found.
+				[b]Note:[/b] The [method populate_inverse_metric_cache] function MUST be called at least once before calling this method.
 			</description>
 		</method>
 		<method name="tetra_mesh_clear_cache">
