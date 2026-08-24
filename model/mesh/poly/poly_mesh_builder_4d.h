@@ -63,6 +63,7 @@ class PolyMeshBuilder4D : public Object {
 	static int32_t _subdivide_classify(SubdivisionContext &r_ctx, const int64_t p_level, const int32_t p_index);
 	static bool _subdivide_new_elements_touch(const SubdivisionContext &p_ctx, const int64_t p_level, const int32_t p_a, const int32_t p_b);
 	static void _subdivide_repair_first_two(SubdivisionContext &r_ctx, const int64_t p_level, PackedInt32Array &r_members);
+	static void _subdivide_order_face_loop(const SubdivisionContext &p_ctx, PackedInt32Array &r_members);
 	static int32_t _subdivide_cone(SubdivisionContext &r_ctx, SubdivisionRefined &r_refined, const int64_t p_element_level, const int32_t p_element_index);
 	static void _subdivide_collect_closure(const SubdivisionContext &p_ctx, const int64_t p_level, const int32_t p_index, Vector<PackedInt32Array> &r_closure_by_dim);
 	static int32_t _subdivide_internal_element(SubdivisionContext &r_ctx, const int64_t p_level, const int32_t p_cell_index, const Vector<PackedInt32Array> &p_closure_by_dim, const int64_t p_sub_dim, const int32_t p_sub_index);

@@ -469,6 +469,7 @@ TEST_CASE("[PolyMesh4D] Canonical span of 4D cells") {
 			}
 		}
 		// Swap the ridge face's first two edges, which flips the face's own orientation.
+		// This is an intentional test of an undesired edge order, so it prints a warning.
 		{
 			Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
 			Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
@@ -480,7 +481,9 @@ TEST_CASE("[PolyMesh4D] Canonical span of 4D cells") {
 			faces.set(ridge_face, swapped_edges);
 			poly_cell_indices.set(0, faces);
 			mesh->set_poly_cell_indices(poly_cell_indices);
+			ERR_PRINT_OFF;
 			const Vector<PackedInt32Array> result = mesh->get_all_poly_cell_vertex_indices(4, true);
+			ERR_PRINT_ON;
 			REQUIRE(result.size() == 1);
 			for (int64_t i = 0; i < 5; i++) {
 				CHECK_MESSAGE(result[0][i] == expected_span[i], "Flipping the ridge face's orientation must not change the 4D cell's canonical span.");
@@ -874,6 +877,51 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 		REQUIRE(face_vertex_indices.size() == 1);
 		CHECK(face_vertex_indices[0].size() == 3);
 	}
+}
+
+TEST_CASE("[PolyMesh4D] Faces with unordered edges triangulate correctly") {
+	// A pentagonal pyramid cell whose base pentagon face lists its edges in a valid but
+	// non-connected order: the first two edges share a vertex, as validation requires, but
+	// the rest are not in a connected loop order. The tetrahedralization must still cover
+	// the pyramid exactly. The pivot override forces coning from the apex over the base.
+	Ref<ArrayPolyMesh4D> mesh;
+	mesh.instantiate();
+	PackedVector4Array vertices = {
+		Vector4(0, 0, 0, 0),
+		Vector4(2, 0, 0, 0),
+		Vector4(3, 2, 0, 0),
+		Vector4(1, 4, 0, 0),
+		Vector4(-1, 2, 0, 0),
+		Vector4(1, 1.5, 3, 0), // The apex, 3 units above the base pentagon of area 10.
+	};
+	mesh->set_poly_cell_vertices(vertices);
+	mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 2, 3, 3, 4, 0, 4, 0, 5, 1, 5, 2, 5, 3, 5, 4, 5 });
+	Vector<PackedInt32Array> faces;
+	faces.append(PackedInt32Array{ 0, 4, 1, 2, 3 }); // The scrambled pentagon: AB, AE, BC, CD, DE.
+	faces.append(PackedInt32Array{ 0, 6, 5 });
+	faces.append(PackedInt32Array{ 1, 7, 6 });
+	faces.append(PackedInt32Array{ 2, 8, 7 });
+	faces.append(PackedInt32Array{ 3, 9, 8 });
+	faces.append(PackedInt32Array{ 4, 5, 9 });
+	Vector<PackedInt32Array> cells;
+	cells.append(PackedInt32Array{ 0, 1, 2, 3, 4, 5 });
+	mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ faces, cells });
+	mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ 5 });
+	ERR_PRINT_OFF; // The unordered edge list prints a warning, which is expected here.
+	CHECK(mesh->is_poly_mesh_data_valid());
+	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+	ERR_PRINT_ON;
+	const PackedVector4Array simplex_vertices = mesh->get_vertices();
+	double total_volume = 0.0;
+	for (int64_t simplex_start = 0; simplex_start < simplex_indices.size(); simplex_start += 4) {
+		const Vector4 vert0 = simplex_vertices[simplex_indices[simplex_start]];
+		const Vector4 perp = Vector4D::perpendicular(
+				simplex_vertices[simplex_indices[simplex_start + 1]] - vert0,
+				simplex_vertices[simplex_indices[simplex_start + 2]] - vert0,
+				simplex_vertices[simplex_indices[simplex_start + 3]] - vert0);
+		total_volume += perp.length() / 6.0;
+	}
+	CHECK_MESSAGE(total_volume == doctest::Approx(10.0), "The tetrahedralized volume must match the pyramid's volume even with an unordered face edge list.");
 }
 
 TEST_CASE("[PolyMesh4D] Conformed and interior cells") {

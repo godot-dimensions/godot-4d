@@ -74,6 +74,16 @@ TEST_CASE("[PolyMeshBuilder4D] Subdivide elements") {
 		CHECK_MESSAGE(poly_cell_indices[2].size() == 1, "The volumetric cell must be conformed, not subdivided.");
 		CHECK_MESSAGE(poly_cell_indices[2][0].size() == 64, "The conformed volumetric cell must reference all sub-cubes.");
 		CHECK_MESSAGE(mesh->get_poly_cell_vertices().size() == 16 + 32 + 24 + 8, "The subdivided tesseract must add edge midpoints, face centers, and cube centers.");
+		// Every face must have its edges in a connected loop order, including internal walls.
+		const PackedInt32Array all_edges = mesh->get_edge_indices();
+		for (const PackedInt32Array &face : poly_cell_indices[0]) {
+			for (int64_t i = 0; i < face.size(); i++) {
+				const int32_t edge_a = face[i];
+				const int32_t edge_b = face[(i + 1) % face.size()];
+				const bool connected = all_edges[edge_a * 2] == all_edges[edge_b * 2] || all_edges[edge_a * 2] == all_edges[edge_b * 2 + 1] || all_edges[edge_a * 2 + 1] == all_edges[edge_b * 2] || all_edges[edge_a * 2 + 1] == all_edges[edge_b * 2 + 1];
+				CHECK_MESSAGE(connected, "Every face of the subdivided tesseract must have its edges in a connected loop order.");
+			}
+		}
 		// Each piece must inherit its parent's boundary normal, and the cell orientations must match.
 		const PackedVector4Array new_normals = mesh->get_poly_cell_boundary_normals();
 		REQUIRE(new_normals.size() == 64);

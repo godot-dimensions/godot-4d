@@ -97,6 +97,18 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 					}
 					return false;
 				}
+				if (poly_dim_index == 0 && cell_element_count > 3) {
+					// Faces should have their edges in a connected loop order. Reading faces is
+					// robust to any order, but other orders are an undesired layout of the data.
+					for (int64_t i = 0; i < cell_element_count; i++) {
+						const int32_t edge_a = cell[i];
+						const int32_t edge_b = cell[(i + 1) % cell_element_count];
+						if (!_do_edges_have_common_vertex(edge_indices[edge_a * 2], edge_indices[edge_a * 2 + 1], edge_indices[edge_b * 2], edge_indices[edge_b * 2 + 1])) {
+							WARN_PRINT("PolyMesh4D: Face " + itos(cell_idx) + " does not have its edges in a connected loop order. This is handled, but it is an undesired layout of the data.");
+							break;
+						}
+					}
+				}
 			}
 			cells_of_prev_dim = cells_of_dim;
 			prev_dim_count = cells_of_dim.size();
@@ -393,6 +405,34 @@ PackedInt32Array PolyMesh4D::_get_vertex_indices_of_face(const PackedInt32Array 
 	HashSet<int32_t> seen_vertices;
 	for (int64_t i = 0; i < ret.size(); i++) {
 		seen_vertices.insert(ret[i]);
+	}
+	// Walk the edge loop by connectivity, so the vertices are in polygon boundary order,
+	// which the triangulation requires, even if the edge list is not stored in loop order.
+	while (ret.size() < p_face_edge_indices.size()) {
+		const int32_t current_vertex = ret[ret.size() - 1];
+		bool found = false;
+		for (int64_t i = 2; i < p_face_edge_indices.size(); i++) {
+			const int32_t edge_start_vertex = p_all_edge_indices[p_face_edge_indices[i] * 2];
+			const int32_t edge_end_vertex = p_all_edge_indices[p_face_edge_indices[i] * 2 + 1];
+			int32_t other_vertex;
+			if (edge_start_vertex == current_vertex) {
+				other_vertex = edge_end_vertex;
+			} else if (edge_end_vertex == current_vertex) {
+				other_vertex = edge_start_vertex;
+			} else {
+				continue;
+			}
+			if (seen_vertices.has(other_vertex)) {
+				continue;
+			}
+			seen_vertices.insert(other_vertex);
+			ret.append(other_vertex);
+			found = true;
+			break;
+		}
+		if (!found) {
+			break; // The face is not a closed loop, fall back to appending in edge order.
+		}
 	}
 	for (int64_t i = 2; i < p_face_edge_indices.size(); i++) {
 		const int32_t edge_start_vertex = p_all_edge_indices[p_face_edge_indices[i] * 2];
