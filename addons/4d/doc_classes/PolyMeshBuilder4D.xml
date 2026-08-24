@@ -57,5 +57,17 @@
 				This function is useful for converting tetrahedral meshes into polyhedral meshes when the polyhedral structure is implied by the ordering of the tetrahedral cells and a polyhedral representation is desired for further processing. However, this operation is lossy, and so round-trip conversions may not yield the original data. Whenever possible, always keep the original polyhedral mesh data and work with that directly, and avoid using this function unless absolutely necessary.
 			</description>
 		</method>
+		<method name="subdivide_elements" qualifiers="static">
+			<return type="PackedInt32Array" />
+			<param index="0" name="input_mesh" type="ArrayPolyMesh4D" />
+			<param index="1" name="dimension" type="int" />
+			<param index="2" name="elements" type="PackedInt32Array" default="PackedInt32Array()" />
+			<description>
+				Subdivides the selected elements of the given dimension, in place, returning the indices of the new elements created from the selected ones, so that callers can keep track of the inputs, such as updating a user's selection in a modeling tool. If [param elements] is empty, all elements of the given dimension are subdivided. Repeat the subdivision for finer detail.
+				The subdivision splits all edges at their midpoints, and uses well-proportioned decompositions per shape: triangles subdivide into 4 similar triangles, other polygons subdivide into quadrilaterals around a center vertex, simplexes subdivide into corner simplexes and a central rectified simplex (a tetrahedron becomes 4 tetrahedra and an octahedron), boxes subdivide into 8 sub-boxes, orthoplexes subdivide into corner orthoplexes and simplex cones (an octahedron becomes 6 octahedra and 8 tetrahedra), and any other cell is subdivided by connecting its centroid to every piece of its subdivided boundary.
+				Elements below the selected ones are always fully subdivided too. Unselected elements above or beside them are conformed by referencing the pieces of their subdivided members, which keeps the mesh crack-free, even under deformation, because the pieces are shared rather than duplicated. Boundary normals, boundary cell vertex normals, and cell texture maps are carried over and interpolated (or the per-face equivalents, for a flat mesh with only 2D faces), boundary cells keep their normals and matching orientations, sub-elements of seam faces stay seams, and subdividing 4D volumetric cells creates interior boundary cells that are excluded from rendering.
+				[b]Note:[/b] For the best results, subdivide all desired elements in a single call. A conformed cell is no longer shaped like a simplex, box, or orthoplex, so subdividing it in a later call falls back to the centroid-based subdivision.
+			</description>
+		</method>
 	</methods>
 </class>

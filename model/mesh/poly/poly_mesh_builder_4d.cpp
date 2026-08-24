@@ -1379,6 +1379,1039 @@ void PolyMeshBuilder4D::make_boundary_normals_topologically_consistent(const Ref
 	p_mesh_4d->set_poly_cell_boundary_normals(boundary_normals);
 }
 
+// Subdivision helper functions. See `subdivide_elements` below for an overview.
+
+int32_t PolyMeshBuilder4D::_subdivide_append_vertex(SubdivisionContext &r_ctx, const Vector4 &p_position, const PackedInt32Array &p_source_vertices) {
+	const int32_t index = (int32_t)r_ctx.new_vertices.size();
+	r_ctx.new_vertices.append(p_position);
+	r_ctx.new_vertex_sources.append(p_source_vertices);
+	return index;
+}
+
+int32_t PolyMeshBuilder4D::_subdivide_get_or_create_edge(SubdivisionContext &r_ctx, const int32_t p_vertex_a, const int32_t p_vertex_b, const int32_t p_parent) {
+	const int64_t key = (int64_t(MIN(p_vertex_a, p_vertex_b)) << 32) | int64_t(MAX(p_vertex_a, p_vertex_b));
+	const int32_t *existing = r_ctx.new_edge_map.getptr(key);
+	if (existing != nullptr) {
+		return *existing;
+	}
+	const int32_t index = (int32_t)(r_ctx.new_edges.size() / 2);
+	r_ctx.new_edges.append(MIN(p_vertex_a, p_vertex_b));
+	r_ctx.new_edges.append(MAX(p_vertex_a, p_vertex_b));
+	r_ctx.new_edge_parents.append(p_parent);
+	r_ctx.new_edge_map[key] = index;
+	return index;
+}
+
+int32_t PolyMeshBuilder4D::_subdivide_append_cell(SubdivisionContext &r_ctx, const int64_t p_level, const PackedInt32Array &p_members, const int32_t p_parent) {
+	PackedInt32Array members = p_members;
+	_subdivide_repair_first_two(r_ctx, p_level, members);
+	const int32_t index = (int32_t)r_ctx.new_levels[p_level].size();
+	r_ctx.new_levels.write[p_level].append(members);
+	r_ctx.new_level_parents.write[p_level].append(p_parent);
+	return index;
+}
+
+int32_t PolyMeshBuilder4D::_subdivide_get_edge_piece_at(const SubdivisionContext &p_ctx, const int32_t p_old_edge, const int32_t p_old_vertex) {
+	const PackedInt32Array &pieces = p_ctx.edge_pieces[p_old_edge];
+	// The first piece contains the old edge's first vertex, the second piece contains the second.
+	return p_ctx.old_edges[p_old_edge * 2] == p_old_vertex ? pieces[0] : pieces[1];
+}
+
+bool PolyMeshBuilder4D::_subdivide_old_element_has_vertex(const SubdivisionContext &p_ctx, const int64_t p_element_dim, const int32_t p_element_index, const int32_t p_vertex) {
+	if (p_element_dim == 1) {
+		return p_ctx.old_edges[p_element_index * 2] == p_vertex || p_ctx.old_edges[p_element_index * 2 + 1] == p_vertex;
+	}
+	return p_ctx.old_level_vertices[p_element_dim - 2][p_element_index].has(p_vertex);
+}
+
+bool PolyMeshBuilder4D::_subdivide_old_element_contains(const SubdivisionContext &p_ctx, const int64_t p_outer_dim, const int32_t p_outer_index, const int64_t p_inner_dim, const int32_t p_inner_index) {
+	if (p_inner_dim == 1) {
+		return _subdivide_old_element_has_vertex(p_ctx, p_outer_dim, p_outer_index, p_ctx.old_edges[p_inner_index * 2]) &&
+				_subdivide_old_element_has_vertex(p_ctx, p_outer_dim, p_outer_index, p_ctx.old_edges[p_inner_index * 2 + 1]);
+	}
+	const PackedInt32Array &inner_vertices = p_ctx.old_level_vertices[p_inner_dim - 2][p_inner_index];
+	for (const int32_t vertex : inner_vertices) {
+		if (!_subdivide_old_element_has_vertex(p_ctx, p_outer_dim, p_outer_index, vertex)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+Vector4 PolyMeshBuilder4D::_subdivide_old_element_center(const SubdivisionContext &p_ctx, const int64_t p_element_dim, const int32_t p_element_index, PackedInt32Array *r_source_vertices) {
+	PackedInt32Array source_vertices;
+	if (p_element_dim == 1) {
+		source_vertices.append(p_ctx.old_edges[p_element_index * 2]);
+		source_vertices.append(p_ctx.old_edges[p_element_index * 2 + 1]);
+	} else {
+		source_vertices = p_ctx.old_level_vertices[p_element_dim - 2][p_element_index];
+	}
+	Vector4 center;
+	for (const int32_t vertex : source_vertices) {
+		center += p_ctx.old_vertices[vertex];
+	}
+	center /= (real_t)source_vertices.size();
+	if (r_source_vertices != nullptr) {
+		*r_source_vertices = source_vertices;
+	}
+	return center;
+}
+
+int32_t PolyMeshBuilder4D::_subdivide_classify(SubdivisionContext &r_ctx, const int64_t p_level, const int32_t p_index) {
+	const int32_t memo = r_ctx.classification[p_level][p_index];
+	if (memo != SUBDIV_CLASS_UNKNOWN) {
+		return memo;
+	}
+	int32_t result = SUBDIV_CLASS_OTHER;
+	const int64_t element_dim = p_level + 2;
+	const int64_t member_count = r_ctx.old_levels[p_level][p_index].size();
+	const int64_t vertex_count = r_ctx.old_level_vertices[p_level][p_index].size();
+	if (p_level == 0) {
+		// A triangle is a 2D simplex, and a quadrilateral is treated as a 2D box.
+		if (member_count == 3 && vertex_count == 3) {
+			result = SUBDIV_CLASS_SIMPLEX;
+		} else if (member_count == 4 && vertex_count == 4) {
+			result = SUBDIV_CLASS_BOX;
+		}
+	} else {
+		const PackedInt32Array &members = r_ctx.old_levels[p_level][p_index];
+		if (vertex_count == element_dim + 1 && member_count == element_dim + 1) {
+			result = SUBDIV_CLASS_SIMPLEX;
+			for (const int32_t member : members) {
+				if (_subdivide_classify(r_ctx, p_level - 1, member) != SUBDIV_CLASS_SIMPLEX) {
+					result = SUBDIV_CLASS_OTHER;
+					break;
+				}
+			}
+		} else if (vertex_count == (int64_t(1) << element_dim) && member_count == 2 * element_dim) {
+			result = SUBDIV_CLASS_BOX;
+			for (const int32_t member : members) {
+				if (_subdivide_classify(r_ctx, p_level - 1, member) != SUBDIV_CLASS_BOX) {
+					result = SUBDIV_CLASS_OTHER;
+					break;
+				}
+			}
+		} else if (vertex_count == 2 * element_dim && member_count == (int64_t(1) << element_dim)) {
+			result = SUBDIV_CLASS_ORTHOPLEX;
+			for (const int32_t member : members) {
+				if (_subdivide_classify(r_ctx, p_level - 1, member) != SUBDIV_CLASS_SIMPLEX) {
+					result = SUBDIV_CLASS_OTHER;
+					break;
+				}
+			}
+		}
+	}
+	r_ctx.classification.write[p_level].set(p_index, result);
+	return result;
+}
+
+bool PolyMeshBuilder4D::_subdivide_new_elements_touch(const SubdivisionContext &p_ctx, const int64_t p_level, const int32_t p_a, const int32_t p_b) {
+	// Two new elements touch when they share a member (or a vertex, in the case of edges).
+	if (p_level < 0) {
+		const int32_t a1 = p_ctx.new_edges[p_a * 2];
+		const int32_t a2 = p_ctx.new_edges[p_a * 2 + 1];
+		const int32_t b1 = p_ctx.new_edges[p_b * 2];
+		const int32_t b2 = p_ctx.new_edges[p_b * 2 + 1];
+		return a1 == b1 || a1 == b2 || a2 == b1 || a2 == b2;
+	}
+	const PackedInt32Array &members_a = p_ctx.new_levels[p_level][p_a];
+	const PackedInt32Array &members_b = p_ctx.new_levels[p_level][p_b];
+	for (const int32_t member : members_a) {
+		if (members_b.has(member)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void PolyMeshBuilder4D::_subdivide_repair_first_two(SubdivisionContext &r_ctx, const int64_t p_level, PackedInt32Array &r_members) {
+	if (r_members.size() < 2) {
+		return;
+	}
+	const int64_t member_level = p_level - 1;
+	const PackedInt32Array &parents = member_level < 0 ? r_ctx.new_edge_parents : r_ctx.new_level_parents[member_level];
+	// The first two members of a cell must share a common element to encode the orientation.
+	// They should also come from different parents, because pieces of the same subdivided
+	// element are coplanar, which would make the orientation degenerate.
+	if (_subdivide_new_elements_touch(r_ctx, member_level, r_members[0], r_members[1]) && parents[r_members[0]] != parents[r_members[1]]) {
+		return;
+	}
+	// Pass 1 requires distinct parents, pass 2 falls back to any touching pair.
+	for (int pass = 0; pass < 2; pass++) {
+		for (int64_t i = 0; i < r_members.size(); i++) {
+			for (int64_t j = i + 1; j < r_members.size(); j++) {
+				if (pass == 0 && parents[r_members[i]] == parents[r_members[j]]) {
+					continue;
+				}
+				if (!_subdivide_new_elements_touch(r_ctx, member_level, r_members[i], r_members[j])) {
+					continue;
+				}
+				PackedInt32Array reordered;
+				reordered.append(r_members[i]);
+				reordered.append(r_members[j]);
+				for (int64_t rest = 0; rest < r_members.size(); rest++) {
+					if (rest != i && rest != j) {
+						reordered.append(r_members[rest]);
+					}
+				}
+				r_members = reordered;
+				return;
+			}
+		}
+	}
+}
+
+int32_t PolyMeshBuilder4D::_subdivide_cone(SubdivisionContext &r_ctx, SubdivisionRefined &r_refined, const int64_t p_element_level, const int32_t p_element_index) {
+	// Cones the given new element to the refined cell's center vertex, giving an element one dimension higher.
+	const int64_t memo_key = ((p_element_level + 2) << 32) | int64_t(p_element_index);
+	const int32_t *existing = r_refined.cone_by_element.getptr(memo_key);
+	if (existing != nullptr) {
+		return *existing;
+	}
+	int32_t cone_index;
+	if (p_element_level < 0) {
+		// Coning an edge gives a triangle face.
+		const int32_t vertex_a = r_ctx.new_edges[p_element_index * 2];
+		const int32_t vertex_b = r_ctx.new_edges[p_element_index * 2 + 1];
+		PackedInt32Array members = {
+			p_element_index,
+			_subdivide_get_or_create_edge(r_ctx, vertex_a, r_refined.center_vertex, r_ctx.internal_parent_counter--),
+			_subdivide_get_or_create_edge(r_ctx, vertex_b, r_refined.center_vertex, r_ctx.internal_parent_counter--),
+		};
+		cone_index = _subdivide_append_cell(r_ctx, 0, members, r_ctx.internal_parent_counter--);
+	} else {
+		PackedInt32Array members = { p_element_index };
+		const PackedInt32Array element_members = r_ctx.new_levels[p_element_level][p_element_index];
+		for (const int32_t element_member : element_members) {
+			members.append(_subdivide_cone(r_ctx, r_refined, p_element_level - 1, element_member));
+		}
+		cone_index = _subdivide_append_cell(r_ctx, p_element_level + 1, members, r_ctx.internal_parent_counter--);
+	}
+	r_refined.cone_by_element[memo_key] = cone_index;
+	return cone_index;
+}
+
+void PolyMeshBuilder4D::_subdivide_collect_closure(const SubdivisionContext &p_ctx, const int64_t p_level, const int32_t p_index, Vector<PackedInt32Array> &r_closure_by_dim) {
+	// Collects the old element indices in the cell's closure, indexed by geometric dimension.
+	const int64_t element_dim = p_level + 2;
+	r_closure_by_dim.clear();
+	r_closure_by_dim.resize(element_dim);
+	Vector<HashSet<int32_t>> seen;
+	seen.resize(element_dim);
+	PackedInt32Array frontier = p_ctx.old_levels[p_level][p_index];
+	for (int64_t dim = element_dim - 1; dim >= 1; dim--) {
+		PackedInt32Array next_frontier;
+		for (const int32_t element : frontier) {
+			if (seen[dim].has(element)) {
+				continue;
+			}
+			seen.write[dim].insert(element);
+			r_closure_by_dim.write[dim].append(element);
+			if (dim >= 2) {
+				next_frontier.append_array(p_ctx.old_levels[dim - 2][element]);
+			}
+		}
+		frontier = next_frontier;
+	}
+}
+
+int32_t PolyMeshBuilder4D::_subdivide_internal_element(SubdivisionContext &r_ctx, const int64_t p_level, const int32_t p_cell_index, const Vector<PackedInt32Array> &p_closure_by_dim, const int64_t p_sub_dim, const int32_t p_sub_index) {
+	// For box-style refinements, creates the internal element of the cell "across" the given
+	// sub-element. For example, a subdivided cube has an internal wall quad across each of its
+	// edges, and an internal edge from each face's center to the cube's center.
+	SubdivisionRefined *refined = r_ctx.refined_levels.write[p_level].getptr(p_cell_index);
+	CRASH_COND(refined == nullptr);
+	const int64_t memo_key = (p_sub_dim << 32) | int64_t(p_sub_index);
+	{
+		const int32_t *existing = refined->internal_by_subelement.getptr(memo_key);
+		if (existing != nullptr) {
+			return *existing;
+		}
+	}
+	const int64_t cell_dim = p_level + 2;
+	const int64_t internal_dim = cell_dim - p_sub_dim;
+	int32_t internal_index;
+	if (internal_dim == 1) {
+		// The internal element is an edge from the sub-element's center to the cell's center.
+		const int32_t sub_center = p_sub_dim == 1 ? r_ctx.edge_mid_vertex[p_sub_index] : r_ctx.refined_levels[p_sub_dim - 2][p_sub_index].center_vertex;
+		internal_index = _subdivide_get_or_create_edge(r_ctx, sub_center, refined->center_vertex, r_ctx.internal_parent_counter--);
+	} else {
+		PackedInt32Array members;
+		// Members on the cell's boundary: the internal elements of each member across the sub-element.
+		const PackedInt32Array cell_members = r_ctx.old_levels[p_level][p_cell_index];
+		for (const int32_t member : cell_members) {
+			if (!_subdivide_old_element_contains(r_ctx, cell_dim - 1, member, p_sub_dim, p_sub_index)) {
+				continue;
+			}
+			if (cell_dim - 1 == 2) {
+				// The member is a face, whose internal spoke edges were stored during face refinement.
+				const int32_t *spoke = r_ctx.refined_levels[0][member].internal_by_subelement.getptr(memo_key);
+				CRASH_COND(spoke == nullptr);
+				members.append(*spoke);
+			} else {
+				Vector<PackedInt32Array> member_closure;
+				_subdivide_collect_closure(r_ctx, p_level - 1, member, member_closure);
+				members.append(_subdivide_internal_element(r_ctx, p_level - 1, member, member_closure, p_sub_dim, p_sub_index));
+			}
+		}
+		// Members inside the cell: the internal elements across every element one dimension
+		// above the sub-element that contains it.
+		for (const int32_t above : p_closure_by_dim[p_sub_dim + 1]) {
+			if (_subdivide_old_element_contains(r_ctx, p_sub_dim + 1, above, p_sub_dim, p_sub_index)) {
+				members.append(_subdivide_internal_element(r_ctx, p_level, p_cell_index, p_closure_by_dim, p_sub_dim + 1, above));
+			}
+		}
+		internal_index = _subdivide_append_cell(r_ctx, internal_dim - 2, members, r_ctx.internal_parent_counter--);
+		refined = r_ctx.refined_levels.write[p_level].getptr(p_cell_index);
+	}
+	refined->internal_by_subelement[memo_key] = internal_index;
+	return internal_index;
+}
+
+PackedInt32Array PolyMeshBuilder4D::_subdivide_face_vertex_walk(const SubdivisionContext &p_ctx, const int32_t p_face_index) {
+	// Walks the face's edge loop and returns its vertices in boundary order, starting with
+	// the face's first two edges so that the walk is consistent with the face's orientation.
+	const PackedInt32Array &face_edges = p_ctx.old_levels[0][p_face_index];
+	const int32_t edge0_a = p_ctx.old_edges[face_edges[0] * 2];
+	const int32_t edge0_b = p_ctx.old_edges[face_edges[0] * 2 + 1];
+	const int32_t edge1_a = p_ctx.old_edges[face_edges[1] * 2];
+	const int32_t edge1_b = p_ctx.old_edges[face_edges[1] * 2 + 1];
+	const int32_t shared = (edge0_a == edge1_a || edge0_a == edge1_b) ? edge0_a : edge0_b;
+	PackedInt32Array walk = {
+		edge0_a == shared ? edge0_b : edge0_a,
+		shared,
+		edge1_a == shared ? edge1_b : edge1_a,
+	};
+	while (walk.size() < face_edges.size()) {
+		const int32_t current = walk[walk.size() - 1];
+		const int32_t previous = walk[walk.size() - 2];
+		bool found = false;
+		for (const int32_t edge : face_edges) {
+			const int32_t vertex_a = p_ctx.old_edges[edge * 2];
+			const int32_t vertex_b = p_ctx.old_edges[edge * 2 + 1];
+			const int32_t other = vertex_a == current ? vertex_b : (vertex_b == current ? vertex_a : -1);
+			if (other == -1 || other == previous || walk.has(other)) {
+				continue;
+			}
+			walk.append(other);
+			found = true;
+			break;
+		}
+		if (!found) {
+			break; // Malformed face, return what we have.
+		}
+	}
+	return walk;
+}
+
+void PolyMeshBuilder4D::_subdivide_refine_face(SubdivisionContext &r_ctx, const int32_t p_face_index) {
+	r_ctx.refined_levels.write[0].insert(p_face_index, SubdivisionRefined());
+	SubdivisionRefined *refined = r_ctx.refined_levels.write[0].getptr(p_face_index);
+	const PackedInt32Array vertex_sequence = _subdivide_face_vertex_walk(r_ctx, p_face_index);
+	const int64_t n = vertex_sequence.size();
+	// Map each vertex pair to the old edge connecting them.
+	HashMap<int64_t, int32_t> pair_to_edge;
+	for (const int32_t edge : r_ctx.old_levels[0][p_face_index]) {
+		const int32_t vertex_a = r_ctx.old_edges[edge * 2];
+		const int32_t vertex_b = r_ctx.old_edges[edge * 2 + 1];
+		pair_to_edge[(int64_t(MIN(vertex_a, vertex_b)) << 32) | int64_t(MAX(vertex_a, vertex_b))] = edge;
+	}
+	PackedInt32Array boundary_edges; // The old edge for each vertex to the next vertex, in walk order.
+	for (int64_t j = 0; j < n; j++) {
+		const int32_t vertex_a = vertex_sequence[j];
+		const int32_t vertex_b = vertex_sequence[(j + 1) % n];
+		const int32_t *edge = pair_to_edge.getptr((int64_t(MIN(vertex_a, vertex_b)) << 32) | int64_t(MAX(vertex_a, vertex_b)));
+		CRASH_COND(edge == nullptr);
+		boundary_edges.append(*edge);
+	}
+	if (n == 3) {
+		// A triangle subdivides into 3 corner triangles and 1 central medial triangle.
+		for (int64_t j = 0; j < n; j++) {
+			const int32_t vertex = vertex_sequence[j];
+			const int32_t next_edge = boundary_edges[j];
+			const int32_t prev_edge = boundary_edges[(j + n - 1) % n];
+			const int32_t cut_edge = _subdivide_get_or_create_edge(r_ctx, r_ctx.edge_mid_vertex[next_edge], r_ctx.edge_mid_vertex[prev_edge], r_ctx.internal_parent_counter--);
+			refined->cut_piece_by_vertex[vertex] = cut_edge;
+			PackedInt32Array corner_members = {
+				_subdivide_get_edge_piece_at(r_ctx, next_edge, vertex),
+				cut_edge,
+				_subdivide_get_edge_piece_at(r_ctx, prev_edge, vertex),
+			};
+			const int32_t corner = _subdivide_append_cell(r_ctx, 0, corner_members, p_face_index);
+			refined->corner_piece_by_vertex[vertex] = corner;
+			refined->all_pieces.append(corner);
+		}
+		PackedInt32Array central_members;
+		for (int64_t j = 0; j < n; j++) {
+			central_members.append(refined->cut_piece_by_vertex[vertex_sequence[j]]);
+		}
+		const int32_t central = _subdivide_append_cell(r_ctx, 0, central_members, p_face_index);
+		refined->central_pieces.append(central);
+		refined->all_pieces.append(central);
+	} else {
+		// An n-gon subdivides into n corner quadrilaterals around a center vertex.
+		PackedInt32Array center_sources;
+		const Vector4 center_position = _subdivide_old_element_center(r_ctx, 2, p_face_index, &center_sources);
+		refined->center_vertex = _subdivide_append_vertex(r_ctx, center_position, center_sources);
+		for (int64_t j = 0; j < n; j++) {
+			const int32_t edge = boundary_edges[j];
+			const int32_t spoke = _subdivide_get_or_create_edge(r_ctx, r_ctx.edge_mid_vertex[edge], refined->center_vertex, r_ctx.internal_parent_counter--);
+			refined->internal_by_subelement[(int64_t(1) << 32) | int64_t(edge)] = spoke;
+		}
+		for (int64_t j = 0; j < n; j++) {
+			const int32_t vertex = vertex_sequence[j];
+			const int32_t next_edge = boundary_edges[j];
+			const int32_t prev_edge = boundary_edges[(j + n - 1) % n];
+			PackedInt32Array corner_members = {
+				_subdivide_get_edge_piece_at(r_ctx, next_edge, vertex),
+				refined->internal_by_subelement[(int64_t(1) << 32) | int64_t(next_edge)],
+				refined->internal_by_subelement[(int64_t(1) << 32) | int64_t(prev_edge)],
+				_subdivide_get_edge_piece_at(r_ctx, prev_edge, vertex),
+			};
+			const int32_t corner = _subdivide_append_cell(r_ctx, 0, corner_members, p_face_index);
+			refined->corner_piece_by_vertex[vertex] = corner;
+			refined->all_pieces.append(corner);
+		}
+	}
+}
+
+void PolyMeshBuilder4D::_subdivide_refine_cell(SubdivisionContext &r_ctx, const int64_t p_level, const int32_t p_index) {
+	r_ctx.refined_levels.write[p_level].insert(p_index, SubdivisionRefined());
+	SubdivisionRefined *refined = r_ctx.refined_levels.write[p_level].getptr(p_index);
+	const PackedInt32Array members = r_ctx.old_levels[p_level][p_index];
+	const PackedInt32Array vertices = r_ctx.old_level_vertices[p_level][p_index];
+	const int32_t classification = _subdivide_classify(r_ctx, p_level, p_index);
+	if (classification == SUBDIV_CLASS_SIMPLEX) {
+		// A simplex subdivides into corner simplexes and a central rectified simplex.
+		// Create the cut cells across each vertex, made of the members' cut pieces.
+		for (const int32_t vertex : vertices) {
+			PackedInt32Array cut_members;
+			for (const int32_t member : members) {
+				if (_subdivide_old_element_has_vertex(r_ctx, p_level + 1, member, vertex)) {
+					cut_members.append(r_ctx.refined_levels[p_level - 1][member].cut_piece_by_vertex[vertex]);
+				}
+			}
+			const int32_t cut = _subdivide_append_cell(r_ctx, p_level - 1, cut_members, r_ctx.internal_parent_counter--);
+			refined->cut_piece_by_vertex[vertex] = cut;
+		}
+		for (const int32_t vertex : vertices) {
+			PackedInt32Array corner_members;
+			for (const int32_t member : members) {
+				if (_subdivide_old_element_has_vertex(r_ctx, p_level + 1, member, vertex)) {
+					corner_members.append(r_ctx.refined_levels[p_level - 1][member].corner_piece_by_vertex[vertex]);
+				}
+			}
+			corner_members.append(refined->cut_piece_by_vertex[vertex]);
+			const int32_t corner = _subdivide_append_cell(r_ctx, p_level, corner_members, p_index);
+			refined->corner_piece_by_vertex[vertex] = corner;
+			refined->all_pieces.append(corner);
+		}
+		PackedInt32Array central_members;
+		for (const int32_t member : members) {
+			central_members.append_array(r_ctx.refined_levels[p_level - 1][member].central_pieces);
+		}
+		for (const int32_t vertex : vertices) {
+			central_members.append(refined->cut_piece_by_vertex[vertex]);
+		}
+		const int32_t central = _subdivide_append_cell(r_ctx, p_level, central_members, p_index);
+		refined->central_pieces.append(central);
+		refined->all_pieces.append(central);
+	} else if (classification == SUBDIV_CLASS_BOX) {
+		// A box subdivides into one sub-box per vertex, separated by internal walls.
+		PackedInt32Array center_sources;
+		const Vector4 center_position = _subdivide_old_element_center(r_ctx, p_level + 2, p_index, &center_sources);
+		refined->center_vertex = _subdivide_append_vertex(r_ctx, center_position, center_sources);
+		Vector<PackedInt32Array> closure_by_dim;
+		_subdivide_collect_closure(r_ctx, p_level, p_index, closure_by_dim);
+		for (const int32_t vertex : vertices) {
+			PackedInt32Array corner_members;
+			for (const int32_t member : members) {
+				if (_subdivide_old_element_has_vertex(r_ctx, p_level + 1, member, vertex)) {
+					corner_members.append(r_ctx.refined_levels[p_level - 1][member].corner_piece_by_vertex[vertex]);
+				}
+			}
+			for (const int32_t edge : closure_by_dim[1]) {
+				if (_subdivide_old_element_has_vertex(r_ctx, 1, edge, vertex)) {
+					corner_members.append(_subdivide_internal_element(r_ctx, p_level, p_index, closure_by_dim, 1, edge));
+				}
+			}
+			// Re-fetch the pointer since the internal element helper may mutate the map's fields.
+			refined = r_ctx.refined_levels.write[p_level].getptr(p_index);
+			const int32_t corner = _subdivide_append_cell(r_ctx, p_level, corner_members, p_index);
+			refined->corner_piece_by_vertex[vertex] = corner;
+			refined->all_pieces.append(corner);
+		}
+	} else if (classification == SUBDIV_CLASS_ORTHOPLEX) {
+		// An orthoplex subdivides into one half-size orthoplex per vertex, with a simplex
+		// cone toward the center filling the hole left behind at each member.
+		PackedInt32Array center_sources;
+		const Vector4 center_position = _subdivide_old_element_center(r_ctx, p_level + 2, p_index, &center_sources);
+		refined->center_vertex = _subdivide_append_vertex(r_ctx, center_position, center_sources);
+		for (const int32_t vertex : vertices) {
+			PackedInt32Array corner_members;
+			for (const int32_t member : members) {
+				if (_subdivide_old_element_has_vertex(r_ctx, p_level + 1, member, vertex)) {
+					corner_members.append(r_ctx.refined_levels[p_level - 1][member].corner_piece_by_vertex[vertex]);
+				}
+			}
+			for (const int32_t member : members) {
+				if (_subdivide_old_element_has_vertex(r_ctx, p_level + 1, member, vertex)) {
+					const int32_t cut_piece = r_ctx.refined_levels[p_level - 1][member].cut_piece_by_vertex[vertex];
+					corner_members.append(_subdivide_cone(r_ctx, *refined, p_level - 2, cut_piece));
+				}
+			}
+			const int32_t corner = _subdivide_append_cell(r_ctx, p_level, corner_members, p_index);
+			refined->corner_piece_by_vertex[vertex] = corner;
+			refined->all_pieces.append(corner);
+		}
+		for (const int32_t member : members) {
+			const int32_t central_piece = r_ctx.refined_levels[p_level - 1][member].central_pieces[0];
+			const int32_t hole = _subdivide_cone(r_ctx, *refined, p_level - 1, central_piece);
+			r_ctx.new_level_parents.write[p_level].set(hole, p_index);
+			refined->central_pieces.append(hole);
+			refined->all_pieces.append(hole);
+		}
+	} else {
+		// Fallback for any other cell shape: cone every piece of the refined boundary to the centroid.
+		PackedInt32Array center_sources;
+		const Vector4 center_position = _subdivide_old_element_center(r_ctx, p_level + 2, p_index, &center_sources);
+		refined->center_vertex = _subdivide_append_vertex(r_ctx, center_position, center_sources);
+		for (const int32_t member : members) {
+			const PackedInt32Array member_pieces = r_ctx.refined_levels[p_level - 1][member].all_pieces;
+			for (const int32_t piece : member_pieces) {
+				const int32_t cone = _subdivide_cone(r_ctx, *refined, p_level - 1, piece);
+				r_ctx.new_level_parents.write[p_level].set(cone, p_index);
+				refined->all_pieces.append(cone);
+			}
+		}
+	}
+}
+
+PackedInt32Array PolyMeshBuilder4D::_subdivide_conform_face(SubdivisionContext &r_ctx, const int32_t p_face_index) {
+	// Rebuilds an unsubdivided face's edge list in walk order, replacing subdivided edges
+	// with their pieces. Faces with 5+ edges require walk order for correct triangulation.
+	const PackedInt32Array vertex_sequence = _subdivide_face_vertex_walk(r_ctx, p_face_index);
+	const int64_t n = vertex_sequence.size();
+	HashMap<int64_t, int32_t> pair_to_edge;
+	for (const int32_t edge : r_ctx.old_levels[0][p_face_index]) {
+		const int32_t vertex_a = r_ctx.old_edges[edge * 2];
+		const int32_t vertex_b = r_ctx.old_edges[edge * 2 + 1];
+		pair_to_edge[(int64_t(MIN(vertex_a, vertex_b)) << 32) | int64_t(MAX(vertex_a, vertex_b))] = edge;
+	}
+	PackedInt32Array new_members;
+	for (int64_t j = 0; j < n; j++) {
+		const int32_t vertex_a = vertex_sequence[j];
+		const int32_t vertex_b = vertex_sequence[(j + 1) % n];
+		const int32_t *edge = pair_to_edge.getptr((int64_t(MIN(vertex_a, vertex_b)) << 32) | int64_t(MAX(vertex_a, vertex_b)));
+		CRASH_COND(edge == nullptr);
+		if (r_ctx.edge_remap[*edge] >= 0) {
+			new_members.append(r_ctx.edge_remap[*edge]);
+		} else {
+			new_members.append(_subdivide_get_edge_piece_at(r_ctx, *edge, vertex_a));
+			new_members.append(_subdivide_get_edge_piece_at(r_ctx, *edge, vertex_b));
+		}
+	}
+	// Rotate the walk so the first two edges are not collinear pieces of the same old edge,
+	// which would make the face's orientation degenerate.
+	const int64_t member_count = new_members.size();
+	for (int64_t rotation = 0; rotation < member_count; rotation++) {
+		const int32_t edge_a = new_members[rotation];
+		const int32_t edge_b = new_members[(rotation + 1) % member_count];
+		const Vector4 dir_a = (r_ctx.new_vertices[r_ctx.new_edges[edge_a * 2 + 1]] - r_ctx.new_vertices[r_ctx.new_edges[edge_a * 2]]).normalized();
+		const Vector4 dir_b = (r_ctx.new_vertices[r_ctx.new_edges[edge_b * 2 + 1]] - r_ctx.new_vertices[r_ctx.new_edges[edge_b * 2]]).normalized();
+		if (Math::abs(dir_a.dot(dir_b)) > 1.0 - (real_t)CMP_EPSILON) {
+			continue; // Collinear, try the next rotation.
+		}
+		if (rotation == 0) {
+			return new_members;
+		}
+		PackedInt32Array rotated;
+		for (int64_t k = 0; k < member_count; k++) {
+			rotated.append(new_members[(rotation + k) % member_count]);
+		}
+		return rotated;
+	}
+	return new_members; // Fully degenerate face, leave as is.
+}
+
+PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D> &p_input_mesh, const int p_dimension, const PackedInt32Array &p_elements) {
+	// Subdivides the selected elements of the given dimension, in place, using the midpoint
+	// subdivision family: edges split at their midpoints, triangles become 4 triangles, other
+	// polygons become quads around a center vertex, simplexes become corner simplexes plus a
+	// rectified central cell, boxes become 2^N sub-boxes, orthoplexes become corner orthoplexes
+	// plus simplex cones, and any other cell is coned from its centroid over its refined boundary.
+	// Elements below the selected ones are fully subdivided too (downward closure), while
+	// unselected elements above them are conformed by referencing the pieces of their subdivided
+	// members, which keeps everything crack-free, even under deformation.
+	PackedInt32Array ret;
+	ERR_FAIL_COND_V_MSG(p_input_mesh.is_null() || !p_input_mesh->is_mesh_data_valid(), ret, "Input mesh is not valid, so subdivision cannot be performed.");
+	ERR_FAIL_COND_V_MSG(p_dimension < 1 || p_dimension > 4, ret, "Cannot subdivide elements of dimension " + itos(p_dimension) + " in a 4D mesh.");
+	SubdivisionContext ctx;
+	ctx.old_vertices = p_input_mesh->get_poly_cell_vertices();
+	ctx.old_edges = p_input_mesh->get_edge_indices();
+	ctx.old_levels = p_input_mesh->get_poly_cell_indices();
+	const int64_t level_count = ctx.old_levels.size();
+	const int64_t selection_level = int64_t(p_dimension) - 2; // -1 means edges.
+	ERR_FAIL_COND_V_MSG(selection_level >= level_count, ret, "The mesh has no elements of dimension " + itos(p_dimension) + " to subdivide.");
+	const int64_t old_edge_count = ctx.old_edges.size() / 2;
+	const int64_t selection_element_count = selection_level < 0 ? old_edge_count : ctx.old_levels[selection_level].size();
+	// Gather and validate the selection. An empty selection means all elements of that dimension.
+	PackedInt32Array selection = p_elements;
+	if (selection.is_empty()) {
+		selection.resize(selection_element_count);
+		for (int64_t i = 0; i < selection_element_count; i++) {
+			selection.set(i, (int32_t)i);
+		}
+	} else {
+		for (int64_t i = 0; i < selection.size(); i++) {
+			ERR_FAIL_INDEX_V_MSG(selection[i], selection_element_count, ret, "Element index " + itos(selection[i]) + " is out of range for dimension " + itos(p_dimension) + ".");
+		}
+	}
+	if (selection.is_empty()) {
+		return ret; // Nothing to subdivide.
+	}
+	// Cache the vertex indices of every element at every level of the old mesh.
+	ctx.old_level_vertices.resize(level_count);
+	for (int64_t level = 0; level < level_count; level++) {
+		ctx.old_level_vertices.set(level, p_input_mesh->get_all_poly_cell_vertex_indices((int)level + 2, false));
+	}
+	// Mark the selection, then mark everything below it for full subdivision (downward closure).
+	ctx.marked_levels.resize(level_count);
+	if (selection_level < 0) {
+		for (const int32_t element : selection) {
+			ctx.marked_edges.insert(element);
+		}
+	} else {
+		for (const int32_t element : selection) {
+			ctx.marked_levels.write[selection_level].insert(element);
+		}
+		for (int64_t level = selection_level; level >= 0; level--) {
+			for (const int32_t marked : ctx.marked_levels[level]) {
+				for (const int32_t member : ctx.old_levels[level][marked]) {
+					if (level == 0) {
+						ctx.marked_edges.insert(member);
+					} else {
+						ctx.marked_levels.write[level - 1].insert(member);
+					}
+				}
+			}
+		}
+	}
+	// Capture the old boundary data so it can be restored and inherited after subdivision.
+	// The boundary cells of a 4D mesh are the 3D cells, at poly cell dim index 1.
+	const int64_t boundary_level = 1;
+	const bool has_boundary_level = boundary_level < level_count;
+	PackedVector4Array old_boundary_normals;
+	bool had_stored_normals = false;
+	if (has_boundary_level) {
+		old_boundary_normals = p_input_mesh->get_poly_cell_boundary_normals();
+		if (old_boundary_normals.size() == ctx.old_levels[boundary_level].size()) {
+			had_stored_normals = true;
+		} else {
+			// The mesh has no stored boundary normals, but the cell orientations still encode
+			// implicit normals, which must be preserved. Compute them on a throwaway copy.
+			Ref<ArrayPolyMesh4D> scratch = p_input_mesh->duplicate();
+			scratch->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+			old_boundary_normals = scratch->get_poly_cell_boundary_normals();
+		}
+	}
+	const HashMap<Vector2i, Vector<PackedVector4Array>> old_all_normals = p_input_mesh->get_all_poly_cell_normals();
+	const HashMap<Vector2i, Vector<PackedVector3Array>> old_all_texture_maps = p_input_mesh->get_all_poly_cell_texture_maps();
+	const HashSet<int32_t> old_seams = p_input_mesh->get_seam_face_indices();
+	const PackedInt32Array old_pivot_overrides = p_input_mesh->get_poly_cell_boundary_pivot_overrides();
+	// Build the new mesh data, starting with the vertices and edges.
+	ctx.new_vertices = ctx.old_vertices.duplicate();
+	ctx.new_levels.resize(level_count);
+	ctx.new_level_parents.resize(level_count);
+	ctx.level_remap.resize(level_count);
+	ctx.refined_levels.resize(level_count);
+	ctx.classification.resize(level_count);
+	for (int64_t level = 0; level < level_count; level++) {
+		PackedInt32Array classification_init;
+		classification_init.resize(ctx.old_levels[level].size());
+		classification_init.fill(SUBDIV_CLASS_UNKNOWN);
+		ctx.classification.set(level, classification_init);
+	}
+	ctx.edge_remap.resize(old_edge_count);
+	ctx.edge_mid_vertex.resize(old_edge_count);
+	ctx.edge_mid_vertex.fill(-1);
+	ctx.edge_pieces.resize(old_edge_count);
+	for (int64_t edge = 0; edge < old_edge_count; edge++) {
+		const int32_t vertex_a = ctx.old_edges[edge * 2];
+		const int32_t vertex_b = ctx.old_edges[edge * 2 + 1];
+		if (ctx.marked_edges.has((int32_t)edge)) {
+			const Vector4 midpoint = (ctx.old_vertices[vertex_a] + ctx.old_vertices[vertex_b]) * 0.5f;
+			const int32_t mid_vertex = _subdivide_append_vertex(ctx, midpoint, PackedInt32Array{ vertex_a, vertex_b });
+			ctx.edge_mid_vertex.set(edge, mid_vertex);
+			PackedInt32Array pieces = {
+				_subdivide_get_or_create_edge(ctx, vertex_a, mid_vertex, (int32_t)edge),
+				_subdivide_get_or_create_edge(ctx, mid_vertex, vertex_b, (int32_t)edge),
+			};
+			ctx.edge_pieces.set(edge, pieces);
+			ctx.edge_remap.set(edge, -1);
+		} else {
+			ctx.edge_remap.set(edge, _subdivide_get_or_create_edge(ctx, vertex_a, vertex_b, (int32_t)edge));
+		}
+	}
+	// Process each level from the bottom up, so that refinements can use their members' refinements.
+	for (int64_t level = 0; level < level_count; level++) {
+		const int64_t cell_count = ctx.old_levels[level].size();
+		PackedInt32Array remap;
+		remap.resize(cell_count);
+		ctx.level_remap.set(level, remap);
+		for (int64_t i = 0; i < cell_count; i++) {
+			if (ctx.marked_levels[level].has((int32_t)i)) {
+				ctx.level_remap.write[level].set(i, -1);
+				if (level == 0) {
+					_subdivide_refine_face(ctx, (int32_t)i);
+				} else {
+					_subdivide_refine_cell(ctx, level, (int32_t)i);
+				}
+				continue;
+			}
+			const PackedInt32Array &members = ctx.old_levels[level][i];
+			bool any_member_subdivided = false;
+			for (const int32_t member : members) {
+				if (level == 0 ? ctx.marked_edges.has(member) : ctx.marked_levels[level - 1].has(member)) {
+					any_member_subdivided = true;
+					break;
+				}
+			}
+			PackedInt32Array new_members;
+			if (level == 0) {
+				if (any_member_subdivided) {
+					new_members = _subdivide_conform_face(ctx, (int32_t)i);
+				} else {
+					for (const int32_t member : members) {
+						new_members.append(ctx.edge_remap[member]);
+					}
+				}
+			} else {
+				for (const int32_t member : members) {
+					if (ctx.marked_levels[level - 1].has(member)) {
+						new_members.append_array(ctx.refined_levels[level - 1][member].all_pieces);
+					} else {
+						new_members.append(ctx.level_remap[level - 1][member]);
+					}
+				}
+			}
+			ctx.level_remap.write[level].set(i, _subdivide_append_cell(ctx, level, new_members, (int32_t)i));
+		}
+	}
+	// Write the new data into the mesh.
+	p_input_mesh->set_poly_cell_vertices(ctx.new_vertices);
+	p_input_mesh->set_edge_vertex_indices(ctx.new_edges);
+	p_input_mesh->set_poly_cell_indices(ctx.new_levels);
+	p_input_mesh->set_all_poly_cell_normals(HashMap<Vector2i, Vector<PackedVector4Array>>());
+	p_input_mesh->set_all_poly_cell_texture_maps(HashMap<Vector2i, Vector<PackedVector3Array>>());
+	// Remap the pivot overrides. Pieces of subdivided cells lose their parent's override.
+	const int64_t new_boundary_count = has_boundary_level ? ctx.new_levels[boundary_level].size() : 0;
+	if (has_boundary_level && !old_pivot_overrides.is_empty()) {
+		PackedInt32Array new_pivot_overrides;
+		new_pivot_overrides.resize(new_boundary_count);
+		new_pivot_overrides.fill(-1);
+		for (int64_t i = 0; i < old_pivot_overrides.size() && i < ctx.old_levels[boundary_level].size(); i++) {
+			const int32_t new_index = ctx.level_remap[boundary_level][i];
+			if (old_pivot_overrides[i] != -1 && new_index >= 0) {
+				new_pivot_overrides.set(new_index, old_pivot_overrides[i]);
+			}
+		}
+		p_input_mesh->set_poly_cell_boundary_pivot_overrides(new_pivot_overrides);
+	} else {
+		p_input_mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array());
+	}
+	// Remap the seams, which refer to the 2D faces between the 3D boundary cells.
+	if (!old_seams.is_empty()) {
+		HashSet<int32_t> new_seams;
+		for (const int32_t seam : old_seams) {
+			if (seam < 0 || seam >= ctx.old_levels[0].size()) {
+				continue;
+			}
+			if (ctx.level_remap[0][seam] >= 0) {
+				new_seams.insert(ctx.level_remap[0][seam]);
+			} else {
+				for (const int32_t piece : ctx.refined_levels[0][seam].all_pieces) {
+					new_seams.insert(piece);
+				}
+			}
+		}
+		p_input_mesh->set_seam_face_indices(new_seams);
+	} else {
+		p_input_mesh->set_seam_face_indices(HashSet<int32_t>());
+	}
+	// Orient every boundary cell so its orientation-derived normal matches its pre-subdivision
+	// normal, inherited from its parent for new pieces. New interior cells have no desired normal.
+	if (has_boundary_level) {
+		PackedVector4Array desired_normals;
+		desired_normals.resize(new_boundary_count);
+		for (int64_t i = 0; i < new_boundary_count; i++) {
+			const int32_t parent = ctx.new_level_parents[boundary_level][i];
+			if (parent >= 0 && parent < old_boundary_normals.size()) {
+				desired_normals.set(i, old_boundary_normals[parent]);
+			} else {
+				desired_normals.set(i, Vector4());
+			}
+		}
+		p_input_mesh->set_poly_cell_boundary_normals(PackedVector4Array());
+		p_input_mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+		const PackedVector4Array oriented_normals = p_input_mesh->get_poly_cell_boundary_normals();
+		Vector<PackedInt32Array> boundary_cells = ctx.new_levels[boundary_level];
+		bool any_flipped = false;
+		for (int64_t i = 0; i < new_boundary_count && i < oriented_normals.size(); i++) {
+			const Vector4 &desired = desired_normals[i];
+			if (desired.is_zero_approx() || oriented_normals[i].dot(desired) >= 0.0) {
+				continue;
+			}
+			PackedInt32Array boundary_cell = boundary_cells[i];
+			const int32_t temp = boundary_cell[0];
+			boundary_cell.set(0, boundary_cell[1]);
+			boundary_cell.set(1, temp);
+			boundary_cells.set(i, boundary_cell);
+			any_flipped = true;
+		}
+		if (any_flipped) {
+			ctx.new_levels.set(boundary_level, boundary_cells);
+			p_input_mesh->set_poly_cell_indices(ctx.new_levels);
+		}
+		if (had_stored_normals) {
+			p_input_mesh->set_poly_cell_boundary_normals(desired_normals);
+		} else {
+			p_input_mesh->set_poly_cell_boundary_normals(PackedVector4Array());
+		}
+	}
+	// Regenerate the boundary cell vertex normals and texture maps by interpolation.
+	// New vertices average the values of their source vertices within each parent cell.
+	if (has_boundary_level) {
+		const int64_t old_vertex_count = ctx.old_vertices.size();
+		const Vector<PackedVector4Array> *old_vertex_normals = old_all_normals.getptr(PolyMesh4D::CELL_TO_VERT_KEY);
+		const Vector<PackedVector3Array> *old_texture_maps = old_all_texture_maps.getptr(PolyMesh4D::CELL_TO_VERT_KEY);
+		if (old_vertex_normals != nullptr || old_texture_maps != nullptr) {
+			const Vector<PackedInt32Array> new_cell_vertex_indices = p_input_mesh->get_all_poly_cell_vertex_indices(3, false);
+			Vector<PackedVector4Array> new_vertex_normals;
+			Vector<PackedVector3Array> new_texture_maps;
+			new_vertex_normals.resize(new_boundary_count);
+			new_texture_maps.resize(new_boundary_count);
+			for (int64_t i = 0; i < new_boundary_count; i++) {
+				const int32_t parent = ctx.new_level_parents[boundary_level][i];
+				if (parent < 0) {
+					continue; // Interior cells have no vertex normals or texture maps.
+				}
+				const PackedInt32Array &parent_vertices = ctx.old_level_vertices[boundary_level][parent];
+				const PackedInt32Array &new_cell_vertices = new_cell_vertex_indices[i];
+				// Interpolate the vertex normals within the parent cell.
+				if (old_vertex_normals != nullptr && parent < old_vertex_normals->size() && (*old_vertex_normals)[parent].size() == parent_vertices.size()) {
+					const PackedVector4Array &parent_values = (*old_vertex_normals)[parent];
+					PackedVector4Array cell_values;
+					cell_values.resize(new_cell_vertices.size());
+					for (int64_t vert_num = 0; vert_num < new_cell_vertices.size(); vert_num++) {
+						const int32_t vertex = new_cell_vertices[vert_num];
+						Vector4 value;
+						if (vertex < old_vertex_count) {
+							const int64_t found = parent_vertices.find(vertex);
+							if (found != -1) {
+								value = parent_values[found];
+							}
+						} else {
+							const PackedInt32Array &sources = ctx.new_vertex_sources[vertex - old_vertex_count];
+							for (const int32_t source : sources) {
+								const int64_t found = parent_vertices.find(source);
+								if (found != -1) {
+									value += parent_values[found];
+								}
+							}
+							if (value.length_squared() > (real_t)CMP_EPSILON) {
+								value = value.normalized();
+							}
+						}
+						cell_values.set(vert_num, value);
+					}
+					new_vertex_normals.set(i, cell_values);
+				}
+				// Interpolate the texture map within the parent cell.
+				if (old_texture_maps != nullptr && parent < old_texture_maps->size() && (*old_texture_maps)[parent].size() == parent_vertices.size()) {
+					const PackedVector3Array &parent_values = (*old_texture_maps)[parent];
+					PackedVector3Array cell_values;
+					cell_values.resize(new_cell_vertices.size());
+					for (int64_t vert_num = 0; vert_num < new_cell_vertices.size(); vert_num++) {
+						const int32_t vertex = new_cell_vertices[vert_num];
+						Vector3 value;
+						if (vertex < old_vertex_count) {
+							const int64_t found = parent_vertices.find(vertex);
+							if (found != -1) {
+								value = parent_values[found];
+							}
+						} else {
+							const PackedInt32Array &sources = ctx.new_vertex_sources[vertex - old_vertex_count];
+							int64_t found_count = 0;
+							for (const int32_t source : sources) {
+								const int64_t found = parent_vertices.find(source);
+								if (found != -1) {
+									value += parent_values[found];
+									found_count++;
+								}
+							}
+							if (found_count > 0) {
+								value /= (real_t)found_count;
+							}
+						}
+						cell_values.set(vert_num, value);
+					}
+					new_texture_maps.set(i, cell_values);
+				}
+			}
+			if (old_vertex_normals != nullptr) {
+				p_input_mesh->set_poly_cell_vertex_normals(new_vertex_normals);
+			}
+			if (old_texture_maps != nullptr) {
+				p_input_mesh->set_poly_cell_texture_map(new_texture_maps);
+			}
+		}
+	}
+	// For a flat 4D mesh with only 2D faces, such as one from `convert_mesh_3d_to_4d_faces_only`,
+	// the faces carry the normals and texture maps, so carry those over instead. The pieces are
+	// coplanar with their parents, so per-face normals are inherited without any orientation pass.
+	bool preserved_face_data = false;
+	if (level_count == 1) {
+		const int64_t new_face_count = ctx.new_levels[0].size();
+		const int64_t old_face_count = ctx.old_levels[0].size();
+		const int64_t old_vertex_count = ctx.old_vertices.size();
+		HashMap<Vector2i, Vector<PackedVector4Array>> new_all_normals;
+		HashMap<Vector2i, Vector<PackedVector3Array>> new_all_texture_maps;
+		const Vector<PackedVector4Array> *old_face_normals = old_all_normals.getptr(PolyMesh4D::PER_FACE_KEY);
+		if (old_face_normals != nullptr && old_face_normals->size() == 1 && (*old_face_normals)[0].size() == old_face_count) {
+			const PackedVector4Array &old_values = (*old_face_normals)[0];
+			PackedVector4Array new_values;
+			new_values.resize(new_face_count);
+			for (int64_t i = 0; i < new_face_count; i++) {
+				const int32_t parent = ctx.new_level_parents[0][i];
+				new_values.set(i, parent >= 0 ? old_values[parent] : Vector4());
+			}
+			new_all_normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ new_values });
+			preserved_face_data = true;
+		}
+		const Vector<PackedVector3Array> *old_face_texture_maps = old_all_texture_maps.getptr(PolyMesh4D::FACE_TO_VERT_KEY);
+		const Vector<PackedVector4Array> *old_face_vertex_normals = old_all_normals.getptr(PolyMesh4D::FACE_TO_VERT_KEY);
+		if (old_face_texture_maps != nullptr || old_face_vertex_normals != nullptr) {
+			const Vector<PackedInt32Array> new_face_vertex_indices = p_input_mesh->get_all_poly_cell_vertex_indices(2, false);
+			Vector<PackedVector3Array> new_texture_maps;
+			Vector<PackedVector4Array> new_vertex_normals;
+			new_texture_maps.resize(new_face_count);
+			new_vertex_normals.resize(new_face_count);
+			for (int64_t i = 0; i < new_face_count; i++) {
+				const int32_t parent = ctx.new_level_parents[0][i];
+				if (parent < 0) {
+					continue;
+				}
+				const PackedInt32Array &parent_vertices = ctx.old_level_vertices[0][parent];
+				const PackedInt32Array &new_cell_vertices = new_face_vertex_indices[i];
+				if (old_face_vertex_normals != nullptr && parent < old_face_vertex_normals->size() && (*old_face_vertex_normals)[parent].size() == parent_vertices.size()) {
+					const PackedVector4Array &parent_values = (*old_face_vertex_normals)[parent];
+					PackedVector4Array cell_values;
+					cell_values.resize(new_cell_vertices.size());
+					for (int64_t vert_num = 0; vert_num < new_cell_vertices.size(); vert_num++) {
+						const int32_t vertex = new_cell_vertices[vert_num];
+						Vector4 value;
+						if (vertex < old_vertex_count) {
+							const int64_t found = parent_vertices.find(vertex);
+							if (found != -1) {
+								value = parent_values[found];
+							}
+						} else {
+							const PackedInt32Array &sources = ctx.new_vertex_sources[vertex - old_vertex_count];
+							for (const int32_t source : sources) {
+								const int64_t found = parent_vertices.find(source);
+								if (found != -1) {
+									value += parent_values[found];
+								}
+							}
+							if (value.length_squared() > (real_t)CMP_EPSILON) {
+								value = value.normalized();
+							}
+						}
+						cell_values.set(vert_num, value);
+					}
+					new_vertex_normals.set(i, cell_values);
+				}
+				if (old_face_texture_maps != nullptr && parent < old_face_texture_maps->size() && (*old_face_texture_maps)[parent].size() == parent_vertices.size()) {
+					const PackedVector3Array &parent_values = (*old_face_texture_maps)[parent];
+					PackedVector3Array cell_values;
+					cell_values.resize(new_cell_vertices.size());
+					for (int64_t vert_num = 0; vert_num < new_cell_vertices.size(); vert_num++) {
+						const int32_t vertex = new_cell_vertices[vert_num];
+						Vector3 value;
+						if (vertex < old_vertex_count) {
+							const int64_t found = parent_vertices.find(vertex);
+							if (found != -1) {
+								value = parent_values[found];
+							}
+						} else {
+							const PackedInt32Array &sources = ctx.new_vertex_sources[vertex - old_vertex_count];
+							int64_t found_count = 0;
+							for (const int32_t source : sources) {
+								const int64_t found = parent_vertices.find(source);
+								if (found != -1) {
+									value += parent_values[found];
+									found_count++;
+								}
+							}
+							if (found_count > 0) {
+								value /= (real_t)found_count;
+							}
+						}
+						cell_values.set(vert_num, value);
+					}
+					new_texture_maps.set(i, cell_values);
+				}
+			}
+			if (old_face_vertex_normals != nullptr) {
+				new_all_normals.insert(PolyMesh4D::FACE_TO_VERT_KEY, new_vertex_normals);
+				preserved_face_data = true;
+			}
+			if (old_face_texture_maps != nullptr) {
+				new_all_texture_maps.insert(PolyMesh4D::FACE_TO_VERT_KEY, new_texture_maps);
+				preserved_face_data = true;
+			}
+		}
+		if (!new_all_normals.is_empty()) {
+			p_input_mesh->set_all_poly_cell_normals(new_all_normals);
+		}
+		if (!new_all_texture_maps.is_empty()) {
+			p_input_mesh->set_all_poly_cell_texture_maps(new_all_texture_maps);
+		}
+	}
+	// Warn about any other data bindings, whose element indices are stale after subdivision.
+	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : old_all_normals) {
+		if (kv.key == PolyMesh4D::PER_CELL_KEY || kv.key == PolyMesh4D::CELL_TO_VERT_KEY) {
+			continue;
+		}
+		if (preserved_face_data && (kv.key == PolyMesh4D::PER_FACE_KEY || kv.key == PolyMesh4D::FACE_TO_VERT_KEY)) {
+			continue;
+		}
+		WARN_PRINT("PolyMeshBuilder4D: Discarding normals data for binding key " + String(Variant(kv.key)) + " during subdivision.");
+	}
+	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : old_all_texture_maps) {
+		if (kv.key == PolyMesh4D::CELL_TO_VERT_KEY) {
+			continue;
+		}
+		if (preserved_face_data && kv.key == PolyMesh4D::FACE_TO_VERT_KEY) {
+			continue;
+		}
+		WARN_PRINT("PolyMeshBuilder4D: Discarding texture map data for binding key " + String(Variant(kv.key)) + " during subdivision.");
+	}
+	CRASH_COND(!p_input_mesh->is_mesh_data_valid());
+	// Return the indices of the new elements created from the selected ones, so that callers
+	// can keep track of the inputs. For example, in a Blender-like app, the user might select
+	// a set of faces, subdivide them, and update the selection to the new subdivided faces.
+	for (const int32_t element : selection) {
+		if (selection_level < 0) {
+			ret.append_array(ctx.edge_pieces[element]);
+		} else {
+			ret.append_array(ctx.refined_levels[selection_level][element].all_pieces);
+		}
+	}
+	return ret;
+}
+
 PolyMeshBuilder4D *PolyMeshBuilder4D::singleton = nullptr;
 
 void PolyMeshBuilder4D::_bind_methods() {
@@ -1387,6 +2420,7 @@ void PolyMeshBuilder4D::_bind_methods() {
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("extrude_linear", "input_mesh", "extrusion_vector"), &PolyMeshBuilder4D::extrude_linear, DEFVAL(Vector4(0, 0, 0, 1)));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("extrude_spin_from_faces_xw", "input_mesh", "steps"), &PolyMeshBuilder4D::extrude_spin_from_faces_xw, DEFVAL(16));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("reconstruct_from_tetra_mesh", "tetra_mesh"), &PolyMeshBuilder4D::reconstruct_from_tetra_mesh);
+	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("subdivide_elements", "input_mesh", "dimension", "elements"), &PolyMeshBuilder4D::subdivide_elements, DEFVAL(PackedInt32Array()));
 
 	// In-place adjustments to the given mesh.
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_boundary_normals_topologically_consistent", "mesh_4d", "authoritative_boundary_cells"), &PolyMeshBuilder4D::make_boundary_normals_topologically_consistent);
