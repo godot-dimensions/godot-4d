@@ -45,6 +45,7 @@ Error EditorImportPluginOFFScene::_import(const String &p_source_file, const Str
 	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_load_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
 	Node *node = off_doc->import_generate_node(p_options[StringName("deduplicate_edges")], p_options[StringName("per_face_vertices")]);
+	ERR_FAIL_NULL_V(node, ERR_FILE_CORRUPT);
 	String file = p_source_file.get_file();
 	node->get("mesh").call("set_name", file);
 	node->set_name(file.get_basename());
@@ -70,6 +71,7 @@ Error EditorImportPluginOFFScene::import(ResourceUID::ID p_source_id, const Stri
 	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_load_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
 	Node *node = off_doc->import_generate_node(p_options[StringName("deduplicate_edges")], p_options[StringName("per_face_vertices")]);
+	ERR_FAIL_NULL_V(node, ERR_FILE_CORRUPT);
 	String file = p_source_file.get_file();
 	node->get("mesh").call("set_name", file);
 	node->set_name(file.get_basename());

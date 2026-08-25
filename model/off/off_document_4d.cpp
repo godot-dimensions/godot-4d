@@ -242,6 +242,9 @@ Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> 
 }
 
 Ref<ArrayMesh> OFFDocument4D::import_generate_mesh_3d(const bool p_per_face_vertices, const bool p_force_outward_normals) {
+	if (_face_vertex_indices.is_empty()) {
+		ERR_FAIL_V_MSG(Ref<ArrayMesh>(), "OFFDocument4D: This OFF document does not contain any faces, so it cannot be converted to a 3D mesh. Perhaps this is a vertex-only OFF file, or a 0D or 1D OFF file?");
+	}
 	PackedVector3Array vertices_3d;
 	for (int vert_index = 0; vert_index < _vertices.size(); vert_index++) {
 		vertices_3d.append(Vector3(_vertices[vert_index].x, _vertices[vert_index].y, _vertices[vert_index].z));
@@ -403,9 +406,9 @@ Ref<ArrayWireMesh4D> OFFDocument4D::import_generate_wire_mesh_4d(const bool p_de
 Node *OFFDocument4D::import_generate_node(const bool p_deduplicate_edges, const bool p_per_face_vertices) {
 	// If there are no cells, this isn't a 4D mesh, but instead a 3D mesh.
 	if (_cell_face_indices.is_empty()) {
-		MeshInstance3D *mesh_instance_3d = memnew(MeshInstance3D);
 		Ref<ArrayMesh> mesh_3d = import_generate_mesh_3d(p_per_face_vertices);
 		ERR_FAIL_COND_V(mesh_3d.is_null(), nullptr);
+		MeshInstance3D *mesh_instance_3d = memnew(MeshInstance3D);
 		mesh_instance_3d->set_mesh(mesh_3d);
 		return mesh_instance_3d;
 	}
