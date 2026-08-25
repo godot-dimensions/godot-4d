@@ -8,10 +8,20 @@
 #include <godot_cpp/classes/editor_selection.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
 #include <godot_cpp/classes/window.hpp>
+
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 8)
+// In Godot 4.8 and later, main screens are docks, so we need to interact with the dock system.
+#include <godot_cpp/classes/editor_dock.hpp>
+#endif
 #elif GODOT_MODULE
 #include "editor/editor_data.h"
 #include "editor/editor_interface.h"
 #include "scene/main/window.h"
+
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 8)
+// In Godot 4.8 and later, main screens are docks, so we need to interact with the dock system.
+#include "editor/docks/editor_dock.h"
+#endif
 
 #if VERSION_HEX < 0x040400
 #define set_button_icon set_icon
@@ -67,6 +77,8 @@ void Godot4DEditorPlugin::_remove_4d_main_screen() {
 }
 
 void Godot4DEditorPlugin::_move_4d_main_screen_tab_button() const {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 8
+	// Prior to Godot 4.8, each main screen had a Button in an HBoxContainer in the title bar.
 	Control *editor = EditorInterface::get_singleton()->get_base_control();
 	ERR_FAIL_NULL(editor);
 	// Move 4D button to the left of the "Script" button, to the right of the "3D" button.
@@ -80,11 +92,39 @@ void Godot4DEditorPlugin::_move_4d_main_screen_tab_button() const {
 	}
 	ERR_FAIL_NULL(button_asset_lib_store_tab);
 	Node *main_editor_button_hbox = button_asset_lib_store_tab->get_parent();
+	// Check that the buttons exist before getting them, and bail out without printing
+	// any errors if they don't. A GDExtension compiled for Godot 4.3-4.7 may be used in
+	// Godot 4.8 or later, where main screens are docks instead of buttons in an HBoxContainer.
+	if (!main_editor_button_hbox->has_node(NodePath("4D")) || !main_editor_button_hbox->has_node(NodePath("Script"))) {
+		return;
+	}
 	Button *button_4d_tab = GET_NODE_TYPE(main_editor_button_hbox, Button, "4D");
 	Button *button_script_tab = GET_NODE_TYPE(main_editor_button_hbox, Button, "Script");
-	ERR_FAIL_NULL(button_4d_tab);
-	ERR_FAIL_NULL(button_script_tab);
+	if (button_4d_tab == nullptr || button_script_tab == nullptr) {
+		return;
+	}
 	main_editor_button_hbox->move_child(button_4d_tab, button_script_tab->get_index());
+#else
+	// In Godot 4.8 and later, each main screen is an EditorDock in the main screen's
+	// DockTabContainer, and the tabs are ordered by the order of the dock nodes.
+	EditorInterface *editor_interface = EditorInterface::get_singleton();
+	ERR_FAIL_NULL(editor_interface);
+	// Move 4D tab to the left of the "Script" tab, to the right of the "3D" tab.
+	EditorDock *dock_4d = editor_interface->get_dock_by_name("4D");
+	EditorDock *dock_script = editor_interface->get_dock_by_name("Script");
+	ERR_FAIL_NULL(dock_4d);
+	ERR_FAIL_NULL(dock_script);
+	Node *main_screen_docks = dock_4d->get_parent();
+	if (main_screen_docks == nullptr || main_screen_docks != dock_script->get_parent()) {
+		// The docks are not side by side, perhaps because the user moved one of them
+		// somewhere else or closed it, so there is no sensible way to reorder them.
+		return;
+	}
+	// Block signals to avoid changing the selected main screen while the editor is still starting up.
+	main_screen_docks->set_block_signals(true);
+	main_screen_docks->move_child(dock_4d, dock_script->get_index(false));
+	main_screen_docks->set_block_signals(false);
+#endif
 }
 
 void Godot4DEditorPlugin::_inject_4d_scene_button() {
