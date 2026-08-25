@@ -214,10 +214,11 @@ void ArrayWireMesh4D::subdivide_edges(const int64_t p_subdivision_segments) {
 
 void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int64_t p_subdivision_segments) {
 	ERR_FAIL_COND_MSG(p_subdivision_segments < 2, "ArrayWireMesh4D: Cannot subdivide an edge into " + itos(p_subdivision_segments) + " segments, must be at least 2.");
+	ERR_FAIL_COND_MSG(_edge_vertex_indices.is_empty(), "ArrayWireMesh4D: Cannot subdivide an empty mesh.");
 	const int64_t start_edge_index = p_edge_number * 2;
 	const int64_t end_edge_index = start_edge_index + 1;
-	const int64_t original_edge_end = _edge_vertex_indices[end_edge_index];
 	ERR_FAIL_INDEX_MSG(end_edge_index, _edge_vertex_indices.size(), "ArrayWireMesh4D: Edge number " + itos(p_edge_number) + " does not exist.");
+	const int64_t original_edge_end = _edge_vertex_indices[end_edge_index];
 	int64_t used_edge_index_count = _edge_vertex_indices.size();
 	int64_t used_vertex_count = _vertices.size();
 	const int64_t new_vertices = p_subdivision_segments - 1;
