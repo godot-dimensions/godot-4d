@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode skip_vertex_transform, unshaded, cull_disabled, depth_test_disabled, blend_add;
+render_mode skip_vertex_transform, cull_disabled, depth_test_disabled, blend_add;
 
 #include "../../shaders/perpendicular_4d.glsl"
 
@@ -35,6 +35,8 @@ varying flat vec4 center_position;
 varying flat vec4 other_center_position;
 varying float centerness;
 varying float position_w; // the other components are stored in VERTEX, but that's a vec3.
+// Read by the shared light() function appended to this shader, which normalizes it itself.
+varying flat vec4 normal_4d;
 
 // Look up, using a bit-mask of whether each face of the tet faces +W or -W, the order the vertices take to form the projection.
 // Format: first number 0 for 3-triangle case (vertex-on), 1 for 4-triangle case (edge-on), 2 for 3-triangle case (face-on), -1 for impossible case.
@@ -99,11 +101,12 @@ void vertex() {
 		verts[3].xyw / verts[3].z
 	};
 	// Compute flat normals.
-	vec4 normal4 = perpendicular_4d(verts[1] - verts[0], verts[2] - verts[0], verts[3] - verts[0]);
-	bool back_face = dot(verts[0], normal4) <= 0.; // This mustn't be computed from verts_proj alone, as that would give the wrong answer sometimes if a vertex is behind the camera.
+	normal_4d = perpendicular_4d(verts[1] - verts[0], verts[2] - verts[0], verts[3] - verts[0]);
+	// This mustn't be computed from verts_proj alone, as that would give the wrong answer sometimes if a vertex is behind the camera.
+	bool back_face = dot(verts[0], normal_4d) >= 0.;
 	// The skewed normal is needed for the backface calculation because verts[0] is also skewed,
 	// but lighting needs the original normal. Undo z' = z + skewness * w using the transpose.
-	normal4.w += normal4.z * skewness;
+	normal_4d.w += normal_4d.z * skewness;
 
 	int vertex_id = int(VERTEX.x);
 	int projection_case = get_projection_case(verts);
@@ -182,7 +185,7 @@ void vertex() {
 		position_w = position.w;
 		POSITION = PROJECTION_MATRIX * vec4(position.xyz, 1.);
 
-		vec3 normal = normalize(normal4.xyz);
+		vec3 normal = normalize(normal_4d.xyz);
 		vec3 tangent = normalize((verts[1] - verts[0]).xyz); // not necessarily perpendicular to the normal after projecting to 3D. I'm not sure if this matters.
 		vec3 binormal = normalize(cross(normal, tangent));
 		NORMAL = normal;
@@ -244,7 +247,7 @@ void fragment() {
 	vec4 middle_position = mix(position, other_position, middle_weight);
 	vec3 other_uvw = mix(center_uvw + (uvw - center_uvw) / (1. - centerness), other_center_uvw, other_centerness);
 	vec3 middle_uvw = mix(uvw, other_uvw, middle_weight);
-	ALBEDO = albedo.rgb * texture(albedo_texture, middle_uvw).rgb * ((dot((vec4(NORMAL, 0.) * INV_VIEW_MATRIX).xyz, vec3(0., 1., 0.)) / 2.) + 0.5);
+	ALBEDO = albedo.rgb * texture(albedo_texture, middle_uvw).rgb;
 	ALPHA = sqrt(max(thickness, 0.) / 2.); // The sqrt is to compensate for a bug in the definition of Godot's add blend mode.
 	ALBEDO *= ALPHA; // also compensating for the bug.
 }

@@ -19,5 +19,6 @@ void main() {
 	vec4 color = imageLoad(projected_frame, uv);
 	color /= color.a + params.opacity_base;
 	color.a = mix(1., color.a, params.transparency);
+	color.rgb = color.a > 0.0 ? color.rgb / color.a : vec3(0.0);
 	imageStore(projected_frame, uv, color);
 }

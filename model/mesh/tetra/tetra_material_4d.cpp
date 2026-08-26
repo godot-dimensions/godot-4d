@@ -189,9 +189,8 @@ void TetraMaterial4D::update_projected_material_3d() {
 		// In Godot 4.4+, preload the projected shaders. In Godot 4.3, lazy-load them when needed.
 		if (_projected_shader_3d.is_null()) {
 			const String rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
-			if (rendering_method == "gl_compatibility") {
-				// TODO: check whether this does indeed apply to projected rendering too. This is just copied from the cross-section rendering.
-				ERR_FAIL_MSG("4D projected rendering is not supported in Godot 4.3 in the compatibility renderer. Please upgrade to Godot 4.4 or later, or switch to a Vulkan-based rendering method to use 4D projected rendering.");
+			if (rendering_method != "forward_plus") {
+				ERR_FAIL_MSG("4D projected rendering requires Godot's Forward+ rendering method.");
 			}
 			init_shaders();
 		}
@@ -229,6 +228,7 @@ void TetraMaterial4D::init_shaders() {
 	String projected_shader_code = tetra_projected_shader_shader_glsl;
 #ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
 	cross_section_shader_code += tetra_light_shader_shader_glsl;
+	projected_shader_code += tetra_light_shader_shader_glsl;
 #endif
 	// Cross-section shader.
 	_cross_section_shader_3d.instantiate();
