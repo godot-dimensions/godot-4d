@@ -79,6 +79,7 @@ public:
 
 private:
 	Button *_toolbar_buttons[TOOLBAR_BUTTON_MAX] = { nullptr };
+	EditorPreviewEnvironment4D *_preview_environment = nullptr;
 	MenuButton *_transform_settings_menu = nullptr;
 	MenuButton *_layout_menu = nullptr;
 	MenuButton *_view_menu = nullptr;
@@ -95,11 +96,12 @@ private:
 	Marker4D *_origin_marker = nullptr;
 	Ref<ConfigFile> _4d_editor_config_file;
 	String _4d_editor_config_file_path = "";
-	EditorViewportCameraRotationAxisLock _rotation_axis_lock = EditorViewportCameraRotationAxisLock::FULLY_LOCKED;
+	EditorViewportCameraRotationAxisLock4D _rotation_axis_lock = EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED;
 
 	double _information_label_auto_hide_time = 0.0;
 
 	void _apply_4d_editor_settings();
+	void _free_camera_settings();
 	void _on_button_toggled(const bool p_toggled_on, const int p_option);
 	void _on_selection_changed();
 	void _on_transform_settings_menu_id_pressed(const int p_id);
@@ -115,7 +117,7 @@ protected:
 
 public:
 	void press_menu_item(const int p_option);
-	void set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock);
+	void set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock4D p_axis_lock);
 	void set_viewport_layout(const int8_t p_viewport_count, const Side p_dominant_side = SIDE_TOP);
 
 	void setup(EditorUndoRedoManager *p_undo_redo_manager);

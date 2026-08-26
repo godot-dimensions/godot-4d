@@ -7,7 +7,7 @@ class G4MFState4D;
 class G4MFLight4D : public G4MFItem4D {
 	GDCLASS(G4MFLight4D, G4MFItem4D);
 
-	String _light_type = "point";
+	String _light_type = "omni"; // "omni", "spot", or "directional"
 	Color _color = Color(1.0f, 1.0f, 1.0f, 1.0f);
 	double _cone_inner_angle = 0.0;
 	double _cone_outer_angle = 0.7853981633974483;

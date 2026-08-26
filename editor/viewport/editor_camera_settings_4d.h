@@ -15,10 +15,12 @@ class EditorCameraSettings4D : public Object {
 	EditorMainScreen4D *_editor_main_screen = nullptr;
 
 	// Keep these default values in sync with the Camera4D defaults and the values in `write_to_config_file()`.
+	Camera4D::ViewAngleType _view_angle_type = Camera4D::VIEW_ANGLE_FOCAL_LENGTH;
+	double _focal_length = 1.25;
 	double _clip_near = 0.05;
 	double _clip_far = 4000.0;
 
-	EditorViewportCameraRotationAxisLock _rotation_axis_lock = EditorViewportCameraRotationAxisLock::FULLY_LOCKED;
+	EditorViewportCameraRotationAxisLock4D _rotation_axis_lock = EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED;
 	Camera4D::DepthFadeMode _depth_fade_mode = Camera4D::DEPTH_FADE_DISABLED;
 	double _depth_fade_start = 25.0;
 
@@ -35,13 +37,22 @@ class EditorCameraSettings4D : public Object {
 
 	Ref<ConfigFile> _4d_editor_config_file;
 	String _4d_editor_config_file_path = "";
-	String _rendering_engine = "";
+	String _rendering_engine_name = "";
 
 protected:
 	static void _bind_methods();
 	void _validate_property(PropertyInfo &p_property) const;
 
 public:
+	Camera4D::ViewAngleType get_view_angle_type() const { return _view_angle_type; }
+	void set_view_angle_type(const Camera4D::ViewAngleType p_view_angle_type);
+
+	double get_focal_length() const { return _focal_length; }
+	void set_focal_length(const double p_focal_length);
+
+	double get_field_of_view() const;
+	void set_field_of_view(const double p_field_of_view);
+
 	double get_clip_near() const { return _clip_near; }
 	void set_clip_near(const double p_clip_near);
 
@@ -88,7 +99,7 @@ public:
 	void set_projection_opacity_base(const double p_projection_opacity_base);
 
 	// Only a setter because the source of truth for this should be the rendering engine menu.
-	void set_rendering_engine(const String &p_rendering_engine);
+	void set_rendering_engine_name(const String &p_rendering_engine_name);
 
 	void apply_to_cameras() const;
 	void setup(EditorMainScreen4D *p_editor_main_screen, Ref<ConfigFile> &p_config_file, const String &p_config_file_path);

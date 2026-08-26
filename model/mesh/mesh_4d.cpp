@@ -103,9 +103,24 @@ Ref<WireMesh4D> Mesh4D::to_wire_mesh() {
 	return to_array_wire_mesh();
 }
 
+Rect4 Mesh4D::get_rect_bounds() {
+	if (likely(!_is_rect_bounds_dirty)) {
+		return _rect_bounds;
+	}
+	_rect_bounds = Rect4(); // Start by including the mesh's local origin always, even if the mesh does not cover that point.
+	const PackedVector4Array vertices = get_vertices();
+	for (int vertex_index = 0; vertex_index < vertices.size(); vertex_index++) {
+		_rect_bounds.expand_self_to_point(vertices[vertex_index]);
+	}
+	_is_rect_bounds_dirty = false;
+	return _rect_bounds;
+}
+
 Ref<ArrayMesh> Mesh4D::get_cross_section_mesh() {
-	if (_is_cross_section_mesh_dirty || _cross_section_mesh.is_null()) {
+	if (_cross_section_mesh.is_null()) {
 		_cross_section_mesh.instantiate();
+	}
+	if (_is_cross_section_mesh_dirty) {
 		const String mesh_path_or_name = get_path().is_empty() ? get_name() : get_path();
 		const String cross_section_hint = mesh_path_or_name + String(" Cross-Section Mesh");
 		_cross_section_mesh->set_name(cross_section_hint);
@@ -160,6 +175,7 @@ void Mesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("reset_mesh_data_validation"), &Mesh4D::reset_mesh_data_validation);
 	ClassDB::bind_method(D_METHOD("validate_material_for_mesh", "material"), &Mesh4D::validate_material_for_mesh);
 	ClassDB::bind_method(D_METHOD("mark_cross_section_mesh_dirty"), &Mesh4D::mark_cross_section_mesh_dirty);
+	ClassDB::bind_method(D_METHOD("mark_mesh_bounds_and_cross_section_dirty"), &Mesh4D::mark_mesh_bounds_and_cross_section_dirty);
 	ClassDB::bind_method(D_METHOD("update_cross_section_mesh"), &Mesh4D::update_cross_section_mesh);
 
 	ClassDB::bind_method(D_METHOD("to_array_wire_mesh"), &Mesh4D::to_array_wire_mesh);

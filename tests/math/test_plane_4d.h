@@ -46,4 +46,13 @@ TEST_CASE("[Plane4D] From Coplanar Directions") {
 	CHECK_MESSAGE(test.get_normal().dot(Vector4(9, 10, 11, -12)) == doctest::Approx(0), "Plane4D from_coplanar_directions normal should be perpendicular to the input directions.");
 	CHECK_MESSAGE(test.has_point(Vector4(13, 14, 15, 16)), "Plane4D from_coplanar_directions should contain the input point.");
 }
+
+TEST_CASE("[Plane4D] Is Finite") {
+	const Plane4D finite_plane = Plane4D(Vector4(0, 1, 0, 0), 5.0f);
+	CHECK_MESSAGE(finite_plane.is_finite(), "Plane4D is_finite should be true for a plane with finite normal and distance.");
+	const Plane4D infinite_normal = Plane4D(Vector4(0, (real_t)Math_INF, 0, 0), 5.0f);
+	CHECK_MESSAGE(!infinite_normal.is_finite(), "Plane4D is_finite should be false when the normal has an infinite component.");
+	const Plane4D infinite_distance = Plane4D(Vector4(0, 1, 0, 0), (real_t)Math_INF);
+	CHECK_MESSAGE(!infinite_distance.is_finite(), "Plane4D is_finite should be false when the distance is infinite.");
+}
 } // namespace TestPlane4D

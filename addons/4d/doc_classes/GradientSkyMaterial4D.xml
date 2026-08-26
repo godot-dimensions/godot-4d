@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GradientSkyMaterial4D" inherits="SkyMaterial4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D sky material that generates a sky from a gradient of user-defined colors.
+	</brief_description>
+	<description>
+		A procedural 4D sky based on simple color gradients. It supports up to four [DirectionalLight4D] nodes as suns and evaluates their directions in 4D, allowing a sun to move out of the currently viewed 3D cross-section.
+		Its properties closely match [ProceduralSkyMaterial], excluding panorama-based sky cover and other options that do not have a direct 4D equivalent.
+	</description>
+	<tutorials>
+		<link title="OMI_environment_sky specification">https://github.com/omigroup/gltf-extensions/blob/main/extensions/2.0/OMI_environment_sky/README.md</link>
+	</tutorials>
+	<members>
+		<member name="bottom_color" type="Color" setter="set_bottom_color" getter="get_bottom_color" default="Color(0.2, 0.169, 0.133, 1)">
+			Color at the bottom of the sky, also known as the nadir.
+		</member>
+		<member name="bottom_curve" type="float" setter="set_bottom_curve" getter="get_bottom_curve" default="0.02">
+			How quickly the [member horizon_color] fades into the [member bottom_color]. A curve value of 1.0 is a linear transition. Values between 0.0 and 1.0 make the bottom color more dominant, while values between 1.0 and infinity make the horizon color more dominant.
+		</member>
+		<member name="horizon_color" type="Color" setter="set_horizon_color" getter="get_horizon_color" default="Color(0.6463, 0.6558, 0.6708, 1)">
+			Color at the horizon between the top and bottom colors.
+		</member>
+		<member name="sun_angle_max" type="float" setter="set_sun_angle_max" getter="get_sun_angle_max" default="30.0">
+			The angular distance from a [DirectionalLight4D] at which it begins fading into the background sky, in degrees.
+		</member>
+		<member name="sun_curve" type="float" setter="set_sun_curve" getter="get_sun_curve" default="0.15">
+			How quickly each sun fades between its edge and [member sun_angle_max].
+		</member>
+		<member name="top_color" type="Color" setter="set_top_color" getter="get_top_color" default="Color(0.385, 0.454, 0.55, 1)">
+			Color at the top of the sky, also known as the zenith.
+		</member>
+		<member name="top_curve" type="float" setter="set_top_curve" getter="get_top_curve" default="0.15">
+			How quickly the [member horizon_color] fades into the [member top_color]. A curve value of 1.0 is a linear transition. Values between 0.0 and 1.0 make the top color more dominant, while values between 1.0 and infinity make the horizon color more dominant.
+		</member>
+	</members>
+</class>

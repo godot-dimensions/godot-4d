@@ -66,6 +66,10 @@ bool Plane4D::is_equal_approx(const Plane4D &p_plane) const {
 	return normal.is_equal_approx(p_plane.normal) && Math::is_equal_approx(distance, p_plane.distance);
 }
 
+bool Plane4D::is_finite() const {
+	return normal.is_finite() && Math::is_finite(distance);
+}
+
 // Operators.
 
 bool Plane4D::operator==(const Plane4D &p_other) const {

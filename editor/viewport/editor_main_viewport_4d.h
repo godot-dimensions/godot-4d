@@ -14,6 +14,7 @@
 #endif
 
 class Camera4D;
+class RenderingEngine4D;
 
 // Class for the 4D editor viewport, which there may be up to 4 of.
 // Uses EditorCamera4D, EditorInputSurface4D, EditorViewportRotation4D,
@@ -45,7 +46,7 @@ private:
 
 	PackedColorArray _axis_colors;
 	double _information_label_auto_hide_time = 0.0;
-	EditorViewportCameraRotationAxisLock _rotation_axis_lock = EditorViewportCameraRotationAxisLock::FULLY_LOCKED;
+	EditorViewportCameraRotationAxisLock4D _rotation_axis_lock = EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED;
 	bool _camera_uses_free_rotation = false;
 
 	Vector2 _get_warped_mouse_motion(const Ref<InputEvent> &p_ev_mouse_motion) const;
@@ -64,6 +65,8 @@ public:
 	PackedColorArray get_axis_colors() const;
 	Basis4D get_view_camera_basis() const;
 	EditorCamera4D *get_editor_camera_4d() const { return _editor_camera_4d; }
+	Ref<RenderingEngine4D> get_rendering_engine() const;
+
 	void navigation_freelook(const Ref<InputEvent> &p_input_event);
 	void navigation_orbit(const Ref<InputEvent> &p_input_event);
 	void navigation_pan(const Ref<InputEvent> &p_input_event);
@@ -71,7 +74,7 @@ public:
 	void navigation_change_zoom(const double p_zoom_change);
 	void viewport_mouse_input(const Ref<InputEvent> &p_input_event);
 
-	void set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock);
+	void set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock4D p_axis_lock);
 	void set_ground_view_axis(const Vector4::Axis p_axis);
 	void set_information_text(const String &p_text, const double p_auto_hide_time = 1.5);
 	void set_orthogonal_view_plane(const Vector4::Axis p_right, const Vector4::Axis p_up);

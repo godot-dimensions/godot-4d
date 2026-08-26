@@ -106,6 +106,12 @@
 				Marks the cross-section mesh as dirty, meaning it needs to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes.
 			</description>
 		</method>
+		<method name="mark_mesh_bounds_and_cross_section_dirty">
+			<return type="void" />
+			<description>
+				Marks the mesh bounds and cross-section mesh as dirty, meaning they need to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes. This implies [method mark_cross_section_mesh_dirty], so there is no need to also call that method when calling this one.
+			</description>
+		</method>
 		<method name="reset_mesh_data_validation">
 			<return type="void" />
 			<description>

@@ -165,6 +165,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 			set_material(other_material);
 		}
 	}
+	_clear_cache();
 	reset_mesh_data_validation();
 }
 

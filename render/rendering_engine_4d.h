@@ -1,17 +1,21 @@
 #pragma once
 
-#include "../model/mesh/mesh_instance_4d.h"
-#include "../nodes/camera_4d.h"
+#include "../godot_4d_defines.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/variant/typed_array.hpp>
+
+#include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "core/object/ref_counted.h"
 #include "core/variant/typed_array.h"
 #include "scene/main/viewport.h"
 #endif
+
+class Camera4D;
+class MeshInstance4D;
 
 class RenderingEngine4D : public RefCounted {
 	GDCLASS(RenderingEngine4D, RefCounted);
@@ -24,7 +28,12 @@ class RenderingEngine4D : public RefCounted {
 
 	Viewport *_viewport = nullptr;
 	Camera4D *_camera = nullptr;
-	TypedArray<MeshInstance4D> _mesh_instances;
+
+	PackedInt64Array _light_object_ids;
+	TypedArray<Projection> _light_relative_basises;
+	PackedVector4Array _light_relative_positions;
+
+	PackedInt64Array _mesh_instance_object_ids;
 	TypedArray<Projection> _mesh_relative_basises;
 	PackedVector4Array _mesh_relative_positions;
 
@@ -36,32 +45,45 @@ protected:
 public:
 	void calculate_relative_transforms();
 
-	Viewport *get_viewport() const;
-	void set_viewport(Viewport *p_viewport);
+	Viewport *get_viewport() const { return _viewport; }
+	void set_viewport(Viewport *p_viewport); // Internal use only, do not expose.
 
-	Camera4D *get_camera() const;
-	void set_camera(Camera4D *p_camera);
+	Camera4D *get_camera() const { return _camera; }
+	void set_camera(Camera4D *p_camera); // Internal use only, do not expose.
 
-	TypedArray<MeshInstance4D> get_mesh_instances() const;
-	void set_mesh_instances(TypedArray<MeshInstance4D> p_mesh_instances);
+	PackedInt64Array get_light_object_ids() const { return _light_object_ids; }
+	void set_light_object_ids(PackedInt64Array p_light_object_ids); // Internal use only, do not expose.
+	TypedArray<Projection> get_light_relative_basises() const { return _light_relative_basises; }
+	PackedVector4Array get_light_relative_positions() const { return _light_relative_positions; }
 
-	TypedArray<Projection> get_mesh_relative_basises() const;
-	void set_mesh_relative_basises(TypedArray<Projection> p_mesh_relative_basises);
-
-	PackedVector4Array get_mesh_relative_positions() const;
-	void set_mesh_relative_positions(PackedVector4Array p_mesh_relative_positions);
+	PackedInt64Array get_mesh_instance_object_ids() const { return _mesh_instance_object_ids; }
+	void set_mesh_instance_object_ids(PackedInt64Array p_mesh_instance_object_ids); // Internal use only, do not expose.
+	TypedArray<Projection> get_mesh_relative_basises() const { return _mesh_relative_basises; }
+	PackedVector4Array get_mesh_relative_positions() const { return _mesh_relative_positions; }
 
 	void setup_for_viewport_if_needed(Viewport *p_for_viewport);
 	void cleanup_for_viewport_if_needed(Viewport *p_for_viewport);
 
 	virtual String get_friendly_name() const;
-	virtual bool prefers_wireframe_meshes();
+	virtual bool prefers_wireframe_meshes() const;
+	virtual bool supports_lighting() const;
+	virtual bool requires_transparent_background() const;
+	// Whether this rendering engine works with the given Godot rendering method, one of
+	// "forward_plus", "mobile", or "gl_compatibility".
+	virtual bool supports_godot_rendering_method(const String &p_godot_rendering_method) const;
+
 	virtual void setup_for_viewport();
+	// Like setup_for_viewport, but for viewport settings that may change for reasons outside of the
+	// 4D rendering engine, so they are applied every frame instead of only once per viewport.
+	virtual void setup_viewport_per_frame();
 	virtual void cleanup_for_viewport();
 	virtual void render_frame();
 
 	GDVIRTUAL0RC(String, _get_friendly_name);
-	GDVIRTUAL0R(bool, _prefers_wireframe_meshes);
+	GDVIRTUAL0RC(bool, _prefers_wireframe_meshes);
+	GDVIRTUAL0RC(bool, _supports_lighting);
+	GDVIRTUAL0RC(bool, _requires_transparent_background);
+	GDVIRTUAL1RC(bool, _supports_godot_rendering_method, String);
 	GDVIRTUAL0(_setup_for_viewport);
 	GDVIRTUAL0(_cleanup_for_viewport);
 	GDVIRTUAL0(_render_frame);

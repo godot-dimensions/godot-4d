@@ -283,7 +283,7 @@ void TetraMesh4D::tetra_mesh_clear_cache() {
 	_edge_positions_cache.clear();
 	_edge_indices_cache.clear();
 	_nearest_tetra_inverse_metric_cache.clear();
-	mark_cross_section_mesh_dirty();
+	mark_mesh_bounds_and_cross_section_dirty();
 }
 
 Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map) {

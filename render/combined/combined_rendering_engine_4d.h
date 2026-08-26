@@ -65,7 +65,12 @@ public:
 	CombinedRenderingEngine4D();
 	void set_inner_engines(const Ref<CrossSectionRenderingEngine4D> &p_cross_section_engine, const Ref<ProjectedRenderingEngine4D> &p_projected_engine);
 	virtual String get_friendly_name() const override { return "Combined"; }
+	virtual bool supports_lighting() const override { return true; }
+	// Inherits the projected pass's requirement, and the depth capture is itself a compositor effect
+	// writing to a storage image.
+	virtual bool supports_godot_rendering_method(const String &p_godot_rendering_method) const override { return p_godot_rendering_method == "forward_plus"; }
 	virtual void setup_for_viewport() override;
+	virtual void setup_viewport_per_frame() override;
 	virtual void cleanup_for_viewport() override;
 	virtual void render_frame() override;
 	void depth_capture_callback(int64_t p_effect_callback_type, RenderData *p_render_data);

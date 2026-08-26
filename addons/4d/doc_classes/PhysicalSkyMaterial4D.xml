@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PhysicalSkyMaterial4D" inherits="SkyMaterial4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D sky material that simulates atmospheric light scattering.
+	</brief_description>
+	<description>
+		A physically-inspired 4D sky that simulates Rayleigh and Mie scattering. Up to the first four visible [DirectionalLight4D] nodes are used as suns, and their directions are evaluated in 4D so atmospheric brightness, sun disks, and sun glows fade as each sun moves out of the currently viewed 3D cross-section.
+		Its properties closely match [PhysicalSkyMaterial], excluding the panorama-based night sky and other options that do not have a direct 4D equivalent.
+	</description>
+	<tutorials>
+		<link title="OMI_environment_sky specification">https://github.com/omigroup/gltf-extensions/blob/main/extensions/2.0/OMI_environment_sky/README.md</link>
+	</tutorials>
+	<members>
+		<member name="ground_color" type="Color" setter="set_ground_color" getter="get_ground_color" default="Color(0.1, 0.07, 0.034, 1)">
+			Modulates the lower half of the atmosphere to represent light reflected from the ground.
+		</member>
+		<member name="mie_anisotropy" type="float" setter="set_mie_anisotropy" getter="get_mie_anisotropy" default="0.8">
+			Controls the direction of Mie scattering, known as anisotropy or eccentricity. A positive value scatters light mostly forward, while a negative value scatters it mostly backward.
+		</member>
+		<member name="mie_coefficient" type="float" setter="set_mie_coefficient" getter="get_mie_coefficient" default="5e-06">
+			Controls the strength of Mie scattering caused by larger atmospheric particles, in inverse meters ([code]m⁻¹[/code]).
+			[b]Also known as:[/b] Mie scale in [code]OMI_environment_sky[/code]. Godot's [PhysicalSkyMaterial] expresses its Mie coefficient in inverse kilometers, and has a further fudge factor of [member PhysicalSkyMaterial.turbidity], so multiply this value by [code]1000.0 / turbidity[/code] when converting to a [PhysicalSkyMaterial].
+		</member>
+		<member name="mie_color" type="Color" setter="set_mie_color" getter="get_mie_color" default="Color(0.69, 0.729, 0.812, 1)">
+			Controls the color of Mie scattering.
+		</member>
+		<member name="rayleigh_coefficient" type="float" setter="set_rayleigh_coefficient" getter="get_rayleigh_coefficient" default="2e-05">
+			Controls the strength of Rayleigh scattering caused by small atmospheric particles, in inverse meters ([code]m⁻¹[/code]).
+			[b]Also known as:[/b] Rayleigh scale in [code]OMI_environment_sky[/code]. Godot's [PhysicalSkyMaterial] expresses its Rayleigh coefficient in inverse 100 kilometers, so multiply this value by [code]100000.0[/code] when converting to a [PhysicalSkyMaterial].
+		</member>
+		<member name="rayleigh_color" type="Color" setter="set_rayleigh_color" getter="get_rayleigh_color" default="Color(0.3, 0.405, 0.6, 1)">
+			Controls the color of Rayleigh scattering.
+		</member>
+		<member name="sun_glow_half_width_radians" type="float" setter="set_sun_glow_half_width_radians" getter="get_sun_glow_half_width_radians" default="0.05">
+			The angular distance outside each sun disk at which its optical glow falls to half of [member sun_glow_intensity], in radians. The inspector displays this property in degrees. Set to [code]0.0[/code] to disable the glow.
+		</member>
+		<member name="sun_glow_intensity" type="float" setter="set_sun_glow_intensity" getter="get_sun_glow_intensity" default="1.0">
+			The intensity of the optical glow at the edge of each sun disk, relative to the disk's intensity. This simulates glow introduced by a viewer's eyes or camera independently of atmospheric Mie scattering. It is only drawn in the directly viewed sky and does not contribute to ambient lighting or reflections. Set to [code]0.0[/code] to disable the glow.
+		</member>
+	</members>
+</class>

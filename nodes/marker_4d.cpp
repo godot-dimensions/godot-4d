@@ -31,7 +31,6 @@ void Marker4D::_notification(int p_what) {
 			generate_marker_mesh();
 		} break;
 	}
-	MeshInstance4D::_notification(p_what);
 }
 
 void Marker4D::_validate_property(PropertyInfo &p_property) const {

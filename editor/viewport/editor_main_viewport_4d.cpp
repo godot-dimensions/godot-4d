@@ -2,6 +2,7 @@
 
 #include "../../model/mesh/tetra/tetra_mesh_4d.h"
 #include "../../nodes/camera_4d.h"
+#include "../../render/rendering_server_4d.h"
 #include "editor_camera_4d.h"
 #include "editor_input_surface_4d.h"
 #include "editor_transform_gizmo_4d.h"
@@ -89,6 +90,12 @@ PackedColorArray EditorMainViewport4D::get_axis_colors() const {
 
 Basis4D EditorMainViewport4D::get_view_camera_basis() const {
 	return _editor_camera_4d->get_basis();
+}
+
+Ref<RenderingEngine4D> EditorMainViewport4D::get_rendering_engine() const {
+	const String rendering_engine_name = _editor_camera_4d->get_camera_readonly()->get_rendering_engine_name();
+	const Ref<RenderingEngine4D> rendering_engine = RenderingServer4D::get_singleton()->get_rendering_engine_from_name(rendering_engine_name);
+	return rendering_engine;
 }
 
 bool EditorMainViewport4D::_should_mouse_motion_affect_4d(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const {
@@ -261,19 +268,23 @@ Node *EditorMainViewport4D::_raycast_from_mouse(const Vector2 &p_mouse_position,
 	}
 	// Third pass: For nodes that intersected the ray, find the first hit along the ray.
 	Node *nearest_target_node = nullptr;
-	double nearest_distance = Math_INF;
+	double nearest_global_distance = Math_INF;
 	for (int64_t i = nodes.size() - 1; i >= 0; i--) {
 		Node4D *node_4d = nodes[i];
 		const Vector4 local_ray_origin = inverse_global_transforms[i].xform(global_ray_origin);
-		const Vector4 local_ray_direction = inverse_global_transforms[i].basis.xform(global_ray_direction).normalized();
-		const Dictionary raycast_result = node_4d->raycast_intersects_local(local_ray_origin, local_ray_direction, false);
+		const Vector4 local_ray_direction_non_norm = inverse_global_transforms[i].basis.xform(global_ray_direction);
+		const real_t local_units_per_global_unit = local_ray_direction_non_norm.length();
+		const Vector4 local_ray_direction = local_ray_direction_non_norm / local_units_per_global_unit;
+		const real_t local_max_distance = nearest_global_distance * local_units_per_global_unit;
+		const Dictionary raycast_result = node_4d->raycast_intersects_local(local_ray_origin, local_ray_direction, local_max_distance, false);
 		if (raycast_result.has("hit")) {
 			const bool hit = raycast_result["hit"];
 			if (hit && raycast_result.has("distance")) {
 				// Variant's float type is double, so use double here to avoid precision loss.
-				const double distance = raycast_result["distance"];
-				if (nearest_distance > distance) {
-					nearest_distance = distance;
+				const double local_distance = raycast_result["distance"];
+				const double global_distance = local_distance / local_units_per_global_unit;
+				if (nearest_global_distance > global_distance) {
+					nearest_global_distance = global_distance;
 					nearest_target_node = targets[i];
 				}
 			}
@@ -327,19 +338,19 @@ void EditorMainViewport4D::viewport_mouse_input(const Ref<InputEvent> &p_input_e
 	}
 }
 
-void EditorMainViewport4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock) {
+void EditorMainViewport4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock4D p_axis_lock) {
 	_rotation_axis_lock = p_axis_lock;
 }
 
 void EditorMainViewport4D::set_ground_view_axis(const Vector4::Axis p_axis) {
 	switch (_rotation_axis_lock) {
-		case EditorViewportCameraRotationAxisLock::FULLY_LOCKED: {
+		case EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED: {
 			_camera_uses_free_rotation = false;
 		} break;
-		case EditorViewportCameraRotationAxisLock::FREE_GROUND_VIEW: {
+		case EditorViewportCameraRotationAxisLock4D::FREE_GROUND_VIEW: {
 			_camera_uses_free_rotation = p_axis == Vector4::AXIS_Y;
 		} break;
-		case EditorViewportCameraRotationAxisLock::FULLY_FREE: {
+		case EditorViewportCameraRotationAxisLock4D::FULLY_FREE: {
 			_camera_uses_free_rotation = true;
 		} break;
 	}

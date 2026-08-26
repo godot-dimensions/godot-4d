@@ -371,4 +371,4 @@ TEST_CASE("[SceneTree][PhysicsServer4D] Raycast rejects calls from worker thread
 	ERR_PRINT_ON;
 	CHECK(data.result.is_empty());
 }
-}
+} //namespace TestPhysicsServer4D

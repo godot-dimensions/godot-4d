@@ -196,6 +196,20 @@ int32_t PolyMesh4D::_compare_triangulation_alignment(const PackedInt32Array &p_a
 	return -1000 * size;
 }
 
+int32_t PolyMesh4D::_get_lowest_vertex_of_cell_excluding(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const HashSet<int32_t> &p_excluded_vertices) {
+	const PackedInt32Array cell_vertices = _get_vertex_indices_of_poly_cell(p_poly_cell_indices, p_all_edge_indices, p_cell_dim_index, p_which_cell, false);
+	int32_t lowest_vertex = -1;
+	for (const int32_t cell_vertex : cell_vertices) {
+		if (p_excluded_vertices.has(cell_vertex)) {
+			continue;
+		}
+		if (lowest_vertex == -1 || cell_vertex < lowest_vertex) {
+			lowest_vertex = cell_vertex;
+		}
+	}
+	return lowest_vertex;
+}
+
 PackedInt32Array PolyMesh4D::_get_canonical_span_vertex_index_sequence(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_indices_dim_index, const int64_t p_which_cell) {
 	const PackedInt32Array &indices = p_poly_cell_indices[p_indices_dim_index][p_which_cell];
 	if (p_indices_dim_index == 0) {
@@ -208,29 +222,67 @@ PackedInt32Array PolyMesh4D::_get_canonical_span_vertex_index_sequence(const Vec
 	const Vector<PackedInt32Array> &low_dim = p_poly_cell_indices[prev_dim_index];
 	if (p_indices_dim_index == 1) {
 		// Given a 3D cell (dim index 1) made of faces of dim 0, get 4 vertex indices from 3 edges from the first 2 faces.
+		// This is a fast path: the general case below also handles 3D cells, and produces the
+		// same orientation for meshes with sorted edges and planar convex faces, but this
+		// special case is faster and established conventions depend on its exact output.
 		return _get_cell_face_4_vertex_index_sequence(p_all_edge_indices, low_dim[indices[0]], low_dim[indices[1]]);
 	}
-	// General recursive case: Given a 4+ dimensional cell (dim index N>1) made of cells of dim N-1, get the vertex indices that make up those cells.
-	const PackedInt32Array first_edges = _get_edges_of_poly_cell(p_poly_cell_indices, prev_dim_index, indices[0]);
-	const PackedInt32Array second_edges = _get_edges_of_poly_cell(p_poly_cell_indices, prev_dim_index, indices[1]);
-	PackedInt32Array ret = _get_canonical_span_vertex_index_sequence(p_poly_cell_indices, p_all_edge_indices, prev_dim_index, indices[0]);
-	// We need to add one vertex only from the second cell that extends the span.
-	for (const int32_t second_edge : second_edges) {
-		if (first_edges.has(second_edge)) {
-			continue;
-		}
-		const int32_t edge_start_vertex = p_all_edge_indices[second_edge * 2];
-		const int32_t edge_end_vertex = p_all_edge_indices[second_edge * 2 + 1];
-		if (ret.has(edge_start_vertex)) {
-			ret.append(edge_end_vertex);
-			return ret;
-		}
-		if (ret.has(edge_end_vertex)) {
-			ret.append(edge_start_vertex);
-			return ret;
-		}
+	// General case: Cells of geometric dimension d >= 3 (dim index N = d - 2 >= 1).
+	// This construction works the same way in every dimension, producing a span of d + 1 vertices:
+	//  - The first two members of the cell are (d-1)-dimensional cells, which are required
+	//    to share a common (d-2)-dimensional cell, known as the "ridge".
+	//  - A (d-2)-dimensional ridge is spanned by d-1 vertices. Use the ridge's d-1 lowest
+	//    vertex indices in ascending order. This choice is deterministic and independent of
+	//    the order of the data inside of any lower-dimensional cells, so rearranging the
+	//    members of lower-dimensional cells cannot change the orientation of this cell.
+	//  - Prepend the lowest vertex of the first member that is not on the ridge, and append
+	//    the lowest vertex of the second member that is not on the ridge.
+	// Swapping the first two members of the cell swaps the prepended and appended vertices,
+	// which is a single transposition of the span, so it is guaranteed to flip the cell's
+	// orientation. Therefore, the orientation of every cell is controllable at the level of
+	// that cell's own data, by the order of its first two members.
+	// The 2D and 3D special cases above are instances of the same construction. For a 2D face,
+	// the ridge is the vertex shared by the first two edges, which has no ordering concerns.
+	// For a 3D cell, the ridge is the edge shared by the first two faces, taken in stored order,
+	// which the append functions keep sorted ascending anyway, and the extension vertices are
+	// picked using the faces' winding instead of the lowest index.
+	// Note: For degenerate geometry (such as the d-1 lowest vertices of a ridge polytope not
+	// spanning it, like three collinear vertices of a polygon), the span may be degenerate,
+	// which results in a zero normal vector downstream, treated as missing data.
+	int64_t ridge_in_first_member = 0;
+	int64_t ridge_in_second_member = 0;
+	const int32_t ridge_cell = Math4D::find_common_int32(low_dim[indices[0]], low_dim[indices[1]], ridge_in_first_member, ridge_in_second_member);
+	CRASH_COND_MSG(ridge_cell == INT32_MIN, "PolyMesh4D: The first two members of the cell do not share a common cell of the next dimension down, this cell's initial 2 members are invalid.");
+	// Gather the ridge's vertices. For 3D cells (dim index 1), the ridge is a 1D edge, which
+	// is stored in the flat edge array rather than in the poly cell indices.
+	PackedInt32Array ridge_vertices;
+	if (p_indices_dim_index == 1) {
+		ridge_vertices.append(p_all_edge_indices[ridge_cell * 2]);
+		ridge_vertices.append(p_all_edge_indices[ridge_cell * 2 + 1]);
+	} else {
+		ridge_vertices = _get_vertex_indices_of_poly_cell(p_poly_cell_indices, p_all_edge_indices, p_indices_dim_index - 2, ridge_cell, false);
 	}
-	ERR_FAIL_V_MSG(ret, "PolyMesh4D: Could not find a vertex in the second cell that extends the span of the first cell in a way connected to the existing canonical span vertices.");
+	HashSet<int32_t> ridge_vertex_set;
+	for (const int32_t ridge_vertex : ridge_vertices) {
+		ridge_vertex_set.insert(ridge_vertex);
+	}
+	// A (d-2)-dimensional ridge is spanned by d-1 vertices, where d == p_indices_dim_index + 2.
+	const int64_t ridge_span_size = p_indices_dim_index + 1;
+	PackedInt32Array ridge_span = ridge_vertices;
+	ERR_FAIL_COND_V_MSG(ridge_span.size() < ridge_span_size, PackedInt32Array(), "PolyMesh4D: The common cell shared by the first two members of the cell has fewer than " + itos(ridge_span_size) + " vertices, so it cannot span " + itos(p_indices_dim_index) + " dimensions.");
+	ridge_span.sort();
+	ridge_span.resize(ridge_span_size);
+	const int32_t first_extension_vertex = _get_lowest_vertex_of_cell_excluding(p_poly_cell_indices, p_all_edge_indices, prev_dim_index, indices[0], ridge_vertex_set);
+	const int32_t second_extension_vertex = _get_lowest_vertex_of_cell_excluding(p_poly_cell_indices, p_all_edge_indices, prev_dim_index, indices[1], ridge_vertex_set);
+	ERR_FAIL_COND_V_MSG(first_extension_vertex == -1 || second_extension_vertex == -1, PackedInt32Array(), "PolyMesh4D: One of the first two members of the cell has no vertex off of the common cell it shares with the other, so it cannot extend the span.");
+	PackedInt32Array ret;
+	ret.resize(ridge_span_size + 2);
+	ret.set(0, first_extension_vertex);
+	for (int64_t i = 0; i < ridge_span_size; i++) {
+		ret.set(i + 1, ridge_span[i]);
+	}
+	ret.set(ridge_span_size + 1, second_extension_vertex);
+	return ret;
 }
 
 // These internal functions can be fast and exclude most ERR_FAIL_* checks because
@@ -1210,10 +1262,16 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 		// Prepare a cache for inferred vertex texcoords for pivot overrides.
 		const PackedVector4Array poly_cell_vertices = get_poly_cell_vertices();
 		const PackedInt32Array poly_cell_boundary_pivot_overrides = get_poly_cell_boundary_pivot_overrides();
+		const int64_t cell_vert_count = cell_vert.size();
 		Vector<int8_t> cached_inference_state;
-		cached_inference_state.resize_initialized(cell_vert.size());
+		cached_inference_state.resize_initialized(cell_vert_count);
 		PackedVector3Array cached_inferred_texcoord;
-		cached_inferred_texcoord.resize(cell_vert.size());
+		cached_inferred_texcoord.resize(cell_vert_count);
+		// Explicitly initialize these to support older Godot versions that don't recognize `resize_initialized`.
+		for (int64_t cell_vert_index = 0; cell_vert_index < cell_vert_count; cell_vert_index++) {
+			cached_inference_state.set(cell_vert_index, (int8_t)0);
+			cached_inferred_texcoord.set(cell_vert_index, Vector3());
+		}
 		// Fill the texture map cache for each simplex cell using data from the corresponding source polytope cell.
 		_simplex_cell_uvw_texture_map_cache.resize(simplex_count * 4);
 		bool has_some_texture_map = false;

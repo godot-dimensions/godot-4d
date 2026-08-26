@@ -39,7 +39,7 @@ public:
 
 private:
 	// Keep these default values in sync with the EditorCameraSettings4D defaults.
-	String _rendering_engine = "";
+	String _rendering_engine_name = "";
 	KeepAspect _keep_aspect = KEEP_HEIGHT;
 	ProjectionType4D _projection_type = PROJECTION4D_PERSPECTIVE_4D;
 	ViewAngleType _view_angle_type = VIEW_ANGLE_FOCAL_LENGTH;
@@ -47,8 +47,8 @@ private:
 	WFadeMode _w_fade_mode = W_FADE_TRANSPARENCY;
 
 	// These have wrappers with trig functions, so let's use double to avoid precision loss.
-	double _focal_length_4d = 1.0;
-	double _focal_length_3d = 1.0;
+	double _focal_length_4d = 1.25;
+	double _focal_length_3d = 1.25;
 
 	Color _w_fade_color_negative = Color(0.0f, 0.5f, 1.0f);
 	Color _w_fade_color_positive = Color(1.0f, 0.5f, 0.0f);
@@ -82,8 +82,8 @@ public:
 	Vector2 world_to_viewport_local_normal(const Vector4 &p_local_position) const;
 	Vector2 world_to_viewport(const Vector4 &p_global_position) const;
 
-	String get_rendering_engine() const;
-	void set_rendering_engine(const String &p_rendering_engine);
+	String get_rendering_engine_name() const;
+	void set_rendering_engine_name(const String &p_rendering_engine_name);
 
 	KeepAspect get_keep_aspect() const;
 	void set_keep_aspect(const KeepAspect p_keep_aspect);

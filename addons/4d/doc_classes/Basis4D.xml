@@ -347,6 +347,13 @@
 				If [param orthonormalized] is [code]true[/code], the resulting [Basis] will be orthonormalized.
 			</description>
 		</method>
+		<method name="to_3d_orthonormalize_z_dominant" qualifiers="static">
+			<return type="Basis" />
+			<param index="0" name="from_4d" type="Projection" />
+			<description>
+				Converts this [param from_4d] [Basis4D] to a [Basis] 3D matrix. The XYZ 3x3 portion is extracted from the 4D matrix, and the W components are discarded. The resulting [Basis] will be orthonormalized using a Z-dominant method, rather than calling [method to_3d] with [code]true[/code] which uses an X-dominant method. This is useful for converting a 4D basis to a 3D basis when the Z axis is the most important axis to preserve, such as for oriented objects which use +Z or -Z as the forward or front-facing direction.
+			</description>
+		</method>
 		<method name="to_array" qualifiers="static">
 			<return type="PackedFloat32Array" />
 			<param index="0" name="from_basis" type="Projection" />

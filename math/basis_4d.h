@@ -148,6 +148,7 @@ struct _NO_DISCARD_ Basis4D {
 	// Conversion.
 	static Basis4D from_3d(const Basis &p_from_3d);
 	Basis to_3d(const bool p_orthonormalized = false) const;
+	Basis to_3d_orthonormalize_z_dominant() const;
 	static Basis4D from_array(const PackedRealArray &p_from_array);
 	PackedRealArray to_array() const;
 	// For binding to Variant, pick an existing Variant data type.

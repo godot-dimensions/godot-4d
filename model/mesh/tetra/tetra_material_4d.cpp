@@ -1,5 +1,6 @@
 #include "tetra_material_4d.h"
 
+#include "../../../render/cross_section/tetra_cross_section_light_shader.glsl.gen.h"
 #include "../../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
 #include "../../../render/projected/tetra_projected_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
@@ -225,10 +226,16 @@ Ref<Shader> TetraMaterial4D::_projected_shader;
 void TetraMaterial4D::init_shaders() {
 	_cross_section_shader.instantiate();
 	_cross_section_shader->set_name(String("Tetra Cross-Section Shader"));
-	_cross_section_shader->set_code(tetra_cross_section_shader_shader_glsl);
 	_projected_shader.instantiate();
 	_projected_shader->set_name(String("Tetra Projected Shader"));
-	_projected_shader->set_code(tetra_projected_shader_shader_glsl);
+	String cross_section_shader_code = tetra_cross_section_shader_shader_glsl;
+	String projected_shader_code = tetra_projected_shader_shader_glsl;
+#ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
+	cross_section_shader_code += tetra_cross_section_light_shader_shader_glsl;
+	projected_shader_code += tetra_cross_section_light_shader_shader_glsl; // TODO: rename, if it's kept common to both.
+#endif
+	_cross_section_shader->set_code(cross_section_shader_code);
+	_projected_shader->set_code(projected_shader_code);
 	if (RenderingServer::get_singleton() != nullptr) {
 		RenderingServer::get_singleton()->shader_set_path_hint(_cross_section_shader->get_rid(), String("Tetra Cross-Section Shader"));
 		RenderingServer::get_singleton()->shader_set_path_hint(_projected_shader->get_rid(), String("Tetra Projected Shader"));

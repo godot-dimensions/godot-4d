@@ -6,6 +6,7 @@
 #include "editor_camera_4d.h"
 #include "editor_camera_settings_4d.h"
 #include "editor_main_viewport_4d.h"
+#include "editor_preview_environment_4d.h"
 #include "editor_transform_gizmo_4d.h"
 #include "editor_viewport_rotation_4d.h"
 
@@ -98,7 +99,9 @@ void EditorMainScreen4D::_on_transform_settings_menu_id_pressed(const int p_id) 
 		}
 		_4d_editor_config_file->save(_4d_editor_config_file_path);
 	} else if (p_id == TRANSFORM_SETTING_CONFIGURE_SNAP) {
-		_snap_settings_dialog->popup_centered(Size2(400, 450) * EDSCALE);
+		if (_snap_settings_dialog != nullptr) {
+			_snap_settings_dialog->popup_centered(Size2(400, 450) * EDSCALE);
+		}
 	}
 }
 
@@ -170,7 +173,7 @@ void EditorMainScreen4D::_on_view_menu_id_pressed(const int p_id) {
 			_4d_editor_config_file->save(_4d_editor_config_file_path);
 		} break;
 		case VIEW_ITEM_CAMERA_SETTINGS: {
-			_camera_settings_dialog->popup_centered(Size2(400, 360) * EDSCALE);
+			_camera_settings_dialog->popup_centered(Size2(400, 420) * EDSCALE);
 		} break;
 	}
 }
@@ -178,11 +181,11 @@ void EditorMainScreen4D::_on_view_menu_id_pressed(const int p_id) {
 void EditorMainScreen4D::_on_rendering_engine_menu_id_pressed(const int p_id) {
 	const String name = _rendering_engine_menu_popup->get_item_text(p_id);
 	if (name == TTR("Automatic (default)")) {
-		if (_4d_editor_config_file->has_section_key("camera", "rendering_engine")) {
-			_4d_editor_config_file->erase_section_key("camera", "rendering_engine");
+		if (_4d_editor_config_file->has_section_key("camera", "rendering_engine_name")) {
+			_4d_editor_config_file->erase_section_key("camera", "rendering_engine_name");
 		}
 	} else {
-		_4d_editor_config_file->set_value("camera", "rendering_engine", name);
+		_4d_editor_config_file->set_value("camera", "rendering_engine_name", name);
 	}
 	_update_rendering_engine_menu();
 	_4d_editor_config_file->save(_4d_editor_config_file_path);
@@ -196,16 +199,20 @@ void EditorMainScreen4D::_update_rendering_engine_menu() {
 	for (const String &name : rendering_engine_names) {
 		_rendering_engine_menu_popup->add_radio_check_item(name);
 	}
-	// Then select the rendering engine based on the saved name.
-	const String rendering_engine_name = _4d_editor_config_file->get_value("camera", "rendering_engine", String());
+	// Then select the rendering engine based on the saved name. Keep this in sync with `EditorCameraSettings4D`.
+	const String rendering_engine_name = _4d_editor_config_file->get_value("camera", "rendering_engine_name", String());
 	const int64_t index = rendering_engine_names.find(rendering_engine_name);
 	if (index == -1) {
 		_rendering_engine_menu_popup->set_item_checked(0, true); // Automatic (default).
-		_camera_settings->set_rendering_engine("");
+		_camera_settings->set_rendering_engine_name("");
 	} else {
 		_rendering_engine_menu_popup->set_item_checked(index + 1, true); // +1 because of the "Automatic" item.
-		_camera_settings->set_rendering_engine(rendering_engine_name);
+		_camera_settings->set_rendering_engine_name(rendering_engine_name);
 	}
+	ERR_FAIL_NULL(_editor_main_viewports[0]);
+	const Ref<RenderingEngine4D> rendering_engine = _editor_main_viewports[0]->get_rendering_engine();
+	ERR_FAIL_COND(rendering_engine.is_null());
+	_preview_environment->set_rendering_engine_supports_lighting(rendering_engine->supports_lighting());
 }
 
 void EditorMainScreen4D::_update_theme() {
@@ -240,14 +247,26 @@ void EditorMainScreen4D::_notification(int p_what) {
 		} break;
 #if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 		case NOTIFICATION_EXIT_TREE: {
+			// Stop the inspectors from pointing at objects that are about to be freed.
 			if (_snap_settings_inspector != nullptr) {
 				_snap_settings_inspector->edit(nullptr);
 			}
 			if (_camera_settings_inspector != nullptr) {
 				_camera_settings_inspector->edit(nullptr);
 			}
-		}
+		} break;
 #endif
+		case NOTIFICATION_PREDELETE: {
+			_free_camera_settings();
+		} break;
+	}
+}
+
+void EditorMainScreen4D::_free_camera_settings() {
+	// The camera settings is an Object, so it needs to be freed manually.
+	if (_camera_settings != nullptr) {
+		memdelete(_camera_settings);
+		_camera_settings = nullptr;
 	}
 }
 
@@ -278,7 +297,7 @@ void EditorMainScreen4D::press_menu_item(const int p_option) {
 	}
 }
 
-void EditorMainScreen4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock p_axis_lock) {
+void EditorMainScreen4D::set_camera_rotation_axis_lock_policy(const EditorViewportCameraRotationAxisLock4D p_axis_lock) {
 	// This function is named "policy" because it does not immediately change the camera's rotation axis lock,
 	// rather it sets the policy for how it will be handled the next time the user clicks on the rotation widget.
 	_rotation_axis_lock = p_axis_lock;
@@ -370,8 +389,13 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_toggle_mode(true);
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_theme_type_variation("FlatButton");
 	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->set_tooltip_text(TTR("(T) If pressed, use the object's local rotation for the gizmo. Else, transform in global space."));
-	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->connect("toggled", callable_mp(this, &EditorMainScreen4D::_on_button_toggled).bind(TOOLBAR_BUTTON_USE_LOCAL_ROTATION));
+	_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]->connect(StringName("toggled"), callable_mp(this, &EditorMainScreen4D::_on_button_toggled).bind(TOOLBAR_BUTTON_USE_LOCAL_ROTATION));
 	_toolbar_hbox->add_child(_toolbar_buttons[TOOLBAR_BUTTON_USE_LOCAL_ROTATION]);
+	_toolbar_hbox->add_child(memnew(VSeparator));
+
+	_preview_environment = memnew(EditorPreviewEnvironment4D);
+	_preview_environment->setup(this, p_undo_redo_manager, _4d_editor_config_file, _4d_editor_config_file_path);
+	_toolbar_hbox->add_child(_preview_environment);
 
 	// All viewports share one gizmo and origin marker.
 	_transform_gizmo_4d = memnew(EditorTransformGizmo4D);
@@ -471,10 +495,11 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	view_menu_popup->connect(StringName("id_pressed"), callable_mp(this, &EditorMainScreen4D::_on_view_menu_id_pressed));
 	_toolbar_hbox->add_child(memnew(VSeparator));
 
-#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
-	// Set up the camera settings dialog as long as this is Godot >= 4.4.
+	// Always create the camera settings object, even without the dialog, as it's needed for RenderingEngine4D selection.
 	_camera_settings = memnew(EditorCameraSettings4D);
 	_camera_settings->setup(this, _4d_editor_config_file, _4d_editor_config_file_path);
+#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
+	// Set up the camera settings dialog as long as this is Godot >= 4.4.
 	_camera_settings_dialog = memnew(ConfirmationDialog);
 	_camera_settings_dialog->set_name(StringName("CameraSettingsDialog"));
 	_camera_settings_dialog->set_title(TTR("Editor Camera Settings"));
@@ -496,7 +521,6 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 }
 
 EditorMainScreen4D::~EditorMainScreen4D() {
-	if (_camera_settings != nullptr) {
-		memdelete(_camera_settings);
-	}
+	// Normally already done by NOTIFICATION_PREDELETE, this is just a last resort.
+	_free_camera_settings();
 }

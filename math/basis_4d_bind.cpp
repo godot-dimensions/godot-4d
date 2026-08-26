@@ -183,6 +183,10 @@ Basis godot_4d_bind::Basis4D::to_3d(const Projection &p_from_4d, const bool p_or
 	return ::Basis4D(p_from_4d).to_3d(p_orthonormalized);
 }
 
+Basis godot_4d_bind::Basis4D::to_3d_orthonormalize_z_dominant(const Projection &p_from_4d) {
+	return ::Basis4D(p_from_4d).to_3d_orthonormalize_z_dominant();
+}
+
 Projection godot_4d_bind::Basis4D::from_array(const PackedRealArray &p_from_array) {
 	return ::Basis4D::from_array(p_from_array);
 }
@@ -291,6 +295,7 @@ void godot_4d_bind::Basis4D::_bind_methods() {
 	ClassDB::bind_static_method("Basis4D", D_METHOD("to_rotor", "basis"), &godot_4d_bind::Basis4D::to_rotor);
 	// Conversion.
 	ClassDB::bind_static_method("Basis4D", D_METHOD("to_3d", "from_4d", "orthonormalized"), &godot_4d_bind::Basis4D::to_3d, DEFVAL(false));
+	ClassDB::bind_static_method("Basis4D", D_METHOD("to_3d_orthonormalize_z_dominant", "from_4d"), &godot_4d_bind::Basis4D::to_3d_orthonormalize_z_dominant);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_3d", "from_3d"), &godot_4d_bind::Basis4D::from_3d);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("to_array", "from_basis"), &godot_4d_bind::Basis4D::to_array);
 	ClassDB::bind_static_method("Basis4D", D_METHOD("from_array", "from_array"), &godot_4d_bind::Basis4D::from_array);

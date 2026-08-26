@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Light4D" inherits="Node4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for different kinds of 4D light nodes.
+	</brief_description>
+	<description>
+		Light4D is the [i]abstract[/i] base class for 4D light nodes. As it can't be instantiated, it shouldn't be used directly. Other types of 4D light nodes inherit from it. Light4D contains the common properties used for lighting.
+		[b]Note:[/b] Unlike Godot's 3D lights, 4D lights include the [Node4D]'s global uniform scale when rendered. See [member Node4D.global_uniform_scale].
+		[b]Note:[/b] Shadows in the cross-section renderer do not account for off-slice objects obstructing the light. Manual culling, such as room-based culling, may be helpful to avoid lights in another local-W-offset room affecting the current room's lighting.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="light_color" type="Color" setter="set_light_color" getter="get_light_color" default="Color(1, 1, 1, 1)">
+			The light's color in nonlinear sRGB encoding. An [i]overbright[/i] color can be used to achieve a result equivalent to increasing the light's [member light_energy].
+		</member>
+		<member name="light_energy" type="float" setter="set_light_energy" getter="get_light_energy" default="1.0">
+			The light's strength multiplier (this is not a physical unit). For [OmniLight4D] and [SpotLight4D], changing this value will only change the light color's intensity, not the light's range.
+		</member>
+	</members>
+</class>

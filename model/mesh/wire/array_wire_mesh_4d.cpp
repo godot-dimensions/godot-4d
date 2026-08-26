@@ -122,6 +122,7 @@ void ArrayWireMesh4D::deduplicate_all_elements() {
 	}
 	_vertices = output_vertices;
 	_edge_vertex_indices = output_edge_vertex_indices;
+	wire_mesh_clear_cache();
 }
 
 void ArrayWireMesh4D::transform_vertices(const Transform4D &p_transform) {
@@ -164,6 +165,7 @@ void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Tran
 			set_material(other_material);
 		}
 	}
+	wire_mesh_clear_cache();
 	reset_mesh_data_validation();
 }
 

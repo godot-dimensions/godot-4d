@@ -63,7 +63,10 @@ Basis4D Transform4D::xform_basis(const Basis4D &p_basis) const {
 Rect4 Transform4D::xform_rect(const Rect4 &p_rect) const {
 	const Vector4 start = p_rect.get_position();
 	const Vector4 size = p_rect.get_size();
-	Rect4 ret = Rect4(origin, Vector4(0, 0, 0, 0));
+	// Seed with the transformed first corner, not the transform's origin. Seeding with the
+	// origin would make the result always contain the image of the rect's local zero point,
+	// which inflates the bounds whenever the rect does not contain that point itself.
+	Rect4 ret = Rect4(xform(start), Vector4(0, 0, 0, 0));
 	for (int x = 0; x < 2; x++) {
 		for (int y = 0; y < 2; y++) {
 			for (int z = 0; z < 2; z++) {

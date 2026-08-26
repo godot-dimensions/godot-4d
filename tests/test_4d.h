@@ -1,8 +1,9 @@
 #pragma once
 
+// Tests are only valid to run inside a module build, not GDExtension.
 #define GODOT_MODULE 1
 
-// Math
+// Math.
 #include "math/geometric_algebra/test_multivector_4d.h"
 #include "math/geometric_algebra/test_rotor_4d.h"
 #include "math/geometric_algebra/test_split_complex_4d.h"
@@ -14,17 +15,20 @@
 #include "math/test_transform_4d.h"
 #include "math/test_vector_4d.h"
 
-// Model
+// Model.
+#include "model/mesh/poly/test_array_poly_mesh_4d.h"
+#include "model/mesh/poly/test_poly_mesh_4d.h"
 #include "model/mesh/poly/test_poly_mesh_builder_4d.h"
+#include "model/mesh/test_mesh_instance_4d.h"
 #include "model/mesh/tetra/test_array_tetra_mesh_4d.h"
 #include "model/mesh/tetra/test_tetra_mesh_4d.h"
 #include "model/mesh/wire/test_array_wire_mesh_4d.h"
 #include "model/mesh/wire/test_wire_material_4d.h"
 
-// Other
+// Other.
 #include "nodes/test_node_4d.h"
 
-// Physics
+// Physics.
 #include "physics/server/test_physics_server_4d.h"
 #include "physics/shapes/test_box_shape_4d.h"
 #include "physics/shapes/test_capsule_shape_4d.h"

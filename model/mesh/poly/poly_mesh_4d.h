@@ -45,6 +45,7 @@ private:
 		return (p_edge1_a == p_edge2_a) || (p_edge1_a == p_edge2_b) || (p_edge1_b == p_edge2_a) || (p_edge1_b == p_edge2_b);
 	}
 
+	static int32_t _get_lowest_vertex_of_cell_excluding(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_cell_dim_index, const int64_t p_which_cell, const HashSet<int32_t> &p_excluded_vertices);
 	static PackedInt32Array _get_canonical_span_vertex_index_sequence(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const int64_t p_indices_dim_index, const int64_t p_which_cell);
 	static PackedInt32Array _get_cell_face_4_vertex_index_sequence(const PackedInt32Array &p_all_edge_indices, const PackedInt32Array &p_face1_edge_indices, const PackedInt32Array &p_face2_edge_indices);
 	static PackedInt32Array _get_face_edge_3_vertex_index_sequence(const int32_t p_edge1_a, const int32_t p_edge1_b, const int32_t p_edge2_a, const int32_t p_edge2_b);

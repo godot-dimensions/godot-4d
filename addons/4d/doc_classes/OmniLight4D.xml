@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OmniLight4D" inherits="Light4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Omnidirectional 4D light, such as a light bulb or a candle.
+	</brief_description>
+	<description>
+		An omnidirectional light is a type of [Light4D] that emits light in all directions. The light is attenuated by distance, and this attenuation can be configured by changing its energy, range, and range attenuation properties.
+		[b]Note:[/b] Unlike Godot's 3D lights, 4D lights include the [Node4D]'s global uniform scale when rendered. See [member Node4D.global_uniform_scale].
+		[b]Note:[/b] Shadows in the cross-section renderer do not account for off-slice objects obstructing the light. Manual culling, such as room-based culling, may be helpful to avoid lights in another local-W-offset room affecting the current room's lighting.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="omni_light_size_meters" type="float" setter="set_omni_light_size_meters" getter="get_omni_light_size_meters" default="0.0">
+			The simulated size of the light in meters, affecting shading and shadows. Increasing this value simulates a 4D spherical light, expanding the size of specular highlights. If shadows are enabled, a penumbra is rendered, making shadows appear blurrier.
+			[b]Note:[/b] Unlike [member Light3D.light_size], [member omni_light_size_meters] is affected by the [Node4D]'s global uniform scale.
+			[b]Note:[/b] When this value is greater than [code]0.0[/code], and the light is not exactly in the 3D slice, the results will not be physically accurate to 4D lighting. It will become less accurate the farther the light is from the 3D slice, tending towards a point light.
+		</member>
+		<member name="omni_range_attenuation" type="float" setter="set_omni_range_attenuation" getter="get_omni_range_attenuation" default="3.0">
+			Controls the distance attenuation function for the omnidirectional light.
+			A value of [code]0.0[/code] will maintain a constant brightness through most of the range, but smoothly attenuate the light at the edge of the range. Use a value of [code]3.0[/code] for physically accurate 4D lights, as it results in the proper inverse-cube attenuation. For artistic purposes, a value of [code]2.0[/code] will likely produce a more visually pleasing result, but going lower is not recommended.
+			[b]Note:[/b] Setting attenuation to [code]3.0[/code] or higher may result in distant objects receiving minimal light, even within range.
+			[b]Note:[/b] Using negative values or values higher than [code]10.0[/code] may lead to unexpected results.
+		</member>
+		<member name="omni_range_meters" type="float" setter="set_omni_range_meters" getter="get_omni_range_meters" default="10.0">
+			The light's 4D radius in meters. Note that the effectively lit area may appear to be smaller depending on the [member omni_range_attenuation] in use. No matter the [member omni_range_attenuation] in use, the light will never reach anything outside this radius.
+			[b]Note:[/b] Unlike [member OmniLight3D.omni_range], [member omni_range_meters] is affected by the [Node4D]'s global uniform scale.
+		</member>
+	</members>
+</class>

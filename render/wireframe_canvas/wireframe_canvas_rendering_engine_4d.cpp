@@ -1,6 +1,10 @@
 #include "wireframe_canvas_rendering_engine_4d.h"
 
+#include "../../model/mesh/mesh_instance_4d.h"
 #include "../../model/mesh/wire/wire_material_4d.h"
+#include "../environment/sky/plain_sky_material_4d.h"
+#include "../environment/world_environment_4d.h"
+#include "../rendering_server_4d.h"
 #include "wireframe_render_canvas_4d.h"
 
 Color WireframeCanvasRenderingEngine4D::_get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index) {
@@ -10,31 +14,65 @@ Color WireframeCanvasRenderingEngine4D::_get_material_edge_color(const Ref<Mater
 	return p_material->get_albedo_color_of_edge(p_edge_index, p_mesh);
 }
 
+WireframeRenderCanvas4D *WireframeCanvasRenderingEngine4D::_get_valid_render_canvas(const Viewport *p_viewport) {
+	if (p_viewport == nullptr) {
+		return nullptr;
+	}
+	// Find the canvas by type, not name, and skip any that are queued for deletion.
+	const int child_count = p_viewport->get_child_count();
+	for (int i = 0; i < child_count; i++) {
+		WireframeRenderCanvas4D *wire_canvas = Object::cast_to<WireframeRenderCanvas4D>(p_viewport->get_child(i));
+		if (wire_canvas != nullptr && !wire_canvas->is_queued_for_deletion()) {
+			return wire_canvas;
+		}
+	}
+	return nullptr;
+}
+
 void WireframeCanvasRenderingEngine4D::setup_for_viewport() {
 	WireframeRenderCanvas4D *wire_canvas = memnew(WireframeRenderCanvas4D);
-	wire_canvas->set_name("WireframeRenderCanvas4D");
+	wire_canvas->set_name(StringName("WireframeRenderCanvas4D"));
 	get_viewport()->add_child(wire_canvas);
-	// ProjectedRenderingEngine4D turns this on; make sure it's off again when switching away from it.
-	get_viewport()->set_transparent_background(false);
 }
 
 void WireframeCanvasRenderingEngine4D::cleanup_for_viewport() {
-	WireframeRenderCanvas4D *wire_canvas = GET_NODE_TYPE(get_viewport(), WireframeRenderCanvas4D, "WireframeRenderCanvas4D");
-	if (wire_canvas) {
+	WireframeRenderCanvas4D *wire_canvas = _get_valid_render_canvas(get_viewport());
+	if (wire_canvas != nullptr) {
+		// This must be deferred instead of removing the child and freeing it now.
+		// Cleanup runs from Camera4D's NOTIFICATION_EXIT_TREE, at which point every
+		// ancestor of that camera is in the middle of propagating the tree exit and
+		// is blocked, so removing a child of the Viewport is not allowed yet.
 		wire_canvas->queue_free();
 	}
 }
 
 void WireframeCanvasRenderingEngine4D::render_frame() {
-	WireframeRenderCanvas4D *wire_canvas = GET_NODE_TYPE(get_viewport(), WireframeRenderCanvas4D, "WireframeRenderCanvas4D");
+	WireframeRenderCanvas4D *wire_canvas = _get_valid_render_canvas(get_viewport());
 	ERR_FAIL_NULL_MSG(wire_canvas, "WireframeCanvasRenderingEngine4D: Canvas was null.");
-	const Camera4D *camera = get_camera();
+	Camera4D *camera = get_camera();
+	ERR_FAIL_NULL(camera);
+	// Set the background color of the canvas to the current world environment's plain sky color, if available.
+	RenderingServer4D *rendering_server_4d = RenderingServer4D::get_singleton();
+	ERR_FAIL_NULL(rendering_server_4d);
+	WorldEnvironment4D *world_environment_4d = rendering_server_4d->get_current_world_environment_for_camera(camera);
+	Color background_color = Color(0.0f, 0.0f, 0.0f);
+	if (world_environment_4d != nullptr) {
+		Ref<PlainSkyMaterial4D> plain_sky_mat = world_environment_4d->get_sky_material();
+		if (plain_sky_mat.is_valid()) {
+			// Only scale RGB by the energy multiplier, don't scale the alpha channel.
+			const Color sky_color = plain_sky_mat->get_color();
+			const real_t energy_multiplier = plain_sky_mat->get_energy_multiplier();
+			background_color = Color(sky_color.r * energy_multiplier, sky_color.g * energy_multiplier, sky_color.b * energy_multiplier, 1.0f);
+		}
+	}
+	wire_canvas->set_background_color(background_color);
+	// Draw edges for each mesh instance in the scene.
 	Vector<PackedColorArray> edge_colors_to_draw;
 	PackedFloat32Array edge_thicknesses_to_draw;
 	Vector<PackedVector2Array> edge_vertices_to_draw;
-	TypedArray<MeshInstance4D> mesh_instances = get_mesh_instances();
-	TypedArray<Projection> mesh_relative_basises = get_mesh_relative_basises();
-	PackedVector4Array mesh_relative_positions = get_mesh_relative_positions();
+	const PackedInt64Array mesh_instance_object_ids = get_mesh_instance_object_ids();
+	const TypedArray<Projection> mesh_relative_basises = get_mesh_relative_basises();
+	const PackedVector4Array mesh_relative_positions = get_mesh_relative_positions();
 	const bool camera_has_perspective = camera->get_projection_type() != Camera4D::PROJECTION4D_ORTHOGRAPHIC;
 	const bool camera_has_w_fading = camera->get_w_fade_mode() != Camera4D::W_FADE_DISABLED;
 	const bool camera_has_w_fade_hue_shift = camera->get_w_fade_mode() & Camera4D::W_FADE_HUE_SHIFT;
@@ -45,8 +83,9 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 	const real_t camera_w_fade_slope = camera->get_w_fade_slope();
 	const real_t camera_clip_depth_far = camera->get_clip_far();
 	const real_t camera_depth_fade_start = camera->get_depth_fade_start();
-	for (int mesh_index = 0; mesh_index < mesh_instances.size(); mesh_index++) {
-		MeshInstance4D *mesh_inst = Object::cast_to<MeshInstance4D>(mesh_instances[mesh_index]);
+	for (int64_t mesh_index = 0; mesh_index < mesh_instance_object_ids.size(); mesh_index++) {
+		const ObjectID mesh_instance_object_id = (ObjectID)mesh_instance_object_ids[mesh_index];
+		MeshInstance4D *mesh_inst = Object::cast_to<MeshInstance4D>(ObjectDB::get_instance(mesh_instance_object_id));
 		ERR_CONTINUE(mesh_inst == nullptr);
 		const Ref<Material4D> material = mesh_inst->get_active_material();
 		Projection mesh_relative_basis = mesh_relative_basises[mesh_index];

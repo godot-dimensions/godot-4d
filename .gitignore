@@ -5,6 +5,9 @@
 .godot/
 /gen/
 
+# Godot's failed attempts to import Windows MSVC compilation artifacts.
+*.o.obj.import
+
 # General C++ generated files
 *.a
 *.ax

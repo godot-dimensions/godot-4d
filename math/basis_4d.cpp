@@ -540,6 +540,39 @@ Basis Basis4D::to_3d(const bool p_orthonormalized) const {
 	return basis;
 }
 
+Basis Basis4D::to_3d_orthonormalize_z_dominant() const {
+	Vector3 x_3d = Vector3(x.x, x.y, x.z);
+	Vector3 y_3d = Vector3(y.x, y.y, y.z);
+	Vector3 z_3d = Vector3(z.x, z.y, z.z);
+	if (unlikely(z_3d == Vector3())) {
+		z_3d = x_3d.cross(y_3d);
+		if (unlikely(z_3d == Vector3())) {
+			z_3d = Vector3(0.0, 0.0, 1.0);
+		}
+	}
+	z_3d.normalize();
+	x_3d -= z_3d * z_3d.dot(x_3d);
+	if (unlikely(x_3d == Vector3())) {
+		x_3d = y_3d.cross(z_3d);
+		if (unlikely(x_3d == Vector3())) {
+			x_3d = Vector3(0.0, 1.0, 0.0).cross(z_3d);
+			if (unlikely(x_3d == Vector3())) {
+				x_3d = Vector3(1.0, 0.0, 0.0).cross(z_3d);
+			}
+		}
+	}
+	x_3d.normalize();
+	y_3d -= z_3d * z_3d.dot(y_3d);
+	y_3d -= x_3d * x_3d.dot(y_3d);
+	if (unlikely(y_3d == Vector3())) {
+		y_3d = z_3d.cross(x_3d);
+		// Should be impossible given the previous checks.
+		CRASH_COND(y_3d == Vector3());
+	}
+	y_3d.normalize();
+	return Basis(x_3d, y_3d, z_3d);
+}
+
 Basis4D::operator Projection() const {
 	return Projection(x, y, z, w);
 }

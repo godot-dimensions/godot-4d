@@ -2,6 +2,29 @@
 
 #include "editor_main_screen_4d.h"
 
+void EditorCameraSettings4D::set_view_angle_type(const Camera4D::ViewAngleType p_view_angle_type) {
+	_view_angle_type = p_view_angle_type;
+	notify_property_list_changed();
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+void EditorCameraSettings4D::set_focal_length(const double p_focal_length) {
+	_focal_length = p_focal_length;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+double EditorCameraSettings4D::get_field_of_view() const {
+	return Math_PI - 2.0 * Math::atan(_focal_length);
+}
+
+void EditorCameraSettings4D::set_field_of_view(const double p_field_of_view) {
+	_focal_length = Math::tan((Math_PI - p_field_of_view) * 0.5);
+	apply_to_cameras();
+	write_to_config_file();
+}
+
 void EditorCameraSettings4D::set_clip_near(const double p_clip_near) {
 	_clip_near = p_clip_near;
 	apply_to_cameras();
@@ -15,7 +38,7 @@ void EditorCameraSettings4D::set_clip_far(const double p_clip_far) {
 }
 
 void EditorCameraSettings4D::set_rotation_axis_lock(const int p_rotation_axis_lock) {
-	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock)p_rotation_axis_lock;
+	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock4D)p_rotation_axis_lock;
 	apply_to_cameras();
 	write_to_config_file();
 }
@@ -94,8 +117,8 @@ void EditorCameraSettings4D::set_projection_opacity_base(const double p_projecti
 	write_to_config_file();
 }
 
-void EditorCameraSettings4D::set_rendering_engine(const String &p_rendering_engine) {
-	_rendering_engine = p_rendering_engine;
+void EditorCameraSettings4D::set_rendering_engine_name(const String &p_rendering_engine_name) {
+	_rendering_engine_name = p_rendering_engine_name;
 	notify_property_list_changed();
 	apply_to_cameras();
 	write_to_config_file();
@@ -107,6 +130,8 @@ void EditorCameraSettings4D::apply_to_cameras() const {
 	for (int i = 0; i < cameras.size(); i++) {
 		Camera4D *camera = Object::cast_to<Camera4D>(cameras[i]);
 		CRASH_COND(camera == nullptr);
+		camera->set_view_angle_type(_view_angle_type);
+		camera->set_focal_length_4d(_focal_length);
 		camera->set_clip_near(_clip_near);
 		camera->set_clip_far(_clip_far);
 		camera->set_depth_fade_mode(_depth_fade_mode);
@@ -121,7 +146,7 @@ void EditorCameraSettings4D::apply_to_cameras() const {
 		camera->set_skewness(_skewness);
 		camera->set_projection_opacity(_projection_opacity);
 		camera->set_projection_opacity_base(_projection_opacity_base);
-		camera->set_rendering_engine(_rendering_engine);
+		camera->set_rendering_engine_name(_rendering_engine_name);
 	}
 }
 
@@ -129,9 +154,11 @@ void EditorCameraSettings4D::setup(EditorMainScreen4D *p_editor_main_screen, Ref
 	_editor_main_screen = p_editor_main_screen;
 	_4d_editor_config_file = p_config_file;
 	_4d_editor_config_file_path = p_config_file_path;
+	_view_angle_type = (Camera4D::ViewAngleType)(int)p_config_file->get_value("camera", "view_angle_type", _view_angle_type);
+	_focal_length = p_config_file->get_value("camera", "focal_length", _focal_length);
 	_clip_near = p_config_file->get_value("camera", "clip_near", _clip_near);
 	_clip_far = p_config_file->get_value("camera", "clip_far", _clip_far);
-	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock)(int)p_config_file->get_value("camera", "rotation_axis_lock", (int)_rotation_axis_lock);
+	_rotation_axis_lock = (EditorViewportCameraRotationAxisLock4D)(int)p_config_file->get_value("camera", "rotation_axis_lock", (int)_rotation_axis_lock);
 	_depth_fade_mode = (Camera4D::DepthFadeMode)(int)p_config_file->get_value("camera", "depth_fade_mode", _depth_fade_mode);
 	_w_fade_mode = (Camera4D::WFadeMode)(int)p_config_file->get_value("camera", "w_fade_mode", _w_fade_mode);
 	_w_fade_color_negative = p_config_file->get_value("camera", "w_fade_color_negative", _w_fade_color_negative);
@@ -143,7 +170,8 @@ void EditorCameraSettings4D::setup(EditorMainScreen4D *p_editor_main_screen, Ref
 	_skewness = p_config_file->get_value("camera", "skewness", _skewness);
 	_projection_opacity = p_config_file->get_value("camera", "projection_opacity", _projection_opacity);
 	_projection_opacity_base = p_config_file->get_value("camera", "projection_opacity_base", _projection_opacity_base);
-	_rendering_engine = p_config_file->get_value("camera", "rendering_engine", _rendering_engine);
+	// Keep this in sync with `EditorMainScreen4D::_update_rendering_engine_menu()`.
+	_rendering_engine_name = p_config_file->get_value("camera", "rendering_engine_name", _rendering_engine_name);
 	apply_to_cameras();
 }
 
@@ -152,13 +180,19 @@ void EditorCameraSettings4D::write_to_config_file() const {
 		_4d_editor_config_file->erase_section("camera");
 	}
 	// Keep these in sync with the Camera4D and EditorCameraSettings4D defaults.
+	if (_view_angle_type != Camera4D::VIEW_ANGLE_FOCAL_LENGTH) {
+		_4d_editor_config_file->set_value("camera", "view_angle_type", (int)_view_angle_type);
+	}
+	if (!Math::is_equal_approx(_focal_length, 1.25)) {
+		_4d_editor_config_file->set_value("camera", "focal_length", _focal_length);
+	}
 	if (!Math::is_equal_approx(_clip_near, 0.05)) {
 		_4d_editor_config_file->set_value("camera", "clip_near", _clip_near);
 	}
 	if (!Math::is_equal_approx(_clip_far, 4000.0)) {
 		_4d_editor_config_file->set_value("camera", "clip_far", _clip_far);
 	}
-	if (_rotation_axis_lock != EditorViewportCameraRotationAxisLock::FULLY_LOCKED) {
+	if (_rotation_axis_lock != EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED) {
 		_4d_editor_config_file->set_value("camera", "rotation_axis_lock", (int)_rotation_axis_lock);
 	}
 	if (_depth_fade_mode != Camera4D::DEPTH_FADE_DISABLED) {
@@ -197,15 +231,23 @@ void EditorCameraSettings4D::write_to_config_file() const {
 	if (!Math::is_equal_approx(_projection_opacity_base, 1.0)) {
 		_4d_editor_config_file->set_value("camera", "projection_opacity_base", _projection_opacity_base);
 	}
-	if (!_rendering_engine.is_empty()) {
-		_4d_editor_config_file->set_value("camera", "rendering_engine", _rendering_engine);
+	if (!_rendering_engine_name.is_empty()) {
+		_4d_editor_config_file->set_value("camera", "rendering_engine_name", _rendering_engine_name);
 	}
 	_4d_editor_config_file->save(_4d_editor_config_file_path);
 }
 
 void EditorCameraSettings4D::_validate_property(PropertyInfo &p_property) const {
-	if (p_property.name == StringName("clip_far")) {
-		if (_rendering_engine == "Wireframe Canvas" && _depth_fade_mode == Camera4D::DEPTH_FADE_DISABLED) {
+	if (p_property.name == StringName("focal_length")) {
+		if (_view_angle_type != Camera4D::VIEW_ANGLE_FOCAL_LENGTH) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	} else if (p_property.name == StringName("field_of_view")) {
+		if (_view_angle_type != Camera4D::VIEW_ANGLE_FIELD_OF_VIEW) {
+			p_property.usage = PROPERTY_USAGE_NONE;
+		}
+	} else if (p_property.name == StringName("clip_far")) {
+		if (_rendering_engine_name == "Wireframe Canvas" && _depth_fade_mode == Camera4D::DEPTH_FADE_DISABLED) {
 			p_property.usage = PROPERTY_USAGE_NONE;
 		}
 	} else if (p_property.name == StringName("depth_fade_start")) {
@@ -234,6 +276,18 @@ void EditorCameraSettings4D::_validate_property(PropertyInfo &p_property) const 
 void EditorCameraSettings4D::_bind_methods() {
 	// These are copies of the Camera4D properties relevant for the editor camera.
 	// Be sure to keep these in sync with Camera4D.
+	ClassDB::bind_method(D_METHOD("get_view_angle_type"), &EditorCameraSettings4D::get_view_angle_type);
+	ClassDB::bind_method(D_METHOD("set_view_angle_type", "view_angle_type"), &EditorCameraSettings4D::set_view_angle_type);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_angle_type", PROPERTY_HINT_ENUM, "Focal Length,Field of View"), "set_view_angle_type", "get_view_angle_type");
+
+	ClassDB::bind_method(D_METHOD("get_focal_length"), &EditorCameraSettings4D::get_focal_length);
+	ClassDB::bind_method(D_METHOD("set_focal_length", "focal_length"), &EditorCameraSettings4D::set_focal_length);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "focal_length", PROPERTY_HINT_NONE, "suffix:m"), "set_focal_length", "get_focal_length");
+
+	ClassDB::bind_method(D_METHOD("get_field_of_view"), &EditorCameraSettings4D::get_field_of_view);
+	ClassDB::bind_method(D_METHOD("set_field_of_view", "field_of_view"), &EditorCameraSettings4D::set_field_of_view);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "field_of_view", PROPERTY_HINT_RANGE, "1,179,0.1,radians_as_degrees"), "set_field_of_view", "get_field_of_view");
+
 	ClassDB::bind_method(D_METHOD("get_clip_near"), &EditorCameraSettings4D::get_clip_near);
 	ClassDB::bind_method(D_METHOD("set_clip_near", "clip_near"), &EditorCameraSettings4D::set_clip_near);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clip_near", PROPERTY_HINT_RANGE, "0.001,1000,0.001,or_greater,exp,suffix:m"), "set_clip_near", "get_clip_near");

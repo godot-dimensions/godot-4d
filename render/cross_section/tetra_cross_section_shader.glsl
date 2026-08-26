@@ -1,5 +1,7 @@
 shader_type spatial;
-render_mode skip_vertex_transform, unshaded;
+render_mode skip_vertex_transform;
+
+#include "../shaders/perpendicular_4d.glsl"
 
 // World space
 // Not allowed to pass matrices through instance uniforms, so have to unpack into vectors.
@@ -13,6 +15,9 @@ uniform vec4 albedo : source_color;
 uniform sampler3D albedo_texture : hint_default_white, source_color;
 
 varying vec3 uvw;
+// Flat shading currently computes this from the transformed cell positions. Future smooth shading
+// can interpolate transformed 4D vertex normals into the same varying without changing light().
+varying vec4 normal_4d;
 
 // Maps from an arbitrary edge index to the indices of the vertices in a tetrahedron [a,b,c,d].
 const int TETRAHEDRON_EDGE_TO_VERTEX_MAP[] = {
@@ -81,6 +86,7 @@ void vertex() {
 
 	int vertex_id = int(VERTEX.x);
 	int face = get_face_lookup_index(verts[0].w, verts[1].w, verts[2].w, verts[3].w, vertex_id);
+	normal_4d = vec4(0.0, 0.0, 1.0, 0.0);
 	if (vertex_id >= 6 || CROSS_SECTION_LOOKUP[face] == -1) {
 		// This vertex is unused, cull
 		POSITION = vec4(0.0, 0.0, CLIP_SPACE_FAR, 1.0);
@@ -106,6 +112,18 @@ void vertex() {
 		vec3 face_v2 = slice_edge(verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v2_edge * 2]], verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v2_edge * 2 + 1]]);
 		vec3 face_v3 = slice_edge(verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v3_edge * 2]], verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v3_edge * 2 + 1]]);
 		vec3 normal = normalize(cross(face_v3 - face_v1, face_v2 - face_v1));
+		vec4 cell_normal_4d = perpendicular_4d(verts[1] - verts[0], verts[2] - verts[0], verts[3] - verts[0]);
+		float cell_normal_length = length(cell_normal_4d);
+		if (cell_normal_length > 0.0) {
+			cell_normal_4d /= cell_normal_length;
+			// Keep the 4D normal's orientation consistent with the generated triangle winding.
+			if (dot(cell_normal_4d.xyz, normal) < 0.0) {
+				cell_normal_4d = -cell_normal_4d;
+			}
+		} else {
+			cell_normal_4d = vec4(normal, 0.0);
+		}
+		normal_4d = cell_normal_4d;
 		vec3 tangent = normalize(face_v2 - face_v1);
 		vec3 binormal = normalize(cross(normal, tangent));
 		NORMAL = normal;
@@ -116,5 +134,6 @@ void vertex() {
 
 void fragment() {
 	NORMAL = normalize(NORMAL);
-	ALBEDO = albedo.rgb * texture(albedo_texture, uvw).rgb * ((dot((vec4(NORMAL, 0.0) * INV_VIEW_MATRIX).xyz, vec3(0.0, 1.0, 0.0)) / 2.0) + 0.5);
+	ALBEDO = albedo.rgb * texture(albedo_texture, uvw).rgb;
+	// Previous angle-based shading also included: * ((dot((vec4(NORMAL, 0.0) * INV_VIEW_MATRIX).xyz, vec3(0.0, 1.0, 0.0)) / 2.0) + 0.5);
 }

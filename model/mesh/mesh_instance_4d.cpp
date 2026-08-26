@@ -9,7 +9,11 @@ void MeshInstance4D::_notification(int p_what) {
 			RenderingServer4D::get_singleton()->register_mesh_instance(this);
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
-			RenderingServer4D::get_singleton()->unregister_mesh_instance(this);
+			// The singleton is already gone if the module was uninitialized first.
+			RenderingServer4D *rendering_server = RenderingServer4D::get_singleton();
+			if (rendering_server != nullptr) {
+				rendering_server->unregister_mesh_instance(this);
+			}
 		} break;
 	}
 }
@@ -44,17 +48,11 @@ void MeshInstance4D::set_mesh(const Ref<Mesh4D> &p_mesh) {
 }
 
 Rect4 MeshInstance4D::get_rect_bounds_local(const Transform4D &p_to_target) const {
-	Rect4 bounds = Rect4(p_to_target.origin, Vector4());
 	const Ref<Mesh4D> mesh = get_mesh();
 	if (mesh.is_null()) {
-		return bounds;
+		return Rect4(p_to_target.origin, Vector4());
 	}
-	const Transform4D to_target = p_to_target;
-	const PackedVector4Array vertices = mesh->get_vertices();
-	for (int vert_index = 0; vert_index < vertices.size(); vert_index++) {
-		bounds = bounds.expand_to_point(to_target * vertices[vert_index]);
-	}
-	return bounds;
+	return p_to_target.xform_rect(mesh->get_rect_bounds());
 }
 
 Dictionary MeshInstance4D::raycast_intersects_local(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance, const bool p_inside_is_zero) const {
@@ -66,7 +64,7 @@ Dictionary MeshInstance4D::raycast_intersects_local(const Vector4 &p_local_from,
 	}
 	// If the mesh is not a tetra mesh, fallback to using the local Rect4 bounds.
 	const Rect4 local_bounds = get_rect_bounds_local();
-	return local_bounds.raycast_intersects_dict(p_local_from, p_local_direction, p_inside_is_zero);
+	return local_bounds.raycast_intersects_dict(p_local_from, p_local_direction, p_max_distance, p_inside_is_zero);
 }
 
 void MeshInstance4D::_bind_methods() {
