@@ -1887,27 +1887,27 @@ void ArrayPolyMesh4D::set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vec
 	poly_mesh_clear_cache(false);
 }
 
-#if GODOT_HAS_TYPED_DICTIONARY
-TypedDictionary<Vector2i, Array> ArrayPolyMesh4D::get_all_poly_cell_normals_bind() const {
-	TypedDictionary<Vector2i, Array> result;
+ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_normals_bind() const {
+	PolyDataDictionary result;
 	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : _all_poly_cell_normals) {
 		const Vector2i &key = kv.key;
 		const Vector<PackedVector4Array> &normals_data = kv.value;
 		Array normals_array;
 		normals_array.resize(normals_data.size());
 		for (int64_t i = 0; i < normals_data.size(); i++) {
-			normals_array.set(i, normals_data[i]);
+			normals_array[i] = normals_data[i];
 		}
 		result[key] = normals_array;
 	}
 	return result;
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_normals_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_normals) {
+void ArrayPolyMesh4D::set_all_poly_cell_normals_bind(const PolyDataDictionary &p_all_poly_cell_normals) {
 	HashMap<Vector2i, Vector<PackedVector4Array>> normals_hashmap;
-	for (const KeyValue<Variant, Variant> &kv : p_all_poly_cell_normals) {
-		const Vector2i key = kv.key;
-		const Array normals_array = kv.value;
+	const Array normals_keys = p_all_poly_cell_normals.keys();
+	for (int64_t key_index = 0; key_index < normals_keys.size(); key_index++) {
+		const Vector2i key = normals_keys[key_index];
+		const Array normals_array = p_all_poly_cell_normals[key];
 		Vector<PackedVector4Array> normals_data;
 		normals_data.resize(normals_array.size());
 		for (int64_t i = 0; i < normals_array.size(); i++) {
@@ -1919,26 +1919,27 @@ void ArrayPolyMesh4D::set_all_poly_cell_normals_bind(const TypedDictionary<Vecto
 	set_all_poly_cell_normals(normals_hashmap);
 }
 
-TypedDictionary<Vector2i, Array> ArrayPolyMesh4D::get_all_poly_cell_texture_maps_bind() const {
-	TypedDictionary<Vector2i, Array> result;
+ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_texture_maps_bind() const {
+	PolyDataDictionary result;
 	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : _all_poly_cell_texture_maps) {
 		const Vector2i &key = kv.key;
 		const Vector<PackedVector3Array> &texture_map_data = kv.value;
 		Array texture_map_array;
 		texture_map_array.resize(texture_map_data.size());
 		for (int64_t i = 0; i < texture_map_data.size(); i++) {
-			texture_map_array.set(i, texture_map_data[i]);
+			texture_map_array[i] = texture_map_data[i];
 		}
 		result[key] = texture_map_array;
 	}
 	return result;
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_texture_maps) {
+void ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind(const PolyDataDictionary &p_all_poly_cell_texture_maps) {
 	HashMap<Vector2i, Vector<PackedVector3Array>> texture_maps_hashmap;
-	for (const KeyValue<Variant, Variant> &kv : p_all_poly_cell_texture_maps) {
-		const Vector2i key = kv.key;
-		const Array texture_map_array = kv.value;
+	const Array texture_map_keys = p_all_poly_cell_texture_maps.keys();
+	for (int64_t key_index = 0; key_index < texture_map_keys.size(); key_index++) {
+		const Vector2i key = texture_map_keys[key_index];
+		const Array texture_map_array = p_all_poly_cell_texture_maps[key];
 		Vector<PackedVector3Array> texture_map_data;
 		texture_map_data.resize(texture_map_array.size());
 		for (int64_t i = 0; i < texture_map_array.size(); i++) {
@@ -1949,7 +1950,6 @@ void ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind(const TypedDictionary<
 	}
 	set_all_poly_cell_texture_maps(texture_maps_hashmap);
 }
-#endif // GODOT_HAS_TYPED_DICTIONARY
 
 void ArrayPolyMesh4D::set_edge_vertex_indices(const PackedInt32Array &p_edge_indices) {
 	_edge_vertex_indices = PackedInt32Array(p_edge_indices);
@@ -2143,29 +2143,28 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "edge_indices"), "set_edge_indices", "get_edge_indices");
 
 	// Normals and texture maps. The "all" ones need the getters bound here.
-#if GODOT_HAS_TYPED_DICTIONARY
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_normals"), &ArrayPolyMesh4D::get_all_poly_cell_normals_bind);
 	ClassDB::bind_method(D_METHOD("set_all_poly_cell_normals", "all_poly_cell_normals"), &ArrayPolyMesh4D::set_all_poly_cell_normals_bind);
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normals", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_normals", "get_all_poly_cell_normals");
-
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_texture_maps"), &ArrayPolyMesh4D::get_all_poly_cell_texture_maps_bind);
 	ClassDB::bind_method(D_METHOD("set_all_poly_cell_texture_maps", "all_poly_cell_texture_maps"), &ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind);
+#if GODOT_HAS_TYPED_DICTIONARY
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normals", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_normals", "get_all_poly_cell_normals");
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_maps", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_texture_maps", "get_all_poly_cell_texture_maps");
-
-	constexpr PropertyUsageFlags PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS = PROPERTY_USAGE_EDITOR;
 #else
-	// When not saving the "all" ones, save the high-level properties (default = storage + editor).
-	constexpr PropertyUsageFlags PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS = PROPERTY_USAGE_DEFAULT;
+	// Godot 4.3 and earlier do not support type hints on Dictionary properties.
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normals"), "set_all_poly_cell_normals", "get_all_poly_cell_normals");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_maps"), "set_all_poly_cell_texture_maps", "get_all_poly_cell_texture_maps");
 #endif // GODOT_HAS_TYPED_DICTIONARY
 
+	// The dictionaries are the stored source of truth, so the high-level views are editor-only.
 	ClassDB::bind_method(D_METHOD("set_poly_cell_boundary_normals", "poly_cell_boundary_normals"), &ArrayPolyMesh4D::set_poly_cell_boundary_normals);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_boundary_normals", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS), "set_poly_cell_boundary_normals", "get_poly_cell_boundary_normals");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_boundary_normals", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_poly_cell_boundary_normals", "get_poly_cell_boundary_normals");
 
 	ClassDB::bind_method(D_METHOD("set_poly_cell_vertex_normals", "poly_cell_vertex_normals"), &ArrayPolyMesh4D::set_poly_cell_vertex_normals_bind);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertex_normals", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS), "set_poly_cell_vertex_normals", "get_poly_cell_vertex_normals");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertex_normals", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_poly_cell_vertex_normals", "get_poly_cell_vertex_normals");
 
 	ClassDB::bind_method(D_METHOD("set_poly_cell_texture_map", "poly_cell_texture_map"), &ArrayPolyMesh4D::set_poly_cell_texture_map_bind);
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_texture_map", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_HIGH_LEVEL_NORMALS_TEXMAPS), "set_poly_cell_texture_map", "get_poly_cell_texture_map");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_texture_map", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_poly_cell_texture_map", "get_poly_cell_texture_map");
 
 	// Enums.
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);

@@ -85,8 +85,9 @@ using namespace godot;
 #define PROPERTY_HINT_GROUP_ENABLE PROPERTY_HINT_NONE
 
 // Prior to Godot 4.5, the vector resize API did not clarify whether it was initializing new elements or not.
+// Plain `resize` does NOT zero-initialize trivial types, so `resize_initialized` must map to `resize_zeroed`.
 // See https://github.com/godotengine/godot/pull/104522
-#define resize_initialized resize
+#define resize_initialized resize_zeroed
 #define resize_uninitialized resize
 
 // As of Godot 4.5, we can use constexpr for vectors, but 4.4 and earlier don't support constexpr for vectors.

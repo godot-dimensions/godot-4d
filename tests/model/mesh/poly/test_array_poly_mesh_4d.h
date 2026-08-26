@@ -1144,4 +1144,35 @@ TEST_CASE("[ArrayPolyMesh4D] Getters and setters") {
 		CHECK(mesh->is_poly_mesh_data_valid());
 	}
 }
+
+TEST_CASE("[ArrayPolyMesh4D] Duplicate preserves the normals and texture map dictionaries") {
+	// A flat mesh stores its normals under the per-face key, which only survives
+	// duplication if the dictionaries are bound as properties on all Godot versions.
+	Ref<ArrayPolyMesh4D> mesh;
+	mesh.instantiate();
+	PackedVector4Array vertices = { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0) };
+	mesh->set_poly_cell_vertices(vertices);
+	mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 0, 2 });
+	Vector<PackedInt32Array> faces;
+	faces.append(PackedInt32Array{ 0, 1, 2 });
+	mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ faces });
+	const Vector4 pos_z = Vector4(0, 0, 1, 0);
+	HashMap<Vector2i, Vector<PackedVector4Array>> normals;
+	normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ PackedVector4Array{ pos_z } });
+	mesh->set_all_poly_cell_normals(normals);
+	HashMap<Vector2i, Vector<PackedVector3Array>> texture_maps;
+	texture_maps.insert(PolyMesh4D::FACE_TO_VERT_KEY, Vector<PackedVector3Array>{ PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0) } });
+	mesh->set_all_poly_cell_texture_maps(texture_maps);
+	Ref<ArrayPolyMesh4D> duplicated = mesh->duplicate();
+	REQUIRE(duplicated.is_valid());
+	const HashMap<Vector2i, Vector<PackedVector4Array>> duplicated_normals = duplicated->get_all_poly_cell_normals();
+	REQUIRE_MESSAGE(duplicated_normals.has(PolyMesh4D::PER_FACE_KEY), "Duplicating a mesh must preserve the per-face normals.");
+	REQUIRE(duplicated_normals[PolyMesh4D::PER_FACE_KEY].size() == 1);
+	REQUIRE(duplicated_normals[PolyMesh4D::PER_FACE_KEY][0].size() == 1);
+	CHECK(duplicated_normals[PolyMesh4D::PER_FACE_KEY][0][0].is_equal_approx(pos_z));
+	const HashMap<Vector2i, Vector<PackedVector3Array>> duplicated_texture_maps = duplicated->get_all_poly_cell_texture_maps();
+	REQUIRE_MESSAGE(duplicated_texture_maps.has(PolyMesh4D::FACE_TO_VERT_KEY), "Duplicating a mesh must preserve the face texture maps.");
+	REQUIRE(duplicated_texture_maps[PolyMesh4D::FACE_TO_VERT_KEY].size() == 1);
+	CHECK(duplicated_texture_maps[PolyMesh4D::FACE_TO_VERT_KEY][0].size() == 3);
+}
 } // namespace TestArrayPolyMesh4D

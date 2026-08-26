@@ -98,11 +98,16 @@ public:
 	void set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vector<PackedVector3Array>> &p_all_poly_cell_texture_maps);
 
 #if GODOT_HAS_TYPED_DICTIONARY
-	TypedDictionary<Vector2i, Array> get_all_poly_cell_normals_bind() const;
-	void set_all_poly_cell_normals_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_normals);
-	TypedDictionary<Vector2i, Array> get_all_poly_cell_texture_maps_bind() const;
-	void set_all_poly_cell_texture_maps_bind(const TypedDictionary<Vector2i, Array> &p_all_poly_cell_texture_maps);
+	using PolyDataDictionary = TypedDictionary<Vector2i, Array>;
+#else
+	// Godot 4.3 and earlier do not have TypedDictionary, so use a plain Dictionary.
+	// The dictionaries must still be bound so they are kept by duplication and serialization.
+	using PolyDataDictionary = Dictionary;
 #endif // GODOT_HAS_TYPED_DICTIONARY
+	PolyDataDictionary get_all_poly_cell_normals_bind() const;
+	void set_all_poly_cell_normals_bind(const PolyDataDictionary &p_all_poly_cell_normals);
+	PolyDataDictionary get_all_poly_cell_texture_maps_bind() const;
+	void set_all_poly_cell_texture_maps_bind(const PolyDataDictionary &p_all_poly_cell_texture_maps);
 
 	virtual PackedInt32Array get_edge_indices() override { return _edge_vertex_indices; }
 	void set_edge_vertex_indices(const PackedInt32Array &p_edge_indices);
