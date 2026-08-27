@@ -10,11 +10,11 @@
 #endif
 #endif
 
-RID SpotLight4D::create_light_3d_render_base() const {
+RID SpotLight4D::create_3d_cross_section_render_base() const {
 	return RenderingServer::get_singleton()->spot_light_create();
 }
 
-bool SpotLight4D::update_light_3d_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const {
+bool SpotLight4D::update_3d_cross_section_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const {
 	ERR_FAIL_COND_V_MSG(!p_light_3d_render_base.is_valid(), false, "SpotLight4D render base RID for Light3D is invalid.");
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	ERR_FAIL_NULL_V(rendering_server, false);
@@ -25,58 +25,52 @@ bool SpotLight4D::update_light_3d_render_base(const Projection &p_relative_to_ca
 	const Basis4D relative_basis_4d = Basis4D(p_relative_to_camera_basis);
 	const real_t uniform_scale_4d = ABS(relative_basis_4d.get_uniform_scale());
 	const real_t scaled_range_4d = _spot_range_meters * uniform_scale_4d;
-	if (scaled_range_4d <= 0.0 || _spot_angle_degrees <= 0.0) {
-		return false;
-	}
 	const real_t slice_offset_w = p_relative_to_camera_position.w;
-	const real_t slice_offset_sq = slice_offset_w * slice_offset_w;
-	const real_t scaled_range_4d_sq = scaled_range_4d * scaled_range_4d;
-	// Squared radius of the 3D spherical cross-section: R3² = R4² - h².
-	const real_t slice_range_3d_sq = scaled_range_4d_sq - slice_offset_sq;
-	if (slice_range_3d_sq <= 0.0) {
+	// The light's 4D sphere only meets the W = 0 slice if its radius reaches that far along W.
+	if (_spot_angle_degrees <= 0.0 || scaled_range_4d <= ABS(slice_offset_w)) {
 		return false;
 	}
-	const real_t slice_range_3d = Math::sqrt(slice_range_3d_sq);
-	// Same thing for size, but `MAX` with zero instead of exit conditions.
-	const real_t scaled_size_4d = _spot_light_size_meters * uniform_scale_4d;
-	const real_t scaled_size_4d_sq = scaled_size_4d * scaled_size_4d;
-	const real_t scaled_size_3d_sq = scaled_size_4d_sq - slice_offset_sq;
-	const real_t slice_size_3d = Math::sqrt(MAX(0.0, scaled_size_3d_sq));
-	real_t range_attenuation_3d = _spot_range_attenuation;
-	real_t energy_3d = get_light_energy();
-	real_t spot_angle_3d = _spot_angle_degrees;
-	real_t spot_angle_attenuation_3d = _spot_angle_attenuation;
 	const real_t emission_direction_length_4d = relative_basis_4d.z.length();
 	if (emission_direction_length_4d <= CMP_EPSILON) {
 		return false;
 	}
-	// SpotLight3D/4D emit along local -Z, so the slice component is the negated W component of local +Z.
-	const real_t slice_direction = CLAMP(-relative_basis_4d.z.w / emission_direction_length_4d, (real_t)-1.0, (real_t)1.0);
 #ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
-	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SLICE_DIRECTION, slice_direction);
-	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SLICE_OFFSET, slice_offset_w);
+	// The 3D lights are 4D-aware, so they want the true 4D light parameters rather than the parameters
+	// of this slice through the light. The only cost of the larger bounds those imply is that the
+	// cross-section renderer does a little wasted work on lights that turn out to not be relevant in the slice.
+	update_3d_projected_render_base(p_relative_to_camera_basis, p_relative_to_camera_position, p_light_3d_render_base);
 #else
 	// Fallback for when the base engine doesn't support slice parameters in the 3D lights (missing Godot Dimensions engine modifications).
+	const real_t slice_offset_sq = slice_offset_w * slice_offset_w;
+	const real_t scaled_range_4d_sq = scaled_range_4d * scaled_range_4d;
+	// Squared radius of the 3D spherical cross-section: R3² = R4² - h².
+	const real_t slice_range_3d_sq = scaled_range_4d_sq - slice_offset_sq;
+	const real_t slice_range_3d = Math::sqrt(slice_range_3d_sq);
+	const real_t scaled_size_4d = _spot_light_size_meters * uniform_scale_4d;
 	const real_t rep_dist = 0.5f * slice_range_3d;
 	const real_t rep_dist_sq = 0.25f * slice_range_3d_sq;
 	const real_t distance_4d_sq = rep_dist_sq + slice_offset_sq;
 	const real_t distance_4d = Math::sqrt(distance_4d_sq);
-	range_attenuation_3d *= rep_dist_sq / distance_4d_sq;
+	const real_t range_attenuation_3d = _spot_range_attenuation * (rep_dist_sq / distance_4d_sq);
 	const real_t exact_range_ratio_sq = distance_4d_sq / scaled_range_4d_sq;
 	const real_t exact_taper = Math::pow(1.0f - exact_range_ratio_sq * exact_range_ratio_sq, 2.0f);
 	constexpr real_t fallback_taper = (15.0f / 16.0f) * (15.0f / 16.0f);
+	real_t energy_3d = get_light_energy();
 	energy_3d *= exact_taper * Math::pow(distance_4d, -_spot_range_attenuation) / (fallback_taper * Math::pow(rep_dist, -range_attenuation_3d));
 	// A 4D cone generally does not slice to a constant-angle 3D cone. Fit a 3D cone at the same
 	// representative distance used for the range attenuation fallback.
+	// SpotLight3D/4D emit along local -Z, so the slice component is the negated W component of local +Z.
+	const real_t slice_direction = CLAMP(-relative_basis_4d.z.w / emission_direction_length_4d, (real_t)-1.0, (real_t)1.0);
 	const real_t projected_direction_scale = Math::sqrt(MAX((real_t)0.0, (real_t)1.0 - slice_direction * slice_direction));
 	const real_t cone_cos_4d = Math::cos(Math::deg_to_rad(_spot_angle_degrees));
 	const real_t axis_cos_4d = CLAMP((projected_direction_scale * rep_dist - slice_offset_w * slice_direction) / distance_4d, (real_t)-1.0, (real_t)1.0);
-	const real_t cone_rim_denom = 1.0f - cone_cos_4d;
-	const real_t exact_axis_rim = MAX((real_t)1e-4, (1.0f - MAX(axis_cos_4d, cone_cos_4d)) / cone_rim_denom);
+	const real_t exact_axis_rim = MAX((real_t)1e-4, (1.0f - MAX(axis_cos_4d, cone_cos_4d)) / (1.0f - cone_cos_4d));
 	const real_t exact_axis_spot_attenuation = _spot_angle_attenuation == 0.0f ? (axis_cos_4d > cone_cos_4d ? 1.0f : 0.0f) : 1.0f - Math::pow(exact_axis_rim, 1.0f / _spot_angle_attenuation);
 	if (exact_axis_spot_attenuation <= 0.0f) {
 		return false;
 	}
+	real_t spot_angle_3d = _spot_angle_degrees;
+	real_t spot_angle_attenuation_3d = _spot_angle_attenuation;
 	if (projected_direction_scale <= CMP_EPSILON) {
 		// A perpendicular cone is angularly uniform within the slice at a fixed radius.
 		spot_angle_3d = 180.0;
@@ -92,15 +86,59 @@ bool SpotLight4D::update_light_3d_render_base(const Projection &p_relative_to_ca
 		const real_t fallback_axis_spot_attenuation = _spot_angle_attenuation == 0.0f ? 1.0f : 1.0f - Math::pow((real_t)1e-4, 1.0f / _spot_angle_attenuation);
 		energy_3d *= exact_axis_spot_attenuation / fallback_axis_spot_attenuation;
 	}
-#endif
 	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_ENERGY, energy_3d);
 	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_RANGE, slice_range_3d);
-	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SIZE, slice_size_3d);
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SIZE, scaled_size_4d);
 	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_ATTENUATION, range_attenuation_3d);
 	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SPOT_ANGLE, spot_angle_3d);
 	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SPOT_ATTENUATION, spot_angle_attenuation_3d);
 	rendering_server->light_set_color(p_light_3d_render_base, get_light_color());
+#endif
 	return true;
+}
+
+RID SpotLight4D::create_3d_projected_render_base() const {
+	return RenderingServer::get_singleton()->spot_light_create();
+}
+
+void SpotLight4D::update_3d_projected_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const {
+	ERR_FAIL_COND_MSG(!p_light_3d_render_base.is_valid(), "SpotLight4D render base RID for Light3D is invalid.");
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	ERR_FAIL_NULL(rendering_server);
+	// Godot's 3D lights do not include the node scale. However, 4D lights should include the node scale.
+	const Basis4D relative_basis_4d = Basis4D(p_relative_to_camera_basis);
+	const real_t uniform_scale_4d = ABS(relative_basis_4d.get_uniform_scale());
+	// The projection of a hypersphere is a sphere of the same radius, so the 4D range and size are used as-is in any case.
+	const real_t scaled_range_4d = _spot_range_meters * uniform_scale_4d;
+	const real_t scaled_size_4d = _spot_light_size_meters * uniform_scale_4d;
+	// SpotLight3D/4D emit along local -Z, so the slice component is the negated W component of local +Z.
+	const real_t emission_direction_length_4d = relative_basis_4d.z.length();
+	const real_t slice_direction = emission_direction_length_4d <= CMP_EPSILON ? (real_t)0.0 : CLAMP(-relative_basis_4d.z.w / emission_direction_length_4d, (real_t)-1.0, (real_t)1.0);
+	real_t spot_angle_3d = _spot_angle_degrees;
+#ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SLICE_DIRECTION, slice_direction);
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SLICE_OFFSET, p_relative_to_camera_position.w);
+#else
+	// Fallback for when the base engine doesn't support slice parameters in the 3D lights (missing Godot Dimensions engine modifications).
+	// The projection of a 4D cone of half-angle θ about an axis with W component a is a 3D cone of
+	// half-angle α where cos α = sqrt(cos²θ - a²) / sqrt(1 - a²), or all 3D directions if cos²θ ≤ a².
+	const real_t cone_cos_4d = Math::cos(Math::deg_to_rad(_spot_angle_degrees));
+	const real_t cone_cos_4d_sq = cone_cos_4d * cone_cos_4d;
+	const real_t slice_direction_sq = slice_direction * slice_direction;
+	if (cone_cos_4d > 0.0 && cone_cos_4d_sq > slice_direction_sq) {
+		const real_t projected_cone_cos_3d = Math::sqrt((cone_cos_4d_sq - slice_direction_sq) / (1.0f - slice_direction_sq));
+		spot_angle_3d = Math::rad_to_deg(Math::acos(MIN(projected_cone_cos_3d, (real_t)1.0)));
+	} else {
+		spot_angle_3d = 180.0;
+	}
+#endif
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_ENERGY, get_light_energy());
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_RANGE, scaled_range_4d);
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SIZE, scaled_size_4d);
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_ATTENUATION, _spot_range_attenuation);
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SPOT_ANGLE, spot_angle_3d);
+	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_SPOT_ATTENUATION, _spot_angle_attenuation);
+	rendering_server->light_set_color(p_light_3d_render_base, get_light_color());
 }
 
 void SpotLight4D::set_spot_angle_degrees(const double p_spot_angle_degrees) {

@@ -157,7 +157,6 @@ def add_glsl_header(source_path):
 
 
 add_glsl_header("../../render/combined/depth_capture.glsl")
-add_glsl_header("../../render/cross_section/tetra_cross_section_light_shader.glsl")
 add_glsl_header("../../render/cross_section/tetra_cross_section_shader.glsl")
 add_glsl_header("../../render/cross_section/wireframe_cross_section_shader.glsl")
 add_glsl_header("../../render/environment/sky/gradient_sky_shader.glsl")
@@ -183,6 +182,7 @@ add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clo
 add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_full_res_main.glsl")
 add_glsl_header("../../render/projected/normalize_transparency.glsl")
 add_glsl_header("../../render/projected/tetra_projected_shader.glsl")
+add_glsl_header("../../render/shaders/tetra_light_shader.glsl")
 
 target_file_path = "../../editor/icons/editor_4d_icons.gen.h"
 icon_sources = Glob("icons/4D.svg") + Glob("icons/Node4D.svg")

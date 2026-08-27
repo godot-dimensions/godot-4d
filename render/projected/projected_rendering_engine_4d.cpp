@@ -89,14 +89,14 @@ void ProjectedRenderingEngine4D::_create_light_render_instance_3d(const ObjectID
 		_projected_world_3d.instantiate();
 	}
 	LightRenderInstance3D light_render_instance_3d;
-	light_render_instance_3d.base = light_4d->create_light_3d_render_base();
+	light_render_instance_3d.base = light_4d->create_3d_projected_render_base();
 	ERR_FAIL_COND_MSG(!light_render_instance_3d.base.is_valid(), "Unable to create a Light3D render base RID for a Light4D node.");
 	light_render_instance_3d.instance = rendering_server->instance_create();
 	if (!light_render_instance_3d.instance.is_valid()) {
 		rendering_server->free_rid(light_render_instance_3d.base);
 		ERR_FAIL_MSG("Unable to create a Light3D render instance RID for a Light4D node.");
 	}
-	rendering_server->instance_set_visible(light_render_instance_3d.instance, false);
+	rendering_server->instance_set_visible(light_render_instance_3d.instance, true);
 	rendering_server->instance_set_base(light_render_instance_3d.instance, light_render_instance_3d.base);
 	rendering_server->instance_set_scenario(light_render_instance_3d.instance, _projected_world_3d->get_scenario());
 	_lights_3d[p_light_4d_node_object_id] = light_render_instance_3d;
@@ -134,19 +134,9 @@ void ProjectedRenderingEngine4D::_update_lights() {
 		LightRenderInstance3D &light_render_instance_3d = _lights_3d[light_object_id]; // Mutable reference.
 		const Projection light_relative_basis = light_relative_basises[light_index];
 		const Vector4 light_relative_position = light_relative_positions[light_index];
-		// NOTE: update_light_3d_render_base() describes the light as it intersects the W = 0 slice
-		// (for example OmniLight4D reports sqrt(range^2 - w^2), the radius of that cross-section, and
-		// reports not-visible when the light misses the slice entirely). That is exactly right for
-		// the cross-section pass, but the projected pass shows the whole 4D scene rather than one
-		// slice, so lights are currently slice-culled here too even though geometry away from the
-		// slice is visible and ought to be lit. Lighting the projected view on its own terms needs
-		// light math that integrates over W rather than sampling it at 0.
-		const bool visible_in_slice = light_4d->update_light_3d_render_base(light_relative_basis, light_relative_position, light_render_instance_3d.base);
-		rendering_server->instance_set_visible(light_render_instance_3d.instance, visible_in_slice);
-		if (visible_in_slice) {
-			const Transform3D light_transform_3d = Transform3D(Basis4D(light_relative_basis).to_3d_orthonormalize_z_dominant(), Vector3(light_relative_position.x, light_relative_position.y, light_relative_position.z));
-			rendering_server->instance_set_transform(light_render_instance_3d.instance, light_transform_3d);
-		}
+		light_4d->update_3d_projected_render_base(light_relative_basis, light_relative_position, light_render_instance_3d.base);
+		const Transform3D light_transform_3d = Transform3D(Basis4D(light_relative_basis).to_3d_orthonormalize_z_dominant(), Vector3(light_relative_position.x, light_relative_position.y, light_relative_position.z));
+		rendering_server->instance_set_transform(light_render_instance_3d.instance, light_transform_3d);
 		light_render_instance_3d.last_used_pass = _current_pass;
 	}
 	// Delete any lights that are not currently visible and active in the scene.

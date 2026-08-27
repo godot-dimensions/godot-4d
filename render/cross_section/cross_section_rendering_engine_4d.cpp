@@ -25,7 +25,7 @@ void CrossSectionRenderingEngine4D::_create_light_render_instance_3d(const Objec
 		_cross_section_world_3d.instantiate();
 	}
 	LightRenderInstance3D light_render_instance_3d;
-	light_render_instance_3d.base = light_4d->create_light_3d_render_base();
+	light_render_instance_3d.base = light_4d->create_3d_cross_section_render_base();
 	ERR_FAIL_COND_MSG(!light_render_instance_3d.base.is_valid(), "Unable to create a Light3D render base RID for a Light4D node.");
 	light_render_instance_3d.instance = rendering_server->instance_create();
 	if (!light_render_instance_3d.instance.is_valid()) {
@@ -96,7 +96,7 @@ void CrossSectionRenderingEngine4D::_update_lights() {
 		LightRenderInstance3D &light_render_instance_3d = _lights_3d[light_object_id]; // Mutable reference.
 		const Projection light_relative_basis = light_relative_basises[light_index];
 		const Vector4 light_relative_position = light_relative_positions[light_index];
-		const bool visible_in_slice = light_4d->update_light_3d_render_base(light_relative_basis, light_relative_position, light_render_instance_3d.base);
+		const bool visible_in_slice = light_4d->update_3d_cross_section_render_base(light_relative_basis, light_relative_position, light_render_instance_3d.base);
 		rendering_server->instance_set_visible(light_render_instance_3d.instance, visible_in_slice);
 		if (visible_in_slice) {
 			const Transform3D light_transform_3d = Transform3D(Basis4D(light_relative_basis).to_3d_orthonormalize_z_dominant(), Vector3(light_relative_position.x, light_relative_position.y, light_relative_position.z));

@@ -247,6 +247,8 @@ void fragment() {
 	middle_weight = isnan(middle_weight) ? 0.5 : clamp(middle_weight, 0., 1.);
 	
 	vec4 middle_position = mix(position, other_position, middle_weight);
+	LIGHT_VERTEX = middle_position.xyz;
+	LIGHT_VERTEX_W = middle_position.w;
 	vec3 other_uvw = mix(center_uvw + (uvw - center_uvw) / (1. - centerness), other_center_uvw, other_centerness);
 	vec3 middle_uvw = mix(uvw, other_uvw, middle_weight);
 	ALBEDO = albedo.rgb * texture(albedo_texture, middle_uvw).rgb;

@@ -1,8 +1,8 @@
 #include "tetra_material_4d.h"
 
-#include "../../../render/cross_section/tetra_cross_section_light_shader.glsl.gen.h"
 #include "../../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
 #include "../../../render/projected/tetra_projected_shader.glsl.gen.h"
+#include "../../../render/shaders/tetra_light_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
 
 #if GDEXTENSION
@@ -231,8 +231,8 @@ void TetraMaterial4D::init_shaders() {
 	String cross_section_shader_code = tetra_cross_section_shader_shader_glsl;
 	String projected_shader_code = tetra_projected_shader_shader_glsl;
 #ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
-	cross_section_shader_code += tetra_cross_section_light_shader_shader_glsl;
-	projected_shader_code += tetra_cross_section_light_shader_shader_glsl; // TODO: rename, if it's kept common to both.
+	cross_section_shader_code += tetra_light_shader_shader_glsl;
+	projected_shader_code += tetra_light_shader_shader_glsl;
 #endif
 	_cross_section_shader->set_code(cross_section_shader_code);
 	_projected_shader->set_code(projected_shader_code);

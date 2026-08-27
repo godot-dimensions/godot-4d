@@ -13,8 +13,10 @@ protected:
 	static void _bind_methods();
 
 public:
-	virtual RID create_light_3d_render_base() const override;
-	virtual bool update_light_3d_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const override;
+	virtual RID create_3d_cross_section_render_base() const override;
+	virtual bool update_3d_cross_section_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const override;
+	virtual RID create_3d_projected_render_base() const override;
+	virtual void update_3d_projected_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const override;
 
 	double get_angular_radius_degrees() const { return Math::rad_to_deg(_angular_radius_radians); }
 	void set_angular_radius_degrees(const double p_angular_radius_degrees);
