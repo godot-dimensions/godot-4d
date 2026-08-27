@@ -227,6 +227,9 @@ void TetraMaterial4D::init_shaders() {
 	String cross_section_shader_code = tetra_cross_section_shader_shader_glsl;
 	String projected_shader_code = tetra_projected_shader_shader_glsl;
 #ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
+	// LIGHT_VERTEX_W is a custom shader built-in provided by the Godot Dimensions engine changes.
+	// Inject its assignment only when that built-in exists so stock-engine builds and GDExtension builds remain valid.
+	projected_shader_code = projected_shader_code.replace("/* LIGHT_VERTEX_W_ASSIGNMENT */", "LIGHT_VERTEX_W = middle_position.w;");
 	cross_section_shader_code += tetra_light_shader_shader_glsl;
 	projected_shader_code += tetra_light_shader_shader_glsl;
 #endif
