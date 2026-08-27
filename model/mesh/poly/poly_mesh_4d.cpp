@@ -1006,9 +1006,9 @@ void PolyMesh4D::poly_mesh_clear_cache(const bool p_normals_only) {
 	_simplex_cell_boundary_normals_cache.clear();
 	_simplex_cell_vertex_normals_cache.clear();
 	reset_poly_mesh_data_validation();
-	// Normals can be computed separately from the rest, so allow resetting just them (and mark cross section dirty).
+	// Normals can be computed separately from the rest, so allow resetting just them (and mark the proxy 3D mesh dirty).
 	if (p_normals_only) {
-		mark_cross_section_mesh_dirty();
+		mark_proxy_mesh_3d_dirty();
 		return;
 	}
 	_simplex_cell_indices_cache.clear();

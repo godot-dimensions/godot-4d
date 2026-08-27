@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TetraRenderingEngine4D" inherits="RenderingEngine4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Abstract base class for 4D rendering engines that draw tetrahedral meshes through Godot's 3D renderer.
+	</brief_description>
+	<description>
+		TetraRenderingEngine4D is the shared implementation behind the cross-section and projected 4D renderers. Both work by handing Godot's own 3D renderer a proxy 3D mesh (see [method Mesh4D.get_proxy_mesh_3d]) that stores 4D vertex data in its ordinary vertex channels, together with a shader material that reconstructs the 4D geometry on the GPU. The engine owns a private [World3D] attached to the viewport, and maintains one 3D render instance per visible [MeshInstance4D] and one 3D light per visible [Light4D] within it.
+		Subclasses supply the parts that differ between them: which of [Light4D]'s two 3D approximations to build, which of [Material4D]'s shader materials to use, and any extra per-instance shader parameters their shader takes.
+		This is an abstract base class, so it must be extended to be used. See [RenderingEngine4D] for the interface that all 4D rendering engines share.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

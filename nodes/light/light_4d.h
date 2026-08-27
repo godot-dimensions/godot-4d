@@ -15,11 +15,10 @@ protected:
 
 public:
 	// The cross-section and projected approximations of a 4D light are potentially different shapes
-	// (at least in the fall-back case where we can't just send the real 4D geometry), so they get
-	// separate render bases, which the combined rendering engine needs to use at the same time.
-	virtual RID create_3d_cross_section_render_base() const = 0;
+	// (at least in the fall-back case where we can't just send the real 4D geometry), so each engine
+	// gets its own render base, which the combined rendering engine needs to use at the same time.
+	virtual RID create_3d_render_base() const = 0;
 	virtual bool update_3d_cross_section_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const = 0;
-	virtual RID create_3d_projected_render_base() const = 0;
 	virtual void update_3d_projected_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const = 0;
 
 	Color get_light_color() const { return _light_color; }

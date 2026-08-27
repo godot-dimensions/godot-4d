@@ -283,7 +283,7 @@ void TetraMesh4D::tetra_mesh_clear_cache() {
 	_edge_positions_cache.clear();
 	_edge_indices_cache.clear();
 	_nearest_tetra_inverse_metric_cache.clear();
-	mark_mesh_bounds_and_cross_section_dirty();
+	mark_mesh_bounds_and_proxy_mesh_3d_dirty();
 }
 
 Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map) {
@@ -513,9 +513,9 @@ PackedVector4Array TetraMesh4D::get_simplex_cell_positions() {
 	return _simplex_positions_cache;
 }
 
-void TetraMesh4D::update_cross_section_mesh() {
-	ERR_FAIL_COND(_cross_section_mesh.is_null());
-	_cross_section_mesh->clear_surfaces();
+void TetraMesh4D::update_proxy_mesh_3d() {
+	ERR_FAIL_COND(_proxy_mesh_3d.is_null());
+	_proxy_mesh_3d->clear_surfaces();
 
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
@@ -606,7 +606,7 @@ void TetraMesh4D::update_cross_section_mesh() {
 		surface_tool->add_vertex(Vector3(10.0, uvw2.z, uvw3.z));
 		surface_tool->add_vertex(Vector3(11.0, uvw2.z, uvw3.z));
 	}
-	surface_tool->commit(_cross_section_mesh);
+	surface_tool->commit(_proxy_mesh_3d);
 
 	// TODO Second surface for 4D "shadow" effect.
 }

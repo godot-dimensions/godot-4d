@@ -202,7 +202,7 @@ PackedVector4Array ArrayTetraMesh4D::get_simplex_cell_vertex_normals() {
 
 void ArrayTetraMesh4D::set_simplex_cell_vertex_normals(const PackedVector4Array &p_simplex_cell_vertex_normals) {
 	_simplex_cell_vertex_normals = p_simplex_cell_vertex_normals;
-	mark_cross_section_mesh_dirty();
+	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 
@@ -212,7 +212,7 @@ PackedVector3Array ArrayTetraMesh4D::get_simplex_cell_texture_map() {
 
 void ArrayTetraMesh4D::set_simplex_cell_texture_map(const PackedVector3Array &p_simplex_cell_texture_map) {
 	_simplex_cell_texture_map = p_simplex_cell_texture_map;
-	mark_cross_section_mesh_dirty();
+	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 

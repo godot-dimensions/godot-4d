@@ -77,6 +77,7 @@
 #include "render/projected/projected_rendering_engine_4d.h"
 #include "render/rendering_engine_4d.h"
 #include "render/rendering_server_4d.h"
+#include "render/tetra_rendering_engine_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
 
 // Environment.
@@ -167,6 +168,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(PhysicsServer4D);
 		// Core render.
 		GDREGISTER_VIRTUAL_CLASS(RenderingEngine4D);
+		GDREGISTER_ABSTRACT_CLASS(TetraRenderingEngine4D);
 		GDREGISTER_CLASS(RenderingServer4D);
 		// General.
 		GDREGISTER_CLASS(Node4D);

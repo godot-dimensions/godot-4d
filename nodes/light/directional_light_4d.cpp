@@ -10,7 +10,7 @@
 #endif
 #endif
 
-RID DirectionalLight4D::create_3d_cross_section_render_base() const {
+RID DirectionalLight4D::create_3d_render_base() const {
 	return RenderingServer::get_singleton()->directional_light_create();
 }
 
@@ -38,10 +38,6 @@ bool DirectionalLight4D::update_3d_cross_section_render_base(const Projection &p
 	rendering_server->light_set_param(p_light_3d_render_base, RSE::LIGHT_PARAM_ENERGY, get_light_energy() * projected_direction_scale);
 #endif
 	return true;
-}
-
-RID DirectionalLight4D::create_3d_projected_render_base() const {
-	return RenderingServer::get_singleton()->directional_light_create();
 }
 
 void DirectionalLight4D::update_3d_projected_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const {

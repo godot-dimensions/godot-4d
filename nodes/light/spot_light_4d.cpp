@@ -10,7 +10,7 @@
 #endif
 #endif
 
-RID SpotLight4D::create_3d_cross_section_render_base() const {
+RID SpotLight4D::create_3d_render_base() const {
 	return RenderingServer::get_singleton()->spot_light_create();
 }
 
@@ -95,10 +95,6 @@ bool SpotLight4D::update_3d_cross_section_render_base(const Projection &p_relati
 	rendering_server->light_set_color(p_light_3d_render_base, get_light_color());
 #endif
 	return true;
-}
-
-RID SpotLight4D::create_3d_projected_render_base() const {
-	return RenderingServer::get_singleton()->spot_light_create();
 }
 
 void SpotLight4D::update_3d_projected_render_base(const Projection &p_relative_to_camera_basis, const Vector4 &p_relative_to_camera_position, const RID p_light_3d_render_base) const {
