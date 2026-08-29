@@ -26,10 +26,11 @@ env.Append(
         "../../physics/server",
         "../../physics/shapes",
         "../../render",
-        "../../render/cross_section",
         "../../render/environment",
         "../../render/environment/cloud",
         "../../render/environment/sky",
+        "../../render/3d",
+        "../../render/3d/cross_section",
         "../../render/wireframe_canvas",
     ]
 )
@@ -57,10 +58,11 @@ sources = (
     + Glob("../../physics/server/*.cpp")
     + Glob("../../physics/shapes/*.cpp")
     + Glob("../../render/*.cpp")
-    + Glob("../../render/cross_section/*.cpp")
     + Glob("../../render/environment/*.cpp")
     + Glob("../../render/environment/cloud/*.cpp")
     + Glob("../../render/environment/sky/*.cpp")
+    + Glob("../../render/3d/*.cpp")
+    + Glob("../../render/3d/cross_section/*.cpp")
     + Glob("../../render/wireframe_canvas/*.cpp")
 )
 
@@ -152,9 +154,6 @@ def add_glsl_header(source_path):
     env.Depends(target, header_builders.get_raw_header_dependencies(source_path))
 
 
-add_glsl_header("../../render/cross_section/tetra_cross_section_light_shader.glsl")
-add_glsl_header("../../render/cross_section/tetra_cross_section_shader.glsl")
-add_glsl_header("../../render/cross_section/wireframe_cross_section_shader.glsl")
 add_glsl_header("../../render/environment/sky/gradient_sky_shader.glsl")
 add_glsl_header("../../render/environment/sky/physical_sky_shader.glsl")
 add_glsl_header("../../render/environment/sky/plain_sky_shader.glsl")
@@ -176,6 +175,9 @@ add_glsl_header("../../render/environment/cloud/volumetric_cloud_full_res_main.g
 add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_main.glsl")
 add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_full_res_main.glsl")
 add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_full_res_main.glsl")
+add_glsl_header("../../render/3d/cross_section/tetra_cross_section_light_shader.glsl")
+add_glsl_header("../../render/3d/cross_section/tetra_cross_section_shader.glsl")
+add_glsl_header("../../render/3d/cross_section/wireframe_cross_section_shader.glsl")
 
 target_file_path = "../../editor/icons/editor_4d_icons.gen.h"
 icon_sources = Glob("icons/4D.svg") + Glob("icons/Node4D.svg")

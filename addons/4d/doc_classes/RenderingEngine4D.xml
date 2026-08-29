@@ -66,6 +66,12 @@
 				Returns the [Camera4D] node currently being rendered by the rendering engine. This will be set by [RenderingServer4D] before calling [method _render_frame].
 			</description>
 		</method>
+		<method name="get_current_pass" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the current rendering pass number. This is incremented immediately before each call to [method _render_frame]. This number is monotonic (never decreases) and is unique for each frame rendered by this [RenderingEngine4D] instance.
+			</description>
+		</method>
 		<method name="get_friendly_name" qualifiers="const">
 			<return type="String" />
 			<description>

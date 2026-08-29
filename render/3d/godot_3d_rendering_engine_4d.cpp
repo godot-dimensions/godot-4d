@@ -1,10 +1,8 @@
-#include "cross_section_rendering_engine_4d.h"
+#include "godot_3d_rendering_engine_4d.h"
 
 #include "../../model/mesh/mesh_instance_4d.h"
 #include "../../model/mesh/poly/poly_material_4d.h"
 #include "../../nodes/camera_4d.h"
-#include "../../nodes/light/directional_light_4d.h"
-#include "../environment/render_bridge_4d_to_3d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/rendering_server.hpp>
@@ -16,13 +14,13 @@
 #endif
 #endif
 
-void CrossSectionRenderingEngine4D::_create_light_render_instance_3d(const ObjectID p_light_4d_node_object_id) {
+void Godot3DRenderingEngine4D::_create_light_render_instance_3d(const ObjectID p_light_4d_node_object_id) {
 	Light4D *light_4d = Object::cast_to<Light4D>(ObjectDB::get_instance(p_light_4d_node_object_id));
 	ERR_FAIL_NULL(light_4d);
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	ERR_FAIL_NULL(rendering_server);
-	if (!_cross_section_world_3d.is_valid()) {
-		_cross_section_world_3d.instantiate();
+	if (!_world_3d.is_valid()) {
+		_world_3d.instantiate();
 	}
 	LightRenderInstance3D light_render_instance_3d;
 	light_render_instance_3d.base = light_4d->create_light_3d_render_base();
@@ -34,26 +32,31 @@ void CrossSectionRenderingEngine4D::_create_light_render_instance_3d(const Objec
 	}
 	rendering_server->instance_set_visible(light_render_instance_3d.instance, false);
 	rendering_server->instance_set_base(light_render_instance_3d.instance, light_render_instance_3d.base);
-	rendering_server->instance_set_scenario(light_render_instance_3d.instance, _cross_section_world_3d->get_scenario());
+	rendering_server->instance_set_scenario(light_render_instance_3d.instance, _world_3d->get_scenario());
 	_lights_3d[p_light_4d_node_object_id] = light_render_instance_3d;
 }
 
-RID CrossSectionRenderingEngine4D::_create_mesh_render_instance_3d() {
-	ERR_FAIL_NULL_V(RenderingServer::get_singleton(), RID());
-	RID instance = RenderingServer::get_singleton()->instance_create();
-	if (!_cross_section_world_3d.is_valid()) {
-		_cross_section_world_3d.instantiate();
+RID Godot3DRenderingEngine4D::_create_mesh_render_instance_3d() {
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	ERR_FAIL_NULL_V(rendering_server, RID());
+	RID instance = rendering_server->instance_create();
+	ERR_FAIL_COND_V_MSG(!instance.is_valid(), RID(), "Unable to create a Mesh3D render instance RID for a MeshInstance4D node.");
+	if (!_world_3d.is_valid()) {
+		_world_3d.instantiate();
 	}
-	RenderingServer::get_singleton()->instance_set_scenario(instance, _cross_section_world_3d->get_scenario());
+	rendering_server->instance_set_scenario(instance, _world_3d->get_scenario());
+	if (_ignore_mesh_culling()) {
+		rendering_server->instance_set_ignore_culling(instance, true);
+	}
 	return instance;
 }
 
-void CrossSectionRenderingEngine4D::_update_camera() {
+void Godot3DRenderingEngine4D::_update_3d_camera() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
-	if (!_cross_section_camera.is_valid()) {
+	if (!_camera_3d.is_valid()) {
 		ERR_FAIL_NULL(get_viewport());
-		_cross_section_camera = RenderingServer::get_singleton()->camera_create();
-		RenderingServer::get_singleton()->viewport_attach_camera(get_viewport()->get_viewport_rid(), _cross_section_camera);
+		_camera_3d = RenderingServer::get_singleton()->camera_create();
+		RenderingServer::get_singleton()->viewport_attach_camera(get_viewport()->get_viewport_rid(), _camera_3d);
 	}
 	// Only setting final 3D->2D projection stuff here. Can't pass the full Transform4D or even the basis as the camera's transform because it expects a Transform3D.
 	ERR_FAIL_NULL(get_camera());
@@ -62,25 +65,26 @@ void CrossSectionRenderingEngine4D::_update_camera() {
 	const float clip_far = camera->get_clip_far();
 	switch (camera->get_projection_type()) {
 		case Camera4D::PROJECTION4D_ORTHOGRAPHIC: {
-			RenderingServer::get_singleton()->camera_set_orthogonal(_cross_section_camera, camera->get_orthographic_size(), clip_near, clip_far);
+			RenderingServer::get_singleton()->camera_set_orthogonal(_camera_3d, camera->get_orthographic_size(), clip_near, clip_far);
 		} break;
 		case Camera4D::PROJECTION4D_PERSPECTIVE_4D: {
-			RenderingServer::get_singleton()->camera_set_perspective(_cross_section_camera, Math::rad_to_deg(camera->get_field_of_view_4d()), clip_near, clip_far);
+			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(camera->get_field_of_view_4d()), clip_near, clip_far);
 		} break;
 		case Camera4D::PROJECTION4D_PERSPECTIVE_3D: {
-			RenderingServer::get_singleton()->camera_set_perspective(_cross_section_camera, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
+			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
 		} break;
 		case Camera4D::PROJECTION4D_PERSPECTIVE_DUAL: {
-			WARN_PRINT_ONCE("Dual-perspective is not supported by the Cross-section renderer. Use PERSPECTIVE_3D, PERSPECTIVE_4D, or ORTHOGRAPHIC instead.");
-			RenderingServer::get_singleton()->camera_set_perspective(_cross_section_camera, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
+			WARN_PRINT_ONCE("Dual-perspective is not supported by 4D renderers that use Godot's 3D rendering. Use PERSPECTIVE_3D, PERSPECTIVE_4D, or ORTHOGRAPHIC instead.");
+			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
 		} break;
 	}
 }
 
-void CrossSectionRenderingEngine4D::_update_lights() {
+void Godot3DRenderingEngine4D::_update_3d_lights() {
 	const PackedInt64Array light_object_ids = get_light_object_ids();
 	const TypedArray<Projection> light_relative_basises = get_light_relative_basises();
 	const PackedVector4Array light_relative_positions = get_light_relative_positions();
+	const int64_t current_pass = get_current_pass();
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	ERR_FAIL_NULL(rendering_server);
 	ERR_FAIL_COND(light_relative_basises.size() != light_object_ids.size());
@@ -96,19 +100,19 @@ void CrossSectionRenderingEngine4D::_update_lights() {
 		LightRenderInstance3D &light_render_instance_3d = _lights_3d[light_object_id]; // Mutable reference.
 		const Projection light_relative_basis = light_relative_basises[light_index];
 		const Vector4 light_relative_position = light_relative_positions[light_index];
-		const bool visible_in_slice = light_4d->update_light_3d_cross_section_render_base(light_relative_basis, light_relative_position, light_render_instance_3d.base);
-		rendering_server->instance_set_visible(light_render_instance_3d.instance, visible_in_slice);
-		if (visible_in_slice) {
+		const bool visible = _update_light_3d_render_base(light_4d, light_relative_basis, light_relative_position, light_render_instance_3d.base);
+		rendering_server->instance_set_visible(light_render_instance_3d.instance, visible);
+		if (visible) {
 			const Transform3D light_transform_3d = Transform3D(Basis4D(light_relative_basis).to_3d_orthonormalize_z_dominant(), Vector3(light_relative_position.x, light_relative_position.y, light_relative_position.z));
 			rendering_server->instance_set_transform(light_render_instance_3d.instance, light_transform_3d);
 		}
-		light_render_instance_3d.last_used_pass = _current_pass;
+		light_render_instance_3d.last_used_pass = current_pass;
 	}
 	// Delete any lights that are not currently visible and active in the scene.
 	Vector<ObjectID> light_instance_ids_to_erase;
-	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::LightRenderInstance3D> &light_pair : _lights_3d) {
+	for (const KeyValue<ObjectID, Godot3DRenderingEngine4D::LightRenderInstance3D> &light_pair : _lights_3d) {
 		const LightRenderInstance3D &light_instance_3d = light_pair.value;
-		if (light_instance_3d.last_used_pass != _current_pass) {
+		if (light_instance_3d.last_used_pass != current_pass) {
 			rendering_server->free_rid(light_instance_3d.instance);
 			rendering_server->free_rid(light_instance_3d.base);
 			light_instance_ids_to_erase.append(light_pair.key);
@@ -119,11 +123,16 @@ void CrossSectionRenderingEngine4D::_update_lights() {
 	}
 }
 
-void CrossSectionRenderingEngine4D::_update_mesh_instances() {
-	// Maps global to cameral-local, aka world space to view space.
+void Godot3DRenderingEngine4D::_update_3d_mesh_instances() {
+	// Maps global to camera-local, aka world space to view space.
 	const PackedInt64Array mesh_instance_4d_object_ids = get_mesh_instance_object_ids();
 	const TypedArray<Projection> modelview_basises = get_mesh_relative_basises();
 	const PackedVector4Array modelview_origins = get_mesh_relative_positions();
+	const int64_t current_pass = get_current_pass();
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	ERR_FAIL_NULL(rendering_server);
+	ERR_FAIL_COND(modelview_basises.size() != mesh_instance_4d_object_ids.size());
+	ERR_FAIL_COND(modelview_origins.size() != mesh_instance_4d_object_ids.size());
 	for (int64_t mesh_index = 0; mesh_index < mesh_instance_4d_object_ids.size(); mesh_index++) {
 		// Get the MeshInstance4D and its Mesh4D, skipping if either is invalid.
 		const ObjectID mesh_instance_4d_object_id = (ObjectID)mesh_instance_4d_object_ids[mesh_index];
@@ -138,17 +147,22 @@ void CrossSectionRenderingEngine4D::_update_mesh_instances() {
 		ERR_CONTINUE(!mesh_3d.is_valid());
 
 		// This is a valid MeshInstance4D with a valid Mesh4D and a valid proxy Mesh3D.
-		// Get or create an MeshRenderInstance3D for this MeshInstance4D, and update if needed.
+		// Get or create a MeshRenderInstance3D for this MeshInstance4D, and update if needed.
 		if (!_mesh_instances_3d.has(mesh_instance_4d_object_id)) {
-			_mesh_instances_3d[mesh_instance_4d_object_id] = MeshRenderInstance3D();
-			_mesh_instances_3d[mesh_instance_4d_object_id].instance = _create_mesh_render_instance_3d();
+			const RID instance = _create_mesh_render_instance_3d();
+			if (!instance.is_valid()) {
+				continue;
+			}
+			MeshRenderInstance3D mesh_render_instance_3d;
+			mesh_render_instance_3d.instance = instance;
+			_mesh_instances_3d[mesh_instance_4d_object_id] = mesh_render_instance_3d;
 		}
 		MeshRenderInstance3D &mesh_render_instance_3d = _mesh_instances_3d[mesh_instance_4d_object_id];
 		const RID base_3d_rid = mesh_3d->get_rid();
 		const bool base_changed = mesh_render_instance_3d.base != base_3d_rid;
 		if (base_changed) {
 			mesh_render_instance_3d.base = base_3d_rid;
-			RenderingServer::get_singleton()->instance_set_base(mesh_render_instance_3d.instance, base_3d_rid);
+			rendering_server->instance_set_base(mesh_render_instance_3d.instance, base_3d_rid);
 		}
 
 		Ref<Material4D> material_4d = mesh_instance_4d->get_active_material();
@@ -164,40 +178,44 @@ void CrossSectionRenderingEngine4D::_update_mesh_instances() {
 					poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
 				}
 			}
-			Ref<Material> override_material_3d = material_4d->get_cross_section_material();
-			ERR_CONTINUE(!override_material_3d.is_valid());
-			override_material_rid_3d = override_material_3d->get_rid();
+			const Ref<Material> override_material_3d = _get_material_3d(material_4d);
+			if (override_material_3d.is_valid()) {
+				override_material_rid_3d = override_material_3d->get_rid();
+			}
 		}
 		// Godot clears surface override materials when an instance's base changes.
 		if (base_changed || mesh_render_instance_3d.material != override_material_rid_3d) {
 			mesh_render_instance_3d.material = override_material_rid_3d;
-			RenderingServer::get_singleton()->instance_set_surface_override_material(mesh_render_instance_3d.instance, 0, override_material_rid_3d);
+			rendering_server->instance_set_surface_override_material(mesh_render_instance_3d.instance, 0, override_material_rid_3d);
 		}
 
-		Projection modelview_basis = modelview_basises[mesh_index];
-		Vector4 modelview_origin = modelview_origins[mesh_index];
+		const Projection modelview_basis = modelview_basises[mesh_index];
+		const Vector4 modelview_origin = modelview_origins[mesh_index];
 		// The proxy Mesh3D stores 4D data in its ordinary vertex channels, so its automatically
-		// calculated AABB is unrelated to the positions produced by the cross-section shader.
-		// Supply conservative camera-relative bounds for frustum culling and light pairing.
+		// calculated AABB is unrelated to the positions the shaders produce. Supply conservative
+		// camera-relative bounds instead, which frustum culling uses (unless _ignore_mesh_culling is
+		// set) and which omni and spot lights are paired with geometry by, matching the space the
+		// light transforms are in.
 		const Rect4 bounds_4d = mesh_instance_4d->get_rect_bounds_local(Transform4D(modelview_basis, modelview_origin));
 		const AABB bounds_3d = AABB(Vector3(bounds_4d.position.x, bounds_4d.position.y, bounds_4d.position.z), Vector3(bounds_4d.size.x, bounds_4d.size.y, bounds_4d.size.z));
-		RenderingServer::get_singleton()->instance_set_custom_aabb(mesh_render_instance_3d.instance, bounds_3d);
+		rendering_server->instance_set_custom_aabb(mesh_render_instance_3d.instance, bounds_3d);
 		// TODO Need to split out view matrix to support multiple viewports, currently the same for all viewports. Either instance per viewport or pack view matrix in camera attributes.
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_origin", modelview_origin);
+		rendering_server->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_origin", modelview_origin);
 		// Can't pass a mat4 through instance uniforms, need to break up into columns.
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_x", modelview_basis.columns[0]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_y", modelview_basis.columns[1]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_z", modelview_basis.columns[2]);
-		RenderingServer::get_singleton()->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_w", modelview_basis.columns[3]);
+		rendering_server->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_x", modelview_basis.columns[0]);
+		rendering_server->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_y", modelview_basis.columns[1]);
+		rendering_server->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_z", modelview_basis.columns[2]);
+		rendering_server->instance_geometry_set_shader_parameter(mesh_render_instance_3d.instance, "modelview_basis_w", modelview_basis.columns[3]);
+		_update_extra_instance_shader_parameters(mesh_render_instance_3d.instance);
 
-		mesh_render_instance_3d.last_used_pass = _current_pass;
+		mesh_render_instance_3d.last_used_pass = current_pass;
 	}
 	// Delete any meshes that are not currently visible and active in the scene.
 	Vector<ObjectID> mesh_instance_ids_to_erase;
-	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::MeshRenderInstance3D> &pair : _mesh_instances_3d) {
+	for (const KeyValue<ObjectID, Godot3DRenderingEngine4D::MeshRenderInstance3D> &pair : _mesh_instances_3d) {
 		const MeshRenderInstance3D &instance_3d = pair.value;
-		if (instance_3d.last_used_pass != _current_pass) {
-			RenderingServer::get_singleton()->free_rid(instance_3d.instance);
+		if (instance_3d.last_used_pass != current_pass) {
+			rendering_server->free_rid(instance_3d.instance);
 			mesh_instance_ids_to_erase.append(pair.key);
 		}
 	}
@@ -206,48 +224,31 @@ void CrossSectionRenderingEngine4D::_update_mesh_instances() {
 	}
 }
 
-void CrossSectionRenderingEngine4D::render_frame() {
-	ERR_FAIL_NULL(RenderingServer::get_singleton());
-	ERR_FAIL_NULL(get_camera());
-	ERR_FAIL_NULL(get_viewport());
-	_current_pass++;
-	_update_camera();
-	_update_lights();
-	if (_cross_section_environment_bridge != nullptr) {
-		_cross_section_environment_bridge->update_environment(get_camera());
-		_cross_section_environment_bridge->update_suns(get_light_object_ids(), get_light_relative_basises());
-	}
-	_update_mesh_instances();
-}
-
-void CrossSectionRenderingEngine4D::setup_for_viewport() {
+void Godot3DRenderingEngine4D::setup_for_viewport() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
 	ERR_FAIL_NULL(get_viewport());
-	if (!_cross_section_world_3d.is_valid()) {
-		_cross_section_world_3d.instantiate();
+	if (!_world_3d.is_valid()) {
+		_world_3d.instantiate();
 	}
-	if (_cross_section_environment_bridge == nullptr) {
-		_cross_section_environment_bridge = memnew(EnvironmentRenderBridge4DTo3D);
-	}
-	_cross_section_environment_bridge->setup_environment_resources(_cross_section_world_3d);
 	Viewport *viewport = get_viewport();
 	// Avoids a weird error from the current scenario on viewport not being initialized. Should ideally be handled by set_world_3d.
-	RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), _cross_section_world_3d->get_scenario());
-	viewport->set_world_3d(_cross_section_world_3d);
-	if (_cross_section_camera.is_valid()) {
-		RenderingServer::get_singleton()->viewport_attach_camera(viewport->get_viewport_rid(), _cross_section_camera);
+	RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), _world_3d->get_scenario());
+	viewport->set_world_3d(_world_3d);
+	if (_camera_3d.is_valid()) {
+		RenderingServer::get_singleton()->viewport_attach_camera(viewport->get_viewport_rid(), _camera_3d);
 	}
+	_setup_specific_render_resources();
 }
 
-void CrossSectionRenderingEngine4D::_cleanup_render_resources() {
+void Godot3DRenderingEngine4D::_cleanup_3d_render_resources() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	if (rendering_server == nullptr) {
 		_lights_3d.clear();
 		_mesh_instances_3d.clear();
-		_cross_section_camera = RID();
+		_camera_3d = RID();
 		return;
 	}
-	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::LightRenderInstance3D> &pair : _lights_3d) {
+	for (const KeyValue<ObjectID, Godot3DRenderingEngine4D::LightRenderInstance3D> &pair : _lights_3d) {
 		const LightRenderInstance3D &light_3d = pair.value;
 		if (light_3d.instance.is_valid()) {
 			rendering_server->free_rid(light_3d.instance);
@@ -257,38 +258,36 @@ void CrossSectionRenderingEngine4D::_cleanup_render_resources() {
 		}
 	}
 	_lights_3d.clear();
-	for (const KeyValue<ObjectID, CrossSectionRenderingEngine4D::MeshRenderInstance3D> &pair : _mesh_instances_3d) {
+	for (const KeyValue<ObjectID, Godot3DRenderingEngine4D::MeshRenderInstance3D> &pair : _mesh_instances_3d) {
 		const MeshRenderInstance3D &instance_3d = pair.value;
 		if (instance_3d.instance.is_valid()) {
 			rendering_server->free_rid(instance_3d.instance);
 		}
 	}
 	_mesh_instances_3d.clear();
-	if (_cross_section_camera.is_valid()) {
-		rendering_server->free_rid(_cross_section_camera);
-		_cross_section_camera = RID();
-	}
-	if (_cross_section_environment_bridge != nullptr) {
-		_cross_section_environment_bridge->cleanup_render_resources();
-		memdelete(_cross_section_environment_bridge);
-		_cross_section_environment_bridge = nullptr;
+	if (_camera_3d.is_valid()) {
+		rendering_server->free_rid(_camera_3d);
+		_camera_3d = RID();
 	}
 	// Explicitly free the World3D so its scenario RID (and any remaining
 	// instances inside it) are released while the RenderingServer is alive.
-	_cross_section_world_3d = Ref<World3D>();
+	_world_3d = Ref<World3D>();
 }
 
-void CrossSectionRenderingEngine4D::cleanup_for_viewport() {
+void Godot3DRenderingEngine4D::cleanup_for_viewport() {
 	// Detach the custom world from the viewport BEFORE freeing RS resources,
 	// so any VisualInstance3D nodes in the viewport re-register in the
 	// default world rather than our soon-to-be-freed scenario.
 	Viewport *viewport = get_viewport();
-	if (_cross_section_world_3d.is_valid() && viewport != nullptr) {
+	if (_world_3d.is_valid() && viewport != nullptr) {
 		viewport->set_world_3d(Ref<World3D>());
+		// Same workaround as in setup_for_viewport (needed for when this is used in the combined renderer).
+		RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), RID());
 	}
-	_cleanup_render_resources();
+	_cleanup_specific_render_resources();
+	_cleanup_3d_render_resources();
 }
 
-CrossSectionRenderingEngine4D::~CrossSectionRenderingEngine4D() {
-	_cleanup_render_resources();
+Godot3DRenderingEngine4D::~Godot3DRenderingEngine4D() {
+	_cleanup_3d_render_resources();
 }

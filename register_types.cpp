@@ -72,7 +72,8 @@
 #include "physics/shapes/sphere_shape_4d.h"
 
 // Render.
-#include "render/cross_section/cross_section_rendering_engine_4d.h"
+#include "render/3d/cross_section/cross_section_rendering_engine_4d.h"
+#include "render/3d/godot_3d_rendering_engine_4d.h"
 #include "render/rendering_engine_4d.h"
 #include "render/rendering_server_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
@@ -262,6 +263,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
 		GDREGISTER_CLASS(WireframeRenderCanvas4D);
 		GDREGISTER_CLASS(WireframeCanvasRenderingEngine4D);
+		GDREGISTER_ABSTRACT_CLASS(Godot3DRenderingEngine4D);
 		// Must be registered before CrossSectionRenderingEngine4D, which owns and frees it.
 		GDREGISTER_CLASS(EnvironmentRenderBridge4DTo3D);
 		GDREGISTER_CLASS(CrossSectionRenderingEngine4D);

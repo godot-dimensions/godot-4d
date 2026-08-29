@@ -1,7 +1,7 @@
 shader_type spatial;
 render_mode skip_vertex_transform;
 
-#include "../shaders/perpendicular_4d.glsl"
+#include "../../shaders/perpendicular_4d.glsl"
 
 // World space
 // Not allowed to pass matrices through instance uniforms, so have to unpack into vectors.

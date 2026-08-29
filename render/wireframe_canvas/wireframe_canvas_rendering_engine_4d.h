@@ -18,6 +18,8 @@ class WireframeCanvasRenderingEngine4D : public RenderingEngine4D {
 protected:
 	static void _bind_methods() {}
 
+	virtual void _render_frame_callback() override;
+
 public:
 	virtual String get_friendly_name() const override { return "Wireframe Canvas"; }
 	virtual bool prefers_wireframe_meshes() const override { return true; }
@@ -26,5 +28,4 @@ public:
 	virtual bool supports_godot_rendering_method(const String &) const override { return true; }
 	virtual void setup_for_viewport() override;
 	virtual void cleanup_for_viewport() override;
-	virtual void render_frame() override;
 };

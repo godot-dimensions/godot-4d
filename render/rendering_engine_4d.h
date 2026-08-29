@@ -31,6 +31,9 @@ class RenderingEngine4D : public RefCounted {
 	Viewport *_viewport = nullptr;
 	Camera4D *_camera = nullptr;
 
+	// This should be signed for consistency with the bindings, since Variant only has int64_t.
+	int64_t _current_pass = 0;
+
 	PackedInt64Array _light_object_ids;
 	TypedArray<Projection> _light_relative_basises;
 	PackedVector4Array _light_relative_positions;
@@ -44,6 +47,10 @@ class RenderingEngine4D : public RefCounted {
 protected:
 	static void _bind_methods();
 
+	// The name `render_frame` is taken by the public version, and `_render_frame` is taken by the GDVIRTUAL version.
+	// Therefore, internal C++ implementations need to use this different name to avoid conflicts.
+	virtual void _render_frame_callback();
+
 public:
 	void calculate_relative_transforms();
 
@@ -52,6 +59,8 @@ public:
 
 	Camera4D *get_camera() const { return _camera; }
 	void set_camera(Camera4D *p_camera); // Internal use only, do not expose.
+
+	int64_t get_current_pass() const { return _current_pass; }
 
 	PackedInt64Array get_light_object_ids() const { return _light_object_ids; }
 	void set_light_object_ids(PackedInt64Array p_light_object_ids); // Internal use only, do not expose.
@@ -74,7 +83,7 @@ public:
 
 	virtual void setup_for_viewport();
 	virtual void cleanup_for_viewport();
-	virtual void render_frame();
+	void render_frame();
 
 	GDVIRTUAL0RC(String, _get_friendly_name);
 	GDVIRTUAL0RC(bool, _prefers_wireframe_meshes);

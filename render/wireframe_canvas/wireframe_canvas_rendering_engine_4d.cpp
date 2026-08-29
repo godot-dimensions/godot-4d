@@ -29,24 +29,7 @@ WireframeRenderCanvas4D *WireframeCanvasRenderingEngine4D::_get_valid_render_can
 	return nullptr;
 }
 
-void WireframeCanvasRenderingEngine4D::setup_for_viewport() {
-	WireframeRenderCanvas4D *wire_canvas = memnew(WireframeRenderCanvas4D);
-	wire_canvas->set_name(StringName("WireframeRenderCanvas4D"));
-	get_viewport()->add_child(wire_canvas);
-}
-
-void WireframeCanvasRenderingEngine4D::cleanup_for_viewport() {
-	WireframeRenderCanvas4D *wire_canvas = _get_valid_render_canvas(get_viewport());
-	if (wire_canvas != nullptr) {
-		// This must be deferred instead of removing the child and freeing it now.
-		// Cleanup runs from Camera4D's NOTIFICATION_EXIT_TREE, at which point every
-		// ancestor of that camera is in the middle of propagating the tree exit and
-		// is blocked, so removing a child of the Viewport is not allowed yet.
-		wire_canvas->queue_free();
-	}
-}
-
-void WireframeCanvasRenderingEngine4D::render_frame() {
+void WireframeCanvasRenderingEngine4D::_render_frame_callback() {
 	WireframeRenderCanvas4D *wire_canvas = _get_valid_render_canvas(get_viewport());
 	ERR_FAIL_NULL_MSG(wire_canvas, "WireframeCanvasRenderingEngine4D: Canvas was null.");
 	Camera4D *camera = get_camera();
@@ -207,4 +190,21 @@ void WireframeCanvasRenderingEngine4D::render_frame() {
 	wire_canvas->set_edge_thicknesses_to_draw(edge_thicknesses_to_draw);
 	wire_canvas->set_edge_vertices_to_draw(edge_vertices_to_draw);
 	wire_canvas->queue_redraw();
+}
+
+void WireframeCanvasRenderingEngine4D::setup_for_viewport() {
+	WireframeRenderCanvas4D *wire_canvas = memnew(WireframeRenderCanvas4D);
+	wire_canvas->set_name(StringName("WireframeRenderCanvas4D"));
+	get_viewport()->add_child(wire_canvas);
+}
+
+void WireframeCanvasRenderingEngine4D::cleanup_for_viewport() {
+	WireframeRenderCanvas4D *wire_canvas = _get_valid_render_canvas(get_viewport());
+	if (wire_canvas != nullptr) {
+		// This must be deferred instead of removing the child and freeing it now.
+		// Cleanup runs from Camera4D's NOTIFICATION_EXIT_TREE, at which point every
+		// ancestor of that camera is in the middle of propagating the tree exit and
+		// is blocked, so removing a child of the Viewport is not allowed yet.
+		wire_canvas->queue_free();
+	}
 }

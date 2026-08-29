@@ -1,6 +1,6 @@
 #include "wire_material_4d.h"
 
-#include "../../../render/cross_section/wireframe_cross_section_shader.glsl.gen.h"
+#include "../../../render/3d/cross_section/wireframe_cross_section_shader.glsl.gen.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/rendering_server.hpp>

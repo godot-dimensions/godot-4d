@@ -139,8 +139,13 @@ void RenderingEngine4D::cleanup_for_viewport() {
 	GDVIRTUAL_CALL(_cleanup_for_viewport);
 }
 
-void RenderingEngine4D::render_frame() {
+void RenderingEngine4D::_render_frame_callback() {
 	GDVIRTUAL_CALL(_render_frame);
+}
+
+void RenderingEngine4D::render_frame() {
+	_current_pass++;
+	_render_frame_callback();
 }
 
 void RenderingEngine4D::_bind_methods() {
@@ -152,6 +157,7 @@ void RenderingEngine4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_viewport"), &RenderingEngine4D::get_viewport);
 	ClassDB::bind_method(D_METHOD("get_camera"), &RenderingEngine4D::get_camera);
+	ClassDB::bind_method(D_METHOD("get_current_pass"), &RenderingEngine4D::get_current_pass);
 
 	ClassDB::bind_method(D_METHOD("get_light_object_ids"), &RenderingEngine4D::get_light_object_ids);
 	ClassDB::bind_method(D_METHOD("get_light_relative_basises"), &RenderingEngine4D::get_light_relative_basises);

@@ -1,7 +1,7 @@
 #include "tetra_material_4d.h"
 
-#include "../../../render/cross_section/tetra_cross_section_light_shader.glsl.gen.h"
-#include "../../../render/cross_section/tetra_cross_section_shader.glsl.gen.h"
+#include "../../../render/3d/cross_section/tetra_cross_section_light_shader.glsl.gen.h"
+#include "../../../render/3d/cross_section/tetra_cross_section_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
 
 #if GDEXTENSION
