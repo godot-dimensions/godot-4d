@@ -134,10 +134,10 @@ void CrossSectionRenderingEngine4D::_update_mesh_instances() {
 		if (!mesh_4d.is_valid()) {
 			continue;
 		}
-		Ref<Mesh> mesh_3d = mesh_4d->get_cross_section_mesh();
+		Ref<Mesh> mesh_3d = mesh_4d->get_proxy_mesh_3d();
 		ERR_CONTINUE(!mesh_3d.is_valid());
 
-		// This is a valid MeshInstance4D with a valid Mesh4D and a valid cross-section Mesh3D.
+		// This is a valid MeshInstance4D with a valid Mesh4D and a valid proxy Mesh3D.
 		// Get or create an MeshRenderInstance3D for this MeshInstance4D, and update if needed.
 		if (!_mesh_instances_3d.has(mesh_instance_4d_object_id)) {
 			_mesh_instances_3d[mesh_instance_4d_object_id] = MeshRenderInstance3D();

@@ -22,7 +22,7 @@ protected:
 	PackedFloat64Array _nearest_tetra_inverse_metric_cache;
 
 	Ref<ArrayMesh> convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map);
-	virtual void update_cross_section_mesh() override;
+	virtual void update_proxy_mesh_3d() override;
 
 public:
 	// Nearest point and signed distance.

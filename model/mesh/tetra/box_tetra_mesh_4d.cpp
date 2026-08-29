@@ -38,8 +38,8 @@ void BoxTetraMesh4D::set_tetra_decomp(const BoxTetraDecomp p_decomp) {
 
 void BoxTetraMesh4D::set_cell_texture_map(const BoxCellTextureMap p_map) {
 	_cell_texture_map = p_map;
-	// Most of the caches can be kept, but the cross section mesh needs to be rebuilt.
-	mark_cross_section_mesh_dirty();
+	// Most of the caches can be kept, but the proxy mesh 3D needs to be rebuilt.
+	mark_proxy_mesh_3d_dirty();
 }
 
 Ref<ArrayMesh> BoxTetraMesh4D::export_texture_map_mesh() {

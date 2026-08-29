@@ -33,10 +33,10 @@
 				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertices] for details of the returned data.
 			</description>
 		</method>
-		<method name="_update_cross_section_mesh" qualifiers="virtual">
+		<method name="_update_proxy_mesh_3d" qualifiers="virtual">
 			<return type="void" />
 			<description>
-				Updates the 3D mesh this mesh uses for cross-section rendering. Can be called to force the cross-section mesh to be updated, but typically should only be called internally. Subclasses can override this, but most cases should be covered by the default implementation.
+				Rebuilds the proxy 3D mesh this mesh is rendered through. Can be called to force the proxy mesh to be updated, but typically should only be called internally. Subclasses can override this, but most cases should be covered by the default implementation.
 			</description>
 		</method>
 		<method name="_validate_material_for_mesh" qualifiers="virtual">
@@ -60,12 +60,6 @@
 				[b]Note:[/b] This only looks at edge indices. It does not remove duplicate vertices, nor does it have access to the vertices array.
 			</description>
 		</method>
-		<method name="get_cross_section_mesh">
-			<return type="ArrayMesh" />
-			<description>
-				Returns a 3D mesh that can be used to render 3D cross-sections of this mesh in the cross-section renderer. This mesh will only render properly with the cross-section material from [method Material4D.get_cross_section_material].
-			</description>
-		</method>
 		<method name="get_edge_indices">
 			<return type="PackedInt32Array" />
 			<description>
@@ -76,6 +70,12 @@
 			<return type="PackedVector4Array" />
 			<description>
 				Gets the edge positions of the mesh. Each Vector4 in the array is a position in meters in 4D space. Edges are defined by two vertices, and the positions in this array are the positions of the vertices that make up the edges. This value is usually calculated from a combination of the edge indices and the vertices arrays, see [method get_edge_indices] and [method get_vertices].
+			</description>
+		</method>
+		<method name="get_proxy_mesh_3d">
+			<return type="ArrayMesh" />
+			<description>
+				Returns the proxy 3D mesh that the tetrahedral renderers hand to Godot's own 3D renderer. It stores this mesh's 4D data in its ordinary vertex channels, so it will only render properly with one of the shader materials from [method Material4D.get_cross_section_material] or [method Material4D.get_projected_material], depending on which renderer is in use.
 			</description>
 		</method>
 		<method name="get_vertices">
@@ -100,16 +100,16 @@
 				If a mesh has valid data, the result of the validation will be cached until the mesh data changes, so this method may be called multiple times without performance concerns. This also means this method should be called after generating a mesh. This especially useful when generating a mesh on a thread; calling this on the thread will avoid stalling the main thread with mesh validation during rendering.
 			</description>
 		</method>
-		<method name="mark_cross_section_mesh_dirty">
+		<method name="mark_mesh_bounds_and_proxy_mesh_3d_dirty">
 			<return type="void" />
 			<description>
-				Marks the cross-section mesh as dirty, meaning it needs to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes.
+				Marks the mesh bounds and the proxy 3D mesh as dirty, meaning they need to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes. This implies [method mark_proxy_mesh_3d_dirty], so there is no need to also call that method when calling this one.
 			</description>
 		</method>
-		<method name="mark_mesh_bounds_and_cross_section_dirty">
+		<method name="mark_proxy_mesh_3d_dirty">
 			<return type="void" />
 			<description>
-				Marks the mesh bounds and cross-section mesh as dirty, meaning they need to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes. This implies [method mark_cross_section_mesh_dirty], so there is no need to also call that method when calling this one.
+				Marks the proxy 3D mesh as dirty, meaning it needs to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes.
 			</description>
 		</method>
 		<method name="reset_mesh_data_validation">
@@ -131,10 +131,10 @@
 				Converts this Mesh4D to a [WireMesh4D]. This method will use the best conversion available. For example, a [BoxTetraMesh4D] will be converted to a [BoxWireMesh4D]. If no specialized conversion is available, the method will return an [ArrayWireMesh4D]. See [method to_array_wire_mesh] for more details. The new mesh will have the same vertices, edges, and material as this mesh. The material will be shared between the two meshes, but everything else will be a copy.
 			</description>
 		</method>
-		<method name="update_cross_section_mesh">
+		<method name="update_proxy_mesh_3d">
 			<return type="void" />
 			<description>
-				Updates the 3D mesh this mesh uses for cross-section rendering. Can be called to force the cross-section mesh to be updated, but typically should only be called internally.
+				Rebuilds the proxy 3D mesh this mesh is rendered through. Can be called to force the proxy mesh to be updated, but typically should only be called internally.
 			</description>
 		</method>
 		<method name="validate_material_for_mesh">

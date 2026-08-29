@@ -10,7 +10,7 @@
 
 void WireMesh4D::wire_mesh_clear_cache() {
 	_edge_positions_cache.clear();
-	mark_mesh_bounds_and_cross_section_dirty();
+	mark_mesh_bounds_and_proxy_mesh_3d_dirty();
 }
 
 PackedVector4Array WireMesh4D::get_edge_positions() {
@@ -40,9 +40,9 @@ void WireMesh4D::cleanup_fallback_material() {
 	_fallback_material.unref();
 }
 
-void WireMesh4D::update_cross_section_mesh() {
-	ERR_FAIL_COND(_cross_section_mesh.is_null());
-	_cross_section_mesh->clear_surfaces();
+void WireMesh4D::update_proxy_mesh_3d() {
+	ERR_FAIL_COND(_proxy_mesh_3d.is_null());
+	_proxy_mesh_3d->clear_surfaces();
 
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
@@ -59,7 +59,7 @@ void WireMesh4D::update_cross_section_mesh() {
 		// Not using these positions because it doesn't fit the full vec4, but might as well set it to something sane.
 		surface_tool->add_vertex(Vector3(edge_vert.x, edge_vert.y, edge_vert.z));
 	}
-	surface_tool->commit(_cross_section_mesh);
+	surface_tool->commit(_proxy_mesh_3d);
 }
 
 void WireMesh4D::_bind_methods() {
