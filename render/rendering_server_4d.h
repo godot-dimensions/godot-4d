@@ -4,7 +4,10 @@
 
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/hash_set.hpp>
 #include <godot_cpp/templates/vector.hpp>
+#elif GODOT_MODULE
+#include "core/templates/hash_set.h"
 #endif
 
 class Light4D;
@@ -21,6 +24,8 @@ class RenderingServer4D : public Object {
 	// We could add a "World4D" class in the future if we want to add this feature, but it's not necessary for now.
 	Vector<Light4D *> _lights;
 	Vector<MeshInstance4D *> _mesh_instances;
+
+	HashSet<String> _warned_incompatible_rendering_engine_names;
 	double _render_time_base = 0.0;
 	uint64_t _last_render_time_base_ticks_usec = 0;
 

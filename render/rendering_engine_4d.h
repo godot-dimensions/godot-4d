@@ -5,11 +5,13 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/viewport.hpp>
+#include <godot_cpp/templates/hash_set.hpp>
 #include <godot_cpp/variant/typed_array.hpp>
 
 #include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "core/object/ref_counted.h"
+#include "core/templates/hash_set.h"
 #include "core/variant/typed_array.h"
 #include "scene/main/viewport.h"
 #endif
@@ -66,7 +68,9 @@ public:
 
 	virtual String get_friendly_name() const;
 	virtual bool prefers_wireframe_meshes() const;
+	virtual bool requires_transparent_background() const;
 	virtual bool supports_lighting() const;
+	virtual bool supports_godot_rendering_method(const String &p_godot_rendering_method) const;
 
 	virtual void setup_for_viewport();
 	virtual void cleanup_for_viewport();
@@ -74,7 +78,9 @@ public:
 
 	GDVIRTUAL0RC(String, _get_friendly_name);
 	GDVIRTUAL0RC(bool, _prefers_wireframe_meshes);
+	GDVIRTUAL0RC(bool, _requires_transparent_background);
 	GDVIRTUAL0RC(bool, _supports_lighting);
+	GDVIRTUAL1RC(bool, _supports_godot_rendering_method, String);
 	GDVIRTUAL0(_setup_for_viewport);
 	GDVIRTUAL0(_cleanup_for_viewport);
 	GDVIRTUAL0(_render_frame);

@@ -19,11 +19,13 @@
 #ifdef TOOLS_ENABLED
 #include <godot_cpp/classes/editor_interface.hpp>
 #endif // TOOLS_ENABLED
+#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/window.hpp>
 #elif GODOT_MODULE
 #include "core/config/engine.h"
+#include "core/config/project_settings.h"
 #include "core/os/time.h"
 #ifdef TOOLS_ENABLED
 #include "editor/editor_interface.h"
@@ -162,6 +164,21 @@ void RenderingServer4D::_render_frame() {
 			}
 		}
 		// Now that we have a rendering engine selected, set up its properties.
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
+		const String godot_rendering_method = RenderingServer::get_singleton()->get_current_rendering_method();
+#else
+		const String godot_rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
+#endif
+		if (!rendering_engine->supports_godot_rendering_method(godot_rendering_method)) {
+			// Don't try to render with a rendering engine that doesn't support the current Godot rendering method.
+			// Print a warning only once per rendering engine, so the user isn't spammed every frame.
+			const String rendering_engine_name = rendering_engine->get_friendly_name();
+			if (!_warned_incompatible_rendering_engine_names.has(rendering_engine_name)) {
+				_warned_incompatible_rendering_engine_names.insert(rendering_engine_name);
+				WARN_PRINT(vformat("The %s 4D rendering engine does not support Godot's %s rendering method, so nothing will be rendered in 4D.", rendering_engine_name, godot_rendering_method));
+			}
+			continue;
+		}
 		rendering_engine->setup_for_viewport_if_needed(viewport);
 		rendering_engine->set_camera(camera0);
 		emit_signal("pre_render", camera0, viewport, rendering_engine);
@@ -349,10 +366,12 @@ void RenderingServer4D::register_rendering_engine(const Ref<RenderingEngine4D> &
 	if (_rendering_engines.has(friendly_name)) {
 		WARN_PRINT("Rendering engine '" + friendly_name + "' already registered. The existing engine will be replaced.");
 	}
+	_warned_incompatible_rendering_engine_names.erase(friendly_name);
 	_rendering_engines[friendly_name] = p_engine;
 }
 
 void RenderingServer4D::unregister_rendering_engine(const String &p_friendly_name) {
+	_warned_incompatible_rendering_engine_names.erase(p_friendly_name);
 	_rendering_engines.erase(p_friendly_name);
 }
 

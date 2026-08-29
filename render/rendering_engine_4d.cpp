@@ -10,6 +10,7 @@
 #include <vector>
 
 void RenderingEngine4D::calculate_relative_transforms() {
+	ERR_FAIL_NULL(_camera);
 	const Transform4D camera_inverse_transform = _camera->get_global_transform().inverse();
 	// Lights.
 	const int light_count = _light_object_ids.size();
@@ -18,6 +19,7 @@ void RenderingEngine4D::calculate_relative_transforms() {
 	for (int64_t i = 0; i < _light_object_ids.size(); i++) {
 		const ObjectID light_object_id = (ObjectID)_light_object_ids[i];
 		const Light4D *light = Object::cast_to<const Light4D>(ObjectDB::get_instance(light_object_id));
+		ERR_CONTINUE(light == nullptr);
 		const Transform4D relative_transform = camera_inverse_transform * light->get_global_transform();
 		_light_relative_basises[i] = relative_transform.basis.operator Projection();
 		_light_relative_positions.set(i, relative_transform.origin);
@@ -29,6 +31,7 @@ void RenderingEngine4D::calculate_relative_transforms() {
 	for (int64_t i = 0; i < _mesh_instance_object_ids.size(); i++) {
 		const ObjectID mesh_instance_object_id = (ObjectID)_mesh_instance_object_ids[i];
 		const MeshInstance4D *mesh_instance = Object::cast_to<const MeshInstance4D>(ObjectDB::get_instance(mesh_instance_object_id));
+		ERR_CONTINUE(mesh_instance == nullptr);
 		const Transform4D relative_transform = camera_inverse_transform * mesh_instance->get_global_transform();
 		_mesh_relative_basises[i] = relative_transform.basis.operator Projection();
 		_mesh_relative_positions.set(i, relative_transform.origin);
@@ -85,6 +88,18 @@ bool RenderingEngine4D::supports_lighting() const {
 	return supports_lighting;
 }
 
+bool RenderingEngine4D::requires_transparent_background() const {
+	bool requires_transparent_background = false;
+	GDVIRTUAL_CALL(_requires_transparent_background, requires_transparent_background);
+	return requires_transparent_background;
+}
+
+bool RenderingEngine4D::supports_godot_rendering_method(const String &p_godot_rendering_method) const {
+	bool supports_godot_rendering_method = true;
+	GDVIRTUAL_CALL(_supports_godot_rendering_method, p_godot_rendering_method, supports_godot_rendering_method);
+	return supports_godot_rendering_method;
+}
+
 String RenderingEngine4D::get_friendly_name() const {
 	String friendly_name;
 	GDVIRTUAL_CALL(_get_friendly_name, friendly_name);
@@ -93,6 +108,11 @@ String RenderingEngine4D::get_friendly_name() const {
 
 void RenderingEngine4D::setup_for_viewport_if_needed(Viewport *p_for_viewport) {
 	_viewport = p_for_viewport;
+	// Every time, regardless of being already setup, make sure the viewport has a transparent background if the rendering engine requires it.
+	// Note that the cleanup explicitly excludes restoring any previous setting, because something else may have changed it after this did.
+	if (requires_transparent_background() && !p_for_viewport->has_transparent_background()) {
+		p_for_viewport->set_transparent_background(true);
+	}
 	if (_setup_viewports.has(p_for_viewport)) {
 		return;
 	}
@@ -127,6 +147,8 @@ void RenderingEngine4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_friendly_name"), &RenderingEngine4D::get_friendly_name);
 	ClassDB::bind_method(D_METHOD("prefers_wireframe_meshes"), &RenderingEngine4D::prefers_wireframe_meshes);
 	ClassDB::bind_method(D_METHOD("supports_lighting"), &RenderingEngine4D::supports_lighting);
+	ClassDB::bind_method(D_METHOD("requires_transparent_background"), &RenderingEngine4D::requires_transparent_background);
+	ClassDB::bind_method(D_METHOD("supports_godot_rendering_method", "godot_rendering_method"), &RenderingEngine4D::supports_godot_rendering_method);
 
 	ClassDB::bind_method(D_METHOD("get_viewport"), &RenderingEngine4D::get_viewport);
 	ClassDB::bind_method(D_METHOD("get_camera"), &RenderingEngine4D::get_camera);
@@ -142,6 +164,8 @@ void RenderingEngine4D::_bind_methods() {
 	GDVIRTUAL_BIND(_get_friendly_name);
 	GDVIRTUAL_BIND(_prefers_wireframe_meshes);
 	GDVIRTUAL_BIND(_supports_lighting);
+	GDVIRTUAL_BIND(_requires_transparent_background);
+	GDVIRTUAL_BIND(_supports_godot_rendering_method, "godot_rendering_method");
 	GDVIRTUAL_BIND(_setup_for_viewport);
 	GDVIRTUAL_BIND(_cleanup_for_viewport);
 	GDVIRTUAL_BIND(_render_frame);

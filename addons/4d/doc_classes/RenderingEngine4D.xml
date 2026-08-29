@@ -35,10 +35,23 @@
 				Callback method to render a frame. This method is called by [RenderingServer4D] every frame. The current camera, all meshes, and their transforms are passed in.
 			</description>
 		</method>
+		<method name="_requires_transparent_background" qualifiers="virtual const">
+			<return type="bool" />
+			<description>
+				Override this method to return [code]true[/code] if the rendering engine requires a transparent viewport background in order to correctly render to it. [RenderingServer4D] enforces this requirement before rendering. By default, returns [code]false[/code].
+			</description>
+		</method>
 		<method name="_setup_for_viewport" qualifiers="virtual">
 			<return type="void" />
 			<description>
 				Callback method to set up the rendering engine for a viewport. This method is called by [RenderingServer4D] once per viewport before calling [method _render_frame] for the first time for that viewport. In this function, only [method get_viewport] may be accessed. All other properties must not be accessed inside this function as they may contain stale data from other viewports or be null/empty.
+			</description>
+		</method>
+		<method name="_supports_godot_rendering_method" qualifiers="virtual const">
+			<return type="bool" />
+			<param index="0" name="godot_rendering_method" type="String" />
+			<description>
+				Callback method to determine if the rendering engine works with the given Godot rendering method, one of [code]"forward_plus"[/code], [code]"mobile"[/code], or [code]"gl_compatibility"[/code]. [RenderingServer4D] checks this against the rendering method Godot is actually using, and if it is unsupported, warns and skips 4D rendering entirely instead of rendering incorrectly. By default, returns [code]true[/code].
 			</description>
 		</method>
 		<method name="_supports_lighting" qualifiers="virtual const">
@@ -107,6 +120,19 @@
 			<return type="bool" />
 			<description>
 				Returns [code]true[/code] if the rendering engine prefers meshes to be wireframe. Used to decide which type of optimized meshes should be supplied in the scene, such as for editor gizmos: [WireMesh4D] if [code]true[/code], or [TetraMesh4D] if [code]false[/code]. Non-optimized [PolyMesh4D] meshes are slower, but will display optimally in both wireframe and non-wireframe rendering engines.
+			</description>
+		</method>
+		<method name="requires_transparent_background" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the rendering engine requires a transparent viewport background in order to correctly render to it. [RenderingServer4D] enforces this requirement before rendering.
+			</description>
+		</method>
+		<method name="supports_godot_rendering_method" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="godot_rendering_method" type="String" />
+			<description>
+				Returns [code]true[/code] if the rendering engine works with the given Godot rendering method, one of [code]"forward_plus"[/code], [code]"mobile"[/code], or [code]"gl_compatibility"[/code]. [RenderingServer4D] checks this against the rendering method Godot is actually using, and if it is unsupported, warns and skips 4D rendering entirely instead of rendering incorrectly.
 			</description>
 		</method>
 		<method name="supports_lighting" qualifiers="const">
