@@ -29,6 +29,8 @@ class RenderingServer4D : public Object {
 	double _render_time_base = 0.0;
 	uint64_t _last_render_time_base_ticks_usec = 0;
 
+	String _get_current_godot_rendering_method() const;
+	Ref<RenderingEngine4D> _select_rendering_engine(const String &p_friendly_name, const String &p_godot_rendering_method) const;
 	PackedInt64Array _get_visible_light_object_ids() const;
 	PackedInt64Array _get_visible_mesh_instance_object_ids() const;
 	bool _are_render_frame_and_process_frame_connected = false;

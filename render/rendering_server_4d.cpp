@@ -151,7 +151,8 @@ void RenderingServer4D::_render_frame() {
 		}
 #endif // TOOLS_ENABLED
 		ERR_FAIL_COND_MSG(_rendering_engines.is_empty(), "No 4D rendering engines registered. 4D rendering will not occur.");
-		Ref<RenderingEngine4D> rendering_engine = get_rendering_engine_from_name(camera0->get_rendering_engine_name());
+		const String godot_rendering_method = _get_current_godot_rendering_method();
+		Ref<RenderingEngine4D> rendering_engine = _select_rendering_engine(camera0->get_rendering_engine_name(), godot_rendering_method);
 		if (viewport->has_meta("last_rendering_engine_name_4d")) {
 			Variant last_rendering_engine_variant = viewport->get_meta("last_rendering_engine_name_4d");
 			if (last_rendering_engine_variant.get_type() == Variant::STRING) {
@@ -164,11 +165,6 @@ void RenderingServer4D::_render_frame() {
 			}
 		}
 		// Now that we have a rendering engine selected, set up its properties.
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
-		const String godot_rendering_method = RenderingServer::get_singleton()->get_current_rendering_method();
-#else
-		const String godot_rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
-#endif
 		if (!rendering_engine->supports_godot_rendering_method(godot_rendering_method)) {
 			// Don't try to render with a rendering engine that doesn't support the current Godot rendering method.
 			// Print a warning only once per rendering engine, so the user isn't spammed every frame.
@@ -391,14 +387,39 @@ PackedStringArray RenderingServer4D::get_rendering_engine_names() const {
 }
 
 Ref<RenderingEngine4D> RenderingServer4D::get_rendering_engine_from_name(const String &p_friendly_name) const {
+	return _select_rendering_engine(p_friendly_name, _get_current_godot_rendering_method());
+}
+
+String RenderingServer4D::_get_current_godot_rendering_method() const {
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	ERR_FAIL_NULL_V(rendering_server, String());
+	return rendering_server->get_current_rendering_method();
+#else
+	ProjectSettings *project_settings = ProjectSettings::get_singleton();
+	ERR_FAIL_NULL_V(project_settings, String());
+	return project_settings->get_setting("rendering/renderer/rendering_method");
+#endif
+}
+
+Ref<RenderingEngine4D> RenderingServer4D::_select_rendering_engine(const String &p_friendly_name, const String &p_godot_rendering_method) const {
 	if (_rendering_engines.has(p_friendly_name)) {
-		return _rendering_engines[p_friendly_name];
+		const Ref<RenderingEngine4D> rendering_engine = _rendering_engines[p_friendly_name];
+		return rendering_engine;
 	}
-	// Fallback to the first registered rendering engine. If the name is empty,
-	// treat it as "auto" and do not print a warning. Else, print a warning.
+	ERR_FAIL_COND_V_MSG(_rendering_engines.is_empty(), Ref<RenderingEngine4D>(), "No 4D rendering engines registered.");
+	// An empty name requests automatic selection. An unregistered name also falls back to
+	// automatic selection, but prints a warning to distinguish it from an intentional request.
 	if (!p_friendly_name.is_empty()) {
-		WARN_PRINT("Rendering engine '" + p_friendly_name + "' not registered. Using the first registered engine.");
+		WARN_PRINT("Rendering engine '" + p_friendly_name + "' not registered. Using automatic selection.");
 	}
+	for (const KeyValue<String, Ref<RenderingEngine4D>> &E : _rendering_engines) {
+		if (E.value->supports_godot_rendering_method(p_godot_rendering_method)) {
+			return E.value;
+		}
+	}
+	// No compatible engine is available. Return the first engine so _render_frame() can issue the
+	// ordinary incompatibility warning and skip rendering, just as it does for an explicit choice.
 	return _rendering_engines.begin()->value;
 }
 
