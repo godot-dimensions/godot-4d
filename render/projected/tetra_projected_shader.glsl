@@ -252,6 +252,6 @@ void fragment() {
 	vec3 other_uvw = mix(center_uvw + (uvw - center_uvw) / (1. - centerness), other_center_uvw, other_centerness);
 	vec3 middle_uvw = mix(uvw, other_uvw, middle_weight);
 	ALBEDO = albedo.rgb * texture(albedo_texture, middle_uvw).rgb;
-	ALPHA = sqrt(thickness / 2.); // The sqrt is to compensate for a bug in the definition of Godot's add blend mode.
+	ALPHA = sqrt(max(thickness, 0.) / 2.); // The sqrt is to compensate for a bug in the definition of Godot's add blend mode.
 	ALBEDO *= ALPHA; // also compensating for the bug.
 }
