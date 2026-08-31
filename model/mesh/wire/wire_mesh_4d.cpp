@@ -50,7 +50,7 @@ void WireMesh4D::update_proxy_mesh_3d() {
 	surface_tool->set_custom_format(0, SurfaceTool::CUSTOM_RGBA_FLOAT);
 	Ref<Material4D> material = get_material();
 	if (material.is_valid()) {
-		surface_tool->set_material(material->get_cross_section_material());
+		surface_tool->set_material(material->get_cross_section_material_3d());
 	}
 
 	PackedVector4Array edges = get_edge_positions();

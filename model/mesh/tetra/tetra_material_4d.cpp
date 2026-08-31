@@ -150,17 +150,17 @@ Ref<Texture3D> TetraMaterial4D::get_albedo_texture_3d() const {
 
 void TetraMaterial4D::set_albedo_texture_3d(const Ref<Texture3D> &p_albedo_texture_3d) {
 	_albedo_texture_3d = p_albedo_texture_3d;
-	update_cross_section_material();
+	update_cross_section_material_3d();
 }
 
-void TetraMaterial4D::update_cross_section_material() {
-	if (_cross_section_material.is_null()) {
+void TetraMaterial4D::update_cross_section_material_3d() {
+	if (_cross_section_material_3d.is_null()) {
 		return;
 	}
-	if (_cross_section_material->get_shader().is_null()) {
+	if (_cross_section_material_3d->get_shader().is_null()) {
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
 		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
-		if (_cross_section_shader.is_null()) {
+		if (_cross_section_shader_3d.is_null()) {
 			const String rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
 			if (rendering_method == "gl_compatibility") {
 				ERR_FAIL_MSG("4D cross-section rendering is not supported in Godot 4.3 in the compatibility renderer. Please upgrade to Godot 4.4 or later, or switch to a Vulkan-based rendering method to use 4D cross-section rendering.");
@@ -168,14 +168,14 @@ void TetraMaterial4D::update_cross_section_material() {
 			init_shaders();
 		}
 #endif
-		_cross_section_material->set_shader(_cross_section_shader);
+		_cross_section_material_3d->set_shader(_cross_section_shader_3d);
 	}
 	const ColorSourceFlags flags = get_albedo_source_flags();
 	const Color albedo = (flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) ? _albedo_color : Color(1.0, 1.0, 1.0);
 	// Setting to a Nil variant resets to the default texture, which is white.
 	const Variant albedo_texture = (flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW) ? Variant(_albedo_texture_3d) : Variant();
-	_cross_section_material->set_shader_parameter("albedo", albedo);
-	_cross_section_material->set_shader_parameter("albedo_texture", albedo_texture);
+	_cross_section_material_3d->set_shader_parameter("albedo", albedo);
+	_cross_section_material_3d->set_shader_parameter("albedo_texture", albedo_texture);
 }
 
 void TetraMaterial4D::_validate_property(PropertyInfo &p_property) const {
@@ -192,23 +192,31 @@ TetraMaterial4D::TetraMaterial4D() {
 	set_albedo_source(TETRA_COLOR_SOURCE_SINGLE_COLOR);
 }
 
-Ref<Shader> TetraMaterial4D::_cross_section_shader;
+Ref<Shader> TetraMaterial4D::_cross_section_shader_3d;
 
 void TetraMaterial4D::init_shaders() {
-	_cross_section_shader.instantiate();
-	_cross_section_shader->set_name(String("Tetra Cross-Section Shader"));
-	String shader_code = tetra_cross_section_shader_shader_glsl;
+	// Shader code.
+	String cross_section_shader_code = tetra_cross_section_shader_shader_glsl;
 #ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
-	shader_code += tetra_cross_section_light_shader_shader_glsl;
+	cross_section_shader_code += tetra_cross_section_light_shader_shader_glsl;
 #endif
-	_cross_section_shader->set_code(shader_code);
-	if (RenderingServer::get_singleton() != nullptr) {
-		RenderingServer::get_singleton()->shader_set_path_hint(_cross_section_shader->get_rid(), String("Tetra Cross-Section Shader"));
+	// Cross-section shader.
+	_cross_section_shader_3d.instantiate();
+	_cross_section_shader_3d->set_name(String("Tetra Cross-Section Shader"));
+	_cross_section_shader_3d->set_code(cross_section_shader_code);
+	// RenderingServer path hint. Note: This will never be null in normal runs as long as
+	// `TetraMaterial4D::init_shaders` is called at the appropriate time, however...
+	// `--test` initializes scene-level modules without creating a RenderingServer singleton.
+	// The above Shader setup is safe always, while the path hint is non-critical,
+	// so we can safely skip setting the path hint when RenderingServer is null.
+	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	if (rendering_server != nullptr) {
+		rendering_server->shader_set_path_hint(_cross_section_shader_3d->get_rid(), String("Tetra Cross-Section Shader"));
 	}
 }
 
 void TetraMaterial4D::cleanup_shaders() {
-	_cross_section_shader.unref();
+	_cross_section_shader_3d.unref();
 }
 
 void TetraMaterial4D::_bind_methods() {

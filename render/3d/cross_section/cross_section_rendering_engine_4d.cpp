@@ -30,7 +30,7 @@ void CrossSectionRenderingEngine4D::_render_frame_callback() {
 // Godot3DRenderingEngine4D interface.
 
 Ref<Material> CrossSectionRenderingEngine4D::_get_material_3d(const Ref<Material4D> &p_material_4d) const {
-	return p_material_4d->get_cross_section_material();
+	return p_material_4d->get_cross_section_material_3d();
 }
 
 bool CrossSectionRenderingEngine4D::_update_light_3d_render_base(Light4D *p_light_4d, const Projection &p_relative_basis, const Vector4 &p_relative_position, const RID p_render_base) const {
