@@ -1,6 +1,6 @@
 #include "wire_material_4d.h"
 
-#include "../../../render/3d/cross_section/wireframe_cross_section_shader.glsl.gen.h"
+#include "../../../render/3d/shaders/wireframe_shader_3d.glsl.gen.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/rendering_server.hpp>
@@ -83,7 +83,7 @@ void WireMaterial4D::update_cross_section_material_3d() {
 	if (_cross_section_material_3d->get_shader().is_null()) {
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
 		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
-		if (_cross_section_shader_3d.is_null()) {
+		if (_wireframe_shader_3d.is_null()) {
 			const String rendering_method = ProjectSettings::get_singleton()->get_setting("rendering/renderer/rendering_method");
 			if (rendering_method == "gl_compatibility") {
 				ERR_FAIL_MSG("4D cross-section rendering is not supported in Godot 4.3 in the compatibility renderer. Please upgrade to Godot 4.4 or later, or switch to a Vulkan-based rendering method to use 4D cross-section rendering.");
@@ -91,7 +91,7 @@ void WireMaterial4D::update_cross_section_material_3d() {
 			init_shaders();
 		}
 #endif
-		_cross_section_material_3d->set_shader(_cross_section_shader_3d);
+		_cross_section_material_3d->set_shader(_wireframe_shader_3d);
 	}
 	_cross_section_material_3d->set_shader_parameter("albedo", _albedo_color);
 }
@@ -100,19 +100,19 @@ WireMaterial4D::WireMaterial4D() {
 	set_albedo_source(WIRE_COLOR_SOURCE_SINGLE_COLOR);
 }
 
-Ref<Shader> WireMaterial4D::_cross_section_shader_3d;
+Ref<Shader> WireMaterial4D::_wireframe_shader_3d;
 
 void WireMaterial4D::init_shaders() {
-	_cross_section_shader_3d.instantiate();
-	_cross_section_shader_3d->set_name(String("Wireframe Cross-Section Shader"));
-	_cross_section_shader_3d->set_code(wireframe_cross_section_shader_shader_glsl);
+	_wireframe_shader_3d.instantiate();
+	_wireframe_shader_3d->set_name(String("Wireframe Shader 4D in 3D"));
+	_wireframe_shader_3d->set_code(wireframe_shader_3d_shader_glsl);
 	if (RenderingServer::get_singleton() != nullptr) {
-		RenderingServer::get_singleton()->shader_set_path_hint(_cross_section_shader_3d->get_rid(), String("Wireframe Cross-Section Shader"));
+		RenderingServer::get_singleton()->shader_set_path_hint(_wireframe_shader_3d->get_rid(), String("Wireframe Shader 4D in 3D"));
 	}
 }
 
 void WireMaterial4D::cleanup_shaders() {
-	_cross_section_shader_3d.unref();
+	_wireframe_shader_3d.unref();
 }
 
 void WireMaterial4D::_bind_methods() {

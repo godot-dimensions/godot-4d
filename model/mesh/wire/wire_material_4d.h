@@ -16,7 +16,8 @@ public:
 private:
 	WireColorSource _albedo_source = WIRE_COLOR_SOURCE_SINGLE_COLOR;
 	real_t _line_thickness = 0.0f;
-	static Ref<Shader> _cross_section_shader_3d;
+	// Shared by all 3D materials used for rendering 4D wireframes in 3D.
+	static Ref<Shader> _wireframe_shader_3d;
 
 	static Material4D::ColorSourceFlags _wire_source_to_flags(const WireColorSource p_wire_source);
 
