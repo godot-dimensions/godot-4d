@@ -28,6 +28,7 @@ env.Append(
         "../../render",
         "../../render/3d",
         "../../render/3d/cross_section",
+        "../../render/3d/projected",
         "../../render/environment",
         "../../render/environment/cloud",
         "../../render/environment/sky",
@@ -59,6 +60,7 @@ sources = (
     + Glob("../../render/*.cpp")
     + Glob("../../render/3d/*.cpp")
     + Glob("../../render/3d/cross_section/*.cpp")
+    + Glob("../../render/3d/projected/*.cpp")
     + Glob("../../render/environment/*.cpp")
     + Glob("../../render/environment/cloud/*.cpp")
     + Glob("../../render/environment/sky/*.cpp")
@@ -154,6 +156,8 @@ def add_glsl_header(source_path):
 
 
 add_glsl_header("../../render/3d/cross_section/tetra_cross_section_shader.glsl")
+add_glsl_header("../../render/3d/projected/normalize_transparency.glsl")
+add_glsl_header("../../render/3d/projected/tetra_projected_shader.glsl")
 add_glsl_header("../../render/3d/shaders/tetra_light_shader.glsl")
 add_glsl_header("../../render/3d/shaders/wireframe_shader_3d.glsl")
 add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_main.glsl")

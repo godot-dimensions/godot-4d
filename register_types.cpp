@@ -74,6 +74,7 @@
 // Render.
 #include "render/3d/cross_section/cross_section_rendering_engine_4d.h"
 #include "render/3d/godot_3d_rendering_engine_4d.h"
+#include "render/3d/projected/projected_rendering_engine_4d.h"
 #include "render/rendering_engine_4d.h"
 #include "render/rendering_server_4d.h"
 #include "render/wireframe_canvas/wireframe_canvas_rendering_engine_4d.h"
@@ -267,6 +268,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Must be registered before CrossSectionRenderingEngine4D, which owns and frees it.
 		GDREGISTER_CLASS(EnvironmentRenderBridge4DTo3D);
 		GDREGISTER_CLASS(CrossSectionRenderingEngine4D);
+		GDREGISTER_CLASS(ProjectedRenderingEngine4D);
 #endif // GDEXTENSION
 		PhysicsServer4D *physics_server = memnew(PhysicsServer4D);
 		physics_server->register_physics_engine("AxisAlignedBoxPhysicsEngine4D", memnew(AxisAlignedBoxPhysicsEngine4D));
@@ -280,10 +282,13 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		wireframe_canvas_engine.instantiate();
 		Ref<CrossSectionRenderingEngine4D> cross_section_engine;
 		cross_section_engine.instantiate();
+		Ref<ProjectedRenderingEngine4D> projected_engine;
+		projected_engine.instantiate();
 		// The order of registration determines the precedence for the "Automatic" rendering engine selection.
 		// Wireframe is the default for now, but this will change after the other engines are feature-complete.
 		rendering_server->register_rendering_engine(wireframe_canvas_engine);
 		rendering_server->register_rendering_engine(cross_section_engine);
+		rendering_server->register_rendering_engine(projected_engine);
 		add_godot_singleton("RenderingServer4D", rendering_server);
 		// Material initialization.
 #if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)

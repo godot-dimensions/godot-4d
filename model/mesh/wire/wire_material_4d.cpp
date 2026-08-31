@@ -96,6 +96,24 @@ void WireMaterial4D::update_cross_section_material_3d() {
 	_cross_section_material_3d->set_shader_parameter("albedo", _albedo_color);
 }
 
+void WireMaterial4D::update_projected_material_3d() {
+	if (!_projected_material_3d.is_valid()) {
+		return;
+	}
+	if (_projected_material_3d->get_shader().is_null()) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
+		// In Godot 4.4+, preload the shaders. In Godot 4.3, lazy-load them when needed.
+		// No compatibility renderer check here: the projected engine requires a
+		// RenderingDevice-based renderer, so this can't be reached on gl_compatibility.
+		if (_wireframe_shader_3d.is_null()) {
+			init_shaders();
+		}
+#endif
+		_projected_material_3d->set_shader(_wireframe_shader_3d);
+	}
+	_projected_material_3d->set_shader_parameter("albedo", _albedo_color);
+}
+
 WireMaterial4D::WireMaterial4D() {
 	set_albedo_source(WIRE_COLOR_SOURCE_SINGLE_COLOR);
 }

@@ -28,6 +28,7 @@ private:
 	TetraColorSource _albedo_source = TETRA_COLOR_SOURCE_SINGLE_COLOR;
 	Ref<Texture3D> _albedo_texture_3d;
 	static Ref<Shader> _cross_section_shader_3d;
+	static Ref<Shader> _projected_shader_3d;
 
 	static Material4D::ColorSourceFlags _tetra_source_to_flags(const TetraColorSource p_tetra_source);
 
@@ -36,6 +37,7 @@ protected:
 	void _validate_property(PropertyInfo &p_property) const;
 
 	void update_cross_section_material_3d() override;
+	void update_projected_material_3d() override;
 
 public:
 	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh) override;

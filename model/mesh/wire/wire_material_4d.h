@@ -17,6 +17,7 @@ private:
 	WireColorSource _albedo_source = WIRE_COLOR_SOURCE_SINGLE_COLOR;
 	real_t _line_thickness = 0.0f;
 	// Shared by all 3D materials used for rendering 4D wireframes in 3D.
+	// In ProjectedRenderingEngine4D, the shader only differs by the skewness instance uniform.
 	static Ref<Shader> _wireframe_shader_3d;
 
 	static Material4D::ColorSourceFlags _wire_source_to_flags(const WireColorSource p_wire_source);
@@ -25,6 +26,7 @@ protected:
 	static void _bind_methods();
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 	void update_cross_section_material_3d() override;
+	void update_projected_material_3d() override;
 
 public:
 	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_edge_count, const int p_second_edge_count) override;
