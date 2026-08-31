@@ -153,9 +153,9 @@ def add_glsl_header(source_path):
     env.Depends(target, header_builders.get_raw_header_dependencies(source_path))
 
 
-add_glsl_header("../../render/3d/cross_section/tetra_cross_section_light_shader.glsl")
 add_glsl_header("../../render/3d/cross_section/tetra_cross_section_shader.glsl")
 add_glsl_header("../../render/3d/cross_section/wireframe_cross_section_shader.glsl")
+add_glsl_header("../../render/3d/tetra_light_shader.glsl")
 add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_main.glsl")
 add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_shader.glsl")
 add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_main.glsl")

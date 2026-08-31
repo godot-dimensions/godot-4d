@@ -1,7 +1,7 @@
 #include "tetra_material_4d.h"
 
-#include "../../../render/3d/cross_section/tetra_cross_section_light_shader.glsl.gen.h"
 #include "../../../render/3d/cross_section/tetra_cross_section_shader.glsl.gen.h"
+#include "../../../render/3d/tetra_light_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
 
 #if GDEXTENSION
@@ -198,7 +198,7 @@ void TetraMaterial4D::init_shaders() {
 	// Shader code.
 	String cross_section_shader_code = tetra_cross_section_shader_shader_glsl;
 #ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
-	cross_section_shader_code += tetra_cross_section_light_shader_shader_glsl;
+	cross_section_shader_code += tetra_light_shader_shader_glsl;
 #endif
 	// Cross-section shader.
 	_cross_section_shader_3d.instantiate();
