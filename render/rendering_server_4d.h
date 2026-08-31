@@ -56,6 +56,7 @@ public:
 
 	void register_rendering_engine(const Ref<RenderingEngine4D> &p_engine);
 	void unregister_rendering_engine(const String &p_friendly_name);
+	void unregister_all_rendering_engines();
 	PackedStringArray get_rendering_engine_names() const;
 	Ref<RenderingEngine4D> get_rendering_engine_from_name(const String &p_friendly_name) const;
 

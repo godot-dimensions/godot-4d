@@ -69,6 +69,7 @@ RenderingServer4D::~RenderingServer4D() {
 	}
 	_viewport_cameras.clear();
 	_viewport_world_environments.clear();
+	_warned_incompatible_rendering_engine_names.clear();
 	_rendering_engines.clear();
 	singleton = nullptr;
 }
@@ -369,6 +370,11 @@ void RenderingServer4D::register_rendering_engine(const Ref<RenderingEngine4D> &
 void RenderingServer4D::unregister_rendering_engine(const String &p_friendly_name) {
 	_warned_incompatible_rendering_engine_names.erase(p_friendly_name);
 	_rendering_engines.erase(p_friendly_name);
+}
+
+void RenderingServer4D::unregister_all_rendering_engines() {
+	_warned_incompatible_rendering_engine_names.clear();
+	_rendering_engines.clear();
 }
 
 PackedStringArray RenderingServer4D::get_rendering_engine_names() const {

@@ -272,13 +272,19 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		physics_server->register_physics_engine("AxisAlignedBoxPhysicsEngine4D", memnew(AxisAlignedBoxPhysicsEngine4D));
 		physics_server->register_physics_engine("GhostPhysicsEngine4D", memnew(GhostPhysicsEngine4D));
 		add_godot_singleton("PhysicsServer4D", physics_server);
-		// Render.
-		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
-		rendering_server->register_rendering_engine(memnew(WireframeCanvasRenderingEngine4D));
-		rendering_server->register_rendering_engine(memnew(CrossSectionRenderingEngine4D));
-		add_godot_singleton("RenderingServer4D", rendering_server);
 	}
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		// Render. This must be initialized after RenderingServer and RenderingDevice.
+		RenderingServer4D *rendering_server = memnew(RenderingServer4D);
+		Ref<WireframeCanvasRenderingEngine4D> wireframe_canvas_engine;
+		wireframe_canvas_engine.instantiate();
+		Ref<CrossSectionRenderingEngine4D> cross_section_engine;
+		cross_section_engine.instantiate();
+		// The order of registration determines the precedence for the "Automatic" rendering engine selection.
+		// Wireframe is the default for now, but this will change after the other engines are feature-complete.
+		rendering_server->register_rendering_engine(wireframe_canvas_engine);
+		rendering_server->register_rendering_engine(cross_section_engine);
+		add_godot_singleton("RenderingServer4D", rendering_server);
 		// Material initialization.
 #if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
 		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
@@ -351,10 +357,13 @@ void uninitialize_4d_module(ModuleInitializationLevel p_level) {
 		GradientSkyMaterial4D::cleanup_shader();
 		TetraMaterial4D::cleanup_shaders();
 		WireMaterial4D::cleanup_shaders();
+		// Clean up RenderingServer4D and its engines.
+		RenderingServer4D *rendering_server = RenderingServer4D::get_singleton();
+		rendering_server->unregister_all_rendering_engines();
+		remove_godot_singleton("RenderingServer4D", rendering_server);
 	}
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE_OR_EARLIEST) {
 		// Unregister and free the singletons in the opposite order of registration.
-		remove_godot_singleton("RenderingServer4D", RenderingServer4D::get_singleton());
 		remove_godot_singleton("PhysicsServer4D", PhysicsServer4D::get_singleton());
 		remove_godot_singleton("WireMeshBuilder4D", WireMeshBuilder4D::get_singleton());
 		remove_godot_singleton("PolyMeshBuilder4D", PolyMeshBuilder4D::get_singleton());
