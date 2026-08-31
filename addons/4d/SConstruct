@@ -10,8 +10,6 @@ env.Append(
         "./,src/,../../",
         "../../math",
         "../../math/geometric_algebra",
-        "../../nodes",
-        "../../nodes/light",
         "../../model",
         "../../model/g4mf",
         "../../model/g4mf/structures",
@@ -21,16 +19,18 @@ env.Append(
         "../../model/mesh/tetra",
         "../../model/mesh/wire",
         "../../model/off",
+        "../../nodes",
+        "../../nodes/light",
         "../../physics",
         "../../physics/bodies",
         "../../physics/server",
         "../../physics/shapes",
         "../../render",
+        "../../render/3d",
+        "../../render/3d/cross_section",
         "../../render/environment",
         "../../render/environment/cloud",
         "../../render/environment/sky",
-        "../../render/3d",
-        "../../render/3d/cross_section",
         "../../render/wireframe_canvas",
     ]
 )
@@ -41,9 +41,6 @@ sources = (
     + Glob("../../*.cpp")
     + Glob("../../math/*.cpp")
     + Glob("../../math/geometric_algebra/*.cpp")
-    + Glob("../../nodes/*.cpp")
-    + Glob("../../nodes/light/*.cpp")
-    + Glob("../../resources/*.cpp")
     + Glob("../../model/*.cpp")
     + Glob("../../model/g4mf/*.cpp")
     + Glob("../../model/g4mf/structures/*.cpp")
@@ -53,16 +50,18 @@ sources = (
     + Glob("../../model/mesh/tetra/*.cpp")
     + Glob("../../model/mesh/wire/*.cpp")
     + Glob("../../model/off/*.cpp")
+    + Glob("../../nodes/*.cpp")
+    + Glob("../../nodes/light/*.cpp")
     + Glob("../../physics/*.cpp")
     + Glob("../../physics/bodies/*.cpp")
     + Glob("../../physics/server/*.cpp")
     + Glob("../../physics/shapes/*.cpp")
     + Glob("../../render/*.cpp")
+    + Glob("../../render/3d/*.cpp")
+    + Glob("../../render/3d/cross_section/*.cpp")
     + Glob("../../render/environment/*.cpp")
     + Glob("../../render/environment/cloud/*.cpp")
     + Glob("../../render/environment/sky/*.cpp")
-    + Glob("../../render/3d/*.cpp")
-    + Glob("../../render/3d/cross_section/*.cpp")
     + Glob("../../render/wireframe_canvas/*.cpp")
 )
 
@@ -154,30 +153,30 @@ def add_glsl_header(source_path):
     env.Depends(target, header_builders.get_raw_header_dependencies(source_path))
 
 
-add_glsl_header("../../render/environment/sky/gradient_sky_shader.glsl")
-add_glsl_header("../../render/environment/sky/physical_sky_shader.glsl")
-add_glsl_header("../../render/environment/sky/plain_sky_shader.glsl")
-add_glsl_header("../../render/environment/cloud/volumetric_cloud_shader.glsl")
-add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_shader.glsl")
-add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_shader.glsl")
-add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_shader.glsl")
-add_glsl_header("../../render/environment/cloud/volumetric_cloud_full_res_shader.glsl")
-add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_shader.glsl")
-add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_full_res_shader.glsl")
-add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_full_res_shader.glsl")
-add_glsl_header("../../render/environment/cloud/volumetric_cloud_density.glsl")
-add_glsl_header("../../render/environment/cloud/volumetric_cloud_rendering.glsl")
-add_glsl_header("../../render/environment/cloud/volumetric_cloud_main.glsl")
-add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_main.glsl")
-add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_main.glsl")
-add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_main.glsl")
-add_glsl_header("../../render/environment/cloud/volumetric_cloud_full_res_main.glsl")
-add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_main.glsl")
-add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_full_res_main.glsl")
-add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_full_res_main.glsl")
 add_glsl_header("../../render/3d/cross_section/tetra_cross_section_light_shader.glsl")
 add_glsl_header("../../render/3d/cross_section/tetra_cross_section_shader.glsl")
 add_glsl_header("../../render/3d/cross_section/wireframe_cross_section_shader.glsl")
+add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_main.glsl")
+add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_shader.glsl")
+add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_main.glsl")
+add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_shader.glsl")
+add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_full_res_main.glsl")
+add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_full_res_shader.glsl")
+add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_main.glsl")
+add_glsl_header("../../render/environment/cloud/physical_sky_with_volumetric_clouds_shader.glsl")
+add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_full_res_main.glsl")
+add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_full_res_shader.glsl")
+add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_main.glsl")
+add_glsl_header("../../render/environment/cloud/plain_sky_with_volumetric_clouds_shader.glsl")
+add_glsl_header("../../render/environment/cloud/volumetric_cloud_density.glsl")
+add_glsl_header("../../render/environment/cloud/volumetric_cloud_full_res_main.glsl")
+add_glsl_header("../../render/environment/cloud/volumetric_cloud_full_res_shader.glsl")
+add_glsl_header("../../render/environment/cloud/volumetric_cloud_main.glsl")
+add_glsl_header("../../render/environment/cloud/volumetric_cloud_rendering.glsl")
+add_glsl_header("../../render/environment/cloud/volumetric_cloud_shader.glsl")
+add_glsl_header("../../render/environment/sky/gradient_sky_shader.glsl")
+add_glsl_header("../../render/environment/sky/physical_sky_shader.glsl")
+add_glsl_header("../../render/environment/sky/plain_sky_shader.glsl")
 
 target_file_path = "../../editor/icons/editor_4d_icons.gen.h"
 icon_sources = Glob("icons/4D.svg") + Glob("icons/Node4D.svg")
