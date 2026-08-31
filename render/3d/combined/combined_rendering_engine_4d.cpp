@@ -37,7 +37,10 @@ CombinedRenderingEngine4D::CombinedRenderingEngine4D() {
 	_cross_section_depth_texture.instantiate();
 
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
-	ERR_FAIL_NULL(rendering_server);
+	if (rendering_server == nullptr) {
+		// `--test` initializes scene-level modules without creating a RenderingServer singleton.
+		return;
+	}
 	RenderingDevice *rd = rendering_server->get_rendering_device();
 	if (rd == nullptr) {
 		// The Compatibility renderer supports neither compositor effects nor the projected
@@ -71,6 +74,7 @@ CombinedRenderingEngine4D::CombinedRenderingEngine4D() {
 			RSE::COMPOSITOR_EFFECT_CALLBACK_TYPE_POST_OPAQUE,
 			callable_mp(this, &CombinedRenderingEngine4D::_depth_capture_callback));
 	rendering_server->compositor_effect_set_enabled(_depth_capture_compositor_effect, true);
+	rendering_server->compositor_effect_set_flag(_depth_capture_compositor_effect, RSE::COMPOSITOR_EFFECT_FLAG_ACCESS_RESOLVED_DEPTH, true);
 	_depth_capture_compositor = rendering_server->compositor_create();
 	TypedArray<RID> compositor_effects;
 	compositor_effects.push_back(_depth_capture_compositor_effect);
@@ -155,13 +159,38 @@ void CombinedRenderingEngine4D::_ensure_depth_capture_output_texture(const Size2
 	}
 }
 
-void CombinedRenderingEngine4D::_sync_viewport_sizes() {
-	const Size2i size = Size2i(get_viewport()->get_visible_rect().size);
+void CombinedRenderingEngine4D::_sync_viewport_settings() {
+	Viewport *viewport = get_viewport();
+	ERR_FAIL_NULL(viewport);
+	const Size2i size = Size2i(viewport->get_visible_rect().size);
 	_projected_viewport->set_size(size);
 	_cross_section_viewport->set_size(size);
-	// This has to be called before the depth capture callback, otherwise the projection
-	// material will have a stale reference to the previously-sized texture, because of the order
-	// these things are updated in.
+
+	const auto sync_3d_settings = [viewport](SubViewport *p_sub_viewport) {
+		p_sub_viewport->set_use_hdr_2d(viewport->is_using_hdr_2d());
+		p_sub_viewport->set_msaa_3d(viewport->get_msaa_3d());
+		p_sub_viewport->set_screen_space_aa(viewport->get_screen_space_aa());
+		p_sub_viewport->set_use_taa(viewport->is_using_taa());
+		p_sub_viewport->set_scaling_3d_mode(viewport->get_scaling_3d_mode());
+		p_sub_viewport->set_scaling_3d_scale(viewport->get_scaling_3d_scale());
+		p_sub_viewport->set_fsr_sharpness(viewport->get_fsr_sharpness());
+		p_sub_viewport->set_texture_mipmap_bias(viewport->get_texture_mipmap_bias());
+		p_sub_viewport->set_use_debanding(viewport->is_using_debanding());
+		p_sub_viewport->set_mesh_lod_threshold(viewport->get_mesh_lod_threshold());
+		p_sub_viewport->set_use_occlusion_culling(viewport->is_using_occlusion_culling());
+		p_sub_viewport->set_debug_draw(viewport->get_debug_draw());
+		p_sub_viewport->set_positional_shadow_atlas_size(viewport->get_positional_shadow_atlas_size());
+		p_sub_viewport->set_positional_shadow_atlas_16_bits(viewport->get_positional_shadow_atlas_16_bits());
+		for (int quadrant = 0; quadrant < 4; quadrant++) {
+			p_sub_viewport->set_positional_shadow_atlas_quadrant_subdiv(quadrant, viewport->get_positional_shadow_atlas_quadrant_subdiv(quadrant));
+		}
+	};
+	sync_3d_settings(_projected_viewport);
+	sync_3d_settings(_cross_section_viewport);
+
+	// Keep the capture texture at the output size, and install it before the depth capture callback;
+	// otherwise the projected material will retain a stale reference after a resize. The callback
+	// resamples the renderer's potentially scaled internal depth buffer into this texture.
 	_ensure_depth_capture_output_texture(size);
 }
 
@@ -170,7 +199,7 @@ void CombinedRenderingEngine4D::setup_for_viewport() {
 	ERR_FAIL_NULL(get_viewport());
 	ERR_FAIL_COND_MSG(_cross_section_engine.is_null() || _projected_engine.is_null(), "CombinedRenderingEngine4D: set_inner_engines() was never called.");
 	_ensure_helpers_created();
-	_sync_viewport_sizes();
+	_sync_viewport_settings();
 
 	_cross_section_engine->setup_for_viewport_if_needed(_cross_section_viewport);
 	_projected_engine->setup_for_viewport_if_needed(_projected_viewport);
@@ -186,8 +215,6 @@ void CombinedRenderingEngine4D::setup_for_viewport() {
 }
 
 void CombinedRenderingEngine4D::cleanup_for_viewport() {
-	// Stop the sub-viewports from continuing to render every frame (and hide the composited
-	// result) while some other engine is active, without tearing down and recreating them.
 	if (_combine_canvas_layer != nullptr) {
 		_combine_canvas_layer->hide();
 	}
@@ -207,13 +234,27 @@ void CombinedRenderingEngine4D::cleanup_for_viewport() {
 		// Clear it so the projected engine, if used alone, doesn't refer to the stale texture.
 		_projected_engine->set_cross_section_depth_texture(Variant());
 	}
+
+	// These helper nodes are owned by the viewport on which this engine was set up. Tear them
+	// down now, so none of the raw pointers can outlive that viewport. The cross-section viewport
+	// is a child of the projected viewport, and the texture rects are children of the canvas layer.
+	if (_projected_viewport != nullptr) {
+		_projected_viewport->queue_free();
+	}
+	if (_combine_canvas_layer != nullptr) {
+		_combine_canvas_layer->queue_free();
+	}
+	_cross_section_viewport = nullptr;
+	_projected_viewport = nullptr;
+	_combine_canvas_layer = nullptr;
+	_projected_rect = nullptr;
 }
 
 void CombinedRenderingEngine4D::_render_frame_callback() {
 	ERR_FAIL_NULL(get_camera());
 	ERR_FAIL_NULL(get_viewport());
 	ERR_FAIL_COND(_cross_section_engine.is_null() || _projected_engine.is_null());
-	_sync_viewport_sizes();
+	_sync_viewport_settings();
 
 	Camera4D *camera = get_camera();
 	_projected_rect->set_modulate(Color(1.0, 1.0, 1.0, camera->get_projection_opacity()));
@@ -245,11 +286,15 @@ void CombinedRenderingEngine4D::_depth_capture_callback(int64_t p_effect_callbac
 	if (buffers == nullptr) {
 		return;
 	}
-	const Size2i size = buffers->get_internal_size();
+	const Size2i input_size = buffers->get_internal_size();
+	const Size2i output_size = _depth_capture_output_size;
+	ERR_FAIL_COND(input_size.x <= 0 || input_size.y <= 0 || output_size.x <= 0 || output_size.y <= 0);
+	// The projected pass samples this output texture with normalized screen coordinates, so the
+	// capture remains aligned even when 3D scaling makes the internal and output sizes differ.
 	// Matches the shader's local_size of 8x8: round up so a partial workgroup still covers
 	// the last few rows or columns. The shader bounds-checks those extra invocations.
-	const uint32_t x_groups = (uint32_t(size.x) + 7) / 8;
-	const uint32_t y_groups = (uint32_t(size.y) + 7) / 8;
+	const uint32_t x_groups = (uint32_t(output_size.x) + 7) / 8;
+	const uint32_t y_groups = (uint32_t(output_size.y) + 7) / 8;
 
 	Ref<RDUniform> depth_input_uniform;
 	depth_input_uniform.instantiate();
@@ -280,10 +325,10 @@ void CombinedRenderingEngine4D::_depth_capture_callback(int64_t p_effect_callbac
 	push_constant.resize(16);
 	{
 		int32_t *push_constant_data = reinterpret_cast<int32_t *>(push_constant.ptrw());
-		push_constant_data[0] = size.x;
-		push_constant_data[1] = size.y;
-		push_constant_data[2] = 0;
-		push_constant_data[3] = 0;
+		push_constant_data[0] = input_size.x;
+		push_constant_data[1] = input_size.y;
+		push_constant_data[2] = output_size.x;
+		push_constant_data[3] = output_size.y;
 	}
 
 	const int64_t compute_list = rd->compute_list_begin();

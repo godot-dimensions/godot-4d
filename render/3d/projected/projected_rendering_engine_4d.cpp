@@ -28,16 +28,19 @@
 
 ProjectedRenderingEngine4D::ProjectedRenderingEngine4D() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
-	ERR_FAIL_NULL(rendering_server);
+	if (rendering_server == nullptr) {
+		// `--test` initializes scene-level modules without creating a RenderingServer singleton.
+		return;
+	}
 	RenderingDevice *rd = rendering_server->get_rendering_device();
 	if (rd == nullptr) {
 		// The Compatibility renderer isn't compatible with projected rendering anyway.
 		return;
 	}
-	// shader_compile_spirv_from_source(Ref<RDShaderSource>)/shader_create_from_spirv(Ref<RDShaderSPIRV>)
+	// `shader_compile_spirv_from_source(Ref<RDShaderSource>)` and `shader_create_from_spirv(Ref<RDShaderSPIRV>)`
 	// are exposed to GDExtension directly, but in engine-module C++ they're private (named
-	// _shader_compile_spirv_from_source/_shader_create_from_spirv; module code is expected to call
-	// the raw stage/string/Vector<uint8_t> overloads of the same public names instead). Calling them
+	// `_shader_compile_spirv_from_source` and `_shader_create_from_spirv`; module code is expected to call
+	// the raw stage/string/`Vector<uint8_t>` overloads of the same public names instead). Calling them
 	// by name through the same Variant dispatch GDExtension and scripts use sidesteps that C++ access
 	// specifier, so the exact same code works in both builds.
 	Ref<RDShaderSource> shader_source;
@@ -174,7 +177,7 @@ void ProjectedRenderingEngine4D::_normalize_image_callback(int64_t p_effect_call
 			const int64_t compute_list = rd->compute_list_begin();
 			rd->compute_list_bind_compute_pipeline(compute_list, _normalize_pipeline);
 			rd->compute_list_bind_uniform_set(compute_list, uniform_set, 0);
-			// compute_list_set_push_constant takes a PackedByteArray in GDExtension, but only a
+			// `compute_list_set_push_constant` takes a PackedByteArray in GDExtension, but only a
 			// raw pointer is exposed to engine-module C++ (the PackedByteArray-based overload is
 			// private there, same split as the shader-compile methods in the constructor).
 #if GDEXTENSION

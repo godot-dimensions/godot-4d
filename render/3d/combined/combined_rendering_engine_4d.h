@@ -54,7 +54,7 @@ private:
 	RID _depth_capture_compositor_effect;
 
 	void _ensure_helpers_created();
-	void _sync_viewport_sizes();
+	void _sync_viewport_settings();
 	void _ensure_depth_capture_output_texture(const Size2i &p_size);
 	void _cleanup_render_resources();
 	void _depth_capture_callback(int64_t p_effect_callback_type, RenderData *p_render_data);

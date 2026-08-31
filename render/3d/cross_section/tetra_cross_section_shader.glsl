@@ -88,7 +88,7 @@ void vertex() {
 	int face = get_face_lookup_index(verts_4d[0].w, verts_4d[1].w, verts_4d[2].w, verts_4d[3].w, vertex_id);
 	normal_4d = vec4(0.0, 0.0, 1.0, 0.0);
 	if (vertex_id >= 6 || CROSS_SECTION_LOOKUP[face] == -1) {
-		// This vertex is unused, cull
+		// This vertex is unused, cull.
 		POSITION = vec4(0.0, 0.0, CLIP_SPACE_FAR, 1.0);
 	} else {
 		int position_edge = CROSS_SECTION_LOOKUP[face + (vertex_id % 3)];

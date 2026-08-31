@@ -53,7 +53,7 @@
 		<method name="get_projected_material_3d">
 			<return type="ShaderMaterial" />
 			<description>
-				Returns a 3D material to be used by the projected renderer. The returned material is automatically updated to match the properties of this material.
+				Returns a 3D material to be used by the projected renderer. For material types that support projected rendering, the returned material is automatically updated to match the properties of this material. Unsupported material types return a material with no shader.
 			</description>
 		</method>
 		<method name="is_default_material" qualifiers="const">
