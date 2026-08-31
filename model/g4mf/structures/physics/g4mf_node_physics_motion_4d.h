@@ -48,7 +48,7 @@ public:
 	double get_gravity_factor() const { return _gravity_factor; }
 	void set_gravity_factor(const double p_gravity_factor) { _gravity_factor = p_gravity_factor; }
 
-	PhysicsBody4D *to_physics_body() const;
+	PhysicsBody4D *generate_physics_body() const;
 	static Ref<G4MFNodePhysicsMotion4D> from_physics_body(const PhysicsBody4D *p_physics_body);
 
 	static Ref<G4MFNodePhysicsMotion4D> from_dictionary(const Dictionary &p_dict);

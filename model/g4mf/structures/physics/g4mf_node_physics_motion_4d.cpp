@@ -6,7 +6,7 @@
 #include "../../../../physics/bodies/rigid_body_4d.h"
 #include "../../../../physics/bodies/static_body_4d.h"
 
-PhysicsBody4D *G4MFNodePhysicsMotion4D::to_physics_body() const {
+PhysicsBody4D *G4MFNodePhysicsMotion4D::generate_physics_body() const {
 	if (_motion_type == "static") {
 		StaticBody4D *static_body = memnew(StaticBody4D);
 		return static_body;
@@ -110,7 +110,7 @@ void G4MFNodePhysicsMotion4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_gravity_factor"), &G4MFNodePhysicsMotion4D::get_gravity_factor);
 	ClassDB::bind_method(D_METHOD("set_gravity_factor", "gravity_factor"), &G4MFNodePhysicsMotion4D::set_gravity_factor);
 
-	ClassDB::bind_method(D_METHOD("to_physics_body"), &G4MFNodePhysicsMotion4D::to_physics_body);
+	ClassDB::bind_method(D_METHOD("generate_physics_body"), &G4MFNodePhysicsMotion4D::generate_physics_body);
 	ClassDB::bind_static_method("G4MFNodePhysicsMotion4D", D_METHOD("from_physics_body", "physics_body"), &G4MFNodePhysicsMotion4D::from_physics_body);
 
 	ClassDB::bind_static_method("G4MFNodePhysicsMotion4D", D_METHOD("from_dictionary", "dict"), &G4MFNodePhysicsMotion4D::from_dictionary);

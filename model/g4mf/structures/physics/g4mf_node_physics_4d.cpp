@@ -69,7 +69,7 @@ Node4D *G4MFNodePhysics4D::generate_physics_node(const Ref<G4MFState4D> &p_g4mf_
 	const CollisionObject4D *col_obj = nullptr;
 	Node4D *ret = nullptr;
 	if (_motion.is_valid()) {
-		CollisionObject4D *from_motion = _motion->to_physics_body();
+		CollisionObject4D *from_motion = _motion->generate_physics_body();
 		col_obj = from_motion;
 		ret = from_motion;
 	} else if (!_trigger_node_indices.is_empty() || is_empty_of_motion_and_shapes()) {

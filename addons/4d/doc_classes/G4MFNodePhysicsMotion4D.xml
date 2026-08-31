@@ -25,16 +25,16 @@
 				Converts the given [PhysicsBody4D] into a [G4MFNodePhysicsMotion4D]. This will set the fields of the [G4MFNodePhysicsMotion4D] based on the data in the [PhysicsBody4D], which is meant to be added to [member G4MFNodePhysics4D.motion] property.
 			</description>
 		</method>
+		<method name="generate_physics_body" qualifiers="const">
+			<return type="PhysicsBody4D" />
+			<description>
+				Generates a new [PhysicsBody4D] node from the G4MF physics motion data. This will create a [PhysicsBody4D]-derived node, such as a [RigidBody4D], [CharacterBody4D], or [StaticBody4D]. This uses only the data in the [G4MFNodePhysicsMotion4D] and only ever generates one node.
+			</description>
+		</method>
 		<method name="to_dictionary" qualifiers="const">
 			<return type="Dictionary" />
 			<description>
 				Converts the G4MF physics motion data to a [Dictionary]. This is used for serializing the G4MF physics motion data as JSON.
-			</description>
-		</method>
-		<method name="to_physics_body" qualifiers="const">
-			<return type="PhysicsBody4D" />
-			<description>
-				Generates a [PhysicsBody4D] node from the G4MF physics motion data. This will create a [PhysicsBody4D]-derived node, such as [RigidBody4D], [CharacterBody4D], or [StaticBody4D]. This uses only the data in the [G4MFNodePhysicsMotion4D] and only ever generates one node.
 			</description>
 		</method>
 	</methods>
