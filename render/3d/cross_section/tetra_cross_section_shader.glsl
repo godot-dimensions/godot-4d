@@ -3,7 +3,7 @@ render_mode skip_vertex_transform;
 
 #include "../../shaders/perpendicular_4d.glsl"
 
-// World space
+// World space.
 // Not allowed to pass matrices through instance uniforms, so have to unpack into vectors.
 instance uniform vec4 modelview_origin;
 instance uniform vec4 modelview_basis_x;
@@ -74,33 +74,33 @@ vec3 slice_edge(vec4 v1, vec4 v2) {
 }
 
 void vertex() {
-	mat4 modelview_basis = mat4(modelview_basis_x, modelview_basis_y, modelview_basis_z, modelview_basis_w);
+	mat4 modelview_basis_4d = mat4(modelview_basis_x, modelview_basis_y, modelview_basis_z, modelview_basis_w);
 
-	vec4 verts[] = { CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3 };
-	verts[0] = (modelview_basis * verts[0]) + modelview_origin;
-	verts[1] = (modelview_basis * verts[1]) + modelview_origin;
-	verts[2] = (modelview_basis * verts[2]) + modelview_origin;
-	verts[3] = (modelview_basis * verts[3]) + modelview_origin;
+	vec4 verts_4d[] = { CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3 };
+	verts_4d[0] = (modelview_basis_4d * verts_4d[0]) + modelview_origin;
+	verts_4d[1] = (modelview_basis_4d * verts_4d[1]) + modelview_origin;
+	verts_4d[2] = (modelview_basis_4d * verts_4d[2]) + modelview_origin;
+	verts_4d[3] = (modelview_basis_4d * verts_4d[3]) + modelview_origin;
 
 	vec3 uvws[] = { vec3(UV, COLOR.a), vec3(UV2, VERTEX.y), vec3(NORMAL.xy / NORMAL.z, VERTEX.z), COLOR.rgb };
 
 	int vertex_id = int(VERTEX.x);
-	int face = get_face_lookup_index(verts[0].w, verts[1].w, verts[2].w, verts[3].w, vertex_id);
+	int face = get_face_lookup_index(verts_4d[0].w, verts_4d[1].w, verts_4d[2].w, verts_4d[3].w, vertex_id);
 	normal_4d = vec4(0.0, 0.0, 1.0, 0.0);
 	if (CROSS_SECTION_LOOKUP[face] == -1) {
-		// This vertex is unused, cull
+		// This vertex is unused, cull.
 		POSITION = vec4(0.0, 0.0, CLIP_SPACE_FAR, 1.0);
 	} else {
 		int position_edge = CROSS_SECTION_LOOKUP[face + (vertex_id % 3)];
 		int edge_vert1 = TETRAHEDRON_EDGE_TO_VERTEX_MAP[position_edge * 2];
 		int edge_vert2 = TETRAHEDRON_EDGE_TO_VERTEX_MAP[(position_edge * 2) + 1];
-		vec4 position1 = verts[edge_vert1];
-		vec4 position2 = verts[edge_vert2];
-		float mix_weight = position1.w / (position1.w - position2.w);
-		vec4 position = mix(position1, position2, mix_weight);
+		vec4 position1_4d = verts_4d[edge_vert1];
+		vec4 position2_4d = verts_4d[edge_vert2];
+		float mix_weight = position1_4d.w / (position1_4d.w - position2_4d.w);
+		vec4 position_4d = mix(position1_4d, position2_4d, mix_weight);
 		// Vertex is view space and used for lighting, position is clip space and used for rasterizing.
-		VERTEX = position.xyz;
-		POSITION = PROJECTION_MATRIX * vec4(position.xyz, 1.0);
+		VERTEX = position_4d.xyz;
+		POSITION = PROJECTION_MATRIX * vec4(position_4d.xyz, 1.0);
 
 		uvw = mix(uvws[edge_vert1], uvws[edge_vert2], mix_weight);
 
@@ -108,11 +108,11 @@ void vertex() {
 		int face_v1_edge = CROSS_SECTION_LOOKUP[face];
 		int face_v2_edge = CROSS_SECTION_LOOKUP[face + 1];
 		int face_v3_edge = CROSS_SECTION_LOOKUP[face + 2];
-		vec3 face_v1 = slice_edge(verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v1_edge * 2]], verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v1_edge * 2 + 1]]);
-		vec3 face_v2 = slice_edge(verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v2_edge * 2]], verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v2_edge * 2 + 1]]);
-		vec3 face_v3 = slice_edge(verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v3_edge * 2]], verts[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v3_edge * 2 + 1]]);
+		vec3 face_v1 = slice_edge(verts_4d[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v1_edge * 2]], verts_4d[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v1_edge * 2 + 1]]);
+		vec3 face_v2 = slice_edge(verts_4d[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v2_edge * 2]], verts_4d[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v2_edge * 2 + 1]]);
+		vec3 face_v3 = slice_edge(verts_4d[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v3_edge * 2]], verts_4d[TETRAHEDRON_EDGE_TO_VERTEX_MAP[face_v3_edge * 2 + 1]]);
 		vec3 normal = normalize(cross(face_v3 - face_v1, face_v2 - face_v1));
-		vec4 cell_normal_4d = perpendicular_4d(verts[1] - verts[0], verts[2] - verts[0], verts[3] - verts[0]);
+		vec4 cell_normal_4d = perpendicular_4d(verts_4d[1] - verts_4d[0], verts_4d[2] - verts_4d[0], verts_4d[3] - verts_4d[0]);
 		float cell_normal_length = length(cell_normal_4d);
 		if (cell_normal_length > 0.0) {
 			cell_normal_4d /= cell_normal_length;
