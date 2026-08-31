@@ -148,9 +148,10 @@ void ProjectedRenderingEngine4D::_normalize_image_callback(int64_t p_effect_call
 			push_constant_float_data[2] = (float)camera->get_projection_opacity_base();
 			// Whether to leave the output transparent. The input is always transparent because the
 			// normalization requires it, but the output only needs to be when something is going to
-			// composite it over something else: whatever the project setting is for.
+			// composite it over something else: either the combined renderer (_cross_section_depth_texture
+			// is set iff this is running as part of it) or whatever the project setting is for.
 			const bool project_transparent_background = ProjectSettings::get_singleton()->get_setting("rendering/viewport/transparent_background");
-			// 3 is transparency.
+			// 3 is transparency. `_cross_section_depth_texture` is set iff this is running as part of the combined renderer.
 			push_constant_data[3] = (_cross_section_depth_texture.get_type() != Variant::NIL || project_transparent_background) ? 1 : 0;
 		}
 		for (uint32_t view = 0; view < buffers->get_view_count(); view++) {

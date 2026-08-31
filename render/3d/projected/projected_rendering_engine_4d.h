@@ -17,6 +17,7 @@ private:
 	RID _normalize_compositor;
 	RID _normalize_compositor_effect;
 
+	// Sent from the combined rendering engine, or nil if projected rendering is used alone.
 	Variant _cross_section_depth_texture;
 
 	void _normalize_image_callback(int64_t p_effect_callback_type, RenderData *p_render_data);

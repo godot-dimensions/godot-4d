@@ -5,6 +5,7 @@ Import("env_modules")
 
 env_4d = env_modules.Clone()
 
+env_4d.GLSL_HEADER("3d/combined/depth_capture.glsl")
 env_4d.GLSL_HEADER("3d/cross_section/tetra_cross_section_shader.glsl")
 env_4d.GLSL_HEADER("3d/projected/normalize_transparency.glsl")
 env_4d.GLSL_HEADER("3d/projected/tetra_projected_shader.glsl")
@@ -34,6 +35,7 @@ env_4d.GLSL_HEADER("environment/sky/plain_sky_shader.glsl")
 
 env_4d.add_source_files(env.modules_sources, "*.cpp")
 env_4d.add_source_files(env.modules_sources, "3d/*.cpp")
+env_4d.add_source_files(env.modules_sources, "3d/combined/*.cpp")
 env_4d.add_source_files(env.modules_sources, "3d/cross_section/*.cpp")
 env_4d.add_source_files(env.modules_sources, "3d/projected/*.cpp")
 env_4d.add_source_files(env.modules_sources, "environment/*.cpp")
