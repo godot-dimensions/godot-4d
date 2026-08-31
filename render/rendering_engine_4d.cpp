@@ -9,6 +9,12 @@
 #include <tuple>
 #include <vector>
 
+#if GDEXTENSION
+#include <godot_cpp/classes/project_settings.hpp>
+#elif GODOT_MODULE
+#include "core/config/project_settings.h"
+#endif
+
 void RenderingEngine4D::calculate_relative_transforms() {
 	ERR_FAIL_NULL(_camera);
 	const Transform4D camera_inverse_transform = _camera->get_global_transform().inverse();
@@ -108,10 +114,23 @@ String RenderingEngine4D::get_friendly_name() const {
 
 void RenderingEngine4D::setup_for_viewport_if_needed(Viewport *p_for_viewport) {
 	_viewport = p_for_viewport;
-	// Every time, regardless of being already setup, make sure the viewport has a transparent background if the rendering engine requires it.
-	// Note that the cleanup explicitly excludes restoring any previous setting, because something else may have changed it after this did.
-	if (requires_transparent_background() && !p_for_viewport->has_transparent_background()) {
-		p_for_viewport->set_transparent_background(true);
+	// Every time, regardless of being already setup, check the viewport transparent background settings.
+	// Do not keep track of the previous transparent background state, because the user may change it.
+	const bool requires_transparent = requires_transparent_background();
+	const bool has_transparent = p_for_viewport->has_transparent_background();
+	if (requires_transparent != has_transparent) {
+		if (requires_transparent) {
+			// If the Viewport needs transparency but doesn't have it, force it.
+			p_for_viewport->set_transparent_background(true);
+		} else {
+			// If the Viewport doesn't need transparency but has it, consult ProjectSettings.
+			// This way we are not force-disabling transparency for a Viewport if the user has it enabled
+			// in ProjectSettings, which is an independent setting from the Viewport's own setting.
+			const bool should_be_transparent = ProjectSettings::get_singleton()->get("rendering/viewport/transparent_background");
+			if (should_be_transparent != has_transparent) {
+				p_for_viewport->set_transparent_background(should_be_transparent);
+			}
+		}
 	}
 	if (_setup_viewports.has(p_for_viewport)) {
 		return;
