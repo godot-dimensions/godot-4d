@@ -7,44 +7,49 @@ void Camera4D::_validate_property(PropertyInfo &p_property) const {
 		PackedStringArray rendering_engine_names = RenderingServer4D::get_singleton()->get_rendering_engine_names();
 		p_property.hint_string = String(",").join(rendering_engine_names);
 	} else if (p_property.name == StringName("view_angle_type")) {
+		// Only show the FOV vs focal length selection if the camera is using some kind of perspective projection.
 		if (!(_projection_type & PROJECTION4D_PERSPECTIVE_DUAL)) {
 			p_property.usage = PROPERTY_USAGE_NONE;
 		}
 	} else if (p_property.name == StringName("focal_length_3d")) {
 		if (_view_angle_type != VIEW_ANGLE_FOCAL_LENGTH || !is_second_pass_perspective()) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = _view_angle_type == VIEW_ANGLE_FOCAL_LENGTH ? PROPERTY_USAGE_NO_EDITOR : PROPERTY_USAGE_NONE;
 		}
 	} else if (p_property.name == StringName("focal_length_4d")) {
 		if (_view_angle_type != VIEW_ANGLE_FOCAL_LENGTH || !is_first_pass_perspective()) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = _view_angle_type == VIEW_ANGLE_FOCAL_LENGTH ? PROPERTY_USAGE_NO_EDITOR : PROPERTY_USAGE_NONE;
 		}
 	} else if (p_property.name == StringName("field_of_view_3d")) {
 		if (_view_angle_type != VIEW_ANGLE_FIELD_OF_VIEW || !is_second_pass_perspective()) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = _view_angle_type == VIEW_ANGLE_FIELD_OF_VIEW ? PROPERTY_USAGE_NO_EDITOR : PROPERTY_USAGE_NONE;
 		}
 	} else if (p_property.name == StringName("field_of_view_4d")) {
 		if (_view_angle_type != VIEW_ANGLE_FIELD_OF_VIEW || !is_first_pass_perspective()) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = _view_angle_type == VIEW_ANGLE_FIELD_OF_VIEW ? PROPERTY_USAGE_NO_EDITOR : PROPERTY_USAGE_NONE;
 		}
 	} else if (p_property.name == StringName("orthographic_size")) {
 		if (_projection_type != PROJECTION4D_ORTHOGRAPHIC) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+	} else if (p_property.name == StringName("depth_fade_start")) {
+		if (_depth_fade_mode == DEPTH_FADE_DISABLED) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("w_fade_color_negative")) {
 		if (!(_w_fade_mode & W_FADE_HUE_SHIFT)) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("w_fade_color_positive")) {
 		if (!(_w_fade_mode & W_FADE_HUE_SHIFT)) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("w_fade_distance")) {
 		if (_w_fade_mode == W_FADE_DISABLED) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("w_fade_slope")) {
 		if (_w_fade_mode == W_FADE_DISABLED) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	}
 }
@@ -93,18 +98,6 @@ void Camera4D::make_current() {
 	}
 }
 
-void Camera4D::set_depth_fade_mode(const DepthFadeMode p_depth_fade_mode) {
-	_depth_fade_mode = p_depth_fade_mode;
-}
-
-void Camera4D::set_depth_fade_start(const double p_depth_fade_start) {
-	_depth_fade_start = p_depth_fade_start;
-}
-
-double Camera4D::get_depth_fade_start() const {
-	return _depth_fade_start;
-}
-
 bool Camera4D::is_position_behind(const Vector4 &p_global_position) const {
 	const Transform4D global_xform = get_global_transform();
 	return global_xform.basis.z.dot(p_global_position - global_xform.origin) > -_clip_near;
@@ -149,7 +142,7 @@ Vector2 Camera4D::world_to_viewport_local_normal(const Vector4 &p_local_position
 	// Project from 4D to 3D.
 	Vector3 projected_point_3d;
 	if (bool(_projection_type & PROJECTION4D_PERSPECTIVE_4D)) {
-		projected_point_3d = Vector3(p_local_position.x, p_local_position.y, p_local_position.w) * (_focal_length_4d / p_local_position.z);
+		projected_point_3d = Vector3(p_local_position.x, p_local_position.y, p_local_position.w) * (_focal_length_4d / (p_local_position.z + p_local_position.w * _skewness));
 	} else {
 		projected_point_3d = Vector3(p_local_position.x, p_local_position.y, p_local_position.z);
 	}
@@ -170,24 +163,12 @@ Vector2 Camera4D::world_to_viewport(const Vector4 &p_global_position) const {
 	return (projected * pixel_size + viewport_size) * 0.5f;
 }
 
-String Camera4D::get_rendering_engine_name() const {
-	return _rendering_engine_name;
-}
-
 void Camera4D::set_rendering_engine_name(const String &p_rendering_engine_name) {
 	_rendering_engine_name = p_rendering_engine_name;
 }
 
-Camera4D::KeepAspect Camera4D::get_keep_aspect() const {
-	return _keep_aspect;
-}
-
 void Camera4D::set_keep_aspect(const KeepAspect p_keep_aspect) {
 	_keep_aspect = p_keep_aspect;
-}
-
-Camera4D::ProjectionType4D Camera4D::get_projection_type() const {
-	return _projection_type;
 }
 
 void Camera4D::set_projection_type(const ProjectionType4D p_projection_type_4d) {
@@ -203,25 +184,13 @@ bool Camera4D::is_second_pass_perspective() const {
 	return bool(_projection_type & PROJECTION4D_PERSPECTIVE_3D);
 }
 
-Camera4D::ViewAngleType Camera4D::get_view_angle_type() const {
-	return _view_angle_type;
-}
-
 void Camera4D::set_view_angle_type(const ViewAngleType p_view_angle_type) {
 	_view_angle_type = p_view_angle_type;
 	notify_property_list_changed();
 }
 
-double Camera4D::get_focal_length_4d() const {
-	return _focal_length_4d;
-}
-
 void Camera4D::set_focal_length_4d(const double p_focal_length_4d) {
 	_focal_length_4d = p_focal_length_4d;
-}
-
-double Camera4D::get_focal_length_3d() const {
-	return _focal_length_3d;
 }
 
 void Camera4D::set_focal_length_3d(const double p_focal_length_3d) {
@@ -244,32 +213,25 @@ void Camera4D::set_field_of_view_3d(const double p_field_of_view_3d) {
 	_focal_length_3d = Math::tan((Math_PI - p_field_of_view_3d) * 0.5);
 }
 
-double Camera4D::get_orthographic_size() const {
-	return _orthographic_size;
-}
-
 void Camera4D::set_orthographic_size(const double p_orthographic_size) {
 	_orthographic_size = p_orthographic_size;
-}
-
-double Camera4D::get_clip_near() const {
-	return _clip_near;
 }
 
 void Camera4D::set_clip_near(const double p_clip_near) {
 	_clip_near = p_clip_near;
 }
 
-double Camera4D::get_clip_far() const {
-	return _clip_far;
-}
-
 void Camera4D::set_clip_far(const double p_clip_far) {
 	_clip_far = p_clip_far;
 }
 
-Camera4D::WFadeMode Camera4D::get_w_fade_mode() const {
-	return _w_fade_mode;
+void Camera4D::set_depth_fade_mode(const DepthFadeMode p_depth_fade_mode) {
+	_depth_fade_mode = p_depth_fade_mode;
+	notify_property_list_changed();
+}
+
+void Camera4D::set_depth_fade_start(const double p_depth_fade_start) {
+	_depth_fade_start = p_depth_fade_start;
 }
 
 void Camera4D::set_w_fade_mode(const WFadeMode p_w_fade_mode) {
@@ -277,36 +239,40 @@ void Camera4D::set_w_fade_mode(const WFadeMode p_w_fade_mode) {
 	notify_property_list_changed();
 }
 
-Color Camera4D::get_w_fade_color_negative() const {
-	return _w_fade_color_negative;
-}
-
 void Camera4D::set_w_fade_color_negative(const Color &p_w_fade_color_negative) {
 	_w_fade_color_negative = p_w_fade_color_negative;
-}
-
-Color Camera4D::get_w_fade_color_positive() const {
-	return _w_fade_color_positive;
 }
 
 void Camera4D::set_w_fade_color_positive(const Color &p_w_fade_color_positive) {
 	_w_fade_color_positive = p_w_fade_color_positive;
 }
 
-double Camera4D::get_w_fade_distance() const {
-	return _w_fade_distance;
-}
-
 void Camera4D::set_w_fade_distance(const double p_w_fade_distance) {
 	_w_fade_distance = p_w_fade_distance;
 }
 
-double Camera4D::get_w_fade_slope() const {
-	return _w_fade_slope;
-}
-
 void Camera4D::set_w_fade_slope(const double p_w_fade_slope) {
 	_w_fade_slope = p_w_fade_slope;
+}
+
+void Camera4D::set_edge_falloff(const double p_edge_falloff) {
+	_edge_falloff = p_edge_falloff;
+}
+
+void Camera4D::set_plane_sharpness(const double p_plane_sharpness) {
+	_plane_sharpness = p_plane_sharpness;
+}
+
+void Camera4D::set_skewness(const double p_skewness) {
+	_skewness = p_skewness;
+}
+
+void Camera4D::set_projection_opacity(const double p_projection_opacity) {
+	_projection_opacity = p_projection_opacity;
+}
+
+void Camera4D::set_projection_opacity_base(const double p_projection_opacity_base) {
+	_projection_opacity_base = p_projection_opacity_base;
 }
 
 void Camera4D::_bind_methods() {
@@ -370,6 +336,15 @@ void Camera4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_clip_far", "clip_far"), &Camera4D::set_clip_far);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clip_far", PROPERTY_HINT_RANGE, "0.01,4000,0.01,or_greater,exp,suffix:m"), "set_clip_far", "get_clip_far");
 
+	ADD_GROUP("Fading", "");
+	ClassDB::bind_method(D_METHOD("get_depth_fade_mode"), &Camera4D::get_depth_fade_mode);
+	ClassDB::bind_method(D_METHOD("set_depth_fade_mode", "depth_fade_mode"), &Camera4D::set_depth_fade_mode);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "depth_fade_mode", PROPERTY_HINT_ENUM, "Disabled,Distance,XYZ Only,Z Only"), "set_depth_fade_mode", "get_depth_fade_mode");
+
+	ClassDB::bind_method(D_METHOD("get_depth_fade_start"), &Camera4D::get_depth_fade_start);
+	ClassDB::bind_method(D_METHOD("set_depth_fade_start", "depth_fade_start"), &Camera4D::set_depth_fade_start);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth_fade_start", PROPERTY_HINT_RANGE, "1,100,0.01,or_greater,or_less,exp,suffix:m"), "set_depth_fade_start", "get_depth_fade_start");
+
 	ClassDB::bind_method(D_METHOD("get_w_fade_mode"), &Camera4D::get_w_fade_mode);
 	ClassDB::bind_method(D_METHOD("set_w_fade_mode", "w_fade_mode"), &Camera4D::set_w_fade_mode);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "w_fade_mode", PROPERTY_HINT_ENUM, "Disabled,Transparency,Hue Shift,Transparency + Hue Shift"), "set_w_fade_mode", "get_w_fade_mode");
@@ -390,13 +365,26 @@ void Camera4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_w_fade_slope", "w_fade_slope"), &Camera4D::set_w_fade_slope);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.001,10,0.001,or_greater,or_less,exp"), "set_w_fade_slope", "get_w_fade_slope");
 
-	ClassDB::bind_method(D_METHOD("get_depth_fade_mode"), &Camera4D::get_depth_fade_mode);
-	ClassDB::bind_method(D_METHOD("set_depth_fade_mode", "depth_fade_mode"), &Camera4D::set_depth_fade_mode);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "depth_fade_mode", PROPERTY_HINT_ENUM, "Disabled,Distance,XYZ Only,Z Only"), "set_depth_fade_mode", "get_depth_fade_mode");
+	ADD_GROUP("Projection", "");
+	ClassDB::bind_method(D_METHOD("get_edge_falloff"), &Camera4D::get_edge_falloff);
+	ClassDB::bind_method(D_METHOD("set_edge_falloff", "edge_falloff"), &Camera4D::set_edge_falloff);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "edge_falloff", PROPERTY_HINT_RANGE, "0,5,0.01,or_greater"), "set_edge_falloff", "get_edge_falloff");
 
-	ClassDB::bind_method(D_METHOD("get_depth_fade_start"), &Camera4D::get_depth_fade_start);
-	ClassDB::bind_method(D_METHOD("set_depth_fade_start", "depth_fade_start"), &Camera4D::set_depth_fade_start);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth_fade_start", PROPERTY_HINT_RANGE, "1,100,0.01,or_greater,or_less,exp"), "set_depth_fade_start", "get_depth_fade_start");
+	ClassDB::bind_method(D_METHOD("get_plane_sharpness"), &Camera4D::get_plane_sharpness);
+	ClassDB::bind_method(D_METHOD("set_plane_sharpness", "plane_sharpness"), &Camera4D::set_plane_sharpness);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "plane_sharpness", PROPERTY_HINT_RANGE, "0,0.99,0.001"), "set_plane_sharpness", "get_plane_sharpness");
+
+	ClassDB::bind_method(D_METHOD("get_skewness"), &Camera4D::get_skewness);
+	ClassDB::bind_method(D_METHOD("set_skewness", "skewness"), &Camera4D::set_skewness);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "skewness", PROPERTY_HINT_RANGE, "-1,1,0.001"), "set_skewness", "get_skewness");
+
+	ClassDB::bind_method(D_METHOD("get_projection_opacity"), &Camera4D::get_projection_opacity);
+	ClassDB::bind_method(D_METHOD("set_projection_opacity", "projection_opacity"), &Camera4D::set_projection_opacity);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "projection_opacity", PROPERTY_HINT_RANGE, "0,1,0.001"), "set_projection_opacity", "get_projection_opacity");
+
+	ClassDB::bind_method(D_METHOD("get_projection_opacity_base"), &Camera4D::get_projection_opacity_base);
+	ClassDB::bind_method(D_METHOD("set_projection_opacity_base", "projection_opacity_base"), &Camera4D::set_projection_opacity_base);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "projection_opacity_base", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,exp"), "set_projection_opacity_base", "get_projection_opacity_base");
 
 	BIND_ENUM_CONSTANT(KEEP_WIDTH);
 	BIND_ENUM_CONSTANT(KEEP_HEIGHT);

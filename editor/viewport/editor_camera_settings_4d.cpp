@@ -87,6 +87,36 @@ void EditorCameraSettings4D::set_w_fade_slope(const double p_w_fade_slope) {
 	write_to_config_file();
 }
 
+void EditorCameraSettings4D::set_edge_falloff(const double p_edge_falloff) {
+	_edge_falloff = p_edge_falloff;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+void EditorCameraSettings4D::set_plane_sharpness(const double p_plane_sharpness) {
+	_plane_sharpness = p_plane_sharpness;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+void EditorCameraSettings4D::set_skewness(const double p_skewness) {
+	_skewness = p_skewness;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+void EditorCameraSettings4D::set_projection_opacity(const double p_projection_opacity) {
+	_projection_opacity = p_projection_opacity;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+void EditorCameraSettings4D::set_projection_opacity_base(const double p_projection_opacity_base) {
+	_projection_opacity_base = p_projection_opacity_base;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
 void EditorCameraSettings4D::set_rendering_engine_name(const String &p_rendering_engine_name) {
 	_rendering_engine_name = p_rendering_engine_name;
 	notify_property_list_changed();
@@ -111,6 +141,11 @@ void EditorCameraSettings4D::apply_to_cameras() const {
 		camera->set_w_fade_color_positive(_w_fade_color_positive);
 		camera->set_w_fade_distance(_w_fade_distance);
 		camera->set_w_fade_slope(_w_fade_slope);
+		camera->set_edge_falloff(_edge_falloff);
+		camera->set_plane_sharpness(_plane_sharpness);
+		camera->set_skewness(_skewness);
+		camera->set_projection_opacity(_projection_opacity);
+		camera->set_projection_opacity_base(_projection_opacity_base);
 		camera->set_rendering_engine_name(_rendering_engine_name);
 	}
 }
@@ -130,6 +165,11 @@ void EditorCameraSettings4D::setup(EditorMainScreen4D *p_editor_main_screen, Ref
 	_w_fade_color_positive = p_config_file->get_value("camera", "w_fade_color_positive", _w_fade_color_positive);
 	_w_fade_distance = p_config_file->get_value("camera", "w_fade_distance", _w_fade_distance);
 	_w_fade_slope = p_config_file->get_value("camera", "w_fade_slope", _w_fade_slope);
+	_edge_falloff = p_config_file->get_value("camera", "edge_falloff", _edge_falloff);
+	_plane_sharpness = p_config_file->get_value("camera", "plane_sharpness", _plane_sharpness);
+	_skewness = p_config_file->get_value("camera", "skewness", _skewness);
+	_projection_opacity = p_config_file->get_value("camera", "projection_opacity", _projection_opacity);
+	_projection_opacity_base = p_config_file->get_value("camera", "projection_opacity_base", _projection_opacity_base);
 	// Keep this in sync with `EditorMainScreen4D::_update_rendering_engine_menu()`.
 	_rendering_engine_name = p_config_file->get_value("camera", "rendering_engine_name", _rendering_engine_name);
 	apply_to_cameras();
@@ -176,6 +216,21 @@ void EditorCameraSettings4D::write_to_config_file() const {
 	if (!Math::is_equal_approx(_w_fade_slope, 1.0)) {
 		_4d_editor_config_file->set_value("camera", "w_fade_slope", _w_fade_slope);
 	}
+	if (!Math::is_equal_approx(_edge_falloff, 1.0)) {
+		_4d_editor_config_file->set_value("camera", "edge_falloff", _edge_falloff);
+	}
+	if (!Math::is_equal_approx(_plane_sharpness, 0.3)) {
+		_4d_editor_config_file->set_value("camera", "plane_sharpness", _plane_sharpness);
+	}
+	if (!Math::is_equal_approx(_skewness, 0.0)) {
+		_4d_editor_config_file->set_value("camera", "skewness", _skewness);
+	}
+	if (!Math::is_equal_approx(_projection_opacity, 1.0)) {
+		_4d_editor_config_file->set_value("camera", "projection_opacity", _projection_opacity);
+	}
+	if (!Math::is_equal_approx(_projection_opacity_base, 1.0)) {
+		_4d_editor_config_file->set_value("camera", "projection_opacity_base", _projection_opacity_base);
+	}
 	if (!_rendering_engine_name.is_empty()) {
 		_4d_editor_config_file->set_value("camera", "rendering_engine_name", _rendering_engine_name);
 	}
@@ -193,27 +248,27 @@ void EditorCameraSettings4D::_validate_property(PropertyInfo &p_property) const 
 		}
 	} else if (p_property.name == StringName("clip_far")) {
 		if (_rendering_engine_name == "Wireframe Canvas" && _depth_fade_mode == Camera4D::DEPTH_FADE_DISABLED) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("depth_fade_start")) {
 		if (_depth_fade_mode == Camera4D::DEPTH_FADE_DISABLED) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("w_fade_color_negative")) {
 		if (!(_w_fade_mode & Camera4D::W_FADE_HUE_SHIFT)) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("w_fade_color_positive")) {
 		if (!(_w_fade_mode & Camera4D::W_FADE_HUE_SHIFT)) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("w_fade_distance")) {
 		if (_w_fade_mode == Camera4D::W_FADE_DISABLED) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	} else if (p_property.name == StringName("w_fade_slope")) {
 		if (_w_fade_mode == Camera4D::W_FADE_DISABLED) {
-			p_property.usage = PROPERTY_USAGE_NONE;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 	}
 }
@@ -245,6 +300,7 @@ void EditorCameraSettings4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_rotation_axis_lock", "rotation_axis_lock"), &EditorCameraSettings4D::set_rotation_axis_lock);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "rotation_axis_lock", PROPERTY_HINT_ENUM, "Fully Locked,Free Ground View,Fully Free"), "set_rotation_axis_lock", "get_rotation_axis_lock");
 
+	ADD_GROUP("Fading", "");
 	ClassDB::bind_method(D_METHOD("get_depth_fade_mode"), &EditorCameraSettings4D::get_depth_fade_mode);
 	ClassDB::bind_method(D_METHOD("set_depth_fade_mode", "depth_fade_mode"), &EditorCameraSettings4D::set_depth_fade_mode);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "depth_fade_mode", PROPERTY_HINT_ENUM, "Disabled,Distance,XYZ Only,Z Only"), "set_depth_fade_mode", "get_depth_fade_mode");
@@ -272,4 +328,25 @@ void EditorCameraSettings4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_w_fade_slope"), &EditorCameraSettings4D::get_w_fade_slope);
 	ClassDB::bind_method(D_METHOD("set_w_fade_slope", "w_fade_slope"), &EditorCameraSettings4D::set_w_fade_slope);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "w_fade_slope", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,or_less,exp"), "set_w_fade_slope", "get_w_fade_slope");
+
+	ADD_GROUP("Projection", "");
+	ClassDB::bind_method(D_METHOD("get_edge_falloff"), &EditorCameraSettings4D::get_edge_falloff);
+	ClassDB::bind_method(D_METHOD("set_edge_falloff", "edge_falloff"), &EditorCameraSettings4D::set_edge_falloff);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "edge_falloff", PROPERTY_HINT_RANGE, "0,5,0.01,or_greater"), "set_edge_falloff", "get_edge_falloff");
+
+	ClassDB::bind_method(D_METHOD("get_plane_sharpness"), &EditorCameraSettings4D::get_plane_sharpness);
+	ClassDB::bind_method(D_METHOD("set_plane_sharpness", "plane_sharpness"), &EditorCameraSettings4D::set_plane_sharpness);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "plane_sharpness", PROPERTY_HINT_RANGE, "0,0.99,0.001"), "set_plane_sharpness", "get_plane_sharpness");
+
+	ClassDB::bind_method(D_METHOD("get_skewness"), &EditorCameraSettings4D::get_skewness);
+	ClassDB::bind_method(D_METHOD("set_skewness", "skewness"), &EditorCameraSettings4D::set_skewness);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "skewness", PROPERTY_HINT_RANGE, "-1,1,0.001"), "set_skewness", "get_skewness");
+
+	ClassDB::bind_method(D_METHOD("get_projection_opacity"), &EditorCameraSettings4D::get_projection_opacity);
+	ClassDB::bind_method(D_METHOD("set_projection_opacity", "projection_opacity"), &EditorCameraSettings4D::set_projection_opacity);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "projection_opacity", PROPERTY_HINT_RANGE, "0,1,0.001"), "set_projection_opacity", "get_projection_opacity");
+
+	ClassDB::bind_method(D_METHOD("get_projection_opacity_base"), &EditorCameraSettings4D::get_projection_opacity_base);
+	ClassDB::bind_method(D_METHOD("set_projection_opacity_base", "projection_opacity_base"), &EditorCameraSettings4D::set_projection_opacity_base);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "projection_opacity_base", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,exp"), "set_projection_opacity_base", "get_projection_opacity_base");
 }
