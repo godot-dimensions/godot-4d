@@ -616,11 +616,8 @@ void TetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("populate_inverse_metric_cache"), &TetraMesh4D::populate_inverse_metric_cache);
 	ClassDB::bind_method(D_METHOD("get_signed_distance_to_mesh", "local_point"), &TetraMesh4D::get_signed_distance_to_mesh_bind);
 	// Raycast.
-	// TODO: These should be `Math_INF` but Godot's bindings do not like infinity,
-	// and also values above max float32 will overflow to infinity in the bindings.
-	// See https://github.com/godotengine/godot-cpp/pull/2030
-	ClassDB::bind_method(D_METHOD("raycast_intersects_fast", "local_from", "local_direction", "max_distance"), &TetraMesh4D::raycast_intersects_fast, DEFVAL(3.4e38));
-	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction", "max_distance"), &TetraMesh4D::raycast_intersects, DEFVAL(3.4e38));
+	ClassDB::bind_method(D_METHOD("raycast_intersects_fast", "local_from", "local_direction", "max_distance"), &TetraMesh4D::raycast_intersects_fast, DEFVAL(BINDING_SAFE_INF));
+	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction", "max_distance"), &TetraMesh4D::raycast_intersects, DEFVAL(BINDING_SAFE_INF));
 	// Cache (validation is bound in base Mesh4D).
 	ClassDB::bind_method(D_METHOD("tetra_mesh_clear_cache"), &TetraMesh4D::tetra_mesh_clear_cache);
 	// Conversion.
