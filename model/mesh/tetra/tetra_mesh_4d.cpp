@@ -286,7 +286,8 @@ void TetraMesh4D::tetra_mesh_clear_cache() {
 	mark_mesh_bounds_and_proxy_mesh_3d_dirty();
 }
 
-Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map) {
+Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedInt32Array &p_texture_map_indices) {
+	const PackedVector3Array texture_map_values = get_texture_map_values();
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
 	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
@@ -295,45 +296,49 @@ Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array
 	material.instantiate();
 	material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 	surface_tool->set_material(material);
-	const int64_t size = p_texture_map.size();
+	const int64_t size = p_texture_map_indices.size();
 	float hue = 0.0f;
 	for (int64_t i = 0; i < size - 3; i += 4) {
 		surface_tool->set_color(Color::from_hsv(hue, 1.0f, 1.0f));
+		const Vector3 &tex0 = texture_map_values[p_texture_map_indices[i]];
+		const Vector3 &tex1 = texture_map_values[p_texture_map_indices[i + 1]];
+		const Vector3 &tex2 = texture_map_values[p_texture_map_indices[i + 2]];
+		const Vector3 &tex3 = texture_map_values[p_texture_map_indices[i + 3]];
 		// Fix for meshes having inverted faces.
-		const Vector3 average = (p_texture_map[i] + p_texture_map[i + 1] + p_texture_map[i + 2] + p_texture_map[i + 3]) / 4.0f;
-		const Vector3 first_cross = (p_texture_map[i + 1] - p_texture_map[i]).cross(p_texture_map[i + 2] - p_texture_map[i]);
-		const real_t dot = first_cross.dot(average - p_texture_map[i]);
+		const Vector3 average = (tex0 + tex1 + tex2 + tex3) / 4.0f;
+		const Vector3 first_cross = (tex1 - tex0).cross(tex2 - tex0);
+		const real_t dot = first_cross.dot(average - tex0);
 		if (dot == 0.0f) {
 			continue; // Degenerate tetrahedron.
 		} else if (dot > 0.0f) {
-			surface_tool->add_vertex(p_texture_map[i]);
-			surface_tool->add_vertex(p_texture_map[i + 1]);
-			surface_tool->add_vertex(p_texture_map[i + 2]);
-			surface_tool->add_vertex(p_texture_map[i]);
-			surface_tool->add_vertex(p_texture_map[i + 2]);
-			surface_tool->add_vertex(p_texture_map[i + 3]);
-			surface_tool->add_vertex(p_texture_map[i]);
-			surface_tool->add_vertex(p_texture_map[i + 3]);
-			surface_tool->add_vertex(p_texture_map[i + 1]);
-			surface_tool->add_vertex(p_texture_map[i + 1]);
-			surface_tool->add_vertex(p_texture_map[i + 3]);
-			surface_tool->add_vertex(p_texture_map[i + 2]);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex2);
 		} else { // dot < 0.0f
-			surface_tool->add_vertex(p_texture_map[i + 2]);
-			surface_tool->add_vertex(p_texture_map[i + 1]);
-			surface_tool->add_vertex(p_texture_map[i]);
-			surface_tool->add_vertex(p_texture_map[i + 3]);
-			surface_tool->add_vertex(p_texture_map[i + 2]);
-			surface_tool->add_vertex(p_texture_map[i]);
-			surface_tool->add_vertex(p_texture_map[i + 1]);
-			surface_tool->add_vertex(p_texture_map[i + 3]);
-			surface_tool->add_vertex(p_texture_map[i]);
-			surface_tool->add_vertex(p_texture_map[i + 2]);
-			surface_tool->add_vertex(p_texture_map[i + 3]);
-			surface_tool->add_vertex(p_texture_map[i + 1]);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex1);
 		}
 		// Any irrational number will do here.
-		hue += 0.045f * Math_E;
+		hue += 0.045f * (float)Math_E;
 	}
 	surface_tool->generate_normals();
 	return surface_tool->commit();
@@ -341,23 +346,35 @@ Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array
 
 Ref<ArrayMesh> TetraMesh4D::export_texture_map_mesh() {
 	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Ref<ArrayMesh>(), "TetraMesh4D: Cannot export texture map mesh for an invalid mesh.");
-	return convert_texture_map_to_mesh(get_simplex_cell_texture_map());
+	return convert_texture_map_to_mesh(get_simplex_cell_texture_map_indices());
 }
 
 bool TetraMesh4D::validate_mesh_data() {
-	const PackedInt32Array cell_vertex_indices = get_simplex_cell_vertex_indices();
-	const int64_t cell_vertex_indices_count = cell_vertex_indices.size();
-	if (cell_vertex_indices_count == 0) {
+	const PackedInt32Array simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
+	const int64_t simplex_cell_vertex_indices_count = simplex_cell_vertex_indices.size();
+	if (simplex_cell_vertex_indices_count == 0) {
 		return true; // Zero cells is allowed, and no need to validate anything else in that case.
 	}
-	ERR_FAIL_COND_V_MSG(cell_vertex_indices_count % 4 != 0, false, "TetraMesh4D: Cell vertex indices count must be a multiple of 4 (" + itos(cell_vertex_indices_count) + " % 4 != 0).");
-	const int64_t cell_texture_map_count = get_simplex_cell_texture_map().size();
-	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_vertex_indices_count, false, "TetraMesh4D: Texture map size (" + itos(cell_texture_map_count) + ") must match cell vertex indices size (" + itos(cell_vertex_indices_count) + ").");
-	const int64_t cell_normals_count = get_simplex_cell_boundary_normals().size();
-	ERR_FAIL_COND_V_MSG(cell_normals_count > 0 && cell_normals_count * 4 != cell_vertex_indices_count, false, "TetraMesh4D: Boundary normals count (" + itos(cell_normals_count) + ") must have one per cell (expected " + itos(cell_vertex_indices_count / 4) + ")");
+	ERR_FAIL_COND_V_MSG(simplex_cell_vertex_indices_count % 4 != 0, false, "TetraMesh4D: Cell vertex indices count must be a multiple of 4 (" + itos(simplex_cell_vertex_indices_count) + " % 4 != 0).");
+	const PackedInt32Array cell_texture_map_indices = get_simplex_cell_texture_map_indices();
+	const int64_t cell_texture_map_indices_count = cell_texture_map_indices.size();
+	ERR_FAIL_COND_V_MSG(cell_texture_map_indices_count > 0 && cell_texture_map_indices_count != simplex_cell_vertex_indices_count, false, "TetraMesh4D: Texture map size (" + itos(cell_texture_map_indices_count) + ") must match cell vertex indices size (" + itos(simplex_cell_vertex_indices_count) + ").");
+	const PackedInt32Array cell_normal_indices = get_simplex_cell_normal_indices();
+	const int64_t cell_normal_indices_count = cell_normal_indices.size();
+	ERR_FAIL_COND_V_MSG(cell_normal_indices_count > 0 && cell_normal_indices_count != simplex_cell_vertex_indices_count, false, "TetraMesh4D: Normal indices size (" + itos(cell_normal_indices_count) + ") must match cell vertex indices size (" + itos(simplex_cell_vertex_indices_count) + ").");
+	const int64_t cell_boundary_normals_count = get_simplex_cell_boundary_normals().size();
+	ERR_FAIL_COND_V_MSG(cell_boundary_normals_count > 0 && cell_boundary_normals_count * 4 != simplex_cell_vertex_indices_count, false, "TetraMesh4D: Boundary normals count (" + itos(cell_boundary_normals_count) + ") must have one per cell (expected " + itos(simplex_cell_vertex_indices_count / 4) + ")");
 	const int64_t vertex_count = get_vertex_positions().size();
-	for (int32_t cell_vertex_index : cell_vertex_indices) {
-		ERR_FAIL_COND_V_MSG(cell_vertex_index < 0 || cell_vertex_index >= vertex_count, false, "TetraMesh4D: Cell index " + itos(cell_vertex_index) + " is out of range (valid: 0-" + itos(vertex_count - 1) + ")");
+	for (int32_t cell_vertex_index : simplex_cell_vertex_indices) {
+		ERR_FAIL_COND_V_MSG(cell_vertex_index < 0 || cell_vertex_index >= vertex_count, false, "TetraMesh4D: Cell vertex index " + itos(cell_vertex_index) + " is out of range (valid: 0-" + itos(vertex_count - 1) + ")");
+	}
+	const int64_t texture_map_value_count = get_texture_map_values().size();
+	for (int32_t texture_map_index : cell_texture_map_indices) {
+		ERR_FAIL_COND_V_MSG(texture_map_index < 0 || texture_map_index >= texture_map_value_count, false, "TetraMesh4D: Texture map index " + itos(texture_map_index) + " is out of range (valid: 0-" + itos(texture_map_value_count - 1) + ")");
+	}
+	const int64_t normal_value_count = get_normal_values().size();
+	for (int32_t normal_index : cell_normal_indices) {
+		ERR_FAIL_COND_V_MSG(normal_index < 0 || normal_index >= normal_value_count, false, "TetraMesh4D: Normal index " + itos(normal_index) + " is out of range (valid: 0-" + itos(normal_value_count - 1) + ")");
 	}
 	return true;
 }
@@ -365,9 +382,9 @@ bool TetraMesh4D::validate_mesh_data() {
 void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
 	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
-		const PackedInt32Array cell_vertex_indices = get_simplex_cell_vertex_indices();
+		const PackedInt32Array simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
 		PackedColorArray color_array = p_material->get_albedo_color_array();
-		const int cell_count = cell_vertex_indices.size() / 4;
+		const int cell_count = simplex_cell_vertex_indices.size() / 4;
 		if (color_array.size() < cell_count) {
 			p_material->resize_albedo_color_array(cell_count);
 		}
@@ -393,10 +410,12 @@ Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	Ref<ArrayTetraMesh4D> array_mesh;
 	array_mesh.instantiate();
 	array_mesh->set_vertex_positions(get_vertex_positions());
+	array_mesh->set_normal_values(get_normal_values());
+	array_mesh->set_texture_map_values(get_texture_map_values());
 	array_mesh->set_simplex_cell_vertex_indices(get_simplex_cell_vertex_indices());
+	array_mesh->set_simplex_cell_normal_indices(get_simplex_cell_normal_indices());
+	array_mesh->set_simplex_cell_texture_map_indices(get_simplex_cell_texture_map_indices());
 	array_mesh->set_simplex_cell_boundary_normals(get_simplex_cell_boundary_normals());
-	array_mesh->set_simplex_cell_vertex_normals(get_simplex_cell_vertex_normals());
-	array_mesh->set_simplex_cell_texture_map(get_simplex_cell_texture_map());
 	array_mesh->set_material(get_material());
 	array_mesh->set_name(get_name());
 	// Copy metadata.
@@ -428,22 +447,22 @@ PackedInt32Array TetraMesh4D::get_simplex_cell_vertex_indices() {
 	return indices;
 }
 
+PackedInt32Array TetraMesh4D::get_simplex_cell_normal_indices() {
+	PackedInt32Array indices;
+	GDVIRTUAL_CALL(_get_simplex_cell_normal_indices, indices);
+	return indices;
+}
+
+PackedInt32Array TetraMesh4D::get_simplex_cell_texture_map_indices() {
+	PackedInt32Array indices;
+	GDVIRTUAL_CALL(_get_simplex_cell_texture_map_indices, indices);
+	return indices;
+}
+
 PackedVector4Array TetraMesh4D::get_simplex_cell_boundary_normals() {
 	PackedVector4Array face_normals;
 	GDVIRTUAL_CALL(_get_simplex_cell_boundary_normals, face_normals);
 	return face_normals;
-}
-
-PackedVector4Array TetraMesh4D::get_simplex_cell_vertex_normals() {
-	PackedVector4Array vertex_normals;
-	GDVIRTUAL_CALL(_get_simplex_cell_vertex_normals, vertex_normals);
-	return vertex_normals;
-}
-
-PackedVector3Array TetraMesh4D::get_simplex_cell_texture_map() {
-	PackedVector3Array texture_map;
-	GDVIRTUAL_CALL(_get_simplex_cell_texture_map, texture_map);
-	return texture_map;
 }
 
 PackedInt32Array TetraMesh4D::calculate_edge_indices_from_simplex_cell_vertex_indices(const PackedInt32Array &p_simplex_cell_vertex_indices, const bool p_deduplicate) {
@@ -517,17 +536,27 @@ void TetraMesh4D::update_proxy_mesh_3d() {
 	const PackedVector4Array cell_positions = get_simplex_cell_positions();
 	const PackedVector4Array cell_normals = get_simplex_cell_boundary_normals();
 	(void)cell_normals; // Unused for now, should be used for smooth shading in the future.
-	PackedVector3Array cell_tex_map = get_simplex_cell_texture_map();
-	if (cell_tex_map.size() != cell_positions.size()) {
-		if (cell_tex_map.size() == 0) {
-			Ref<TetraMaterial4D> tetra_material = get_material();
-			if (tetra_material.is_valid() && tetra_material->get_albedo_texture_3d().is_valid()) {
-				WARN_PRINT("Mesh '" + get_name() + "' has an albedo texture but no texture map. The texture will not function correctly.");
+	PackedVector3Array tex_map_values = get_texture_map_values();
+	PackedInt32Array cell_tex_map_indices = get_simplex_cell_texture_map_indices();
+	{
+		const int64_t cell_positions_count = cell_positions.size();
+		const int64_t cell_tex_map_indices_count = cell_tex_map_indices.size();
+		if (cell_tex_map_indices_count != cell_positions_count) {
+			if (cell_tex_map_indices_count == 0) {
+				Ref<TetraMaterial4D> tetra_material = get_material();
+				if (tetra_material.is_valid() && tetra_material->get_albedo_texture_3d().is_valid()) {
+					WARN_PRINT("Mesh '" + get_name() + "' has an albedo texture but no texture map. The texture will not function correctly.");
+				}
+			} else {
+				ERR_PRINT("Cell texture map size (" + itos(cell_tex_map_indices_count) + ") does not match cell positions size (" + itos(cell_positions_count) + ").");
 			}
-		} else {
-			ERR_PRINT("Cell texture map size (" + itos(cell_tex_map.size()) + ") does not match cell positions size (" + itos(cell_positions.size()) + ").");
+			cell_tex_map_indices.resize(cell_positions_count);
+			const int64_t tex_map_new_value_index = tex_map_values.size();
+			tex_map_values.append(Vector3(0.0, 0.0, 0.0)); // Add a default value to avoid out-of-bounds access.
+			for (int64_t i = cell_tex_map_indices_count; i < cell_positions_count; i++) {
+				cell_tex_map_indices.set(i, tex_map_new_value_index);
+			}
 		}
-		cell_tex_map.resize(cell_positions.size());
 	}
 	Ref<Material4D> material = get_material();
 	if (material.is_valid()) {
@@ -566,10 +595,10 @@ void TetraMesh4D::update_proxy_mesh_3d() {
 		// UVW texture coords, need 4*3 float slots.  Using UV, UV2, Normal, Color, vertex.y, and vertex.z.
 		// Normal gets normalized somewhere in the pipeline, so last coord of 1.0 will get set to whatever we need to divide by to get
 		// to get the original coords.
-		Vector3 uvw1 = cell_tex_map[i];
-		Vector3 uvw2 = cell_tex_map[i + 1];
-		Vector3 uvw3 = cell_tex_map[i + 2];
-		Vector3 uvw4 = cell_tex_map[i + 3];
+		const Vector3 &uvw1 = tex_map_values[cell_tex_map_indices[i]];
+		const Vector3 &uvw2 = tex_map_values[cell_tex_map_indices[i + 1]];
+		const Vector3 &uvw3 = tex_map_values[cell_tex_map_indices[i + 2]];
+		const Vector3 &uvw4 = tex_map_values[cell_tex_map_indices[i + 3]];
 		surface_tool->set_uv(Vector2(uvw1.x, uvw1.y));
 		surface_tool->set_uv2(Vector2(uvw2.x, uvw2.y));
 		surface_tool->set_normal(Vector3(uvw3.x, uvw3.y, 1.0));
@@ -619,12 +648,12 @@ void TetraMesh4D::_bind_methods() {
 	// Getters.
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_vertex_indices"), &TetraMesh4D::get_simplex_cell_vertex_indices);
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_positions"), &TetraMesh4D::get_simplex_cell_positions);
+	ClassDB::bind_method(D_METHOD("get_simplex_cell_normal_indices"), &TetraMesh4D::get_simplex_cell_normal_indices);
+	ClassDB::bind_method(D_METHOD("get_simplex_cell_texture_map_indices"), &TetraMesh4D::get_simplex_cell_texture_map_indices);
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_boundary_normals"), &TetraMesh4D::get_simplex_cell_boundary_normals);
-	ClassDB::bind_method(D_METHOD("get_simplex_cell_vertex_normals"), &TetraMesh4D::get_simplex_cell_vertex_normals);
-	ClassDB::bind_method(D_METHOD("get_simplex_cell_texture_map"), &TetraMesh4D::get_simplex_cell_texture_map);
 
 	GDVIRTUAL_BIND(_get_simplex_cell_vertex_indices);
+	GDVIRTUAL_BIND(_get_simplex_cell_normal_indices);
+	GDVIRTUAL_BIND(_get_simplex_cell_texture_map_indices);
 	GDVIRTUAL_BIND(_get_simplex_cell_boundary_normals);
-	GDVIRTUAL_BIND(_get_simplex_cell_vertex_normals);
-	GDVIRTUAL_BIND(_get_simplex_cell_texture_map);
 }

@@ -35,9 +35,7 @@ void EditorImportPluginOFFPoly4D::_make_single_convex_3d_cell(Ref<ArrayPolyMesh4
 		sum.normalize();
 		face_normals.set(face_index, sum);
 	}
-	HashMap<Vector2i, Vector<PackedVector4Array>> output_all_poly_cell_normals = p_mesh->get_all_poly_cell_normals();
-	output_all_poly_cell_normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ face_normals });
-	p_mesh->set_all_poly_cell_normals(output_all_poly_cell_normals);
+	p_mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ face_normals });
 }
 
 void EditorImportPluginOFFPoly4D::_make_single_convex_4d_volume(Ref<ArrayPolyMesh4D> p_mesh) {

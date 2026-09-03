@@ -50,9 +50,11 @@ public:
 
 	virtual Ref<ArrayMesh> export_texture_map_mesh() override;
 	virtual PackedInt32Array get_simplex_cell_vertex_indices() override;
+	virtual PackedInt32Array get_simplex_cell_normal_indices() override;
+	virtual PackedInt32Array get_simplex_cell_texture_map_indices() override;
 	virtual PackedVector4Array get_simplex_cell_boundary_normals() override;
-	virtual PackedVector4Array get_simplex_cell_vertex_normals() override;
-	virtual PackedVector3Array get_simplex_cell_texture_map() override;
+	virtual PackedVector4Array get_normal_values() override;
+	virtual PackedVector3Array get_texture_map_values() override;
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_vertex_positions() override;
 

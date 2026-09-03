@@ -86,6 +86,20 @@
 				Before running this function, ensure that the seams are up to date. You can set seams manually, or calculate seams based on the angles between cells using [method calculate_seam_faces].
 			</description>
 		</method>
+		<method name="compact_normal_values">
+			<return type="void" />
+			<description>
+				Compacts the normal value pool by removing values that are not referenced by any normal data binding and merging identical values, remapping the indices of all normal data bindings to the compacted pool. The relative order of the kept values is preserved.
+				[b]Note:[/b] This will break any existing references to the normal values outside of the normal data bindings in ArrayPolyMesh4D. If any exist in your project, they need to be handled separately.
+			</description>
+		</method>
+		<method name="compact_texture_map_values">
+			<return type="void" />
+			<description>
+				Compacts the texture map value pool by removing values that are not referenced by any texture map data binding and merging identical values, remapping the indices of all texture map data bindings to the compacted pool. The relative order of the kept values is preserved.
+				[b]Note:[/b] This will break any existing references to the texture map values outside of the texture map data bindings in ArrayPolyMesh4D. If any exist in your project, they need to be handled separately.
+			</description>
+		</method>
 		<method name="deduplicate_all_elements">
 			<return type="void" />
 			<description>
@@ -187,19 +201,19 @@
 		</method>
 	</methods>
 	<members>
-		<member name="all_poly_cell_normals" type="Dictionary[Vector2i, Array]" setter="set_all_poly_cell_normals" getter="get_all_poly_cell_normals" default="{}">
-			All normal data for this mesh, including per-cell ([member poly_cell_boundary_normals]), cell vertices ([member poly_cell_vertex_normals]), per-face, face vertices, and more. This is a low-level member intended for advanced use cases, the other normal-related members are recommended for most users.
-			The keys are a [Vector2i], where X is the geometry dimension and Y is the decomposition dimension. Both components must be non-negative, and Y must not exceed X. Each dictionary value is effectively [code]Array[PackedVector4Array][/code].
-			When X is greater than Y, the outer array contains one inner array per geometry element of dimension X. Each non-empty inner array must contain one normal per decomposed element of dimension Y, in the order returned by [method PolyMesh4D.get_all_poly_cell_poly_indices]. An empty inner array means that geometry element has no data for this binding.
-			When X equals Y, the outer array is empty or contains exactly one inner array, with one normal per geometry element. A missing key or an empty outer array means no data for the binding.
-			Auxiliary bindings may omit trailing geometry elements: a hierarchical outer array or a flat inner array may be shorter than the geometry count, but must not be longer. The boundary bindings exposed by [member poly_cell_boundary_normals] and [member poly_cell_vertex_normals] must instead cover every boundary cell when populated.
+		<member name="all_poly_cell_normal_indices" type="Dictionary[Vector2i, Array]" setter="set_all_poly_cell_normal_indices" getter="get_all_poly_cell_normal_indices" default="{}">
+			All normal index bindings for this mesh. Each index refers to [member poly_cell_normal_values] and must be non-negative and less than the size of that value pool. This is a low-level member intended for advanced use cases; [member poly_cell_normal_indices] is recommended for boundary cell vertex data.
+			The keys are [Vector2i]s, where X is the geometry dimension and Y is the decomposition dimension. Both components must be non-negative, and Y must not exceed X. Each dictionary value is an [code]Array[PackedInt32Array][/code]. Boundary cell vertex data uses [code]Vector2i(3, 0)[/code]. Boundary normals use [code]Vector2i(3, 3)[/code] and share the same value pool.
+			When X is greater than Y, the outer array contains one inner array per geometry element of dimension X. Each non-empty inner array must contain one value index per decomposed element of dimension Y, in the order returned by [method PolyMesh4D.get_all_poly_cell_poly_indices]. An empty inner array means that geometry element has no data for this binding.
+			When X equals Y, the outer array is empty or contains exactly one inner array, with one value index per geometry element. A missing key or an empty outer array means no data for the binding.
+			Auxiliary bindings may omit trailing geometry elements: a hierarchical outer array or a flat inner array may be shorter than the geometry count, but must not be longer. The boundary bindings exposed by [member poly_cell_normal_indices] and [member poly_cell_boundary_normals] must instead cover every boundary cell when populated.
 		</member>
-		<member name="all_poly_cell_texture_maps" type="Dictionary[Vector2i, Array]" setter="set_all_poly_cell_texture_maps" getter="get_all_poly_cell_texture_maps" default="{}">
-			All texture map data for this mesh, including cell vertices ([member poly_cell_texture_map]), face vertices, and more. This is a low-level member intended for advanced use cases, the other texture map member is recommended for most users.
-			The keys are a [Vector2i], where X is the geometry dimension and Y is the decomposition dimension. Both components must be non-negative, and Y must not exceed X. Each dictionary value is effectively [code]Array[PackedVector3Array][/code].
-			When X is greater than Y, the outer array contains one inner array per geometry element of dimension X. Each non-empty inner array must contain one texture coordinate per decomposed element of dimension Y, in the order returned by [method PolyMesh4D.get_all_poly_cell_poly_indices]. An empty inner array means that geometry element has no data for this binding.
-			When X equals Y, the outer array is empty or contains exactly one inner array, with one texture coordinate per geometry element. A missing key or an empty outer array means no data for the binding.
-			Auxiliary bindings may omit trailing geometry elements: a hierarchical outer array or a flat inner array may be shorter than the geometry count, but must not be longer. The boundary bindings exposed by [member poly_cell_texture_map] must instead cover every boundary cell when populated.
+		<member name="all_poly_cell_texture_map_indices" type="Dictionary[Vector2i, Array]" setter="set_all_poly_cell_texture_map_indices" getter="get_all_poly_cell_texture_map_indices" default="{}">
+			All texture map index bindings for this mesh. Each index refers to [member poly_cell_texture_map_values] and must be non-negative and less than the size of that value pool. This is a low-level member intended for advanced use cases; [member poly_cell_texture_map_indices] is recommended for boundary cell vertex data.
+			The keys are [Vector2i]s, where X is the geometry dimension and Y is the decomposition dimension. Both components must be non-negative, and Y must not exceed X. Each dictionary value is an [code]Array[PackedInt32Array][/code]. Boundary cell vertex data uses [code]Vector2i(3, 0)[/code].
+			When X is greater than Y, the outer array contains one inner array per geometry element of dimension X. Each non-empty inner array must contain one value index per decomposed element of dimension Y, in the order returned by [method PolyMesh4D.get_all_poly_cell_poly_indices]. An empty inner array means that geometry element has no data for this binding.
+			When X equals Y, the outer array is empty or contains exactly one inner array, with one value index per geometry element. A missing key or an empty outer array means no data for the binding.
+			Auxiliary bindings may omit trailing geometry elements: a hierarchical outer array or a flat inner array may be shorter than the geometry count, but must not be longer. The boundary bindings exposed by [member poly_cell_texture_map_indices] must instead cover every boundary cell when populated.
 		</member>
 		<member name="edge_indices" type="PackedInt32Array" setter="set_edge_indices" getter="get_edge_indices" default="PackedInt32Array()">
 			The flat array of edge indices. Every 2 integers defines an edge. Each integer is an index into the [member poly_cell_vertex_positions] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
@@ -218,13 +232,19 @@
 			- The optional third item is an array of 4D hypervolumes. It is an array of [PackedInt32Array]s, where each [PackedInt32Array] contains the 3D cell indices that make up one 4D hypervolume.
 			Since edges are always made of exactly 2 vertices, they are not included in this array. Edges use a simpler data structure where all edges are stored in a single [PackedInt32Array], and every 2 items represent one edge. See [member edge_indices].
 		</member>
-		<member name="poly_cell_texture_map" type="PackedVector3Array[]" setter="set_poly_cell_texture_map" getter="get_poly_cell_texture_map" default="[]">
-			The texture mapping of the polyhedral cells. Each item in this array is a [PackedVector3Array] containing the texture space mapping for the vertex instances of the corresponding cell in the [member poly_cell_indices] array. Each Vector3 in these arrays defines the texture coordinates for the corresponding vertex instance in the cell, and is usually on the range from (0, 0, 0) to (1, 1, 1).
-			This array may be empty for no texture map. Otherwise, it must contain one inner array per boundary cell. Each inner array must be empty for a cell without data, or contain one entry per vertex instance in the order returned by [method PolyMesh4D.get_all_cell_vertex_indices] with [code]start_with_canonical_span[/code] set to [code]false[/code].
+		<member name="poly_cell_normal_indices" type="PackedInt32Array[]" setter="set_poly_cell_normal_indices" getter="get_poly_cell_normal_indices" default="[]">
+			The normal indices for the vertex instances of each polyhedral boundary cell. Each [PackedInt32Array] contains indices into [member poly_cell_normal_values], in the vertex order returned by [method PolyMesh4D.get_all_cell_vertex_indices] with [code]start_with_canonical_span = false[/code]. The outer array must have one item per boundary cell, or be empty for no normals. Each inner array must have one index per vertex instance in that cell, or be empty for a cell without data. Every index must be non-negative and less than the size of the value pool.
+			This is a view of [member all_poly_cell_normal_indices] at the key [code]Vector2i(3, 0)[/code].
 		</member>
-		<member name="poly_cell_vertex_normals" type="PackedVector4Array[]" setter="set_poly_cell_vertex_normals" getter="get_poly_cell_vertex_normals" default="[]">
-			The normals of the vertex instances for each polyhedral cell. Each item in this array is a [PackedVector4Array] containing the normals for each vertex instance in the corresponding cell in the [member poly_cell_indices] array. Each Vector4 in these arrays should be normalized.
-			This array may be empty for no vertex normals. Otherwise, it must contain one inner array per boundary cell. Each inner array must be empty for a cell without data, or contain one entry per vertex instance in the order returned by [method PolyMesh4D.get_all_cell_vertex_indices] with [code]start_with_canonical_span[/code] set to [code]false[/code].
+		<member name="poly_cell_normal_values" type="PackedVector4Array" setter="set_poly_cell_normal_values" getter="get_poly_cell_normal_values" default="PackedVector4Array()">
+			The shared normal value pool for polyhedral data. Each [Vector4] is a normal vector that should be normalized. Values are referenced by [member poly_cell_normal_indices] and may also be shared by other polyhedral data bindings. This pool is distinct from [method Mesh4D.get_normal_values], which contains values for the decomposed simplex cells.
+		</member>
+		<member name="poly_cell_texture_map_indices" type="PackedInt32Array[]" setter="set_poly_cell_texture_map_indices" getter="get_poly_cell_texture_map_indices" default="[]">
+			The texture map indices for the vertex instances of each polyhedral boundary cell. Each [PackedInt32Array] contains indices into [member poly_cell_texture_map_values], in the vertex order returned by [method PolyMesh4D.get_all_cell_vertex_indices] with [code]start_with_canonical_span = false[/code]. The outer array must have one item per boundary cell, or be empty for no texture mapping. Each inner array must have one index per vertex instance in that cell, or be empty for a cell without data. Every index must be non-negative and less than the size of the value pool.
+			This is a view of [member all_poly_cell_texture_map_indices] at the key [code]Vector2i(3, 0)[/code].
+		</member>
+		<member name="poly_cell_texture_map_values" type="PackedVector3Array" setter="set_poly_cell_texture_map_values" getter="get_poly_cell_texture_map_values" default="PackedVector3Array()">
+			The shared texture map value pool for polyhedral data. Each [Vector3] is a position in texture space, usually between 0.0 and 1.0 on each axis. Values are referenced by [member poly_cell_texture_map_indices] and may also be shared by other polyhedral data bindings. This pool is distinct from [method Mesh4D.get_texture_map_values], which contains values for the decomposed simplex cells.
 		</member>
 		<member name="poly_cell_vertex_positions" type="PackedVector4Array" setter="set_poly_cell_vertex_positions" getter="get_poly_cell_vertex_positions" default="PackedVector4Array()">
 			The vertex positions of the polyhedral mesh. Each Vector4 in the array is a position in meters in 4D space. The items in this array are referenced by the [member edge_indices] array.

@@ -202,23 +202,21 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Subdivide a converted flat mesh and ex
 	CHECK_MESSAGE(converted->is_poly_mesh_data_valid(), "The subdivided flat mesh must have valid poly mesh data.");
 	CHECK_MESSAGE(new_pieces.size() == 2 * 4, "Each triangle must subdivide into 4 triangles.");
 	// The flat mesh's per-face normals must be inherited by the pieces.
-	const HashMap<Vector2i, Vector<PackedVector4Array>> all_normals = converted->get_all_poly_cell_normals();
-	const Vector<PackedVector4Array> *face_normals = all_normals.getptr(PolyMesh4D::PER_FACE_KEY);
-	REQUIRE_MESSAGE(face_normals != nullptr, "The per-face normals of a flat mesh must be preserved by subdivision.");
-	REQUIRE((*face_normals)[0].size() == 8);
+	const Vector<PackedVector4Array> face_normals = converted->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	REQUIRE_MESSAGE(!face_normals.is_empty(), "The per-face normals of a flat mesh must be preserved by subdivision.");
+	REQUIRE(face_normals[0].size() == 8);
 	const Vector4 pos_z = Vector4(0, 0, 1, 0);
 	for (int64_t i = 0; i < 8; i++) {
-		CHECK_MESSAGE((*face_normals)[0][i].is_equal_approx(pos_z), "Each face piece must inherit the +Z face normal.");
+		CHECK_MESSAGE(face_normals[0][i].is_equal_approx(pos_z), "Each face piece must inherit the +Z face normal.");
 	}
 	// The texture map was set from the UVs, which match half the vertex XY positions,
 	// so interpolation must preserve that linear relationship at the new vertices.
-	const HashMap<Vector2i, Vector<PackedVector3Array>> all_texture_maps = converted->get_all_poly_cell_texture_maps();
-	const Vector<PackedVector3Array> *texture_maps = all_texture_maps.getptr(PolyMesh4D::FACE_TO_VERT_KEY);
-	REQUIRE_MESSAGE(texture_maps != nullptr, "The face texture maps of a flat mesh must be preserved by subdivision.");
+	const Vector<PackedVector3Array> texture_maps = converted->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE_MESSAGE(!texture_maps.is_empty(), "The face texture maps of a flat mesh must be preserved by subdivision.");
 	const PackedVector4Array flat_vertices = converted->get_poly_cell_vertex_positions();
 	const Vector<PackedInt32Array> face_vertex_indices = converted->get_all_poly_cell_vertex_indices(2, false);
 	for (int64_t face_index = 0; face_index < 8; face_index++) {
-		const PackedVector3Array &face_texture_map = (*texture_maps)[face_index];
+		const PackedVector3Array &face_texture_map = texture_maps[face_index];
 		REQUIRE(face_texture_map.size() == face_vertex_indices[face_index].size());
 		for (int64_t vert_num = 0; vert_num < face_texture_map.size(); vert_num++) {
 			const Vector4 vertex = flat_vertices[face_vertex_indices[face_index][vert_num]];

@@ -61,10 +61,15 @@ public:
 	virtual PackedInt32Array get_edge_indices();
 	virtual PackedVector4Array get_edge_positions();
 	virtual PackedVector4Array get_vertex_positions();
+	virtual PackedVector4Array get_normal_values();
+	virtual PackedVector3Array get_texture_map_values();
 
 	GDVIRTUAL0R(PackedInt32Array, _get_edge_indices);
 	GDVIRTUAL0R(PackedVector4Array, _get_edge_positions);
 	GDVIRTUAL0R(PackedVector4Array, _get_vertex_positions);
+	GDVIRTUAL0R(PackedVector4Array, _get_normal_values);
+	GDVIRTUAL0R(PackedVector3Array, _get_texture_map_values);
+
 	GDVIRTUAL0R(bool, _validate_mesh_data);
 	GDVIRTUAL0R(Ref<Material4D>, _get_fallback_material);
 	GDVIRTUAL0(_update_proxy_mesh_3d);

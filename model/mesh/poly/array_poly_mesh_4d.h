@@ -31,17 +31,18 @@ private:
 	// 2: Each 4D cell made up of 3D cell indices (optional, for encoding hypervolumes).
 	Vector<Vector<PackedInt32Array>> _poly_cell_indices;
 	PackedVector4Array _poly_cell_vertex_positions;
+	PackedVector4Array _poly_cell_normal_values;
+	PackedVector3Array _poly_cell_texture_map_values;
 	// The key's X is the geometry dimension, Y is the decomposition dimension.
 	// See G4MFMeshSurfaceBindingGeometry4D for more details.
-	HashMap<Vector2i, Vector<PackedVector4Array>> _all_poly_cell_normals;
-	HashMap<Vector2i, Vector<PackedVector3Array>> _all_poly_cell_texture_maps;
+	HashMap<Vector2i, Vector<PackedInt32Array>> _all_poly_cell_normal_indices;
+	HashMap<Vector2i, Vector<PackedInt32Array>> _all_poly_cell_texture_map_indices;
 	PackedInt32Array _poly_cell_boundary_pivot_overrides;
 	// Seams always refer to 2D faces (the border between boundary 3D cells).
 	HashSet<int32_t> _seam_face_indices;
 	PackedInt32Array _edge_vertex_indices;
 
-	template <typename T>
-	bool _validate_data_binding_shape_internal(const Vector2i p_key, const Vector<T> &p_binding, const String &p_binding_name) const;
+	bool _validate_data_binding_shape_internal(const Vector2i p_key, const Vector<PackedInt32Array> &p_binding, const int64_t p_value_count, const String &p_binding_name) const;
 	void _delete_data_bindings_internal(const int32_t p_dimension, const int32_t p_index);
 
 	PackedInt32Array _get_cell_4_vertices_starting_from_face(const int64_t p_cell, const int64_t p_start_face) const;
@@ -52,15 +53,24 @@ private:
 	void _delete_edge_internal(const int32_t p_index);
 	void _delete_vertex_internal(const int32_t p_index);
 	void _delete_poly_cell_element_internal(const int32_t p_dimension, const int32_t p_index);
-	bool _unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert);
-	void _unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing);
-	void _fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional);
+	bool _unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert, Vector<PackedVector3Array> &r_poly_cell_texture_map);
+	void _unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing, Vector<PackedVector3Array> &r_poly_cell_texture_map);
+	void _fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional, Vector<PackedVector3Array> &r_poly_cell_texture_map);
 	static Vector3i _tiles_for_island_count(const int32_t p_island_count);
 	static inline int32_t _ceil_div(int32_t p_a, int32_t p_b) {
 		return (p_a + p_b - 1) / p_b;
 	}
 
+	// Internal helpers for the normal and texture map value pools.
+	PackedInt32Array _normal_indices_for_values_internal(const PackedVector4Array &p_values);
+	PackedVector4Array _sample_normal_values_internal(const PackedInt32Array &p_indices) const;
+	Vector<PackedVector3Array> _get_poly_cell_texture_map_dense_internal() const;
+	void _set_poly_cell_texture_map_dense_internal(const Vector<PackedVector3Array> &p_poly_cell_texture_map);
+	void _compact_normal_values_internal();
+	void _compact_texture_map_values_internal();
+
 protected:
+	bool _set(const StringName &p_name, const Variant &p_value);
 	static void _bind_methods();
 	bool _validate_poly_mesh_data_only() override;
 
@@ -72,6 +82,10 @@ public:
 	int32_t append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 	void delete_poly_element(const int32_t p_dimension, const int32_t p_index);
+
+	// Explicit compaction functions for removing unreferenced or duplicate data.
+	void compact_normal_values();
+	void compact_texture_map_values();
 
 	// Normal calculation functions.
 	void calculate_boundary_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_keep_existing = false);
@@ -97,10 +111,17 @@ public:
 	void merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 
 	// Getters and setters.
-	HashMap<Vector2i, Vector<PackedVector4Array>> get_all_poly_cell_normals() const;
-	void set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals);
-	HashMap<Vector2i, Vector<PackedVector3Array>> get_all_poly_cell_texture_maps() const;
-	void set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vector<PackedVector3Array>> &p_all_poly_cell_texture_maps);
+	HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_normal_indices() const;
+	void set_all_poly_cell_normal_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_normal_indices);
+	HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_texture_map_indices() const;
+	void set_all_poly_cell_texture_map_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_texture_map_indices);
+
+	// Dense views of the indexed data bindings, for code that works with expanded values.
+	// The setters deduplicate the values into the value pool and store indices.
+	Vector<PackedVector4Array> get_poly_cell_dense_normals(const Vector2i &p_key) const;
+	void set_poly_cell_dense_normals(const Vector2i &p_key, const Vector<PackedVector4Array> &p_dense_normals);
+	Vector<PackedVector3Array> get_poly_cell_dense_texture_map(const Vector2i &p_key) const;
+	void set_poly_cell_dense_texture_map(const Vector2i &p_key, const Vector<PackedVector3Array> &p_dense_texture_map);
 
 #if GODOT_HAS_TYPED_DICTIONARY
 	using PolyDataDictionary = TypedDictionary<Vector2i, Array>;
@@ -109,10 +130,10 @@ public:
 	// The dictionaries must still be bound so they are kept by duplication and serialization.
 	using PolyDataDictionary = Dictionary;
 #endif // GODOT_HAS_TYPED_DICTIONARY
-	PolyDataDictionary get_all_poly_cell_normals_bind() const;
-	void set_all_poly_cell_normals_bind(const PolyDataDictionary &p_all_poly_cell_normals);
-	PolyDataDictionary get_all_poly_cell_texture_maps_bind() const;
-	void set_all_poly_cell_texture_maps_bind(const PolyDataDictionary &p_all_poly_cell_texture_maps);
+	PolyDataDictionary get_all_poly_cell_normal_indices_bind() const;
+	void set_all_poly_cell_normal_indices_bind(const PolyDataDictionary &p_all_poly_cell_normal_indices);
+	PolyDataDictionary get_all_poly_cell_texture_map_indices_bind() const;
+	void set_all_poly_cell_texture_map_indices_bind(const PolyDataDictionary &p_all_poly_cell_texture_map_indices);
 
 	virtual PackedInt32Array get_edge_indices() override { return _edge_vertex_indices; }
 	void set_edge_vertex_indices(const PackedInt32Array &p_edge_indices);
@@ -127,13 +148,13 @@ public:
 	virtual PackedInt32Array get_poly_cell_boundary_pivot_overrides() override;
 	void set_poly_cell_boundary_pivot_overrides(const PackedInt32Array &p_poly_cell_boundary_pivot_overrides);
 
-	virtual Vector<PackedVector4Array> get_poly_cell_vertex_normals() override;
-	void set_poly_cell_vertex_normals(const Vector<PackedVector4Array> &p_poly_cell_vertex_normals);
-	void set_poly_cell_vertex_normals_bind(const TypedArray<PackedVector4Array> &p_poly_cell_vertex_normals);
+	virtual Vector<PackedInt32Array> get_poly_cell_normal_indices() override;
+	void set_poly_cell_normal_indices(const Vector<PackedInt32Array> &p_poly_cell_normal_indices);
+	void set_poly_cell_normal_indices_bind(const TypedArray<PackedInt32Array> &p_poly_cell_normal_indices);
 
-	virtual Vector<PackedVector3Array> get_poly_cell_texture_map() override;
-	void set_poly_cell_texture_map(const Vector<PackedVector3Array> &p_poly_cell_texture_map);
-	void set_poly_cell_texture_map_bind(const TypedArray<PackedVector3Array> &p_poly_cell_texture_map);
+	virtual Vector<PackedInt32Array> get_poly_cell_texture_map_indices() override;
+	void set_poly_cell_texture_map_indices(const Vector<PackedInt32Array> &p_poly_cell_texture_map_indices);
+	void set_poly_cell_texture_map_indices_bind(const TypedArray<PackedInt32Array> &p_poly_cell_texture_map_indices);
 
 	virtual HashSet<int32_t> get_seam_face_indices() const override { return HashSet<int32_t>(_seam_face_indices); }
 	PackedInt32Array get_seam_face_indices_bind() const;
@@ -142,6 +163,12 @@ public:
 
 	virtual PackedVector4Array get_poly_cell_vertex_positions() override;
 	void set_poly_cell_vertex_positions(const PackedVector4Array &p_vertex_positions);
+
+	virtual PackedVector4Array get_poly_cell_normal_values() override;
+	void set_poly_cell_normal_values(const PackedVector4Array &p_normal_values);
+
+	virtual PackedVector3Array get_poly_cell_texture_map_values() override;
+	void set_poly_cell_texture_map_values(const PackedVector3Array &p_tex_map_values);
 };
 
 VARIANT_ENUM_CAST(ArrayPolyMesh4D::ComputeNormalsMode);

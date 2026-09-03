@@ -26,8 +26,8 @@ class G4MFMeshSurface4D : public G4MFItem4D {
 	int _simplexes_accessor_index = -1;
 	bool _polytope_simplexes = false;
 
-	void _convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const bool p_deduplicate, PackedVector4Array &r_unique_normal_values, PackedVector3Array &r_unique_texture_map_values);
-	void _convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate, PackedVector4Array &r_unique_normal_values, PackedVector3Array &r_unique_texture_map_values);
+	void _convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const bool p_deduplicate);
+	void _convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate);
 
 protected:
 	static void _bind_methods();

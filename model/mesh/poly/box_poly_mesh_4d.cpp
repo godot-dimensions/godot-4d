@@ -42,30 +42,52 @@ PackedVector4Array BoxPolyMesh4D::get_poly_cell_vertex_positions() {
 	return get_vertex_positions();
 }
 
+PackedVector4Array BoxPolyMesh4D::get_poly_cell_normal_values() {
+	return BOX_NORMAL_VALUES;
+}
+
+PackedVector3Array BoxPolyMesh4D::get_poly_cell_texture_map_values() {
+	switch (_poly_texture_map) {
+		case BOX_POLY_TEXTURE_MAP_CROSS_ISLAND: {
+			return BOX_TEXTURE_MAP_CROSS_ISLAND_VALUES;
+		} break;
+		case BOX_POLY_TEXTURE_MAP_FILL_EACH_SIDE: {
+			return BOX_TEXTURE_MAP_FILL_EACH_SIDE_VALUES;
+		} break;
+		case BOX_POLY_TEXTURE_MAP_COMPACT_2X2X2_GRID: {
+			return BOX_TEXTURE_MAP_COMPACT_2X2X2_GRID_VALUES;
+		} break;
+		case BOX_POLY_TEXTURE_MAP_LONG_CROSS: {
+			return BOX_TEXTURE_MAP_LONG_CROSS_VALUES;
+		} break;
+	}
+	ERR_FAIL_V_MSG(PackedVector3Array(), "BoxPolyMesh4D: Invalid cell texture map type.");
+}
+
 PackedVector4Array BoxPolyMesh4D::get_poly_cell_boundary_normals() {
 	return BOX_POLY_CELL_BOUNDARY_NORMALS;
 }
 
-Vector<PackedVector4Array> BoxPolyMesh4D::get_poly_cell_vertex_normals() {
-	return BOX_POLY_CELL_VERTEX_NORMALS;
+Vector<PackedInt32Array> BoxPolyMesh4D::get_poly_cell_normal_indices() {
+	return BOX_POLY_CELL_NORMAL_INDICES;
 }
 
-Vector<PackedVector3Array> BoxPolyMesh4D::get_poly_cell_texture_map() {
+Vector<PackedInt32Array> BoxPolyMesh4D::get_poly_cell_texture_map_indices() {
 	switch (_poly_texture_map) {
 		case BOX_POLY_TEXTURE_MAP_CROSS_ISLAND: {
-			return BOX_POLY_CELL_POLY_TEXTURE_MAP_CROSS_ISLAND;
+			return BOX_POLY_CELL_POLY_TEXTURE_MAP_CROSS_ISLAND_INDICES;
 		} break;
 		case BOX_POLY_TEXTURE_MAP_FILL_EACH_SIDE: {
-			return BOX_POLY_CELL_POLY_TEXTURE_MAP_FILL_EACH_SIDE;
+			return BOX_POLY_CELL_POLY_TEXTURE_MAP_FILL_EACH_SIDE_INDICES;
 		} break;
 		case BOX_POLY_TEXTURE_MAP_COMPACT_2X2X2_GRID: {
-			return BOX_POLY_CELL_POLY_TEXTURE_MAP_COMPACT_2X2X2_GRID;
+			return BOX_POLY_CELL_POLY_TEXTURE_MAP_COMPACT_2X2X2_GRID_INDICES;
 		} break;
 		case BOX_POLY_TEXTURE_MAP_LONG_CROSS: {
-			return BOX_POLY_CELL_POLY_TEXTURE_MAP_LONG_CROSS;
+			return BOX_POLY_CELL_POLY_TEXTURE_MAP_LONG_CROSS_INDICES;
 		} break;
 	}
-	ERR_FAIL_V_MSG(Vector<PackedVector3Array>(), "BoxPolyMesh4D: Invalid cell texture map type.");
+	ERR_FAIL_V_MSG(Vector<PackedInt32Array>(), "BoxPolyMesh4D: Invalid cell texture map type.");
 }
 
 PackedInt32Array BoxPolyMesh4D::get_edge_indices() {

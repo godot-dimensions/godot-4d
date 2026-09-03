@@ -42,9 +42,11 @@ public:
 
 	virtual Vector<Vector<PackedInt32Array>> get_poly_cell_indices() override;
 	virtual PackedVector4Array get_poly_cell_vertex_positions() override;
+	virtual PackedVector4Array get_poly_cell_normal_values() override;
+	virtual PackedVector3Array get_poly_cell_texture_map_values() override;
 	virtual PackedVector4Array get_poly_cell_boundary_normals() override;
-	virtual Vector<PackedVector4Array> get_poly_cell_vertex_normals() override;
-	virtual Vector<PackedVector3Array> get_poly_cell_texture_map() override;
+	virtual Vector<PackedInt32Array> get_poly_cell_normal_indices() override;
+	virtual Vector<PackedInt32Array> get_poly_cell_texture_map_indices() override;
 
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_vertex_positions() override;

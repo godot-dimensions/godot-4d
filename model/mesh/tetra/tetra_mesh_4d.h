@@ -21,7 +21,7 @@ protected:
 	PackedVector4Array _simplex_positions_cache;
 	PackedFloat64Array _nearest_tetra_inverse_metric_cache;
 
-	Ref<ArrayMesh> convert_texture_map_to_mesh(const PackedVector3Array &p_texture_map);
+	Ref<ArrayMesh> convert_texture_map_to_mesh(const PackedInt32Array &p_texture_map_indices);
 	virtual void update_proxy_mesh_3d() override;
 
 public:
@@ -46,9 +46,9 @@ public:
 
 	// Getters.
 	virtual PackedInt32Array get_simplex_cell_vertex_indices();
+	virtual PackedInt32Array get_simplex_cell_normal_indices();
+	virtual PackedInt32Array get_simplex_cell_texture_map_indices();
 	virtual PackedVector4Array get_simplex_cell_boundary_normals();
-	virtual PackedVector4Array get_simplex_cell_vertex_normals();
-	virtual PackedVector3Array get_simplex_cell_texture_map();
 	PackedVector4Array get_simplex_cell_positions();
 
 	// Edges.
@@ -62,9 +62,9 @@ public:
 	static void cleanup_fallback_material();
 
 	GDVIRTUAL0R(PackedInt32Array, _get_simplex_cell_vertex_indices);
+	GDVIRTUAL0R(PackedInt32Array, _get_simplex_cell_normal_indices);
+	GDVIRTUAL0R(PackedInt32Array, _get_simplex_cell_texture_map_indices);
 	GDVIRTUAL0R(PackedVector4Array, _get_simplex_cell_boundary_normals);
-	GDVIRTUAL0R(PackedVector4Array, _get_simplex_cell_vertex_normals);
-	GDVIRTUAL0R(PackedVector3Array, _get_simplex_cell_texture_map);
 
 private:
 	static Ref<TetraMaterial4D> _fallback_material;

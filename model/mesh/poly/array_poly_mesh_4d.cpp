@@ -3,9 +3,13 @@
 #include "../../../math/math_4d.h"
 #include "../../../math/vector_4d.h"
 
-template <typename T>
-bool ArrayPolyMesh4D::_validate_data_binding_shape_internal(const Vector2i p_key, const Vector<T> &p_binding, const String &p_binding_name) const {
+bool ArrayPolyMesh4D::_validate_data_binding_shape_internal(const Vector2i p_key, const Vector<PackedInt32Array> &p_binding, const int64_t p_value_count, const String &p_binding_name) const {
 	ERR_FAIL_COND_V_MSG(p_key.x < 0 || p_key.y < 0 || p_key.y > p_key.x, false, "ArrayPolyMesh4D: " + p_binding_name + " binding key " + String(p_key) + " must have a decomposition dimension between zero and its geometry dimension.");
+	for (const PackedInt32Array &indices : p_binding) {
+		for (const int32_t value_index : indices) {
+			ERR_FAIL_INDEX_V_MSG(value_index, p_value_count, false, "ArrayPolyMesh4D: " + p_binding_name + " binding must reference valid values.");
+		}
+	}
 	if (p_binding.is_empty()) {
 		return true; // An empty binding represents missing data, even for an absent geometry dimension.
 	}
@@ -58,13 +62,13 @@ bool ArrayPolyMesh4D::_validate_poly_mesh_data_only() {
 	if (!PolyMesh4D::_validate_poly_mesh_data_only()) {
 		return false;
 	}
-	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &binding : _all_poly_cell_normals) {
-		if (!_validate_data_binding_shape_internal(binding.key, binding.value, "Normal")) {
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : _all_poly_cell_normal_indices) {
+		if (!_validate_data_binding_shape_internal(binding.key, binding.value, _poly_cell_normal_values.size(), "Normal")) {
 			return false;
 		}
 	}
-	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &binding : _all_poly_cell_texture_maps) {
-		if (!_validate_data_binding_shape_internal(binding.key, binding.value, "Texture map")) {
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : _all_poly_cell_texture_map_indices) {
+		if (!_validate_data_binding_shape_internal(binding.key, binding.value, _poly_cell_texture_map_values.size(), "Texture map")) {
 			return false;
 		}
 	}
@@ -170,7 +174,7 @@ PackedInt32Array ArrayPolyMesh4D::append_vertices(const PackedVector4Array &p_ve
 }
 
 void ArrayPolyMesh4D::_delete_data_bindings_internal(const int32_t p_dimension, const int32_t p_index) {
-	for (KeyValue<Vector2i, Vector<PackedVector4Array>> &binding : _all_poly_cell_normals) {
+	for (KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : _all_poly_cell_normal_indices) {
 		if (binding.key.x != p_dimension) {
 			continue;
 		}
@@ -182,7 +186,7 @@ void ArrayPolyMesh4D::_delete_data_bindings_internal(const int32_t p_dimension, 
 			binding.value.remove_at(p_index);
 		}
 	}
-	for (KeyValue<Vector2i, Vector<PackedVector3Array>> &binding : _all_poly_cell_texture_maps) {
+	for (KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : _all_poly_cell_texture_map_indices) {
 		if (binding.key.x != p_dimension) {
 			continue;
 		}
@@ -194,6 +198,180 @@ void ArrayPolyMesh4D::_delete_data_bindings_internal(const int32_t p_dimension, 
 			binding.value.remove_at(p_index);
 		}
 	}
+}
+
+// Internal helpers for the normal and texture map value pools.
+
+PackedInt32Array ArrayPolyMesh4D::_normal_indices_for_values_internal(const PackedVector4Array &p_values) {
+	PackedInt32Array indices;
+	indices.resize(p_values.size());
+	for (int64_t i = 0; i < p_values.size(); i++) {
+		indices.set(i, (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, p_values[i]));
+	}
+	return indices;
+}
+
+PackedVector4Array ArrayPolyMesh4D::_sample_normal_values_internal(const PackedInt32Array &p_indices) const {
+	PackedVector4Array values;
+	values.resize(p_indices.size());
+	const int64_t value_count = _poly_cell_normal_values.size();
+	for (int64_t i = 0; i < p_indices.size(); i++) {
+		const int32_t value_index = p_indices[i];
+		ERR_CONTINUE(value_index < 0 || value_index >= value_count);
+		values.set(i, _poly_cell_normal_values[value_index]);
+	}
+	return values;
+}
+
+Vector<PackedVector3Array> ArrayPolyMesh4D::_get_poly_cell_texture_map_dense_internal() const {
+	Vector<PackedVector3Array> dense;
+	if (!_all_poly_cell_texture_map_indices.has(CELL_TO_VERT_KEY)) {
+		return dense;
+	}
+	const Vector<PackedInt32Array> &poly_cell_texture_map_indices = _all_poly_cell_texture_map_indices[CELL_TO_VERT_KEY];
+	const int64_t value_count = _poly_cell_texture_map_values.size();
+	dense.resize(poly_cell_texture_map_indices.size());
+	for (int64_t cell_index = 0; cell_index < poly_cell_texture_map_indices.size(); cell_index++) {
+		const PackedInt32Array &cell_indices = poly_cell_texture_map_indices[cell_index];
+		PackedVector3Array cell_values;
+		cell_values.resize(cell_indices.size());
+		for (int64_t i = 0; i < cell_indices.size(); i++) {
+			const int32_t value_index = cell_indices[i];
+			ERR_CONTINUE(value_index < 0 || value_index >= value_count);
+			cell_values.set(i, _poly_cell_texture_map_values[value_index]);
+		}
+		dense.set(cell_index, cell_values);
+	}
+	return dense;
+}
+
+void ArrayPolyMesh4D::_set_poly_cell_texture_map_dense_internal(const Vector<PackedVector3Array> &p_poly_cell_texture_map) {
+	Vector<PackedInt32Array> poly_cell_texture_map_indices;
+	poly_cell_texture_map_indices.resize(p_poly_cell_texture_map.size());
+	for (int64_t cell_index = 0; cell_index < p_poly_cell_texture_map.size(); cell_index++) {
+		const PackedVector3Array &cell_values = p_poly_cell_texture_map[cell_index];
+		PackedInt32Array cell_indices;
+		cell_indices.resize(cell_values.size());
+		for (int64_t i = 0; i < cell_values.size(); i++) {
+			cell_indices.set(i, (int32_t)Vector4D::vector3_array_append_deduplicate(_poly_cell_texture_map_values, cell_values[i]));
+		}
+		poly_cell_texture_map_indices.set(cell_index, cell_indices);
+	}
+	if (poly_cell_texture_map_indices.is_empty()) {
+		_all_poly_cell_texture_map_indices.erase(CELL_TO_VERT_KEY);
+	} else {
+		_all_poly_cell_texture_map_indices.insert(CELL_TO_VERT_KEY, poly_cell_texture_map_indices);
+	}
+}
+
+// Note: Compaction is O(n^2) in the pool size because deduplication is a linear scan per value.
+// Therefore, compaction is a separate explicit step instead of running after every editing
+// operation, so that a sequence of editing operations only needs to pay this cost once at the end.
+void ArrayPolyMesh4D::_compact_normal_values_internal() {
+	// Mark which values are referenced by any data binding.
+	const int64_t old_value_count = _poly_cell_normal_values.size();
+	Vector<bool> referenced;
+	referenced.resize(old_value_count);
+	for (int64_t i = 0; i < old_value_count; i++) {
+		referenced.set(i, false);
+	}
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_normal_indices) {
+		for (const PackedInt32Array &indices : kv.value) {
+			for (const int32_t value_index : indices) {
+				ERR_CONTINUE(value_index < 0 || value_index >= old_value_count);
+				referenced.set(value_index, true);
+			}
+		}
+	}
+	// Build the compacted pool, dropping unreferenced values and deduplicating
+	// identical values, while preserving the relative order of the kept values.
+	PackedVector4Array compacted_values;
+	PackedInt32Array old_to_new;
+	old_to_new.resize(old_value_count);
+	for (int64_t i = 0; i < old_value_count; i++) {
+		if (!referenced[i]) {
+			old_to_new.set(i, -1);
+			continue;
+		}
+		old_to_new.set(i, (int32_t)Vector4D::vector4_array_append_deduplicate(compacted_values, _poly_cell_normal_values[i]));
+	}
+	// Remap the indices of all data bindings into the compacted pool.
+	for (KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_normal_indices) {
+		Vector<PackedInt32Array> &index_arrays = kv.value;
+		for (int64_t array_index = 0; array_index < index_arrays.size(); array_index++) {
+			PackedInt32Array indices = index_arrays[array_index];
+			for (int64_t i = 0; i < indices.size(); i++) {
+				const int32_t old_index = indices[i];
+				ERR_CONTINUE(old_index < 0 || old_index >= old_value_count);
+				indices.set(i, old_to_new[old_index]);
+			}
+			index_arrays.set(array_index, indices);
+		}
+	}
+	_poly_cell_normal_values = compacted_values;
+}
+
+void ArrayPolyMesh4D::_compact_texture_map_values_internal() {
+	// Mark which values are referenced by any data binding.
+	const int64_t old_value_count = _poly_cell_texture_map_values.size();
+	Vector<bool> referenced;
+	referenced.resize(old_value_count);
+	for (int64_t i = 0; i < old_value_count; i++) {
+		referenced.set(i, false);
+	}
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_texture_map_indices) {
+		for (const PackedInt32Array &indices : kv.value) {
+			for (const int32_t value_index : indices) {
+				ERR_CONTINUE(value_index < 0 || value_index >= old_value_count);
+				referenced.set(value_index, true);
+			}
+		}
+	}
+	// Build the compacted pool, dropping unreferenced values and deduplicating
+	// identical values, while preserving the relative order of the kept values.
+	PackedVector3Array compacted_values;
+	PackedInt32Array old_to_new;
+	old_to_new.resize(old_value_count);
+	for (int64_t i = 0; i < old_value_count; i++) {
+		if (!referenced[i]) {
+			old_to_new.set(i, -1);
+			continue;
+		}
+		old_to_new.set(i, (int32_t)Vector4D::vector3_array_append_deduplicate(compacted_values, _poly_cell_texture_map_values[i]));
+	}
+	// Remap the indices of all data bindings into the compacted pool.
+	for (KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_texture_map_indices) {
+		Vector<PackedInt32Array> &index_arrays = kv.value;
+		for (int64_t array_index = 0; array_index < index_arrays.size(); array_index++) {
+			PackedInt32Array indices = index_arrays[array_index];
+			for (int64_t i = 0; i < indices.size(); i++) {
+				const int32_t old_index = indices[i];
+				ERR_CONTINUE(old_index < 0 || old_index >= old_value_count);
+				indices.set(i, old_to_new[old_index]);
+			}
+			index_arrays.set(array_index, indices);
+		}
+	}
+	_poly_cell_texture_map_values = compacted_values;
+}
+
+// Explicit compaction functions. Editing operations always leave the mesh in a consistent
+// valid state, but may leave unreferenced values in the pools, which wastes space when kept.
+// Compaction is not run automatically because it is O(n^2) in the pool size, so it is faster
+// to run a sequence of editing operations first and only compact once at the end, if desired.
+
+void ArrayPolyMesh4D::compact_normal_values() {
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot compact normal values of an invalid mesh.");
+	_compact_normal_values_internal();
+	poly_mesh_clear_cache(true);
+	reset_poly_mesh_data_validation();
+}
+
+void ArrayPolyMesh4D::compact_texture_map_values() {
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot compact texture map values of an invalid mesh.");
+	_compact_texture_map_values_internal();
+	poly_mesh_clear_cache();
+	reset_poly_mesh_data_validation();
 }
 
 void ArrayPolyMesh4D::_delete_edge_internal(const int32_t p_index) {
@@ -374,7 +552,7 @@ void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode
 	PackedVector4Array poly_cell_boundary_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, p_keep_existing);
 	CRASH_COND(poly_cell_boundary_normals.size() != cell_vertex_indices.size());
 	if (p_mode == COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY) {
-		_all_poly_cell_normals.insert(PER_CELL_KEY, Vector<PackedVector4Array>{ poly_cell_boundary_normals });
+		_all_poly_cell_normal_indices.insert(PER_CELL_KEY, Vector<PackedInt32Array>{ _normal_indices_for_values_internal(poly_cell_boundary_normals) });
 		poly_mesh_clear_cache();
 		return;
 	}
@@ -404,52 +582,56 @@ void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode
 	if (p_mode == COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION) {
 		_poly_cell_indices.set(1, boundary_cell_indices);
 	}
-	_all_poly_cell_normals.insert(PER_CELL_KEY, Vector<PackedVector4Array>{ poly_cell_boundary_normals });
+	_all_poly_cell_normal_indices.insert(PER_CELL_KEY, Vector<PackedInt32Array>{ _normal_indices_for_values_internal(poly_cell_boundary_normals) });
 	poly_mesh_clear_cache();
 }
 
 void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
-	_all_poly_cell_normals.erase(CELL_TO_VERT_KEY);
+	_all_poly_cell_normal_indices.erase(CELL_TO_VERT_KEY);
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
-	if (p_recalculate_boundary_normals || !_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
+	if (p_recalculate_boundary_normals || !_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(p_mode);
 	}
 	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
 	const int64_t cell_count = cell_vertex_indices.size();
-	const PackedVector4Array &poly_cell_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
-	CRASH_COND(poly_cell_boundary_normals.size() != cell_count);
-	Vector<PackedVector4Array> poly_cell_vertex_normals;
-	poly_cell_vertex_normals.resize(cell_count);
+	const PackedInt32Array &per_cell_normal_indices = _all_poly_cell_normal_indices[PER_CELL_KEY][0];
+	CRASH_COND(per_cell_normal_indices.size() != cell_count);
+	// Flat shading means every vertex of a cell shares the cell's normal, so the
+	// vertex normal indices can all point at the cell's boundary normal value.
+	Vector<PackedInt32Array> poly_cell_normal_indices;
+	poly_cell_normal_indices.resize(cell_count);
 	for (int64_t cell_index = 0; cell_index < cell_count; cell_index++) {
-		PackedVector4Array vertex_normals_for_cell;
-		const Vector4 &cell_normal = poly_cell_boundary_normals[cell_index];
+		PackedInt32Array normal_indices_for_cell;
+		const int32_t cell_normal_index = per_cell_normal_indices[cell_index];
 		const int64_t cell_vertex_pos_count = cell_vertex_indices[cell_index].size();
-		vertex_normals_for_cell.resize(cell_vertex_pos_count);
+		normal_indices_for_cell.resize(cell_vertex_pos_count);
 		for (int64_t vertex_index = 0; vertex_index < cell_vertex_pos_count; vertex_index++) {
-			vertex_normals_for_cell.set(vertex_index, cell_normal);
+			normal_indices_for_cell.set(vertex_index, cell_normal_index);
 		}
-		poly_cell_vertex_normals.set(cell_index, vertex_normals_for_cell);
+		poly_cell_normal_indices.set(cell_index, normal_indices_for_cell);
 	}
-	_all_poly_cell_normals.insert(CELL_TO_VERT_KEY, poly_cell_vertex_normals);
+	_all_poly_cell_normal_indices.insert(CELL_TO_VERT_KEY, poly_cell_normal_indices);
 	poly_mesh_clear_cache();
 }
 
 void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
-	_all_poly_cell_normals.erase(CELL_TO_VERT_KEY);
+	_all_poly_cell_normal_indices.erase(CELL_TO_VERT_KEY);
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
 	// Step 1: Prepare the data arrays which will be used by this function.
-	if (p_recalculate_boundary_normals || !_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
+	if (p_recalculate_boundary_normals || !_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(p_mode);
 	}
 	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
-	const PackedVector4Array &poly_cell_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
+	const PackedVector4Array poly_cell_boundary_normals = _sample_normal_values_internal(_all_poly_cell_normal_indices[PER_CELL_KEY][0]);
 	CRASH_COND(poly_cell_boundary_normals.size() != cell_vertex_indices.size());
-	Vector<PackedVector4Array> poly_cell_vertex_normals;
-	poly_cell_vertex_normals.resize(poly_cell_boundary_normals.size());
+	Vector<PackedInt32Array> poly_cell_normal_indices;
+	poly_cell_normal_indices.resize(poly_cell_boundary_normals.size());
 	PackedVector4Array vertex_normals;
 	vertex_normals.resize(_poly_cell_vertex_positions.size());
+	PackedInt32Array vertex_normal_value_indices;
+	vertex_normal_value_indices.resize(_poly_cell_vertex_positions.size());
 	// Step 2: Iterate through each island separately such that seams (if they exist)
 	// are respected and are treated as sharp edges that should not be smoothed across.
 	const Vector<PackedInt32Array> islands = collect_all_islands();
@@ -458,6 +640,7 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 		// Step 3: Calculate the average normal of each vertex across each usage in cells in this island.
 		for (int64_t vertex_index = 0; vertex_index < _poly_cell_vertex_positions.size(); vertex_index++) {
 			vertex_normals.set(vertex_index, Vector4(0.0, 0.0, 0.0, 0.0));
+			vertex_normal_value_indices.set(vertex_index, -1);
 		}
 		for (const int32_t cell_index : cells_in_island) {
 			const PackedInt32Array &vertex_indices_for_cell = cell_vertex_indices[cell_index];
@@ -469,19 +652,24 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 		for (int64_t vertex_index = 0; vertex_index < _poly_cell_vertex_positions.size(); vertex_index++) {
 			vertex_normals.set(vertex_index, vertex_normals[vertex_index].normalized());
 		}
-		// Step 4: Assign each cell's vertex normals to the average normal of the vertices that make up that cell.
+		// Step 4: Assign each cell's vertex normals to the average normal of the vertices that make up
+		// that cell. Each vertex's normal value is only appended once per island and then referenced.
 		for (const int32_t cell_index : cells_in_island) {
 			const PackedInt32Array &vertex_indices_for_cell = cell_vertex_indices[cell_index];
-			PackedVector4Array vertex_normals_for_cell;
+			PackedInt32Array normal_indices_for_cell;
 			const int64_t cell_vertex_pos_count = vertex_indices_for_cell.size();
-			vertex_normals_for_cell.resize(cell_vertex_pos_count);
+			normal_indices_for_cell.resize(cell_vertex_pos_count);
 			for (int64_t vertex_in_cell = 0; vertex_in_cell < cell_vertex_pos_count; vertex_in_cell++) {
-				vertex_normals_for_cell.set(vertex_in_cell, vertex_normals[vertex_indices_for_cell[vertex_in_cell]]);
+				const int32_t vertex_index = vertex_indices_for_cell[vertex_in_cell];
+				if (vertex_normal_value_indices[vertex_index] == -1) {
+					vertex_normal_value_indices.set(vertex_index, (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, vertex_normals[vertex_index]));
+				}
+				normal_indices_for_cell.set(vertex_in_cell, vertex_normal_value_indices[vertex_index]);
 			}
-			poly_cell_vertex_normals.set(cell_index, vertex_normals_for_cell);
+			poly_cell_normal_indices.set(cell_index, normal_indices_for_cell);
 		}
 	}
-	_all_poly_cell_normals.insert(CELL_TO_VERT_KEY, poly_cell_vertex_normals);
+	_all_poly_cell_normal_indices.insert(CELL_TO_VERT_KEY, poly_cell_normal_indices);
 	poly_mesh_clear_cache();
 }
 
@@ -491,21 +679,21 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 	if (_poly_cell_indices[1].is_empty()) {
 		return;
 	}
-	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
+	if (!_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
 	}
 	Vector<PackedInt32Array> cell_face_indices = Vector<PackedInt32Array>(_poly_cell_indices[1]);
 	const int64_t original_cell_count = cell_face_indices.size();
 	const int64_t original_pivot_count = _poly_cell_boundary_pivot_overrides.size();
-	const bool has_vertex_normals = _all_poly_cell_normals.has(CELL_TO_VERT_KEY) && !_all_poly_cell_normals[CELL_TO_VERT_KEY].is_empty();
-	const bool has_texture_map = _all_poly_cell_texture_maps.has(CELL_TO_VERT_KEY) && !_all_poly_cell_texture_maps[CELL_TO_VERT_KEY].is_empty();
+	const bool has_vertex_normals = _all_poly_cell_normal_indices.has(CELL_TO_VERT_KEY) && !_all_poly_cell_normal_indices[CELL_TO_VERT_KEY].is_empty();
+	const bool has_texture_map = _all_poly_cell_texture_map_indices.has(CELL_TO_VERT_KEY) && !_all_poly_cell_texture_map_indices[CELL_TO_VERT_KEY].is_empty();
 	Vector<PackedInt32Array> original_cell_vertices;
 	if (has_vertex_normals || has_texture_map) {
 		original_cell_vertices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
 	}
 	// This has to be a copy, it's set back in place at the end of the function.
-	PackedVector4Array poly_cell_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
-	CRASH_COND(poly_cell_boundary_normals.size() != original_cell_count);
+	PackedInt32Array per_cell_normal_indices = _all_poly_cell_normal_indices[PER_CELL_KEY][0];
+	CRASH_COND(per_cell_normal_indices.size() != original_cell_count);
 	PackedInt32Array flipped_cell_index_for_original;
 	flipped_cell_index_for_original.resize(original_cell_count);
 	for (int64_t i = 0; i < original_cell_count; i++) {
@@ -553,9 +741,9 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 		// Copy texture coordinates without changing their values.
 		if (has_texture_map) {
 			// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
-			Vector<PackedVector3Array> &poly_cell_texture_maps = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
-			const PackedVector3Array &source_texture_map = poly_cell_texture_maps[cell_index];
-			PackedVector3Array flipped_cell_texture_map;
+			Vector<PackedInt32Array> &poly_cell_texture_maps = _all_poly_cell_texture_map_indices[CELL_TO_VERT_KEY];
+			const PackedInt32Array &source_texture_map = poly_cell_texture_maps[cell_index];
+			PackedInt32Array flipped_cell_texture_map;
 			flipped_cell_texture_map.resize(source_texture_map.size());
 			for (int64_t i = 0; i < source_texture_map.size(); i++) {
 				flipped_cell_texture_map.set(i, source_texture_map[vertex_remap[i]]);
@@ -565,12 +753,13 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 		// Copy and flip the vertex normals if they exist for this cell before adding the flipped cell.
 		if (has_vertex_normals) {
 			// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
-			Vector<PackedVector4Array> &poly_cell_vertex_normals = _all_poly_cell_normals[CELL_TO_VERT_KEY];
-			const PackedVector4Array &source_normals = poly_cell_vertex_normals[cell_index];
-			PackedVector4Array flipped_cell_vertex_normals;
+			Vector<PackedInt32Array> &poly_cell_vertex_normals = _all_poly_cell_normal_indices[CELL_TO_VERT_KEY];
+			const PackedInt32Array &source_normals = poly_cell_vertex_normals[cell_index];
+			PackedInt32Array flipped_cell_vertex_normals;
 			flipped_cell_vertex_normals.resize(source_normals.size());
 			for (int64_t vertex_in_cell = 0; vertex_in_cell < source_normals.size(); vertex_in_cell++) {
-				flipped_cell_vertex_normals.set(vertex_in_cell, -source_normals[vertex_remap[vertex_in_cell]]);
+				const Vector4 flipped_normal = -_poly_cell_normal_values[source_normals[vertex_remap[vertex_in_cell]]];
+				flipped_cell_vertex_normals.set(vertex_in_cell, (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, flipped_normal));
 			}
 			poly_cell_vertex_normals.append(flipped_cell_vertex_normals);
 		}
@@ -584,7 +773,7 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 		}
 		cell_face_indices.append(flipped_cell_faces);
 		flipped_cell_index_for_original.set(cell_index, new_flipped_cell_index);
-		poly_cell_boundary_normals.append(-poly_cell_boundary_normals[cell_index]);
+		per_cell_normal_indices.append((int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, -_poly_cell_normal_values[per_cell_normal_indices[cell_index]]));
 	}
 	_poly_cell_indices.set(1, cell_face_indices);
 	if (_poly_cell_indices.size() > 2) {
@@ -607,7 +796,7 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 		}
 		_poly_cell_indices.set(2, volumetric_cell_indices);
 	}
-	_all_poly_cell_normals.insert(PER_CELL_KEY, Vector<PackedVector4Array>{ poly_cell_boundary_normals });
+	_all_poly_cell_normal_indices.insert(PER_CELL_KEY, Vector<PackedInt32Array>{ per_cell_normal_indices });
 	poly_mesh_clear_cache();
 }
 
@@ -648,13 +837,13 @@ PackedInt32Array ArrayPolyMesh4D::make_single_volume_from_all_cells() const {
 void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radians, const bool p_discard_seams_within_islands) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate seam faces because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate seam faces for an invalid mesh.");
-	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
+	if (!_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
 	}
 	_seam_face_indices.clear();
 	HashSet<int32_t> cells_between_volumetric;
 	const Vector<PackedInt32Array> &cell_face_indices = _poly_cell_indices[1];
-	const PackedVector4Array &poly_cell_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
+	const PackedVector4Array poly_cell_boundary_normals = _sample_normal_values_internal(_all_poly_cell_normal_indices[PER_CELL_KEY][0]);
 	CRASH_COND(poly_cell_boundary_normals.size() != cell_face_indices.size());
 	if (_poly_cell_indices.size() > 2) {
 		// If this is a volumetric poly mesh with 4D cells, ignore cells between volumetric cells.
@@ -899,14 +1088,10 @@ void ArrayPolyMesh4D::_transform_cell_to_texture_space(const Transform4D &p_worl
 	r_poly_cell_texture_map.set(p_cell_index, cell_texture_map);
 }
 
-bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert) {
+bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
 	const int32_t cell_index = p_cells_in_island[p_current_cell_index_index];
 	const PackedInt32Array &cell_data = _poly_cell_indices[1][cell_index];
-	if (!_all_poly_cell_texture_maps.has(CELL_TO_VERT_KEY)) {
-		_all_poly_cell_texture_maps.insert(CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
-	}
-	// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
-	Vector<PackedVector3Array> &poly_cell_texture_map = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
+	Vector<PackedVector3Array> &poly_cell_texture_map = r_poly_cell_texture_map;
 	// For the first cell in the island, there is nothing to "build on",
 	// so just start by directly projecting.
 	if (p_current_cell_index_index == 0) {
@@ -993,15 +1178,14 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 	ERR_FAIL_V_MSG(false, "ArrayPolyMesh4D: Island cells are not contiguous, cannot unwrap.");
 }
 
-void ArrayPolyMesh4D::_unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing) {
-	const Vector<PackedVector3Array> &poly_cell_texture_map = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
-	CRASH_COND(poly_cell_texture_map.size() != _poly_cell_indices[1].size());
+void ArrayPolyMesh4D::_unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
+	CRASH_COND(r_poly_cell_texture_map.size() != _poly_cell_indices[1].size());
 	const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
 	for (int64_t cell_index_index = 0; cell_index_index < p_cells_in_island.size(); cell_index_index++) {
-		if (p_keep_existing && !poly_cell_texture_map[p_cells_in_island[cell_index_index]].is_empty()) {
+		if (p_keep_existing && !r_poly_cell_texture_map[p_cells_in_island[cell_index_index]].is_empty()) {
 			continue;
 		}
-		if (!_unwrap_texture_map_island_cell(p_cells_in_island, cell_index_index, cell_vert)) {
+		if (!_unwrap_texture_map_island_cell(p_cells_in_island, cell_index_index, cell_vert, r_poly_cell_texture_map)) {
 			return;
 		}
 	}
@@ -1017,15 +1201,17 @@ void ArrayPolyMesh4D::unwrap_texture_map_island(const PackedInt32Array &p_cells_
 	}
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Poly mesh data is invalid, cannot unwrap.");
 	const int64_t cell_count = cells.size();
-	// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
-	Vector<PackedVector3Array> &poly_cell_texture_map = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
+	// Unwrapping works with a dense texture map, sampled from the indexed data
+	// at the start and converted back to indexed data at the end.
+	Vector<PackedVector3Array> poly_cell_texture_map = _get_poly_cell_texture_map_dense_internal();
 	const int64_t existing_texture_map_count = poly_cell_texture_map.size();
 	poly_cell_texture_map.resize_initialized(cell_count);
 	for (int64_t i = existing_texture_map_count; i < cell_count; i++) {
 		poly_cell_texture_map.set(i, PackedVector3Array());
 	}
 	// Use the internal version internally when we know the data is valid.
-	_unwrap_texture_map_island_internal(p_cells_in_island, p_keep_existing);
+	_unwrap_texture_map_island_internal(p_cells_in_island, p_keep_existing, poly_cell_texture_map);
+	_set_poly_cell_texture_map_dense_internal(poly_cell_texture_map);
 	poly_mesh_clear_cache();
 }
 
@@ -1034,11 +1220,12 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot unwrap texture map for a mesh with no cells.");
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Poly mesh data is invalid, cannot unwrap.");
 	const int64_t cell_count = _poly_cell_indices[1].size();
-	if (!p_keep_existing) {
-		_all_poly_cell_texture_maps.erase(CELL_TO_VERT_KEY);
+	// Unwrapping works with a dense texture map, sampled from the indexed data
+	// at the start and converted back to indexed data at the end.
+	Vector<PackedVector3Array> poly_cell_texture_map;
+	if (p_keep_existing) {
+		poly_cell_texture_map = _get_poly_cell_texture_map_dense_internal();
 	}
-	// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
-	Vector<PackedVector3Array> &poly_cell_texture_map = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
 	const int64_t existing_texture_map_count = poly_cell_texture_map.size();
 	poly_cell_texture_map.resize_initialized(cell_count);
 	for (int64_t i = existing_texture_map_count; i < cell_count; i++) {
@@ -1064,14 +1251,14 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 	}
 	// Step 2: Unwrap each island individually into an unbounded space.
 	for (int64_t island_index = 0; island_index < islands.size(); island_index++) {
-		_unwrap_texture_map_island_internal(islands[island_index], p_keep_existing);
+		_unwrap_texture_map_island_internal(islands[island_index], p_keep_existing, poly_cell_texture_map);
 	}
 	// Step 3: Fit or tile the islands into the texture space depending on the mode.
 	if (actual_mode == UNWRAP_MODE_EACH_CELL_FILLS || actual_mode == UNWRAP_MODE_EACH_ISLAND_FILLS) {
 		// Fit each island into the 0-to-1 UVW texture space with padding.
 		const AABB padded_full_aabb = AABB(Vector3(pad_offset, pad_offset, pad_offset), Vector3(pad_size, pad_size, pad_size));
 		for (int32_t island_index = 0; island_index < islands.size(); island_index++) {
-			_fit_island_texture_map_into_aabb(islands[island_index], padded_full_aabb, p_proportional);
+			_fit_island_texture_map_into_aabb(islands[island_index], padded_full_aabb, p_proportional, poly_cell_texture_map);
 		}
 	} else if (actual_mode == UNWRAP_MODE_TILE_CELLS || actual_mode == UNWRAP_MODE_TILE_ISLANDS) {
 		// Tile the islands in texture space by rescaling and offsetting them.
@@ -1088,19 +1275,19 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 					}
 					const PackedInt32Array &cells_in_island = islands[tile_index];
 					const AABB island_aabb = AABB(Vector3(x, y, z) * unpadded_tile_size + padding_offset, padded_tile_size);
-					_fit_island_texture_map_into_aabb(cells_in_island, island_aabb, p_proportional);
+					_fit_island_texture_map_into_aabb(cells_in_island, island_aabb, p_proportional, poly_cell_texture_map);
 				}
 			}
 		}
 	} else {
 		ERR_FAIL_MSG("ArrayPolyMesh4D: Unknown unwrap texture map mode.");
 	}
+	_set_poly_cell_texture_map_dense_internal(poly_cell_texture_map);
 	poly_mesh_clear_cache();
 }
 
-void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional) {
-	// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
-	Vector<PackedVector3Array> &poly_cell_texture_map = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
+void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
+	Vector<PackedVector3Array> &poly_cell_texture_map = r_poly_cell_texture_map;
 	const PackedVector3Array first_cell_texture_map = poly_cell_texture_map[p_cells_in_island[0]];
 	ERR_FAIL_COND_MSG(first_cell_texture_map.is_empty(), "ArrayPolyMesh4D: Cannot fit island texture map into AABB because at least one cell in the island has an empty texture map.");
 	AABB current_aabb = AABB(first_cell_texture_map[0], Vector3());
@@ -1146,8 +1333,9 @@ Vector3i ArrayPolyMesh4D::_tiles_for_island_count(const int32_t p_island_count) 
 }
 
 void ArrayPolyMesh4D::transform_texture_map(const Transform3D &p_transform) {
-	// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
-	Vector<PackedVector3Array> &poly_cell_texture_map = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
+	// Transform a dense copy of the texture map, then convert it back to indexed data.
+	// This ensures that values shared with other data bindings are not affected.
+	Vector<PackedVector3Array> poly_cell_texture_map = _get_poly_cell_texture_map_dense_internal();
 	const int64_t cell_count = poly_cell_texture_map.size();
 	for (int64_t cell_index = 0; cell_index < cell_count; cell_index++) {
 		PackedVector3Array cell_texture_map = poly_cell_texture_map[cell_index];
@@ -1156,6 +1344,7 @@ void ArrayPolyMesh4D::transform_texture_map(const Transform3D &p_transform) {
 		}
 		poly_cell_texture_map.set(cell_index, cell_texture_map);
 	}
+	_set_poly_cell_texture_map_dense_internal(poly_cell_texture_map);
 	poly_mesh_clear_cache();
 }
 
@@ -1166,23 +1355,21 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 	const bool has_boundary_cells = _poly_cell_indices.size() > 1;
 	// We need to ensure the boundary normals stay the same before and after deduplication,
 	// which means we need to start with boundary normals calculated from the original data.
-	if (has_boundary_cells && (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size())) {
+	if (has_boundary_cells && (!_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size())) {
 		calculate_boundary_normals();
 	}
+	// Both data binding maps have the same structure, so most of the code below can process them in a loop.
+	HashMap<Vector2i, Vector<PackedInt32Array>> *data_binding_maps[2] = { &_all_poly_cell_normal_indices, &_all_poly_cell_texture_map_indices };
 	// Snapshot the sub-element traversal order for all decomposed bindings BEFORE any deduplication.
 	// Deduplication can change sub-element ordering within cells (e.g., edge deduplication can reverse
 	// an edge's stored vertex order), breaking data indexed by traversal position.
 	HashMap<Vector2i, Vector<PackedInt32Array>> pre_dedup_poly;
-	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &pre_kv : _all_poly_cell_normals) {
-		const Vector2i pre_key = pre_kv.key;
-		if (pre_key.x != pre_key.y && !pre_kv.value.is_empty() && !pre_dedup_poly.has(pre_key)) {
-			pre_dedup_poly.insert(pre_key, get_all_poly_cell_poly_indices(pre_key.x, pre_key.y));
-		}
-	}
-	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &pre_kv : _all_poly_cell_texture_maps) {
-		const Vector2i pre_key = pre_kv.key;
-		if (pre_key.x != pre_key.y && !pre_kv.value.is_empty() && !pre_dedup_poly.has(pre_key)) {
-			pre_dedup_poly.insert(pre_key, get_all_poly_cell_poly_indices(pre_key.x, pre_key.y));
+	for (HashMap<Vector2i, Vector<PackedInt32Array>> *data_binding_map : data_binding_maps) {
+		for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &pre_kv : *data_binding_map) {
+			const Vector2i pre_key = pre_kv.key;
+			if (pre_key.x != pre_key.y && !pre_kv.value.is_empty() && !pre_dedup_poly.has(pre_key)) {
+				pre_dedup_poly.insert(pre_key, get_all_poly_cell_poly_indices(pre_key.x, pre_key.y));
+			}
 		}
 	}
 	// Deduplicate vertices.
@@ -1308,170 +1495,104 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 			output_seam_face_indices.insert(face_index_remap[seam_face_index]);
 		}
 	}
-	// Update poly cell normal bindings.
-	HashMap<Vector2i, Vector<PackedVector4Array>> output_poly_cell_normals;
-	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : _all_poly_cell_normals) {
-		const Vector2i key = kv.key;
-		if (kv.value.is_empty() || (key.x == key.y && kv.value[0].is_empty())) {
-			output_poly_cell_normals.insert(key, kv.value);
-			continue;
-		}
-		ERR_CONTINUE_MSG((key.x - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid normal binding for geometry dimension " + itos(key.x) + ". Skipping.");
-		const HashMap<int32_t, int32_t> &index_remap = (key.x == 0) ? vertex_index_remap : ((key.x == 1) ? edge_index_remap : poly_cell_index_remaps[key.x - 2]);
-		const Vector<PackedVector4Array> &input_normal_data = kv.value;
-		Vector<PackedVector4Array> output_normals_data;
-		if (key.y == key.x && input_normal_data.size() == 1) {
-			// Non-decomposed normals use a flat structure.
-			const PackedVector4Array &input_flat_normals = input_normal_data[0];
-			PackedVector4Array output_flat_normals;
-			for (int64_t input_index = 0; input_index < input_flat_normals.size(); input_index++) {
-				const int64_t output_index = index_remap[input_index];
-				// New items should be contiguously added in the same order as the input,
-				// so the next output index should never be greater than the current output size.
-				CRASH_COND(output_index > output_flat_normals.size());
-				// When deduplicating, we only want the first copy's attached data,
-				// so that it pairs with the geometry that was kept.
-				if (output_index == output_flat_normals.size()) {
-					output_flat_normals.resize(output_index + 1);
-					output_flat_normals.set(output_index, input_flat_normals[input_index]);
-				}
+	// Update the poly cell data bindings (normal indices and texture map indices).
+	// The bindings reference the geometry elements by position, so they need remapping,
+	// but the value pools they index into are unaffected by geometry deduplication.
+	for (HashMap<Vector2i, Vector<PackedInt32Array>> *data_binding_map : data_binding_maps) {
+		HashMap<Vector2i, Vector<PackedInt32Array>> output_data_bindings;
+		for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : *data_binding_map) {
+			const Vector2i key = kv.key;
+			if (kv.value.is_empty() || (key.x == key.y && kv.value[0].is_empty())) {
+				output_data_bindings.insert(key, kv.value);
+				continue;
 			}
-			output_normals_data = { output_flat_normals };
-		} else {
-			for (int64_t input_index = 0; input_index < input_normal_data.size(); input_index++) {
-				const int64_t output_index = index_remap[input_index];
-				CRASH_COND(output_index > output_normals_data.size());
-				if (output_index == output_normals_data.size()) {
-					output_normals_data.resize(output_index + 1);
-					PackedVector4Array cell_normals = input_normal_data[input_index];
-					// Remap inner positions if sub-element ordering changed due to deduplication.
-					// This can happen at any dimension: e.g. edge reversal changes vertex traversal order,
-					// or face deduplication with different edge order changes cell-to-edge order.
-					if (pre_dedup_poly.has(key) && input_index < pre_dedup_poly[key].size() && output_index < post_dedup_poly[key].size()) {
-						const PackedInt32Array &old_elems = pre_dedup_poly[key][input_index];
-						const PackedInt32Array &new_elems = post_dedup_poly[key][output_index];
-						if (!cell_normals.is_empty()) {
-							ERR_CONTINUE_MSG(key.y >= 2 && (key.y - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid normal sub-element dimension " + itos(key.y) + ". Skipping remap.");
-							const HashMap<int32_t, int32_t> &subelement_remap = (key.y == 0) ? vertex_index_remap : ((key.y == 1) ? edge_index_remap : poly_cell_index_remaps[key.y - 2]);
-							PackedVector4Array remapped_normals;
-							remapped_normals.resize(new_elems.size());
-							for (int64_t new_pos = 0; new_pos < new_elems.size(); new_pos++) {
-								const int32_t new_elem = new_elems[new_pos];
-								bool found = false;
-								for (int64_t old_pos = 0; old_pos < old_elems.size(); old_pos++) {
-									if (subelement_remap[old_elems[old_pos]] == new_elem) {
-										remapped_normals.set(new_pos, cell_normals[old_pos]);
-										found = true;
-										break;
-									}
-								}
-								ERR_FAIL_COND_MSG(!found, vformat("ArrayPolyMesh4D::deduplicate_all_elements: Failed to remap normal for cell %d (new sub-element %d not found in pre-dedup traversal).", input_index, new_elem));
-							}
-							cell_normals = remapped_normals;
-						}
+			ERR_CONTINUE_MSG((key.x - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid data binding for geometry dimension " + itos(key.x) + ". Skipping.");
+			const HashMap<int32_t, int32_t> &index_remap = (key.x == 0) ? vertex_index_remap : ((key.x == 1) ? edge_index_remap : poly_cell_index_remaps[key.x - 2]);
+			const Vector<PackedInt32Array> &input_data = kv.value;
+			Vector<PackedInt32Array> output_data;
+			if (key.y == key.x && input_data.size() == 1) {
+				// Non-decomposed data uses a flat structure, with one value index per element.
+				const PackedInt32Array &input_flat_indices = input_data[0];
+				PackedInt32Array output_flat_indices;
+				for (int64_t input_index = 0; input_index < input_flat_indices.size(); input_index++) {
+					const int64_t output_index = index_remap[input_index];
+					// New items should be contiguously added in the same order as the input,
+					// so the next output index should never be greater than the current output size.
+					CRASH_COND(output_index > output_flat_indices.size());
+					// When deduplicating, we only want the first copy's attached data,
+					// so that it pairs with the geometry that was kept.
+					if (output_index == output_flat_indices.size()) {
+						output_flat_indices.resize(output_index + 1);
+						output_flat_indices.set(output_index, input_flat_indices[input_index]);
 					}
-					output_normals_data.set(output_index, cell_normals);
 				}
-			}
-		}
-		output_poly_cell_normals.insert(key, output_normals_data);
-	}
-	// Update poly cell texture map bindings.
-	HashMap<Vector2i, Vector<PackedVector3Array>> output_poly_cell_texture_maps;
-	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : _all_poly_cell_texture_maps) {
-		const Vector2i key = kv.key;
-		if (kv.value.is_empty() || (key.x == key.y && kv.value[0].is_empty())) {
-			output_poly_cell_texture_maps.insert(key, kv.value);
-			continue;
-		}
-		ERR_CONTINUE_MSG((key.x - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid texture map binding for geometry dimension " + itos(key.x) + ". Skipping.");
-		const HashMap<int32_t, int32_t> &index_remap = (key.x == 0) ? vertex_index_remap : ((key.x == 1) ? edge_index_remap : poly_cell_index_remaps[key.x - 2]);
-		const Vector<PackedVector3Array> &input_texture_map_data = kv.value;
-		Vector<PackedVector3Array> output_texture_map_data;
-		if (key.y == key.x && input_texture_map_data.size() == 1) {
-			// Non-decomposed texture maps use a flat structure.
-			const PackedVector3Array &input_flat_texture_map = input_texture_map_data[0];
-			PackedVector3Array output_flat_texture_map;
-			for (int64_t input_index = 0; input_index < input_flat_texture_map.size(); input_index++) {
-				const int64_t output_index = index_remap[input_index];
-				CRASH_COND(output_index > output_flat_texture_map.size());
-				if (output_index == output_flat_texture_map.size()) {
-					output_flat_texture_map.resize(output_index + 1);
-					output_flat_texture_map.set(output_index, input_flat_texture_map[input_index]);
-				}
-			}
-			output_texture_map_data = { output_flat_texture_map };
-		} else {
-			for (int64_t input_index = 0; input_index < input_texture_map_data.size(); input_index++) {
-				const int64_t output_index = index_remap[input_index];
-				CRASH_COND(output_index > output_texture_map_data.size());
-				if (output_index == output_texture_map_data.size()) {
-					output_texture_map_data.resize(output_index + 1);
-					PackedVector3Array cell_texture_map = input_texture_map_data[input_index];
-					// Remap inner positions if sub-element ordering changed due to deduplication.
-					// This can happen at any dimension: e.g. edge reversal changes vertex traversal order,
-					// or face deduplication with different edge order changes cell-to-edge order.
-					if (pre_dedup_poly.has(key) && input_index < pre_dedup_poly[key].size() && output_index < post_dedup_poly[key].size()) {
-						const PackedInt32Array &old_elems = pre_dedup_poly[key][input_index];
-						const PackedInt32Array &new_elems = post_dedup_poly[key][output_index];
-						if (!cell_texture_map.is_empty()) {
-							ERR_CONTINUE_MSG(key.y >= 2 && (key.y - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid texture map sub-element dimension " + itos(key.y) + ". Skipping remap.");
-							const HashMap<int32_t, int32_t> &subelement_remap = (key.y == 0) ? vertex_index_remap : ((key.y == 1) ? edge_index_remap : poly_cell_index_remaps[key.y - 2]);
-							PackedVector3Array remapped_texture_map;
-							remapped_texture_map.resize(new_elems.size());
-							for (int64_t new_pos = 0; new_pos < new_elems.size(); new_pos++) {
-								const int32_t new_elem = new_elems[new_pos];
-								bool found = false;
-								for (int64_t old_pos = 0; old_pos < old_elems.size(); old_pos++) {
-									if (subelement_remap[old_elems[old_pos]] == new_elem) {
-										remapped_texture_map.set(new_pos, cell_texture_map[old_pos]);
-										found = true;
-										break;
+				output_data = { output_flat_indices };
+			} else {
+				for (int64_t input_index = 0; input_index < input_data.size(); input_index++) {
+					const int64_t output_index = index_remap[input_index];
+					CRASH_COND(output_index > output_data.size());
+					if (output_index == output_data.size()) {
+						output_data.resize(output_index + 1);
+						PackedInt32Array cell_value_indices = input_data[input_index];
+						// Remap inner positions if sub-element ordering changed due to deduplication.
+						// This can happen at any dimension: e.g. edge reversal changes vertex traversal order,
+						// or face deduplication with different edge order changes cell-to-edge order.
+						if (pre_dedup_poly.has(key) && input_index < pre_dedup_poly[key].size() && output_index < post_dedup_poly[key].size()) {
+							const PackedInt32Array &old_elems = pre_dedup_poly[key][input_index];
+							const PackedInt32Array &new_elems = post_dedup_poly[key][output_index];
+							if (!cell_value_indices.is_empty()) {
+								ERR_CONTINUE_MSG(key.y >= 2 && (key.y - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid data binding sub-element dimension " + itos(key.y) + ". Skipping remap.");
+								const HashMap<int32_t, int32_t> &subelement_remap = (key.y == 0) ? vertex_index_remap : ((key.y == 1) ? edge_index_remap : poly_cell_index_remaps[key.y - 2]);
+								PackedInt32Array remapped_value_indices;
+								remapped_value_indices.resize(new_elems.size());
+								for (int64_t new_pos = 0; new_pos < new_elems.size(); new_pos++) {
+									const int32_t new_elem = new_elems[new_pos];
+									bool found = false;
+									for (int64_t old_pos = 0; old_pos < old_elems.size(); old_pos++) {
+										if (subelement_remap[old_elems[old_pos]] == new_elem) {
+											remapped_value_indices.set(new_pos, cell_value_indices[old_pos]);
+											found = true;
+											break;
+										}
 									}
+									ERR_FAIL_COND_MSG(!found, vformat("ArrayPolyMesh4D::deduplicate_all_elements: Failed to remap data binding for cell %d (new sub-element %d not found in pre-dedup traversal).", input_index, new_elem));
 								}
-								ERR_FAIL_COND_MSG(!found, vformat("ArrayPolyMesh4D::deduplicate_all_elements: Failed to remap texture map for cell %d (new sub-element %d not found in pre-dedup traversal).", input_index, new_elem));
+								cell_value_indices = remapped_value_indices;
 							}
-							cell_texture_map = remapped_texture_map;
 						}
+						output_data.set(output_index, cell_value_indices);
 					}
-					output_texture_map_data.set(output_index, cell_texture_map);
 				}
 			}
+			output_data_bindings.insert(key, output_data);
 		}
-		output_poly_cell_texture_maps.insert(key, output_texture_map_data);
+		*data_binding_map = output_data_bindings;
 	}
-	// Write back the remaining deduplicated data (geometry was already written back earlier).
+	// Write back the remaining deduplicated data (geometry and data bindings were already written back earlier).
 	_poly_cell_boundary_pivot_overrides = output_poly_cell_boundary_pivot_overrides;
 	_seam_face_indices = output_seam_face_indices;
-	_all_poly_cell_normals = output_poly_cell_normals;
-	_all_poly_cell_texture_maps = output_poly_cell_texture_maps;
 	if (output_poly_cell_indices.size() > 1) {
 		// Ensure boundary normals stay consistent with the geometry after deduplication,
 		// since the reordering can cause them to become flipped. This is done by swapping
 		// the first two faces in any cell whose normal was flipped. This may also affect
 		// the binding of other decomposed elements, so those need to be resampled as well.
 		HashMap<Vector2i, Vector<PackedInt32Array>> remapped_poly_poly;
-		for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : output_poly_cell_normals) {
-			const Vector2i key = kv.key;
-			if (key.x < 3 || key.y >= 3 || kv.value.is_empty()) {
-				continue; // Swapping won't affect the binding of these elements, so we can skip remapping them.
+		for (HashMap<Vector2i, Vector<PackedInt32Array>> *data_binding_map : data_binding_maps) {
+			for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : *data_binding_map) {
+				const Vector2i key = kv.key;
+				if (remapped_poly_poly.has(key)) {
+					continue; // Already tracked.
+				}
+				if (key.x < 3 || key.y >= 3 || kv.value.is_empty()) {
+					continue; // Swapping won't affect the binding of these elements, so we can skip remapping them.
+				}
+				remapped_poly_poly.insert(key, get_all_poly_cell_poly_indices(key.x, key.y));
 			}
-			remapped_poly_poly.insert(key, get_all_poly_cell_poly_indices(key.x, key.y));
-		}
-		for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : output_poly_cell_texture_maps) {
-			const Vector2i key = kv.key;
-			if (remapped_poly_poly.has(key)) {
-				continue; // Already tracked.
-			}
-			if (key.x < 3 || key.y >= 3 || kv.value.is_empty()) {
-				continue; // Swapping won't affect the binding of these elements, so we can skip remapping them.
-			}
-			remapped_poly_poly.insert(key, get_all_poly_cell_poly_indices(key.x, key.y));
 		}
 		// Now actually check on the boundary cells and see if their first two elements need swapping.
-		const PackedVector4Array remapped_boundary_normals = (output_poly_cell_normals.has(PER_CELL_KEY) && !output_poly_cell_normals[PER_CELL_KEY].is_empty()) ? output_poly_cell_normals[PER_CELL_KEY][0] : PackedVector4Array();
+		const PackedVector4Array remapped_boundary_normals = (_all_poly_cell_normal_indices.has(PER_CELL_KEY) && !_all_poly_cell_normal_indices[PER_CELL_KEY].is_empty()) ? _sample_normal_values_internal(_all_poly_cell_normal_indices[PER_CELL_KEY][0]) : PackedVector4Array();
 		calculate_boundary_normals();
-		const PackedVector4Array &recalculated_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
+		const PackedVector4Array recalculated_boundary_normals = _sample_normal_values_internal(_all_poly_cell_normal_indices[PER_CELL_KEY][0]);
 		Vector<PackedInt32Array> all_cell_face_indices = output_poly_cell_indices[1];
 		for (int64_t cell_index = 0; cell_index < recalculated_boundary_normals.size(); cell_index++) {
 			if (cell_index < remapped_boundary_normals.size() && remapped_boundary_normals[cell_index].dot(recalculated_boundary_normals[cell_index]) < 0) {
@@ -1493,54 +1614,37 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 			const Vector<PackedInt32Array> &remapped_poly = kv.value;
 			const Vector<PackedInt32Array> recalculated_poly = get_all_poly_cell_poly_indices(key.x, key.y);
 			CRASH_COND(remapped_poly.size() != recalculated_poly.size());
-			if (_all_poly_cell_normals.has(key)) {
-				Vector<PackedVector4Array> normal_bindings = _all_poly_cell_normals[key];
-				CRASH_COND(normal_bindings.size() > remapped_poly.size());
-				for (int64_t cell_index = 0; cell_index < normal_bindings.size(); cell_index++) {
+			for (HashMap<Vector2i, Vector<PackedInt32Array>> *data_binding_map : data_binding_maps) {
+				if (!data_binding_map->has(key)) {
+					continue;
+				}
+				Vector<PackedInt32Array> data_bindings = (*data_binding_map)[key];
+				CRASH_COND(data_bindings.size() > remapped_poly.size());
+				for (int64_t cell_index = 0; cell_index < data_bindings.size(); cell_index++) {
 					const PackedInt32Array &remapped_cell_poly = remapped_poly[cell_index];
 					const PackedInt32Array &recalculated_cell_poly = recalculated_poly[cell_index];
-					if (normal_bindings[cell_index].is_empty() || remapped_cell_poly == recalculated_cell_poly) {
+					if (data_bindings[cell_index].is_empty() || remapped_cell_poly == recalculated_cell_poly) {
 						continue; // This cell's poly didn't change, so its binding is still correct.
 					}
 					CRASH_COND(remapped_cell_poly.size() != recalculated_cell_poly.size());
-					// This cell's poly changed, so we need to resample normals.
-					const PackedVector4Array &old_cell_normals = normal_bindings[cell_index];
-					PackedVector4Array new_cell_normals;
-					new_cell_normals.resize(old_cell_normals.size());
+					// This cell's poly changed, so we need to resample the data binding.
+					const PackedInt32Array &old_cell_value_indices = data_bindings[cell_index];
+					PackedInt32Array new_cell_value_indices;
+					new_cell_value_indices.resize(old_cell_value_indices.size());
 					for (int64_t elem_index = 0; elem_index < remapped_cell_poly.size(); elem_index++) {
 						const int64_t search_element = remapped_cell_poly[elem_index];
 						const int64_t dest_index = recalculated_cell_poly.find(search_element);
-						new_cell_normals.set(dest_index, old_cell_normals[elem_index]);
+						new_cell_value_indices.set(dest_index, old_cell_value_indices[elem_index]);
 					}
-					normal_bindings.set(cell_index, new_cell_normals);
+					data_bindings.set(cell_index, new_cell_value_indices);
 				}
-				_all_poly_cell_normals.insert(key, normal_bindings);
-			}
-			if (_all_poly_cell_texture_maps.has(key)) {
-				Vector<PackedVector3Array> texture_map_bindings = _all_poly_cell_texture_maps[key];
-				CRASH_COND(texture_map_bindings.size() > remapped_poly.size());
-				for (int64_t cell_index = 0; cell_index < texture_map_bindings.size(); cell_index++) {
-					const PackedInt32Array &remapped_cell_poly = remapped_poly[cell_index];
-					const PackedInt32Array &recalculated_cell_poly = recalculated_poly[cell_index];
-					if (texture_map_bindings[cell_index].is_empty() || remapped_cell_poly == recalculated_cell_poly) {
-						continue; // This cell's poly didn't change, so its binding is still correct.
-					}
-					CRASH_COND(remapped_cell_poly.size() != recalculated_cell_poly.size());
-					// This cell's poly changed, so we need to resample texture maps.
-					const PackedVector3Array &old_cell_texture_maps = texture_map_bindings[cell_index];
-					PackedVector3Array new_cell_texture_maps;
-					new_cell_texture_maps.resize(old_cell_texture_maps.size());
-					for (int64_t elem_index = 0; elem_index < remapped_cell_poly.size(); elem_index++) {
-						const int64_t search_element = remapped_cell_poly[elem_index];
-						const int64_t dest_index = recalculated_cell_poly.find(search_element);
-						new_cell_texture_maps.set(dest_index, old_cell_texture_maps[elem_index]);
-					}
-					texture_map_bindings.set(cell_index, new_cell_texture_maps);
-				}
-				_all_poly_cell_texture_maps.insert(key, texture_map_bindings);
+				data_binding_map->insert(key, data_bindings);
 			}
 		}
 	}
+	// Deduplication can leave the value pools with unreferenced values, so compact them.
+	_compact_normal_values_internal();
+	_compact_texture_map_values_internal();
 	poly_mesh_clear_cache(false);
 }
 
@@ -1670,23 +1774,38 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	if (other_array_mesh.is_null()) {
 		other_array_mesh = p_other->to_array_poly_mesh();
 	}
-	const HashMap<Vector2i, Vector<PackedVector4Array>> &other_poly_cell_normals = other_array_mesh->_all_poly_cell_normals;
+	// Merge the value pools first, remembering how the other mesh's value indices map into this
+	// mesh's pools. The other mesh's normal values need to be transformed by the merge basis.
+	const PackedVector4Array &other_normal_values = other_array_mesh->_poly_cell_normal_values;
+	PackedInt32Array other_normal_value_remap;
+	other_normal_value_remap.resize(other_normal_values.size());
+	for (int64_t i = 0; i < other_normal_values.size(); i++) {
+		const Vector4 other_normal = p_transform.basis.xform(other_normal_values[i]);
+		other_normal_value_remap.set(i, (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, other_normal));
+	}
+	const PackedVector3Array &other_texture_map_values = other_array_mesh->_poly_cell_texture_map_values;
+	PackedInt32Array other_texture_map_value_remap;
+	other_texture_map_value_remap.resize(other_texture_map_values.size());
+	for (int64_t i = 0; i < other_texture_map_values.size(); i++) {
+		other_texture_map_value_remap.set(i, (int32_t)Vector4D::vector3_array_append_deduplicate(_poly_cell_texture_map_values, other_texture_map_values[i]));
+	}
+	const HashMap<Vector2i, Vector<PackedInt32Array>> &other_poly_cell_normal_indices = other_array_mesh->_all_poly_cell_normal_indices;
 	PackedVector4Array boundary_normals_cache;
 	// Merge all normals.
-	if (!_all_poly_cell_normals.is_empty() || !other_poly_cell_normals.is_empty()) {
+	if (!_all_poly_cell_normal_indices.is_empty() || !other_poly_cell_normal_indices.is_empty()) {
 		// Merge all normals from other mesh, iterating through all keys.
-		for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &other_normals_kv : other_poly_cell_normals) {
+		for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &other_normals_kv : other_poly_cell_normal_indices) {
 			const Vector2i key = other_normals_kv.key;
-			const Vector<PackedVector4Array> &other_normals_data = other_normals_kv.value;
+			const Vector<PackedInt32Array> &other_normals_data = other_normals_kv.value;
 			if (other_normals_data.is_empty() || (key.y == key.x && other_normals_data[0].is_empty())) {
 				continue;
 			}
 			// This usage of HashMap's indexing operator writes to the map if missing.
-			Vector<PackedVector4Array> &merged_normals = _all_poly_cell_normals[key];
+			Vector<PackedInt32Array> &merged_normals = _all_poly_cell_normal_indices[key];
 			if (key.y == key.x) {
 				// Non-decomposed normals use a flat structure, which we need to ensure is populated.
 				if (merged_normals.is_empty()) {
-					merged_normals.append(PackedVector4Array());
+					merged_normals.append(PackedInt32Array());
 				}
 			}
 			// Figure out how many entries are needed in this dimension based on the key.
@@ -1715,7 +1834,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 							boundary_normals_cache = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_instances_span_first, true);
 							CRASH_COND(boundary_normals_cache.size() != start_poly_cell_indices_counts[1]);
 						}
-						merged_normals.set(0, boundary_normals_cache);
+						merged_normals.set(0, _normal_indices_for_values_internal(boundary_normals_cache));
 					}
 				} else if (poly_cell_indices_dims > 1 && key == CELL_TO_VERT_KEY) {
 					// Special case: Generate missing vertex normals if needed.
@@ -1728,21 +1847,26 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 						const int64_t start_count = merged_normals.size();
 						merged_normals.resize(start_poly_cell_indices_counts[1]);
 						for (int64_t cell_index = start_count; cell_index < start_poly_cell_indices_counts[1]; cell_index++) {
-							PackedVector4Array vertex_normals_for_cell;
-							vertex_normals_for_cell.resize(cell_vertex_instances_span_first[cell_index].size());
-							const Vector4 cell_boundary_normal = boundary_normals_cache[cell_index];
-							for (int64_t vert_inst = 0; vert_inst < vertex_normals_for_cell.size(); vert_inst++) {
-								vertex_normals_for_cell.set(vert_inst, cell_boundary_normal);
+							PackedInt32Array normal_indices_for_cell;
+							normal_indices_for_cell.resize(cell_vertex_instances_span_first[cell_index].size());
+							const int32_t cell_boundary_normal_index = (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, boundary_normals_cache[cell_index]);
+							for (int64_t vert_inst = 0; vert_inst < normal_indices_for_cell.size(); vert_inst++) {
+								normal_indices_for_cell.set(vert_inst, cell_boundary_normal_index);
 							}
-							merged_normals.set(cell_index, vertex_normals_for_cell);
+							merged_normals.set(cell_index, normal_indices_for_cell);
 						}
 					}
 				} else {
 					WARN_PRINT("ArrayPolyMesh4D: The original mesh was missing normal entries for geometry dimension " + itos(key.x) + " and decomposition dimension " + itos(key.y) + ", but the other mesh has entries for this key. Filling missing entries with empty data while merging. Consider updating the original mesh with this data before merging to avoid this warning in the future.");
 					if (key.y == key.x) {
-						// Fill missing non-decomposed normals with zeroes.
-						PackedVector4Array flat_merged_normals = merged_normals[0];
+						// Fill missing non-decomposed normals with a zero normal value.
+						const int32_t zero_normal_value_index = (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, Vector4());
+						PackedInt32Array flat_merged_normals = merged_normals[0];
+						const int64_t old_flat_count = flat_merged_normals.size();
 						flat_merged_normals.resize(start_cell_count_for_geom_dim);
+						for (int64_t i = old_flat_count; i < start_cell_count_for_geom_dim; i++) {
+							flat_merged_normals.set(i, zero_normal_value_index);
+						}
 						merged_normals.set(0, flat_merged_normals);
 					} else {
 						// Fill missing decomposed normals with empty arrays.
@@ -1750,15 +1874,17 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 					}
 				}
 			}
-			// Merge normals with transformation if needed, and insert into the map.
+			// Merge normals by remapping the other mesh's value indices, and insert into the map.
 			if (key.y == key.x) {
 				// Non-decomposed normals use a flat structure, so we need to merge them into one array.
-				PackedVector4Array flat_merged_normals = merged_normals[0];
-				const PackedVector4Array &other_flat_normals = other_normals_data.size() > 0 ? other_normals_data[0] : PackedVector4Array();
+				PackedInt32Array flat_merged_normals = merged_normals[0];
+				const PackedInt32Array &other_flat_normals = other_normals_data[0];
 				const int64_t start_count = flat_merged_normals.size();
 				flat_merged_normals.resize(start_count + other_flat_normals.size());
 				for (int64_t cell_index = 0; cell_index < other_flat_normals.size(); cell_index++) {
-					flat_merged_normals.set(start_count + cell_index, p_transform.basis.xform(other_flat_normals[cell_index]));
+					const int32_t other_value_index = other_flat_normals[cell_index];
+					ERR_CONTINUE(other_value_index < 0 || other_value_index >= other_normal_value_remap.size());
+					flat_merged_normals.set(start_count + cell_index, other_normal_value_remap[other_value_index]);
 				}
 				merged_normals.set(0, flat_merged_normals);
 			} else {
@@ -1766,30 +1892,32 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 				const int64_t start_count = merged_normals.size();
 				merged_normals.resize(start_count + other_normals_data.size());
 				for (int64_t cell_index = 0; cell_index < other_normals_data.size(); cell_index++) {
-					PackedVector4Array transformed_cell_normals = other_normals_data[cell_index];
-					for (int64_t vert_inst = 0; vert_inst < transformed_cell_normals.size(); vert_inst++) {
-						transformed_cell_normals.set(vert_inst, p_transform.basis.xform(transformed_cell_normals[vert_inst]));
+					PackedInt32Array remapped_cell_normal_indices = other_normals_data[cell_index];
+					for (int64_t vert_inst = 0; vert_inst < remapped_cell_normal_indices.size(); vert_inst++) {
+						const int32_t other_value_index = remapped_cell_normal_indices[vert_inst];
+						ERR_CONTINUE(other_value_index < 0 || other_value_index >= other_normal_value_remap.size());
+						remapped_cell_normal_indices.set(vert_inst, other_normal_value_remap[other_value_index]);
 					}
-					merged_normals.set(start_count + cell_index, transformed_cell_normals);
+					merged_normals.set(start_count + cell_index, remapped_cell_normal_indices);
 				}
 			}
 		}
 	}
 	// Merge all texture maps.
-	const HashMap<Vector2i, Vector<PackedVector3Array>> &other_poly_cell_texture_maps = other_array_mesh->_all_poly_cell_texture_maps;
-	if (!_all_poly_cell_texture_maps.is_empty() || !other_poly_cell_texture_maps.is_empty()) {
-		for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &other_tex_map_kv : other_poly_cell_texture_maps) {
+	const HashMap<Vector2i, Vector<PackedInt32Array>> &other_poly_cell_texture_map_indices = other_array_mesh->_all_poly_cell_texture_map_indices;
+	if (!_all_poly_cell_texture_map_indices.is_empty() || !other_poly_cell_texture_map_indices.is_empty()) {
+		for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &other_tex_map_kv : other_poly_cell_texture_map_indices) {
 			const Vector2i key = other_tex_map_kv.key;
-			const Vector<PackedVector3Array> &other_texture_map_data = other_tex_map_kv.value;
+			const Vector<PackedInt32Array> &other_texture_map_data = other_tex_map_kv.value;
 			if (other_texture_map_data.is_empty() || (key.y == key.x && other_texture_map_data[0].is_empty())) {
 				continue;
 			}
 			// This usage of HashMap's indexing operator writes to the map if missing.
-			Vector<PackedVector3Array> &merged_texture_map = _all_poly_cell_texture_maps[key];
+			Vector<PackedInt32Array> &merged_texture_map = _all_poly_cell_texture_map_indices[key];
 			if (key.y == key.x) {
 				// Non-decomposed texture maps use a flat structure, which we need to ensure is populated.
 				if (merged_texture_map.is_empty()) {
-					merged_texture_map.append(PackedVector3Array());
+					merged_texture_map.append(PackedInt32Array());
 				}
 			}
 			// Figure out how many entries are needed in this dimension based on the key.
@@ -1811,27 +1939,34 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 				missing_entries = merged_texture_map.size() < start_cell_count_for_geom_dim;
 			}
 			if (missing_entries) {
-				// For texture maps, we just pad with empty arrays if needed, no generation logic.
+				// For texture maps, we just pad with empty data if needed, no generation logic.
 				WARN_PRINT("ArrayPolyMesh4D: The original mesh was missing texture map entries for geometry dimension " + itos(key.x) + " and decomposition dimension " + itos(key.y) + ", but the other mesh has entries for this key. Filling missing entries with empty data while merging. Consider updating the original mesh with this data before merging to avoid this warning in the future.");
 				if (key.y == key.x) {
-					// Fill missing non-decomposed texture maps with zeroes.
-					PackedVector3Array flat_merged_texture_map = merged_texture_map[0];
+					// Fill missing non-decomposed texture maps with a zero texture map value.
+					const int32_t zero_texture_map_value_index = (int32_t)Vector4D::vector3_array_append_deduplicate(_poly_cell_texture_map_values, Vector3());
+					PackedInt32Array flat_merged_texture_map = merged_texture_map[0];
+					const int64_t old_flat_count = flat_merged_texture_map.size();
 					flat_merged_texture_map.resize(start_cell_count_for_geom_dim);
+					for (int64_t i = old_flat_count; i < start_cell_count_for_geom_dim; i++) {
+						flat_merged_texture_map.set(i, zero_texture_map_value_index);
+					}
 					merged_texture_map.set(0, flat_merged_texture_map);
 				} else {
 					// Fill missing decomposed texture maps with empty arrays.
 					merged_texture_map.resize(start_cell_count_for_geom_dim);
 				}
 			}
-			// Merge texture maps with transformation if needed, and insert into the map.
+			// Merge texture maps by remapping the other mesh's value indices, and insert into the map.
 			if (key.y == key.x) {
 				// Non-decomposed texture maps use a flat structure, so we need to merge them into one array.
-				PackedVector3Array flat_merged_texture_map = merged_texture_map[0];
-				const PackedVector3Array &other_flat_texture_map = other_texture_map_data.size() > 0 ? other_texture_map_data[0] : PackedVector3Array();
+				PackedInt32Array flat_merged_texture_map = merged_texture_map[0];
+				const PackedInt32Array &other_flat_texture_map = other_texture_map_data[0];
 				const int64_t start_count = flat_merged_texture_map.size();
 				flat_merged_texture_map.resize(start_count + other_flat_texture_map.size());
 				for (int64_t cell_index = 0; cell_index < other_flat_texture_map.size(); cell_index++) {
-					flat_merged_texture_map.set(start_count + cell_index, other_flat_texture_map[cell_index]);
+					const int32_t other_value_index = other_flat_texture_map[cell_index];
+					ERR_CONTINUE(other_value_index < 0 || other_value_index >= other_texture_map_value_remap.size());
+					flat_merged_texture_map.set(start_count + cell_index, other_texture_map_value_remap[other_value_index]);
 				}
 				merged_texture_map.set(0, flat_merged_texture_map);
 			} else {
@@ -1839,7 +1974,13 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 				const int64_t start_count = merged_texture_map.size();
 				merged_texture_map.resize(start_count + other_texture_map_data.size());
 				for (int64_t cell_index = 0; cell_index < other_texture_map_data.size(); cell_index++) {
-					merged_texture_map.set(start_count + cell_index, other_texture_map_data[cell_index]);
+					PackedInt32Array remapped_cell_texture_map_indices = other_texture_map_data[cell_index];
+					for (int64_t vert_inst = 0; vert_inst < remapped_cell_texture_map_indices.size(); vert_inst++) {
+						const int32_t other_value_index = remapped_cell_texture_map_indices[vert_inst];
+						ERR_CONTINUE(other_value_index < 0 || other_value_index >= other_texture_map_value_remap.size());
+						remapped_cell_texture_map_indices.set(vert_inst, other_texture_map_value_remap[other_value_index]);
+					}
+					merged_texture_map.set(start_count + cell_index, remapped_cell_texture_map_indices);
 				}
 			}
 		}
@@ -1848,17 +1989,17 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	// data bindings that the other mesh lacked, those are now missing entries for the merged
 	// geometry, which would make the merged mesh fail validation, so fill them in below.
 	Vector<PackedInt32Array> merged_cell_vertex_indices;
-	if (poly_cell_indices_dims > 1 && _all_poly_cell_normals.has(PER_CELL_KEY) && !_all_poly_cell_normals[PER_CELL_KEY].is_empty() && !_all_poly_cell_normals[PER_CELL_KEY][0].is_empty()) {
+	if (poly_cell_indices_dims > 1 && _all_poly_cell_normal_indices.has(PER_CELL_KEY) && !_all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() && !_all_poly_cell_normal_indices[PER_CELL_KEY][0].is_empty()) {
 		// Special case: Generate missing boundary normals based on the merged cell orientations.
-		Vector<PackedVector4Array> &merged_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY];
+		Vector<PackedInt32Array> &merged_boundary_normals = _all_poly_cell_normal_indices[PER_CELL_KEY];
 		if (merged_boundary_normals[0].size() < _poly_cell_indices[1].size()) {
 			merged_cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
-			merged_boundary_normals.set(0, _compute_boundary_normals_based_on_cell_orientation(merged_cell_vertex_indices, true));
+			merged_boundary_normals.set(0, _normal_indices_for_values_internal(_compute_boundary_normals_based_on_cell_orientation(merged_cell_vertex_indices, true)));
 		}
 	}
-	if (poly_cell_indices_dims > 1 && _all_poly_cell_normals.has(CELL_TO_VERT_KEY) && !_all_poly_cell_normals[CELL_TO_VERT_KEY].is_empty()) {
+	if (poly_cell_indices_dims > 1 && _all_poly_cell_normal_indices.has(CELL_TO_VERT_KEY) && !_all_poly_cell_normal_indices[CELL_TO_VERT_KEY].is_empty()) {
 		// Special case: Generate missing vertex normals as flat shading normals.
-		Vector<PackedVector4Array> &merged_vertex_normals = _all_poly_cell_normals[CELL_TO_VERT_KEY];
+		Vector<PackedInt32Array> &merged_vertex_normals = _all_poly_cell_normal_indices[CELL_TO_VERT_KEY];
 		const int64_t merged_cell_count = _poly_cell_indices[1].size();
 		if (merged_vertex_normals.size() < merged_cell_count) {
 			if (merged_cell_vertex_indices.is_empty()) {
@@ -1866,26 +2007,26 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 			}
 			// Prefer the merged boundary normals when available, else use the cell orientations.
 			PackedVector4Array flat_boundary_normals;
-			if (_all_poly_cell_normals.has(PER_CELL_KEY) && !_all_poly_cell_normals[PER_CELL_KEY].is_empty() && _all_poly_cell_normals[PER_CELL_KEY][0].size() == merged_cell_count) {
-				flat_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
+			if (_all_poly_cell_normal_indices.has(PER_CELL_KEY) && !_all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() && _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() == merged_cell_count) {
+				flat_boundary_normals = _sample_normal_values_internal(_all_poly_cell_normal_indices[PER_CELL_KEY][0]);
 			} else {
 				flat_boundary_normals = _compute_boundary_normals_based_on_cell_orientation(merged_cell_vertex_indices, false);
 			}
 			const int64_t start_count = merged_vertex_normals.size();
 			merged_vertex_normals.resize(merged_cell_count);
 			for (int64_t cell_index = start_count; cell_index < merged_cell_count; cell_index++) {
-				PackedVector4Array vertex_normals_for_cell;
-				vertex_normals_for_cell.resize(merged_cell_vertex_indices[cell_index].size());
-				const Vector4 cell_boundary_normal = flat_boundary_normals[cell_index];
-				for (int64_t vert_inst = 0; vert_inst < vertex_normals_for_cell.size(); vert_inst++) {
-					vertex_normals_for_cell.set(vert_inst, cell_boundary_normal);
+				PackedInt32Array normal_indices_for_cell;
+				normal_indices_for_cell.resize(merged_cell_vertex_indices[cell_index].size());
+				const int32_t cell_boundary_normal_index = (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, flat_boundary_normals[cell_index]);
+				for (int64_t vert_inst = 0; vert_inst < normal_indices_for_cell.size(); vert_inst++) {
+					normal_indices_for_cell.set(vert_inst, cell_boundary_normal_index);
 				}
-				merged_vertex_normals.set(cell_index, vertex_normals_for_cell);
+				merged_vertex_normals.set(cell_index, normal_indices_for_cell);
 			}
 		}
 	}
 	// General case: Pad any remaining short normal bindings with empty data.
-	for (KeyValue<Vector2i, Vector<PackedVector4Array>> &normals_kv : _all_poly_cell_normals) {
+	for (KeyValue<Vector2i, Vector<PackedInt32Array>> &normals_kv : _all_poly_cell_normal_indices) {
 		const Vector2i key = normals_kv.key;
 		if (normals_kv.value.is_empty() || (key.x == key.y && normals_kv.value[0].is_empty())) {
 			continue;
@@ -1900,16 +2041,21 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		} else {
 			continue; // Invalid binding for a dimension the merged mesh does not have.
 		}
-		Vector<PackedVector4Array> &merged_normals = normals_kv.value;
+		Vector<PackedInt32Array> &merged_normals = normals_kv.value;
 		if (key.y == key.x) {
-			// Non-decomposed normals use a flat structure, so pad the flat array with zeroes.
+			// Non-decomposed normals use a flat structure, so pad the flat array with a zero normal value.
 			if (merged_normals.is_empty()) {
-				merged_normals.append(PackedVector4Array());
+				merged_normals.append(PackedInt32Array());
 			}
 			if (merged_normals[0].size() < cell_count_for_geom_dim) {
 				WARN_PRINT("ArrayPolyMesh4D: The other mesh was missing normal entries for geometry dimension " + itos(key.x) + " and decomposition dimension " + itos(key.y) + ", but the original mesh has entries for this key. Filling missing entries with empty data while merging. Consider updating the other mesh with this data before merging to avoid this warning in the future.");
-				PackedVector4Array flat_merged_normals = merged_normals[0];
+				const int32_t zero_normal_value_index = (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, Vector4());
+				PackedInt32Array flat_merged_normals = merged_normals[0];
+				const int64_t old_flat_count = flat_merged_normals.size();
 				flat_merged_normals.resize(cell_count_for_geom_dim);
+				for (int64_t i = old_flat_count; i < cell_count_for_geom_dim; i++) {
+					flat_merged_normals.set(i, zero_normal_value_index);
+				}
 				merged_normals.set(0, flat_merged_normals);
 			}
 		} else if (merged_normals.size() < cell_count_for_geom_dim) {
@@ -1920,7 +2066,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	}
 	// Texture maps cannot be generated, so pad any short texture map bindings with empty data.
 	// Cells with empty texture map entries are valid, they are just unmapped.
-	for (KeyValue<Vector2i, Vector<PackedVector3Array>> &texture_map_kv : _all_poly_cell_texture_maps) {
+	for (KeyValue<Vector2i, Vector<PackedInt32Array>> &texture_map_kv : _all_poly_cell_texture_map_indices) {
 		const Vector2i key = texture_map_kv.key;
 		if (texture_map_kv.value.is_empty() || (key.x == key.y && texture_map_kv.value[0].is_empty())) {
 			continue;
@@ -1935,15 +2081,20 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		} else {
 			continue; // Invalid binding for a dimension the merged mesh does not have.
 		}
-		Vector<PackedVector3Array> &merged_texture_map = texture_map_kv.value;
+		Vector<PackedInt32Array> &merged_texture_map = texture_map_kv.value;
 		if (key.y == key.x) {
-			// Non-decomposed texture maps use a flat structure, so pad the flat array with zeroes.
+			// Non-decomposed texture maps use a flat structure, so pad the flat array with a zero texture map value.
 			if (merged_texture_map.is_empty()) {
-				merged_texture_map.append(PackedVector3Array());
+				merged_texture_map.append(PackedInt32Array());
 			}
 			if (merged_texture_map[0].size() < cell_count_for_geom_dim) {
-				PackedVector3Array flat_merged_texture_map = merged_texture_map[0];
+				const int32_t zero_texture_map_value_index = (int32_t)Vector4D::vector3_array_append_deduplicate(_poly_cell_texture_map_values, Vector3());
+				PackedInt32Array flat_merged_texture_map = merged_texture_map[0];
+				const int64_t old_flat_count = flat_merged_texture_map.size();
 				flat_merged_texture_map.resize(cell_count_for_geom_dim);
+				for (int64_t i = old_flat_count; i < cell_count_for_geom_dim; i++) {
+					flat_merged_texture_map.set(i, zero_texture_map_value_index);
+				}
 				merged_texture_map.set(0, flat_merged_texture_map);
 			}
 		} else if (merged_texture_map.size() < cell_count_for_geom_dim) {
@@ -1974,29 +2125,98 @@ void ArrayPolyMesh4D::merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vect
 
 // Getters and setters.
 
-HashMap<Vector2i, Vector<PackedVector4Array>> ArrayPolyMesh4D::get_all_poly_cell_normals() const {
-	return HashMap<Vector2i, Vector<PackedVector4Array>>(_all_poly_cell_normals);
+HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_normal_indices() const {
+	return HashMap<Vector2i, Vector<PackedInt32Array>>(_all_poly_cell_normal_indices);
 }
 
-HashMap<Vector2i, Vector<PackedVector3Array>> ArrayPolyMesh4D::get_all_poly_cell_texture_maps() const {
-	return HashMap<Vector2i, Vector<PackedVector3Array>>(_all_poly_cell_texture_maps);
+Vector<PackedVector4Array> ArrayPolyMesh4D::get_poly_cell_dense_normals(const Vector2i &p_key) const {
+	Vector<PackedVector4Array> dense;
+	if (!_all_poly_cell_normal_indices.has(p_key)) {
+		return dense;
+	}
+	const Vector<PackedInt32Array> &index_arrays = _all_poly_cell_normal_indices[p_key];
+	dense.resize(index_arrays.size());
+	for (int64_t i = 0; i < index_arrays.size(); i++) {
+		dense.set(i, _sample_normal_values_internal(index_arrays[i]));
+	}
+	return dense;
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_normals(const HashMap<Vector2i, Vector<PackedVector4Array>> &p_all_poly_cell_normals) {
-	_all_poly_cell_normals = HashMap<Vector2i, Vector<PackedVector4Array>>(p_all_poly_cell_normals);
+void ArrayPolyMesh4D::set_poly_cell_dense_normals(const Vector2i &p_key, const Vector<PackedVector4Array> &p_dense_normals) {
+	if (p_dense_normals.is_empty()) {
+		_all_poly_cell_normal_indices.erase(p_key);
+	} else {
+		Vector<PackedInt32Array> index_arrays;
+		index_arrays.resize(p_dense_normals.size());
+		for (int64_t i = 0; i < p_dense_normals.size(); i++) {
+			index_arrays.set(i, _normal_indices_for_values_internal(p_dense_normals[i]));
+		}
+		_all_poly_cell_normal_indices.insert(p_key, index_arrays);
+	}
 	poly_mesh_clear_cache(true);
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_texture_maps(const HashMap<Vector2i, Vector<PackedVector3Array>> &p_all_poly_cell_texture_maps) {
-	_all_poly_cell_texture_maps = HashMap<Vector2i, Vector<PackedVector3Array>>(p_all_poly_cell_texture_maps);
+Vector<PackedVector3Array> ArrayPolyMesh4D::get_poly_cell_dense_texture_map(const Vector2i &p_key) const {
+	Vector<PackedVector3Array> dense;
+	if (!_all_poly_cell_texture_map_indices.has(p_key)) {
+		return dense;
+	}
+	const Vector<PackedInt32Array> &index_arrays = _all_poly_cell_texture_map_indices[p_key];
+	const int64_t value_count = _poly_cell_texture_map_values.size();
+	dense.resize(index_arrays.size());
+	for (int64_t i = 0; i < index_arrays.size(); i++) {
+		const PackedInt32Array &indices = index_arrays[i];
+		PackedVector3Array values;
+		values.resize(indices.size());
+		for (int64_t j = 0; j < indices.size(); j++) {
+			const int32_t value_index = indices[j];
+			ERR_CONTINUE(value_index < 0 || value_index >= value_count);
+			values.set(j, _poly_cell_texture_map_values[value_index]);
+		}
+		dense.set(i, values);
+	}
+	return dense;
+}
+
+void ArrayPolyMesh4D::set_poly_cell_dense_texture_map(const Vector2i &p_key, const Vector<PackedVector3Array> &p_dense_texture_map) {
+	if (p_dense_texture_map.is_empty()) {
+		_all_poly_cell_texture_map_indices.erase(p_key);
+	} else {
+		Vector<PackedInt32Array> index_arrays;
+		index_arrays.resize(p_dense_texture_map.size());
+		for (int64_t i = 0; i < p_dense_texture_map.size(); i++) {
+			const PackedVector3Array &values = p_dense_texture_map[i];
+			PackedInt32Array indices;
+			indices.resize(values.size());
+			for (int64_t j = 0; j < values.size(); j++) {
+				indices.set(j, (int32_t)Vector4D::vector3_array_append_deduplicate(_poly_cell_texture_map_values, values[j]));
+			}
+			index_arrays.set(i, indices);
+		}
+		_all_poly_cell_texture_map_indices.insert(p_key, index_arrays);
+	}
 	poly_mesh_clear_cache(false);
 }
 
-ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_normals_bind() const {
+HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_texture_map_indices() const {
+	return HashMap<Vector2i, Vector<PackedInt32Array>>(_all_poly_cell_texture_map_indices);
+}
+
+void ArrayPolyMesh4D::set_all_poly_cell_normal_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_normals) {
+	_all_poly_cell_normal_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_normals);
+	poly_mesh_clear_cache(true);
+}
+
+void ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_texture_maps) {
+	_all_poly_cell_texture_map_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_texture_maps);
+	poly_mesh_clear_cache(false);
+}
+
+ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_normal_indices_bind() const {
 	PolyDataDictionary result;
-	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : _all_poly_cell_normals) {
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_normal_indices) {
 		const Vector2i &key = kv.key;
-		const Vector<PackedVector4Array> &normals_data = kv.value;
+		const Vector<PackedInt32Array> &normals_data = kv.value;
 		Array normals_array;
 		normals_array.resize(normals_data.size());
 		for (int64_t i = 0; i < normals_data.size(); i++) {
@@ -2007,28 +2227,28 @@ ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_normals_b
 	return result;
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_normals_bind(const PolyDataDictionary &p_all_poly_cell_normals) {
-	HashMap<Vector2i, Vector<PackedVector4Array>> normals_hashmap;
+void ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind(const PolyDataDictionary &p_all_poly_cell_normals) {
+	HashMap<Vector2i, Vector<PackedInt32Array>> normals_hashmap;
 	const Array normals_keys = p_all_poly_cell_normals.keys();
 	for (int64_t key_index = 0; key_index < normals_keys.size(); key_index++) {
 		const Vector2i key = normals_keys[key_index];
 		const Array normals_array = p_all_poly_cell_normals[key];
-		Vector<PackedVector4Array> normals_data;
+		Vector<PackedInt32Array> normals_data;
 		normals_data.resize(normals_array.size());
 		for (int64_t i = 0; i < normals_array.size(); i++) {
-			const PackedVector4Array vec4_array = normals_array[i];
+			const PackedInt32Array vec4_array = normals_array[i];
 			normals_data.set(i, vec4_array);
 		}
 		normals_hashmap.insert(key, normals_data);
 	}
-	set_all_poly_cell_normals(normals_hashmap);
+	set_all_poly_cell_normal_indices(normals_hashmap);
 }
 
-ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_texture_maps_bind() const {
+ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_texture_map_indices_bind() const {
 	PolyDataDictionary result;
-	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : _all_poly_cell_texture_maps) {
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_texture_map_indices) {
 		const Vector2i &key = kv.key;
-		const Vector<PackedVector3Array> &texture_map_data = kv.value;
+		const Vector<PackedInt32Array> &texture_map_data = kv.value;
 		Array texture_map_array;
 		texture_map_array.resize(texture_map_data.size());
 		for (int64_t i = 0; i < texture_map_data.size(); i++) {
@@ -2039,21 +2259,21 @@ ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_texture_m
 	return result;
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind(const PolyDataDictionary &p_all_poly_cell_texture_maps) {
-	HashMap<Vector2i, Vector<PackedVector3Array>> texture_maps_hashmap;
-	const Array texture_map_keys = p_all_poly_cell_texture_maps.keys();
+void ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices_bind(const PolyDataDictionary &p_all_poly_cell_texture_map_indices) {
+	HashMap<Vector2i, Vector<PackedInt32Array>> texture_maps_hashmap;
+	const Array texture_map_keys = p_all_poly_cell_texture_map_indices.keys();
 	for (int64_t key_index = 0; key_index < texture_map_keys.size(); key_index++) {
 		const Vector2i key = texture_map_keys[key_index];
-		const Array texture_map_array = p_all_poly_cell_texture_maps[key];
-		Vector<PackedVector3Array> texture_map_data;
+		const Array texture_map_array = p_all_poly_cell_texture_map_indices[key];
+		Vector<PackedInt32Array> texture_map_data;
 		texture_map_data.resize(texture_map_array.size());
 		for (int64_t i = 0; i < texture_map_array.size(); i++) {
-			const PackedVector3Array vec3_array = texture_map_array[i];
+			const PackedInt32Array vec3_array = texture_map_array[i];
 			texture_map_data.set(i, vec3_array);
 		}
 		texture_maps_hashmap.insert(key, texture_map_data);
 	}
-	set_all_poly_cell_texture_maps(texture_maps_hashmap);
+	set_all_poly_cell_texture_map_indices(texture_maps_hashmap);
 }
 
 void ArrayPolyMesh4D::set_edge_vertex_indices(const PackedInt32Array &p_edge_indices) {
@@ -2092,17 +2312,17 @@ void ArrayPolyMesh4D::set_poly_cell_indices_bind(const TypedArray<Array> &p_poly
 }
 
 PackedVector4Array ArrayPolyMesh4D::get_poly_cell_boundary_normals() {
-	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty()) {
+	if (!_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty()) {
 		return PackedVector4Array();
 	}
-	return PackedVector4Array(_all_poly_cell_normals[PER_CELL_KEY][0]);
+	return _sample_normal_values_internal(_all_poly_cell_normal_indices[PER_CELL_KEY][0]);
 }
 
 void ArrayPolyMesh4D::set_poly_cell_boundary_normals(const PackedVector4Array &p_poly_cell_boundary_normals) {
 	if (p_poly_cell_boundary_normals.is_empty()) {
-		_all_poly_cell_normals.erase(PER_CELL_KEY);
+		_all_poly_cell_normal_indices.erase(PER_CELL_KEY);
 	} else {
-		_all_poly_cell_normals.insert(PER_CELL_KEY, Vector<PackedVector4Array>{ p_poly_cell_boundary_normals });
+		_all_poly_cell_normal_indices.insert(PER_CELL_KEY, Vector<PackedInt32Array>{ _normal_indices_for_values_internal(p_poly_cell_boundary_normals) });
 	}
 	poly_mesh_clear_cache(true);
 }
@@ -2116,54 +2336,54 @@ void ArrayPolyMesh4D::set_poly_cell_boundary_pivot_overrides(const PackedInt32Ar
 	poly_mesh_clear_cache(false);
 }
 
-Vector<PackedVector4Array> ArrayPolyMesh4D::get_poly_cell_vertex_normals() {
-	if (!_all_poly_cell_normals.has(CELL_TO_VERT_KEY)) {
-		return Vector<PackedVector4Array>();
+Vector<PackedInt32Array> ArrayPolyMesh4D::get_poly_cell_normal_indices() {
+	if (!_all_poly_cell_normal_indices.has(CELL_TO_VERT_KEY)) {
+		return Vector<PackedInt32Array>();
 	}
-	return Vector<PackedVector4Array>(_all_poly_cell_normals[CELL_TO_VERT_KEY]);
+	return Vector<PackedInt32Array>(_all_poly_cell_normal_indices[CELL_TO_VERT_KEY]);
 }
 
-void ArrayPolyMesh4D::set_poly_cell_vertex_normals(const Vector<PackedVector4Array> &p_poly_cell_vertex_normals) {
-	if (p_poly_cell_vertex_normals.is_empty()) {
-		_all_poly_cell_normals.erase(CELL_TO_VERT_KEY);
+void ArrayPolyMesh4D::set_poly_cell_normal_indices(const Vector<PackedInt32Array> &p_poly_cell_normal_indices) {
+	if (p_poly_cell_normal_indices.is_empty()) {
+		_all_poly_cell_normal_indices.erase(CELL_TO_VERT_KEY);
 	} else {
-		_all_poly_cell_normals.insert(CELL_TO_VERT_KEY, p_poly_cell_vertex_normals);
+		_all_poly_cell_normal_indices.insert(CELL_TO_VERT_KEY, p_poly_cell_normal_indices);
 	}
 	poly_mesh_clear_cache(true);
 }
 
-void ArrayPolyMesh4D::set_poly_cell_vertex_normals_bind(const TypedArray<PackedVector4Array> &p_poly_cell_vertex_normals) {
-	Vector<PackedVector4Array> normals;
-	normals.resize(p_poly_cell_vertex_normals.size());
-	for (int i = 0; i < p_poly_cell_vertex_normals.size(); i++) {
-		normals.set(i, p_poly_cell_vertex_normals[i]);
+void ArrayPolyMesh4D::set_poly_cell_normal_indices_bind(const TypedArray<PackedInt32Array> &p_poly_cell_normal_indices) {
+	Vector<PackedInt32Array> normal_indices;
+	normal_indices.resize(p_poly_cell_normal_indices.size());
+	for (int i = 0; i < p_poly_cell_normal_indices.size(); i++) {
+		normal_indices.set(i, p_poly_cell_normal_indices[i]);
 	}
-	set_poly_cell_vertex_normals(normals);
+	set_poly_cell_normal_indices(normal_indices);
 }
 
-Vector<PackedVector3Array> ArrayPolyMesh4D::get_poly_cell_texture_map() {
-	if (!_all_poly_cell_texture_maps.has(CELL_TO_VERT_KEY)) {
-		return Vector<PackedVector3Array>();
+Vector<PackedInt32Array> ArrayPolyMesh4D::get_poly_cell_texture_map_indices() {
+	if (!_all_poly_cell_texture_map_indices.has(CELL_TO_VERT_KEY)) {
+		return Vector<PackedInt32Array>();
 	}
-	return Vector<PackedVector3Array>(_all_poly_cell_texture_maps[CELL_TO_VERT_KEY]);
+	return Vector<PackedInt32Array>(_all_poly_cell_texture_map_indices[CELL_TO_VERT_KEY]);
 }
 
-void ArrayPolyMesh4D::set_poly_cell_texture_map(const Vector<PackedVector3Array> &p_poly_cell_texture_map) {
+void ArrayPolyMesh4D::set_poly_cell_texture_map_indices(const Vector<PackedInt32Array> &p_poly_cell_texture_map) {
 	if (p_poly_cell_texture_map.is_empty()) {
-		_all_poly_cell_texture_maps.erase(CELL_TO_VERT_KEY);
+		_all_poly_cell_texture_map_indices.erase(CELL_TO_VERT_KEY);
 	} else {
-		_all_poly_cell_texture_maps.insert(CELL_TO_VERT_KEY, p_poly_cell_texture_map);
+		_all_poly_cell_texture_map_indices.insert(CELL_TO_VERT_KEY, p_poly_cell_texture_map);
 	}
 	poly_mesh_clear_cache(false);
 }
 
-void ArrayPolyMesh4D::set_poly_cell_texture_map_bind(const TypedArray<PackedVector3Array> &p_poly_cell_texture_map) {
-	Vector<PackedVector3Array> uvw_map;
-	uvw_map.resize(p_poly_cell_texture_map.size());
+void ArrayPolyMesh4D::set_poly_cell_texture_map_indices_bind(const TypedArray<PackedInt32Array> &p_poly_cell_texture_map) {
+	Vector<PackedInt32Array> tex_map;
+	tex_map.resize(p_poly_cell_texture_map.size());
 	for (int i = 0; i < p_poly_cell_texture_map.size(); i++) {
-		uvw_map.set(i, p_poly_cell_texture_map[i]);
+		tex_map.set(i, p_poly_cell_texture_map[i]);
 	}
-	set_poly_cell_texture_map(uvw_map);
+	set_poly_cell_texture_map_indices(tex_map);
 }
 
 PackedInt32Array ArrayPolyMesh4D::get_seam_face_indices_bind() const {
@@ -2202,6 +2422,69 @@ void ArrayPolyMesh4D::set_poly_cell_vertex_positions(const PackedVector4Array &p
 	reset_poly_mesh_data_validation();
 }
 
+PackedVector4Array ArrayPolyMesh4D::get_poly_cell_normal_values() {
+	return _poly_cell_normal_values;
+}
+
+void ArrayPolyMesh4D::set_poly_cell_normal_values(const PackedVector4Array &p_normal_values) {
+	_poly_cell_normal_values = p_normal_values;
+	poly_mesh_clear_cache(true);
+}
+
+PackedVector3Array ArrayPolyMesh4D::get_poly_cell_texture_map_values() {
+	return _poly_cell_texture_map_values;
+}
+
+void ArrayPolyMesh4D::set_poly_cell_texture_map_values(const PackedVector3Array &p_tex_map_values) {
+	_poly_cell_texture_map_values = p_tex_map_values;
+	poly_mesh_clear_cache(false);
+}
+
+bool ArrayPolyMesh4D::_set(const StringName &p_name, const Variant &p_value) {
+	// Compatibility with old files that stored dense values instead of indexed values.
+	if (p_name == StringName("all_poly_cell_normals")) {
+		const Dictionary all_poly_cell_normals = p_value;
+		HashMap<Vector2i, Vector<PackedInt32Array>> normal_indices_map;
+		const Array normals_keys = all_poly_cell_normals.keys();
+		for (int64_t key_index = 0; key_index < normals_keys.size(); key_index++) {
+			const Vector2i key = normals_keys[key_index];
+			const Array normals_array = all_poly_cell_normals[key];
+			Vector<PackedInt32Array> normal_indices_data;
+			normal_indices_data.resize(normals_array.size());
+			for (int64_t i = 0; i < normals_array.size(); i++) {
+				const PackedVector4Array dense_normals = normals_array[i];
+				normal_indices_data.set(i, _normal_indices_for_values_internal(dense_normals));
+			}
+			normal_indices_map.insert(key, normal_indices_data);
+		}
+		set_all_poly_cell_normal_indices(normal_indices_map);
+		return true;
+	} else if (p_name == StringName("all_poly_cell_texture_maps")) {
+		const Dictionary all_poly_cell_texture_maps = p_value;
+		HashMap<Vector2i, Vector<PackedInt32Array>> texture_map_indices_map;
+		const Array texture_map_keys = all_poly_cell_texture_maps.keys();
+		for (int64_t key_index = 0; key_index < texture_map_keys.size(); key_index++) {
+			const Vector2i key = texture_map_keys[key_index];
+			const Array texture_map_array = all_poly_cell_texture_maps[key];
+			Vector<PackedInt32Array> texture_map_indices_data;
+			texture_map_indices_data.resize(texture_map_array.size());
+			for (int64_t i = 0; i < texture_map_array.size(); i++) {
+				const PackedVector3Array dense_texture_map = texture_map_array[i];
+				PackedInt32Array cell_texture_map_indices;
+				cell_texture_map_indices.resize(dense_texture_map.size());
+				for (int64_t j = 0; j < dense_texture_map.size(); j++) {
+					cell_texture_map_indices.set(j, (int32_t)Vector4D::vector3_array_append_deduplicate(_poly_cell_texture_map_values, dense_texture_map[j]));
+				}
+				texture_map_indices_data.set(i, cell_texture_map_indices);
+			}
+			texture_map_indices_map.insert(key, texture_map_indices_data);
+		}
+		set_all_poly_cell_texture_map_indices(texture_map_indices_map);
+		return true;
+	}
+	return false;
+}
+
 void ArrayPolyMesh4D::_bind_methods() {
 	// Append and delete functions.
 	ClassDB::bind_method(D_METHOD("append_edge_points", "point_a", "point_b", "deduplicate"), &ArrayPolyMesh4D::append_edge_points, DEFVAL(true));
@@ -2210,6 +2493,9 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertex, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertices, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("delete_poly_element", "dimension", "index"), &ArrayPolyMesh4D::delete_poly_element);
+
+	ClassDB::bind_method(D_METHOD("compact_normal_values"), &ArrayPolyMesh4D::compact_normal_values);
+	ClassDB::bind_method(D_METHOD("compact_texture_map_values"), &ArrayPolyMesh4D::compact_texture_map_values);
 
 	// Normal calculation functions.
 	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "normals_mode", "keep_existing"), &ArrayPolyMesh4D::calculate_boundary_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(false));
@@ -2252,28 +2538,35 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "edge_indices"), "set_edge_indices", "get_edge_indices");
 
 	// Normals and texture maps. The "all" ones need the getters bound here.
-	ClassDB::bind_method(D_METHOD("get_all_poly_cell_normals"), &ArrayPolyMesh4D::get_all_poly_cell_normals_bind);
-	ClassDB::bind_method(D_METHOD("set_all_poly_cell_normals", "all_poly_cell_normals"), &ArrayPolyMesh4D::set_all_poly_cell_normals_bind);
-	ClassDB::bind_method(D_METHOD("get_all_poly_cell_texture_maps"), &ArrayPolyMesh4D::get_all_poly_cell_texture_maps_bind);
-	ClassDB::bind_method(D_METHOD("set_all_poly_cell_texture_maps", "all_poly_cell_texture_maps"), &ArrayPolyMesh4D::set_all_poly_cell_texture_maps_bind);
+	ClassDB::bind_method(D_METHOD("get_all_poly_cell_normal_indices"), &ArrayPolyMesh4D::get_all_poly_cell_normal_indices_bind);
+	ClassDB::bind_method(D_METHOD("set_all_poly_cell_normal_indices", "all_poly_cell_normal_indices"), &ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind);
+	ClassDB::bind_method(D_METHOD("get_all_poly_cell_texture_map_indices"), &ArrayPolyMesh4D::get_all_poly_cell_texture_map_indices_bind);
+	ClassDB::bind_method(D_METHOD("set_all_poly_cell_texture_map_indices", "all_poly_cell_texture_map_indices"), &ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices_bind);
 #if GODOT_HAS_TYPED_DICTIONARY
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normals", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_normals", "get_all_poly_cell_normals");
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_maps", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_texture_maps", "get_all_poly_cell_texture_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normal_indices", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_normal_indices", "get_all_poly_cell_normal_indices");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_map_indices", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_texture_map_indices", "get_all_poly_cell_texture_map_indices");
 #else
 	// Godot 4.3 and earlier do not support type hints on Dictionary properties.
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normals"), "set_all_poly_cell_normals", "get_all_poly_cell_normals");
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_maps"), "set_all_poly_cell_texture_maps", "get_all_poly_cell_texture_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normal_indices"), "set_all_poly_cell_normal_indices", "get_all_poly_cell_normal_indices");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_map_indices"), "set_all_poly_cell_texture_map_indices", "get_all_poly_cell_texture_map_indices");
 #endif // GODOT_HAS_TYPED_DICTIONARY
 
-	// The dictionaries are the stored source of truth, so the high-level views are editor-only.
+	// The value pools that the index dictionaries reference into.
+	ClassDB::bind_method(D_METHOD("set_poly_cell_normal_values", "poly_cell_normal_values"), &ArrayPolyMesh4D::set_poly_cell_normal_values);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_normal_values"), "set_poly_cell_normal_values", "get_poly_cell_normal_values");
+
+	ClassDB::bind_method(D_METHOD("set_poly_cell_texture_map_values", "poly_cell_texture_map_values"), &ArrayPolyMesh4D::set_poly_cell_texture_map_values);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR3_ARRAY, "poly_cell_texture_map_values"), "set_poly_cell_texture_map_values", "get_poly_cell_texture_map_values");
+
+	// The dictionaries and value pools are the stored source of truth, so the high-level views are editor-only.
 	ClassDB::bind_method(D_METHOD("set_poly_cell_boundary_normals", "poly_cell_boundary_normals"), &ArrayPolyMesh4D::set_poly_cell_boundary_normals);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_boundary_normals", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_poly_cell_boundary_normals", "get_poly_cell_boundary_normals");
 
-	ClassDB::bind_method(D_METHOD("set_poly_cell_vertex_normals", "poly_cell_vertex_normals"), &ArrayPolyMesh4D::set_poly_cell_vertex_normals_bind);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertex_normals", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_poly_cell_vertex_normals", "get_poly_cell_vertex_normals");
+	ClassDB::bind_method(D_METHOD("set_poly_cell_normal_indices", "poly_cell_normal_indices"), &ArrayPolyMesh4D::set_poly_cell_normal_indices_bind);
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_normal_indices", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_poly_cell_normal_indices", "get_poly_cell_normal_indices");
 
-	ClassDB::bind_method(D_METHOD("set_poly_cell_texture_map", "poly_cell_texture_map"), &ArrayPolyMesh4D::set_poly_cell_texture_map_bind);
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_texture_map", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_poly_cell_texture_map", "get_poly_cell_texture_map");
+	ClassDB::bind_method(D_METHOD("set_poly_cell_texture_map_indices", "poly_cell_texture_map_indices"), &ArrayPolyMesh4D::set_poly_cell_texture_map_indices_bind);
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_texture_map_indices", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_poly_cell_texture_map_indices", "get_poly_cell_texture_map_indices");
 
 	// Enums.
 	BIND_ENUM_CONSTANT(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);

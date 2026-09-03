@@ -44,47 +44,69 @@ void BoxTetraMesh4D::set_cell_texture_map(const BoxCellTextureMap p_map) {
 
 Ref<ArrayMesh> BoxTetraMesh4D::export_texture_map_mesh() {
 	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Ref<ArrayMesh>(), "BoxTetraMesh4D: Cannot export texture map mesh for an invalid mesh.");
-	PackedVector3Array texture_map = get_simplex_cell_texture_map();
+	PackedInt32Array texture_map_indices = get_simplex_cell_texture_map_indices();
 	if (_cell_texture_map == BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID) {
 		// Special case: For 3D rendering of the resulting mesh, flip the normals of the negative sides.
-		const int64_t map_size = texture_map.size();
+		const int64_t map_size = texture_map_indices.size();
 		const int64_t side_size = map_size / 8;
 		for (int64_t side_offset = 0; side_offset < map_size; side_offset += map_size / 4) {
 			for (int64_t i = 1; i < side_size; i += 4) {
-				const Vector3 temp = texture_map[side_offset + i];
-				texture_map.set(side_offset + i, texture_map[side_offset + i + 1]);
-				texture_map.set(side_offset + i + 1, temp);
+				const int32_t temp = texture_map_indices[side_offset + i];
+				texture_map_indices.set(side_offset + i, texture_map_indices[side_offset + i + 1]);
+				texture_map_indices.set(side_offset + i + 1, temp);
 			}
 		}
 	}
-	return convert_texture_map_to_mesh(texture_map);
+	return convert_texture_map_to_mesh(texture_map_indices);
 }
 
 PackedInt32Array BoxTetraMesh4D::get_simplex_cell_vertex_indices() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_VERTEX_INDICES : BOX_48_CELL_VERTEX_INDICES;
 }
 
+PackedInt32Array BoxTetraMesh4D::get_simplex_cell_normal_indices() {
+	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_NORMAL_INDICES : BOX_48_CELL_NORMAL_INDICES;
+}
+
+PackedInt32Array BoxTetraMesh4D::get_simplex_cell_texture_map_indices() {
+	switch (_cell_texture_map) {
+		case BOX_CELL_TEXTURE_MAP_CROSS_ISLAND: {
+			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_CROSS_ISLAND_INDICES : BOX_48_CELL_TEXTURE_MAP_CROSS_ISLAND_INDICES;
+		} break;
+		case BOX_CELL_TEXTURE_MAP_FILL_EACH_SIDE: {
+			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_FILL_EACH_SIDE_INDICES : BOX_48_CELL_TEXTURE_MAP_FILL_EACH_SIDE_INDICES;
+		} break;
+		case BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID: {
+			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID_INDICES : BOX_48_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID_INDICES;
+		} break;
+		case BOX_CELL_TEXTURE_MAP_LONG_CROSS: {
+			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_LONG_CROSS_INDICES : BOX_48_CELL_TEXTURE_MAP_LONG_CROSS_INDICES;
+		} break;
+	}
+	ERR_FAIL_V_MSG(PackedInt32Array(), "Invalid cell texture map type.");
+}
+
 PackedVector4Array BoxTetraMesh4D::get_simplex_cell_boundary_normals() {
 	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_BOUNDARY_NORMALS : BOX_48_CELL_BOUNDARY_NORMALS;
 }
 
-PackedVector4Array BoxTetraMesh4D::get_simplex_cell_vertex_normals() {
-	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_VERTEX_NORMALS : BOX_48_CELL_VERTEX_NORMALS;
+PackedVector4Array BoxTetraMesh4D::get_normal_values() {
+	return BOX_NORMAL_VALUES;
 }
 
-PackedVector3Array BoxTetraMesh4D::get_simplex_cell_texture_map() {
+PackedVector3Array BoxTetraMesh4D::get_texture_map_values() {
 	switch (_cell_texture_map) {
 		case BOX_CELL_TEXTURE_MAP_CROSS_ISLAND: {
-			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_CROSS_ISLAND : BOX_48_CELL_TEXTURE_MAP_CROSS_ISLAND;
+			return BOX_TEXTURE_MAP_CROSS_ISLAND_VALUES;
 		} break;
 		case BOX_CELL_TEXTURE_MAP_FILL_EACH_SIDE: {
-			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_FILL_EACH_SIDE : BOX_48_CELL_TEXTURE_MAP_FILL_EACH_SIDE;
+			return BOX_TEXTURE_MAP_FILL_EACH_SIDE_VALUES;
 		} break;
 		case BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID: {
-			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID : BOX_48_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID;
+			return BOX_TEXTURE_MAP_COMPACT_2X2X2_GRID_VALUES;
 		} break;
 		case BOX_CELL_TEXTURE_MAP_LONG_CROSS: {
-			return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_TEXTURE_MAP_LONG_CROSS : BOX_48_CELL_TEXTURE_MAP_LONG_CROSS;
+			return BOX_TEXTURE_MAP_LONG_CROSS_VALUES;
 		} break;
 	}
 	ERR_FAIL_V_MSG(PackedVector3Array(), "Invalid cell texture map type.");

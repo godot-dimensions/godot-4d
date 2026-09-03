@@ -10,7 +10,7 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 // This code is much harder to read when clang-format messes with the
 // manual alignment, so disable clang-format just for this file.
 /* clang-format off */
-#define ORTHOPLEX_CELL_BOUNDARY_NORMALS PackedVector4Array { \
+#define ORTHOPLEX_NORMAL_VALUES PackedVector4Array { \
 	Vector4(-0.5f, -0.5f, -0.5f, -0.5f), \
 	Vector4(+0.5f, -0.5f, -0.5f, -0.5f), \
 	Vector4(+0.5f, +0.5f, -0.5f, -0.5f), \
@@ -29,24 +29,32 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 	Vector4(-0.5f, -0.5f, -0.5f, +0.5f), \
 }
 
+#define ORTHOPLEX_CELL_TEXTURE_MAP_VALUES PackedVector3Array { \
+	/* -W and -Z */ \
+	Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
+	Vector3(1.0f, 0.5f, 0.5f), Vector3(_5D6, _1D6, _1D6), Vector3(_5D6, _5D6, _1D6), Vector3(0.5f, 1.0f, 0.5f), \
+	Vector3(_1D6, _5D6, _1D6), Vector3(_1D6, _1D6, _1D6), Vector3(0.5f, 0.5f, 1.0f), Vector3(_5D6, _5D6, _5D6), \
+	Vector3(_5D6, _1D6, _5D6), Vector3(_1D6, _1D6, _5D6), Vector3(_1D6, _5D6, _5D6), \
+}
+
 #define REPEAT_FOUR_TIMES(m) m, m, m, m
-#define ORTHOPLEX_CELL_VERTEX_NORMALS PackedVector4Array { \
-	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, -0.5f, -0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, -0.5f, -0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, -0.5f, -0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, -0.5f, -0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, +0.5f, -0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, +0.5f, -0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, +0.5f, -0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, +0.5f, -0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, +0.5f, +0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, +0.5f, +0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, +0.5f, +0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, +0.5f, +0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, -0.5f, +0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, -0.5f, +0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, -0.5f, +0.5f)), \
-	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, -0.5f, +0.5f)), \
+#define ORTHOPLEX_CELL_NORMAL_INDICES PackedInt32Array { \
+	REPEAT_FOUR_TIMES(0), \
+	REPEAT_FOUR_TIMES(1), \
+	REPEAT_FOUR_TIMES(2), \
+	REPEAT_FOUR_TIMES(3), \
+	REPEAT_FOUR_TIMES(4), \
+	REPEAT_FOUR_TIMES(5), \
+	REPEAT_FOUR_TIMES(6), \
+	REPEAT_FOUR_TIMES(7), \
+	REPEAT_FOUR_TIMES(8), \
+	REPEAT_FOUR_TIMES(9), \
+	REPEAT_FOUR_TIMES(10), \
+	REPEAT_FOUR_TIMES(11), \
+	REPEAT_FOUR_TIMES(12), \
+	REPEAT_FOUR_TIMES(13), \
+	REPEAT_FOUR_TIMES(14), \
+	REPEAT_FOUR_TIMES(15), \
 }
 
 #define ORTHOPLEX_CELL_VERTEX_INDICES PackedInt32Array { \
@@ -56,28 +64,28 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 	7, 0, 3, 4, 1, 3, 4, 7, 7, 1, 2, 4, 0, 2, 4, 7, /* +W and -Z */ \
 }
 
-#define ORTHOPLEX_CELL_UVW_MAP PackedVector3Array { \
+#define ORTHOPLEX_CELL_TEXTURE_MAP_INDICES PackedInt32Array { \
 	/* -W and -Z */ \
-	Vector3(_1D6, _1D6, _1D6), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
-	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(_5D6, _1D6, _1D6), \
-	Vector3(_5D6, _5D6, _1D6), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
-	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(_1D6, _5D6, _1D6), \
+	9, 1, 2, 3, \
+	4, 2, 3, 5, \
+	6, 4, 7, 3, \
+	1, 7, 3, 8, \
 	/* -W and +Z */ \
-	Vector3(_1D6, _5D6, _5D6), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), \
-	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(_5D6, _5D6, _5D6), \
-	Vector3(_5D6, _1D6, _5D6), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), \
-	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(_1D6, _1D6, _5D6), \
+	14, 1, 7, 10, \
+	4, 7, 10, 11, \
+	12, 4, 2, 10, \
+	1, 2, 10, 13, \
 	/* +W and +Z */ \
-	Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), \
-	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(0.5f, 0.5f, 0.5f), \
-	Vector3(0.5f, 0.5f, 0.5f), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), \
-	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(0.5f, 0.5f, 0.5f), \
+	0, 1, 2, 10, \
+	4, 2, 10, 0, \
+	0, 4, 7, 10, \
+	1, 7, 10, 0, \
 	/* +W and -Z */ \
-	Vector3(0.5f, 0.5f, 0.5f), Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
-	Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(0.5f, 0.5f, 0.5f), \
-	Vector3(0.5f, 0.5f, 0.5f), Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), \
-	Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(0.5f, 0.5f, 0.5f), \
-};
+	0, 1, 7, 3, \
+	4, 7, 3, 0, \
+	0, 4, 2, 3, \
+	1, 2, 3, 0, \
+}
 
 #define ORTHOPLEX_POLY_CELL_INDICES Vector<Vector<PackedInt32Array>> { \
 	Vector<PackedInt32Array> { \
@@ -107,46 +115,46 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 }
 
 // The order of these needs to match the data in ORTHOPLEX_POLY_CELL_INDICES.
-#define ORTHOPLEX_POLY_CELL_VERTEX_NORMALS Vector<PackedVector4Array> { \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, -0.5f, -0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, -0.5f, -0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, -0.5f, -0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, -0.5f, -0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, +0.5f, -0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, +0.5f, -0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, +0.5f, -0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, +0.5f, -0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, +0.5f, +0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, +0.5f, +0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, +0.5f, +0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, +0.5f, +0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(-0.5f, +0.5f, -0.5f, +0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(+0.5f, +0.5f, -0.5f, +0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(+0.5f, -0.5f, -0.5f, +0.5f)) }, \
-	PackedVector4Array { REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, -0.5f, +0.5f)) }, \
+#define ORTHOPLEX_POLY_CELL_VERTEX_NORMAL_INDICES Vector<PackedInt32Array> { \
+	PackedInt32Array { REPEAT_FOUR_TIMES(0), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(1), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(2), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(3), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(4), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(5), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(6), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(7), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(8), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(9), }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(10) }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(11) }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(12) }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(13) }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(14) }, \
+	PackedInt32Array { REPEAT_FOUR_TIMES(15) }, \
 }
 
-#define ORTHOPLEX_POLY_CELL_POLY_TEXTURE_MAP Vector<PackedVector3Array> { \
+#define ORTHOPLEX_POLY_CELL_POLY_TEXTURE_MAP_INDICES Vector<PackedInt32Array> { \
 	/* -W and -Z */ \
-	PackedVector3Array { Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(_1D6, _1D6, _1D6), Vector3(0.5f, 0.5f, 0.0f) }, \
-	PackedVector3Array { Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(_5D6, _1D6, _1D6) }, \
-	PackedVector3Array { Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(_5D6, _5D6, _1D6), Vector3(0.5f, 0.5f, 0.0f) }, \
-	PackedVector3Array { Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(_1D6, _5D6, _1D6) }, \
+	PackedInt32Array { 1, 2, 9, 3 }, \
+	PackedInt32Array { 4, 2, 3, 5 }, \
+	PackedInt32Array { 4, 7, 6, 3 }, \
+	PackedInt32Array { 1, 7, 3, 8 }, \
 	/* -W and +Z */ \
-	PackedVector3Array { Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(_1D6, _5D6, _5D6), Vector3(0.5f, 0.5f, 1.0f) }, \
-	PackedVector3Array { Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(_5D6, _5D6, _5D6) }, \
-	PackedVector3Array { Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(_5D6, _1D6, _5D6), Vector3(0.5f, 0.5f, 1.0f) }, \
-	PackedVector3Array { Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(_1D6, _1D6, _5D6) }, \
+	PackedInt32Array { 1, 7, 14, 10 }, \
+	PackedInt32Array { 4, 7, 10, 11 }, \
+	PackedInt32Array { 4, 2, 12, 10 }, \
+	PackedInt32Array { 1, 2, 10, 13 }, \
 	/* +W and +Z */ \
-	PackedVector3Array { Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.5f), Vector3(0.5f, 0.5f, 1.0f) }, \
-	PackedVector3Array { Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(0.5f, 0.5f, 0.5f) }, \
-	PackedVector3Array { Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.5f), Vector3(0.5f, 0.5f, 1.0f) }, \
-	PackedVector3Array { Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 1.0f), Vector3(0.5f, 0.5f, 0.5f) }, \
+	PackedInt32Array { 1, 2, 0, 10 }, \
+	PackedInt32Array { 4, 2, 10, 0 }, \
+	PackedInt32Array { 4, 7, 0, 10 }, \
+	PackedInt32Array { 1, 7, 10, 0 }, \
 	/* +W and -Z */ \
-	PackedVector3Array { Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.5f), Vector3(0.5f, 0.5f, 0.0f) }, \
-	PackedVector3Array { Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 1.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(0.5f, 0.5f, 0.5f) }, \
-	PackedVector3Array { Vector3(1.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.5f), Vector3(0.5f, 0.5f, 0.0f) }, \
-	PackedVector3Array { Vector3(0.0f, 0.5f, 0.5f), Vector3(0.5f, 0.0f, 0.5f), Vector3(0.5f, 0.5f, 0.0f), Vector3(0.5f, 0.5f, 0.5f) }, \
+	PackedInt32Array { 1, 7, 0, 3 }, \
+	PackedInt32Array { 4, 7, 3, 0 }, \
+	PackedInt32Array { 4, 2, 0, 3 }, \
+	PackedInt32Array { 1, 2, 3, 0 }, \
 }
 
 // These are the same for all orthoplex types: poly, tetra, wire.

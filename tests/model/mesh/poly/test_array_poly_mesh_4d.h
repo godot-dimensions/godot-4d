@@ -1,11 +1,67 @@
 #pragma once
 
+#include "../../../../math/vector_4d.h"
 #include "../../../../model/mesh/poly/array_poly_mesh_4d.h"
 #include "../../../../model/mesh/poly/box_poly_mesh_4d.h"
+#include "../mesh_attribute_test_helpers_4d.h"
 
 #include "tests/test_macros.h"
 
 namespace TestArrayPolyMesh4D {
+using namespace TestMeshAttributes4D;
+
+static HashMap<Vector2i, Vector<PackedVector4Array>> get_all_dense_normals(const Ref<ArrayPolyMesh4D> &p_mesh) {
+	HashMap<Vector2i, Vector<PackedVector4Array>> result;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : p_mesh->get_all_poly_cell_normal_indices()) {
+		result.insert(binding.key, p_mesh->get_poly_cell_dense_normals(binding.key));
+	}
+	return result;
+}
+
+static HashMap<Vector2i, Vector<PackedVector3Array>> get_all_dense_texture_maps(const Ref<ArrayPolyMesh4D> &p_mesh) {
+	HashMap<Vector2i, Vector<PackedVector3Array>> result;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : p_mesh->get_all_poly_cell_texture_map_indices()) {
+		result.insert(binding.key, p_mesh->get_poly_cell_dense_texture_map(binding.key));
+	}
+	return result;
+}
+
+static void set_all_dense_normals(const Ref<ArrayPolyMesh4D> &p_mesh, const HashMap<Vector2i, Vector<PackedVector4Array>> &p_bindings) {
+	HashMap<Vector2i, Vector<PackedInt32Array>> bindings;
+	PackedVector4Array values;
+	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &binding : p_bindings) {
+		Vector<PackedInt32Array> arrays;
+		for (const PackedVector4Array &cell : binding.value) {
+			PackedInt32Array indices;
+			for (const Vector4 &value : cell) {
+				indices.append(Vector4D::vector4_array_append_deduplicate(values, value));
+			}
+			arrays.append(indices);
+		}
+		bindings.insert(binding.key, arrays);
+	}
+	p_mesh->set_poly_cell_normal_values(values);
+	p_mesh->set_all_poly_cell_normal_indices(bindings);
+}
+
+static void set_all_dense_texture_maps(const Ref<ArrayPolyMesh4D> &p_mesh, const HashMap<Vector2i, Vector<PackedVector3Array>> &p_bindings) {
+	HashMap<Vector2i, Vector<PackedInt32Array>> bindings;
+	PackedVector3Array values;
+	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &binding : p_bindings) {
+		Vector<PackedInt32Array> arrays;
+		for (const PackedVector3Array &cell : binding.value) {
+			PackedInt32Array indices;
+			for (const Vector3 &value : cell) {
+				indices.append(Vector4D::vector3_array_append_deduplicate(values, value));
+			}
+			arrays.append(indices);
+		}
+		bindings.insert(binding.key, arrays);
+	}
+	p_mesh->set_poly_cell_texture_map_values(values);
+	p_mesh->set_all_poly_cell_texture_map_indices(bindings);
+}
+
 // The faces of a tetrahedron with vertices 0, 1, 2, 3, encoded as lists of edge indices.
 // Edges: 0:(0,1) 1:(0,2) 2:(0,3) 3:(1,2) 4:(1,3) 5:(2,3)
 // Faces: 0: verts 0-1-2, 1: verts 0-1-3, 2: verts 0-2-3, 3: verts 1-2-3.
@@ -260,8 +316,8 @@ TEST_CASE("[ArrayPolyMesh4D] Delete poly elements") {
 		for (int64_t cell_index = 0; cell_index < 7; cell_index++) {
 			CHECK(adjusted_normals[cell_index] == original_normals[cell_index + 1]);
 		}
-		CHECK(mesh->get_poly_cell_vertex_normals().size() == 7);
-		CHECK(mesh->get_poly_cell_texture_map().size() == 7);
+		CHECK(mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY).size() == 7);
+		CHECK(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY).size() == 7);
 		CHECK(mesh->is_poly_mesh_data_valid());
 	}
 
@@ -448,7 +504,7 @@ TEST_CASE("[ArrayPolyMesh4D] Flat and smooth shading normals") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		mesh->set_flat_shading_normals();
 		const PackedVector4Array boundary_normals = mesh->get_poly_cell_boundary_normals();
-		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_vertex_normals();
+		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(vertex_normals.size() == 8);
 		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
 			REQUIRE(vertex_normals[cell_index].size() == 8);
@@ -463,7 +519,7 @@ TEST_CASE("[ArrayPolyMesh4D] Flat and smooth shading normals") {
 		mesh->set_smooth_shading_normals();
 		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
 		const Vector<PackedInt32Array> cell_vertex_indices = mesh->get_all_boundary_cell_vertex_indices(false);
-		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_vertex_normals();
+		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(vertex_normals.size() == 8);
 		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
 			REQUIRE(vertex_normals[cell_index].size() == cell_vertex_indices[cell_index].size());
@@ -480,11 +536,11 @@ TEST_CASE("[ArrayPolyMesh4D] Flat and smooth shading normals") {
 		// An empty binding for the boundary normals key can be set through the all-normals
 		// map setter, and must be treated the same as having no normals at all.
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
-		HashMap<Vector2i, Vector<PackedVector4Array>> degenerate_normals;
-		degenerate_normals.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedVector4Array>());
-		mesh->set_all_poly_cell_normals(degenerate_normals);
+		HashMap<Vector2i, Vector<PackedInt32Array>> degenerate_normals;
+		degenerate_normals.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedInt32Array>());
+		mesh->set_all_poly_cell_normal_indices(degenerate_normals);
 		mesh->set_flat_shading_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
-		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_vertex_normals();
+		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(vertex_normals.size() == 1);
 		REQUIRE(vertex_normals[0].size() == 4);
 		CHECK(vertex_normals[0][0].is_equal_approx(Vector4(0, 0, 0, 1)));
@@ -497,7 +553,7 @@ TEST_CASE("[ArrayPolyMesh4D] Flat and smooth shading normals") {
 		mesh->calculate_seam_faces();
 		mesh->set_smooth_shading_normals();
 		const PackedVector4Array boundary_normals = mesh->get_poly_cell_boundary_normals();
-		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_vertex_normals();
+		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(vertex_normals.size() == 8);
 		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
 			for (int64_t vertex_in_cell = 0; vertex_in_cell < vertex_normals[cell_index].size(); vertex_in_cell++) {
@@ -512,10 +568,10 @@ TEST_CASE("[ArrayPolyMesh4D] Make double sided") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		Vector<PackedVector4Array> vertex_normals;
 		vertex_normals.push_back(PackedVector4Array{ Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1) });
-		mesh->set_poly_cell_vertex_normals(vertex_normals);
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, vertex_normals);
 		Vector<PackedVector3Array> texture_map;
 		texture_map.push_back(PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) });
-		mesh->set_poly_cell_texture_map(texture_map);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, texture_map);
 		mesh->make_double_sided();
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
 		REQUIRE(poly_cell_indices[1].size() == 2);
@@ -523,12 +579,12 @@ TEST_CASE("[ArrayPolyMesh4D] Make double sided") {
 		const PackedVector4Array boundary_normals = mesh->get_poly_cell_boundary_normals();
 		REQUIRE(boundary_normals.size() == 2);
 		CHECK(boundary_normals[1].is_equal_approx(-boundary_normals[0]));
-		const Vector<PackedVector4Array> doubled_vertex_normals = mesh->get_poly_cell_vertex_normals();
+		const Vector<PackedVector4Array> doubled_vertex_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(doubled_vertex_normals.size() == 2);
 		for (int64_t vertex_in_cell = 0; vertex_in_cell < 4; vertex_in_cell++) {
 			CHECK_MESSAGE(doubled_vertex_normals[1][vertex_in_cell].is_equal_approx(Vector4(0, 0, 0, -1)), "The flipped cell's vertex normals must be negated.");
 		}
-		const Vector<PackedVector3Array> doubled_texture_map = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> doubled_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(doubled_texture_map.size() == 2);
 		const PackedVector3Array expected_flipped_texture_map = { texture_map[0][0], texture_map[0][1], texture_map[0][3], texture_map[0][2] };
 		CHECK_MESSAGE(doubled_texture_map[1] == expected_flipped_texture_map, "The flipped cell must preserve texture coordinates by vertex identity.");
@@ -698,7 +754,7 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 	SUBCASE("Tile cells mode gives each box cell a half-size tile") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		mesh->unwrap_texture_map(ArrayPolyMesh4D::UNWRAP_MODE_TILE_CELLS);
-		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(texture_map.size() == 8);
 		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
 			REQUIRE(texture_map[cell_index].size() == 8);
@@ -721,7 +777,7 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 	SUBCASE("Each cell fills mode maps each box cell to the full unit cube") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		mesh->unwrap_texture_map(ArrayPolyMesh4D::UNWRAP_MODE_EACH_CELL_FILLS);
-		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(texture_map.size() == 8);
 		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
 			AABB cell_aabb = AABB(texture_map[cell_index][0], Vector3());
@@ -736,7 +792,7 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 	SUBCASE("Padding insets the unwrapped cells") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		mesh->unwrap_texture_map(ArrayPolyMesh4D::UNWRAP_MODE_EACH_CELL_FILLS, 1.0);
-		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(texture_map.size() == 8);
 		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
 			AABB cell_aabb = AABB(texture_map[cell_index][0], Vector3());
@@ -752,7 +808,7 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 	SUBCASE("Tile islands mode with no seams unwraps the box as one island") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		mesh->unwrap_texture_map(ArrayPolyMesh4D::UNWRAP_MODE_TILE_ISLANDS);
-		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(texture_map.size() == 8);
 		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
 			REQUIRE(texture_map[cell_index].size() == 8);
@@ -770,9 +826,9 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 
 	SUBCASE("Unwrapping a single island only fills that island") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
-		mesh->set_poly_cell_texture_map(Vector<PackedVector3Array>());
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
 		mesh->unwrap_texture_map_island(PackedInt32Array{ 0 });
-		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(texture_map.size() == 8);
 		CHECK(texture_map[0].size() == 8);
 		for (int64_t cell_index = 1; cell_index < 8; cell_index++) {
@@ -784,9 +840,9 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 TEST_CASE("[ArrayPolyMesh4D] Transform texture map and vertices") {
 	SUBCASE("Transforming the texture map offsets all coordinates") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
-		const Vector<PackedVector3Array> original = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> original = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		mesh->transform_texture_map(Transform3D(Basis(), Vector3(10, 20, 30)));
-		const Vector<PackedVector3Array> transformed = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> transformed = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE(transformed.size() == original.size());
 		for (int64_t cell_index = 0; cell_index < original.size(); cell_index++) {
 			REQUIRE(transformed[cell_index].size() == original[cell_index].size());
@@ -940,7 +996,7 @@ TEST_CASE("[ArrayPolyMesh4D] Merge meshes") {
 		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
 		mesh->set_flat_shading_normals();
 		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(10, 0, 0, 0)));
-		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_vertex_normals();
+		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE_MESSAGE(vertex_normals.size() == 2, "The other mesh's missing vertex normals must be generated during the merge.");
 		REQUIRE(vertex_normals[1].size() == 4);
 		for (int64_t vertex_in_cell = 0; vertex_in_cell < 4; vertex_in_cell++) {
@@ -954,9 +1010,9 @@ TEST_CASE("[ArrayPolyMesh4D] Merge meshes") {
 		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
 		Vector<PackedVector3Array> texture_map;
 		texture_map.push_back(PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) });
-		mesh->set_poly_cell_texture_map(texture_map);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, texture_map);
 		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(10, 0, 0, 0)));
-		const Vector<PackedVector3Array> merged_texture_map = mesh->get_poly_cell_texture_map();
+		const Vector<PackedVector3Array> merged_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 		REQUIRE_MESSAGE(merged_texture_map.size() == 2, "The texture map must be padded to cover the merged cells.");
 		CHECK(merged_texture_map[0].size() == 4);
 		CHECK_MESSAGE(merged_texture_map[1].is_empty(), "The other mesh's cell must be padded as unmapped.");
@@ -1072,9 +1128,9 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplicate all elements") {
 			}
 		}
 		REQUIRE_MESSAGE(interface_cell != -1, "There must be a cell entirely at the interface plane.");
-		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
-		REQUIRE(simplex_indices.size() > 0);
-		const int64_t simplex_count = simplex_indices.size() / 4;
+		const PackedInt32Array simplex_vertex_indices = mesh->get_simplex_cell_vertex_indices();
+		REQUIRE(simplex_vertex_indices.size() > 0);
+		const int64_t simplex_count = simplex_vertex_indices.size() / 4;
 		for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
 			CHECK_MESSAGE(mesh->get_source_poly_cell_for_simplex_cell(simplex_index) != interface_cell, "The interface cell between two volumetric cells must not be tetrahedralized.");
 		}
@@ -1093,43 +1149,45 @@ TEST_CASE("[ArrayPolyMesh4D] Getters and setters") {
 
 	SUBCASE("Vertex normals") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
-		CHECK(mesh->get_poly_cell_vertex_normals().is_empty());
+		CHECK(mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY).is_empty());
 		Vector<PackedVector4Array> vertex_normals;
 		vertex_normals.push_back(PackedVector4Array{ Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1) });
-		mesh->set_poly_cell_vertex_normals(vertex_normals);
-		CHECK(mesh->get_poly_cell_vertex_normals().size() == 1);
-		mesh->set_poly_cell_vertex_normals(Vector<PackedVector4Array>());
-		CHECK(mesh->get_poly_cell_vertex_normals().is_empty());
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, vertex_normals);
+		CHECK(mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY).size() == 1);
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector4Array>());
+		CHECK(mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY).is_empty());
 	}
 
 	SUBCASE("Texture map") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
-		CHECK(mesh->get_poly_cell_texture_map().is_empty());
+		CHECK(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY).is_empty());
 		Vector<PackedVector3Array> texture_map;
 		texture_map.push_back(PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) });
-		mesh->set_poly_cell_texture_map(texture_map);
-		CHECK(mesh->get_poly_cell_texture_map().size() == 1);
-		mesh->set_poly_cell_texture_map(Vector<PackedVector3Array>());
-		CHECK(mesh->get_poly_cell_texture_map().is_empty());
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, texture_map);
+		CHECK(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY).size() == 1);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
+		CHECK(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY).is_empty());
 	}
 
 	SUBCASE("All normals and texture maps by binding key") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		mesh->calculate_boundary_normals();
-		HashMap<Vector2i, Vector<PackedVector4Array>> all_normals = mesh->get_all_poly_cell_normals();
-		REQUIRE(all_normals.has(PolyMesh4D::PER_CELL_KEY));
-		CHECK(all_normals[PolyMesh4D::PER_CELL_KEY][0].size() == 1);
-		// Round trip through the setter.
+		HashMap<Vector2i, Vector<PackedInt32Array>> all_normal_indices = mesh->get_all_poly_cell_normal_indices();
+		REQUIRE(all_normal_indices.has(PolyMesh4D::PER_CELL_KEY));
+		CHECK(all_normal_indices[PolyMesh4D::PER_CELL_KEY][0].size() == 1);
+		// Round trip through the setters. The value pool must be copied along with the indices.
 		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
-		other->set_all_poly_cell_normals(all_normals);
+		other->set_poly_cell_normal_values(mesh->get_poly_cell_normal_values());
+		other->set_all_poly_cell_normal_indices(all_normal_indices);
 		CHECK(other->get_poly_cell_boundary_normals() == mesh->get_poly_cell_boundary_normals());
 		Vector<PackedVector3Array> texture_map;
 		texture_map.push_back(PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) });
-		mesh->set_poly_cell_texture_map(texture_map);
-		HashMap<Vector2i, Vector<PackedVector3Array>> all_texture_maps = mesh->get_all_poly_cell_texture_maps();
-		REQUIRE(all_texture_maps.has(PolyMesh4D::CELL_TO_VERT_KEY));
-		other->set_all_poly_cell_texture_maps(all_texture_maps);
-		CHECK(other->get_poly_cell_texture_map().size() == 1);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, texture_map);
+		HashMap<Vector2i, Vector<PackedInt32Array>> all_texture_map_indices = mesh->get_all_poly_cell_texture_map_indices();
+		REQUIRE(all_texture_map_indices.has(PolyMesh4D::CELL_TO_VERT_KEY));
+		other->set_poly_cell_texture_map_values(mesh->get_poly_cell_texture_map_values());
+		other->set_all_poly_cell_texture_map_indices(all_texture_map_indices);
+		CHECK(other->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY).size() == 1);
 	}
 
 	SUBCASE("Edge indices and poly cell indices round trip") {
@@ -1158,23 +1216,19 @@ TEST_CASE("[ArrayPolyMesh4D] Duplicate preserves the normals and texture map dic
 	faces.append(PackedInt32Array{ 0, 1, 2 });
 	mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ faces });
 	const Vector4 pos_z = Vector4(0, 0, 1, 0);
-	HashMap<Vector2i, Vector<PackedVector4Array>> normals;
-	normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ PackedVector4Array{ pos_z } });
-	mesh->set_all_poly_cell_normals(normals);
-	HashMap<Vector2i, Vector<PackedVector3Array>> texture_maps;
-	texture_maps.insert(PolyMesh4D::FACE_TO_VERT_KEY, Vector<PackedVector3Array>{ PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0) } });
-	mesh->set_all_poly_cell_texture_maps(texture_maps);
+	mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ PackedVector4Array{ pos_z } });
+	mesh->set_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY, Vector<PackedVector3Array>{ PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0) } });
 	Ref<ArrayPolyMesh4D> duplicated = mesh->duplicate();
 	REQUIRE(duplicated.is_valid());
-	const HashMap<Vector2i, Vector<PackedVector4Array>> duplicated_normals = duplicated->get_all_poly_cell_normals();
-	REQUIRE_MESSAGE(duplicated_normals.has(PolyMesh4D::PER_FACE_KEY), "Duplicating a mesh must preserve the per-face normals.");
-	REQUIRE(duplicated_normals[PolyMesh4D::PER_FACE_KEY].size() == 1);
-	REQUIRE(duplicated_normals[PolyMesh4D::PER_FACE_KEY][0].size() == 1);
-	CHECK(duplicated_normals[PolyMesh4D::PER_FACE_KEY][0][0].is_equal_approx(pos_z));
-	const HashMap<Vector2i, Vector<PackedVector3Array>> duplicated_texture_maps = duplicated->get_all_poly_cell_texture_maps();
-	REQUIRE_MESSAGE(duplicated_texture_maps.has(PolyMesh4D::FACE_TO_VERT_KEY), "Duplicating a mesh must preserve the face texture maps.");
-	REQUIRE(duplicated_texture_maps[PolyMesh4D::FACE_TO_VERT_KEY].size() == 1);
-	CHECK(duplicated_texture_maps[PolyMesh4D::FACE_TO_VERT_KEY][0].size() == 3);
+	const Vector<PackedVector4Array> duplicated_normals = duplicated->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	REQUIRE_MESSAGE(!duplicated_normals.is_empty(), "Duplicating a mesh must preserve the per-face normals.");
+	REQUIRE(duplicated_normals.size() == 1);
+	REQUIRE(duplicated_normals[0].size() == 1);
+	CHECK(duplicated_normals[0][0].is_equal_approx(pos_z));
+	const Vector<PackedVector3Array> duplicated_texture_maps = duplicated->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE_MESSAGE(!duplicated_texture_maps.is_empty(), "Duplicating a mesh must preserve the face texture maps.");
+	REQUIRE(duplicated_texture_maps.size() == 1);
+	CHECK(duplicated_texture_maps[0].size() == 3);
 }
 
 TEST_CASE("[ArrayPolyMesh4D] Boundary pivot overrides follow mesh edits") {
@@ -1233,8 +1287,8 @@ static int64_t dense_binding_element_count(const Ref<ArrayPolyMesh4D> &p_mesh, c
 }
 
 static void clear_dense_test_bindings(const Ref<ArrayPolyMesh4D> &p_mesh) {
-	p_mesh->set_all_poly_cell_normals(HashMap<Vector2i, Vector<PackedVector4Array>>());
-	p_mesh->set_all_poly_cell_texture_maps(HashMap<Vector2i, Vector<PackedVector3Array>>());
+	set_all_dense_normals(p_mesh, HashMap<Vector2i, Vector<PackedVector4Array>>());
+	set_all_dense_texture_maps(p_mesh, HashMap<Vector2i, Vector<PackedVector3Array>>());
 }
 
 static void set_dense_test_binding(const Ref<ArrayPolyMesh4D> &p_mesh, const Vector2i p_key, const int64_t p_count = -1, const int p_seed = 1) {
@@ -1263,12 +1317,12 @@ static void set_dense_test_binding(const Ref<ArrayPolyMesh4D> &p_mesh, const Vec
 			textures.append(cell_textures);
 		}
 	}
-	HashMap<Vector2i, Vector<PackedVector4Array>> all_normals = p_mesh->get_all_poly_cell_normals();
-	HashMap<Vector2i, Vector<PackedVector3Array>> all_textures = p_mesh->get_all_poly_cell_texture_maps();
+	HashMap<Vector2i, Vector<PackedVector4Array>> all_normals = get_all_dense_normals(p_mesh);
+	HashMap<Vector2i, Vector<PackedVector3Array>> all_textures = get_all_dense_texture_maps(p_mesh);
 	all_normals.insert(p_key, normals);
 	all_textures.insert(p_key, textures);
-	p_mesh->set_all_poly_cell_normals(all_normals);
-	p_mesh->set_all_poly_cell_texture_maps(all_textures);
+	set_all_dense_normals(p_mesh, all_normals);
+	set_all_dense_texture_maps(p_mesh, all_textures);
 }
 
 TEST_CASE("[ArrayPolyMesh4D] Dense binding validation checks every geometry dimension") {
@@ -1280,8 +1334,8 @@ TEST_CASE("[ArrayPolyMesh4D] Dense binding validation checks every geometry dime
 			clear_dense_test_bindings(mesh);
 			set_dense_test_binding(mesh, key);
 			CHECK(mesh->is_poly_mesh_data_valid());
-			const Vector<PackedVector4Array> original_normals = mesh->get_all_poly_cell_normals()[key];
-			const Vector<PackedVector3Array> original_textures = mesh->get_all_poly_cell_texture_maps()[key];
+			const Vector<PackedVector4Array> original_normals = get_all_dense_normals(mesh)[key];
+			const Vector<PackedVector3Array> original_textures = get_all_dense_texture_maps(mesh)[key];
 			for (const bool change_normals : { false, true }) {
 				for (int invalid_shape = 0; invalid_shape < 2; invalid_shape++) {
 					HashMap<Vector2i, Vector<PackedVector4Array>> normals;
@@ -1301,8 +1355,8 @@ TEST_CASE("[ArrayPolyMesh4D] Dense binding validation checks every geometry dime
 					}
 					normals.insert(key, normal_data);
 					textures.insert(key, texture_data);
-					mesh->set_all_poly_cell_normals(normals);
-					mesh->set_all_poly_cell_texture_maps(textures);
+					set_all_dense_normals(mesh, normals);
+					set_all_dense_texture_maps(mesh, textures);
 					ERR_PRINT_OFF;
 					CHECK_FALSE(mesh->is_poly_mesh_data_valid());
 					ERR_PRINT_ON;
@@ -1320,11 +1374,41 @@ TEST_CASE("[ArrayPolyMesh4D] Dense binding validation checks every geometry dime
 			} else {
 				textures.insert(key, Vector<PackedVector3Array>());
 			}
-			mesh->set_all_poly_cell_normals(normals);
-			mesh->set_all_poly_cell_texture_maps(textures);
+			set_all_dense_normals(mesh, normals);
+			set_all_dense_texture_maps(mesh, textures);
 			ERR_PRINT_OFF;
 			CHECK_FALSE(mesh->is_poly_mesh_data_valid());
 			ERR_PRINT_ON;
+		}
+	}
+}
+
+TEST_CASE("[ArrayPolyMesh4D] Every indexed binding validates its value range") {
+	for (int geometry_dimension = 0; geometry_dimension <= 4; geometry_dimension++) {
+		for (int decomposition_dimension = 0; decomposition_dimension <= geometry_dimension; decomposition_dimension++) {
+			const Vector2i key(geometry_dimension, decomposition_dimension);
+			for (const bool normals : { false, true }) {
+				for (const bool negative : { false, true }) {
+					CAPTURE(key);
+					CAPTURE(normals);
+					CAPTURE(negative);
+					Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+					clear_dense_test_bindings(mesh);
+					set_dense_test_binding(mesh, key);
+					REQUIRE(mesh->is_poly_mesh_data_valid());
+					HashMap<Vector2i, Vector<PackedInt32Array>> bindings = normals ? mesh->get_all_poly_cell_normal_indices() : mesh->get_all_poly_cell_texture_map_indices();
+					const int64_t value_count = normals ? mesh->get_poly_cell_normal_values().size() : mesh->get_poly_cell_texture_map_values().size();
+					bindings[key].ptrw()[0].set(0, negative ? -1 : value_count);
+					if (normals) {
+						mesh->set_all_poly_cell_normal_indices(bindings);
+					} else {
+						mesh->set_all_poly_cell_texture_map_indices(bindings);
+					}
+					ERR_PRINT_OFF;
+					CHECK_FALSE(mesh->is_poly_mesh_data_valid());
+					ERR_PRINT_ON;
+				}
+			}
 		}
 	}
 }
@@ -1341,8 +1425,8 @@ TEST_CASE("[ArrayPolyMesh4D] Dense bindings follow vertex edge and higher-elemen
 		}
 		mesh->delete_poly_element(dimension, 0);
 		REQUIRE(mesh->is_poly_mesh_data_valid());
-		const HashMap<Vector2i, Vector<PackedVector4Array>> normals = mesh->get_all_poly_cell_normals();
-		const HashMap<Vector2i, Vector<PackedVector3Array>> textures = mesh->get_all_poly_cell_texture_maps();
+		const HashMap<Vector2i, Vector<PackedVector4Array>> normals = get_all_dense_normals(mesh);
+		const HashMap<Vector2i, Vector<PackedVector3Array>> textures = get_all_dense_texture_maps(mesh);
 		for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &binding : normals) {
 			const int64_t count = dense_binding_element_count(mesh, binding.key.x);
 			if (binding.key.x == binding.key.y) {
@@ -1364,11 +1448,11 @@ TEST_CASE("[ArrayPolyMesh4D] Dense bindings follow vertex edge and higher-elemen
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		set_dense_test_binding(mesh, PolyMesh4D::FACE_TO_VERT_KEY, 1);
 		mesh->delete_poly_element(2, 3); // Outside the stored prefix.
-		CHECK(mesh->get_all_poly_cell_normals()[PolyMesh4D::FACE_TO_VERT_KEY].size() == 1);
+		CHECK(get_all_dense_normals(mesh)[PolyMesh4D::FACE_TO_VERT_KEY].size() == 1);
 		CHECK(mesh->is_poly_mesh_data_valid());
 		mesh->delete_poly_element(2, 0);
-		CHECK(mesh->get_all_poly_cell_normals()[PolyMesh4D::FACE_TO_VERT_KEY].is_empty());
-		CHECK(mesh->get_all_poly_cell_texture_maps()[PolyMesh4D::FACE_TO_VERT_KEY].is_empty());
+		CHECK(get_all_dense_normals(mesh)[PolyMesh4D::FACE_TO_VERT_KEY].is_empty());
+		CHECK(get_all_dense_texture_maps(mesh)[PolyMesh4D::FACE_TO_VERT_KEY].is_empty());
 		CHECK(mesh->is_poly_mesh_data_valid());
 	}
 }
@@ -1383,8 +1467,8 @@ TEST_CASE("[ArrayPolyMesh4D] Empty bindings survive deletion and deduplication")
 	}
 	normals.insert(Vector2i(5, 0), Vector<PackedVector4Array>());
 	textures.insert(Vector2i(5, 0), Vector<PackedVector3Array>());
-	mesh->set_all_poly_cell_normals(normals);
-	mesh->set_all_poly_cell_texture_maps(textures);
+	set_all_dense_normals(mesh, normals);
+	set_all_dense_texture_maps(mesh, textures);
 	REQUIRE(mesh->is_poly_mesh_data_valid());
 	mesh->delete_poly_element(3, 0);
 	while (!mesh->get_poly_cell_indices().is_empty()) {
@@ -1392,10 +1476,10 @@ TEST_CASE("[ArrayPolyMesh4D] Empty bindings survive deletion and deduplication")
 	}
 	REQUIRE(mesh->is_poly_mesh_data_valid());
 	mesh->deduplicate_all_elements();
-	CHECK(mesh->get_all_poly_cell_normals().size() == normals.size());
-	CHECK(mesh->get_all_poly_cell_texture_maps().size() == textures.size());
-	CHECK(mesh->get_all_poly_cell_normals()[Vector2i(5, 0)].is_empty());
-	CHECK(mesh->get_all_poly_cell_texture_maps()[Vector2i(5, 5)][0].is_empty());
+	CHECK(get_all_dense_normals(mesh).size() == normals.size());
+	CHECK(get_all_dense_texture_maps(mesh).size() == textures.size());
+	CHECK(get_all_dense_normals(mesh)[Vector2i(5, 0)].is_empty());
+	CHECK(get_all_dense_texture_maps(mesh)[Vector2i(5, 5)][0].is_empty());
 	CHECK(mesh->is_poly_mesh_data_valid());
 }
 
@@ -1407,10 +1491,10 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplication resamples partial and empty dense bin
 		mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 2, 3, 3, 0 });
 		mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2, 3 } } });
 		set_dense_test_binding(mesh, PolyMesh4D::FACE_TO_VERT_KEY);
-		REQUIRE(mesh->get_all_poly_cell_normals()[PolyMesh4D::FACE_TO_VERT_KEY][0].size() == 4);
+		REQUIRE(get_all_dense_normals(mesh)[PolyMesh4D::FACE_TO_VERT_KEY][0].size() == 4);
 		mesh->deduplicate_all_elements();
-		const PackedVector4Array normals = mesh->get_all_poly_cell_normals()[PolyMesh4D::FACE_TO_VERT_KEY][0];
-		const PackedVector3Array textures = mesh->get_all_poly_cell_texture_maps()[PolyMesh4D::FACE_TO_VERT_KEY][0];
+		const PackedVector4Array normals = get_all_dense_normals(mesh)[PolyMesh4D::FACE_TO_VERT_KEY][0];
+		const PackedVector3Array textures = get_all_dense_texture_maps(mesh)[PolyMesh4D::FACE_TO_VERT_KEY][0];
 		REQUIRE(normals.size() == 3);
 		REQUIRE(textures.size() == 3);
 		CHECK(normals[2].x == 3); // Keep the first attached value when vertices 2 and 3 merge.
@@ -1436,8 +1520,8 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplication resamples partial and empty dense bin
 		mesh->deduplicate_all_elements();
 		for (const Vector2i key : { Vector2i(1, 0), Vector2i(2, 0) }) {
 			const Vector<PackedInt32Array> elements = mesh->get_all_poly_cell_poly_indices(key.x, key.y);
-			const Vector<PackedVector4Array> normals = mesh->get_all_poly_cell_normals()[key];
-			const Vector<PackedVector3Array> textures = mesh->get_all_poly_cell_texture_maps()[key];
+			const Vector<PackedVector4Array> normals = get_all_dense_normals(mesh)[key];
+			const Vector<PackedVector3Array> textures = get_all_dense_texture_maps(mesh)[key];
 			REQUIRE(normals.size() == elements.size());
 			for (int64_t i = 0; i < elements.size(); i++) {
 				REQUIRE(normals[i].size() == elements[i].size());
@@ -1457,13 +1541,13 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplication resamples partial and empty dense bin
 		PackedVector4Array boundary_normals = mesh->get_poly_cell_boundary_normals();
 		boundary_normals.set(0, -boundary_normals[0]);
 		mesh->set_poly_cell_boundary_normals(boundary_normals);
-		mesh->set_poly_cell_vertex_normals(Vector<PackedVector4Array>{ PackedVector4Array(), PackedVector4Array() });
-		mesh->set_poly_cell_texture_map(Vector<PackedVector3Array>{ PackedVector3Array(), PackedVector3Array() });
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector4Array>{ PackedVector4Array(), PackedVector4Array() });
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>{ PackedVector3Array(), PackedVector3Array() });
 		mesh->deduplicate_all_elements();
 		for (const Vector2i key : { Vector2i(3, 1), Vector2i(3, 2) }) {
 			const Vector<PackedInt32Array> elements = mesh->get_all_poly_cell_poly_indices(key.x, key.y);
-			const Vector<PackedVector4Array> normals = mesh->get_all_poly_cell_normals()[key];
-			const Vector<PackedVector3Array> textures = mesh->get_all_poly_cell_texture_maps()[key];
+			const Vector<PackedVector4Array> normals = get_all_dense_normals(mesh)[key];
+			const Vector<PackedVector3Array> textures = get_all_dense_texture_maps(mesh)[key];
 			REQUIRE(normals.size() == 1);
 			REQUIRE(textures.size() == 1);
 			for (int64_t j = 0; j < elements[0].size(); j++) {
@@ -1471,8 +1555,8 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplication resamples partial and empty dense bin
 				CHECK(textures[0][j].x == elements[0][j] + 1);
 			}
 		}
-		CHECK(mesh->get_poly_cell_vertex_normals()[0].is_empty());
-		CHECK(mesh->get_poly_cell_texture_map()[0].is_empty());
+		CHECK(mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY)[0].is_empty());
+		CHECK(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY)[0].is_empty());
 		CHECK(mesh->is_poly_mesh_data_valid());
 	}
 }
@@ -1499,10 +1583,10 @@ TEST_CASE("[ArrayPolyMesh4D] Dense merge preserves prefixes and pads at the geom
 					if (source_data > 0) {
 						set_dense_test_binding(source, key, source_data == 1 && !boundary_binding ? 1 : count, 7);
 					}
-					const HashMap<Vector2i, Vector<PackedVector4Array>> original_normals = mesh->get_all_poly_cell_normals();
-					const HashMap<Vector2i, Vector<PackedVector3Array>> original_textures = mesh->get_all_poly_cell_texture_maps();
-					const HashMap<Vector2i, Vector<PackedVector4Array>> source_normals = source->get_all_poly_cell_normals();
-					const HashMap<Vector2i, Vector<PackedVector3Array>> source_textures = source->get_all_poly_cell_texture_maps();
+					const HashMap<Vector2i, Vector<PackedVector4Array>> original_normals = get_all_dense_normals(mesh);
+					const HashMap<Vector2i, Vector<PackedVector3Array>> original_textures = get_all_dense_texture_maps(mesh);
+					const HashMap<Vector2i, Vector<PackedVector4Array>> source_normals = get_all_dense_normals(source);
+					const HashMap<Vector2i, Vector<PackedVector3Array>> source_textures = get_all_dense_texture_maps(source);
 					const int64_t destination_count = destination_data == 0 ? 0 : (destination_data == 1 && !boundary_binding ? 1 : count);
 					const int64_t source_count = source_data == 0 ? 0 : (source_data == 1 && !boundary_binding ? 1 : count);
 					const bool expect_padding_warning = (source_data > 0 && destination_count < count) ||
@@ -1515,8 +1599,8 @@ TEST_CASE("[ArrayPolyMesh4D] Dense merge preserves prefixes and pads at the geom
 						ERR_PRINT_ON;
 					}
 					REQUIRE(mesh->is_poly_mesh_data_valid());
-					const HashMap<Vector2i, Vector<PackedVector4Array>> normals = mesh->get_all_poly_cell_normals();
-					const HashMap<Vector2i, Vector<PackedVector3Array>> textures = mesh->get_all_poly_cell_texture_maps();
+					const HashMap<Vector2i, Vector<PackedVector4Array>> normals = get_all_dense_normals(mesh);
+					const HashMap<Vector2i, Vector<PackedVector3Array>> textures = get_all_dense_texture_maps(mesh);
 					if (destination_data == 0 && source_data == 0) {
 						CHECK_FALSE(normals.has(key));
 						CHECK_FALSE(textures.has(key));
@@ -1572,8 +1656,8 @@ TEST_CASE("[ArrayPolyMesh4D] Dense merge preserves prefixes and pads at the geom
 						}
 					}
 					if (source_data > 0) {
-						CHECK(source->get_all_poly_cell_normals()[key] == source_normals[key]);
-						CHECK(source->get_all_poly_cell_texture_maps()[key] == source_textures[key]);
+						CHECK(get_all_dense_normals(source)[key] == source_normals[key]);
+						CHECK(get_all_dense_texture_maps(source)[key] == source_textures[key]);
 					}
 				}
 			}
@@ -1593,15 +1677,15 @@ TEST_CASE("[ArrayPolyMesh4D] Empty incoming bindings do not materialize data") {
 		}
 		normals.insert(Vector2i(3, 0), Vector<PackedVector4Array>());
 		textures.insert(Vector2i(3, 0), Vector<PackedVector3Array>());
-		source->set_all_poly_cell_normals(normals);
-		source->set_all_poly_cell_texture_maps(textures);
+		set_all_dense_normals(source, normals);
+		set_all_dense_texture_maps(source, textures);
 		if (destination_has_empty_keys) {
-			mesh->set_all_poly_cell_normals(normals);
-			mesh->set_all_poly_cell_texture_maps(textures);
+			set_all_dense_normals(mesh, normals);
+			set_all_dense_texture_maps(mesh, textures);
 		}
 		mesh->merge_with(source);
-		const HashMap<Vector2i, Vector<PackedVector4Array>> merged_normals = mesh->get_all_poly_cell_normals();
-		const HashMap<Vector2i, Vector<PackedVector3Array>> merged_textures = mesh->get_all_poly_cell_texture_maps();
+		const HashMap<Vector2i, Vector<PackedVector4Array>> merged_normals = get_all_dense_normals(mesh);
+		const HashMap<Vector2i, Vector<PackedVector3Array>> merged_textures = get_all_dense_texture_maps(mesh);
 		CHECK(merged_normals.size() == (destination_has_empty_keys ? normals.size() : 0));
 		CHECK(merged_textures.size() == (destination_has_empty_keys ? textures.size() : 0));
 		if (destination_has_empty_keys) {
@@ -1619,20 +1703,20 @@ TEST_CASE("[ArrayPolyMesh4D] Self merge snapshots dense attributes and clears pr
 	set_dense_test_binding(mesh, PolyMesh4D::CELL_TO_VERT_KEY);
 	set_dense_test_binding(mesh, PolyMesh4D::PER_FACE_KEY);
 	mesh->set_poly_cell_boundary_normals(PackedVector4Array{ Vector4(0, 0, 0, 1) });
-	const HashMap<Vector2i, Vector<PackedVector4Array>> original_normals = mesh->get_all_poly_cell_normals();
-	const HashMap<Vector2i, Vector<PackedVector3Array>> original_textures = mesh->get_all_poly_cell_texture_maps();
+	const HashMap<Vector2i, Vector<PackedVector4Array>> original_normals = get_all_dense_normals(mesh);
+	const HashMap<Vector2i, Vector<PackedVector3Array>> original_textures = get_all_dense_texture_maps(mesh);
 	const int64_t simplex_index_count = mesh->get_simplex_cell_vertex_indices().size();
 	const int64_t simplex_position_count = mesh->get_simplex_cell_positions().size();
-	const int64_t texture_count = mesh->get_simplex_cell_texture_map().size();
-	const int64_t normal_count = mesh->get_simplex_cell_vertex_normals().size();
+	const int64_t texture_count = sample_texture_map_values(mesh).size();
+	const int64_t normal_count = sample_normal_values(mesh).size();
 	const Transform4D transform(Basis4D::from_scale_uniform(2.0), Vector4(10, 0, 0, 0));
 	mesh->merge_with(mesh, transform);
 	CHECK(mesh->get_simplex_cell_vertex_indices().size() == simplex_index_count * 2);
 	CHECK(mesh->get_simplex_cell_positions().size() == simplex_position_count * 2);
-	CHECK(mesh->get_simplex_cell_texture_map().size() == texture_count * 2);
-	CHECK(mesh->get_simplex_cell_vertex_normals().size() == normal_count * 2);
+	CHECK(sample_texture_map_values(mesh).size() == texture_count * 2);
+	CHECK(sample_normal_values(mesh).size() == normal_count * 2);
 	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &binding : original_normals) {
-		const Vector<PackedVector4Array> merged = mesh->get_all_poly_cell_normals()[binding.key];
+		const Vector<PackedVector4Array> merged = get_all_dense_normals(mesh)[binding.key];
 		if (binding.key.x == binding.key.y) {
 			const int64_t count = binding.value[0].size();
 			REQUIRE(merged[0].size() == count * 2);
@@ -1649,7 +1733,7 @@ TEST_CASE("[ArrayPolyMesh4D] Self merge snapshots dense attributes and clears pr
 		}
 	}
 	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &binding : original_textures) {
-		const Vector<PackedVector3Array> merged = mesh->get_all_poly_cell_texture_maps()[binding.key];
+		const Vector<PackedVector3Array> merged = get_all_dense_texture_maps(mesh)[binding.key];
 		if (binding.key.x == binding.key.y) {
 			PackedVector3Array expected = binding.value[0];
 			expected.append_array(binding.value[0]);
@@ -1669,8 +1753,8 @@ TEST_CASE("[ArrayPolyMesh4D] Double sided attributes follow vertex identity and 
 		for (int pattern = 0; pattern < 7; pattern++) {
 			CAPTURE(pattern);
 			Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
-			mesh->set_all_poly_cell_normals(HashMap<Vector2i, Vector<PackedVector4Array>>());
-			mesh->set_all_poly_cell_texture_maps(HashMap<Vector2i, Vector<PackedVector3Array>>());
+			set_all_dense_normals(mesh, HashMap<Vector2i, Vector<PackedVector4Array>>());
+			set_all_dense_texture_maps(mesh, HashMap<Vector2i, Vector<PackedVector3Array>>());
 			const Vector<PackedInt32Array> cell_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
 			Vector<PackedVector4Array> normals;
 			Vector<PackedVector3Array> texture_map;
@@ -1697,8 +1781,14 @@ TEST_CASE("[ArrayPolyMesh4D] Double sided attributes follow vertex identity and 
 				texture_map.clear();
 			}
 			if (pattern != 0) {
-				mesh->set_poly_cell_vertex_normals(normals);
-				mesh->set_poly_cell_texture_map(texture_map);
+				mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, normals);
+				mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, texture_map);
+			}
+			if (pattern == 1) {
+				HashMap<Vector2i, Vector<PackedInt32Array>> empty_binding;
+				empty_binding.insert(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedInt32Array>());
+				mesh->set_all_poly_cell_normal_indices(empty_binding);
+				mesh->set_all_poly_cell_texture_map_indices(empty_binding);
 			}
 			// A short pivot array includes an explicit missing sentinel and implicit missing tail.
 			mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ cell_vertices[0][0], -1, cell_vertices[2][0] });
@@ -1716,8 +1806,8 @@ TEST_CASE("[ArrayPolyMesh4D] Double sided attributes follow vertex identity and 
 				CAPTURE(pass);
 				const auto before_geometry = mesh->get_poly_cell_indices();
 				const auto before_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
-				const auto before_normals = mesh->get_poly_cell_vertex_normals();
-				const auto before_texture_map = mesh->get_poly_cell_texture_map();
+				const auto before_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
+				const auto before_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 				const auto before_boundary_normals = mesh->get_poly_cell_boundary_normals();
 				const PackedInt32Array before_pivots = mesh->get_poly_cell_boundary_pivot_overrides();
 				mesh->make_double_sided(pass != 2);
@@ -1729,8 +1819,8 @@ TEST_CASE("[ArrayPolyMesh4D] Double sided attributes follow vertex identity and 
 				if (pattern == 3) {
 					ERR_PRINT_ON;
 				}
-				const auto after_normals = mesh->get_poly_cell_vertex_normals();
-				const auto after_texture_map = mesh->get_poly_cell_texture_map();
+				const auto after_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
+				const auto after_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 				const auto after_boundary_normals = mesh->get_poly_cell_boundary_normals();
 				const PackedInt32Array after_pivots = mesh->get_poly_cell_boundary_pivot_overrides();
 				if (pass == 1) {
@@ -1799,23 +1889,53 @@ TEST_CASE("[ArrayPolyMesh4D] Double sided empty boundary levels are unchanged") 
 	for (const bool idempotent : { false, true }) {
 		Ref<ArrayPolyMesh4D> mesh;
 		mesh.instantiate();
-		const PackedVector4Array positions = { Vector4() };
-		mesh->set_poly_cell_vertex_positions(positions);
+		mesh->set_poly_cell_vertex_positions(PackedVector4Array{ Vector4() });
 		Vector<Vector<PackedInt32Array>> poly;
 		poly.resize(2);
 		mesh->set_poly_cell_indices(poly);
 		REQUIRE(mesh->is_mesh_data_valid());
 		mesh->make_double_sided(idempotent);
-		CHECK(mesh->get_poly_cell_vertex_positions() == positions);
 		CHECK(mesh->get_poly_cell_indices() == poly);
-		CHECK(mesh->get_all_poly_cell_normals().is_empty());
-		CHECK(mesh->get_all_poly_cell_texture_maps().is_empty());
+		CHECK(mesh->get_all_poly_cell_normal_indices().is_empty());
+		CHECK(mesh->get_all_poly_cell_texture_map_indices().is_empty());
+		CHECK(mesh->get_poly_cell_normal_values().is_empty());
+		CHECK(mesh->get_poly_cell_texture_map_values().is_empty());
 		CHECK(mesh->get_poly_cell_boundary_pivot_overrides().is_empty());
 		CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
-		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
-		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(mesh->get_normal_values().is_empty());
+		CHECK(mesh->get_texture_map_values().is_empty());
 		CHECK(mesh->is_mesh_data_valid());
 	}
 }
 
+TEST_CASE("[ArrayPolyMesh4D] Explicit compaction removes unreferenced data and remaps bindings") {
+	Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+	const Vector4 normal_a = Vector4(1, 0, 0, 0);
+	const Vector4 normal_b = Vector4(0, 0, 0, 1);
+	const Vector3 texture_a = Vector3(1, 2, 3);
+	const Vector3 texture_b = Vector3(4, 5, 6);
+	const Vector2i vertex_key(3, 0);
+	const Vector2i boundary_key(3, 3);
+	mesh->set_poly_cell_dense_normals(vertex_key, Vector<PackedVector4Array>{ PackedVector4Array{ normal_a, normal_b, normal_a, normal_b } });
+	mesh->set_poly_cell_dense_normals(boundary_key, Vector<PackedVector4Array>{ PackedVector4Array{ normal_b } });
+	mesh->set_poly_cell_dense_texture_map(vertex_key, Vector<PackedVector3Array>{ PackedVector3Array{ texture_a, texture_b, texture_a, texture_b } });
+	mesh->set_poly_cell_dense_texture_map(boundary_key, Vector<PackedVector3Array>{ PackedVector3Array{ texture_b } });
+	CHECK(mesh->get_poly_cell_normal_values().size() == 2);
+	CHECK(mesh->get_poly_cell_texture_map_values().size() == 2);
+	// Remove one binding. The now-unreferenced values stay in the pools until compaction,
+	// which must remap the surviving binding when pool slot zero is removed.
+	mesh->set_poly_cell_dense_normals(vertex_key, Vector<PackedVector4Array>());
+	mesh->set_poly_cell_dense_texture_map(vertex_key, Vector<PackedVector3Array>());
+	CHECK(mesh->get_poly_cell_normal_values().size() == 2);
+	CHECK(mesh->get_poly_cell_texture_map_values().size() == 2);
+	mesh->compact_normal_values();
+	mesh->compact_texture_map_values();
+	REQUIRE(mesh->get_poly_cell_normal_values().size() == 1);
+	REQUIRE(mesh->get_poly_cell_texture_map_values().size() == 1);
+	CHECK(mesh->get_poly_cell_normal_values()[0] == normal_b);
+	CHECK(mesh->get_poly_cell_texture_map_values()[0] == texture_b);
+	CHECK(mesh->get_all_poly_cell_normal_indices()[boundary_key][0][0] == 0);
+	CHECK(mesh->get_all_poly_cell_texture_map_indices()[boundary_key][0][0] == 0);
+	CHECK(mesh->get_poly_cell_boundary_normals()[0] == normal_b);
+}
 } // namespace TestArrayPolyMesh4D

@@ -2,11 +2,14 @@
 
 #include "../../../../model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../../../model/mesh/tetra/box_tetra_mesh_4d.h"
+#include "../mesh_attribute_test_helpers_4d.h"
 
 #include "scene/resources/mesh.h"
 #include "tests/test_macros.h"
 
 namespace TestArrayTetraMesh4D {
+using namespace TestMeshAttributes4D;
+
 static Ref<ArrayTetraMesh4D> make_single_tetra_mesh(const bool p_with_attributes) {
 	Ref<ArrayTetraMesh4D> mesh;
 	mesh.instantiate();
@@ -14,8 +17,8 @@ static Ref<ArrayTetraMesh4D> make_single_tetra_mesh(const bool p_with_attributes
 	mesh->set_simplex_cell_vertex_indices(PackedInt32Array{ 0, 1, 2, 3 });
 	if (p_with_attributes) {
 		mesh->set_simplex_cell_boundary_normals(PackedVector4Array{ Vector4(0, 0, 0, -1) });
-		mesh->set_simplex_cell_vertex_normals(PackedVector4Array{ Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1) });
-		mesh->set_simplex_cell_texture_map(PackedVector3Array{ Vector3(), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) });
+		set_simplex_normal_values(mesh, PackedVector4Array{ Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1) });
+		set_simplex_texture_map_values(mesh, PackedVector3Array{ Vector3(), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) });
 	}
 	return mesh;
 }
@@ -31,7 +34,7 @@ TEST_CASE("[ArrayTetraMesh4D] Calculate Normals") {
 	const Ref<ArrayTetraMesh4D> source = make_single_tetra_mesh(false);
 	mesh->set_vertex_positions(source->get_vertex_positions());
 	mesh->set_simplex_cell_vertex_indices(source->get_simplex_cell_vertex_indices());
-	mesh->set_simplex_cell_vertex_normals(PackedVector4Array{ Vector4(1, 0, 0, 0) });
+	set_simplex_normal_values(mesh, PackedVector4Array{ Vector4(1, 0, 0, 0) });
 	ERR_PRINT_OFF;
 	CHECK_FALSE(mesh->is_mesh_data_valid());
 	ERR_PRINT_ON;
@@ -39,7 +42,7 @@ TEST_CASE("[ArrayTetraMesh4D] Calculate Normals") {
 	mesh->get_proxy_mesh_3d();
 	CHECK(mesh->proxy_updates == 1);
 	mesh->set_flat_shading_normals();
-	const PackedVector4Array normals = mesh->get_simplex_cell_vertex_normals();
+	const PackedVector4Array normals = sample_normal_values(mesh);
 	REQUIRE(normals.size() == 4);
 	for (const Vector4 &normal : normals) {
 		CHECK(normal == Vector4(0, 0, 0, 1));
@@ -57,10 +60,10 @@ TEST_CASE("[ArrayTetraMesh4D] Merge Meshes") {
 			CAPTURE(source_has_attributes);
 			Ref<ArrayTetraMesh4D> mesh = make_single_tetra_mesh(destination_has_attributes);
 			const Ref<ArrayTetraMesh4D> source = make_single_tetra_mesh(source_has_attributes);
-			const PackedVector4Array source_normals = source->get_simplex_cell_vertex_normals();
-			const PackedVector3Array source_textures = source->get_simplex_cell_texture_map();
-			const PackedVector4Array original_normals = mesh->get_simplex_cell_vertex_normals();
-			const PackedVector3Array original_textures = mesh->get_simplex_cell_texture_map();
+			const PackedVector4Array source_normals = sample_normal_values(source);
+			const PackedVector3Array source_textures = sample_texture_map_values(source);
+			const PackedVector4Array original_normals = sample_normal_values(mesh);
+			const PackedVector3Array original_textures = sample_texture_map_values(mesh);
 			REQUIRE(mesh->get_simplex_cell_positions().size() == 4);
 			mesh->merge_with(source, transform);
 			REQUIRE(mesh->is_mesh_data_valid());
@@ -70,8 +73,8 @@ TEST_CASE("[ArrayTetraMesh4D] Merge Meshes") {
 			for (int i = 0; i < 4; i++) {
 				CHECK(positions[i + 4] == transform * source->get_vertex_positions()[i]);
 			}
-			const PackedVector4Array normals = mesh->get_simplex_cell_vertex_normals();
-			const PackedVector3Array textures = mesh->get_simplex_cell_texture_map();
+			const PackedVector4Array normals = sample_normal_values(mesh);
+			const PackedVector3Array textures = sample_texture_map_values(mesh);
 			if (destination_has_attributes || source_has_attributes) {
 				REQUIRE(normals.size() == 8);
 				REQUIRE(textures.size() == 8);
@@ -89,8 +92,8 @@ TEST_CASE("[ArrayTetraMesh4D] Merge Meshes") {
 				CHECK(normals.is_empty());
 				CHECK(textures.is_empty());
 			}
-			CHECK(source->get_simplex_cell_vertex_normals() == source_normals);
-			CHECK(source->get_simplex_cell_texture_map() == source_textures);
+			CHECK(sample_normal_values(source) == source_normals);
+			CHECK(sample_texture_map_values(source) == source_textures);
 		}
 	}
 }
@@ -100,12 +103,16 @@ TEST_CASE("[ArrayTetraMesh4D] Empty and invalid merge inputs") {
 	mesh.instantiate();
 	const Ref<ArrayTetraMesh4D> source = make_single_tetra_mesh(true);
 	mesh->merge_with(source);
-	CHECK(mesh->get_simplex_cell_texture_map() == source->get_simplex_cell_texture_map());
+	CHECK(sample_texture_map_values(mesh) == sample_texture_map_values(source));
 	CHECK(mesh->get_simplex_cell_boundary_normals() == source->get_simplex_cell_boundary_normals());
 	Ref<ArrayTetraMesh4D> empty;
 	empty.instantiate();
+	const PackedVector4Array normal_values = mesh->get_normal_values();
+	const PackedVector3Array texture_values = mesh->get_texture_map_values();
 	mesh->merge_with(empty);
-	CHECK(mesh->get_simplex_cell_texture_map() == source->get_simplex_cell_texture_map());
+	CHECK(mesh->get_normal_values() == normal_values);
+	CHECK(mesh->get_texture_map_values() == texture_values);
+	CHECK(sample_texture_map_values(mesh) == sample_texture_map_values(source));
 	const PackedVector4Array positions = mesh->get_vertex_positions();
 	const PackedInt32Array indices = mesh->get_simplex_cell_vertex_indices();
 	Ref<ArrayTetraMesh4D> invalid = make_single_tetra_mesh(false);
@@ -116,14 +123,14 @@ TEST_CASE("[ArrayTetraMesh4D] Empty and invalid merge inputs") {
 	ERR_PRINT_ON;
 	CHECK(mesh->get_vertex_positions() == positions);
 	CHECK(mesh->get_simplex_cell_vertex_indices() == indices);
-	CHECK(mesh->get_simplex_cell_texture_map() == source->get_simplex_cell_texture_map());
+	CHECK(sample_texture_map_values(mesh) == sample_texture_map_values(source));
 	CHECK(mesh->is_mesh_data_valid());
 }
 
 TEST_CASE("[SceneTree][ArrayTetraMesh4D] Direct proxy and texture export reject invalid data and recover") {
 	const Ref<ArrayTetraMesh4D> source = make_single_tetra_mesh(true);
 	for (const bool warm_proxy : { false, true }) {
-		for (int invalid_data = 0; invalid_data < 8; invalid_data++) {
+		for (int invalid_data = 0; invalid_data < 12; invalid_data++) {
 			CAPTURE(warm_proxy);
 			CAPTURE(invalid_data);
 			Ref<ArrayTetraMesh4D> mesh = make_single_tetra_mesh(true);
@@ -145,15 +152,15 @@ TEST_CASE("[SceneTree][ArrayTetraMesh4D] Direct proxy and texture export reject 
 					mesh->set_simplex_cell_vertex_indices(PackedInt32Array{ 0, 1, 2, 4 });
 					break;
 				case 3:
-					mesh->set_simplex_cell_texture_map(PackedVector3Array{ Vector3() });
+					set_simplex_texture_map_values(mesh, PackedVector3Array{ Vector3() });
 					break;
 				case 4: {
-					PackedVector3Array texture_map = mesh->get_simplex_cell_texture_map();
+					PackedVector3Array texture_map = sample_texture_map_values(mesh);
 					texture_map.append(Vector3());
-					mesh->set_simplex_cell_texture_map(texture_map);
+					set_simplex_texture_map_values(mesh, texture_map);
 				} break;
 				case 5:
-					mesh->set_simplex_cell_vertex_normals(PackedVector4Array{ Vector4() });
+					set_simplex_normal_values(mesh, PackedVector4Array{ Vector4() });
 					break;
 				case 6:
 					mesh->set_simplex_cell_boundary_normals(PackedVector4Array{ Vector4(), Vector4() });
@@ -161,6 +168,18 @@ TEST_CASE("[SceneTree][ArrayTetraMesh4D] Direct proxy and texture export reject 
 				case 7:
 					mesh->set_vertex_positions(PackedVector4Array());
 					break;
+				case 8:
+				case 9: {
+					PackedInt32Array indices = mesh->get_simplex_cell_texture_map_indices();
+					indices.set(0, invalid_data == 8 ? -1 : mesh->get_texture_map_values().size());
+					mesh->set_simplex_cell_texture_map_indices(indices);
+				} break;
+				case 10:
+				case 11: {
+					PackedInt32Array indices = mesh->get_simplex_cell_normal_indices();
+					indices.set(0, invalid_data == 10 ? -1 : mesh->get_normal_values().size());
+					mesh->set_simplex_cell_normal_indices(indices);
+				} break;
 			}
 			ERR_PRINT_OFF;
 			const Ref<ArrayMesh> invalid_proxy = mesh->get_proxy_mesh_3d();
@@ -178,9 +197,9 @@ TEST_CASE("[SceneTree][ArrayTetraMesh4D] Direct proxy and texture export reject 
 
 			mesh->set_vertex_positions(source->get_vertex_positions());
 			mesh->set_simplex_cell_vertex_indices(source->get_simplex_cell_vertex_indices());
-			mesh->set_simplex_cell_vertex_normals(source->get_simplex_cell_vertex_normals());
+			set_simplex_normal_values(mesh, sample_normal_values(source));
 			mesh->set_simplex_cell_boundary_normals(source->get_simplex_cell_boundary_normals());
-			mesh->set_simplex_cell_texture_map(source->get_simplex_cell_texture_map());
+			set_simplex_texture_map_values(mesh, sample_texture_map_values(source));
 			proxy = mesh->get_proxy_mesh_3d();
 			REQUIRE(proxy.is_valid());
 			CHECK(proxy == invalid_proxy);
@@ -238,7 +257,7 @@ TEST_CASE("[SceneTree][ArrayTetraMesh4D] Empty and degenerate texture exports") 
 	for (const PackedVector3Array &texture_map : {
 				 PackedVector3Array{ Vector3(), Vector3(), Vector3(0, 1, 0), Vector3(0, 0, 1) },
 				 PackedVector3Array{ Vector3(), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(1, 1, 0) } }) {
-		mesh->set_simplex_cell_texture_map(texture_map);
+		set_simplex_texture_map_values(mesh, texture_map);
 		const Ref<ArrayMesh> degenerate_export = mesh->export_texture_map_mesh();
 		REQUIRE(degenerate_export.is_valid());
 		CHECK(degenerate_export->get_surface_count() == 0);
@@ -279,5 +298,25 @@ TEST_CASE("[SceneTree][BoxTetraMesh4D] Texture export validates and preserves al
 			CHECK(exported->surface_get_array_len(0) == mesh->get_simplex_cell_vertex_indices().size() * 3);
 		}
 	}
+}
+
+TEST_CASE("[ArrayTetraMesh4D] Explicit compaction removes unreferenced data") {
+	Ref<ArrayTetraMesh4D> mesh = make_single_tetra_mesh(true);
+	// Point every attribute index at one value, orphaning the rest until compaction.
+	mesh->set_simplex_cell_normal_indices(PackedInt32Array{ 0, 0, 0, 0 });
+	mesh->set_simplex_cell_texture_map_indices(PackedInt32Array{ 3, 3, 3, 3 });
+	CHECK(mesh->get_normal_values().size() == 4);
+	CHECK(mesh->get_texture_map_values().size() == 4);
+	mesh->compact_normal_values();
+	mesh->compact_texture_map_values();
+	CHECK(mesh->get_normal_values() == PackedVector4Array{ Vector4(1, 0, 0, 0) });
+	CHECK(mesh->get_texture_map_values() == PackedVector3Array{ Vector3(0, 0, 1) });
+	CHECK(mesh->get_simplex_cell_texture_map_indices() == PackedInt32Array({ 0, 0, 0, 0 }));
+	// Compaction merges duplicated values in the pool, remapping the indices.
+	mesh->set_normal_values(PackedVector4Array{ Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1) });
+	mesh->set_simplex_cell_normal_indices(PackedInt32Array{ 0, 1, 0, 1 });
+	mesh->compact_normal_values();
+	CHECK(mesh->get_normal_values() == PackedVector4Array{ Vector4(0, 0, 0, 1) });
+	CHECK(mesh->get_simplex_cell_normal_indices() == PackedInt32Array({ 0, 0, 0, 0 }));
 }
 } // namespace TestArrayTetraMesh4D

@@ -90,20 +90,14 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const R
 	}
 	ret->set_poly_cell_vertex_positions(output_vertices);
 	ret->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ output_face_indices });
-	if (!output_face_boundary_normals.is_empty() || !output_face_vertex_normals.is_empty()) {
-		HashMap<Vector2i, Vector<PackedVector4Array>> all_poly_cell_normals;
-		if (!output_face_boundary_normals.is_empty()) {
-			all_poly_cell_normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ output_face_boundary_normals });
-		}
-		if (!output_face_vertex_normals.is_empty()) {
-			all_poly_cell_normals.insert(PolyMesh4D::FACE_TO_VERT_KEY, output_face_vertex_normals);
-		}
-		ret->set_all_poly_cell_normals(all_poly_cell_normals);
+	if (!output_face_boundary_normals.is_empty()) {
+		ret->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ output_face_boundary_normals });
+	}
+	if (!output_face_vertex_normals.is_empty()) {
+		ret->set_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY, output_face_vertex_normals);
 	}
 	if (!output_face_texture_maps.is_empty()) {
-		HashMap<Vector2i, Vector<PackedVector3Array>> all_poly_cell_texture_maps;
-		all_poly_cell_texture_maps.insert(PolyMesh4D::FACE_TO_VERT_KEY, output_face_texture_maps);
-		ret->set_all_poly_cell_texture_maps(all_poly_cell_texture_maps);
+		ret->set_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY, output_face_texture_maps);
 	}
 	return ret;
 }
@@ -223,9 +217,9 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 		CRASH_COND(!ret->is_mesh_data_valid());
 		const PackedInt32Array &face_to_extruded_cell = all_cell_to_extruded_cell[1];
 		// Copy over the normals from the original 2D faces, if that data is present.
-		HashMap<Vector2i, Vector<PackedVector4Array>> all_poly_cell_normals = ret->get_all_poly_cell_normals();
-		if (all_poly_cell_normals.has(PolyMesh4D::PER_FACE_KEY) && all_poly_cell_normals[PolyMesh4D::PER_FACE_KEY].size() == 1) {
-			const PackedVector4Array &per_face_normals = all_poly_cell_normals[PolyMesh4D::PER_FACE_KEY][0];
+		const Vector<PackedVector4Array> per_face_normals_dense = ret->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+		if (per_face_normals_dense.size() == 1) {
+			const PackedVector4Array &per_face_normals = per_face_normals_dense[0];
 			CRASH_COND(per_face_normals.size() < face_to_extruded_cell.size());
 			Vector<PackedInt32Array> boundary_cells = poly_cell_indices[1];
 			PackedVector4Array per_cell_normals = ret->get_poly_cell_boundary_normals();
@@ -250,8 +244,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			ret->set_poly_cell_indices(poly_cell_indices);
 			// The boundary normals themselves will be recalculated at the end of this function,
 			// but write the result back anyway for internal consistency.
-			all_poly_cell_normals.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedVector4Array>{ per_cell_normals });
-			ret->set_all_poly_cell_normals(all_poly_cell_normals);
+			ret->set_poly_cell_dense_normals(PolyMesh4D::PER_CELL_KEY, Vector<PackedVector4Array>{ per_cell_normals });
 		} else {
 			// Otherwise, if there is no data to copy over, calculate new boundary normals for the extruded faces.
 			// 4D-specific code: Ensure boundary cells are correctly oriented with outward facing normals.
@@ -320,19 +313,19 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 		}
 		// Copy over the vertex normals from the original 2D faces, if that data is present.
 		// Unlike per-face normals, there is no need to rectify or generate fallback data when missing.
-		if (all_poly_cell_normals.has(PolyMesh4D::FACE_TO_VERT_KEY)) {
-			Vector<PackedVector4Array> face_to_vert_normals = all_poly_cell_normals[PolyMesh4D::FACE_TO_VERT_KEY];
+		Vector<PackedVector4Array> face_to_vert_normals = ret->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+		if (!face_to_vert_normals.is_empty()) {
 			// This data currently only contains one copy of the input face vertex normals, copy it again.
 			const Vector<PackedInt32Array> &input_faces = input_poly_cell_indices[0];
 			const int64_t input_face_count = input_faces.size();
 			face_to_vert_normals.resize(input_face_count); // Just in case the original size was smaller due to missing data. Empty entries are fine.
 			face_to_vert_normals.append_array(face_to_vert_normals); // New size will be 2x the input face count.
-			all_poly_cell_normals.insert(PolyMesh4D::FACE_TO_VERT_KEY, face_to_vert_normals);
+			ret->set_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY, face_to_vert_normals);
 			// Now transfer the face vertex normals to the extruded cell vertex normals.
-			const PackedVector4Array &per_cell_normals = ret->get_poly_cell_boundary_normals();
+			const PackedVector4Array per_cell_normals = ret->get_poly_cell_boundary_normals();
 			const Vector<PackedInt32Array> all_face_vert = ret->get_all_poly_cell_vertex_indices(2, false);
 			const Vector<PackedInt32Array> all_cell_vert = ret->get_all_poly_cell_vertex_indices(3, false);
-			Vector<PackedVector4Array> cell_to_vert_normals = all_poly_cell_normals.has(PolyMesh4D::CELL_TO_VERT_KEY) ? all_poly_cell_normals[PolyMesh4D::CELL_TO_VERT_KEY] : Vector<PackedVector4Array>();
+			Vector<PackedVector4Array> cell_to_vert_normals = ret->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 			cell_to_vert_normals.resize(all_cell_vert.size());
 			for (int face_index = 0; face_index < input_face_count; face_index++) {
 				const PackedVector4Array &face_vert_normals = face_to_vert_normals[face_index];
@@ -358,13 +351,11 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 				}
 				cell_to_vert_normals.set(cell_index, cell_vert_normals);
 			}
-			all_poly_cell_normals.insert(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_normals);
-			ret->set_all_poly_cell_normals(all_poly_cell_normals);
+			ret->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_normals);
 		}
 		// Copy over the vertex texture maps from the original 2D faces, if that data is present.
-		HashMap<Vector2i, Vector<PackedVector3Array>> all_poly_cell_texture_maps = ret->get_all_poly_cell_texture_maps();
-		if (all_poly_cell_texture_maps.has(PolyMesh4D::FACE_TO_VERT_KEY)) {
-			Vector<PackedVector3Array> face_to_vert_texture_maps = all_poly_cell_texture_maps[PolyMesh4D::FACE_TO_VERT_KEY];
+		Vector<PackedVector3Array> face_to_vert_texture_maps = ret->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+		if (!face_to_vert_texture_maps.is_empty()) {
 			// This data currently only contains one copy of the input face vertex texture maps, copy it again.
 			const Vector<PackedInt32Array> &input_faces = input_poly_cell_indices[0];
 			const int64_t input_face_count = input_faces.size();
@@ -379,11 +370,11 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 				}
 				face_to_vert_texture_maps.set(face_index + input_face_count, face_vert_texture_map);
 			}
-			all_poly_cell_texture_maps.insert(PolyMesh4D::FACE_TO_VERT_KEY, face_to_vert_texture_maps);
+			ret->set_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY, face_to_vert_texture_maps);
 			// Now transfer the face vertex texture maps to the extruded cell vertex texture maps.
 			const Vector<PackedInt32Array> all_face_vert = ret->get_all_poly_cell_vertex_indices(2, false);
 			const Vector<PackedInt32Array> all_cell_vert = ret->get_all_poly_cell_vertex_indices(3, false);
-			Vector<PackedVector3Array> cell_to_vert_texture_maps = all_poly_cell_texture_maps.has(PolyMesh4D::CELL_TO_VERT_KEY) ? all_poly_cell_texture_maps[PolyMesh4D::CELL_TO_VERT_KEY] : Vector<PackedVector3Array>();
+			Vector<PackedVector3Array> cell_to_vert_texture_maps = ret->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 			cell_to_vert_texture_maps.resize(all_cell_vert.size());
 			for (int face_index = 0; face_index < input_face_count; face_index++) {
 				const PackedVector3Array &first_copy_face_vert_texture_maps = face_to_vert_texture_maps[face_index];
@@ -410,8 +401,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 				}
 				cell_to_vert_texture_maps.set(cell_index, cell_vert_texture_maps);
 			}
-			all_poly_cell_texture_maps.insert(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_texture_maps);
-			ret->set_all_poly_cell_texture_maps(all_poly_cell_texture_maps);
+			ret->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_texture_maps);
 		}
 	}
 	// Overwrite the cells and recalculate the normals again to ensure data consistency.
@@ -668,7 +658,12 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	const PackedVector4Array wip_boundary_normals = ret->get_poly_cell_boundary_normals();
 	const Vector<PackedInt32Array> input_face_vertex_indices = p_input_mesh->get_all_face_vertex_indices();
 	// Step 14: Get or compute the face boundary normals.
-	const HashMap<Vector2i, Vector<PackedVector4Array>> input_all_poly_cell_normals = p_input_mesh->get_all_poly_cell_normals();
+	// This function works with dense normal and texture map data, sampled from
+	// the indexed data at the start and converted back to indexed at the end.
+	HashMap<Vector2i, Vector<PackedVector4Array>> input_all_poly_cell_normals;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &input_normal_kv : p_input_mesh->get_all_poly_cell_normal_indices()) {
+		input_all_poly_cell_normals.insert(input_normal_kv.key, p_input_mesh->get_poly_cell_dense_normals(input_normal_kv.key));
+	}
 	PackedVector4Array input_face_normals;
 	if (input_all_poly_cell_normals.has(PolyMesh4D::PER_FACE_KEY)) {
 		input_face_normals = input_all_poly_cell_normals[PolyMesh4D::PER_FACE_KEY][0];
@@ -705,7 +700,10 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	output_poly_cell_indices.set(1, output_cell_indices);
 	ret->set_poly_cell_indices(output_poly_cell_indices);
 	// Step 16: Copy and convert the face normals if they exist, rotating them appropriately for each step.
-	HashMap<Vector2i, Vector<PackedVector4Array>> output_all_poly_cell_normals = ret->get_all_poly_cell_normals();
+	HashMap<Vector2i, Vector<PackedVector4Array>> output_all_poly_cell_normals;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &output_normal_kv : ret->get_all_poly_cell_normal_indices()) {
+		output_all_poly_cell_normals.insert(output_normal_kv.key, ret->get_poly_cell_dense_normals(output_normal_kv.key));
+	}
 	output_all_poly_cell_normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ input_face_normals });
 	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &normal_kv : input_all_poly_cell_normals) {
 		const Vector2i key = normal_kv.key;
@@ -825,10 +823,18 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 		}
 		output_all_poly_cell_normals.insert(dest_key, cell_vert_normals);
 	}
-	ret->set_all_poly_cell_normals(output_all_poly_cell_normals);
+	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &output_normal_kv : output_all_poly_cell_normals) {
+		ret->set_poly_cell_dense_normals(output_normal_kv.key, output_normal_kv.value);
+	}
 	// Step 18: Copy and convert the face texture maps if they exist, adding to the Z for each step.
-	const HashMap<Vector2i, Vector<PackedVector3Array>> &input_all_poly_cell_texture_maps = p_input_mesh->get_all_poly_cell_texture_maps();
-	HashMap<Vector2i, Vector<PackedVector3Array>> output_all_poly_cell_texture_maps = ret->get_all_poly_cell_texture_maps();
+	HashMap<Vector2i, Vector<PackedVector3Array>> input_all_poly_cell_texture_maps;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &input_tex_map_kv : p_input_mesh->get_all_poly_cell_texture_map_indices()) {
+		input_all_poly_cell_texture_maps.insert(input_tex_map_kv.key, p_input_mesh->get_poly_cell_dense_texture_map(input_tex_map_kv.key));
+	}
+	HashMap<Vector2i, Vector<PackedVector3Array>> output_all_poly_cell_texture_maps;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &output_tex_map_kv : ret->get_all_poly_cell_texture_map_indices()) {
+		output_all_poly_cell_texture_maps.insert(output_tex_map_kv.key, ret->get_poly_cell_dense_texture_map(output_tex_map_kv.key));
+	}
 	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &tex_map_kv : input_all_poly_cell_texture_maps) {
 		const Vector2i key = tex_map_kv.key;
 		// Step 18.1: Get and validate the texture map data for this key.
@@ -946,7 +952,9 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 		}
 		output_all_poly_cell_texture_maps.insert(dest_key, cell_vert_tex_maps);
 	}
-	ret->set_all_poly_cell_texture_maps(output_all_poly_cell_texture_maps);
+	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &output_tex_map_kv : output_all_poly_cell_texture_maps) {
+		ret->set_poly_cell_dense_texture_map(output_tex_map_kv.key, output_tex_map_kv.value);
+	}
 	// Step 20: Recalculate boundary normals and validate.
 	ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 	CRASH_COND(!ret->is_poly_mesh_data_valid());
@@ -1216,8 +1224,8 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::reconstruct_from_tetra_mesh(const Ref<Te
 	ret.instantiate();
 	const PackedVector4Array vertices = p_tetra_mesh->get_vertex_positions();
 	ret->set_poly_cell_vertex_positions(vertices);
-	const PackedInt32Array simplex_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
-	const int64_t simplex_count = simplex_indices.size() / 4;
+	const PackedInt32Array simplex_vertex_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
+	const int64_t simplex_count = simplex_vertex_indices.size() / 4;
 	PackedInt32Array boundary_pivot_overrides;
 	PackedInt32Array edge_vertex_indices;
 	Vector<PackedInt32Array> all_face_edge_indices;
@@ -1228,7 +1236,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::reconstruct_from_tetra_mesh(const Ref<Te
 		int64_t last_pivot = -1;
 		for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
 			const int64_t offset = simplex_index * 4;
-			const int32_t pivot = simplex_indices[offset];
+			const int32_t pivot = simplex_vertex_indices[offset];
 			if (pivot != last_pivot) {
 				// This is a new cell, so save what we found so far, and start a new face list.
 				if (simplex_index > 0) {
@@ -1240,16 +1248,16 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::reconstruct_from_tetra_mesh(const Ref<Te
 				// Start a new face list.
 				last_triangle_vertex_indices = Vector<PackedInt32Array>();
 				last_simplex_normal = Vector4D::perpendicular(
-						vertices[simplex_indices[offset]].direction_to(vertices[simplex_indices[offset + 1]]),
-						vertices[simplex_indices[offset]].direction_to(vertices[simplex_indices[offset + 2]]),
-						vertices[simplex_indices[offset]].direction_to(vertices[simplex_indices[offset + 3]]));
+						vertices[simplex_vertex_indices[offset]].direction_to(vertices[simplex_vertex_indices[offset + 1]]),
+						vertices[simplex_vertex_indices[offset]].direction_to(vertices[simplex_vertex_indices[offset + 2]]),
+						vertices[simplex_vertex_indices[offset]].direction_to(vertices[simplex_vertex_indices[offset + 3]]));
 				last_pivot = pivot;
 			}
 			for (int64_t vertex_in_simplex = 0; vertex_in_simplex < 4; vertex_in_simplex++) {
 				PackedInt32Array triangle_vertex_indices = {
-					simplex_indices[offset + vertex_in_simplex],
-					simplex_indices[offset + (vertex_in_simplex + 1) % 4],
-					simplex_indices[offset + (vertex_in_simplex + 2) % 4],
+					simplex_vertex_indices[offset + vertex_in_simplex],
+					simplex_vertex_indices[offset + (vertex_in_simplex + 1) % 4],
+					simplex_vertex_indices[offset + (vertex_in_simplex + 2) % 4],
 				};
 				triangle_vertex_indices.sort();
 				const int64_t found_index = last_triangle_vertex_indices.find(triangle_vertex_indices);
@@ -2053,8 +2061,16 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 			old_boundary_normals = scratch->get_poly_cell_boundary_normals();
 		}
 	}
-	const HashMap<Vector2i, Vector<PackedVector4Array>> old_all_normals = p_input_mesh->get_all_poly_cell_normals();
-	const HashMap<Vector2i, Vector<PackedVector3Array>> old_all_texture_maps = p_input_mesh->get_all_poly_cell_texture_maps();
+	// Subdivision works with dense normal and texture map data, sampled from
+	// the indexed data at the start and converted back to indexed at the end.
+	HashMap<Vector2i, Vector<PackedVector4Array>> old_all_normals;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &old_normal_kv : p_input_mesh->get_all_poly_cell_normal_indices()) {
+		old_all_normals.insert(old_normal_kv.key, p_input_mesh->get_poly_cell_dense_normals(old_normal_kv.key));
+	}
+	HashMap<Vector2i, Vector<PackedVector3Array>> old_all_texture_maps;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &old_tex_map_kv : p_input_mesh->get_all_poly_cell_texture_map_indices()) {
+		old_all_texture_maps.insert(old_tex_map_kv.key, p_input_mesh->get_poly_cell_dense_texture_map(old_tex_map_kv.key));
+	}
 	const HashSet<int32_t> old_seams = p_input_mesh->get_seam_face_indices();
 	const PackedInt32Array old_pivot_overrides = p_input_mesh->get_poly_cell_boundary_pivot_overrides();
 	// Build the new mesh data, starting with the vertices and edges.
@@ -2140,8 +2156,10 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 	p_input_mesh->set_poly_cell_vertex_positions(ctx.new_vertices);
 	p_input_mesh->set_edge_vertex_indices(ctx.new_edges);
 	p_input_mesh->set_poly_cell_indices(ctx.new_levels);
-	p_input_mesh->set_all_poly_cell_normals(HashMap<Vector2i, Vector<PackedVector4Array>>());
-	p_input_mesh->set_all_poly_cell_texture_maps(HashMap<Vector2i, Vector<PackedVector3Array>>());
+	p_input_mesh->set_all_poly_cell_normal_indices(HashMap<Vector2i, Vector<PackedInt32Array>>());
+	p_input_mesh->set_all_poly_cell_texture_map_indices(HashMap<Vector2i, Vector<PackedInt32Array>>());
+	p_input_mesh->set_poly_cell_normal_values(PackedVector4Array());
+	p_input_mesh->set_poly_cell_texture_map_values(PackedVector3Array());
 	// Remap the pivot overrides. Pieces of subdivided cells lose their parent's override.
 	const int64_t new_boundary_count = has_boundary_level ? ctx.new_levels[boundary_level].size() : 0;
 	if (has_boundary_level && !old_pivot_overrides.is_empty()) {
@@ -2298,10 +2316,10 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 				}
 			}
 			if (old_vertex_normals != nullptr) {
-				p_input_mesh->set_poly_cell_vertex_normals(new_vertex_normals);
+				p_input_mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, new_vertex_normals);
 			}
 			if (old_texture_maps != nullptr) {
-				p_input_mesh->set_poly_cell_texture_map(new_texture_maps);
+				p_input_mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, new_texture_maps);
 			}
 		}
 	}
@@ -2410,11 +2428,11 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 				preserved_face_data = true;
 			}
 		}
-		if (!new_all_normals.is_empty()) {
-			p_input_mesh->set_all_poly_cell_normals(new_all_normals);
+		for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &new_normal_kv : new_all_normals) {
+			p_input_mesh->set_poly_cell_dense_normals(new_normal_kv.key, new_normal_kv.value);
 		}
-		if (!new_all_texture_maps.is_empty()) {
-			p_input_mesh->set_all_poly_cell_texture_maps(new_all_texture_maps);
+		for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &new_tex_map_kv : new_all_texture_maps) {
+			p_input_mesh->set_poly_cell_dense_texture_map(new_tex_map_kv.key, new_tex_map_kv.value);
 		}
 	}
 	// Warn about any other data bindings, whose element indices are stale after subdivision.

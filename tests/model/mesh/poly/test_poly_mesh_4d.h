@@ -3,10 +3,13 @@
 #include "../../../../model/mesh/poly/array_poly_mesh_4d.h"
 #include "../../../../model/mesh/poly/box_poly_mesh_4d.h"
 #include "../../../../model/mesh/poly/orthoplex_poly_mesh_4d.h"
+#include "../mesh_attribute_test_helpers_4d.h"
 
 #include "tests/test_macros.h"
 
 namespace TestPolyMesh4D {
+using namespace TestMeshAttributes4D;
+
 // The faces of a tetrahedron with vertices 0, 1, 2, 3, encoded as lists of edge indices.
 // Edges: 0:(0,1) 1:(0,2) 2:(0,3) 3:(1,2) 4:(1,3) 5:(2,3)
 // Faces: 0: verts 0-1-2, 1: verts 0-1-3, 2: verts 0-2-3, 3: verts 1-2-3.
@@ -173,15 +176,15 @@ TEST_CASE("[PolyMesh4D] Validate poly mesh data") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		Vector<PackedVector4Array> vertex_normals;
 		vertex_normals.push_back(PackedVector4Array{ Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1) });
-		mesh->set_poly_cell_vertex_normals(vertex_normals);
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, vertex_normals);
 		ERR_PRINT_OFF;
 		CHECK_FALSE_MESSAGE(mesh->is_poly_mesh_data_valid(), "Three vertex normals for a cell with four vertices is invalid.");
 		ERR_PRINT_ON;
 		vertex_normals.set(0, PackedVector4Array{ Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1) });
-		mesh->set_poly_cell_vertex_normals(vertex_normals);
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, vertex_normals);
 		CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "Four vertex normals for a cell with four vertices is valid.");
 		vertex_normals.set(0, PackedVector4Array());
-		mesh->set_poly_cell_vertex_normals(vertex_normals);
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, vertex_normals);
 		CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "Cells are allowed to be missing vertex normals.");
 	}
 
@@ -189,15 +192,15 @@ TEST_CASE("[PolyMesh4D] Validate poly mesh data") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		Vector<PackedVector3Array> texture_map;
 		texture_map.push_back(PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0) });
-		mesh->set_poly_cell_texture_map(texture_map);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, texture_map);
 		ERR_PRINT_OFF;
 		CHECK_FALSE_MESSAGE(mesh->is_poly_mesh_data_valid(), "Two texture map entries for a cell with four vertices is invalid.");
 		ERR_PRINT_ON;
 		texture_map.set(0, PackedVector3Array{ Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) });
-		mesh->set_poly_cell_texture_map(texture_map);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, texture_map);
 		CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "Four texture map entries for a cell with four vertices is valid.");
 		texture_map.set(0, PackedVector3Array());
-		mesh->set_poly_cell_texture_map(texture_map);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, texture_map);
 		CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "Cells are allowed to be missing texture map data.");
 	}
 }
@@ -512,11 +515,11 @@ TEST_CASE("[PolyMesh4D] Canonical span of 4D cells") {
 
 TEST_CASE("[PolyMesh4D] Simplex decomposition of a single tetrahedron cell") {
 	Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
-	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
-	REQUIRE_MESSAGE(simplex_indices.size() == 4, "A tetrahedral cell must decompose into exactly one simplex.");
+	const PackedInt32Array simplex_vertex_indices = mesh->get_simplex_cell_vertex_indices();
+	REQUIRE_MESSAGE(simplex_vertex_indices.size() == 4, "A tetrahedral cell must decompose into exactly one simplex.");
 	// The simplex must use all four vertices, each exactly once.
 	for (int32_t vertex_index = 0; vertex_index < 4; vertex_index++) {
-		CHECK_MESSAGE(simplex_indices.has(vertex_index), "The single simplex must use every vertex of the tetrahedral cell.");
+		CHECK_MESSAGE(simplex_vertex_indices.has(vertex_index), "The single simplex must use every vertex of the tetrahedral cell.");
 	}
 	CHECK_MESSAGE(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions(), "Decomposing a single tetrahedral cell should not add any vertices.");
 	CHECK_MESSAGE(mesh->get_source_poly_cell_for_simplex_cell(0) == 0, "The simplex must map back to the boundary cell it came from.");
@@ -525,16 +528,16 @@ TEST_CASE("[PolyMesh4D] Simplex decomposition of a single tetrahedron cell") {
 	const PackedVector4Array simplex_normals = mesh->get_simplex_cell_boundary_normals();
 	REQUIRE(simplex_normals.size() == 1);
 	CHECK_MESSAGE(simplex_normals[0].is_equal_approx(Vector4(0, 0, 0, 1)), "The simplex normal must match the cell orientation.");
-	CHECK_MESSAGE(mesh->get_simplex_cell_vertex_normals().is_empty(), "No vertex normal data means no simplex vertex normals.");
-	CHECK_MESSAGE(mesh->get_simplex_cell_texture_map().is_empty(), "No texture map data means no simplex texture map.");
+	CHECK_MESSAGE(mesh->get_simplex_cell_normal_indices().is_empty(), "No vertex normal data means no simplex normal indices.");
+	CHECK_MESSAGE(mesh->get_simplex_cell_texture_map_indices().is_empty(), "No texture map data means no simplex texture map indices.");
 }
 
 TEST_CASE("[PolyMesh4D] Simplex decomposition of a box") {
 	Ref<BoxPolyMesh4D> box;
 	box.instantiate();
-	const PackedInt32Array simplex_indices = box->get_simplex_cell_vertex_indices();
-	REQUIRE_MESSAGE(simplex_indices.size() % 4 == 0, "Simplex cell vertex indices must come in groups of 4.");
-	const int64_t simplex_count = simplex_indices.size() / 4;
+	const PackedInt32Array simplex_vertex_indices = box->get_simplex_cell_vertex_indices();
+	REQUIRE_MESSAGE(simplex_vertex_indices.size() % 4 == 0, "Simplex cell vertex indices must come in groups of 4.");
+	const int64_t simplex_count = simplex_vertex_indices.size() / 4;
 	CHECK_MESSAGE(simplex_count == 48, "Each of the 8 cube cells should decompose into 6 tetrahedra.");
 	const PackedVector4Array curated_normals = box->get_poly_cell_boundary_normals();
 	const PackedVector4Array simplex_normals = box->get_simplex_cell_boundary_normals();
@@ -550,7 +553,7 @@ TEST_CASE("[PolyMesh4D] Simplex decomposition of a box") {
 		// The 4 vertices of each simplex must be distinct.
 		for (int64_t i = 0; i < 4; i++) {
 			for (int64_t j = i + 1; j < 4; j++) {
-				CHECK(simplex_indices[simplex_index * 4 + i] != simplex_indices[simplex_index * 4 + j]);
+				CHECK(simplex_vertex_indices[simplex_index * 4 + i] != simplex_vertex_indices[simplex_index * 4 + j]);
 			}
 		}
 	}
@@ -558,19 +561,27 @@ TEST_CASE("[PolyMesh4D] Simplex decomposition of a box") {
 		CHECK_MESSAGE(simplexes_per_cell[cell_index] == 6, "Each cube cell should contribute 6 tetrahedra.");
 	}
 	// Vertex normals: the box data uses flat shading, so all simplex vertex normals match the source cell.
-	const PackedVector4Array simplex_vertex_normals = box->get_simplex_cell_vertex_normals();
-	REQUIRE(simplex_vertex_normals.size() == simplex_count * 4);
+	const PackedInt32Array simplex_normal_indices = box->get_simplex_cell_normal_indices();
+	const PackedVector4Array normal_values = box->get_normal_values();
+	REQUIRE(simplex_normal_indices.size() == simplex_count * 4);
 	for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
 		const int32_t source_cell = box->get_source_poly_cell_for_simplex_cell(simplex_index);
 		for (int64_t vertex_in_simplex = 0; vertex_in_simplex < 4; vertex_in_simplex++) {
-			CHECK(simplex_vertex_normals[simplex_index * 4 + vertex_in_simplex].is_equal_approx(curated_normals[source_cell]));
+			const int32_t normal_index = simplex_normal_indices[simplex_index * 4 + vertex_in_simplex];
+			REQUIRE(normal_index >= 0);
+			REQUIRE(normal_index < normal_values.size());
+			CHECK(normal_values[normal_index].is_equal_approx(curated_normals[source_cell]));
 		}
 	}
 	// Texture map: all curated box texture coordinates are within the 0 to 1 range.
-	const PackedVector3Array simplex_texture_map = box->get_simplex_cell_texture_map();
-	REQUIRE(simplex_texture_map.size() == simplex_count * 4);
-	for (int64_t i = 0; i < simplex_texture_map.size(); i++) {
-		const Vector3 texcoord = simplex_texture_map[i];
+	const PackedInt32Array simplex_texture_map_indices = box->get_simplex_cell_texture_map_indices();
+	const PackedVector3Array texture_map_values = box->get_texture_map_values();
+	REQUIRE(simplex_texture_map_indices.size() == simplex_count * 4);
+	for (int64_t i = 0; i < simplex_texture_map_indices.size(); i++) {
+		const int32_t texture_map_index = simplex_texture_map_indices[i];
+		REQUIRE(texture_map_index >= 0);
+		REQUIRE(texture_map_index < texture_map_values.size());
+		const Vector3 texcoord = texture_map_values[texture_map_index];
 		CHECK(texcoord.x >= (real_t)0.0);
 		CHECK(texcoord.y >= (real_t)0.0);
 		CHECK(texcoord.z >= (real_t)0.0);
@@ -583,8 +594,8 @@ TEST_CASE("[PolyMesh4D] Simplex decomposition of a box") {
 TEST_CASE("[PolyMesh4D] Simplex decomposition of an orthoplex") {
 	Ref<OrthoplexPolyMesh4D> orthoplex;
 	orthoplex.instantiate();
-	const PackedInt32Array simplex_indices = orthoplex->get_simplex_cell_vertex_indices();
-	REQUIRE_MESSAGE(simplex_indices.size() == 16 * 4, "Each of the 16 tetrahedral cells decomposes into exactly one simplex.");
+	const PackedInt32Array simplex_vertex_indices = orthoplex->get_simplex_cell_vertex_indices();
+	REQUIRE_MESSAGE(simplex_vertex_indices.size() == 16 * 4, "Each of the 16 tetrahedral cells decomposes into exactly one simplex.");
 	CHECK_MESSAGE(orthoplex->get_vertex_positions().size() == 8, "Decomposing an orthoplex should not add any vertices.");
 	const PackedVector4Array curated_normals = orthoplex->get_poly_cell_boundary_normals();
 	const PackedVector4Array simplex_normals = orthoplex->get_simplex_cell_boundary_normals();
@@ -616,9 +627,9 @@ TEST_CASE("[PolyMesh4D] Boundary pivot overrides are used by the simplex decompo
 	}
 	pivot_overrides.set(0, 7);
 	mesh->set_poly_cell_boundary_pivot_overrides(pivot_overrides);
-	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
-	REQUIRE(simplex_indices.size() % 4 == 0);
-	const int64_t simplex_count = simplex_indices.size() / 4;
+	const PackedInt32Array simplex_vertex_indices = mesh->get_simplex_cell_vertex_indices();
+	REQUIRE(simplex_vertex_indices.size() % 4 == 0);
+	const int64_t simplex_count = simplex_vertex_indices.size() / 4;
 	int64_t cell_0_simplex_count = 0;
 	for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
 		if (mesh->get_source_poly_cell_for_simplex_cell(simplex_index) != 0) {
@@ -627,7 +638,7 @@ TEST_CASE("[PolyMesh4D] Boundary pivot overrides are used by the simplex decompo
 		cell_0_simplex_count++;
 		bool has_pivot = false;
 		for (int64_t i = 0; i < 4; i++) {
-			if (simplex_indices[simplex_index * 4 + i] == 7) {
+			if (simplex_vertex_indices[simplex_index * 4 + i] == 7) {
 				has_pivot = true;
 			}
 		}
@@ -750,17 +761,19 @@ TEST_CASE("[PolyMesh4D] To array poly mesh") {
 		for (int64_t dim_index = 0; dim_index < array_indices.size(); dim_index++) {
 			CHECK(array_indices[dim_index] == box_indices[dim_index]);
 		}
-		const Vector<PackedVector4Array> array_vertex_normals = array_mesh->get_poly_cell_vertex_normals();
-		const Vector<PackedVector4Array> box_vertex_normals = box->get_poly_cell_vertex_normals();
-		REQUIRE(array_vertex_normals.size() == box_vertex_normals.size());
-		for (int64_t cell_index = 0; cell_index < array_vertex_normals.size(); cell_index++) {
-			CHECK(array_vertex_normals[cell_index] == box_vertex_normals[cell_index]);
+		CHECK(array_mesh->get_poly_cell_normal_values() == box->get_poly_cell_normal_values());
+		CHECK(array_mesh->get_poly_cell_texture_map_values() == box->get_poly_cell_texture_map_values());
+		const Vector<PackedInt32Array> array_normal_indices = array_mesh->get_poly_cell_normal_indices();
+		const Vector<PackedInt32Array> box_normal_indices = box->get_poly_cell_normal_indices();
+		REQUIRE(array_normal_indices.size() == box_normal_indices.size());
+		for (int64_t cell_index = 0; cell_index < array_normal_indices.size(); cell_index++) {
+			CHECK(array_normal_indices[cell_index] == box_normal_indices[cell_index]);
 		}
-		const Vector<PackedVector3Array> array_texture_map = array_mesh->get_poly_cell_texture_map();
-		const Vector<PackedVector3Array> box_texture_map = box->get_poly_cell_texture_map();
-		REQUIRE(array_texture_map.size() == box_texture_map.size());
-		for (int64_t cell_index = 0; cell_index < array_texture_map.size(); cell_index++) {
-			CHECK(array_texture_map[cell_index] == box_texture_map[cell_index]);
+		const Vector<PackedInt32Array> array_texture_map_indices = array_mesh->get_poly_cell_texture_map_indices();
+		const Vector<PackedInt32Array> box_texture_map_indices = box->get_poly_cell_texture_map_indices();
+		REQUIRE(array_texture_map_indices.size() == box_texture_map_indices.size());
+		for (int64_t cell_index = 0; cell_index < array_texture_map_indices.size(); cell_index++) {
+			CHECK(array_texture_map_indices[cell_index] == box_texture_map_indices[cell_index]);
 		}
 		CHECK_MESSAGE(array_mesh->is_poly_mesh_data_valid(), "The converted array mesh must be valid.");
 		CHECK_MESSAGE(array_mesh->get_simplex_cell_vertex_indices() == box->get_simplex_cell_vertex_indices(), "The converted array mesh must decompose identically.");
@@ -802,9 +815,9 @@ TEST_CASE("[PolyMesh4D] Watertight simplex decomposition") {
 			orthoplex.instantiate();
 			mesh = orthoplex;
 		}
-		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
-		REQUIRE(simplex_indices.size() % 4 == 0);
-		const int64_t simplex_count = simplex_indices.size() / 4;
+		const PackedInt32Array simplex_vertex_indices = mesh->get_simplex_cell_vertex_indices();
+		REQUIRE(simplex_vertex_indices.size() % 4 == 0);
+		const int64_t simplex_count = simplex_vertex_indices.size() / 4;
 		REQUIRE(simplex_count > 0);
 		HashMap<int64_t, int32_t> facet_counts;
 		for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
@@ -814,7 +827,7 @@ TEST_CASE("[PolyMesh4D] Watertight simplex decomposition") {
 					if (i == drop_index) {
 						continue;
 					}
-					facet.append(simplex_indices[simplex_index * 4 + i]);
+					facet.append(simplex_vertex_indices[simplex_index * 4 + i]);
 				}
 				facet.sort();
 				const int64_t key = facet_key(facet);
@@ -856,29 +869,35 @@ TEST_CASE("[PolyMesh4D] Derived attributes are independent of the first getter")
 	PackedInt32Array reference_indices;
 	PackedVector4Array reference_normals;
 	PackedVector3Array reference_texture;
-	for (int first_getter = 0; first_getter < 4; first_getter++) {
+	for (int first_getter = 0; first_getter < 6; first_getter++) {
 		CAPTURE(first_getter);
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
-		mesh->set_poly_cell_vertex_normals(Vector<PackedVector4Array>{ source_normals });
-		mesh->set_poly_cell_texture_map(Vector<PackedVector3Array>{ source_texture });
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector4Array>{ source_normals });
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>{ source_texture });
 		// Each getter must work on its first call, with no validation or other derived getter priming it.
 		switch (first_getter) {
 			case 0:
 				CHECK_FALSE(mesh->get_simplex_cell_vertex_indices().is_empty());
 				break;
 			case 1:
-				CHECK_FALSE(mesh->get_simplex_cell_vertex_normals().is_empty());
+				CHECK_FALSE(sample_normal_values(mesh).is_empty());
 				break;
 			case 2:
-				CHECK_FALSE(mesh->get_simplex_cell_texture_map().is_empty());
+				CHECK_FALSE(sample_texture_map_values(mesh).is_empty());
 				break;
 			case 3:
 				CHECK_FALSE(mesh->get_simplex_cell_boundary_normals().is_empty());
 				break;
+			case 4:
+				CHECK_FALSE(mesh->get_normal_values().is_empty());
+				break;
+			case 5:
+				CHECK_FALSE(mesh->get_texture_map_values().is_empty());
+				break;
 		}
 		const PackedInt32Array indices = mesh->get_simplex_cell_vertex_indices();
-		const PackedVector4Array normals = mesh->get_simplex_cell_vertex_normals();
-		const PackedVector3Array texture = mesh->get_simplex_cell_texture_map();
+		const PackedVector4Array normals = sample_normal_values(mesh);
+		const PackedVector3Array texture = sample_texture_map_values(mesh);
 		REQUIRE(indices.size() == 4);
 		REQUIRE(normals.size() == indices.size());
 		REQUIRE(texture.size() == indices.size());
@@ -896,12 +915,12 @@ TEST_CASE("[PolyMesh4D] Derived attributes are independent of the first getter")
 			CHECK(texture == reference_texture);
 		}
 		mesh->poly_mesh_clear_cache();
-		CHECK(mesh->get_simplex_cell_texture_map() == texture);
-		CHECK(mesh->get_simplex_cell_vertex_normals() == normals);
+		CHECK(sample_texture_map_values(mesh) == texture);
+		CHECK(sample_normal_values(mesh) == normals);
 		CHECK(mesh->get_simplex_cell_vertex_indices() == indices);
 		mesh->poly_mesh_clear_cache(true);
-		CHECK(mesh->get_simplex_cell_vertex_normals() == normals);
-		CHECK(mesh->get_simplex_cell_texture_map() == texture);
+		CHECK(sample_normal_values(mesh) == normals);
+		CHECK(sample_texture_map_values(mesh) == texture);
 		CHECK(mesh->is_mesh_data_valid());
 	}
 }
@@ -910,15 +929,17 @@ TEST_CASE("[PolyMesh4D] Missing derived attributes remain empty") {
 	for (const bool empty_cell_entries : { false, true }) {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		if (empty_cell_entries) {
-			mesh->set_poly_cell_vertex_normals(Vector<PackedVector4Array>{ PackedVector4Array() });
-			mesh->set_poly_cell_texture_map(Vector<PackedVector3Array>{ PackedVector3Array() });
+			mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector4Array>{ PackedVector4Array() });
+			mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>{ PackedVector3Array() });
 		}
-		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
-		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(sample_texture_map_values(mesh).is_empty());
+		CHECK(sample_normal_values(mesh).is_empty());
+		CHECK(mesh->get_normal_values().is_empty());
+		CHECK(mesh->get_texture_map_values().is_empty());
 		CHECK(mesh->get_simplex_cell_vertex_indices().size() == 4);
 		CHECK(mesh->get_simplex_cell_boundary_normals().size() == 1);
-		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
-		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(sample_texture_map_values(mesh).is_empty());
+		CHECK(sample_normal_values(mesh).is_empty());
 		CHECK(mesh->is_mesh_data_valid());
 	}
 }
@@ -927,8 +948,8 @@ TEST_CASE("[PolyMesh4D] Fully covered boundary cells have empty derived attribut
 	Ref<BoxPolyMesh4D> box;
 	box.instantiate();
 	Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
-	const Vector<PackedVector4Array> original_normals = mesh->get_poly_cell_vertex_normals();
-	const Vector<PackedVector3Array> original_texture = mesh->get_poly_cell_texture_map();
+	const Vector<PackedVector4Array> original_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
+	const Vector<PackedVector3Array> original_texture = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 	REQUIRE_FALSE(original_normals.is_empty());
 	REQUIRE_FALSE(original_texture.is_empty());
 	Vector<Vector<PackedInt32Array>> poly = mesh->get_poly_cell_indices();
@@ -938,7 +959,7 @@ TEST_CASE("[PolyMesh4D] Fully covered boundary cells have empty derived attribut
 	poly.ptrw()[2].append(poly[2][0]);
 	mesh->set_poly_cell_indices(poly);
 	REQUIRE(mesh->is_poly_mesh_data_valid());
-	for (int first_getter = 0; first_getter < 4; first_getter++) {
+	for (int first_getter = 0; first_getter < 6; first_getter++) {
 		CAPTURE(first_getter);
 		mesh->poly_mesh_clear_cache();
 		switch (first_getter) {
@@ -946,25 +967,33 @@ TEST_CASE("[PolyMesh4D] Fully covered boundary cells have empty derived attribut
 				CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
 				break;
 			case 1:
-				CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+				CHECK(sample_normal_values(mesh).is_empty());
 				break;
 			case 2:
-				CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+				CHECK(sample_texture_map_values(mesh).is_empty());
 				break;
 			case 3:
 				CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
 				break;
+			case 4:
+				CHECK(mesh->get_normal_values().is_empty());
+				break;
+			case 5:
+				CHECK(mesh->get_texture_map_values().is_empty());
+				break;
 		}
 		CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
 		CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
-		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
-		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(sample_normal_values(mesh).is_empty());
+		CHECK(sample_texture_map_values(mesh).is_empty());
+		CHECK(mesh->get_normal_values().is_empty());
+		CHECK(mesh->get_texture_map_values().is_empty());
 		CHECK(mesh->get_simplex_cell_positions().is_empty());
 		CHECK(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions());
 		CHECK(mesh->is_mesh_data_valid());
 	}
-	CHECK(mesh->get_poly_cell_vertex_normals() == original_normals);
-	CHECK(mesh->get_poly_cell_texture_map() == original_texture);
+	CHECK(mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY) == original_normals);
+	CHECK(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY) == original_texture);
 }
 
 TEST_CASE("[PolyMesh4D] Appended volumes invalidate derived data and validation") {
@@ -973,12 +1002,12 @@ TEST_CASE("[PolyMesh4D] Appended volumes invalidate derived data and validation"
 		box.instantiate();
 		Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
 		const PackedInt32Array volume = mesh->get_poly_cell_indices()[2][0];
-		REQUIRE_FALSE(mesh->get_simplex_cell_texture_map().is_empty());
-		REQUIRE_FALSE(mesh->get_simplex_cell_vertex_normals().is_empty());
+		REQUIRE_FALSE(sample_texture_map_values(mesh).is_empty());
+		REQUIRE_FALSE(sample_normal_values(mesh).is_empty());
 		REQUIRE(mesh->is_mesh_data_valid());
 		CHECK(mesh->append_poly_cell(4, volume, false) == 1);
-		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
-		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(sample_texture_map_values(mesh).is_empty());
+		CHECK(sample_normal_values(mesh).is_empty());
 		CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
 		CHECK(mesh->is_mesh_data_valid());
 	}
@@ -1002,8 +1031,8 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 				mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ Vector<PackedInt32Array>(), Vector<PackedInt32Array>() });
 			}
 			CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
-			CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
-			CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+			CHECK(sample_normal_values(mesh).is_empty());
+			CHECK(sample_texture_map_values(mesh).is_empty());
 			CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
 			CHECK(mesh->is_mesh_data_valid());
 		}
@@ -1018,8 +1047,8 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 		CHECK_MESSAGE(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions(), "Without boundary cells, the simplex vertices are just the poly vertices.");
 		CHECK_MESSAGE(mesh->get_simplex_cell_vertex_indices().is_empty(), "Without boundary cells, there are no simplexes.");
 		CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
-		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
-		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(sample_normal_values(mesh).is_empty());
+		CHECK(sample_texture_map_values(mesh).is_empty());
 		CHECK(mesh->append_vertex(Vector4(0, 1, 0, 0)) == 3);
 		CHECK(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions());
 	}
@@ -1037,8 +1066,8 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 		CHECK(mesh->is_poly_mesh_data_valid());
 		CHECK_MESSAGE(mesh->get_simplex_cell_vertex_indices().is_empty(), "A face-only mesh has no boundary cells to decompose.");
 		CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
-		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
-		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(sample_normal_values(mesh).is_empty());
+		CHECK(sample_texture_map_values(mesh).is_empty());
 		const Vector<PackedInt32Array> face_vertex_indices = mesh->get_all_face_vertex_indices();
 		REQUIRE(face_vertex_indices.size() == 1);
 		CHECK(face_vertex_indices[0].size() == 3);
@@ -1075,16 +1104,16 @@ TEST_CASE("[PolyMesh4D] Faces with unordered edges triangulate correctly") {
 	mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ 5 });
 	ERR_PRINT_OFF; // The unordered edge list prints a warning, which is expected here.
 	CHECK(mesh->is_poly_mesh_data_valid());
-	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
+	const PackedInt32Array simplex_vertex_indices = mesh->get_simplex_cell_vertex_indices();
 	ERR_PRINT_ON;
 	const PackedVector4Array simplex_vertex_positions = mesh->get_vertex_positions();
 	double total_volume = 0.0;
-	for (int64_t simplex_start = 0; simplex_start < simplex_indices.size(); simplex_start += 4) {
-		const Vector4 vert0 = simplex_vertex_positions[simplex_indices[simplex_start]];
+	for (int64_t simplex_start = 0; simplex_start < simplex_vertex_indices.size(); simplex_start += 4) {
+		const Vector4 vert0 = simplex_vertex_positions[simplex_vertex_indices[simplex_start]];
 		const Vector4 perp = Vector4D::perpendicular(
-				simplex_vertex_positions[simplex_indices[simplex_start + 1]] - vert0,
-				simplex_vertex_positions[simplex_indices[simplex_start + 2]] - vert0,
-				simplex_vertex_positions[simplex_indices[simplex_start + 3]] - vert0);
+				simplex_vertex_positions[simplex_vertex_indices[simplex_start + 1]] - vert0,
+				simplex_vertex_positions[simplex_vertex_indices[simplex_start + 2]] - vert0,
+				simplex_vertex_positions[simplex_vertex_indices[simplex_start + 3]] - vert0);
 		total_volume += perp.length() / 6.0;
 	}
 	CHECK_MESSAGE(total_volume == doctest::Approx(10.0), "The tetrahedralized volume must match the pyramid's volume even with an unordered face edge list.");
@@ -1221,9 +1250,9 @@ TEST_CASE("[PolyMesh4D] Conformed and interior cells") {
 		volumes.append(volume_b_cells);
 		mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ faces, cells, volumes });
 		CHECK(mesh->is_poly_mesh_data_valid());
-		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
-		CHECK_MESSAGE(simplex_indices.size() == 8 * 4, "Only the 8 outer tetrahedral cells must decompose, into 1 tetrahedron each.");
-		for (int32_t simplex_index = 0; simplex_index < (int32_t)(simplex_indices.size() / 4); simplex_index++) {
+		const PackedInt32Array simplex_vertex_indices = mesh->get_simplex_cell_vertex_indices();
+		CHECK_MESSAGE(simplex_vertex_indices.size() == 8 * 4, "Only the 8 outer tetrahedral cells must decompose, into 1 tetrahedron each.");
+		for (int32_t simplex_index = 0; simplex_index < (int32_t)(simplex_vertex_indices.size() / 4); simplex_index++) {
 			CHECK_MESSAGE(mesh->get_source_poly_cell_for_simplex_cell(simplex_index) != shared_cell_index, "The interior boundary cell shared by both volumetric cells must generate no tetrahedra.");
 		}
 	}

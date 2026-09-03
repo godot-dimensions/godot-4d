@@ -466,33 +466,32 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh(const Dictionary &p_options) co
 	}
 	simplex_cell_vertex_indices.resize(simplex_cell_iter);
 	// Fill a texture map using the horizontal coordinates of the vertices.
-	PackedVector3Array simplex_cell_texture_map;
-	simplex_cell_texture_map.resize(simplex_cell_iter);
+	// There is one texture map value per vertex, so the vertex
+	// indices can be reused as texture map indices.
+	PackedVector3Array texture_map_values;
+	texture_map_values.resize(vertices.size());
 	const Vector3 vert_min_vec3 = Vector3(vertices[0].x, vertices[0].z, vertices[0].w);
 	const Vector3 vert_max_vec3 = Vector3(vertices[vertices.size() - 1].x, vertices[vertices.size() - 1].z, vertices[vertices.size() - 1].w);
 	const Vector3 vert_size_vec3 = vert_max_vec3 - vert_min_vec3;
-	for (int64_t i = 0; i < simplex_cell_iter; i++) {
-		const int32_t simplex_vert = simplex_cell_vertex_indices[i];
-		const Vector4 vertex_vec4 = vertices[simplex_vert];
+	for (int64_t i = 0; i < vertices.size(); i++) {
+		const Vector4 vertex_vec4 = vertices[i];
 		const Vector3 vertex_vec3 = Vector3(vertex_vec4.x, vertex_vec4.z, vertex_vec4.w);
-		simplex_cell_texture_map.set(i, (vertex_vec3 - vert_min_vec3) / vert_size_vec3);
+		texture_map_values.set(i, (vertex_vec3 - vert_min_vec3) / vert_size_vec3);
 	}
-	// Normalize the normals and sample them for the tetrahedra.
+	// Normalize the normals. There is one normal value per vertex,
+	// so the vertex indices can be reused as normal indices.
 	for (int64_t i = 0; i < vert_normals.size(); i++) {
 		vert_normals.set(i, vert_normals[i].normalized());
-	}
-	PackedVector4Array simplex_cell_vertex_normals;
-	simplex_cell_vertex_normals.resize(simplex_cell_iter);
-	for (int64_t i = 0; i < simplex_cell_iter; i++) {
-		simplex_cell_vertex_normals.set(i, vert_normals[simplex_cell_vertex_indices[i]]);
 	}
 	// Insert the final data into a new mesh.
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	tetra_mesh->set_vertex_positions(vertices);
+	tetra_mesh->set_texture_map_values(texture_map_values);
+	tetra_mesh->set_normal_values(vert_normals);
 	tetra_mesh->set_simplex_cell_vertex_indices(simplex_cell_vertex_indices);
-	tetra_mesh->set_simplex_cell_texture_map(simplex_cell_texture_map);
-	tetra_mesh->set_simplex_cell_vertex_normals(simplex_cell_vertex_normals);
+	tetra_mesh->set_simplex_cell_normal_indices(simplex_cell_vertex_indices);
+	tetra_mesh->set_simplex_cell_texture_map_indices(simplex_cell_vertex_indices);
 	CRASH_COND(!tetra_mesh->is_mesh_data_valid());
 	return tetra_mesh;
 }

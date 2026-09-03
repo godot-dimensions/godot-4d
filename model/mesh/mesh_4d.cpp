@@ -167,6 +167,18 @@ PackedVector4Array Mesh4D::get_vertex_positions() {
 	return vertex_positions;
 }
 
+PackedVector4Array Mesh4D::get_normal_values() {
+	PackedVector4Array vertex_normals;
+	GDVIRTUAL_CALL(_get_normal_values, vertex_normals);
+	return vertex_normals;
+}
+
+PackedVector3Array Mesh4D::get_texture_map_values() {
+	PackedVector3Array texture_map;
+	GDVIRTUAL_CALL(_get_texture_map_values, texture_map);
+	return texture_map;
+}
+
 void Mesh4D::_bind_methods() {
 	ClassDB::bind_static_method("Mesh4D", D_METHOD("deduplicate_edge_indices", "items"), &Mesh4D::deduplicate_edge_indices);
 	ClassDB::bind_method(D_METHOD("has_edge_indices", "first", "second"), &Mesh4D::has_edge_indices);
@@ -189,10 +201,15 @@ void Mesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_edge_indices"), &Mesh4D::get_edge_indices);
 	ClassDB::bind_method(D_METHOD("get_edge_positions"), &Mesh4D::get_edge_positions);
 	ClassDB::bind_method(D_METHOD("get_vertex_positions"), &Mesh4D::get_vertex_positions);
+	ClassDB::bind_method(D_METHOD("get_normal_values"), &Mesh4D::get_normal_values);
+	ClassDB::bind_method(D_METHOD("get_texture_map_values"), &Mesh4D::get_texture_map_values);
 
 	GDVIRTUAL_BIND(_get_edge_indices);
 	GDVIRTUAL_BIND(_get_edge_positions);
 	GDVIRTUAL_BIND(_get_vertex_positions);
+	GDVIRTUAL_BIND(_get_normal_values);
+	GDVIRTUAL_BIND(_get_texture_map_values);
+
 	GDVIRTUAL_BIND(_get_fallback_material);
 	GDVIRTUAL_BIND(_validate_material_for_mesh, "material");
 	GDVIRTUAL_BIND(_validate_mesh_data);

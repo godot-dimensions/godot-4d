@@ -36,16 +36,24 @@ PackedVector4Array OrthoplexPolyMesh4D::get_poly_cell_vertex_positions() {
 	return get_vertex_positions();
 }
 
+PackedVector4Array OrthoplexPolyMesh4D::get_poly_cell_normal_values() {
+	return ORTHOPLEX_NORMAL_VALUES;
+}
+
+PackedVector3Array OrthoplexPolyMesh4D::get_poly_cell_texture_map_values() {
+	return ORTHOPLEX_CELL_TEXTURE_MAP_VALUES;
+}
+
 PackedVector4Array OrthoplexPolyMesh4D::get_poly_cell_boundary_normals() {
-	return ORTHOPLEX_CELL_BOUNDARY_NORMALS;
+	return ORTHOPLEX_NORMAL_VALUES; // Same values for boundary normals and vertex normals for orthoplex.
 }
 
-Vector<PackedVector4Array> OrthoplexPolyMesh4D::get_poly_cell_vertex_normals() {
-	return ORTHOPLEX_POLY_CELL_VERTEX_NORMALS;
+Vector<PackedInt32Array> OrthoplexPolyMesh4D::get_poly_cell_normal_indices() {
+	return ORTHOPLEX_POLY_CELL_VERTEX_NORMAL_INDICES;
 }
 
-Vector<PackedVector3Array> OrthoplexPolyMesh4D::get_poly_cell_texture_map() {
-	return ORTHOPLEX_POLY_CELL_POLY_TEXTURE_MAP;
+Vector<PackedInt32Array> OrthoplexPolyMesh4D::get_poly_cell_texture_map_indices() {
+	return ORTHOPLEX_POLY_CELL_POLY_TEXTURE_MAP_INDICES;
 }
 
 PackedInt32Array OrthoplexPolyMesh4D::get_edge_indices() {

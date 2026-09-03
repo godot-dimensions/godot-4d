@@ -31,16 +31,24 @@ PackedInt32Array OrthoplexTetraMesh4D::get_simplex_cell_vertex_indices() {
 	return ORTHOPLEX_CELL_VERTEX_INDICES;
 }
 
+PackedInt32Array OrthoplexTetraMesh4D::get_simplex_cell_normal_indices() {
+	return ORTHOPLEX_CELL_NORMAL_INDICES;
+}
+
+PackedInt32Array OrthoplexTetraMesh4D::get_simplex_cell_texture_map_indices() {
+	return ORTHOPLEX_CELL_TEXTURE_MAP_INDICES;
+}
+
 PackedVector4Array OrthoplexTetraMesh4D::get_simplex_cell_boundary_normals() {
-	return ORTHOPLEX_CELL_BOUNDARY_NORMALS;
+	return ORTHOPLEX_NORMAL_VALUES; // Same values for boundary normals and vertex normals for orthoplex.
 }
 
-PackedVector4Array OrthoplexTetraMesh4D::get_simplex_cell_vertex_normals() {
-	return ORTHOPLEX_CELL_VERTEX_NORMALS;
+PackedVector4Array OrthoplexTetraMesh4D::get_normal_values() {
+	return ORTHOPLEX_NORMAL_VALUES;
 }
 
-PackedVector3Array OrthoplexTetraMesh4D::get_simplex_cell_texture_map() {
-	return ORTHOPLEX_CELL_UVW_MAP;
+PackedVector3Array OrthoplexTetraMesh4D::get_texture_map_values() {
+	return ORTHOPLEX_CELL_TEXTURE_MAP_VALUES;
 }
 
 PackedVector4Array OrthoplexTetraMesh4D::get_vertex_positions() {

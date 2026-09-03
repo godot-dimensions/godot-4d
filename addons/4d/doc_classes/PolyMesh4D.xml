@@ -30,16 +30,28 @@
 				Callback method that should return the cell indices of a polyhedral mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_indices] for details of the returned data.
 			</description>
 		</method>
-		<method name="_get_poly_cell_texture_map" qualifiers="virtual">
-			<return type="PackedVector3Array[]" />
+		<method name="_get_poly_cell_normal_indices" qualifiers="virtual">
+			<return type="PackedInt32Array[]" />
 			<description>
-				Callback method that should return the texture mapping of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_texture_map] for details of the returned data.
+				Callback method that should return the polyhedral normal indices. Do not call this method. Override this in a custom mesh class to supply the data described by [method get_poly_cell_normal_indices].
 			</description>
 		</method>
-		<method name="_get_poly_cell_vertex_normals" qualifiers="virtual">
-			<return type="PackedVector4Array[]" />
+		<method name="_get_poly_cell_normal_values" qualifiers="virtual">
+			<return type="PackedVector4Array" />
 			<description>
-				Callback method that should return the vertex normals of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_vertex_normals] for details of the returned data.
+				Callback method that should return the polyhedral normal values. Do not call this method. Override this in a custom mesh class to supply the data described by [method get_poly_cell_normal_values].
+			</description>
+		</method>
+		<method name="_get_poly_cell_texture_map_indices" qualifiers="virtual">
+			<return type="PackedInt32Array[]" />
+			<description>
+				Callback method that should return the polyhedral texture map indices. Do not call this method. Override this in a custom mesh class to supply the data described by [method get_poly_cell_texture_map_indices].
+			</description>
+		</method>
+		<method name="_get_poly_cell_texture_map_values" qualifiers="virtual">
+			<return type="PackedVector3Array" />
+			<description>
+				Callback method that should return the polyhedral texture map values. Do not call this method. Override this in a custom mesh class to supply the data described by [method get_poly_cell_texture_map_values].
 			</description>
 		</method>
 		<method name="_get_poly_cell_vertex_positions" qualifiers="virtual">
@@ -102,17 +114,28 @@
 				Since edges are always made of exactly 2 vertices, they are not included in this array. Edges use a simpler data structure where all edges are stored in a single [PackedInt32Array], and every 2 items represent one edge. See [method Mesh4D.get_edge_indices].
 			</description>
 		</method>
-		<method name="get_poly_cell_texture_map">
-			<return type="PackedVector3Array[]" />
+		<method name="get_poly_cell_normal_indices">
+			<return type="PackedInt32Array[]" />
 			<description>
-				Returns the texture mapping of the polyhedral cells. Each item in this array is a [PackedVector3Array] containing the texture space mapping for the vertex instances of the corresponding cell in the [method get_poly_cell_indices] array. Each Vector3 in these arrays defines the texture coordinates for the corresponding vertex instance in the cell, and is usually on the range from (0, 0, 0) to (1, 1, 1).
-				The outer array may be empty for no texture mapping. Otherwise, it must contain one array per boundary cell; an individual cell's array may be empty for no texture mapping on that cell.
+				Returns the normal indices for the vertex instances of each polyhedral boundary cell. Each [PackedInt32Array] contains indices into [method get_poly_cell_normal_values], in the vertex order returned by [method get_all_cell_vertex_indices] with [code]start_with_canonical_span = false[/code]. The outer array must have one item per boundary cell, or be empty for no normals. Each inner array must have one index per vertex instance in that cell, or be empty for a cell without data. Every index must be non-negative and less than the size of the value pool.
 			</description>
 		</method>
-		<method name="get_poly_cell_vertex_normals">
-			<return type="PackedVector4Array[]" />
+		<method name="get_poly_cell_normal_values">
+			<return type="PackedVector4Array" />
 			<description>
-				Returns the normals of the vertex instances for each polyhedral cell. Each item in this array is a [PackedVector4Array] containing the normals for each vertex instance in the corresponding cell in the [method get_poly_cell_indices] array. Each Vector4 in these arrays should be normalized.
+				Returns the shared normal value pool for polyhedral data. Each [Vector4] is a normal vector that should be normalized. Values are referenced by [method get_poly_cell_normal_indices] and may also be shared by other polyhedral data bindings. This pool is distinct from [method Mesh4D.get_normal_values], which contains values for the decomposed simplex cells.
+			</description>
+		</method>
+		<method name="get_poly_cell_texture_map_indices">
+			<return type="PackedInt32Array[]" />
+			<description>
+				Returns the texture map indices for the vertex instances of each polyhedral boundary cell. Each [PackedInt32Array] contains indices into [method get_poly_cell_texture_map_values], in the vertex order returned by [method get_all_cell_vertex_indices] with [code]start_with_canonical_span = false[/code]. The outer array must have one item per boundary cell, or be empty for no texture mapping. Each inner array must have one index per vertex instance in that cell, or be empty for a cell without data. Every index must be non-negative and less than the size of the value pool.
+			</description>
+		</method>
+		<method name="get_poly_cell_texture_map_values">
+			<return type="PackedVector3Array" />
+			<description>
+				Returns the shared texture map value pool for polyhedral data. Each [Vector3] is a position in texture space, usually between 0.0 and 1.0 on each axis. Values are referenced by [method get_poly_cell_texture_map_indices] and may also be shared by other polyhedral data bindings. This pool is distinct from [method Mesh4D.get_texture_map_values], which contains values for the decomposed simplex cells.
 			</description>
 		</method>
 		<method name="get_poly_cell_vertex_positions">
@@ -126,7 +149,7 @@
 			<return type="int" />
 			<param index="0" name="simplex_cell_index" type="int" />
 			<description>
-				Returns the index of the polyhedral surface cell from which the given simplex cell was derived. This is useful for mapping simplex cells back to their original polyhedral surface cells, for example when performing raycasts against the tetrahedralized mesh and wanting to know which polyhedral cell was hit.
+				Returns the index of the polyhedral surface cell from which the given simplex cell was derived. This is useful for mapping simplex cells back to their original polyhedral surface cells, for example when performing raycasts against the tetrahedralized mesh and wanting to know which polyhedral cell was hit. Returns [code]-1[/code] if the given index is out of range of the cached simplex cells.
 			</description>
 		</method>
 		<method name="poly_mesh_clear_cache">

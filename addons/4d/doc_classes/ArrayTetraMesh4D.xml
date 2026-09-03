@@ -56,6 +56,20 @@
 				[b]Caution:[/b] This method may not work correctly for tetrahedra whose span contains the origin. In such cases, it is analogous to a 3D triangle lying flat in the XY plane, where a vector pointing away from the origin would also lie in the XY plane, making it impossible to determine a unique Z direction.
 			</description>
 		</method>
+		<method name="compact_normal_values">
+			<return type="void" />
+			<description>
+				Compacts the normal value pool by removing values that are not referenced by any normal index and merging identical values, remapping the simplex cell normal indices to the compacted pool. The relative order of the kept values is preserved.
+				[b]Note:[/b] This will break any existing references to the normal values outside of the simplex cell normal indices in ArrayTetraMesh4D. If any exist in your project, they need to be handled separately.
+			</description>
+		</method>
+		<method name="compact_texture_map_values">
+			<return type="void" />
+			<description>
+				Compacts the texture map value pool by removing values that are not referenced by any texture map index and merging identical values, remapping the simplex cell texture map indices to the compacted pool. The relative order of the kept values is preserved.
+				[b]Note:[/b] This will break any existing references to the texture map values outside of the simplex cell texture map indices in ArrayTetraMesh4D. If any exist in your project, they need to be handled separately.separately.
+			</description>
+		</method>
 		<method name="merge_with">
 			<return type="void" />
 			<param index="0" name="other" type="ArrayTetraMesh4D" />
@@ -76,18 +90,24 @@
 		</method>
 	</methods>
 	<members>
+		<member name="normal_values" type="PackedVector4Array" setter="set_normal_values" getter="get_normal_values" default="PackedVector4Array()">
+			The normal values of the tetrahedral mesh. Each Vector4 in this array is a normal vector, referenced by the items in the [member simplex_cell_normal_indices] array, and each should be normalized.
+		</member>
 		<member name="simplex_cell_boundary_normals" type="PackedVector4Array" setter="set_simplex_cell_boundary_normals" getter="get_simplex_cell_boundary_normals" default="PackedVector4Array()">
 			The normals of the tetrahedral cells. Boundary normals define which side of the cell is the front side, and therefore should be drawn. Boundary normals can also be used to calculate vertex normals to determine how lighting angles are calculated for the cell. Each Vector4 in this array is for one cell, and should be normalized. This array should either be one-fourth as long as the [member simplex_cell_vertex_indices] array, or empty for no normals, or else the mesh is invalid.
 			[b]Note:[/b] Like with 3D face normals calculated from triangle winding order, the 4D boundary normals SHOULD be calculated automatically from the orientation of the tetrahedral cells, which is determined by the relative positions of the vertices. However, this calculation can be expensive, so this property provides caching for the boundary normals. You do not need to ever set this manually. The getter of this property is non-const, and will calculate and cache the boundary normals if they are not already cached.
 		</member>
-		<member name="simplex_cell_texture_map" type="PackedVector3Array" setter="set_simplex_cell_texture_map" getter="get_simplex_cell_texture_map" default="PackedVector3Array()">
-			The UVW texture mapping of the tetrahedral cells. Each Vector3 in this array is the texture space mapping for the cell vertex in the [member simplex_cell_vertex_indices] array with the same index. This array should either be the same length as the [member simplex_cell_vertex_indices] array, or empty for no UVW mapping, or else the mesh is invalid.
+		<member name="simplex_cell_normal_indices" type="PackedInt32Array" setter="set_simplex_cell_normal_indices" getter="get_simplex_cell_normal_indices" default="PackedInt32Array()">
+			The normal indices of the tetrahedral cells. Each integer is an index to the [member normal_values] array, with one normal index per vertex instance in a tetrahedral cell, meaning 4 per cell. This array should either be the same length as the [member simplex_cell_vertex_indices] array, or empty for no normals, or else the mesh is invalid. Every index must be non-negative and less than the size of the value pool.
+		</member>
+		<member name="simplex_cell_texture_map_indices" type="PackedInt32Array" setter="set_simplex_cell_texture_map_indices" getter="get_simplex_cell_texture_map_indices" default="PackedInt32Array()">
+			The texture map indices of the tetrahedral cells. Each integer is an index to the [member texture_map_values] array, with one texture map index per vertex instance in a tetrahedral cell, meaning 4 per cell. This array should either be the same length as the [member simplex_cell_vertex_indices] array, or empty for no texture mapping, or else the mesh is invalid. Every index must be non-negative and less than the size of the value pool.
 		</member>
 		<member name="simplex_cell_vertex_indices" type="PackedInt32Array" setter="set_simplex_cell_vertex_indices" getter="get_simplex_cell_vertex_indices" default="PackedInt32Array()">
 			The vertex indices of the tetrahedral cells. Every 4 integers defines a tetrahedral cell. Each integer is an index to the [member vertex_positions] array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
 		</member>
-		<member name="simplex_cell_vertex_normals" type="PackedVector4Array" setter="set_simplex_cell_vertex_normals" getter="get_simplex_cell_vertex_normals" default="PackedVector4Array()">
-			The normals of the vertex indices of tetrahedral cells. Vertex normals define how lighting angles are calculated for the cell. Each Vector4 in this array is for one vertex instance in a tetrahedral cell, meaning 4 per cell, and each should be normalized. This array should either be the same length as the [member simplex_cell_vertex_indices] array, or empty for no normals, or else the mesh is invalid.
+		<member name="texture_map_values" type="PackedVector3Array" setter="set_texture_map_values" getter="get_texture_map_values" default="PackedVector3Array()">
+			The texture map values of the tetrahedral cells. Each Vector3 in this array is a position in texture space, referenced by the items in the [member simplex_cell_texture_map_indices] array.
 		</member>
 		<member name="vertex_positions" type="PackedVector4Array" setter="set_vertex_positions" getter="get_vertex_positions" default="PackedVector4Array()">
 			The vertices of the tetrahedral mesh. Each Vector4 in this array is a vertex defined as a position in meters in 4D space. The items in this array are referenced by the [member simplex_cell_vertex_indices] array.
