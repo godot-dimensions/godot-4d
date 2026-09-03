@@ -1,5 +1,11 @@
 #include "off_document_4d.h"
 
+#include "../../math/math_4d.h"
+#include "../../math/vector_4d.h"
+#include "../mesh/mesh_instance_4d.h"
+#include "../mesh/poly/poly_material_4d.h"
+#include "../mesh/wire/wire_material_4d.h"
+
 #if GDEXTENSION
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
@@ -11,12 +17,6 @@
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/resources/surface_tool.h"
 #endif
-
-#include "../../math/math_4d.h"
-#include "../../math/vector_4d.h"
-#include "../mesh/mesh_instance_4d.h"
-#include "../mesh/poly/poly_material_4d.h"
-#include "../mesh/wire/wire_material_4d.h"
 
 void OFFDocument4D::_count_unique_edges_from_faces() {
 	_edge_count = 0;

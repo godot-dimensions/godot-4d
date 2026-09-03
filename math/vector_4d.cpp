@@ -255,6 +255,19 @@ Vector4 Vector4D::from_json_array(const Array &p_json_array) {
 	return Vector4();
 }
 
+Vector4i Vector4D::from_json_array_int(const Array &p_json_array) {
+	if (likely(p_json_array.size() > 3)) {
+		return Vector4i(p_json_array[0], p_json_array[1], p_json_array[2], p_json_array[3]);
+	} else if (p_json_array.size() == 3) {
+		return Vector4i(p_json_array[0], p_json_array[1], p_json_array[2], 0);
+	} else if (p_json_array.size() == 2) {
+		return Vector4i(p_json_array[0], p_json_array[1], 0, 0);
+	} else if (p_json_array.size() == 1) {
+		return Vector4i(p_json_array[0], 0, 0, 0);
+	}
+	return Vector4i();
+}
+
 Vector4D *Vector4D::singleton = nullptr;
 
 void Vector4D::_bind_methods() {
@@ -286,5 +299,6 @@ void Vector4D::_bind_methods() {
 	ClassDB::bind_static_method("Vector4D", D_METHOD("from_3d", "vector", "w"), &Vector4D::from_3d, DEFVAL(0.0));
 	ClassDB::bind_static_method("Vector4D", D_METHOD("to_3d", "vector"), &Vector4D::to_3d);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("from_json_array", "json_array"), &Vector4D::from_json_array);
+	ClassDB::bind_static_method("Vector4D", D_METHOD("from_json_array_int", "json_array"), &Vector4D::from_json_array_int);
 	ClassDB::bind_static_method("Vector4D", D_METHOD("to_json_array", "vector"), &Vector4D::to_json_array);
 }

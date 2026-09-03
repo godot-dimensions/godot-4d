@@ -86,6 +86,13 @@
 				Converts a JSON array of numbers to a [Vector4]. If the array contains less than 4 elements, the missing elements are treated as [code]0.0[/code]. If the array contains more than 4 elements, only the first 4 elements are used. Any non-number values are converted as best as possible according to the [Variant] rules. This is the inverse of [method to_json_array].
 			</description>
 		</method>
+		<method name="from_json_array_int" qualifiers="static">
+			<return type="Vector4i" />
+			<param index="0" name="json_array" type="Array" />
+			<description>
+				Converts a JSON array of numbers to a [Vector4i]. If the array contains less than 4 elements, the missing elements are treated as [code]0[/code]. If the array contains more than 4 elements, only the first 4 elements are used. Any non-number values are converted as best as possible according to the [Variant] rules.
+			</description>
+		</method>
 		<method name="is_uniform" qualifiers="static">
 			<return type="bool" />
 			<param index="0" name="vector" type="Vector4" />
@@ -149,7 +156,7 @@
 			<return type="Vector4" />
 			<param index="0" name="radius" type="float" default="1.0" />
 			<description>
-				Returns a random [Vector4] inside a 4D sphere (hypersphere) with the given [param radius], inclusive. If the radius is not specified, it defaults to [code]1.0[/code]. The returned vector is uniformly distributed inside the hypersphere.
+				Returns a random [Vector4] inside a 4D sphere with the given [param radius], inclusive. If the radius is not specified, it defaults to [code]1.0[/code]. The returned vector is uniformly distributed inside the 4D sphere.
 			</description>
 		</method>
 		<method name="random_in_range" qualifiers="static">
