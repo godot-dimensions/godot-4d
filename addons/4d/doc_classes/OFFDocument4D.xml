@@ -75,14 +75,14 @@
 				Generates a 4D [ArrayWireMesh4D] resource from the OFF data, for use with [MeshInstance4D]. Per-cell colors will be discarded. If there are any per-face colors, they will be used as edge colors in a [WireMaterial4D]. If [param deduplicate_edges] is [code]true[/code], the generated wire mesh will only have one edge for each unique edge in the OFF data. Note that converting to a wireframe is a one-way operation, the resulting [ArrayWireMesh4D] cannot be converted back to OFF data.
 			</description>
 		</method>
-		<method name="import_load_from_byte_array" qualifiers="static">
+		<method name="import_read_from_byte_array" qualifiers="static">
 			<return type="OFFDocument4D" />
 			<param index="0" name="data" type="PackedByteArray" />
 			<description>
 				Loads an OFF file from an in-memory byte array and returns an OFFDocument4D with the data. If there is a problem with the file, at most one warning will be printed, and the code will attempt to continue loading the file anyway.
 			</description>
 		</method>
-		<method name="import_load_from_file" qualifiers="static">
+		<method name="import_read_from_file" qualifiers="static">
 			<return type="OFFDocument4D" />
 			<param index="0" name="path" type="String" />
 			<description>

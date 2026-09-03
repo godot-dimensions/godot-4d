@@ -42,7 +42,7 @@ TypedArray<Dictionary> EditorImportPluginOFFScene::_get_import_options(const Str
 }
 
 Error EditorImportPluginOFFScene::_import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const {
-	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_load_from_file(p_source_file);
+	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_read_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
 	Node *node = off_doc->import_generate_node(p_options[StringName("deduplicate_edges")], p_options[StringName("per_face_vertices")]);
 	ERR_FAIL_NULL_V(node, ERR_FILE_CORRUPT);
@@ -68,7 +68,7 @@ Error EditorImportPluginOFFScene::import(const String &p_source_file, const Stri
 Error EditorImportPluginOFFScene::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
 #endif
 {
-	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_load_from_file(p_source_file);
+	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_read_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
 	Node *node = off_doc->import_generate_node(p_options[StringName("deduplicate_edges")], p_options[StringName("per_face_vertices")]);
 	ERR_FAIL_NULL_V(node, ERR_FILE_CORRUPT);

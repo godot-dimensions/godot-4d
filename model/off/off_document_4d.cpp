@@ -476,7 +476,7 @@ enum class OFFDocumentReadState {
 	READ_CELLS,
 };
 
-Ref<OFFDocument4D> OFFDocument4D::import_load_from_byte_array(const PackedByteArray &p_data) {
+Ref<OFFDocument4D> OFFDocument4D::import_read_from_byte_array(const PackedByteArray &p_data) {
 	ERR_FAIL_COND_V_MSG(p_data.is_empty(), Ref<OFFDocument4D>(), "OFF import: Error: Given byte array is empty.");
 #if GDEXTENSION
 	const String as_string = p_data.get_string_from_utf8();
@@ -491,10 +491,10 @@ Ref<OFFDocument4D> OFFDocument4D::import_load_from_byte_array(const PackedByteAr
 #endif
 	}
 #endif
-	return OFFDocument4D::_import_load_from_raw_text(as_string, "(in-memory data)");
+	return OFFDocument4D::_import_read_from_raw_text(as_string, "(in-memory data)");
 }
 
-Ref<OFFDocument4D> OFFDocument4D::import_load_from_file(const String &p_path) {
+Ref<OFFDocument4D> OFFDocument4D::import_read_from_file(const String &p_path) {
 #if GDEXTENSION
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
 	ERR_FAIL_COND_V_MSG(file.is_null(), Ref<OFFDocument4D>(), "OFF import: Error: Could not open file " + p_path + ".");
@@ -504,10 +504,10 @@ Ref<OFFDocument4D> OFFDocument4D::import_load_from_file(const String &p_path) {
 	ERR_FAIL_COND_V_MSG(err != OK, Ref<OFFDocument4D>(), "OFF import: Error: Could not open file " + p_path + ".");
 #endif
 	const String file_text = file->get_as_text();
-	return _import_load_from_raw_text(file_text, p_path);
+	return _import_read_from_raw_text(file_text, p_path);
 }
 
-Ref<OFFDocument4D> OFFDocument4D::_import_load_from_raw_text(const String &p_raw_text, const String &p_path) {
+Ref<OFFDocument4D> OFFDocument4D::_import_read_from_raw_text(const String &p_raw_text, const String &p_path) {
 	Ref<OFFDocument4D> off_document;
 	off_document.instantiate();
 	OFFDocumentReadState read_state = OFFDocumentReadState::READ_SIZE;
@@ -753,8 +753,8 @@ void OFFDocument4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("export_save_to_byte_array"), &OFFDocument4D::export_save_to_byte_array);
 	ClassDB::bind_method(D_METHOD("export_save_to_file", "path"), &OFFDocument4D::export_save_to_file);
 
-	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_byte_array", "data"), &OFFDocument4D::import_load_from_byte_array);
-	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_load_from_file", "path"), &OFFDocument4D::import_load_from_file);
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_read_from_byte_array", "data"), &OFFDocument4D::import_read_from_byte_array);
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("import_read_from_file", "path"), &OFFDocument4D::import_read_from_file);
 	ClassDB::bind_method(D_METHOD("import_generate_mesh_3d", "per_face_vertices", "force_outward_normals"), &OFFDocument4D::import_generate_mesh_3d, DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("import_generate_poly_mesh_4d"), &OFFDocument4D::import_generate_poly_mesh_4d);
 	ClassDB::bind_method(D_METHOD("import_generate_tetra_mesh_4d"), &OFFDocument4D::import_generate_tetra_mesh_4d);

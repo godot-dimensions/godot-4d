@@ -77,7 +77,7 @@ Error G4MFModel4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) 
 		}
 		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: G4MFModel4D: Failed to read G4MF model.");
 	} else if (mime_type == "model/off") {
-		_model_off_document = OFFDocument4D::import_load_from_byte_array(file_data);
+		_model_off_document = OFFDocument4D::import_read_from_byte_array(file_data);
 		ERR_FAIL_COND_V_MSG(_model_off_document.is_null(), ERR_PARSE_ERROR, "G4MF import: G4MFModel4D: Failed to import OFF model.");
 #ifdef MODULE_GLTF_ENABLED
 	} else if (mime_type == "model/gltf-binary" || mime_type == "model/gltf+json") {

@@ -43,7 +43,7 @@ class OFFDocument4D : public Resource {
 
 	// Internal entire-file string conversion functions.
 	String _export_save_to_string();
-	static Ref<OFFDocument4D> _import_load_from_raw_text(const String &p_raw_text, const String &p_path);
+	static Ref<OFFDocument4D> _import_read_from_raw_text(const String &p_raw_text, const String &p_path);
 
 protected:
 	static void _bind_methods();
@@ -54,8 +54,8 @@ public:
 	PackedByteArray export_save_to_byte_array();
 	void export_save_to_file(const String &p_path);
 
-	static Ref<OFFDocument4D> import_load_from_byte_array(const PackedByteArray &p_data);
-	static Ref<OFFDocument4D> import_load_from_file(const String &p_path);
+	static Ref<OFFDocument4D> import_read_from_byte_array(const PackedByteArray &p_data);
+	static Ref<OFFDocument4D> import_read_from_file(const String &p_path);
 	Ref<ArrayMesh> import_generate_mesh_3d(const bool p_per_face_vertices = true, const bool p_force_outward_normals = false);
 	Ref<ArrayPolyMesh4D> import_generate_poly_mesh_4d();
 	Ref<ArrayTetraMesh4D> import_generate_tetra_mesh_4d();
