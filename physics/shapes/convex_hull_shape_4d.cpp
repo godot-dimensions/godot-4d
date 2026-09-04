@@ -19,7 +19,7 @@ bool ConvexHullShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 Ref<TetraMesh4D> ConvexHullShape4D::to_tetra_mesh(const Dictionary &p_options) const {
 	Ref<ArrayTetraMesh4D> mesh;
 	mesh.instantiate();
-	mesh->set_vertices(_points);
+	mesh->set_vertex_positions(_points);
 	ERR_PRINT("ConvexHullShape4D.convert_to_tetra_mesh: Calculating the tetrahedral mesh cells is not implemented yet.");
 	return mesh;
 }
@@ -27,7 +27,7 @@ Ref<TetraMesh4D> ConvexHullShape4D::to_tetra_mesh(const Dictionary &p_options) c
 Ref<WireMesh4D> ConvexHullShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
-	mesh->set_vertices(_points);
+	mesh->set_vertex_positions(_points);
 	ERR_PRINT("ConvexHullShape4D.convert_to_wire_mesh: Calculating the wire mesh edge indices is not implemented yet.");
 	return mesh;
 }
@@ -35,7 +35,7 @@ Ref<WireMesh4D> ConvexHullShape4D::to_wire_mesh(const Dictionary &p_options) con
 Ref<ConvexHullShape4D> ConvexHullShape4D::create_from_mesh(const Ref<Mesh4D> &p_mesh) {
 	Ref<ConvexHullShape4D> shape;
 	shape.instantiate();
-	shape->set_points(p_mesh->get_vertices());
+	shape->set_points(p_mesh->get_vertex_positions());
 	ERR_PRINT("ConvexHullShape4D.create_from_mesh: Calculating the convex hull from mesh vertices is not implemented yet.");
 	return shape;
 }

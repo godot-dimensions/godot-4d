@@ -49,7 +49,7 @@ constexpr real_t _5D6 = 5.0 / 6.0;
 	REPEAT_FOUR_TIMES(Vector4(-0.5f, -0.5f, -0.5f, +0.5f)), \
 }
 
-#define ORTHOPLEX_CELL_INDICES PackedInt32Array { \
+#define ORTHOPLEX_CELL_VERTEX_INDICES PackedInt32Array { \
 	6, 0, 2, 4, 1, 2, 4, 6, 6, 1, 3, 4, 0, 3, 4, 6, /* -W and -Z */ \
 	6, 0, 3, 5, 1, 3, 5, 6, 6, 1, 2, 5, 0, 2, 5, 6, /* -W and +Z */ \
 	7, 0, 2, 5, 1, 2, 5, 7, 7, 1, 3, 5, 0, 3, 5, 7, /* +W and +Z */ \

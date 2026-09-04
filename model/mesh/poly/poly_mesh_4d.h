@@ -30,9 +30,9 @@ public:
 #endif
 
 private:
-	PackedInt32Array _simplex_cell_indices_cache;
-	PackedInt32Array _simplex_cell_indices_source_poly_cells;
-	PackedVector4Array _simplex_cell_vertices_cache; // Superset of the polytope cell vertices.
+	PackedInt32Array _simplex_cell_vertex_indices_cache;
+	PackedInt32Array _simplex_cell_source_poly_cells;
+	PackedVector4Array _simplex_cell_vertex_positions_cache; // Superset of the polytope cell vertices.
 	PackedVector4Array _simplex_cell_boundary_normals_cache;
 	PackedVector4Array _simplex_cell_vertex_normals_cache;
 	PackedVector3Array _simplex_cell_uvw_texture_map_cache;
@@ -87,7 +87,7 @@ public:
 	int32_t get_source_poly_cell_for_simplex_cell(const int32_t p_simplex_cell_index) const;
 
 	virtual Vector<Vector<PackedInt32Array>> get_poly_cell_indices();
-	virtual PackedVector4Array get_poly_cell_vertices();
+	virtual PackedVector4Array get_poly_cell_vertex_positions();
 	virtual PackedVector4Array get_poly_cell_boundary_normals();
 	virtual PackedInt32Array get_poly_cell_boundary_pivot_overrides();
 	virtual Vector<PackedVector4Array> get_poly_cell_vertex_normals();
@@ -98,14 +98,14 @@ public:
 	TypedArray<PackedVector3Array> get_poly_cell_texture_map_bind();
 
 	virtual PackedInt32Array get_edge_indices() override;
-	virtual PackedInt32Array get_simplex_cell_indices() override;
+	virtual PackedInt32Array get_simplex_cell_vertex_indices() override;
 	virtual PackedVector4Array get_simplex_cell_boundary_normals() override;
 	virtual PackedVector4Array get_simplex_cell_vertex_normals() override;
 	virtual PackedVector3Array get_simplex_cell_texture_map() override;
-	virtual PackedVector4Array get_vertices() override;
+	virtual PackedVector4Array get_vertex_positions() override;
 
 	GDVIRTUAL0R(TypedArray<Array>, _get_poly_cell_indices);
-	GDVIRTUAL0R(PackedVector4Array, _get_poly_cell_vertices);
+	GDVIRTUAL0R(PackedVector4Array, _get_poly_cell_vertex_positions);
 	GDVIRTUAL0R(PackedVector4Array, _get_poly_cell_boundary_normals);
 	GDVIRTUAL0R(PackedInt32Array, _get_poly_cell_boundary_pivot_overrides);
 	GDVIRTUAL0R(TypedArray<PackedVector4Array>, _get_poly_cell_vertex_normals);

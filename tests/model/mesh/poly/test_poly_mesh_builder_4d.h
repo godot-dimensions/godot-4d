@@ -73,7 +73,7 @@ TEST_CASE("[PolyMeshBuilder4D] Subdivide elements") {
 		CHECK_MESSAGE(poly_cell_indices[1].size() == 64, "The boundary level must contain exactly the sub-cubes.");
 		CHECK_MESSAGE(poly_cell_indices[2].size() == 1, "The volumetric cell must be conformed, not subdivided.");
 		CHECK_MESSAGE(poly_cell_indices[2][0].size() == 64, "The conformed volumetric cell must reference all sub-cubes.");
-		CHECK_MESSAGE(mesh->get_poly_cell_vertices().size() == 16 + 32 + 24 + 8, "The subdivided tesseract must add edge midpoints, face centers, and cube centers.");
+		CHECK_MESSAGE(mesh->get_poly_cell_vertex_positions().size() == 16 + 32 + 24 + 8, "The subdivided tesseract must add edge midpoints, face centers, and cube centers.");
 		// Every face must have its edges in a connected loop order, including internal walls.
 		const PackedInt32Array all_edges = mesh->get_edge_indices();
 		for (const PackedInt32Array &face : poly_cell_indices[0]) {
@@ -119,7 +119,7 @@ TEST_CASE("[PolyMeshBuilder4D] Subdivide elements") {
 			Vector4(0, 0, 1, 0),
 			Vector4(0, 0, 0, 1),
 		};
-		mesh->set_poly_cell_vertices(vertices);
+		mesh->set_poly_cell_vertex_positions(vertices);
 		PackedInt32Array edge_indices;
 		HashMap<int32_t, int32_t> edge_map;
 		for (int32_t a = 0; a < 5; a++) {
@@ -162,7 +162,7 @@ TEST_CASE("[PolyMeshBuilder4D] Subdivide elements") {
 		const PackedInt32Array new_pieces = PolyMeshBuilder4D::subdivide_elements(mesh, 4, PackedInt32Array());
 		CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "The subdivided pentachoron must have valid poly mesh data.");
 		CHECK_MESSAGE(new_pieces.size() == 6, "A pentachoron must subdivide into 5 corner pentachora and 1 central rectified pentachoron.");
-		CHECK_MESSAGE(mesh->get_poly_cell_vertices().size() == 5 + 10, "The subdivided pentachoron must only add the 10 edge midpoints, with no center vertices.");
+		CHECK_MESSAGE(mesh->get_poly_cell_vertex_positions().size() == 5 + 10, "The subdivided pentachoron must only add the 10 edge midpoints, with no center vertices.");
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
 		CHECK_MESSAGE(poly_cell_indices[1].size() == 5 * 5 + 5, "The subdivided pentachoron must have 25 boundary cell pieces and 5 interior cut cells.");
 		CHECK_MESSAGE(poly_cell_indices[2].size() == 6, "The subdivided pentachoron must have 6 volumetric cells.");
@@ -215,7 +215,7 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Subdivide a converted flat mesh and ex
 	const HashMap<Vector2i, Vector<PackedVector3Array>> all_texture_maps = converted->get_all_poly_cell_texture_maps();
 	const Vector<PackedVector3Array> *texture_maps = all_texture_maps.getptr(PolyMesh4D::FACE_TO_VERT_KEY);
 	REQUIRE_MESSAGE(texture_maps != nullptr, "The face texture maps of a flat mesh must be preserved by subdivision.");
-	const PackedVector4Array flat_vertices = converted->get_poly_cell_vertices();
+	const PackedVector4Array flat_vertices = converted->get_poly_cell_vertex_positions();
 	const Vector<PackedInt32Array> face_vertex_indices = converted->get_all_poly_cell_vertex_indices(2, false);
 	for (int64_t face_index = 0; face_index < 8; face_index++) {
 		const PackedVector3Array &face_texture_map = (*texture_maps)[face_index];

@@ -49,12 +49,12 @@ public:
 	void set_cell_texture_map(const BoxCellTextureMap p_map);
 
 	virtual Ref<ArrayMesh> export_texture_map_mesh() override;
-	virtual PackedInt32Array get_simplex_cell_indices() override;
+	virtual PackedInt32Array get_simplex_cell_vertex_indices() override;
 	virtual PackedVector4Array get_simplex_cell_boundary_normals() override;
 	virtual PackedVector4Array get_simplex_cell_vertex_normals() override;
 	virtual PackedVector3Array get_simplex_cell_texture_map() override;
 	virtual PackedInt32Array get_edge_indices() override;
-	virtual PackedVector4Array get_vertices() override;
+	virtual PackedVector4Array get_vertex_positions() override;
 
 	static Ref<BoxTetraMesh4D> from_box_wire_mesh(const Ref<BoxWireMesh4D> &p_wire_mesh);
 	Ref<BoxWireMesh4D> to_box_wire_mesh() const;

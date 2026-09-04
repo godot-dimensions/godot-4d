@@ -8,7 +8,7 @@ void PolyMaterial4D::populate_albedo_color_array_for_poly_mesh(const Ref<TetraMe
 	if (poly_color_array_size == 0) {
 		return; // Nothing to do.
 	}
-	const PackedInt32Array tets = p_poly_mesh->get_simplex_cell_indices();
+	const PackedInt32Array tets = p_poly_mesh->get_simplex_cell_vertex_indices();
 	ERR_FAIL_COND(tets.size() < 4 || tets.size() % 4 != 0);
 	_albedo_color_array.clear();
 	_albedo_color_array.append(_poly_albedo_color_array[0]);

@@ -38,8 +38,8 @@ Vector<Vector<PackedInt32Array>> BoxPolyMesh4D::get_poly_cell_indices() {
 	return BOX_POLY_CELL_INDICES;
 }
 
-PackedVector4Array BoxPolyMesh4D::get_poly_cell_vertices() {
-	return get_vertices();
+PackedVector4Array BoxPolyMesh4D::get_poly_cell_vertex_positions() {
+	return get_vertex_positions();
 }
 
 PackedVector4Array BoxPolyMesh4D::get_poly_cell_boundary_normals() {
@@ -72,7 +72,7 @@ PackedInt32Array BoxPolyMesh4D::get_edge_indices() {
 	return BOX_EDGE_INDICES;
 }
 
-PackedVector4Array BoxPolyMesh4D::get_vertices() {
+PackedVector4Array BoxPolyMesh4D::get_vertex_positions() {
 	if (_vertices_cache.is_empty()) {
 		const Vector4 he = get_half_extents();
 		_vertices_cache.append(Vector4(-he.x, -he.y, -he.z, -he.w));

@@ -19,9 +19,9 @@ private:
 	TypedArray<G4MFMeshSurface4D> _surfaces;
 	int _vertices_accessor_index = -1;
 
-	Ref<ArrayPolyMesh4D> _generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const;
-	Ref<ArrayTetraMesh4D> _generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const;
-	Ref<ArrayWireMesh4D> _generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertices, const int p_surface) const;
+	Ref<ArrayPolyMesh4D> _generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertex_positions, const int p_surface) const;
+	Ref<ArrayTetraMesh4D> _generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertex_positions, const int p_surface) const;
+	Ref<ArrayWireMesh4D> _generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertex_positions, const int p_surface) const;
 
 protected:
 	static void _bind_methods();

@@ -31,13 +31,13 @@ PackedInt32Array BoxWireMesh4D::get_edge_indices() {
 PackedVector4Array BoxWireMesh4D::get_edge_positions() {
 	if (_edge_positions_cache.is_empty()) {
 		for (const int i : BOX_EDGE_INDICES) {
-			_edge_positions_cache.append(get_vertices()[i]);
+			_edge_positions_cache.append(get_vertex_positions()[i]);
 		}
 	}
 	return _edge_positions_cache;
 }
 
-PackedVector4Array BoxWireMesh4D::get_vertices() {
+PackedVector4Array BoxWireMesh4D::get_vertex_positions() {
 	if (_vertices_cache.is_empty()) {
 		const Vector4 he = get_half_extents();
 		_vertices_cache.append(Vector4(-he.x, -he.y, -he.z, -he.w));

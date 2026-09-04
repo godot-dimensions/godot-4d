@@ -32,7 +32,7 @@ int64_t ArrayPolyMesh4D::append_edge_indices(int32_t p_index_a, int32_t p_index_
 }
 
 int64_t ArrayPolyMesh4D::append_poly_cell(const int32_t p_dimension, const PackedInt32Array &p_cell, const bool p_deduplicate) {
-	ERR_FAIL_COND_V_MSG(_poly_cell_vertices.is_empty() || _edge_vertex_indices.is_empty(), -1, "This ArrayPolyMesh4D lacks any 0D vertices or 1D edges, so cannot append a poly cell.");
+	ERR_FAIL_COND_V_MSG(_poly_cell_vertex_positions.is_empty() || _edge_vertex_indices.is_empty(), -1, "This ArrayPolyMesh4D lacks any 0D vertices or 1D edges, so cannot append a poly cell.");
 	ERR_FAIL_COND_V_MSG(p_dimension < 2, -1, "ArrayPolyMesh4D: Cannot append " + itos(p_dimension) + "D poly cell. For 0D vertices and 1D edges, use the special functions for those.");
 	const int64_t old_mesh_dim = _poly_cell_indices.size() + 1;
 	ERR_FAIL_COND_V_MSG(p_dimension > old_mesh_dim + 1, -1, "ArrayPolyMesh4D: Cannot append a " + itos(p_dimension) + "D poly cell because the mesh currently only has cells up to " + itos(old_mesh_dim) + "D. Cells must be appended in order of dimension, so append the missing " + itos(old_mesh_dim + 1) + "D cell(s) first.");
@@ -77,16 +77,16 @@ int64_t ArrayPolyMesh4D::append_poly_cell(const int32_t p_dimension, const Packe
 }
 
 int ArrayPolyMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
-	const int vertex_count = _poly_cell_vertices.size();
+	const int vertex_count = _poly_cell_vertex_positions.size();
 	if (p_deduplicate_vertices) {
 		for (int i = 0; i < vertex_count; i++) {
-			if (_poly_cell_vertices[i] == p_vertex) {
+			if (_poly_cell_vertex_positions[i] == p_vertex) {
 				return i;
 			}
 		}
 	}
-	ERR_FAIL_COND_V(_poly_cell_vertices.size() > MAX_POLY_VERTICES, 2147483647);
-	_poly_cell_vertices.push_back(p_vertex);
+	ERR_FAIL_COND_V(_poly_cell_vertex_positions.size() > MAX_POLY_VERTICES, 2147483647);
+	_poly_cell_vertex_positions.push_back(p_vertex);
 	reset_poly_mesh_data_validation();
 	return vertex_count;
 }
@@ -141,7 +141,7 @@ void ArrayPolyMesh4D::_delete_edge_internal(const int32_t p_index) {
 }
 
 void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
-	const int64_t vertex_count = _poly_cell_vertices.size();
+	const int64_t vertex_count = _poly_cell_vertex_positions.size();
 	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= vertex_count, "ArrayPolyMesh4D: Vertex index is out of range.");
 	// Before deleting this vertex, we need to delete any edges that reference it,
 	// and any poly cells in higher dimensions that reference those edges.
@@ -156,7 +156,7 @@ void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
 		_delete_edge_internal(edges_to_delete[i]);
 	}
 	// Delete the vertex itself now that all dependent edges (and higher dimensions) are gone.
-	_poly_cell_vertices.remove_at(p_index);
+	_poly_cell_vertex_positions.remove_at(p_index);
 	// Shift remaining edge vertex references down to preserve index semantics.
 	for (int64_t edge_vertex_index = 0; edge_vertex_index < _edge_vertex_indices.size(); edge_vertex_index++) {
 		if (_edge_vertex_indices[edge_vertex_index] > p_index) {
@@ -284,7 +284,7 @@ void ArrayPolyMesh4D::delete_poly_element(const int32_t p_dimension, const int32
 void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode, const bool p_keep_existing) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for invalid poly mesh data.");
-	const PackedVector4Array &vertices = get_poly_cell_vertices();
+	const PackedVector4Array &vertices = get_poly_cell_vertex_positions();
 	ERR_FAIL_COND_MSG(vertices.is_empty(), "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no vertices.");
 	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
 	if (cell_vertex_indices.is_empty()) {
@@ -303,8 +303,8 @@ void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode
 		const PackedInt32Array &vertex_indices = cell_vertex_indices[cell_index];
 		Vector4 average = Vector4();
 		for (int64_t vertex_index : vertex_indices) {
-			ERR_FAIL_COND(vertex_index < 0 || vertex_index >= _poly_cell_vertices.size());
-			average += _poly_cell_vertices[vertex_index];
+			ERR_FAIL_COND(vertex_index < 0 || vertex_index >= _poly_cell_vertex_positions.size());
+			average += _poly_cell_vertex_positions[vertex_index];
 		}
 		average /= (real_t)vertex_indices.size();
 		if (average.dot(poly_cell_boundary_normals[cell_index]) < 0) {
@@ -368,14 +368,14 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 	Vector<PackedVector4Array> poly_cell_vertex_normals;
 	poly_cell_vertex_normals.resize(poly_cell_boundary_normals.size());
 	PackedVector4Array vertex_normals;
-	vertex_normals.resize(_poly_cell_vertices.size());
+	vertex_normals.resize(_poly_cell_vertex_positions.size());
 	// Step 2: Iterate through each island separately such that seams (if they exist)
 	// are respected and are treated as sharp edges that should not be smoothed across.
 	const Vector<PackedInt32Array> islands = collect_all_islands();
 	for (int64_t island_index = 0; island_index < islands.size(); island_index++) {
 		const PackedInt32Array &cells_in_island = islands[island_index];
 		// Step 3: Calculate the average normal of each vertex across each usage in cells in this island.
-		for (int64_t vertex_index = 0; vertex_index < _poly_cell_vertices.size(); vertex_index++) {
+		for (int64_t vertex_index = 0; vertex_index < _poly_cell_vertex_positions.size(); vertex_index++) {
 			vertex_normals.set(vertex_index, Vector4(0.0, 0.0, 0.0, 0.0));
 		}
 		for (const int32_t cell_index : cells_in_island) {
@@ -385,7 +385,7 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 				vertex_normals.set(vertex_index, vertex_normals[vertex_index] + cell_normal);
 			}
 		}
-		for (int64_t vertex_index = 0; vertex_index < _poly_cell_vertices.size(); vertex_index++) {
+		for (int64_t vertex_index = 0; vertex_index < _poly_cell_vertex_positions.size(); vertex_index++) {
 			vertex_normals.set(vertex_index, vertex_normals[vertex_index].normalized());
 		}
 		// Step 4: Assign each cell's vertex normals to the average normal of the vertices that make up that cell.
@@ -760,18 +760,18 @@ void ArrayPolyMesh4D::_get_cell_world_span_seed(const int64_t p_which_cell, Vect
 		SWAP(first_next_vertex, first_common_vertex);
 	}
 	p_pivot = first_next_vertex;
-	r_world_x = _poly_cell_vertices[first_next_vertex].direction_to(_poly_cell_vertices[first_common_vertex]);
+	r_world_x = _poly_cell_vertex_positions[first_next_vertex].direction_to(_poly_cell_vertex_positions[first_common_vertex]);
 	if (first_common_vertex == common_vertex_start) {
-		r_world_y = _poly_cell_vertices[first_common_vertex].direction_to(_poly_cell_vertices[common_vertex_end]);
+		r_world_y = _poly_cell_vertex_positions[first_common_vertex].direction_to(_poly_cell_vertex_positions[common_vertex_end]);
 	} else {
-		r_world_y = _poly_cell_vertices[first_common_vertex].direction_to(_poly_cell_vertices[common_vertex_start]);
+		r_world_y = _poly_cell_vertex_positions[first_common_vertex].direction_to(_poly_cell_vertex_positions[common_vertex_start]);
 	}
 	int32_t second_next_vertex = _edge_vertex_indices[second_face[second_next_edge] * 2];
 	int32_t second_common_vertex = _edge_vertex_indices[second_face[second_next_edge] * 2 + 1];
 	if (second_next_vertex == common_vertex_start || second_next_vertex == common_vertex_end) {
 		SWAP(second_next_vertex, second_common_vertex);
 	}
-	r_world_z = _poly_cell_vertices[second_common_vertex].direction_to(_poly_cell_vertices[second_next_vertex]);
+	r_world_z = _poly_cell_vertex_positions[second_common_vertex].direction_to(_poly_cell_vertex_positions[second_next_vertex]);
 }
 
 void ArrayPolyMesh4D::_transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
@@ -781,7 +781,7 @@ void ArrayPolyMesh4D::_transform_cell_to_texture_space(const Transform4D &p_worl
 	for (int64_t i = 0; i < cell_vert.size(); i++) {
 		// If we ever have 3.5-dimensional transforms, this would be a good place to use them.
 		// But let's not make a whole new data structure for one use case, we'll use 4D transforms instead.
-		const Vector4 offset = _poly_cell_vertices[cell_vert[i]] - _poly_cell_vertices[p_pivot];
+		const Vector4 offset = _poly_cell_vertex_positions[cell_vert[i]] - _poly_cell_vertex_positions[p_pivot];
 		const Vector4 rel = p_world_to_texcoord.xform(offset);
 		cell_texture_map.set(i, Vector3(rel.x, rel.y, rel.z));
 	}
@@ -833,10 +833,10 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 			const PackedInt32Array cell_span = _get_cell_4_vertices_starting_from_face(cell_index, cell_data_index);
 			ERR_FAIL_COND_V_MSG(cell_span.size() != 4, false, "ArrayPolyMesh4D: Failed to get 4 vertex span for cell.");
 			// Don't normalize X and Y because the lengths of these matter.
-			const Vector4 world_x = _poly_cell_vertices[cell_span[1]] - _poly_cell_vertices[cell_span[0]];
-			const Vector4 world_y = _poly_cell_vertices[cell_span[2]] - _poly_cell_vertices[cell_span[0]];
+			const Vector4 world_x = _poly_cell_vertex_positions[cell_span[1]] - _poly_cell_vertex_positions[cell_span[0]];
+			const Vector4 world_y = _poly_cell_vertex_positions[cell_span[2]] - _poly_cell_vertex_positions[cell_span[0]];
 			// Z needs to be perpendicular to X and Y and the length proportion needs to be consistent between world and texcoord space.
-			Vector4 world_z = _poly_cell_vertices[cell_span[3]] - _poly_cell_vertices[cell_span[0]];
+			Vector4 world_z = _poly_cell_vertex_positions[cell_span[3]] - _poly_cell_vertex_positions[cell_span[0]];
 			const real_t world_z_len = world_x.length() * world_y.length();
 			world_z = Vector4D::orthogonal_from_two(world_z, world_x, world_y).normalized() * world_z_len;
 			ERR_FAIL_COND_V_MSG(Math::is_zero_approx(world_z.length()), false, "ArrayPolyMesh4D: Cell is degenerate.");
@@ -1077,8 +1077,8 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 	// Deduplicate vertices.
 	PackedVector4Array output_vertices;
 	HashMap<int32_t, int32_t> vertex_index_remap;
-	for (int64_t input_vertex_index = 0; input_vertex_index < _poly_cell_vertices.size(); input_vertex_index++) {
-		const Vector4 vertex = _poly_cell_vertices[input_vertex_index];
+	for (int64_t input_vertex_index = 0; input_vertex_index < _poly_cell_vertex_positions.size(); input_vertex_index++) {
+		const Vector4 vertex = _poly_cell_vertex_positions[input_vertex_index];
 		bool found_duplicate = false;
 		for (int64_t output_vertex_index = 0; output_vertex_index < output_vertices.size(); output_vertex_index++) {
 			if (vertex.is_equal_approx(output_vertices[output_vertex_index])) {
@@ -1160,7 +1160,7 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 	// Write back deduplicated geometry now so that get_all_poly_cell_poly_indices reads the new arrays
 	// when computing the post-dedup sub-element orderings for remapping data bindings.
 	const int64_t input_boundary_cell_count = (_poly_cell_indices.size() > 1) ? _poly_cell_indices[1].size() : 0;
-	_poly_cell_vertices = output_vertices;
+	_poly_cell_vertex_positions = output_vertices;
 	_edge_vertex_indices = output_edge_vertex_indices;
 	_poly_cell_indices = output_poly_cell_indices;
 	// Snapshot the sub-element traversal order for all decomposed bindings AFTER deduplication.
@@ -1426,9 +1426,9 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 }
 
 void ArrayPolyMesh4D::transform_vertices(const Transform4D &p_transform) {
-	const int64_t vertex_count = _poly_cell_vertices.size();
+	const int64_t vertex_count = _poly_cell_vertex_positions.size();
 	for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
-		_poly_cell_vertices.set(vertex_index, p_transform.xform(_poly_cell_vertices[vertex_index]));
+		_poly_cell_vertex_positions.set(vertex_index, p_transform.xform(_poly_cell_vertex_positions[vertex_index]));
 	}
 	poly_mesh_clear_cache();
 }
@@ -1441,11 +1441,11 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: This mesh is invalid, cannot merge another mesh into it.");
 	ERR_FAIL_COND_MSG(p_other.is_null() || !p_other->is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot merge an invalid PolyMesh4D into this mesh.");
 	const Vector<Vector<PackedInt32Array>> &other_poly_cell_indices = p_other->get_poly_cell_indices();
-	const PackedVector4Array &other_poly_cell_vertices = p_other->get_poly_cell_vertices();
+	const PackedVector4Array &other_poly_cell_vertices = p_other->get_poly_cell_vertex_positions();
 	const PackedInt32Array &other_poly_cell_boundary_pivot_overrides = p_other->get_poly_cell_boundary_pivot_overrides();
 	const PackedInt32Array &other_edge_indices = p_other->get_edge_indices();
 	const HashSet<int32_t> &other_seam_face_indices = p_other->get_seam_face_indices();
-	const int64_t start_vertex_count = _poly_cell_vertices.size();
+	const int64_t start_vertex_count = _poly_cell_vertex_positions.size();
 	const int64_t start_edge_index_count = _edge_vertex_indices.size();
 	const int64_t other_vertex_count = other_poly_cell_vertices.size();
 	const int64_t other_edge_index_count = other_edge_indices.size();
@@ -1471,9 +1471,9 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		}
 	}
 	// Merge vertices.
-	_poly_cell_vertices.resize(end_vertex_count);
+	_poly_cell_vertex_positions.resize(end_vertex_count);
 	for (int64_t i = 0; i < other_vertex_count; i++) {
-		_poly_cell_vertices.set(start_vertex_count + i, p_transform * other_poly_cell_vertices[i]);
+		_poly_cell_vertex_positions.set(start_vertex_count + i, p_transform * other_poly_cell_vertices[i]);
 	}
 	// Merge edges.
 	_edge_vertex_indices.resize(end_edge_index_count);
@@ -1579,7 +1579,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 			// Use post-merge counts for padding/filling operations.
 			int64_t cell_count_for_geom_dim = 0;
 			if (key.x == 0) {
-				cell_count_for_geom_dim = _poly_cell_vertices.size();
+				cell_count_for_geom_dim = _poly_cell_vertex_positions.size();
 			} else if (key.x == 1) {
 				cell_count_for_geom_dim = _edge_vertex_indices.size() / 2;
 			} else if (key.x > 1 && (key.x - 2) < poly_cell_indices_dims) {
@@ -1694,7 +1694,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 			// Use post-merge counts for padding/filling operations.
 			int64_t cell_count_for_geom_dim = 0;
 			if (key.x == 0) {
-				cell_count_for_geom_dim = _poly_cell_vertices.size();
+				cell_count_for_geom_dim = _poly_cell_vertex_positions.size();
 			} else if (key.x == 1) {
 				cell_count_for_geom_dim = _edge_vertex_indices.size() / 2;
 			} else if (key.x > 1 && (key.x - 2) < poly_cell_indices_dims) {
@@ -1790,7 +1790,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		const Vector2i key = normals_kv.key;
 		int64_t cell_count_for_geom_dim;
 		if (key.x == 0) {
-			cell_count_for_geom_dim = _poly_cell_vertices.size();
+			cell_count_for_geom_dim = _poly_cell_vertex_positions.size();
 		} else if (key.x == 1) {
 			cell_count_for_geom_dim = _edge_vertex_indices.size() / 2;
 		} else if ((key.x - 2) < _poly_cell_indices.size()) {
@@ -1822,7 +1822,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		const Vector2i key = texture_map_kv.key;
 		int64_t cell_count_for_geom_dim;
 		if (key.x == 0) {
-			cell_count_for_geom_dim = _poly_cell_vertices.size();
+			cell_count_for_geom_dim = _poly_cell_vertex_positions.size();
 		} else if (key.x == 1) {
 			cell_count_for_geom_dim = _edge_vertex_indices.size() / 2;
 		} else if ((key.x - 2) < _poly_cell_indices.size()) {
@@ -2086,13 +2086,13 @@ void ArrayPolyMesh4D::set_seam_face_indices_bind(const PackedInt32Array &p_seam_
 	}
 }
 
-PackedVector4Array ArrayPolyMesh4D::get_poly_cell_vertices() {
-	return _poly_cell_vertices;
+PackedVector4Array ArrayPolyMesh4D::get_poly_cell_vertex_positions() {
+	return _poly_cell_vertex_positions;
 }
 
-void ArrayPolyMesh4D::set_poly_cell_vertices(const PackedVector4Array &p_poly_cell_vertices) {
-	ERR_FAIL_COND(p_poly_cell_vertices.size() > MAX_POLY_VERTICES); // Prevent overflow.
-	_poly_cell_vertices = p_poly_cell_vertices;
+void ArrayPolyMesh4D::set_poly_cell_vertex_positions(const PackedVector4Array &p_vertex_positions) {
+	ERR_FAIL_COND(p_vertex_positions.size() > MAX_POLY_VERTICES); // Prevent overflow.
+	_poly_cell_vertex_positions = p_vertex_positions;
 	poly_mesh_clear_cache();
 	reset_poly_mesh_data_validation();
 }
@@ -2129,8 +2129,12 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_poly_cell_indices", "poly_cell_indices"), &ArrayPolyMesh4D::set_poly_cell_indices_bind);
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "poly_cell_indices"), "set_poly_cell_indices", "get_poly_cell_indices");
 
-	ClassDB::bind_method(D_METHOD("set_poly_cell_vertices", "poly_cell_vertices"), &ArrayPolyMesh4D::set_poly_cell_vertices);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertices"), "set_poly_cell_vertices", "get_poly_cell_vertices");
+	ClassDB::bind_method(D_METHOD("set_poly_cell_vertex_positions", "poly_cell_vertex_positions"), &ArrayPolyMesh4D::set_poly_cell_vertex_positions);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertex_positions"), "set_poly_cell_vertex_positions", "get_poly_cell_vertex_positions");
+#ifndef DISABLE_DEPRECATED
+	// Compatibility property to handle reading existing serialized data.
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "poly_cell_vertices", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_INTERNAL), "set_poly_cell_vertex_positions", "get_poly_cell_vertex_positions");
+#endif // DISABLE_DEPRECATED
 
 	ClassDB::bind_method(D_METHOD("set_poly_cell_boundary_pivot_overrides", "poly_cell_boundary_pivot_overrides"), &ArrayPolyMesh4D::set_poly_cell_boundary_pivot_overrides);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "poly_cell_boundary_pivot_overrides"), "set_poly_cell_boundary_pivot_overrides", "get_poly_cell_boundary_pivot_overrides");

@@ -22,7 +22,7 @@ void EditorImportPluginOFFPoly4D::_make_single_convex_3d_cell(Ref<ArrayPolyMesh4
 	p_mesh->set_poly_cell_indices(poly_cell_indices);
 	// Assign face normals pointing outward from the center of the mesh.
 	// This functionality is considered niche so it's just implemented here.
-	const PackedVector4Array &poly_vert = p_mesh->get_poly_cell_vertices();
+	const PackedVector4Array &poly_vert = p_mesh->get_poly_cell_vertex_positions();
 	const Vector<PackedInt32Array> face_vert_ind = p_mesh->get_all_poly_cell_vertex_indices(2, false);
 	PackedVector4Array face_normals;
 	face_normals.resize(face_vert_ind.size());

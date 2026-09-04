@@ -29,13 +29,13 @@ public:
 	void set_size(const Vector4 &p_size);
 
 	virtual Vector<Vector<PackedInt32Array>> get_poly_cell_indices() override;
-	virtual PackedVector4Array get_poly_cell_vertices() override;
+	virtual PackedVector4Array get_poly_cell_vertex_positions() override;
 	virtual PackedVector4Array get_poly_cell_boundary_normals() override;
 	virtual Vector<PackedVector4Array> get_poly_cell_vertex_normals() override;
 	virtual Vector<PackedVector3Array> get_poly_cell_texture_map() override;
 
 	virtual PackedInt32Array get_edge_indices() override;
-	virtual PackedVector4Array get_vertices() override;
+	virtual PackedVector4Array get_vertex_positions() override;
 
 	static Ref<OrthoplexPolyMesh4D> from_orthoplex_tetra_mesh(const Ref<OrthoplexTetraMesh4D> &p_tetra_mesh);
 	static Ref<OrthoplexPolyMesh4D> from_orthoplex_wire_mesh(const Ref<OrthoplexWireMesh4D> &p_wire_mesh);

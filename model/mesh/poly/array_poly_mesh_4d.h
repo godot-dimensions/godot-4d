@@ -30,7 +30,7 @@ private:
 	// 1: Each 3D cell made up of 2D face indices (each 3D cell makes up the boundary/surface of the 4D mesh).
 	// 2: Each 4D cell made up of 3D cell indices (optional, for encoding hypervolumes).
 	Vector<Vector<PackedInt32Array>> _poly_cell_indices;
-	PackedVector4Array _poly_cell_vertices;
+	PackedVector4Array _poly_cell_vertex_positions;
 	// The key's X is the geometry dimension, Y is the decomposition dimension.
 	// See G4MFMeshSurfaceBindingGeometry4D for more details.
 	HashMap<Vector2i, Vector<PackedVector4Array>> _all_poly_cell_normals;
@@ -135,8 +135,8 @@ public:
 	void set_seam_face_indices(const HashSet<int32_t> &p_seam_face_indices);
 	void set_seam_face_indices_bind(const PackedInt32Array &p_seam_face_indices);
 
-	virtual PackedVector4Array get_poly_cell_vertices() override;
-	void set_poly_cell_vertices(const PackedVector4Array &p_vertices);
+	virtual PackedVector4Array get_poly_cell_vertex_positions() override;
+	void set_poly_cell_vertex_positions(const PackedVector4Array &p_vertex_positions);
 };
 
 VARIANT_ENUM_CAST(ArrayPolyMesh4D::ComputeNormalsMode);

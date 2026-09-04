@@ -32,8 +32,8 @@ Vector<Vector<PackedInt32Array>> OrthoplexPolyMesh4D::get_poly_cell_indices() {
 	return ORTHOPLEX_POLY_CELL_INDICES;
 }
 
-PackedVector4Array OrthoplexPolyMesh4D::get_poly_cell_vertices() {
-	return get_vertices();
+PackedVector4Array OrthoplexPolyMesh4D::get_poly_cell_vertex_positions() {
+	return get_vertex_positions();
 }
 
 PackedVector4Array OrthoplexPolyMesh4D::get_poly_cell_boundary_normals() {
@@ -52,7 +52,7 @@ PackedInt32Array OrthoplexPolyMesh4D::get_edge_indices() {
 	return ORTHOPLEX_EDGE_INDICES;
 }
 
-PackedVector4Array OrthoplexPolyMesh4D::get_vertices() {
+PackedVector4Array OrthoplexPolyMesh4D::get_vertex_positions() {
 	if (_vertices_cache.is_empty()) {
 		const Vector4 he = get_half_extents();
 		_vertices_cache.append(Vector4(-he.x, 0.0f, 0.0f, 0.0f));

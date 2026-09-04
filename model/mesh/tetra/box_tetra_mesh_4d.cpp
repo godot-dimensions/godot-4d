@@ -59,8 +59,8 @@ Ref<ArrayMesh> BoxTetraMesh4D::export_texture_map_mesh() {
 	return convert_texture_map_to_mesh(texture_map);
 }
 
-PackedInt32Array BoxTetraMesh4D::get_simplex_cell_indices() {
-	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_INDICES : BOX_48_CELL_INDICES;
+PackedInt32Array BoxTetraMesh4D::get_simplex_cell_vertex_indices() {
+	return _tetra_decomp == BOX_TETRA_DECOMP_40_CELL ? BOX_40_CELL_VERTEX_INDICES : BOX_48_CELL_VERTEX_INDICES;
 }
 
 PackedVector4Array BoxTetraMesh4D::get_simplex_cell_boundary_normals() {
@@ -96,7 +96,7 @@ PackedInt32Array BoxTetraMesh4D::get_edge_indices() {
 	return TetraMesh4D::get_edge_indices();
 }
 
-PackedVector4Array BoxTetraMesh4D::get_vertices() {
+PackedVector4Array BoxTetraMesh4D::get_vertex_positions() {
 	if (_vertices_cache.is_empty()) {
 		const Vector4 he = get_half_extents();
 		_vertices_cache.append(Vector4(-he.x, -he.y, -he.z, -he.w));

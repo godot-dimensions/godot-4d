@@ -123,9 +123,9 @@ TEST_CASE("[ArrayPolyMesh4D] Append vertices and edges") {
 		CHECK(mesh->append_vertex(Vector4(1, 2, 3, 4)) == 0);
 		CHECK(mesh->append_vertex(Vector4(5, 6, 7, 8)) == 1);
 		CHECK_MESSAGE(mesh->append_vertex(Vector4(1, 2, 3, 4)) == 0, "Appending a duplicate vertex should return the existing index.");
-		CHECK(mesh->get_poly_cell_vertices().size() == 2);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 2);
 		CHECK_MESSAGE(mesh->append_vertex(Vector4(1, 2, 3, 4), false) == 2, "Appending without deduplication should append a new vertex.");
-		CHECK(mesh->get_poly_cell_vertices().size() == 3);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 3);
 	}
 
 	SUBCASE("Appending multiple vertices returns their indices") {
@@ -133,7 +133,7 @@ TEST_CASE("[ArrayPolyMesh4D] Append vertices and edges") {
 		mesh.instantiate();
 		const PackedInt32Array indices = mesh->append_vertices(PackedVector4Array{ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 0) });
 		CHECK((indices == PackedInt32Array{ 0, 1, 0 }));
-		CHECK(mesh->get_poly_cell_vertices().size() == 2);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 2);
 	}
 
 	SUBCASE("Appending edges stores sorted vertex indices and deduplicates both orders") {
@@ -156,7 +156,7 @@ TEST_CASE("[ArrayPolyMesh4D] Append vertices and edges") {
 		mesh.instantiate();
 		CHECK(mesh->append_edge_points(Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0)) == 0);
 		CHECK(mesh->append_edge_points(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0)) == 1);
-		CHECK_MESSAGE(mesh->get_poly_cell_vertices().size() == 3, "Shared points between edges should be deduplicated.");
+		CHECK_MESSAGE(mesh->get_poly_cell_vertex_positions().size() == 3, "Shared points between edges should be deduplicated.");
 		CHECK_MESSAGE(mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(1, 0, 0, 0)) == 1, "An existing edge given by points should deduplicate.");
 	}
 }
@@ -215,7 +215,7 @@ TEST_CASE("[ArrayPolyMesh4D] Delete poly elements") {
 	SUBCASE("Deleting a vertex cascades to edges, faces, and cells") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		mesh->delete_poly_element(0, 3);
-		CHECK(mesh->get_poly_cell_vertices().size() == 3);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 3);
 		CHECK_MESSAGE((mesh->get_edge_indices() == PackedInt32Array{ 0, 1, 0, 2, 1, 2 }), "Edges referencing the deleted vertex should be deleted, and the rest reindexed.");
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
 		REQUIRE_MESSAGE(poly_cell_indices.size() == 1, "The cell dimension should be trimmed once it becomes empty.");
@@ -227,7 +227,7 @@ TEST_CASE("[ArrayPolyMesh4D] Delete poly elements") {
 	SUBCASE("Deleting an edge cascades to faces and cells") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		mesh->delete_poly_element(1, 0);
-		CHECK(mesh->get_poly_cell_vertices().size() == 4);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 4);
 		CHECK((mesh->get_edge_indices() == PackedInt32Array{ 0, 2, 0, 3, 1, 2, 1, 3, 2, 3 }));
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
 		REQUIRE(poly_cell_indices.size() == 1);
@@ -274,7 +274,7 @@ TEST_CASE("[ArrayPolyMesh4D] Delete poly elements") {
 		mesh->delete_poly_element(1, 99);
 		mesh->delete_poly_element(2, 99);
 		ERR_PRINT_ON;
-		CHECK(mesh->get_poly_cell_vertices().size() == 4);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 4);
 		CHECK(mesh->get_edge_indices().size() == 12);
 		CHECK(mesh->get_poly_cell_indices().size() == 2);
 		CHECK(mesh->is_poly_mesh_data_valid());
@@ -461,7 +461,7 @@ TEST_CASE("[ArrayPolyMesh4D] Flat and smooth shading normals") {
 	SUBCASE("Smooth shading on a box gives corner-diagonal normals") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		mesh->set_smooth_shading_normals();
-		const PackedVector4Array vertices = mesh->get_poly_cell_vertices();
+		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
 		const Vector<PackedInt32Array> cell_vertex_indices = mesh->get_all_boundary_cell_vertex_indices(false);
 		const Vector<PackedVector4Array> vertex_normals = mesh->get_poly_cell_vertex_normals();
 		REQUIRE(vertex_normals.size() == 8);
@@ -798,7 +798,7 @@ TEST_CASE("[ArrayPolyMesh4D] Transform texture map and vertices") {
 	SUBCASE("Transforming vertices applies the basis and offset") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		mesh->transform_vertices(Transform4D(Basis4D::from_scale_uniform(2.0), Vector4(1, 2, 3, 4)));
-		const PackedVector4Array vertices = mesh->get_poly_cell_vertices();
+		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
 		REQUIRE(vertices.size() == 4);
 		CHECK(vertices[0].is_equal_approx(Vector4(1, 2, 3, 4)));
 		CHECK(vertices[1].is_equal_approx(Vector4(3, 2, 3, 4)));
@@ -813,7 +813,7 @@ TEST_CASE("[ArrayPolyMesh4D] Merge meshes") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
 		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(10, 0, 0, 0)));
-		const PackedVector4Array vertices = mesh->get_poly_cell_vertices();
+		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
 		REQUIRE(vertices.size() == 8);
 		CHECK(vertices[4].is_equal_approx(Vector4(10, 0, 0, 0)));
 		CHECK(vertices[5].is_equal_approx(Vector4(11, 0, 0, 0)));
@@ -867,7 +867,7 @@ TEST_CASE("[ArrayPolyMesh4D] Merge meshes") {
 		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
 		REQUIRE(normals.size() == 2);
 		CHECK(normals[1].is_equal_approx(Vector4(0, 0, 0, -1)));
-		const PackedVector4Array vertices = mesh->get_poly_cell_vertices();
+		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
 		CHECK(vertices[5].is_equal_approx(Vector4(9, 0, 0, 0)));
 	}
 
@@ -892,7 +892,7 @@ TEST_CASE("[ArrayPolyMesh4D] Merge meshes") {
 		other->append_edge_indices(1, 2);
 		other->append_poly_cell(2, PackedInt32Array{ 0, 2, 1 }, false);
 		mesh->merge_with(other, Transform4D());
-		CHECK(mesh->get_poly_cell_vertices().size() == 7);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 7);
 		CHECK(mesh->get_edge_indices().size() == 18);
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
 		REQUIRE(poly_cell_indices.size() == 2);
@@ -968,7 +968,7 @@ TEST_CASE("[ArrayPolyMesh4D] Merge meshes") {
 		Ref<ArrayPolyMesh4D> mesh;
 		mesh.instantiate();
 		mesh->merge_with(box, Transform4D());
-		CHECK(mesh->get_poly_cell_vertices() == box->get_poly_cell_vertices());
+		CHECK(mesh->get_poly_cell_vertex_positions() == box->get_poly_cell_vertex_positions());
 		CHECK(mesh->get_edge_indices() == box->get_edge_indices());
 		CHECK(mesh->get_poly_cell_indices().size() == 3);
 		CHECK(mesh->get_poly_cell_boundary_normals() == box->get_poly_cell_boundary_normals());
@@ -982,11 +982,11 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplicate all elements") {
 		mesh->append_vertex(Vector4(0, 0, 1, 0), false); // Duplicate of vertex 3.
 		mesh->append_edge_indices(2, 4, false); // Becomes a duplicate of edge 5 (2, 3) after vertex dedup.
 		mesh->append_poly_cell(2, PackedInt32Array{ 3, 5, 4 }, false); // Duplicate of face 3.
-		CHECK(mesh->get_poly_cell_vertices().size() == 5);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 5);
 		CHECK(mesh->get_edge_indices().size() == 14);
 		CHECK(mesh->get_poly_cell_indices()[0].size() == 5);
 		mesh->deduplicate_all_elements();
-		CHECK(mesh->get_poly_cell_vertices().size() == 4);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 4);
 		CHECK(mesh->get_edge_indices().size() == 12);
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
 		CHECK(poly_cell_indices[0].size() == 4);
@@ -1012,7 +1012,7 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplicate all elements") {
 		mesh->append_poly_cell(2, PackedInt32Array{ 0, 2, 1 }, false);
 		mesh->append_poly_cell(2, PackedInt32Array{ 2, 0, 1 }, false); // Duplicate of face 0.
 		mesh->deduplicate_all_elements();
-		CHECK(mesh->get_poly_cell_vertices().size() == 3);
+		CHECK(mesh->get_poly_cell_vertex_positions().size() == 3);
 		CHECK(mesh->get_edge_indices().size() == 6);
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
 		REQUIRE(poly_cell_indices.size() == 1);
@@ -1045,7 +1045,7 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplicate all elements") {
 		Ref<ArrayPolyMesh4D> other = make_box_array_mesh();
 		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(1, 0, 0, 0)));
 		mesh->deduplicate_all_elements();
-		CHECK_MESSAGE(mesh->get_poly_cell_vertices().size() == 24, "The 8 interface vertices must be deduplicated.");
+		CHECK_MESSAGE(mesh->get_poly_cell_vertex_positions().size() == 24, "The 8 interface vertices must be deduplicated.");
 		CHECK_MESSAGE(mesh->get_edge_indices().size() == 104, "The 12 interface edges must be deduplicated.");
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
 		REQUIRE(poly_cell_indices.size() == 3);
@@ -1054,7 +1054,7 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplicate all elements") {
 		CHECK(poly_cell_indices[2].size() == 2);
 		CHECK(mesh->is_poly_mesh_data_valid());
 		// Find the interface cell: the one whose vertices all have x at the interface plane.
-		const PackedVector4Array vertices = mesh->get_poly_cell_vertices();
+		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
 		const Vector<PackedInt32Array> cell_vertex_indices = mesh->get_all_boundary_cell_vertex_indices(false);
 		int32_t interface_cell = -1;
 		for (int64_t cell_index = 0; cell_index < cell_vertex_indices.size(); cell_index++) {
@@ -1071,7 +1071,7 @@ TEST_CASE("[ArrayPolyMesh4D] Deduplicate all elements") {
 			}
 		}
 		REQUIRE_MESSAGE(interface_cell != -1, "There must be a cell entirely at the interface plane.");
-		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
 		REQUIRE(simplex_indices.size() > 0);
 		const int64_t simplex_count = simplex_indices.size() / 4;
 		for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
@@ -1135,10 +1135,10 @@ TEST_CASE("[ArrayPolyMesh4D] Getters and setters") {
 		Ref<ArrayPolyMesh4D> source = make_tetrahedron_cell_mesh();
 		Ref<ArrayPolyMesh4D> mesh;
 		mesh.instantiate();
-		mesh->set_poly_cell_vertices(source->get_poly_cell_vertices());
+		mesh->set_poly_cell_vertex_positions(source->get_poly_cell_vertex_positions());
 		mesh->set_edge_vertex_indices(source->get_edge_indices());
 		mesh->set_poly_cell_indices(source->get_poly_cell_indices());
-		CHECK(mesh->get_poly_cell_vertices() == source->get_poly_cell_vertices());
+		CHECK(mesh->get_poly_cell_vertex_positions() == source->get_poly_cell_vertex_positions());
 		CHECK(mesh->get_edge_indices() == source->get_edge_indices());
 		CHECK(mesh->get_poly_cell_indices().size() == 2);
 		CHECK(mesh->is_poly_mesh_data_valid());
@@ -1151,7 +1151,7 @@ TEST_CASE("[ArrayPolyMesh4D] Duplicate preserves the normals and texture map dic
 	Ref<ArrayPolyMesh4D> mesh;
 	mesh.instantiate();
 	PackedVector4Array vertices = { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0) };
-	mesh->set_poly_cell_vertices(vertices);
+	mesh->set_poly_cell_vertex_positions(vertices);
 	mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 0, 2 });
 	Vector<PackedInt32Array> faces;
 	faces.append(PackedInt32Array{ 0, 1, 2 });

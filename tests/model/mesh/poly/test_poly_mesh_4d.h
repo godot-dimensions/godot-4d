@@ -512,13 +512,13 @@ TEST_CASE("[PolyMesh4D] Canonical span of 4D cells") {
 
 TEST_CASE("[PolyMesh4D] Simplex decomposition of a single tetrahedron cell") {
 	Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
-	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
 	REQUIRE_MESSAGE(simplex_indices.size() == 4, "A tetrahedral cell must decompose into exactly one simplex.");
 	// The simplex must use all four vertices, each exactly once.
 	for (int32_t vertex_index = 0; vertex_index < 4; vertex_index++) {
 		CHECK_MESSAGE(simplex_indices.has(vertex_index), "The single simplex must use every vertex of the tetrahedral cell.");
 	}
-	CHECK_MESSAGE(mesh->get_vertices() == mesh->get_poly_cell_vertices(), "Decomposing a single tetrahedral cell should not add any vertices.");
+	CHECK_MESSAGE(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions(), "Decomposing a single tetrahedral cell should not add any vertices.");
 	CHECK_MESSAGE(mesh->get_source_poly_cell_for_simplex_cell(0) == 0, "The simplex must map back to the boundary cell it came from.");
 	CHECK_MESSAGE(mesh->get_source_poly_cell_for_simplex_cell(-1) == -1, "Out of range simplex indices must map to -1.");
 	CHECK_MESSAGE(mesh->get_source_poly_cell_for_simplex_cell(1) == -1, "Out of range simplex indices must map to -1.");
@@ -532,8 +532,8 @@ TEST_CASE("[PolyMesh4D] Simplex decomposition of a single tetrahedron cell") {
 TEST_CASE("[PolyMesh4D] Simplex decomposition of a box") {
 	Ref<BoxPolyMesh4D> box;
 	box.instantiate();
-	const PackedInt32Array simplex_indices = box->get_simplex_cell_indices();
-	REQUIRE_MESSAGE(simplex_indices.size() % 4 == 0, "Simplex cell indices must come in groups of 4.");
+	const PackedInt32Array simplex_indices = box->get_simplex_cell_vertex_indices();
+	REQUIRE_MESSAGE(simplex_indices.size() % 4 == 0, "Simplex cell vertex indices must come in groups of 4.");
 	const int64_t simplex_count = simplex_indices.size() / 4;
 	CHECK_MESSAGE(simplex_count == 48, "Each of the 8 cube cells should decompose into 6 tetrahedra.");
 	const PackedVector4Array curated_normals = box->get_poly_cell_boundary_normals();
@@ -583,9 +583,9 @@ TEST_CASE("[PolyMesh4D] Simplex decomposition of a box") {
 TEST_CASE("[PolyMesh4D] Simplex decomposition of an orthoplex") {
 	Ref<OrthoplexPolyMesh4D> orthoplex;
 	orthoplex.instantiate();
-	const PackedInt32Array simplex_indices = orthoplex->get_simplex_cell_indices();
+	const PackedInt32Array simplex_indices = orthoplex->get_simplex_cell_vertex_indices();
 	REQUIRE_MESSAGE(simplex_indices.size() == 16 * 4, "Each of the 16 tetrahedral cells decomposes into exactly one simplex.");
-	CHECK_MESSAGE(orthoplex->get_vertices().size() == 8, "Decomposing an orthoplex should not add any vertices.");
+	CHECK_MESSAGE(orthoplex->get_vertex_positions().size() == 8, "Decomposing an orthoplex should not add any vertices.");
 	const PackedVector4Array curated_normals = orthoplex->get_poly_cell_boundary_normals();
 	const PackedVector4Array simplex_normals = orthoplex->get_simplex_cell_boundary_normals();
 	REQUIRE(simplex_normals.size() == 16);
@@ -616,7 +616,7 @@ TEST_CASE("[PolyMesh4D] Boundary pivot overrides are used by the simplex decompo
 	}
 	pivot_overrides.set(0, 7);
 	mesh->set_poly_cell_boundary_pivot_overrides(pivot_overrides);
-	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
 	REQUIRE(simplex_indices.size() % 4 == 0);
 	const int64_t simplex_count = simplex_indices.size() / 4;
 	int64_t cell_0_simplex_count = 0;
@@ -741,7 +741,7 @@ TEST_CASE("[PolyMesh4D] To array poly mesh") {
 		box.instantiate();
 		Ref<ArrayPolyMesh4D> array_mesh = box->to_array_poly_mesh();
 		REQUIRE(array_mesh.is_valid());
-		CHECK(array_mesh->get_poly_cell_vertices() == box->get_poly_cell_vertices());
+		CHECK(array_mesh->get_poly_cell_vertex_positions() == box->get_poly_cell_vertex_positions());
 		CHECK(array_mesh->get_edge_indices() == box->get_edge_indices());
 		CHECK(array_mesh->get_poly_cell_boundary_normals() == box->get_poly_cell_boundary_normals());
 		const Vector<Vector<PackedInt32Array>> array_indices = array_mesh->get_poly_cell_indices();
@@ -763,7 +763,7 @@ TEST_CASE("[PolyMesh4D] To array poly mesh") {
 			CHECK(array_texture_map[cell_index] == box_texture_map[cell_index]);
 		}
 		CHECK_MESSAGE(array_mesh->is_poly_mesh_data_valid(), "The converted array mesh must be valid.");
-		CHECK_MESSAGE(array_mesh->get_simplex_cell_indices() == box->get_simplex_cell_indices(), "The converted array mesh must decompose identically.");
+		CHECK_MESSAGE(array_mesh->get_simplex_cell_vertex_indices() == box->get_simplex_cell_vertex_indices(), "The converted array mesh must decompose identically.");
 	}
 
 	SUBCASE("Orthoplex converts and stays valid") {
@@ -771,7 +771,7 @@ TEST_CASE("[PolyMesh4D] To array poly mesh") {
 		orthoplex.instantiate();
 		Ref<ArrayPolyMesh4D> array_mesh = orthoplex->to_array_poly_mesh();
 		REQUIRE(array_mesh.is_valid());
-		CHECK(array_mesh->get_poly_cell_vertices() == orthoplex->get_poly_cell_vertices());
+		CHECK(array_mesh->get_poly_cell_vertex_positions() == orthoplex->get_poly_cell_vertex_positions());
 		CHECK(array_mesh->is_poly_mesh_data_valid());
 	}
 }
@@ -802,7 +802,7 @@ TEST_CASE("[PolyMesh4D] Watertight simplex decomposition") {
 			orthoplex.instantiate();
 			mesh = orthoplex;
 		}
-		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
 		REQUIRE(simplex_indices.size() % 4 == 0);
 		const int64_t simplex_count = simplex_indices.size() / 4;
 		REQUIRE(simplex_count > 0);
@@ -838,12 +838,12 @@ TEST_CASE("[PolyMesh4D] Watertight simplex decomposition") {
 
 TEST_CASE("[PolyMesh4D] Cache clearing keeps results consistent") {
 	Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
-	const PackedInt32Array first_simplex_indices = mesh->get_simplex_cell_indices();
+	const PackedInt32Array first_simplex_indices = mesh->get_simplex_cell_vertex_indices();
 	const PackedVector4Array first_normals = mesh->get_simplex_cell_boundary_normals();
-	const PackedVector4Array first_vertices = mesh->get_vertices();
+	const PackedVector4Array first_vertices = mesh->get_vertex_positions();
 	mesh->poly_mesh_clear_cache();
-	CHECK_MESSAGE(mesh->get_simplex_cell_indices() == first_simplex_indices, "Recomputing after a cache clear must give the same simplexes.");
-	CHECK_MESSAGE(mesh->get_vertices() == first_vertices, "Recomputing after a cache clear must give the same vertices.");
+	CHECK_MESSAGE(mesh->get_simplex_cell_vertex_indices() == first_simplex_indices, "Recomputing after a cache clear must give the same simplexes.");
+	CHECK_MESSAGE(mesh->get_vertex_positions() == first_vertices, "Recomputing after a cache clear must give the same vertices.");
 	mesh->poly_mesh_clear_cache(true);
 	CHECK_MESSAGE(mesh->get_simplex_cell_boundary_normals() == first_normals, "Recomputing after a normals-only cache clear must give the same normals.");
 	mesh->reset_poly_mesh_data_validation();
@@ -857,8 +857,8 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 		mesh->append_edge_points(Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0));
 		mesh->append_edge_points(Vector4(1, 0, 0, 0), Vector4(1, 1, 0, 0));
 		CHECK(mesh->is_poly_mesh_data_valid());
-		CHECK_MESSAGE(mesh->get_vertices() == mesh->get_poly_cell_vertices(), "Without boundary cells, the simplex vertices are just the poly vertices.");
-		CHECK_MESSAGE(mesh->get_simplex_cell_indices().is_empty(), "Without boundary cells, there are no simplexes.");
+		CHECK_MESSAGE(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions(), "Without boundary cells, the simplex vertices are just the poly vertices.");
+		CHECK_MESSAGE(mesh->get_simplex_cell_vertex_indices().is_empty(), "Without boundary cells, there are no simplexes.");
 	}
 
 	SUBCASE("A mesh with faces but no cells") {
@@ -872,7 +872,7 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 		mesh->append_edge_indices(1, 2);
 		mesh->append_poly_cell(2, PackedInt32Array{ 0, 2, 1 }, false);
 		CHECK(mesh->is_poly_mesh_data_valid());
-		CHECK_MESSAGE(mesh->get_simplex_cell_indices().is_empty(), "A face-only mesh has no boundary cells to decompose.");
+		CHECK_MESSAGE(mesh->get_simplex_cell_vertex_indices().is_empty(), "A face-only mesh has no boundary cells to decompose.");
 		const Vector<PackedInt32Array> face_vertex_indices = mesh->get_all_face_vertex_indices();
 		REQUIRE(face_vertex_indices.size() == 1);
 		CHECK(face_vertex_indices[0].size() == 3);
@@ -894,7 +894,7 @@ TEST_CASE("[PolyMesh4D] Faces with unordered edges triangulate correctly") {
 		Vector4(-1, 2, 0, 0),
 		Vector4(1, 1.5, 3, 0), // The apex, 3 units above the base pentagon of area 10.
 	};
-	mesh->set_poly_cell_vertices(vertices);
+	mesh->set_poly_cell_vertex_positions(vertices);
 	mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 2, 3, 3, 4, 0, 4, 0, 5, 1, 5, 2, 5, 3, 5, 4, 5 });
 	Vector<PackedInt32Array> faces;
 	faces.append(PackedInt32Array{ 0, 4, 1, 2, 3 }); // The scrambled pentagon: AB, AE, BC, CD, DE.
@@ -909,16 +909,16 @@ TEST_CASE("[PolyMesh4D] Faces with unordered edges triangulate correctly") {
 	mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ 5 });
 	ERR_PRINT_OFF; // The unordered edge list prints a warning, which is expected here.
 	CHECK(mesh->is_poly_mesh_data_valid());
-	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+	const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
 	ERR_PRINT_ON;
-	const PackedVector4Array simplex_vertices = mesh->get_vertices();
+	const PackedVector4Array simplex_vertex_positions = mesh->get_vertex_positions();
 	double total_volume = 0.0;
 	for (int64_t simplex_start = 0; simplex_start < simplex_indices.size(); simplex_start += 4) {
-		const Vector4 vert0 = simplex_vertices[simplex_indices[simplex_start]];
+		const Vector4 vert0 = simplex_vertex_positions[simplex_indices[simplex_start]];
 		const Vector4 perp = Vector4D::perpendicular(
-				simplex_vertices[simplex_indices[simplex_start + 1]] - vert0,
-				simplex_vertices[simplex_indices[simplex_start + 2]] - vert0,
-				simplex_vertices[simplex_indices[simplex_start + 3]] - vert0);
+				simplex_vertex_positions[simplex_indices[simplex_start + 1]] - vert0,
+				simplex_vertex_positions[simplex_indices[simplex_start + 2]] - vert0,
+				simplex_vertex_positions[simplex_indices[simplex_start + 3]] - vert0);
 		total_volume += perp.length() / 6.0;
 	}
 	CHECK_MESSAGE(total_volume == doctest::Approx(10.0), "The tetrahedralized volume must match the pyramid's volume even with an unordered face edge list.");
@@ -947,7 +947,7 @@ TEST_CASE("[PolyMesh4D] Conformed and interior cells") {
 			Vector4(-1, 0, 1, 0),
 			Vector4(0, 0, 1, 0),
 		};
-		mesh->set_poly_cell_vertices(vertices);
+		mesh->set_poly_cell_vertex_positions(vertices);
 		mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 2, 3, 0, 3, 0, 4, 1, 5, 2, 6, 3, 7, 4, 8, 5, 8, 5, 9, 6, 9, 6, 10, 7, 10, 4, 11, 7, 11, 8, 12, 9, 12, 10, 12, 11, 12 });
 		Vector<PackedInt32Array> faces;
 		faces.append(PackedInt32Array{ 0, 1, 2, 3 });
@@ -988,7 +988,7 @@ TEST_CASE("[PolyMesh4D] Conformed and interior cells") {
 			Vector4(0, 0, 0, 1),
 			Vector4(0.5, 0.5, 0.5, 0.5),
 		};
-		mesh->set_poly_cell_vertices(vertices);
+		mesh->set_poly_cell_vertex_positions(vertices);
 		// Edges are all vertex pairs except {0, 5}, since only those two are not connected.
 		PackedInt32Array edge_indices;
 		HashMap<int32_t, int32_t> edge_map;
@@ -1055,7 +1055,7 @@ TEST_CASE("[PolyMesh4D] Conformed and interior cells") {
 		volumes.append(volume_b_cells);
 		mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ faces, cells, volumes });
 		CHECK(mesh->is_poly_mesh_data_valid());
-		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_indices();
+		const PackedInt32Array simplex_indices = mesh->get_simplex_cell_vertex_indices();
 		CHECK_MESSAGE(simplex_indices.size() == 8 * 4, "Only the 8 outer tetrahedral cells must decompose, into 1 tetrahedron each.");
 		for (int32_t simplex_index = 0; simplex_index < (int32_t)(simplex_indices.size() / 4); simplex_index++) {
 			CHECK_MESSAGE(mesh->get_source_poly_cell_for_simplex_cell(simplex_index) != shared_cell_index, "The interior boundary cell shared by both volumetric cells must generate no tetrahedra.");

@@ -60,11 +60,11 @@ public:
 
 	virtual PackedInt32Array get_edge_indices();
 	virtual PackedVector4Array get_edge_positions();
-	virtual PackedVector4Array get_vertices();
+	virtual PackedVector4Array get_vertex_positions();
 
 	GDVIRTUAL0R(PackedInt32Array, _get_edge_indices);
 	GDVIRTUAL0R(PackedVector4Array, _get_edge_positions);
-	GDVIRTUAL0R(PackedVector4Array, _get_vertices);
+	GDVIRTUAL0R(PackedVector4Array, _get_vertex_positions);
 	GDVIRTUAL0R(bool, _validate_mesh_data);
 	GDVIRTUAL0R(Ref<Material4D>, _get_fallback_material);
 	GDVIRTUAL0(_update_proxy_mesh_3d);

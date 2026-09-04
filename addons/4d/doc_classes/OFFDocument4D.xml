@@ -106,7 +106,7 @@
 		<member name="face_vertex_indices" type="PackedInt32Array[]" setter="set_face_vertex_indices" getter="get_face_vertex_indices" default="[]">
 			The indices of the vertices of each face in the mesh. Each item in the array is a PackedInt32Array that represents a face by containing the indices of the vertices that make up the face.
 		</member>
-		<member name="vertices" type="PackedVector4Array" setter="set_vertices" getter="get_vertices" default="PackedVector4Array()">
+		<member name="vertex_positions" type="PackedVector4Array" setter="set_vertex_positions" getter="get_vertex_positions" default="PackedVector4Array()">
 			The vertices of the mesh, in 4D space.
 		</member>
 	</members>

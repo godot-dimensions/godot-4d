@@ -52,7 +52,7 @@ bool PolyMesh4D::validate_mesh_data() {
 bool PolyMesh4D::_validate_poly_mesh_data_only() {
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 	const PackedInt32Array edge_indices = get_edge_indices();
-	const PackedVector4Array poly_cell_vertices = get_poly_cell_vertices();
+	const PackedVector4Array poly_cell_vertices = get_poly_cell_vertex_positions();
 	const int64_t edge_index_count = edge_indices.size();
 	ERR_FAIL_COND_V_MSG(edge_index_count % 2 != 0, false, "PolyMesh4D: Edge index count must be even (pairs of vertices).");
 	const int64_t vertex_count = poly_cell_vertices.size();
@@ -602,7 +602,7 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	}
 	poly_mesh_clear_cache();
 	// Step 1: Gather information needed to compute the simplex decomposition.
-	_simplex_cell_vertices_cache = get_poly_cell_vertices();
+	_simplex_cell_vertex_positions_cache = get_poly_cell_vertex_positions();
 	const PackedInt32Array all_edge_indices = get_edge_indices();
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 	ERR_FAIL_COND_MSG(poly_cell_indices.size() < 2, "PolyMesh4D: Cannot decompose boundary cells into simplexes because there are no boundary cells.");
@@ -711,10 +711,10 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 				if (p_force_align_triangulations && best_score < 0) {
 					Vector4 centroid;
 					for (const int64_t vertex_index : cell_vertex_indices[best_cell_index]) {
-						centroid += _simplex_cell_vertices_cache[vertex_index];
+						centroid += _simplex_cell_vertex_positions_cache[vertex_index];
 					}
 					centroid /= (real_t)cell_vertex_indices[best_cell_index].size();
-					best_pivot_vertex = _append_vertex_internal(_simplex_cell_vertices_cache, centroid, true);
+					best_pivot_vertex = _append_vertex_internal(_simplex_cell_vertex_positions_cache, centroid, true);
 				}
 			}
 			// Step 5.5: If the pivot is on any faces, triangulate the faces that have the pivot vertex.
@@ -779,9 +779,9 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 			for (int64_t tri_index = 0; tri_index < face_triangulation.size(); tri_index += 3) {
 				int32_t new_tet[4] = { pivot_vertex_index, face_triangulation[tri_index], face_triangulation[tri_index + 1], face_triangulation[tri_index + 2] };
 				const Vector4 tet_perp = Vector4D::perpendicular(
-						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[1]]),
-						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[2]]),
-						_simplex_cell_vertices_cache[new_tet[0]].direction_to(_simplex_cell_vertices_cache[new_tet[3]]));
+						_simplex_cell_vertex_positions_cache[new_tet[0]].direction_to(_simplex_cell_vertex_positions_cache[new_tet[1]]),
+						_simplex_cell_vertex_positions_cache[new_tet[0]].direction_to(_simplex_cell_vertex_positions_cache[new_tet[2]]),
+						_simplex_cell_vertex_positions_cache[new_tet[0]].direction_to(_simplex_cell_vertex_positions_cache[new_tet[3]]));
 				if (tet_perp.is_zero_approx()) {
 					// Skip zero-measure tetrahedra, which have no volume to render or collide with.
 					// These arise when a cell has collinear or coplanar chains of vertices, such as
@@ -804,13 +804,13 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 					cell_reference_perp = oriented_tet_perp;
 					has_cell_reference_perp = true;
 				}
-				const int64_t old_size = _simplex_cell_indices_cache.size();
-				_simplex_cell_indices_cache.resize(old_size + 4);
-				_simplex_cell_indices_cache.set(old_size, new_tet[0]);
-				_simplex_cell_indices_cache.set(old_size + 1, new_tet[1]);
-				_simplex_cell_indices_cache.set(old_size + 2, new_tet[2]);
-				_simplex_cell_indices_cache.set(old_size + 3, new_tet[3]);
-				_simplex_cell_indices_source_poly_cells.append(cell_index);
+				const int64_t old_size = _simplex_cell_vertex_indices_cache.size();
+				_simplex_cell_vertex_indices_cache.resize(old_size + 4);
+				_simplex_cell_vertex_indices_cache.set(old_size, new_tet[0]);
+				_simplex_cell_vertex_indices_cache.set(old_size + 1, new_tet[1]);
+				_simplex_cell_vertex_indices_cache.set(old_size + 2, new_tet[2]);
+				_simplex_cell_vertex_indices_cache.set(old_size + 3, new_tet[3]);
+				_simplex_cell_source_poly_cells.append(cell_index);
 			}
 		}
 	}
@@ -866,7 +866,7 @@ Vector<PackedInt32Array> PolyMesh4D::_get_vertex_indices_of_boundary_cells(const
 }
 
 PackedVector4Array PolyMesh4D::_compute_boundary_normals_based_on_cell_orientation(const Vector<PackedInt32Array> &p_boundary_cell_vertex_indices, const bool p_keep_existing) {
-	const PackedVector4Array poly_cell_vertices = get_poly_cell_vertices();
+	const PackedVector4Array poly_cell_vertices = get_poly_cell_vertex_positions();
 	ERR_FAIL_COND_V_MSG(poly_cell_vertices.is_empty(), PackedVector4Array(), "PolyMesh4D: Poly cell vertices are required to compute boundary normals.");
 	PackedVector4Array poly_cell_normals;
 	if (p_keep_existing) {
@@ -950,7 +950,7 @@ Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices(const int 
 	ERR_FAIL_COND_V(p_cell_dimension >= poly_cell_indices.size() + 2, ret);
 	if (p_cell_dimension == 0) {
 		// Degenerate case: the "decomposition" of a vertex into its own dimension is just itself.
-		const int64_t vertex_count = get_poly_cell_vertices().size();
+		const int64_t vertex_count = get_poly_cell_vertex_positions().size();
 		ret.resize(vertex_count);
 		for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
 			ret.set(vertex_index, PackedInt32Array{ (int32_t)vertex_index });
@@ -993,7 +993,7 @@ Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_poly_indices(const int p_
 	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
 	ERR_FAIL_INDEX_V(p_cell_dimension, poly_cell_indices.size() + 2, ret);
 	const PackedInt32Array &all_edge_indices = get_edge_indices();
-	const int64_t cells_in_dimension = (p_cell_dimension == 0) ? get_poly_cell_vertices().size() : ((p_cell_dimension == 1) ? all_edge_indices.size() / 2 : poly_cell_indices[p_cell_dimension - 2].size());
+	const int64_t cells_in_dimension = (p_cell_dimension == 0) ? get_poly_cell_vertex_positions().size() : ((p_cell_dimension == 1) ? all_edge_indices.size() / 2 : poly_cell_indices[p_cell_dimension - 2].size());
 	if (p_decomposition_dimension == p_cell_dimension) {
 		// Degenerate case: the "decomposition" of a cell into its own dimension is just itself.
 		ret.resize(cells_in_dimension);
@@ -1057,10 +1057,10 @@ void PolyMesh4D::poly_mesh_clear_cache(const bool p_normals_only) {
 		mark_proxy_mesh_3d_dirty();
 		return;
 	}
-	_simplex_cell_indices_cache.clear();
-	_simplex_cell_indices_source_poly_cells.clear();
+	_simplex_cell_vertex_indices_cache.clear();
+	_simplex_cell_source_poly_cells.clear();
 	_simplex_cell_uvw_texture_map_cache.clear();
-	_simplex_cell_vertices_cache.clear();
+	_simplex_cell_vertex_positions_cache.clear();
 	tetra_mesh_clear_cache();
 }
 
@@ -1073,16 +1073,16 @@ Ref<ArrayPolyMesh4D> PolyMesh4D::to_array_poly_mesh() {
 	array_poly_mesh->set_poly_cell_boundary_normals(get_poly_cell_boundary_normals());
 	array_poly_mesh->set_poly_cell_vertex_normals(get_poly_cell_vertex_normals());
 	array_poly_mesh->set_poly_cell_texture_map(get_poly_cell_texture_map());
-	array_poly_mesh->set_poly_cell_vertices(get_poly_cell_vertices());
+	array_poly_mesh->set_poly_cell_vertex_positions(get_poly_cell_vertex_positions());
 	array_poly_mesh->set_material(get_material());
 	return array_poly_mesh;
 }
 
 int32_t PolyMesh4D::get_source_poly_cell_for_simplex_cell(const int32_t p_simplex_cell_index) const {
-	if (p_simplex_cell_index < 0 || p_simplex_cell_index >= _simplex_cell_indices_source_poly_cells.size()) {
+	if (p_simplex_cell_index < 0 || p_simplex_cell_index >= _simplex_cell_source_poly_cells.size()) {
 		return -1;
 	}
-	return _simplex_cell_indices_source_poly_cells[p_simplex_cell_index];
+	return _simplex_cell_source_poly_cells[p_simplex_cell_index];
 }
 
 Vector<Vector<PackedInt32Array>> PolyMesh4D::get_poly_cell_indices() {
@@ -1103,16 +1103,16 @@ Vector<Vector<PackedInt32Array>> PolyMesh4D::get_poly_cell_indices() {
 	return indices;
 }
 
-PackedVector4Array PolyMesh4D::get_poly_cell_vertices() {
-	PackedVector4Array vertices;
-	GDVIRTUAL_CALL(_get_poly_cell_vertices, vertices);
-	return vertices;
+PackedVector4Array PolyMesh4D::get_poly_cell_vertex_positions() {
+	PackedVector4Array vertex_positions;
+	GDVIRTUAL_CALL(_get_poly_cell_vertex_positions, vertex_positions);
+	return vertex_positions;
 }
 
 PackedVector4Array PolyMesh4D::get_poly_cell_boundary_normals() {
-	PackedVector4Array normals;
-	GDVIRTUAL_CALL(_get_poly_cell_boundary_normals, normals);
-	return normals;
+	PackedVector4Array boundary_normals;
+	GDVIRTUAL_CALL(_get_poly_cell_boundary_normals, boundary_normals);
+	return boundary_normals;
 }
 
 PackedInt32Array PolyMesh4D::get_poly_cell_boundary_pivot_overrides() {
@@ -1202,34 +1202,34 @@ PackedInt32Array PolyMesh4D::get_edge_indices() {
 	return indices;
 }
 
-PackedInt32Array PolyMesh4D::get_simplex_cell_indices() {
-	if (_simplex_cell_indices_cache.is_empty()) {
+PackedInt32Array PolyMesh4D::get_simplex_cell_vertex_indices() {
+	if (_simplex_cell_vertex_indices_cache.is_empty()) {
 		// Only attempt to decompose boundary cells into simplexes if there are boundary cells to decompose.
 		if (get_poly_cell_indices().size() > 1) {
 			// This will populate the simplex indices cache as a side effect.
 			_decompose_boundary_cells_into_simplexes(true);
 		}
 	}
-	return _simplex_cell_indices_cache;
+	return _simplex_cell_vertex_indices_cache;
 }
 
 PackedVector4Array PolyMesh4D::get_simplex_cell_boundary_normals() {
 	if (_simplex_cell_boundary_normals_cache.is_empty()) {
-		if (_simplex_cell_indices_cache.is_empty()) {
+		if (_simplex_cell_vertex_indices_cache.is_empty()) {
 			_decompose_boundary_cells_into_simplexes(true);
 		}
-		const int64_t simplex_count = _simplex_cell_indices_cache.size() / 4;
+		const int64_t simplex_count = _simplex_cell_vertex_indices_cache.size() / 4;
 		_simplex_cell_boundary_normals_cache.resize(simplex_count);
 		for (int64_t i = 0; i < simplex_count; i++) {
 			const int64_t offset = i * 4;
-			const int32_t vert0 = _simplex_cell_indices_cache[offset];
-			const int32_t vert1 = _simplex_cell_indices_cache[offset + 1];
-			const int32_t vert2 = _simplex_cell_indices_cache[offset + 2];
-			const int32_t vert3 = _simplex_cell_indices_cache[offset + 3];
+			const int32_t vert0 = _simplex_cell_vertex_indices_cache[offset];
+			const int32_t vert1 = _simplex_cell_vertex_indices_cache[offset + 1];
+			const int32_t vert2 = _simplex_cell_vertex_indices_cache[offset + 2];
+			const int32_t vert3 = _simplex_cell_vertex_indices_cache[offset + 3];
 			const Vector4 perp = Vector4D::perpendicular(
-					_simplex_cell_vertices_cache[vert0].direction_to(_simplex_cell_vertices_cache[vert1]),
-					_simplex_cell_vertices_cache[vert0].direction_to(_simplex_cell_vertices_cache[vert2]),
-					_simplex_cell_vertices_cache[vert0].direction_to(_simplex_cell_vertices_cache[vert3]));
+					_simplex_cell_vertex_positions_cache[vert0].direction_to(_simplex_cell_vertex_positions_cache[vert1]),
+					_simplex_cell_vertex_positions_cache[vert0].direction_to(_simplex_cell_vertex_positions_cache[vert2]),
+					_simplex_cell_vertex_positions_cache[vert0].direction_to(_simplex_cell_vertex_positions_cache[vert3]));
 			_simplex_cell_boundary_normals_cache.set(i, perp.normalized());
 		}
 	}
@@ -1242,11 +1242,11 @@ PackedVector4Array PolyMesh4D::get_simplex_cell_vertex_normals() {
 		if (poly_cell_vertex_normals.is_empty()) {
 			return PackedVector4Array(); // No vertex normal data available.
 		}
-		int64_t simplex_count = _simplex_cell_indices_source_poly_cells.size();
-		if (simplex_count == 0 || simplex_count * 4 != _simplex_cell_indices_cache.size()) {
+		int64_t simplex_count = _simplex_cell_source_poly_cells.size();
+		if (simplex_count == 0 || simplex_count * 4 != _simplex_cell_vertex_indices_cache.size()) {
 			_decompose_boundary_cells_into_simplexes(true);
-			simplex_count = _simplex_cell_indices_source_poly_cells.size();
-			CRASH_COND_MSG(simplex_count == 0 || simplex_count * 4 != _simplex_cell_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
+			simplex_count = _simplex_cell_source_poly_cells.size();
+			CRASH_COND_MSG(simplex_count == 0 || simplex_count * 4 != _simplex_cell_vertex_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
 		}
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 		ERR_FAIL_COND_V_MSG(poly_cell_indices.size() < 2, PackedVector4Array(), "PolyMesh4D: No boundary cells available, cannot compute simplex vertex normals.");
@@ -1256,7 +1256,7 @@ PackedVector4Array PolyMesh4D::get_simplex_cell_vertex_normals() {
 		bool has_some_vertex_normals = false;
 		bool missing_some_vertex_normals = false;
 		for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
-			const int32_t source_cell = _simplex_cell_indices_source_poly_cells[simplex_index];
+			const int32_t source_cell = _simplex_cell_source_poly_cells[simplex_index];
 			const PackedVector4Array &source_poly_vertex_normals = poly_cell_vertex_normals[source_cell];
 			if (source_poly_vertex_normals.is_empty()) {
 				missing_some_vertex_normals = true;
@@ -1267,7 +1267,7 @@ PackedVector4Array PolyMesh4D::get_simplex_cell_vertex_normals() {
 			CRASH_COND_MSG(source_poly_vertex_normals.size() != source_cell_vertices.size(), "PolyMesh4D: Source polytope cell vertex normals size does not match cell vertex count.");
 			const int64_t offset = simplex_index * 4;
 			for (int64_t vertex_in_simplex = 0; vertex_in_simplex < 4; vertex_in_simplex++) {
-				const int32_t vertex_index = _simplex_cell_indices_cache[offset + vertex_in_simplex];
+				const int32_t vertex_index = _simplex_cell_vertex_indices_cache[offset + vertex_in_simplex];
 				const int64_t vertex_in_source_poly = source_cell_vertices.find(vertex_index);
 				Vector4 normal;
 				if (vertex_in_source_poly == -1) {
@@ -1295,18 +1295,18 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 		if (poly_cell_texture_map.is_empty()) {
 			return PackedVector3Array(); // No texture map data available.
 		}
-		int64_t simplex_count = _simplex_cell_indices_source_poly_cells.size();
-		if (simplex_count * 4 != _simplex_cell_indices_cache.size()) {
+		int64_t simplex_count = _simplex_cell_source_poly_cells.size();
+		if (simplex_count * 4 != _simplex_cell_vertex_indices_cache.size()) {
 			_decompose_boundary_cells_into_simplexes(true);
-			simplex_count = _simplex_cell_indices_source_poly_cells.size();
-			CRASH_COND_MSG(simplex_count * 4 != _simplex_cell_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
+			simplex_count = _simplex_cell_source_poly_cells.size();
+			CRASH_COND_MSG(simplex_count * 4 != _simplex_cell_vertex_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
 		}
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 		ERR_FAIL_COND_V_MSG(poly_cell_indices.size() < 2, PackedVector3Array(), "PolyMesh4D: No boundary cells available, cannot compute simplex UVW map.");
 		const PackedInt32Array all_edge_indices = get_edge_indices();
 		const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(poly_cell_indices, all_edge_indices, false);
 		// Prepare a cache for inferred vertex texcoords for pivot overrides.
-		const PackedVector4Array poly_cell_vertices = get_poly_cell_vertices();
+		const PackedVector4Array poly_cell_vertices = get_poly_cell_vertex_positions();
 		const PackedInt32Array poly_cell_boundary_pivot_overrides = get_poly_cell_boundary_pivot_overrides();
 		const int64_t cell_vert_count = cell_vert.size();
 		Vector<int8_t> cached_inference_state;
@@ -1323,7 +1323,7 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 		bool has_some_texture_map = false;
 		bool missing_some_texture_map = false;
 		for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
-			const int32_t source_cell = _simplex_cell_indices_source_poly_cells[simplex_index];
+			const int32_t source_cell = _simplex_cell_source_poly_cells[simplex_index];
 			const PackedVector3Array &source_poly_texture_map = poly_cell_texture_map[source_cell];
 			if (source_poly_texture_map.is_empty()) {
 				missing_some_texture_map = true;
@@ -1334,7 +1334,7 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 			CRASH_COND_MSG(source_poly_texture_map.size() != source_cell_vertices.size(), "PolyMesh4D: Source polytope cell texture map size does not match cell vertex count.");
 			const int64_t offset = simplex_index * 4;
 			for (int64_t vertex_in_simplex = 0; vertex_in_simplex < 4; vertex_in_simplex++) {
-				const int32_t vertex_index = _simplex_cell_indices_cache[offset + vertex_in_simplex];
+				const int32_t vertex_index = _simplex_cell_vertex_indices_cache[offset + vertex_in_simplex];
 				const int64_t vertex_in_source_poly = source_cell_vertices.find(vertex_index);
 				Vector3 texcoord;
 				if (vertex_in_source_poly == -1) {
@@ -1382,18 +1382,18 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 	return _simplex_cell_uvw_texture_map_cache;
 }
 
-PackedVector4Array PolyMesh4D::get_vertices() {
-	if (_simplex_cell_vertices_cache.is_empty()) {
+PackedVector4Array PolyMesh4D::get_vertex_positions() {
+	if (_simplex_cell_vertex_positions_cache.is_empty()) {
 		// Only attempt to decompose boundary cells into simplexes if there are boundary cells to decompose.
 		if (get_poly_cell_indices().size() > 1) {
 			// This will populate the simplex vertices cache as a side effect.
 			_decompose_boundary_cells_into_simplexes(true);
 		} else {
 			// If there are no boundary cells, then we can just use the poly cell vertices directly as the simplex vertices.
-			_simplex_cell_vertices_cache = get_poly_cell_vertices();
+			_simplex_cell_vertex_positions_cache = get_poly_cell_vertex_positions();
 		}
 	}
-	return _simplex_cell_vertices_cache;
+	return _simplex_cell_vertex_positions_cache;
 }
 
 void PolyMesh4D::_bind_methods() {
@@ -1407,14 +1407,14 @@ void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_source_poly_cell_for_simplex_cell", "simplex_cell_index"), &PolyMesh4D::get_source_poly_cell_for_simplex_cell);
 
 	ClassDB::bind_method(D_METHOD("get_poly_cell_indices"), &PolyMesh4D::get_poly_cell_indices_bind);
-	ClassDB::bind_method(D_METHOD("get_poly_cell_vertices"), &PolyMesh4D::get_poly_cell_vertices);
+	ClassDB::bind_method(D_METHOD("get_poly_cell_vertex_positions"), &PolyMesh4D::get_poly_cell_vertex_positions);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_boundary_normals"), &PolyMesh4D::get_poly_cell_boundary_normals);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_boundary_pivot_overrides"), &PolyMesh4D::get_poly_cell_boundary_pivot_overrides);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_vertex_normals"), &PolyMesh4D::get_poly_cell_vertex_normals_bind);
 	ClassDB::bind_method(D_METHOD("get_poly_cell_texture_map"), &PolyMesh4D::get_poly_cell_texture_map_bind);
 
 	GDVIRTUAL_BIND(_get_poly_cell_indices);
-	GDVIRTUAL_BIND(_get_poly_cell_vertices);
+	GDVIRTUAL_BIND(_get_poly_cell_vertex_positions);
 	GDVIRTUAL_BIND(_get_poly_cell_boundary_normals);
 	GDVIRTUAL_BIND(_get_poly_cell_boundary_pivot_overrides);
 	GDVIRTUAL_BIND(_get_poly_cell_vertex_normals);

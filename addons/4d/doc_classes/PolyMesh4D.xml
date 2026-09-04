@@ -41,10 +41,10 @@
 				Callback method that should return the vertex normals of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_vertex_normals] for details of the returned data.
 			</description>
 		</method>
-		<method name="_get_poly_cell_vertices" qualifiers="virtual">
+		<method name="_get_poly_cell_vertex_positions" qualifiers="virtual">
 			<return type="PackedVector4Array" />
 			<description>
-				Callback method that should return the vertices of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_vertices] for details of the returned data.
+				Callback method that should return the vertices of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_vertex_positions] for details of the returned data.
 			</description>
 		</method>
 		<method name="get_all_cell_vertex_indices">
@@ -88,7 +88,7 @@
 		<method name="get_poly_cell_boundary_pivot_overrides">
 			<return type="PackedInt32Array" />
 			<description>
-				The overrides for the pivot vertex of each boundary cell, providing control over how the cell is decomposed into tetrahedra for rendering. Each integer in this array is an index into the [member poly_cell_vertices] array, specifying which vertex should be used as the pivot point for the corresponding cell when decomposing it into tetrahedra. The pivot for each boundary cell does not have to be one of the vertices on the sides, it can also be in the middle of the cell. This SHOULD be a vertex that can "see" all parts of the cell, meaning it only works for poly cells that are star-shaped.
+				The overrides for the pivot vertex of each boundary cell, providing control over how the cell is decomposed into tetrahedra for rendering. Each integer in this array is an index into the [method get_poly_cell_vertex_positions] array, specifying which vertex should be used as the pivot point for the corresponding cell when decomposing it into tetrahedra. The pivot for each boundary cell does not have to be one of the vertices on the sides, it can also be in the middle of the cell. This SHOULD be a vertex that can "see" all parts of the cell, meaning it only works for poly cells that are star-shaped.
 			</description>
 		</method>
 		<method name="get_poly_cell_indices">
@@ -113,11 +113,11 @@
 				Returns the normals of the vertex instances for each polyhedral cell. Each item in this array is a [PackedVector4Array] containing the normals for each vertex instance in the corresponding cell in the [method get_poly_cell_indices] array. Each Vector4 in these arrays should be normalized.
 			</description>
 		</method>
-		<method name="get_poly_cell_vertices">
+		<method name="get_poly_cell_vertex_positions">
 			<return type="PackedVector4Array" />
 			<description>
 				Returns the vertex positions of the polyhedral mesh. Each Vector4 in the array is a position in meters in 4D space. The items in this array are referenced by the [method Mesh4D.get_edge_indices] array.
-				[b]Note:[/b] The vertices returned by [method Mesh4D.get_vertices] may be longer than this array. This is because [method Mesh4D.get_vertices] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method Mesh4D.get_vertices] will always match this array, such that it is either a superset of this array, or identical to it.
+				[b]Note:[/b] The vertices returned by [method Mesh4D.get_vertex_positions] may be longer than this array. This is because [method Mesh4D.get_vertex_positions] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method Mesh4D.get_vertex_positions] will always match this array, such that it is either a superset of this array, or identical to it.
 			</description>
 		</method>
 		<method name="get_source_poly_cell_for_simplex_cell" qualifiers="const">

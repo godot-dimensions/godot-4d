@@ -19,19 +19,19 @@
 
 void TetraMesh4D::populate_inverse_metric_cache() {
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "TetraMesh4D: Cannot populate closest-point cache for an invalid mesh.");
-	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
-	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
+	const PackedInt32Array &simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
+	const int64_t simplex_tet_count = simplex_cell_vertex_indices.size() / 4;
 	if (_nearest_tetra_inverse_metric_cache.size() == simplex_tet_count * 6) {
 		return;
 	}
 	_nearest_tetra_inverse_metric_cache.resize(simplex_tet_count * 6);
-	const PackedVector4Array &vertices = get_vertices();
+	const PackedVector4Array &vertices = get_vertex_positions();
 	for (int64_t simplex_tet_index = 0; simplex_tet_index < simplex_tet_count; simplex_tet_index++) {
 		// These indices are guaranteed to be within bounds due to mesh validation.
-		const int32_t i0 = simplex_cell_indices[simplex_tet_index * 4 + 0];
-		const int32_t i1 = simplex_cell_indices[simplex_tet_index * 4 + 1];
-		const int32_t i2 = simplex_cell_indices[simplex_tet_index * 4 + 2];
-		const int32_t i3 = simplex_cell_indices[simplex_tet_index * 4 + 3];
+		const int32_t i0 = simplex_cell_vertex_indices[simplex_tet_index * 4 + 0];
+		const int32_t i1 = simplex_cell_vertex_indices[simplex_tet_index * 4 + 1];
+		const int32_t i2 = simplex_cell_vertex_indices[simplex_tet_index * 4 + 2];
+		const int32_t i3 = simplex_cell_vertex_indices[simplex_tet_index * 4 + 3];
 		const Vector4 vert0 = vertices[i0];
 		const Vector4 edge1 = vertices[i1] - vert0;
 		const Vector4 edge2 = vertices[i2] - vert0;
@@ -57,14 +57,14 @@ void TetraMesh4D::populate_inverse_metric_cache() {
 
 real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_tet, int *r_tetrahedron_index) {
 	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Math_INF, "TetraMesh4D: Cannot get signed distance to an invalid mesh.");
-	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
-	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
+	const PackedInt32Array &simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
+	const int64_t simplex_tet_count = simplex_cell_vertex_indices.size() / 4;
 	if (_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6) {
 		populate_inverse_metric_cache();
 	}
 	ERR_FAIL_COND_V_MSG(_nearest_tetra_inverse_metric_cache.size() != simplex_tet_count * 6, Math_INF, "TetraMesh4D: Closest-point cache is invalid for this mesh.");
 	ERR_FAIL_COND_V_MSG(simplex_tet_count == 0, Math_INF, "TetraMesh4D: Cannot get signed distance to a mesh with zero tetrahedra.");
-	const PackedVector4Array &vertices = get_vertices();
+	const PackedVector4Array &vertices = get_vertex_positions();
 	// Iterate over all tetrahedra to find the nearest point on the mesh, keeping track of the best one.
 	constexpr int32_t MAX_CANDIDATE_TETS = 8;
 	Vector4 best_candidate_points_on_tet[MAX_CANDIDATE_TETS];
@@ -80,10 +80,10 @@ real_t TetraMesh4D::get_signed_distance_to_mesh(const Vector4 &p_local_point, Ve
 		Vector4 nearest_on_tet;
 		real_t min_distance_sq = 0.0;
 		bool proj_inside = false;
-		const Vector4 vert0 = vertices[simplex_cell_indices[tet_index * 4 + 0]];
-		const Vector4 vert1 = vertices[simplex_cell_indices[tet_index * 4 + 1]];
-		const Vector4 vert2 = vertices[simplex_cell_indices[tet_index * 4 + 2]];
-		const Vector4 vert3 = vertices[simplex_cell_indices[tet_index * 4 + 3]];
+		const Vector4 vert0 = vertices[simplex_cell_vertex_indices[tet_index * 4 + 0]];
+		const Vector4 vert1 = vertices[simplex_cell_vertex_indices[tet_index * 4 + 1]];
+		const Vector4 vert2 = vertices[simplex_cell_vertex_indices[tet_index * 4 + 2]];
+		const Vector4 vert3 = vertices[simplex_cell_vertex_indices[tet_index * 4 + 3]];
 		Geometry4D::get_nearest_point_on_tetrahedron_barycentric(vert0, vert1, vert2, vert3, p_local_point, _nearest_tetra_inverse_metric_cache, tet_index, nearest_on_tet, min_distance_sq, proj_inside);
 		const bool less_dist = min_distance_sq < best_distance_sq;
 		// If the projection is outside the tet, but the projected point is the same distance as what we
@@ -162,27 +162,27 @@ real_t TetraMesh4D::get_signed_distance_to_mesh_bind(const Vector4 &p_local_poin
 
 bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance) {
 	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), false, "TetraMesh4D: Cannot raycast on an invalid mesh.");
-	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
-	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
+	const PackedInt32Array &simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
+	const int64_t simplex_tet_count = simplex_cell_vertex_indices.size() / 4;
 	if (simplex_tet_count == 0) {
 		return false; // No tetrahedra to raycast against.
 	}
 	const PackedFloat64Array &inverse_metric_cache = _nearest_tetra_inverse_metric_cache;
 	ERR_FAIL_COND_V_MSG(inverse_metric_cache.size() != simplex_tet_count * 6, false, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_inverse_metric_cache()` before calling `raycast_intersects_fast()`.");
-	const PackedVector4Array &vertices = get_vertices();
+	const PackedVector4Array &vertices = get_vertex_positions();
 	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
 	const int64_t boundary_normals_count = boundary_normals.size();
 	// Iterate through all tetrahedra to find any ray intersection.
 	for (int64_t tet_index = 0; tet_index < simplex_tet_count; tet_index++) {
 		Plane4D tet_plane;
 		if (simplex_tet_count == boundary_normals_count) {
-			tet_plane = Plane4D(boundary_normals[tet_index], vertices[simplex_cell_indices[tet_index * 4 + 0]]);
+			tet_plane = Plane4D(boundary_normals[tet_index], vertices[simplex_cell_vertex_indices[tet_index * 4 + 0]]);
 		} else {
 			// Fallback in case the boundary normals are not available or are mismatched.
-			const Vector4 &pivot = vertices[simplex_cell_indices[tet_index * 4]];
-			const Vector4 &a = vertices[simplex_cell_indices[1 + tet_index * 4]];
-			const Vector4 &b = vertices[simplex_cell_indices[2 + tet_index * 4]];
-			const Vector4 &c = vertices[simplex_cell_indices[3 + tet_index * 4]];
+			const Vector4 &pivot = vertices[simplex_cell_vertex_indices[tet_index * 4]];
+			const Vector4 &a = vertices[simplex_cell_vertex_indices[1 + tet_index * 4]];
+			const Vector4 &b = vertices[simplex_cell_vertex_indices[2 + tet_index * 4]];
+			const Vector4 &c = vertices[simplex_cell_vertex_indices[3 + tet_index * 4]];
 			const Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
 			tet_plane = Plane4D(perp.normalized(), pivot);
 		}
@@ -196,10 +196,10 @@ bool TetraMesh4D::raycast_intersects_fast(const Vector4 &p_local_from, const Vec
 		// Check if this candidate intersection is inside the tetrahedron.
 		const Vector4 intersection_point = p_local_from + p_local_direction * tet_plane_intersection_factor;
 		// These indices are guaranteed to be within bounds due to mesh validation.
-		const int32_t i0 = simplex_cell_indices[tet_index * 4 + 0];
-		const int32_t i1 = simplex_cell_indices[tet_index * 4 + 1];
-		const int32_t i2 = simplex_cell_indices[tet_index * 4 + 2];
-		const int32_t i3 = simplex_cell_indices[tet_index * 4 + 3];
+		const int32_t i0 = simplex_cell_vertex_indices[tet_index * 4 + 0];
+		const int32_t i1 = simplex_cell_vertex_indices[tet_index * 4 + 1];
+		const int32_t i2 = simplex_cell_vertex_indices[tet_index * 4 + 2];
+		const int32_t i3 = simplex_cell_vertex_indices[tet_index * 4 + 3];
 		const Vector4 vert0 = vertices[i0];
 		const Vector4 vert1 = vertices[i1];
 		const Vector4 vert2 = vertices[i2];
@@ -217,14 +217,14 @@ Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Ve
 	Dictionary result;
 	result["hit"] = false;
 	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), result, "TetraMesh4D: Cannot raycast on an invalid mesh.");
-	const PackedInt32Array &simplex_cell_indices = get_simplex_cell_indices();
-	const int64_t simplex_tet_count = simplex_cell_indices.size() / 4;
+	const PackedInt32Array &simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
+	const int64_t simplex_tet_count = simplex_cell_vertex_indices.size() / 4;
 	if (simplex_tet_count == 0) {
 		return result; // No tetrahedra to raycast against.
 	}
 	const PackedFloat64Array &inverse_metric_cache = _nearest_tetra_inverse_metric_cache;
 	ERR_FAIL_COND_V_MSG(inverse_metric_cache.size() != simplex_tet_count * 6, result, "TetraMesh4D: Closest-point cache is invalid for this mesh. Call `populate_inverse_metric_cache()` before calling `raycast_intersects()`.");
-	const PackedVector4Array &vertices = get_vertices();
+	const PackedVector4Array &vertices = get_vertex_positions();
 	const PackedVector4Array &boundary_normals = get_simplex_cell_boundary_normals();
 	const int64_t boundary_normals_count = boundary_normals.size();
 	Vector4 best_hit_normal = Vector4();
@@ -234,13 +234,13 @@ Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Ve
 	for (int64_t tet_index = 0; tet_index < simplex_tet_count; tet_index++) {
 		Plane4D tet_plane;
 		if (simplex_tet_count == boundary_normals_count) {
-			tet_plane = Plane4D(boundary_normals[tet_index], vertices[simplex_cell_indices[tet_index * 4 + 0]]);
+			tet_plane = Plane4D(boundary_normals[tet_index], vertices[simplex_cell_vertex_indices[tet_index * 4 + 0]]);
 		} else {
 			// Fallback in case the boundary normals are not available or are mismatched.
-			const Vector4 &pivot = vertices[simplex_cell_indices[tet_index * 4]];
-			const Vector4 &a = vertices[simplex_cell_indices[1 + tet_index * 4]];
-			const Vector4 &b = vertices[simplex_cell_indices[2 + tet_index * 4]];
-			const Vector4 &c = vertices[simplex_cell_indices[3 + tet_index * 4]];
+			const Vector4 &pivot = vertices[simplex_cell_vertex_indices[tet_index * 4]];
+			const Vector4 &a = vertices[simplex_cell_vertex_indices[1 + tet_index * 4]];
+			const Vector4 &b = vertices[simplex_cell_vertex_indices[2 + tet_index * 4]];
+			const Vector4 &c = vertices[simplex_cell_vertex_indices[3 + tet_index * 4]];
 			const Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
 			tet_plane = Plane4D(perp.normalized(), pivot);
 		}
@@ -254,10 +254,10 @@ Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Ve
 		// Check if this candidate intersection is inside the tetrahedron.
 		const Vector4 intersection_point = p_local_from + p_local_direction * tet_plane_intersection_factor;
 		// These indices are guaranteed to be within bounds due to mesh validation.
-		const int32_t i0 = simplex_cell_indices[tet_index * 4 + 0];
-		const int32_t i1 = simplex_cell_indices[tet_index * 4 + 1];
-		const int32_t i2 = simplex_cell_indices[tet_index * 4 + 2];
-		const int32_t i3 = simplex_cell_indices[tet_index * 4 + 3];
+		const int32_t i0 = simplex_cell_vertex_indices[tet_index * 4 + 0];
+		const int32_t i1 = simplex_cell_vertex_indices[tet_index * 4 + 1];
+		const int32_t i2 = simplex_cell_vertex_indices[tet_index * 4 + 2];
+		const int32_t i3 = simplex_cell_vertex_indices[tet_index * 4 + 3];
 		const Vector4 vert0 = vertices[i0];
 		const Vector4 vert1 = vertices[i1];
 		const Vector4 vert2 = vertices[i2];
@@ -354,19 +354,19 @@ Ref<ArrayMesh> TetraMesh4D::export_texture_map_mesh() {
 }
 
 bool TetraMesh4D::validate_mesh_data() {
-	const PackedInt32Array cell_indices = get_simplex_cell_indices();
-	const int64_t cell_indices_count = cell_indices.size();
-	if (cell_indices_count == 0) {
+	const PackedInt32Array cell_vertex_indices = get_simplex_cell_vertex_indices();
+	const int64_t cell_vertex_indices_count = cell_vertex_indices.size();
+	if (cell_vertex_indices_count == 0) {
 		return true; // Zero cells is allowed, and no need to validate anything else in that case.
 	}
-	ERR_FAIL_COND_V_MSG(cell_indices_count % 4 != 0, false, "TetraMesh4D: Cell indices count must be a multiple of 4 (" + itos(cell_indices_count) + " % 4 != 0).");
+	ERR_FAIL_COND_V_MSG(cell_vertex_indices_count % 4 != 0, false, "TetraMesh4D: Cell vertex indices count must be a multiple of 4 (" + itos(cell_vertex_indices_count) + " % 4 != 0).");
 	const int64_t cell_texture_map_count = get_simplex_cell_texture_map().size();
-	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_indices_count, false, "TetraMesh4D: UVW texture map size (" + itos(cell_texture_map_count) + ") must match cell indices size (" + itos(cell_indices_count) + ").");
+	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_vertex_indices_count, false, "TetraMesh4D: UVW texture map size (" + itos(cell_texture_map_count) + ") must match cell vertex indices size (" + itos(cell_vertex_indices_count) + ").");
 	const int64_t cell_normals_count = get_simplex_cell_boundary_normals().size();
-	ERR_FAIL_COND_V_MSG(cell_normals_count > 0 && cell_normals_count * 4 != cell_indices_count, false, "TetraMesh4D: Boundary normals count (" + itos(cell_normals_count) + ") must have one per cell (expected " + itos(cell_indices_count / 4) + ")");
-	const int64_t vertex_count = get_vertices().size();
-	for (int32_t cell_index : cell_indices) {
-		ERR_FAIL_COND_V_MSG(cell_index < 0 || cell_index >= vertex_count, false, "TetraMesh4D: Cell index " + itos(cell_index) + " is out of range (valid: 0-" + itos(vertex_count - 1) + ")");
+	ERR_FAIL_COND_V_MSG(cell_normals_count > 0 && cell_normals_count * 4 != cell_vertex_indices_count, false, "TetraMesh4D: Boundary normals count (" + itos(cell_normals_count) + ") must have one per cell (expected " + itos(cell_vertex_indices_count / 4) + ")");
+	const int64_t vertex_count = get_vertex_positions().size();
+	for (int32_t cell_vertex_index : cell_vertex_indices) {
+		ERR_FAIL_COND_V_MSG(cell_vertex_index < 0 || cell_vertex_index >= vertex_count, false, "TetraMesh4D: Cell index " + itos(cell_vertex_index) + " is out of range (valid: 0-" + itos(vertex_count - 1) + ")");
 	}
 	return true;
 }
@@ -374,9 +374,9 @@ bool TetraMesh4D::validate_mesh_data() {
 void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
 	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
-		const PackedInt32Array cell_indices = get_simplex_cell_indices();
+		const PackedInt32Array cell_vertex_indices = get_simplex_cell_vertex_indices();
 		PackedColorArray color_array = p_material->get_albedo_color_array();
-		const int cell_count = cell_indices.size() / 4;
+		const int cell_count = cell_vertex_indices.size() / 4;
 		if (color_array.size() < cell_count) {
 			p_material->resize_albedo_color_array(cell_count);
 		}
@@ -401,8 +401,8 @@ void TetraMesh4D::cleanup_fallback_material() {
 Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	Ref<ArrayTetraMesh4D> array_mesh;
 	array_mesh.instantiate();
-	array_mesh->set_vertices(get_vertices());
-	array_mesh->set_simplex_cell_indices(get_simplex_cell_indices());
+	array_mesh->set_vertex_positions(get_vertex_positions());
+	array_mesh->set_simplex_cell_vertex_indices(get_simplex_cell_vertex_indices());
 	array_mesh->set_simplex_cell_boundary_normals(get_simplex_cell_boundary_normals());
 	array_mesh->set_simplex_cell_vertex_normals(get_simplex_cell_vertex_normals());
 	array_mesh->set_simplex_cell_texture_map(get_simplex_cell_texture_map());
@@ -431,9 +431,9 @@ Ref<TetraMesh4D> TetraMesh4D::to_tetra_mesh() {
 
 // Getters.
 
-PackedInt32Array TetraMesh4D::get_simplex_cell_indices() {
+PackedInt32Array TetraMesh4D::get_simplex_cell_vertex_indices() {
 	PackedInt32Array indices;
-	GDVIRTUAL_CALL(_get_simplex_cell_indices, indices);
+	GDVIRTUAL_CALL(_get_simplex_cell_vertex_indices, indices);
 	return indices;
 }
 
@@ -455,24 +455,24 @@ PackedVector3Array TetraMesh4D::get_simplex_cell_texture_map() {
 	return texture_map;
 }
 
-PackedInt32Array TetraMesh4D::calculate_edge_indices_from_simplex_cell_indices(const PackedInt32Array &p_simplex_cell_indices, const bool p_deduplicate) {
+PackedInt32Array TetraMesh4D::calculate_edge_indices_from_simplex_cell_vertex_indices(const PackedInt32Array &p_simplex_cell_vertex_indices, const bool p_deduplicate) {
 	PackedInt32Array edge_indices;
-	edge_indices.resize(p_simplex_cell_indices.size() * 3);
-	const int stop = p_simplex_cell_indices.size() / 4;
+	edge_indices.resize(p_simplex_cell_vertex_indices.size() * 3);
+	const int stop = p_simplex_cell_vertex_indices.size() / 4;
 	for (int i = 0; i < stop; i++) {
 		const int simplex_cell_index = i * 4;
-		edge_indices.set(i * 12 + 0, p_simplex_cell_indices[simplex_cell_index + 0]);
-		edge_indices.set(i * 12 + 1, p_simplex_cell_indices[simplex_cell_index + 1]);
-		edge_indices.set(i * 12 + 2, p_simplex_cell_indices[simplex_cell_index + 0]);
-		edge_indices.set(i * 12 + 3, p_simplex_cell_indices[simplex_cell_index + 2]);
-		edge_indices.set(i * 12 + 4, p_simplex_cell_indices[simplex_cell_index + 0]);
-		edge_indices.set(i * 12 + 5, p_simplex_cell_indices[simplex_cell_index + 3]);
-		edge_indices.set(i * 12 + 6, p_simplex_cell_indices[simplex_cell_index + 1]);
-		edge_indices.set(i * 12 + 7, p_simplex_cell_indices[simplex_cell_index + 2]);
-		edge_indices.set(i * 12 + 8, p_simplex_cell_indices[simplex_cell_index + 1]);
-		edge_indices.set(i * 12 + 9, p_simplex_cell_indices[simplex_cell_index + 3]);
-		edge_indices.set(i * 12 + 10, p_simplex_cell_indices[simplex_cell_index + 2]);
-		edge_indices.set(i * 12 + 11, p_simplex_cell_indices[simplex_cell_index + 3]);
+		edge_indices.set(i * 12 + 0, p_simplex_cell_vertex_indices[simplex_cell_index + 0]);
+		edge_indices.set(i * 12 + 1, p_simplex_cell_vertex_indices[simplex_cell_index + 1]);
+		edge_indices.set(i * 12 + 2, p_simplex_cell_vertex_indices[simplex_cell_index + 0]);
+		edge_indices.set(i * 12 + 3, p_simplex_cell_vertex_indices[simplex_cell_index + 2]);
+		edge_indices.set(i * 12 + 4, p_simplex_cell_vertex_indices[simplex_cell_index + 0]);
+		edge_indices.set(i * 12 + 5, p_simplex_cell_vertex_indices[simplex_cell_index + 3]);
+		edge_indices.set(i * 12 + 6, p_simplex_cell_vertex_indices[simplex_cell_index + 1]);
+		edge_indices.set(i * 12 + 7, p_simplex_cell_vertex_indices[simplex_cell_index + 2]);
+		edge_indices.set(i * 12 + 8, p_simplex_cell_vertex_indices[simplex_cell_index + 1]);
+		edge_indices.set(i * 12 + 9, p_simplex_cell_vertex_indices[simplex_cell_index + 3]);
+		edge_indices.set(i * 12 + 10, p_simplex_cell_vertex_indices[simplex_cell_index + 2]);
+		edge_indices.set(i * 12 + 11, p_simplex_cell_vertex_indices[simplex_cell_index + 3]);
 	}
 	if (p_deduplicate) {
 		edge_indices = deduplicate_edge_indices(edge_indices);
@@ -482,7 +482,7 @@ PackedInt32Array TetraMesh4D::calculate_edge_indices_from_simplex_cell_indices(c
 
 PackedInt32Array TetraMesh4D::get_edge_indices() {
 	if (_edge_indices_cache.is_empty()) {
-		_edge_indices_cache = calculate_edge_indices_from_simplex_cell_indices(get_simplex_cell_indices(), true);
+		_edge_indices_cache = calculate_edge_indices_from_simplex_cell_vertex_indices(get_simplex_cell_vertex_indices(), true);
 	}
 	return _edge_indices_cache;
 }
@@ -490,7 +490,7 @@ PackedInt32Array TetraMesh4D::get_edge_indices() {
 PackedVector4Array TetraMesh4D::get_edge_positions() {
 	if (_edge_positions_cache.is_empty()) {
 		const PackedInt32Array edge_indices = get_edge_indices();
-		const PackedVector4Array vertices = get_vertices();
+		const PackedVector4Array vertices = get_vertex_positions();
 		const int32_t vertices_count = vertices.size();
 		for (const int32_t edge_index : edge_indices) {
 			ERR_FAIL_INDEX_V(edge_index, vertices_count, _simplex_positions_cache);
@@ -502,10 +502,10 @@ PackedVector4Array TetraMesh4D::get_edge_positions() {
 
 PackedVector4Array TetraMesh4D::get_simplex_cell_positions() {
 	if (_simplex_positions_cache.is_empty()) {
-		const PackedInt32Array simplex_cell_indices = get_simplex_cell_indices();
-		const PackedVector4Array vertices = get_vertices();
+		const PackedInt32Array simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
+		const PackedVector4Array vertices = get_vertex_positions();
 		const int32_t vertices_count = vertices.size();
-		for (const int simplex_cell_index : simplex_cell_indices) {
+		for (const int simplex_cell_index : simplex_cell_vertex_indices) {
 			ERR_FAIL_INDEX_V(simplex_cell_index, vertices_count, _simplex_positions_cache);
 			_simplex_positions_cache.append(vertices[simplex_cell_index]);
 		}
@@ -625,13 +625,13 @@ void TetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("to_array_tetra_mesh"), &TetraMesh4D::to_array_tetra_mesh);
 	ClassDB::bind_method(D_METHOD("to_tetra_mesh"), &TetraMesh4D::to_tetra_mesh);
 	// Getters.
-	ClassDB::bind_method(D_METHOD("get_simplex_cell_indices"), &TetraMesh4D::get_simplex_cell_indices);
+	ClassDB::bind_method(D_METHOD("get_simplex_cell_vertex_indices"), &TetraMesh4D::get_simplex_cell_vertex_indices);
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_positions"), &TetraMesh4D::get_simplex_cell_positions);
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_boundary_normals"), &TetraMesh4D::get_simplex_cell_boundary_normals);
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_vertex_normals"), &TetraMesh4D::get_simplex_cell_vertex_normals);
 	ClassDB::bind_method(D_METHOD("get_simplex_cell_texture_map"), &TetraMesh4D::get_simplex_cell_texture_map);
 
-	GDVIRTUAL_BIND(_get_simplex_cell_indices);
+	GDVIRTUAL_BIND(_get_simplex_cell_vertex_indices);
 	GDVIRTUAL_BIND(_get_simplex_cell_boundary_normals);
 	GDVIRTUAL_BIND(_get_simplex_cell_vertex_normals);
 	GDVIRTUAL_BIND(_get_simplex_cell_texture_map);

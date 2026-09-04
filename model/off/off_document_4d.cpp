@@ -39,16 +39,16 @@ void OFFDocument4D::_count_unique_edges_from_faces() {
 }
 
 int64_t OFFDocument4D::_find_or_insert_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
-	const int64_t vertex_count = _vertices.size();
+	const int64_t vertex_pos_count = _vertex_positions.size();
 	if (p_deduplicate_vertices) {
-		for (int64_t vertex_number = 0; vertex_number < vertex_count; vertex_number++) {
-			if (_vertices[vertex_number] == p_vertex) {
+		for (int64_t vertex_number = 0; vertex_number < vertex_pos_count; vertex_number++) {
+			if (_vertex_positions[vertex_number] == p_vertex) {
 				return vertex_number;
 			}
 		}
 	}
-	_vertices.append(p_vertex);
-	return vertex_count;
+	_vertex_positions.append(p_vertex);
+	return vertex_pos_count;
 }
 
 Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices) {
@@ -113,7 +113,7 @@ int32_t OFFDocument4D::_get_next_vertex_not_in_common_edge(const PackedInt32Arra
 	return next_vertex;
 }
 
-Vector4 OFFDocument4D::_predict_poly_import_cell_normal(const PackedVector4Array &p_vertices, const TypedArray<PackedInt32Array> &p_face_vertex_indices, const PackedInt32Array &p_cell_face_indices) {
+Vector4 OFFDocument4D::_predict_poly_import_cell_normal(const PackedVector4Array &p_vertex_positions, const TypedArray<PackedInt32Array> &p_face_vertex_indices, const PackedInt32Array &p_cell_face_indices) {
 	if (p_cell_face_indices.size() < 2) {
 		return Vector4();
 	}
@@ -155,26 +155,26 @@ Vector4 OFFDocument4D::_predict_poly_import_cell_normal(const PackedVector4Array
 		return Vector4();
 	}
 	return Vector4D::perpendicular(
-			p_vertices[first_next_vertex].direction_to(p_vertices[common_edge_min]),
-			p_vertices[first_next_vertex].direction_to(p_vertices[common_edge_max]),
-			p_vertices[first_next_vertex].direction_to(p_vertices[second_next_vertex]));
+			p_vertex_positions[first_next_vertex].direction_to(p_vertex_positions[common_edge_min]),
+			p_vertex_positions[first_next_vertex].direction_to(p_vertex_positions[common_edge_max]),
+			p_vertex_positions[first_next_vertex].direction_to(p_vertex_positions[second_next_vertex]));
 }
 
-Vector4 OFFDocument4D::_compute_cell_normal_from_canonical_span(const PackedVector4Array &p_vertices, const PackedInt32Array &p_cell_vertex_indices) {
+Vector4 OFFDocument4D::_compute_cell_normal_from_canonical_span(const PackedVector4Array &p_vertex_positions, const PackedInt32Array &p_cell_vertex_indices) {
 	if (p_cell_vertex_indices.size() < 4) {
 		return Vector4();
 	}
 	return Vector4D::perpendicular(
-			p_vertices[p_cell_vertex_indices[0]].direction_to(p_vertices[p_cell_vertex_indices[1]]),
-			p_vertices[p_cell_vertex_indices[0]].direction_to(p_vertices[p_cell_vertex_indices[2]]),
-			p_vertices[p_cell_vertex_indices[0]].direction_to(p_vertices[p_cell_vertex_indices[3]]));
+			p_vertex_positions[p_cell_vertex_indices[0]].direction_to(p_vertex_positions[p_cell_vertex_indices[1]]),
+			p_vertex_positions[p_cell_vertex_indices[0]].direction_to(p_vertex_positions[p_cell_vertex_indices[2]]),
+			p_vertex_positions[p_cell_vertex_indices[0]].direction_to(p_vertex_positions[p_cell_vertex_indices[3]]));
 }
 
 Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces) {
 	Ref<OFFDocument4D> off_document;
 	ERR_FAIL_COND_V(p_tetra_mesh.is_null(), off_document);
 	off_document.instantiate();
-	off_document->_vertices = p_tetra_mesh->get_vertices();
+	off_document->_vertex_positions = p_tetra_mesh->get_vertex_positions();
 	const Ref<Material4D> material = p_tetra_mesh->get_material();
 	const Ref<PolyMesh4D> poly_mesh = p_tetra_mesh;
 	if (poly_mesh.is_valid()) {
@@ -204,12 +204,12 @@ Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> 
 				desired_normal = source_cell_normals[cell_number];
 			}
 			if (desired_normal.is_zero_approx() && cell_number < source_cell_vertex_indices.size()) {
-				desired_normal = OFFDocument4D::_compute_cell_normal_from_canonical_span(off_document->_vertices, source_cell_vertex_indices[cell_number]);
+				desired_normal = OFFDocument4D::_compute_cell_normal_from_canonical_span(off_document->_vertex_positions, source_cell_vertex_indices[cell_number]);
 			}
 			if (desired_normal.is_zero_approx()) {
 				continue;
 			}
-			const Vector4 predicted_import_normal = OFFDocument4D::_predict_poly_import_cell_normal(off_document->_vertices, off_document->_face_vertex_indices, exported_cell_face_indices);
+			const Vector4 predicted_import_normal = OFFDocument4D::_predict_poly_import_cell_normal(off_document->_vertex_positions, off_document->_face_vertex_indices, exported_cell_face_indices);
 			if (predicted_import_normal.is_zero_approx()) {
 				continue;
 			}
@@ -222,7 +222,7 @@ Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> 
 		}
 	} else {
 		// TetraMesh4D references cells by their vertex indices, but OFF files reference them by their face indices.
-		const PackedInt32Array cell_indices = p_tetra_mesh->get_simplex_cell_indices();
+		const PackedInt32Array cell_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
 		for (int i = 0; i < cell_indices.size(); i += 4) {
 			const int32_t a = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 1], cell_indices[i + 2], p_deduplicate_faces);
 			const int32_t b = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 2], cell_indices[i + 3], p_deduplicate_faces);
@@ -246,8 +246,8 @@ Ref<ArrayMesh> OFFDocument4D::import_generate_mesh_3d(const bool p_per_face_vert
 		ERR_FAIL_V_MSG(Ref<ArrayMesh>(), "OFFDocument4D: This OFF document does not contain any faces, so it cannot be converted to a 3D mesh. Perhaps this is a vertex-only OFF file, or a 0D or 1D OFF file?");
 	}
 	PackedVector3Array vertices_3d;
-	for (int vert_index = 0; vert_index < _vertices.size(); vert_index++) {
-		vertices_3d.append(Vector3(_vertices[vert_index].x, _vertices[vert_index].y, _vertices[vert_index].z));
+	for (int vert_index = 0; vert_index < _vertex_positions.size(); vert_index++) {
+		vertices_3d.append(Vector3(_vertex_positions[vert_index].x, _vertex_positions[vert_index].y, _vertex_positions[vert_index].z));
 	}
 	if (p_per_face_vertices) {
 		Ref<SurfaceTool> surface_tool;
@@ -307,7 +307,7 @@ Ref<ArrayMesh> OFFDocument4D::import_generate_mesh_3d(const bool p_per_face_vert
 Ref<ArrayPolyMesh4D> OFFDocument4D::import_generate_poly_mesh_4d() {
 	Ref<ArrayPolyMesh4D> poly_mesh;
 	poly_mesh.instantiate();
-	poly_mesh->set_poly_cell_vertices(_vertices);
+	poly_mesh->set_poly_cell_vertex_positions(_vertex_positions);
 	if (_face_vertex_indices.is_empty()) {
 		ERR_FAIL_V_MSG(poly_mesh, "OFFDocument4D: This OFF document does not contain any cells or faces, so it cannot be converted to a polyhedral cell mesh. Perhaps this is a vertex-only OFF file, or a 0D or 1D OFF file?");
 	}
@@ -361,7 +361,7 @@ Ref<ArrayTetraMesh4D> OFFDocument4D::import_generate_tetra_mesh_4d() {
 	if (_cell_face_indices.is_empty()) {
 		Ref<ArrayTetraMesh4D> ret;
 		ret.instantiate();
-		ret->set_vertices(_vertices);
+		ret->set_vertex_positions(_vertex_positions);
 		ERR_FAIL_V_MSG(ret, "OFFDocument4D: This OFF document does not contain any cells, so it cannot be converted to a tetrahedral cell mesh. Perhaps this is a 2D or 3D OFF file?");
 	}
 	// Normal path: Go through PolyMesh4D generation and then convert to TetraMesh4D.
@@ -372,7 +372,7 @@ Ref<ArrayTetraMesh4D> OFFDocument4D::import_generate_tetra_mesh_4d() {
 Ref<ArrayWireMesh4D> OFFDocument4D::import_generate_wire_mesh_4d(const bool p_deduplicate_edges) {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
-	wire_mesh->set_vertices(_vertices);
+	wire_mesh->set_vertex_positions(_vertex_positions);
 	Ref<WireMaterial4D> wire_material;
 	if (_has_any_face_colors) {
 		wire_material.instantiate();
@@ -396,7 +396,7 @@ Ref<ArrayWireMesh4D> OFFDocument4D::import_generate_wire_mesh_4d(const bool p_de
 			}
 		}
 	}
-	if (face_count == 0 && _vertices.size() == 2) {
+	if (face_count == 0 && _vertex_positions.size() == 2) {
 		// Special case: OFF file with just two vertices and one implicit edge (such as a 1D OFF file).
 		wire_mesh->append_edge_indices(0, 1);
 	}
@@ -461,12 +461,12 @@ void OFFDocument4D::set_face_vertex_indices(const TypedArray<PackedInt32Array> &
 	_face_vertex_indices = p_face_vertex_indices;
 }
 
-PackedVector4Array OFFDocument4D::get_vertices() const {
-	return _vertices;
+PackedVector4Array OFFDocument4D::get_vertex_positions() const {
+	return _vertex_positions;
 }
 
-void OFFDocument4D::set_vertices(const PackedVector4Array &p_vertices) {
-	_vertices = p_vertices;
+void OFFDocument4D::set_vertex_positions(const PackedVector4Array &p_vertex_positions) {
+	_vertex_positions = p_vertex_positions;
 }
 
 enum class OFFDocumentReadState {
@@ -550,7 +550,7 @@ Ref<OFFDocument4D> OFFDocument4D::_import_read_from_raw_text(const String &p_raw
 		switch (read_state) {
 			case OFFDocumentReadState::READ_SIZE: {
 				vertex_count = items[0].to_int();
-				off_document->_vertices.resize(vertex_count);
+				off_document->_vertex_positions.resize(vertex_count);
 				if (item_count > 1) {
 					face_count = items[1].to_int();
 					off_document->_face_vertex_indices.resize(face_count);
@@ -574,11 +574,11 @@ Ref<OFFDocument4D> OFFDocument4D::_import_read_from_raw_text(const String &p_raw
 					}
 				}
 				if (item_count == 1) {
-					off_document->_vertices.set(current_vertex_index, Vector4(items[0].to_float(), 0.0, 0.0, 0.0));
+					off_document->_vertex_positions.set(current_vertex_index, Vector4(items[0].to_float(), 0.0, 0.0, 0.0));
 				} else if (item_count == 2) {
-					off_document->_vertices.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), 0.0, 0.0));
+					off_document->_vertex_positions.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), 0.0, 0.0));
 				} else if (item_count == 3) {
-					off_document->_vertices.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), items[2].to_float(), 0.0));
+					off_document->_vertex_positions.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), items[2].to_float(), 0.0));
 				} else {
 					if (can_warn) {
 						if (!items[3].contains(".")) {
@@ -586,7 +586,7 @@ Ref<OFFDocument4D> OFFDocument4D::_import_read_from_raw_text(const String &p_raw
 							//WARN_PRINT("Warning: OFF file " + p_path + " contains invalid vertex line: '" + line + "'. Every number in a vertex should be a floating-point number, whole numbers should end with '.0'. Reading this as a vertex anyway.");
 						}
 					}
-					off_document->_vertices.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), items[2].to_float(), items[3].to_float()));
+					off_document->_vertex_positions.set(current_vertex_index, Vector4(items[0].to_float(), items[1].to_float(), items[2].to_float(), items[3].to_float()));
 				}
 				current_vertex_index++;
 				if (current_vertex_index >= vertex_count) {
@@ -716,15 +716,15 @@ String OFFDocument4D::_export_save_to_string() {
 	if (has_4d_cells) {
 		lines.append("4OFF");
 		lines.append("# Vertices, Faces, Edges, Cells");
-		lines.append(String::num_int64(_vertices.size()) + " " + String::num_int64(_face_vertex_indices.size()) + " " + String::num_int64(_edge_count) + " " + String::num_int64(_cell_face_indices.size()));
+		lines.append(String::num_int64(_vertex_positions.size()) + " " + String::num_int64(_face_vertex_indices.size()) + " " + String::num_int64(_edge_count) + " " + String::num_int64(_cell_face_indices.size()));
 	} else {
 		lines.append("OFF");
 		lines.append("# Vertices, Faces, Edges");
-		lines.append(String::num_int64(_vertices.size()) + " " + String::num_int64(_face_vertex_indices.size()) + " " + String::num_int64(_edge_count));
+		lines.append(String::num_int64(_vertex_positions.size()) + " " + String::num_int64(_face_vertex_indices.size()) + " " + String::num_int64(_edge_count));
 	}
 	lines.append("\n# Vertices");
-	for (int i = 0; i < _vertices.size(); i++) {
-		lines.append(has_4d_cells ? _vector4_to_off_4d(_vertices[i]) : _vector4_to_off_3d(_vertices[i]));
+	for (int i = 0; i < _vertex_positions.size(); i++) {
+		lines.append(has_4d_cells ? _vector4_to_off_4d(_vertex_positions[i]) : _vector4_to_off_3d(_vertex_positions[i]));
 	}
 	lines.append("\n# Faces");
 	for (int i = 0; i < _face_vertex_indices.size(); i++) {
@@ -781,7 +781,11 @@ void OFFDocument4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_face_vertex_indices", "face_vertex_indices"), &OFFDocument4D::set_face_vertex_indices);
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "face_vertex_indices"), "set_face_vertex_indices", "get_face_vertex_indices");
 
-	ClassDB::bind_method(D_METHOD("get_vertices"), &OFFDocument4D::get_vertices);
-	ClassDB::bind_method(D_METHOD("set_vertices", "vertices"), &OFFDocument4D::set_vertices);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertices"), "set_vertices", "get_vertices");
+	ClassDB::bind_method(D_METHOD("get_vertex_positions"), &OFFDocument4D::get_vertex_positions);
+	ClassDB::bind_method(D_METHOD("set_vertex_positions", "vertex_positions"), &OFFDocument4D::set_vertex_positions);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertex_positions"), "set_vertex_positions", "get_vertex_positions");
+#ifndef DISABLE_DEPRECATED
+	// Compatibility property to handle reading existing serialized data.
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertices", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_INTERNAL), "set_vertex_positions", "get_vertex_positions");
+#endif // DISABLE_DEPRECATED
 }

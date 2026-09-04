@@ -58,7 +58,7 @@ Ref<ArrayWireMesh4D> WireMeshBuilder4D::create_3d_orthoplex_sphere(const real_t 
 	}
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
-	mesh->set_vertices(vertices);
+	mesh->set_vertex_positions(vertices);
 	mesh->set_edge_indices(edge_indices);
 	return mesh;
 }
@@ -137,10 +137,10 @@ Ref<ArrayWireMesh4D> WireMeshBuilder4D::extrude_linear(const Ref<ArrayWireMesh4D
 	ret->merge_with(p_input_mesh, Transform4D(Basis4D(), p_extrusion_vector));
 	// Form new edges between the vertices of the two copies of the input mesh.
 	{
-		const PackedVector4Array &input_vertices = p_input_mesh->get_vertices();
+		const PackedVector4Array &input_vertex_positions = p_input_mesh->get_vertex_positions();
 		PackedInt32Array edge_indices = ret->get_edge_indices();
 		int64_t edge_indices_iter = edge_indices.size();
-		const int32_t input_vertex_count = (int32_t)input_vertices.size();
+		const int32_t input_vertex_count = (int32_t)input_vertex_positions.size();
 		edge_indices.resize(edge_indices.size() + input_vertex_count * 2);
 		for (int input_vertex_index = 0; input_vertex_index < input_vertex_count; input_vertex_index++) {
 			edge_indices.set(edge_indices_iter, input_vertex_index);

@@ -23,7 +23,7 @@ public:
 
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_edge_positions() override;
-	virtual PackedVector4Array get_vertices() override;
+	virtual PackedVector4Array get_vertex_positions() override;
 
 	static Ref<OrthoplexWireMesh4D> from_tetra_mesh(const Ref<OrthoplexTetraMesh4D> &p_tetra_mesh);
 	Ref<OrthoplexTetraMesh4D> to_tetra_mesh() const;

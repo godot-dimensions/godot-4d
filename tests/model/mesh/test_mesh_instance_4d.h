@@ -9,13 +9,13 @@ namespace TestMeshInstance4D {
 TEST_CASE("[MeshInstance4D] Bounds follow mesh data and target transform") {
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
-	mesh->set_vertices(PackedVector4Array({ Vector4(-1, -1, -1, -1), Vector4(1, 1, 1, 1) }));
+	mesh->set_vertex_positions(PackedVector4Array({ Vector4(-1, -1, -1, -1), Vector4(1, 1, 1, 1) }));
 
 	MeshInstance4D mesh_instance;
 	mesh_instance.set_mesh(mesh);
 	CHECK(mesh_instance.get_rect_bounds_local() == Rect4(Vector4(-1, -1, -1, -1), Vector4(2, 2, 2, 2)));
 
-	mesh->set_vertices(PackedVector4Array({ Vector4(-2, -2, -2, -2), Vector4(3, 3, 3, 3) }));
+	mesh->set_vertex_positions(PackedVector4Array({ Vector4(-2, -2, -2, -2), Vector4(3, 3, 3, 3) }));
 	CHECK(mesh_instance.get_rect_bounds_local() == Rect4(Vector4(-2, -2, -2, -2), Vector4(5, 5, 5, 5)));
 
 	const Transform4D to_target = Transform4D(Basis4D(), Vector4(10, 20, 30, 40));
@@ -25,7 +25,7 @@ TEST_CASE("[MeshInstance4D] Bounds follow mesh data and target transform") {
 TEST_CASE("[MeshInstance4D] Raycast fallback to bounds") {
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
-	mesh->set_vertices(PackedVector4Array({ Vector4(-1, -1, -1, -1), Vector4(1, 1, 1, 1) }));
+	mesh->set_vertex_positions(PackedVector4Array({ Vector4(-1, -1, -1, -1), Vector4(1, 1, 1, 1) }));
 
 	MeshInstance4D mesh_instance;
 	mesh_instance.set_mesh(mesh);
@@ -50,7 +50,7 @@ TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on deduplicate") {
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
 	// Create mesh with duplicate vertices
-	mesh->set_vertices(PackedVector4Array({ Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1), Vector4(1, 1, 1, 1) }));
+	mesh->set_vertex_positions(PackedVector4Array({ Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1), Vector4(1, 1, 1, 1) }));
 	mesh->append_edge_indices(0, 1, false);
 	mesh->append_edge_indices(0, 2, false); // duplicate edge via different vertex
 
@@ -66,7 +66,7 @@ TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on deduplicate") {
 TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on merge") {
 	Ref<ArrayWireMesh4D> mesh1;
 	mesh1.instantiate();
-	mesh1->set_vertices(PackedVector4Array({ Vector4(-1, -1, -1, -1), Vector4(1, 1, 1, 1) }));
+	mesh1->set_vertex_positions(PackedVector4Array({ Vector4(-1, -1, -1, -1), Vector4(1, 1, 1, 1) }));
 	mesh1->append_edge_indices(0, 1, false);
 
 	Rect4 bounds1 = mesh1->get_rect_bounds();
@@ -75,7 +75,7 @@ TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on merge") {
 	// Create second mesh with vertices outside first mesh's bounds
 	Ref<ArrayWireMesh4D> mesh2;
 	mesh2.instantiate();
-	mesh2->set_vertices(PackedVector4Array({ Vector4(5, 5, 5, 5), Vector4(10, 10, 10, 10) }));
+	mesh2->set_vertex_positions(PackedVector4Array({ Vector4(5, 5, 5, 5), Vector4(10, 10, 10, 10) }));
 	mesh2->append_edge_indices(0, 1, false);
 
 	// Merge mesh2 into mesh1
@@ -89,8 +89,8 @@ TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on merge") {
 TEST_CASE("[ArrayTetraMesh4D] Bounds cache invalidation on merge") {
 	Ref<ArrayTetraMesh4D> tetra1;
 	tetra1.instantiate();
-	tetra1->set_vertices(PackedVector4Array({ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0) }));
-	tetra1->set_simplex_cell_indices(PackedInt32Array({ 0, 1, 2, 3 }));
+	tetra1->set_vertex_positions(PackedVector4Array({ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0) }));
+	tetra1->set_simplex_cell_vertex_indices(PackedInt32Array({ 0, 1, 2, 3 }));
 
 	Rect4 bounds1 = tetra1->get_rect_bounds();
 	CHECK(bounds1 == Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 0)));
@@ -98,8 +98,8 @@ TEST_CASE("[ArrayTetraMesh4D] Bounds cache invalidation on merge") {
 	// Create second tetra mesh with vertices outside first mesh's bounds
 	Ref<ArrayTetraMesh4D> tetra2;
 	tetra2.instantiate();
-	tetra2->set_vertices(PackedVector4Array({ Vector4(5, 5, 5, 5), Vector4(6, 5, 5, 5), Vector4(5, 6, 5, 5), Vector4(5, 5, 6, 5) }));
-	tetra2->set_simplex_cell_indices(PackedInt32Array({ 0, 1, 2, 3 }));
+	tetra2->set_vertex_positions(PackedVector4Array({ Vector4(5, 5, 5, 5), Vector4(6, 5, 5, 5), Vector4(5, 6, 5, 5), Vector4(5, 5, 6, 5) }));
+	tetra2->set_simplex_cell_vertex_indices(PackedInt32Array({ 0, 1, 2, 3 }));
 
 	// Merge tetra2 into tetra1
 	tetra1->merge_with(tetra2);
@@ -112,7 +112,7 @@ TEST_CASE("[ArrayTetraMesh4D] Bounds cache invalidation on merge") {
 TEST_CASE("[Mesh4D] Bounds cache persists across multiple accesses") {
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
-	mesh->set_vertices(PackedVector4Array({ Vector4(-2, -2, -2, -2), Vector4(3, 3, 3, 3) }));
+	mesh->set_vertex_positions(PackedVector4Array({ Vector4(-2, -2, -2, -2), Vector4(3, 3, 3, 3) }));
 
 	// Access bounds multiple times - should use cached value
 	Rect4 bounds1 = mesh->get_rect_bounds();

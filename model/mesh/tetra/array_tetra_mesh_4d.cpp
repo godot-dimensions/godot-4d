@@ -9,17 +9,17 @@ void ArrayTetraMesh4D::_clear_cache() {
 }
 
 bool ArrayTetraMesh4D::validate_mesh_data() {
-	const int64_t cell_indices_count = _simplex_cell_indices.size();
-	ERR_FAIL_COND_V_MSG(cell_indices_count % 4 != 0, false, "ArrayTetraMesh4D: Simplex cell indices size must be a multiple of 4.");
+	const int64_t cell_vertex_indices_count = _simplex_cell_vertex_indices.size();
+	ERR_FAIL_COND_V_MSG(cell_vertex_indices_count % 4 != 0, false, "ArrayTetraMesh4D: Simplex cell vertex indices size must be a multiple of 4.");
 	const int64_t cell_texture_map_count = _simplex_cell_texture_map.size();
-	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_indices_count, false, "ArrayTetraMesh4D: Simplex cell texture map size must be the same as simplex cell indices size (or empty).");
+	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_vertex_indices_count, false, "ArrayTetraMesh4D: Simplex cell texture map size must be the same as simplex cell vertex indices size (or empty).");
 	const int64_t cell_boundary_normals_count = _simplex_cell_boundary_normals.size();
-	ERR_FAIL_COND_V_MSG(cell_boundary_normals_count > 0 && cell_boundary_normals_count * 4 != cell_indices_count, false, "ArrayTetraMesh4D: Simplex cell boundary normals size must be one fourth of simplex cell indices size (or empty).");
+	ERR_FAIL_COND_V_MSG(cell_boundary_normals_count > 0 && cell_boundary_normals_count * 4 != cell_vertex_indices_count, false, "ArrayTetraMesh4D: Simplex cell boundary normals size must be one fourth of simplex cell vertex indices size (or empty).");
 	const int64_t cell_vertex_normals_count = _simplex_cell_vertex_normals.size();
-	ERR_FAIL_COND_V_MSG(cell_vertex_normals_count > 0 && cell_vertex_normals_count != cell_indices_count, false, "ArrayTetraMesh4D: Simplex cell vertex normals size must be the same as simplex cell indices size (or empty).");
-	const int64_t vertex_count = _vertices.size();
-	for (int32_t cell_index : _simplex_cell_indices) {
-		ERR_FAIL_COND_V_MSG(cell_index < 0 || cell_index >= vertex_count, false, "ArrayTetraMesh4D: Simplex cell indices must reference valid vertices.");
+	ERR_FAIL_COND_V_MSG(cell_vertex_normals_count > 0 && cell_vertex_normals_count != cell_vertex_indices_count, false, "ArrayTetraMesh4D: Simplex cell vertex normals size must be the same as simplex cell vertex indices size (or empty).");
+	const int64_t vertex_count = _vertex_positions.size();
+	for (int32_t cell_vertex_index : _simplex_cell_vertex_indices) {
+		ERR_FAIL_COND_V_MSG(cell_vertex_index < 0 || cell_vertex_index >= vertex_count, false, "ArrayTetraMesh4D: Simplex cell vertex indices must reference valid vertices.");
 	}
 	return true;
 }
@@ -34,25 +34,25 @@ void ArrayTetraMesh4D::append_tetra_cell_points(const Vector4 &p_a, const Vector
 }
 
 void ArrayTetraMesh4D::append_tetra_cell_indices(const int p_index_a, const int p_index_b, const int p_index_c, const int p_index_d) {
-	_simplex_cell_indices.append(p_index_a);
-	_simplex_cell_indices.append(p_index_b);
-	_simplex_cell_indices.append(p_index_c);
-	_simplex_cell_indices.append(p_index_d);
+	_simplex_cell_vertex_indices.append(p_index_a);
+	_simplex_cell_vertex_indices.append(p_index_b);
+	_simplex_cell_vertex_indices.append(p_index_c);
+	_simplex_cell_vertex_indices.append(p_index_d);
 	_clear_cache();
 	reset_mesh_data_validation();
 }
 
 int ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
-	const int vertex_count = _vertices.size();
+	const int vertex_count = _vertex_positions.size();
 	if (p_deduplicate_vertices) {
 		for (int i = 0; i < vertex_count; i++) {
-			if (_vertices[i] == p_vertex) {
+			if (_vertex_positions[i] == p_vertex) {
 				return i;
 			}
 		}
 	}
-	ERR_FAIL_COND_V(_vertices.size() > MAX_VERTICES, 2147483647);
-	_vertices.push_back(p_vertex);
+	ERR_FAIL_COND_V(_vertex_positions.size() > MAX_VERTICES, 2147483647);
+	_vertex_positions.push_back(p_vertex);
 	reset_mesh_data_validation();
 	return vertex_count;
 }
@@ -67,16 +67,16 @@ PackedInt32Array ArrayTetraMesh4D::append_vertices(const PackedVector4Array &p_v
 }
 
 void ArrayTetraMesh4D::calculate_boundary_normals(const bool p_keep_existing) {
-	const int cell_count = _simplex_cell_indices.size() / 4;
+	const int cell_count = _simplex_cell_vertex_indices.size() / 4;
 	_simplex_cell_boundary_normals.resize(cell_count);
 	for (int i = 0; i < cell_count; i++) {
 		if (p_keep_existing && _simplex_cell_boundary_normals[i] != Vector4()) {
 			continue;
 		}
-		const Vector4 pivot = _vertices[_simplex_cell_indices[i * 4]];
-		const Vector4 a = _vertices[_simplex_cell_indices[1 + i * 4]];
-		const Vector4 b = _vertices[_simplex_cell_indices[2 + i * 4]];
-		const Vector4 c = _vertices[_simplex_cell_indices[3 + i * 4]];
+		const Vector4 pivot = _vertex_positions[_simplex_cell_vertex_indices[i * 4]];
+		const Vector4 a = _vertex_positions[_simplex_cell_vertex_indices[1 + i * 4]];
+		const Vector4 b = _vertex_positions[_simplex_cell_vertex_indices[2 + i * 4]];
+		const Vector4 c = _vertex_positions[_simplex_cell_vertex_indices[3 + i * 4]];
 		const Vector4 perp = Vector4D::perpendicular(a - pivot, b - pivot, c - pivot);
 		_simplex_cell_boundary_normals.set(i, perp.normalized());
 	}
@@ -89,7 +89,7 @@ void ArrayTetraMesh4D::set_flat_shading_normals(const bool p_force_recalculate_b
 	}
 	const PackedVector4Array cell_boundary_normals = get_simplex_cell_boundary_normals();
 	const int64_t cell_boundary_normal_count = cell_boundary_normals.size();
-	CRASH_COND(cell_boundary_normal_count * 4 != _simplex_cell_indices.size());
+	CRASH_COND(cell_boundary_normal_count * 4 != _simplex_cell_vertex_indices.size());
 	_simplex_cell_vertex_normals.resize(cell_boundary_normal_count * 4);
 	for (int64_t cell_index = 0; cell_index < cell_boundary_normal_count; cell_index++) {
 		const Vector4 &boundary_normal = cell_boundary_normals[cell_index];
@@ -101,29 +101,29 @@ void ArrayTetraMesh4D::set_flat_shading_normals(const bool p_force_recalculate_b
 }
 
 void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Transform4D &p_transform) {
-	const int64_t start_cell_index_count = _simplex_cell_indices.size();
+	const int64_t start_cell_vertex_index_count = _simplex_cell_vertex_indices.size();
 	const int64_t start_cell_boundary_normal_count = _simplex_cell_boundary_normals.size();
 	const int64_t start_cell_vertex_normal_count = _simplex_cell_vertex_normals.size();
 	const int64_t start_cell_texture_map_count = _simplex_cell_texture_map.size();
-	const int64_t start_vertex_count = _vertices.size();
-	const int64_t other_cell_index_count = p_other->_simplex_cell_indices.size();
+	const int64_t start_vertex_count = _vertex_positions.size();
+	const int64_t other_cell_vertex_index_count = p_other->_simplex_cell_vertex_indices.size();
 	const int64_t other_cell_boundary_normal_count = p_other->_simplex_cell_boundary_normals.size();
 	const int64_t other_cell_vertex_normal_count = p_other->_simplex_cell_vertex_normals.size();
 	const int64_t other_cell_texture_map_count = p_other->_simplex_cell_texture_map.size();
-	const int64_t other_vertex_count = p_other->_vertices.size();
-	const int64_t end_cell_index_count = start_cell_index_count + other_cell_index_count;
+	const int64_t other_vertex_count = p_other->_vertex_positions.size();
+	const int64_t end_cell_vertex_index_count = start_cell_vertex_index_count + other_cell_vertex_index_count;
 	const int64_t end_vertex_count = start_vertex_count + other_vertex_count;
-	_simplex_cell_indices.resize(end_cell_index_count);
-	_vertices.resize(end_vertex_count);
-	for (int64_t i = 0; i < other_cell_index_count; i++) {
-		_simplex_cell_indices.set(start_cell_index_count + i, p_other->_simplex_cell_indices[i] + start_vertex_count);
+	_simplex_cell_vertex_indices.resize(end_cell_vertex_index_count);
+	_vertex_positions.resize(end_vertex_count);
+	for (int64_t i = 0; i < other_cell_vertex_index_count; i++) {
+		_simplex_cell_vertex_indices.set(start_cell_vertex_index_count + i, p_other->_simplex_cell_vertex_indices[i] + start_vertex_count);
 	}
 	for (int64_t i = 0; i < other_vertex_count; i++) {
-		_vertices.set(start_vertex_count + i, p_transform * p_other->_vertices[i]);
+		_vertex_positions.set(start_vertex_count + i, p_transform * p_other->_vertex_positions[i]);
 	}
 	// Can't simply add these together in case the first mesh has no normals or UVW maps.
 	if (start_cell_boundary_normal_count > 0 || other_cell_boundary_normal_count > 0) {
-		const int64_t end_cell_normal_count = end_cell_index_count / 4;
+		const int64_t end_cell_normal_count = end_cell_vertex_index_count / 4;
 		_simplex_cell_boundary_normals.resize(end_cell_normal_count);
 		if (other_cell_boundary_normal_count > 0) {
 			const int64_t cell_normal_write_offset = end_cell_normal_count - other_cell_boundary_normal_count;
@@ -133,7 +133,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 		}
 	}
 	if (start_cell_vertex_normal_count > 0 || other_cell_vertex_normal_count > 0) {
-		const int64_t end_cell_vertex_normal_count = end_cell_index_count;
+		const int64_t end_cell_vertex_normal_count = end_cell_vertex_index_count;
 		_simplex_cell_vertex_normals.resize(end_cell_vertex_normal_count);
 		if (other_cell_vertex_normal_count > 0) {
 			const int64_t cell_vertex_normal_write_offset = end_cell_vertex_normal_count - other_cell_vertex_normal_count;
@@ -143,7 +143,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 		}
 	}
 	if (start_cell_texture_map_count > 0 || other_cell_texture_map_count > 0) {
-		const int64_t end_cell_texture_map_count = end_cell_index_count / 4;
+		const int64_t end_cell_texture_map_count = end_cell_vertex_index_count / 4;
 		_simplex_cell_texture_map.resize(end_cell_texture_map_count);
 		if (other_cell_texture_map_count > 0) {
 			const int64_t cell_texture_map_write_offset = end_cell_texture_map_count - other_cell_texture_map_count;
@@ -173,12 +173,12 @@ void ArrayTetraMesh4D::merge_with_bind(const Ref<ArrayTetraMesh4D> &p_other, con
 	merge_with(p_other, Transform4D(p_basis, p_offset));
 }
 
-PackedInt32Array ArrayTetraMesh4D::get_simplex_cell_indices() {
-	return _simplex_cell_indices;
+PackedInt32Array ArrayTetraMesh4D::get_simplex_cell_vertex_indices() {
+	return _simplex_cell_vertex_indices;
 }
 
-void ArrayTetraMesh4D::set_simplex_cell_indices(const PackedInt32Array &p_simplex_cell_indices) {
-	_simplex_cell_indices = p_simplex_cell_indices;
+void ArrayTetraMesh4D::set_simplex_cell_vertex_indices(const PackedInt32Array &p_simplex_cell_vertex_indices) {
+	_simplex_cell_vertex_indices = p_simplex_cell_vertex_indices;
 	_clear_cache();
 	reset_mesh_data_validation();
 }
@@ -216,13 +216,13 @@ void ArrayTetraMesh4D::set_simplex_cell_texture_map(const PackedVector3Array &p_
 	reset_mesh_data_validation();
 }
 
-PackedVector4Array ArrayTetraMesh4D::get_vertices() {
-	return _vertices;
+PackedVector4Array ArrayTetraMesh4D::get_vertex_positions() {
+	return _vertex_positions;
 }
 
-void ArrayTetraMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
-	ERR_FAIL_COND(p_vertices.size() > MAX_VERTICES); // Prevent overflow.
-	_vertices = p_vertices;
+void ArrayTetraMesh4D::set_vertex_positions(const PackedVector4Array &p_vertex_positions) {
+	ERR_FAIL_COND(p_vertex_positions.size() > MAX_VERTICES); // Prevent overflow.
+	_vertex_positions = p_vertex_positions;
 	_clear_cache();
 	reset_mesh_data_validation();
 }
@@ -230,7 +230,7 @@ void ArrayTetraMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
 bool ArrayTetraMesh4D::_set(const StringName &p_name, const Variant &p_value) {
 	// Compatibility with old non-simplex "cell" names.
 	if (p_name == StringName("cell_indices")) {
-		set_simplex_cell_indices(p_value);
+		set_simplex_cell_vertex_indices(p_value);
 		return true;
 	} else if (p_name == StringName("cell_boundary_normals")) {
 		set_simplex_cell_boundary_normals(p_value);
@@ -248,7 +248,7 @@ bool ArrayTetraMesh4D::_set(const StringName &p_name, const Variant &p_value) {
 bool ArrayTetraMesh4D::_get(const StringName &p_name, Variant &r_ret) const {
 	// Compatibility with old non-simplex "cell" names.
 	if (p_name == StringName("cell_indices")) {
-		r_ret = PackedInt32Array(_simplex_cell_indices);
+		r_ret = PackedInt32Array(_simplex_cell_vertex_indices);
 		return true;
 	} else if (p_name == StringName("cell_boundary_normals")) {
 		r_ret = PackedVector4Array(_simplex_cell_boundary_normals);
@@ -274,8 +274,12 @@ void ArrayTetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayTetraMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 
 	// Only bind the setters here because the getters are already bound in TetraMesh4D.
-	ClassDB::bind_method(D_METHOD("set_simplex_cell_indices", "simplex_cell_indices"), &ArrayTetraMesh4D::set_simplex_cell_indices);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "simplex_cell_indices"), "set_simplex_cell_indices", "get_simplex_cell_indices");
+	ClassDB::bind_method(D_METHOD("set_simplex_cell_vertex_indices", "simplex_cell_vertex_indices"), &ArrayTetraMesh4D::set_simplex_cell_vertex_indices);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "simplex_cell_vertex_indices"), "set_simplex_cell_vertex_indices", "get_simplex_cell_vertex_indices");
+#ifndef DISABLE_DEPRECATED
+	// Compatibility property to handle reading existing serialized data.
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "simplex_cell_indices", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_INTERNAL), "set_simplex_cell_vertex_indices", "get_simplex_cell_vertex_indices");
+#endif // DISABLE_DEPRECATED
 
 	ClassDB::bind_method(D_METHOD("set_simplex_cell_boundary_normals", "simplex_cell_boundary_normals"), &ArrayTetraMesh4D::set_simplex_cell_boundary_normals);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "simplex_cell_boundary_normals"), "set_simplex_cell_boundary_normals", "get_simplex_cell_boundary_normals");
@@ -286,6 +290,10 @@ void ArrayTetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_simplex_cell_texture_map", "simplex_cell_texture_map"), &ArrayTetraMesh4D::set_simplex_cell_texture_map);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR3_ARRAY, "simplex_cell_texture_map"), "set_simplex_cell_texture_map", "get_simplex_cell_texture_map");
 
-	ClassDB::bind_method(D_METHOD("set_vertices", "vertices"), &ArrayTetraMesh4D::set_vertices);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertices"), "set_vertices", "get_vertices");
+	ClassDB::bind_method(D_METHOD("set_vertex_positions", "vertex_positions"), &ArrayTetraMesh4D::set_vertex_positions);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertex_positions"), "set_vertex_positions", "get_vertex_positions");
+#ifndef DISABLE_DEPRECATED
+	// Compatibility property to handle reading existing serialized data.
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertices", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_INTERNAL), "set_vertex_positions", "get_vertex_positions");
+#endif // DISABLE_DEPRECATED
 }

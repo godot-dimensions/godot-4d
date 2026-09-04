@@ -94,36 +94,36 @@ Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh_4d() {
 	// First, create a 3D sphere for the base of the 4D arrow.
 	// For symmetry between all axes, make a subdivided octahedron and normalize it.
 	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::create_3d_orthoplex_sphere(MOVE_ARROW_RADIUS_4D, MOVE_ARROW_SUBDIVISIONS_4D, MOVE_ARROW_TIP_POSITION_4D);
-	PackedVector4Array vertices = mesh->get_vertices();
+	PackedVector4Array vertex_positions = mesh->get_vertex_positions();
 	PackedInt32Array edge_indices = mesh->get_edge_indices();
-	const int octahedral_cone_vertex_count = vertices.size();
-	vertices.append(Vector4(0.0, 0.0, 0.0, -1.0 + CENTER_VISUAL_RADIUS_4D));
+	const int octahedral_cone_vertex_count = vertex_positions.size();
+	vertex_positions.append(Vector4(0.0, 0.0, 0.0, -1.0 + CENTER_VISUAL_RADIUS_4D));
 	edge_indices.push_back(octahedral_cone_vertex_count - 1);
 	edge_indices.push_back(octahedral_cone_vertex_count);
-	mesh->set_vertices(vertices);
+	mesh->set_vertex_positions(vertex_positions);
 	mesh->set_edge_indices(edge_indices);
 	return mesh;
 }
 
 Ref<ArrayWireMesh4D> _make_rotation_ring_wire_mesh_4d() {
-	PackedVector4Array vertices;
+	PackedVector4Array vertex_positions;
 	PackedInt32Array edge_indices;
-	vertices.resize(ROTATION_RING_SEGMENTS_4D);
+	vertex_positions.resize(ROTATION_RING_SEGMENTS_4D);
 	edge_indices.resize(ROTATION_RING_SEGMENTS_4D * 2);
-	vertices.set(0, Vector4(1.0, 0.0, 0.0, 0.0));
+	vertex_positions.set(0, Vector4(1.0, 0.0, 0.0, 0.0));
 	edge_indices.set(0, 0);
 	for (int i = 1; i < ROTATION_RING_SEGMENTS_4D; i++) {
 		const real_t angle = Math_TAU * i / ROTATION_RING_SEGMENTS_4D;
 		const real_t x = Math::cos(angle);
 		const real_t y = Math::sin(angle);
-		vertices.set(i, Vector4(x, y, 0.0, 0.0));
+		vertex_positions.set(i, Vector4(x, y, 0.0, 0.0));
 		edge_indices.set(i * 2 - 1, i);
 		edge_indices.set(i * 2, i);
 	}
 	edge_indices.set(ROTATION_RING_SEGMENTS_4D * 2 - 1, 0);
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
-	mesh->set_vertices(vertices);
+	mesh->set_vertex_positions(vertex_positions);
 	mesh->set_edge_indices(edge_indices);
 	return mesh;
 }
@@ -140,7 +140,7 @@ Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh_4d() {
 
 Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
 	// Must match constexpr int PLANE_EDGES_4D.
-	PackedVector4Array vertices = {
+	PackedVector4Array vertex_positions = {
 		Vector4(-PLANE_RADIUS_4D * 0.9, -PLANE_RADIUS_4D, 0.0, 0.0), // First triangle lower left.
 		Vector4(PLANE_RADIUS_4D, -PLANE_RADIUS_4D, 0.0, 0.0), // First triangle lower right.
 		Vector4(PLANE_RADIUS_4D, PLANE_RADIUS_4D * 0.9, 0.0, 0.0), // First triangle upper right.
@@ -151,7 +151,7 @@ Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
 	PackedInt32Array edge_indices = { 0, 1, 0, 2, 1, 2, 3, 4, 3, 5, 4, 5 };
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
-	mesh->set_vertices(vertices);
+	mesh->set_vertex_positions(vertex_positions);
 	mesh->set_edge_indices(edge_indices);
 	return mesh;
 }

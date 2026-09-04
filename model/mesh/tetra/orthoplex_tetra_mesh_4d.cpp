@@ -27,8 +27,8 @@ void OrthoplexTetraMesh4D::set_size(const Vector4 &p_size) {
 	_clear_caches();
 }
 
-PackedInt32Array OrthoplexTetraMesh4D::get_simplex_cell_indices() {
-	return ORTHOPLEX_CELL_INDICES;
+PackedInt32Array OrthoplexTetraMesh4D::get_simplex_cell_vertex_indices() {
+	return ORTHOPLEX_CELL_VERTEX_INDICES;
 }
 
 PackedVector4Array OrthoplexTetraMesh4D::get_simplex_cell_boundary_normals() {
@@ -43,7 +43,7 @@ PackedVector3Array OrthoplexTetraMesh4D::get_simplex_cell_texture_map() {
 	return ORTHOPLEX_CELL_UVW_MAP;
 }
 
-PackedVector4Array OrthoplexTetraMesh4D::get_vertices() {
+PackedVector4Array OrthoplexTetraMesh4D::get_vertex_positions() {
 	if (_vertices_cache.is_empty()) {
 		const Vector4 he = get_half_extents();
 		_vertices_cache.append(Vector4(-he.x, 0.0f, 0.0f, 0.0f));

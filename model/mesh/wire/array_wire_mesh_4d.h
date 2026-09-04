@@ -7,7 +7,7 @@ class ArrayWireMesh4D : public WireMesh4D {
 	GDCLASS(ArrayWireMesh4D, WireMesh4D);
 
 	PackedInt32Array _edge_vertex_indices;
-	PackedVector4Array _vertices;
+	PackedVector4Array _vertex_positions;
 
 protected:
 	static void _bind_methods();
@@ -33,6 +33,6 @@ public:
 	virtual PackedInt32Array get_edge_indices() override;
 	void set_edge_indices(const PackedInt32Array &p_edge_indices);
 
-	virtual PackedVector4Array get_vertices() override;
-	void set_vertices(const PackedVector4Array &p_vertices);
+	virtual PackedVector4Array get_vertex_positions() override;
+	void set_vertex_positions(const PackedVector4Array &p_vertex_positions);
 };

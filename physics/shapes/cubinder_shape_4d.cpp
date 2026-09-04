@@ -371,7 +371,7 @@ Ref<PolyMesh4D> CubinderShape4D::to_poly_mesh(const Dictionary &p_options) const
 	// Set the data into a poly mesh.
 	Ref<ArrayPolyMesh4D> ret;
 	ret.instantiate();
-	ret->set_poly_cell_vertices(circle_vertices);
+	ret->set_poly_cell_vertex_positions(circle_vertices);
 	ret->set_edge_vertex_indices(circle_edge_indices);
 	ret->set_poly_cell_indices(circle_poly_cell_indices);
 	CRASH_COND(!ret->is_mesh_data_valid());
@@ -382,7 +382,7 @@ Ref<PolyMesh4D> CubinderShape4D::to_poly_mesh(const Dictionary &p_options) const
 	ret = PolyMeshBuilder4D::extrude_linear(ret, Vector4(0.0, height_half_extent, 0.0, 0.0));
 	ret = PolyMeshBuilder4D::extrude_linear(ret, Vector4(0.0, 0.0, 0.0, thickness_half_extent));
 	// Set custom seams.
-	const PackedVector4Array poly_vertices = ret->get_poly_cell_vertices();
+	const PackedVector4Array poly_vertices = ret->get_poly_cell_vertex_positions();
 	const Vector<PackedInt32Array> face_vertex_indices = ret->get_all_face_vertex_indices();
 	HashSet<int32_t> seam_face_indices;
 	for (int64_t face_index = 0; face_index < face_vertex_indices.size(); face_index++) {

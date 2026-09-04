@@ -45,14 +45,14 @@ public:
 	virtual Ref<ArrayMesh> export_texture_map_mesh();
 
 	// Getters.
-	virtual PackedInt32Array get_simplex_cell_indices();
+	virtual PackedInt32Array get_simplex_cell_vertex_indices();
 	virtual PackedVector4Array get_simplex_cell_boundary_normals();
 	virtual PackedVector4Array get_simplex_cell_vertex_normals();
 	virtual PackedVector3Array get_simplex_cell_texture_map();
 	PackedVector4Array get_simplex_cell_positions();
 
 	// Edges.
-	static PackedInt32Array calculate_edge_indices_from_simplex_cell_indices(const PackedInt32Array &p_simplex_cell_indices, const bool p_deduplicate = true);
+	static PackedInt32Array calculate_edge_indices_from_simplex_cell_vertex_indices(const PackedInt32Array &p_simplex_cell_vertex_indices, const bool p_deduplicate = true);
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_edge_positions() override;
 
@@ -61,7 +61,7 @@ public:
 	static void init_fallback_material();
 	static void cleanup_fallback_material();
 
-	GDVIRTUAL0R(PackedInt32Array, _get_simplex_cell_indices);
+	GDVIRTUAL0R(PackedInt32Array, _get_simplex_cell_vertex_indices);
 	GDVIRTUAL0R(PackedVector4Array, _get_simplex_cell_boundary_normals);
 	GDVIRTUAL0R(PackedVector4Array, _get_simplex_cell_vertex_normals);
 	GDVIRTUAL0R(PackedVector3Array, _get_simplex_cell_texture_map);

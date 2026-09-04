@@ -362,11 +362,11 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh(const Dictionary &p_options) co
 	const Vector3 start_flat_physical_pos = _get_start_physical_offset();
 	PackedVector4Array vertices;
 	PackedVector4Array vert_normals;
-	PackedInt32Array simplex_cell_indices;
+	PackedInt32Array simplex_cell_vertex_indices;
 	// This is the maximum possible size, but the actual size may be smaller if the heightmap has any holes (non-finite height values).
 	const int64_t grid_cell_max_count = (_grid_size.x - 1) * (_grid_size.y - 1) * (_grid_size.z - 1);
 	// 5 tetrahedra per cube, 4 vertex indices per tetrahedron.
-	simplex_cell_indices.resize(4 * 5 * grid_cell_max_count);
+	simplex_cell_vertex_indices.resize(4 * 5 * grid_cell_max_count);
 	// However, the vertices are always the same size as the height data, matching 1:1 for easy addressability.
 	const int64_t vertex_count = _grid_size.x * _grid_size.y * _grid_size.z;
 	vertices.resize(vertex_count);
@@ -458,13 +458,13 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh(const Dictionary &p_options) co
 						SWAP(tet_corners[18], tet_corners[19]);
 					}
 					for (uint8_t t = 0; t < 20; t++) {
-						simplex_cell_indices.set(simplex_cell_iter++, tet_corners[t]);
+						simplex_cell_vertex_indices.set(simplex_cell_iter++, tet_corners[t]);
 					}
 				}
 			}
 		}
 	}
-	simplex_cell_indices.resize(simplex_cell_iter);
+	simplex_cell_vertex_indices.resize(simplex_cell_iter);
 	// Fill a texture map using the horizontal coordinates of the vertices.
 	PackedVector3Array simplex_cell_texture_map;
 	simplex_cell_texture_map.resize(simplex_cell_iter);
@@ -472,7 +472,7 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh(const Dictionary &p_options) co
 	const Vector3 vert_max_vec3 = Vector3(vertices[vertices.size() - 1].x, vertices[vertices.size() - 1].z, vertices[vertices.size() - 1].w);
 	const Vector3 vert_size_vec3 = vert_max_vec3 - vert_min_vec3;
 	for (int64_t i = 0; i < simplex_cell_iter; i++) {
-		const int32_t simplex_vert = simplex_cell_indices[i];
+		const int32_t simplex_vert = simplex_cell_vertex_indices[i];
 		const Vector4 vertex_vec4 = vertices[simplex_vert];
 		const Vector3 vertex_vec3 = Vector3(vertex_vec4.x, vertex_vec4.z, vertex_vec4.w);
 		simplex_cell_texture_map.set(i, (vertex_vec3 - vert_min_vec3) / vert_size_vec3);
@@ -484,13 +484,13 @@ Ref<TetraMesh4D> HeightMapShape4D::to_tetra_mesh(const Dictionary &p_options) co
 	PackedVector4Array simplex_cell_vertex_normals;
 	simplex_cell_vertex_normals.resize(simplex_cell_iter);
 	for (int64_t i = 0; i < simplex_cell_iter; i++) {
-		simplex_cell_vertex_normals.set(i, vert_normals[simplex_cell_indices[i]]);
+		simplex_cell_vertex_normals.set(i, vert_normals[simplex_cell_vertex_indices[i]]);
 	}
 	// Insert the final data into a new mesh.
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
-	tetra_mesh->set_vertices(vertices);
-	tetra_mesh->set_simplex_cell_indices(simplex_cell_indices);
+	tetra_mesh->set_vertex_positions(vertices);
+	tetra_mesh->set_simplex_cell_vertex_indices(simplex_cell_vertex_indices);
 	tetra_mesh->set_simplex_cell_texture_map(simplex_cell_texture_map);
 	tetra_mesh->set_simplex_cell_vertex_normals(simplex_cell_vertex_normals);
 	CRASH_COND(!tetra_mesh->is_mesh_data_valid());
@@ -544,7 +544,7 @@ Ref<WireMesh4D> HeightMapShape4D::to_wire_mesh(const Dictionary &p_options) cons
 	edge_indices.resize(edge_iter);
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
-	wire_mesh->set_vertices(vertices);
+	wire_mesh->set_vertex_positions(vertices);
 	wire_mesh->set_edge_indices(edge_indices);
 	return wire_mesh;
 }

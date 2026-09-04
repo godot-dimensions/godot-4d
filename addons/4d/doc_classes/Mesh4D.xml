@@ -27,10 +27,10 @@
 				Callback method that should return a fallback [Material4D] for the mesh. This is used when neither the [MeshInstance4D] nor the [Mesh4D] itself have a material defined. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. This is only needed when creating a completely custom [Mesh4D] type; built-in types such as [TetraMesh4D] and [WireMesh4D] already define a fallback material, and overriding this function does nothing for them.
 			</description>
 		</method>
-		<method name="_get_vertices" qualifiers="virtual">
+		<method name="_get_vertex_positions" qualifiers="virtual">
 			<return type="PackedVector4Array" />
 			<description>
-				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertices] for details of the returned data.
+				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertex_positions] for details of the returned data.
 			</description>
 		</method>
 		<method name="_update_proxy_mesh_3d" qualifiers="virtual">
@@ -69,7 +69,7 @@
 		<method name="get_edge_positions">
 			<return type="PackedVector4Array" />
 			<description>
-				Gets the edge positions of the mesh. Each Vector4 in the array is a position in meters in 4D space. Edges are defined by two vertices, and the positions in this array are the positions of the vertices that make up the edges. This value is usually calculated from a combination of the edge indices and the vertices arrays, see [method get_edge_indices] and [method get_vertices].
+				Gets the edge positions of the mesh. Each Vector4 in the array is a position in meters in 4D space. Edges are defined by two vertices, and the positions in this array are the positions of the vertices that make up the edges. This value is usually calculated from a combination of the edge indices and the vertices arrays, see [method get_edge_indices] and [method get_vertex_positions].
 			</description>
 		</method>
 		<method name="get_proxy_mesh_3d">
@@ -78,7 +78,7 @@
 				Returns the proxy 3D mesh that the tetrahedral renderers hand to Godot's own 3D renderer. It stores this mesh's 4D data in its ordinary vertex channels, so it will only render properly with one of the shader materials from [method Material4D.get_cross_section_material] or [method Material4D.get_projected_material], depending on which renderer is in use.
 			</description>
 		</method>
-		<method name="get_vertices">
+		<method name="get_vertex_positions">
 			<return type="PackedVector4Array" />
 			<description>
 				Gets the vertices of the mesh. Each Vector4 in the array is a vertex defined as a position in meters in 4D space. Vertices are referenced by many other arrays in the mesh, such as the edge indices or cell indices.

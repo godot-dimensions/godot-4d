@@ -73,7 +73,7 @@ void WireframeCanvasRenderingEngine4D::_render_frame_callback() {
 		const Ref<Material4D> material = mesh_inst->get_active_material();
 		Projection mesh_relative_basis = mesh_relative_basises[mesh_index];
 		Vector4 mesh_relative_position = mesh_relative_positions[mesh_index];
-		const PackedVector4Array camera_relative_vertices = Transform4D(mesh_relative_basis, mesh_relative_position).xform_many(mesh_inst->get_mesh()->get_vertices());
+		const PackedVector4Array camera_relative_vertices = Transform4D(mesh_relative_basis, mesh_relative_position).xform_many(mesh_inst->get_mesh()->get_vertex_positions());
 		if (camera_relative_vertices.is_empty()) {
 			continue;
 		}

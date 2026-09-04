@@ -11,9 +11,9 @@ bool ArrayWireMesh4D::validate_mesh_data() {
 	if (edge_indices_count % 2 != 0) {
 		return false; // Must be a multiple of 2.
 	}
-	const int64_t vertex_count = _vertices.size();
+	const int64_t vertex_pos_count = _vertex_positions.size();
 	for (int32_t edge_index : _edge_vertex_indices) {
-		if (edge_index < 0 || edge_index >= vertex_count) {
+		if (edge_index < 0 || edge_index >= vertex_pos_count) {
 			return false; // Edges must reference valid vertices.
 		}
 	}
@@ -46,18 +46,18 @@ int32_t ArrayWireMesh4D::append_edge_indices(int p_index_a, int p_index_b, const
 }
 
 int ArrayWireMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
-	const int vertex_count = _vertices.size();
+	const int vertex_pos_count = _vertex_positions.size();
 	if (p_deduplicate_vertices) {
-		for (int i = 0; i < vertex_count; i++) {
-			if (_vertices[i] == p_vertex) {
+		for (int i = 0; i < vertex_pos_count; i++) {
+			if (_vertex_positions[i] == p_vertex) {
 				return i;
 			}
 		}
 	}
-	ERR_FAIL_COND_V(_vertices.size() > MAX_VERTICES, 2147483647);
-	_vertices.push_back(p_vertex);
+	ERR_FAIL_COND_V(_vertex_positions.size() > MAX_VERTICES, 2147483647);
+	_vertex_positions.push_back(p_vertex);
 	reset_mesh_data_validation();
-	return vertex_count;
+	return vertex_pos_count;
 }
 
 PackedInt32Array ArrayWireMesh4D::append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices) {
@@ -74,8 +74,8 @@ void ArrayWireMesh4D::deduplicate_all_elements() {
 	// Deduplicate vertices.
 	PackedVector4Array output_vertices;
 	HashMap<int32_t, int32_t> vertex_index_remap;
-	for (int64_t input_vertex_index = 0; input_vertex_index < _vertices.size(); input_vertex_index++) {
-		const Vector4 vertex = _vertices[input_vertex_index];
+	for (int64_t input_vertex_index = 0; input_vertex_index < _vertex_positions.size(); input_vertex_index++) {
+		const Vector4 vertex = _vertex_positions[input_vertex_index];
 		bool found_duplicate = false;
 		for (int64_t output_vertex_index = 0; output_vertex_index < output_vertices.size(); output_vertex_index++) {
 			if (vertex.is_equal_approx(output_vertices[output_vertex_index])) {
@@ -120,15 +120,15 @@ void ArrayWireMesh4D::deduplicate_all_elements() {
 			output_edge_vertex_indices.append(vertex_index_b);
 		}
 	}
-	_vertices = output_vertices;
+	_vertex_positions = output_vertices;
 	_edge_vertex_indices = output_edge_vertex_indices;
 	wire_mesh_clear_cache();
 }
 
 void ArrayWireMesh4D::transform_vertices(const Transform4D &p_transform) {
-	const int64_t vertex_count = _vertices.size();
-	for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
-		_vertices.set(vertex_index, p_transform.xform(_vertices[vertex_index]));
+	const int64_t vertex_pos_count = _vertex_positions.size();
+	for (int64_t vertex_pos_index = 0; vertex_pos_index < vertex_pos_count; vertex_pos_index++) {
+		_vertex_positions.set(vertex_pos_index, p_transform.xform(_vertex_positions[vertex_pos_index]));
 	}
 	wire_mesh_clear_cache();
 }
@@ -139,18 +139,18 @@ void ArrayWireMesh4D::transform_vertices_bind(const Vector4 &p_offset, const Pro
 
 void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Transform4D &p_transform) {
 	const int start_edge_count = _edge_vertex_indices.size();
-	const int start_vertex_count = _vertices.size();
+	const int start_vertex_count = _vertex_positions.size();
 	const int other_edge_count = p_other->_edge_vertex_indices.size();
-	const int other_vertex_count = p_other->_vertices.size();
+	const int other_vertex_count = p_other->_vertex_positions.size();
 	const int end_edge_count = start_edge_count + other_edge_count;
 	const int end_vertex_count = start_vertex_count + other_vertex_count;
 	_edge_vertex_indices.resize(end_edge_count);
-	_vertices.resize(end_vertex_count);
+	_vertex_positions.resize(end_vertex_count);
 	for (int i = 0; i < other_edge_count; i++) {
 		_edge_vertex_indices.set(start_edge_count + i, p_other->_edge_vertex_indices[i] + start_vertex_count);
 	}
 	for (int i = 0; i < other_vertex_count; i++) {
-		_vertices.set(start_vertex_count + i, p_transform * p_other->_vertices[i]);
+		_vertex_positions.set(start_vertex_count + i, p_transform * p_other->_vertex_positions[i]);
 	}
 	Ref<Material4D> other_material = p_other->get_material();
 	if (other_material.is_valid()) {
@@ -178,20 +178,20 @@ void ArrayWireMesh4D::subdivide_edges(const int64_t p_subdivision_segments) {
 	const int64_t old_edge_indices_size = _edge_vertex_indices.size();
 	const int64_t old_edge_count = old_edge_indices_size / 2;
 	int64_t used_edge_index_count = old_edge_indices_size;
-	int64_t used_vertex_count = _vertices.size();
+	int64_t used_vertex_count = _vertex_positions.size();
 	const int64_t final_vertex_count = used_vertex_count + old_edge_count * (p_subdivision_segments - 1);
 	ERR_FAIL_COND_MSG(final_vertex_count > 2147483647, "ArrayWireMesh4D: Too many vertices after subdivision.");
 	_edge_vertex_indices.resize(old_edge_indices_size * p_subdivision_segments);
-	_vertices.resize(final_vertex_count);
+	_vertex_positions.resize(final_vertex_count);
 	for (int64_t edge_index = 0; edge_index < old_edge_indices_size; edge_index += 2) {
-		const Vector4 start_point = _vertices[_edge_vertex_indices[edge_index]];
-		const Vector4 end_point = _vertices[_edge_vertex_indices[edge_index + 1]];
+		const Vector4 start_point = _vertex_positions[_edge_vertex_indices[edge_index]];
+		const Vector4 end_point = _vertex_positions[_edge_vertex_indices[edge_index + 1]];
 		const Vector4 step = (end_point - start_point) / p_subdivision_segments;
 		const int32_t end_edge_index = _edge_vertex_indices[edge_index + 1];
 		_edge_vertex_indices.set(edge_index + 1, used_vertex_count);
 		for (int64_t i = 1; i < p_subdivision_segments; i++) {
 			const Vector4 new_point = start_point + step * i;
-			_vertices.set(used_vertex_count, new_point);
+			_vertex_positions.set(used_vertex_count, new_point);
 			_edge_vertex_indices.set(used_edge_index_count, used_vertex_count);
 			used_vertex_count++;
 			used_edge_index_count++;
@@ -208,7 +208,7 @@ void ArrayWireMesh4D::subdivide_edges(const int64_t p_subdivision_segments) {
 		}
 	}
 	// This should never fail, but if it does, we need to be noisy about it.
-	CRASH_COND(used_edge_index_count != _edge_vertex_indices.size() || used_vertex_count != _vertices.size());
+	CRASH_COND(used_edge_index_count != _edge_vertex_indices.size() || used_vertex_count != _vertex_positions.size());
 	wire_mesh_clear_cache();
 }
 
@@ -220,17 +220,17 @@ void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int6
 	ERR_FAIL_INDEX_MSG(end_edge_index, _edge_vertex_indices.size(), "ArrayWireMesh4D: Edge number " + itos(p_edge_number) + " does not exist.");
 	const int64_t original_edge_end = _edge_vertex_indices[end_edge_index];
 	int64_t used_edge_index_count = _edge_vertex_indices.size();
-	int64_t used_vertex_count = _vertices.size();
+	int64_t used_vertex_count = _vertex_positions.size();
 	const int64_t new_vertices = p_subdivision_segments - 1;
 	_edge_vertex_indices.resize(used_edge_index_count + new_vertices * 2);
-	_vertices.resize(used_vertex_count + new_vertices);
-	const Vector4 start_point = _vertices[_edge_vertex_indices[start_edge_index]];
-	const Vector4 end_point = _vertices[_edge_vertex_indices[end_edge_index]];
+	_vertex_positions.resize(used_vertex_count + new_vertices);
+	const Vector4 start_point = _vertex_positions[_edge_vertex_indices[start_edge_index]];
+	const Vector4 end_point = _vertex_positions[_edge_vertex_indices[end_edge_index]];
 	const Vector4 step = (end_point - start_point) / p_subdivision_segments;
 	_edge_vertex_indices.set(end_edge_index, used_vertex_count);
 	for (int64_t i = 1; i < p_subdivision_segments; i++) {
 		const Vector4 new_point = start_point + step * i;
-		_vertices.set(used_vertex_count, new_point);
+		_vertex_positions.set(used_vertex_count, new_point);
 		_edge_vertex_indices.set(used_edge_index_count, used_vertex_count);
 		used_vertex_count++;
 		used_edge_index_count++;
@@ -249,8 +249,8 @@ void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int6
 }
 
 void ArrayWireMesh4D::transform_all_vertices(const Transform4D &p_transform) {
-	for (int64_t i = 0; i < _vertices.size(); i++) {
-		_vertices.set(i, p_transform * _vertices[i]);
+	for (int64_t i = 0; i < _vertex_positions.size(); i++) {
+		_vertex_positions.set(i, p_transform * _vertex_positions[i]);
 	}
 	wire_mesh_clear_cache();
 }
@@ -265,13 +265,13 @@ void ArrayWireMesh4D::set_edge_indices(const PackedInt32Array &p_edge_indices) {
 	reset_mesh_data_validation();
 }
 
-PackedVector4Array ArrayWireMesh4D::get_vertices() {
-	return _vertices;
+PackedVector4Array ArrayWireMesh4D::get_vertex_positions() {
+	return _vertex_positions;
 }
 
-void ArrayWireMesh4D::set_vertices(const PackedVector4Array &p_vertices) {
-	ERR_FAIL_COND(p_vertices.size() > MAX_VERTICES);
-	_vertices = p_vertices;
+void ArrayWireMesh4D::set_vertex_positions(const PackedVector4Array &p_vertex_positions) {
+	ERR_FAIL_COND(p_vertex_positions.size() > MAX_VERTICES);
+	_vertex_positions = p_vertex_positions;
 	wire_mesh_clear_cache();
 	reset_mesh_data_validation();
 }
@@ -293,6 +293,10 @@ void ArrayWireMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_edge_indices", "edge_indices"), &ArrayWireMesh4D::set_edge_indices);
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "edge_indices"), "set_edge_indices", "get_edge_indices");
 
-	ClassDB::bind_method(D_METHOD("set_vertices", "vertices"), &ArrayWireMesh4D::set_vertices);
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertices"), "set_vertices", "get_vertices");
+	ClassDB::bind_method(D_METHOD("set_vertex_positions", "vertex_positions"), &ArrayWireMesh4D::set_vertex_positions);
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertex_positions"), "set_vertex_positions", "get_vertex_positions");
+#ifndef DISABLE_DEPRECATED
+	// Compatibility property to handle reading existing serialized data.
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR4_ARRAY, "vertices", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_INTERNAL), "set_vertex_positions", "get_vertex_positions");
+#endif // DISABLE_DEPRECATED
 }

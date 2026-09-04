@@ -133,7 +133,7 @@ Ref<WireMesh4D> SphereShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	}
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
-	wire_mesh->set_vertices(vertices);
+	wire_mesh->set_vertex_positions(vertices);
 	wire_mesh->set_edge_indices(edge_indices);
 	if (deduplicate) {
 		wire_mesh->deduplicate_all_elements();

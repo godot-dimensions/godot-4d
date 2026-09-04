@@ -6,11 +6,11 @@
 class ArrayTetraMesh4D : public TetraMesh4D {
 	GDCLASS(ArrayTetraMesh4D, TetraMesh4D);
 
-	PackedInt32Array _simplex_cell_indices;
+	PackedInt32Array _simplex_cell_vertex_indices;
 	PackedVector4Array _simplex_cell_boundary_normals;
 	PackedVector4Array _simplex_cell_vertex_normals;
 	PackedVector3Array _simplex_cell_texture_map;
-	PackedVector4Array _vertices;
+	PackedVector4Array _vertex_positions;
 
 	void _clear_cache();
 
@@ -31,8 +31,8 @@ public:
 	void merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
 	void merge_with_bind(const Ref<ArrayTetraMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 
-	virtual PackedInt32Array get_simplex_cell_indices() override;
-	void set_simplex_cell_indices(const PackedInt32Array &p_simplex_cell_indices);
+	virtual PackedInt32Array get_simplex_cell_vertex_indices() override;
+	void set_simplex_cell_vertex_indices(const PackedInt32Array &p_simplex_cell_vertex_indices);
 
 	virtual PackedVector4Array get_simplex_cell_boundary_normals() override;
 	void set_simplex_cell_boundary_normals(const PackedVector4Array &p_simplex_cell_boundary_normals);
@@ -43,6 +43,6 @@ public:
 	virtual PackedVector3Array get_simplex_cell_texture_map() override;
 	void set_simplex_cell_texture_map(const PackedVector3Array &p_simplex_cell_texture_map);
 
-	virtual PackedVector4Array get_vertices() override;
-	void set_vertices(const PackedVector4Array &p_vertices);
+	virtual PackedVector4Array get_vertex_positions() override;
+	void set_vertex_positions(const PackedVector4Array &p_vertex_positions);
 };

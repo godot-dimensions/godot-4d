@@ -88,7 +88,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const R
 			}
 		}
 	}
-	ret->set_poly_cell_vertices(output_vertices);
+	ret->set_poly_cell_vertex_positions(output_vertices);
 	ret->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ output_face_indices });
 	if (!output_face_boundary_normals.is_empty() || !output_face_vertex_normals.is_empty()) {
 		HashMap<Vector2i, Vector<PackedVector4Array>> all_poly_cell_normals;
@@ -142,10 +142,10 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 	const int32_t input_edge_count = (int32_t)(input_edge_indices.size() / 2);
 	PackedInt32Array vertex_to_extruded_edge;
 	{
-		const PackedVector4Array &input_vertices = p_input_mesh->get_poly_cell_vertices();
+		const PackedVector4Array &input_vertex_positions = p_input_mesh->get_poly_cell_vertex_positions();
 		PackedInt32Array edge_indices = ret->get_edge_indices();
 		int64_t edge_indices_iter = edge_indices.size();
-		const int32_t input_vertex_count = (int32_t)input_vertices.size();
+		const int32_t input_vertex_count = (int32_t)input_vertex_positions.size();
 		vertex_to_extruded_edge.resize(input_vertex_count);
 		edge_indices.resize(edge_indices.size() + input_vertex_count * 2);
 		for (int input_vertex_index = 0; input_vertex_index < input_vertex_count; input_vertex_index++) {
@@ -258,7 +258,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			// This only works when we have 4D volumes (poly index 2) to indicate which side of a boundary
 			// cell is the inside vs the outside, which came from the input mesh's 3D cells.
 			if (poly_cell_indices.size() > 2) {
-				const PackedVector4Array &output_vertices = ret->get_poly_cell_vertices();
+				const PackedVector4Array &output_vertices = ret->get_poly_cell_vertex_positions();
 				const Vector<PackedInt32Array> volume_vert = ret->get_all_poly_cell_vertex_indices(4, false);
 				const Vector<PackedInt32Array> volume_cells = poly_cell_indices[2];
 				const Vector<PackedInt32Array> boundary_vert = ret->get_all_poly_cell_vertex_indices(3, false);
@@ -429,11 +429,11 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	const Vector<Vector<PackedInt32Array>> &input_poly_cell_indices = p_input_mesh->get_poly_cell_indices();
 	ERR_FAIL_COND_V_MSG(input_poly_cell_indices.size() == 0 || input_poly_cell_indices.size() > 2, ret, "Input mesh must have 2D faces and optionally 3D cells (poly cell indices of size 1 or 2), with no higher order elements like 4D volumes.");
 	ERR_FAIL_COND_V_MSG(!p_input_mesh->is_mesh_data_valid(), ret, "Input mesh is not valid, so extrusion cannot be performed.");
-	const PackedVector4Array &input_vertices = p_input_mesh->get_poly_cell_vertices();
+	const PackedVector4Array &input_vertex_positions = p_input_mesh->get_poly_cell_vertex_positions();
 	const PackedInt32Array &input_edge_indices = p_input_mesh->get_edge_indices();
 	const Vector<PackedInt32Array> &input_face_indices = input_poly_cell_indices[0];
 	const Vector<PackedInt32Array> &input_cell_indices = input_poly_cell_indices.size() > 1 ? input_poly_cell_indices[1] : Vector<PackedInt32Array>();
-	const int32_t input_vertex_count = input_vertices.size();
+	const int32_t input_vertex_count = input_vertex_positions.size();
 	const int64_t input_edge_count = input_edge_indices.size() / 2;
 	const int32_t input_face_count = input_face_indices.size();
 	const int32_t input_cell_count = input_cell_indices.size();
@@ -441,7 +441,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	const double radians_per_step = Math_TAU / p_steps;
 	// Step 2: Start with a copy of the input mesh's vertices, edges, and faces.
 	// Work with raw arrays to avoid safety checks and other overhead of the ArrayPolyMesh4D's functions.
-	PackedVector4Array output_vertices = PackedVector4Array(input_vertices);
+	PackedVector4Array output_vertices = PackedVector4Array(input_vertex_positions);
 	PackedInt32Array output_edge_indices = PackedInt32Array(input_edge_indices);
 	Vector<PackedInt32Array> output_face_indices = Vector<PackedInt32Array>(input_face_indices);
 	Vector<PackedInt32Array> output_cell_indices = Vector<PackedInt32Array>(input_cell_indices);
@@ -481,12 +481,12 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 		const Basis4D rotation = Basis4D::from_xw(angle);
 		for (int32_t vertex_index = 0; vertex_index < input_vertex_count; vertex_index++) {
 			const int32_t map_index = vertex_index * p_steps + step;
-			Vector4 vertex = input_vertices[vertex_index];
+			Vector4 vertex = input_vertex_positions[vertex_index];
 			if (vertex.x == 0.0) {
 				// Rotating would have no effect here, so deduplicate this vertex.
 				original_to_rotated_vertices.set(map_index, original_to_rotated_vertices[vertex_index * p_steps]);
 			} else {
-				const Vector4 rotated_vertex = rotation.xform(input_vertices[vertex_index]);
+				const Vector4 rotated_vertex = rotation.xform(input_vertex_positions[vertex_index]);
 				original_to_rotated_vertices.set(map_index, output_vertices.size());
 				output_vertices.append(rotated_vertex);
 			}
@@ -654,7 +654,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 		}
 	}
 	// Step 13: Set all of this data on the output mesh.
-	ret->set_poly_cell_vertices(output_vertices);
+	ret->set_poly_cell_vertex_positions(output_vertices);
 	ret->set_edge_vertex_indices(output_edge_indices);
 	Vector<Vector<PackedInt32Array>> output_poly_cell_indices = {
 		output_face_indices,
@@ -677,8 +677,8 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 		for (int32_t face_index = 0; face_index < input_face_count; face_index++) {
 			const PackedInt32Array this_input_face_vert = input_face_vertex_indices[face_index];
 			ERR_FAIL_COND_V(this_input_face_vert.size() < 3, ret);
-			const Vector4 face_x = input_vertices[this_input_face_vert[1]] - input_vertices[this_input_face_vert[0]];
-			const Vector4 face_y = input_vertices[this_input_face_vert[2]] - input_vertices[this_input_face_vert[0]];
+			const Vector4 face_x = input_vertex_positions[this_input_face_vert[1]] - input_vertex_positions[this_input_face_vert[0]];
+			const Vector4 face_y = input_vertex_positions[this_input_face_vert[2]] - input_vertex_positions[this_input_face_vert[0]];
 			const Vector3 face_cross_3d = Vector4D::to_3d(face_x).cross(Vector4D::to_3d(face_y));
 			input_face_normals.set(face_index, Vector4D::from_3d(face_cross_3d.normalized()));
 		}
@@ -1214,9 +1214,9 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::reconstruct_from_tetra_mesh(const Ref<Te
 	ERR_FAIL_COND_V(p_tetra_mesh.is_null(), Ref<ArrayPolyMesh4D>());
 	Ref<ArrayPolyMesh4D> ret;
 	ret.instantiate();
-	const PackedVector4Array vertices = p_tetra_mesh->get_vertices();
-	ret->set_poly_cell_vertices(vertices);
-	const PackedInt32Array simplex_indices = p_tetra_mesh->get_simplex_cell_indices();
+	const PackedVector4Array vertices = p_tetra_mesh->get_vertex_positions();
+	ret->set_poly_cell_vertex_positions(vertices);
+	const PackedInt32Array simplex_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
 	const int64_t simplex_count = simplex_indices.size() / 4;
 	PackedInt32Array boundary_pivot_overrides;
 	PackedInt32Array edge_vertex_indices;
@@ -1305,7 +1305,7 @@ void PolyMeshBuilder4D::make_boundary_normals_topologically_consistent(const Ref
 		}
 	}
 	// Compute the average position of each boundary cell.
-	const PackedVector4Array &poly_vertices = p_mesh_4d->get_poly_cell_vertices();
+	const PackedVector4Array &poly_vertices = p_mesh_4d->get_poly_cell_vertex_positions();
 	const Vector<PackedInt32Array> boundary_vert = p_mesh_4d->get_all_poly_cell_vertex_indices(3, false);
 	const PackedInt32Array &boundary_pivot_overrides = p_mesh_4d->get_poly_cell_boundary_pivot_overrides();
 	CRASH_COND(boundary_vert.size() != boundary_cells.size());
@@ -1985,7 +1985,7 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 	ERR_FAIL_COND_V_MSG(p_input_mesh.is_null() || !p_input_mesh->is_mesh_data_valid(), ret, "Input mesh is not valid, so subdivision cannot be performed.");
 	ERR_FAIL_COND_V_MSG(p_dimension < 1 || p_dimension > 4, ret, "Cannot subdivide elements of dimension " + itos(p_dimension) + " in a 4D mesh.");
 	SubdivisionContext ctx;
-	ctx.old_vertices = p_input_mesh->get_poly_cell_vertices();
+	ctx.old_vertices = p_input_mesh->get_poly_cell_vertex_positions();
 	ctx.old_edges = p_input_mesh->get_edge_indices();
 	ctx.old_levels = p_input_mesh->get_poly_cell_indices();
 	const int64_t level_count = ctx.old_levels.size();
@@ -2137,7 +2137,7 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 		}
 	}
 	// Write the new data into the mesh.
-	p_input_mesh->set_poly_cell_vertices(ctx.new_vertices);
+	p_input_mesh->set_poly_cell_vertex_positions(ctx.new_vertices);
 	p_input_mesh->set_edge_vertex_indices(ctx.new_edges);
 	p_input_mesh->set_poly_cell_indices(ctx.new_levels);
 	p_input_mesh->set_all_poly_cell_normals(HashMap<Vector2i, Vector<PackedVector4Array>>());

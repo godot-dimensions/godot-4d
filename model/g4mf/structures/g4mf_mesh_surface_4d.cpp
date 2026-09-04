@@ -152,7 +152,7 @@ PackedInt32Array G4MFMeshSurface4D::load_simplex_indices(const Ref<G4MFState4D> 
 Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
 	Ref<ArrayPolyMesh4D> poly_mesh;
 	poly_mesh.instantiate();
-	poly_mesh->set_poly_cell_vertices(p_vertices);
+	poly_mesh->set_poly_cell_vertex_positions(p_vertices);
 	if (_edges_accessor_index >= 0) {
 		poly_mesh->set_edge_vertex_indices(load_edge_indices(p_g4mf_state));
 	}
@@ -235,9 +235,9 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
-	tetra_mesh->set_vertices(p_vertices);
+	tetra_mesh->set_vertex_positions(p_vertices);
 	if (_simplexes_accessor_index >= 0) {
-		tetra_mesh->set_simplex_cell_indices(load_simplex_indices(p_g4mf_state));
+		tetra_mesh->set_simplex_cell_vertex_indices(load_simplex_indices(p_g4mf_state));
 		tetra_mesh->calculate_boundary_normals();
 	}
 	if (_normals_binding.is_valid() && _normals_binding->get_simplexes_accessor_index() >= 0) {
@@ -284,13 +284,13 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 Ref<ArrayWireMesh4D> G4MFMeshSurface4D::generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
-	wire_mesh->set_vertices(p_vertices);
+	wire_mesh->set_vertex_positions(p_vertices);
 	if (_edges_accessor_index >= 0) {
 		wire_mesh->set_edge_indices(load_edge_indices(p_g4mf_state));
 	} else if (_simplexes_accessor_index >= 0) {
 		// Calculate edges from simplex cells.
 		const PackedInt32Array simplex_indices = load_simplex_indices(p_g4mf_state);
-		const PackedInt32Array edge_indices = TetraMesh4D::calculate_edge_indices_from_simplex_cell_indices(simplex_indices);
+		const PackedInt32Array edge_indices = TetraMesh4D::calculate_edge_indices_from_simplex_cell_vertex_indices(simplex_indices);
 		wire_mesh->set_edge_indices(edge_indices);
 	}
 	const bool is_valid = wire_mesh->is_mesh_data_valid();
@@ -388,7 +388,7 @@ void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState
 }
 
 void G4MFMeshSurface4D::_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate, PackedVector4Array &r_unique_normal_values, PackedVector3Array &r_unique_texture_map_values) {
-	const PackedInt32Array simplex_indices = p_tetra_mesh->get_simplex_cell_indices();
+	const PackedInt32Array simplex_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
 	if (!simplex_indices.is_empty()) {
 		Array simplex_indices_variants;
 		simplex_indices_variants.resize(simplex_indices.size());

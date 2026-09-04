@@ -19,7 +19,7 @@ class OFFDocument4D : public Resource {
 	TypedArray<PackedInt32Array> _cell_face_indices;
 	PackedColorArray _face_colors;
 	TypedArray<PackedInt32Array> _face_vertex_indices;
-	PackedVector4Array _vertices;
+	PackedVector4Array _vertex_positions;
 	int _edge_count = 0;
 	bool _has_any_face_colors = false;
 	bool _has_any_cell_colors = false;
@@ -38,8 +38,8 @@ class OFFDocument4D : public Resource {
 
 	// Export winding order correction helper functions.
 	static int32_t _get_next_vertex_not_in_common_edge(const PackedInt32Array &p_face, const int64_t p_common_edge_index, const int32_t p_common_edge_min, const int32_t p_common_edge_max);
-	static Vector4 _predict_poly_import_cell_normal(const PackedVector4Array &p_vertices, const TypedArray<PackedInt32Array> &p_face_vertex_indices, const PackedInt32Array &p_cell_face_indices);
-	static Vector4 _compute_cell_normal_from_canonical_span(const PackedVector4Array &p_vertices, const PackedInt32Array &p_cell_vertex_indices);
+	static Vector4 _predict_poly_import_cell_normal(const PackedVector4Array &p_vertex_positions, const TypedArray<PackedInt32Array> &p_face_vertex_indices, const PackedInt32Array &p_cell_face_indices);
+	static Vector4 _compute_cell_normal_from_canonical_span(const PackedVector4Array &p_vertex_positions, const PackedInt32Array &p_cell_vertex_indices);
 
 	// Internal entire-file string conversion functions.
 	String _export_save_to_string();
@@ -78,6 +78,6 @@ public:
 	TypedArray<PackedInt32Array> get_face_vertex_indices() const;
 	void set_face_vertex_indices(const TypedArray<PackedInt32Array> &p_face_vertex_indices);
 
-	PackedVector4Array get_vertices() const;
-	void set_vertices(const PackedVector4Array &p_vertices);
+	PackedVector4Array get_vertex_positions() const;
+	void set_vertex_positions(const PackedVector4Array &p_vertex_positions);
 };

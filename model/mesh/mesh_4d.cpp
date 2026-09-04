@@ -73,7 +73,7 @@ void Mesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
 	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) {
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_VERT) {
-			const PackedVector4Array vertices = get_vertices();
+			const PackedVector4Array vertices = get_vertex_positions();
 			PackedColorArray color_array = p_material->get_albedo_color_array();
 			if (color_array.size() < vertices.size()) {
 				p_material->resize_albedo_color_array(vertices.size());
@@ -93,7 +93,7 @@ void Mesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
 Ref<ArrayWireMesh4D> Mesh4D::to_array_wire_mesh() {
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
-	wire_mesh->set_vertices(get_vertices());
+	wire_mesh->set_vertex_positions(get_vertex_positions());
 	wire_mesh->set_edge_indices(get_edge_indices());
 	wire_mesh->set_material(get_material());
 	return wire_mesh;
@@ -108,7 +108,7 @@ Rect4 Mesh4D::get_rect_bounds() {
 		return _rect_bounds;
 	}
 	_rect_bounds = Rect4(); // Start by including the mesh's local origin always, even if the mesh does not cover that point.
-	const PackedVector4Array vertices = get_vertices();
+	const PackedVector4Array vertices = get_vertex_positions();
 	for (int vertex_index = 0; vertex_index < vertices.size(); vertex_index++) {
 		_rect_bounds.expand_self_to_point(vertices[vertex_index]);
 	}
@@ -150,21 +150,21 @@ Ref<Material4D> Mesh4D::get_fallback_material() {
 }
 
 PackedInt32Array Mesh4D::get_edge_indices() {
-	PackedInt32Array indices;
-	GDVIRTUAL_CALL(_get_edge_indices, indices);
-	return indices;
+	PackedInt32Array edge_indices;
+	GDVIRTUAL_CALL(_get_edge_indices, edge_indices);
+	return edge_indices;
 }
 
 PackedVector4Array Mesh4D::get_edge_positions() {
-	PackedVector4Array edges;
-	GDVIRTUAL_CALL(_get_edge_positions, edges);
-	return edges;
+	PackedVector4Array edge_positions;
+	GDVIRTUAL_CALL(_get_edge_positions, edge_positions);
+	return edge_positions;
 }
 
-PackedVector4Array Mesh4D::get_vertices() {
-	PackedVector4Array vertices;
-	GDVIRTUAL_CALL(_get_vertices, vertices);
-	return vertices;
+PackedVector4Array Mesh4D::get_vertex_positions() {
+	PackedVector4Array vertex_positions;
+	GDVIRTUAL_CALL(_get_vertex_positions, vertex_positions);
+	return vertex_positions;
 }
 
 void Mesh4D::_bind_methods() {
@@ -188,11 +188,11 @@ void Mesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_edge_indices"), &Mesh4D::get_edge_indices);
 	ClassDB::bind_method(D_METHOD("get_edge_positions"), &Mesh4D::get_edge_positions);
-	ClassDB::bind_method(D_METHOD("get_vertices"), &Mesh4D::get_vertices);
+	ClassDB::bind_method(D_METHOD("get_vertex_positions"), &Mesh4D::get_vertex_positions);
 
 	GDVIRTUAL_BIND(_get_edge_indices);
 	GDVIRTUAL_BIND(_get_edge_positions);
-	GDVIRTUAL_BIND(_get_vertices);
+	GDVIRTUAL_BIND(_get_vertex_positions);
 	GDVIRTUAL_BIND(_get_fallback_material);
 	GDVIRTUAL_BIND(_validate_material_for_mesh, "material");
 	GDVIRTUAL_BIND(_validate_mesh_data);
