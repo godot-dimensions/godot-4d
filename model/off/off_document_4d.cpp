@@ -222,12 +222,12 @@ Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> 
 		}
 	} else {
 		// TetraMesh4D references cells by their vertex indices, but OFF files reference them by their face indices.
-		const PackedInt32Array cell_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
-		for (int i = 0; i < cell_indices.size(); i += 4) {
-			const int32_t a = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 1], cell_indices[i + 2], p_deduplicate_faces);
-			const int32_t b = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 2], cell_indices[i + 3], p_deduplicate_faces);
-			const int32_t c = off_document->_find_or_insert_face(cell_indices[i], cell_indices[i + 3], cell_indices[i + 1], p_deduplicate_faces);
-			const int32_t d = off_document->_find_or_insert_face(cell_indices[i + 1], cell_indices[i + 3], cell_indices[i + 2], p_deduplicate_faces);
+		const PackedInt32Array cell_vert_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
+		for (int i = 0; i < cell_vert_indices.size(); i += 4) {
+			const int32_t a = off_document->_find_or_insert_face(cell_vert_indices[i], cell_vert_indices[i + 1], cell_vert_indices[i + 2], p_deduplicate_faces);
+			const int32_t b = off_document->_find_or_insert_face(cell_vert_indices[i], cell_vert_indices[i + 2], cell_vert_indices[i + 3], p_deduplicate_faces);
+			const int32_t c = off_document->_find_or_insert_face(cell_vert_indices[i], cell_vert_indices[i + 3], cell_vert_indices[i + 1], p_deduplicate_faces);
+			const int32_t d = off_document->_find_or_insert_face(cell_vert_indices[i + 1], cell_vert_indices[i + 3], cell_vert_indices[i + 2], p_deduplicate_faces);
 			off_document->_cell_face_indices.append(PackedInt32Array{ a, b, c, d });
 		}
 	}

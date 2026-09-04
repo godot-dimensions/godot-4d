@@ -230,6 +230,31 @@ Vector4 Vector4D::random_in_range(const Vector4 &p_from, const Vector4 &p_to) {
 	return Vector4(VariantUtilityFunctions::randf_range(p_from.x, p_to.x), VariantUtilityFunctions::randf_range(p_from.y, p_to.y), VariantUtilityFunctions::randf_range(p_from.z, p_to.z), VariantUtilityFunctions::randf_range(p_from.w, p_to.w));
 }
 
+// Array operations.
+
+// Not 4D, but it is next to the Vector4 version since they are nearly identical.
+int64_t Vector4D::vector3_array_append_deduplicate(PackedVector3Array &r_array, const Vector3 &p_vector) {
+	const int64_t array_count = r_array.size();
+	for (int64_t i = 0; i < array_count; i++) {
+		if (r_array[i] == p_vector) {
+			return i;
+		}
+	}
+	r_array.append(p_vector);
+	return array_count;
+}
+
+int64_t Vector4D::vector4_array_append_deduplicate(PackedVector4Array &r_array, const Vector4 &p_vector) {
+	const int64_t array_count = r_array.size();
+	for (int64_t i = 0; i < array_count; i++) {
+		if (r_array[i] == p_vector) {
+			return i;
+		}
+	}
+	r_array.append(p_vector);
+	return array_count;
+}
+
 // Conversion.
 
 Array Vector4D::to_json_array(const Vector4 &p_vector) {

@@ -39,7 +39,6 @@ private:
 	bool _is_poly_mesh_data_valid = false;
 
 	static Vector3 _average_vector3(const PackedVector3Array &p_vector3_array);
-	static int64_t _append_vertex_internal(PackedVector4Array &r_vertices, const Vector4 &p_vertex, const bool p_deduplicate);
 	static int32_t _compare_triangulation_alignment(const PackedInt32Array &p_a, const PackedInt32Array &p_b);
 	static inline bool _do_edges_have_common_vertex(const int32_t p_edge1_a, const int32_t p_edge1_b, const int32_t p_edge2_a, const int32_t p_edge2_b) {
 		return (p_edge1_a == p_edge2_a) || (p_edge1_a == p_edge2_b) || (p_edge1_b == p_edge2_a) || (p_edge1_b == p_edge2_b);

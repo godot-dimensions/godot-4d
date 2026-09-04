@@ -100,6 +100,10 @@ public:
 	static Vector4 random_in_radius(const real_t p_radius = 1.0);
 	static Vector4 random_in_range(const Vector4 &p_from = Vector4(0, 0, 0, 0), const Vector4 &p_to = Vector4(1, 1, 1, 1));
 
+	// Array operations.
+	static int64_t vector3_array_append_deduplicate(PackedVector3Array &r_array, const Vector3 &p_vector); // Not 4D, but it is next to the Vector4 version since they are nearly identical.
+	static int64_t vector4_array_append_deduplicate(PackedVector4Array &r_array, const Vector4 &p_vector);
+
 	// Conversion.
 	static Vector4 from_color(const Color &p_color) { return Vector4(p_color.r, p_color.g, p_color.b, p_color.a); }
 	static Color to_color(const Vector4 &p_vector) { return Color(p_vector.x, p_vector.y, p_vector.z, p_vector.w); }

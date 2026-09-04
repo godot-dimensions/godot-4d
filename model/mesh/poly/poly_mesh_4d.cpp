@@ -175,19 +175,6 @@ Vector3 PolyMesh4D::_average_vector3(const PackedVector3Array &p_vector3_array) 
 	return sum / (real_t)count;
 }
 
-int64_t PolyMesh4D::_append_vertex_internal(PackedVector4Array &r_vertices, const Vector4 &p_vertex, const bool p_deduplicate) {
-	const int64_t vertex_count = r_vertices.size();
-	if (p_deduplicate) {
-		for (int64_t i = 0; i < vertex_count; i++) {
-			if (r_vertices[i] == p_vertex) {
-				return i;
-			}
-		}
-	}
-	r_vertices.append(p_vertex);
-	return vertex_count;
-}
-
 int32_t PolyMesh4D::_compare_triangulation_alignment(const PackedInt32Array &p_a, const PackedInt32Array &p_b) {
 	const int64_t size = p_a.size();
 	ERR_FAIL_COND_V(size != p_b.size() || size < 3 || (size % 3) != 0, -1000000000);
@@ -714,7 +701,7 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 						centroid += _simplex_cell_vertex_positions_cache[vertex_index];
 					}
 					centroid /= (real_t)cell_vertex_indices[best_cell_index].size();
-					best_pivot_vertex = _append_vertex_internal(_simplex_cell_vertex_positions_cache, centroid, true);
+					best_pivot_vertex = Vector4D::vector4_array_append_deduplicate(_simplex_cell_vertex_positions_cache, centroid);
 				}
 			}
 			// Step 5.5: If the pivot is on any faces, triangulate the faces that have the pivot vertex.

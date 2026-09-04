@@ -76,7 +76,7 @@ int64_t ArrayPolyMesh4D::append_poly_cell(const int32_t p_dimension, const Packe
 	return existing_cell_count;
 }
 
-int ArrayPolyMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
+int32_t ArrayPolyMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
 	const int vertex_count = _poly_cell_vertex_positions.size();
 	if (p_deduplicate_vertices) {
 		for (int i = 0; i < vertex_count; i++) {

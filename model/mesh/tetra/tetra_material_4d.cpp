@@ -66,7 +66,7 @@ Color TetraMaterial4D::get_albedo_color_of_edge(const int64_t p_edge_index, cons
 		Ref<TetraMesh4D> cell_mesh = p_for_mesh;
 		ERR_FAIL_COND_V_MSG(cell_mesh.is_null(), _albedo_color, "TetraMaterial4D: Mesh with per-cell colors is not a tetra cell mesh.");
 		_edge_albedo_color_cache.resize(edge_count);
-		const PackedInt32Array cell_indices = cell_mesh->get_simplex_cell_vertex_indices();
+		const PackedInt32Array cell_vert_indices = cell_mesh->get_simplex_cell_vertex_indices();
 		constexpr int64_t vertices_per_cell = 4;
 		for (int64_t i = 0; i < edge_count; i++) {
 			const int32_t first_vertex_index = edge_indices[i * 2];
@@ -75,14 +75,14 @@ Color TetraMaterial4D::get_albedo_color_of_edge(const int64_t p_edge_index, cons
 			int color_amount = 0;
 			int64_t find_from = 0;
 			while (true) {
-				find_from = cell_indices.find(first_vertex_index, find_from);
+				find_from = cell_vert_indices.find(first_vertex_index, find_from);
 				if (find_from < 0) {
 					break;
 				}
 				// Truncated integer division to get the cell index.
 				const int64_t cell_index = find_from / vertices_per_cell;
 				ERR_FAIL_INDEX_V_MSG(cell_index, _albedo_color_array.size(), _albedo_color, "TetraMaterial4D: Cell index out of bounds for material's color array.");
-				find_from = cell_indices.find(second_vertex_index, cell_index * vertices_per_cell);
+				find_from = cell_vert_indices.find(second_vertex_index, cell_index * vertices_per_cell);
 				if (find_from < 0) {
 					break;
 				}
