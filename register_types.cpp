@@ -87,6 +87,12 @@
 #include "render/environment/sky/plain_sky_material_4d.h"
 #include "render/environment/world_environment_4d.h"
 
+// Voxel.
+#include "voxel/data/voxel_data.h"
+#include "voxel/generators/tiger_test_generator.h"
+#include "voxel/generators/voxel_generator.h"
+#include "voxel/voxel_world_4d.h"
+
 #if GDEXTENSION
 #include <godot_cpp/classes/engine.hpp>
 // GDExtension has a nervous breakdown whenever singleton or casted classes are not registered.
@@ -260,6 +266,11 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(G4MFNode4D);
 		GDREGISTER_CLASS(G4MFState4D);
 		GDREGISTER_CLASS(G4MFDocument4D);
+		// Voxel.
+		GDREGISTER_ABSTRACT_CLASS(VoxelGenerator);
+		GDREGISTER_CLASS(TigerTestGenerator);
+		GDREGISTER_CLASS(VoxelData);
+		GDREGISTER_CLASS(VoxelWorld4D);
 #if GDEXTENSION
 		GDREGISTER_CLASS(AxisAlignedBoxPhysicsEngine4D);
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);

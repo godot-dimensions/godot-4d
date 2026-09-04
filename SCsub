@@ -16,6 +16,7 @@ SConscript("model/SCsub")
 SConscript("nodes/SCsub")
 SConscript("physics/SCsub")
 SConscript("render/SCsub")
+SConscript("voxel/SCsub")
 
 if env.editor_build:
     SConscript("editor/SCsub")

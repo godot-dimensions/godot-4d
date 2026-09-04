@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelGenerator" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Abstract base class for 4D voxel content generators.
+	</brief_description>
+	<description>
+		A VoxelGenerator produces the voxel content that fills a [VoxelData] volume: the material and density of any voxel, and the surface normals where the generated surface crosses the voxel grid's edges. Each subclass generates one kind of content, configured by the parameters it is instantiated with.
+		Generators are currently only usable from C++ code.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

@@ -34,6 +34,9 @@ env.Append(
         "../../render/environment/cloud",
         "../../render/environment/sky",
         "../../render/wireframe_canvas",
+        "../../voxel",
+        "../../voxel/data",
+        "../../voxel/generators",
     ]
 )
 
@@ -67,6 +70,9 @@ sources = (
     + Glob("../../render/environment/cloud/*.cpp")
     + Glob("../../render/environment/sky/*.cpp")
     + Glob("../../render/wireframe_canvas/*.cpp")
+    + Glob("../../voxel/*.cpp")
+    + Glob("../../voxel/data/*.cpp")
+    + Glob("../../voxel/generators/*.cpp")
 )
 
 

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelWorld4D" inherits="Node4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A volume of 4D voxel data in the scene tree.
+	</brief_description>
+	<description>
+		VoxelWorld4D places a volume of 4D voxel data ([VoxelData]) into the scene tree. It can be used for terrain, but also for smaller voxel-based objects.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_voxel_data" qualifiers="const">
+			<return type="VoxelData" />
+			<description>
+				Returns this voxel world's [VoxelData].
+			</description>
+		</method>
+	</methods>
+</class>
