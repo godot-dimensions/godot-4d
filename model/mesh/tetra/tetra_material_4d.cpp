@@ -1,9 +1,12 @@
 #include "tetra_material_4d.h"
 
 #include "../../../render/3d/cross_section/tetra_cross_section_shader.glsl.gen.h"
-#include "../../../render/3d/projected/tetra_projected_shader.glsl.gen.h"
 #include "../../../render/3d/shaders/tetra_light_shader.glsl.gen.h"
 #include "tetra_mesh_4d.h"
+
+#ifdef RD_ENABLED
+#include "../../../render/3d/projected/tetra_projected_shader.glsl.gen.h"
+#endif // RD_ENABLED
 
 #if GDEXTENSION
 #include <godot_cpp/classes/rendering_server.hpp>
@@ -223,24 +226,14 @@ Ref<Shader> TetraMaterial4D::_cross_section_shader_3d;
 Ref<Shader> TetraMaterial4D::_projected_shader_3d;
 
 void TetraMaterial4D::init_shaders() {
-	// Shader code.
-	String cross_section_shader_code = tetra_cross_section_shader_shader_glsl;
-	String projected_shader_code = tetra_projected_shader_shader_glsl;
-#ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
-	// LIGHT_VERTEX_W is a custom shader built-in provided by the Godot Dimensions engine changes.
-	// Inject its assignment only when that built-in exists so stock-engine builds and GDExtension builds remain valid.
-	projected_shader_code = projected_shader_code.replace("/* LIGHT_VERTEX_W_ASSIGNMENT_THIS_IS_REPLACED_IN_TETRA_MATERIAL_CPP_CODE */", "LIGHT_VERTEX_W = middle_position_4d.w;");
-	cross_section_shader_code += tetra_light_shader_shader_glsl;
-	projected_shader_code += tetra_light_shader_shader_glsl;
-#endif
 	// Cross-section shader.
+	String cross_section_shader_code = tetra_cross_section_shader_shader_glsl;
+#ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
+	cross_section_shader_code += tetra_light_shader_shader_glsl;
+#endif
 	_cross_section_shader_3d.instantiate();
 	_cross_section_shader_3d->set_name(String("Tetra Cross-Section Shader"));
 	_cross_section_shader_3d->set_code(cross_section_shader_code);
-	// Projected shader.
-	_projected_shader_3d.instantiate();
-	_projected_shader_3d->set_name(String("Tetra Projected Shader"));
-	_projected_shader_3d->set_code(projected_shader_code);
 	// RenderingServer path hint. Note: This will never be null in normal runs as long as
 	// `TetraMaterial4D::init_shaders` is called at the appropriate time, however...
 	// `--test` initializes scene-level modules without creating a RenderingServer singleton.
@@ -249,8 +242,23 @@ void TetraMaterial4D::init_shaders() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	if (rendering_server != nullptr) {
 		rendering_server->shader_set_path_hint(_cross_section_shader_3d->get_rid(), String("Tetra Cross-Section Shader"));
+	}
+#ifdef RD_ENABLED
+	// Projected shader.
+	String projected_shader_code = tetra_projected_shader_shader_glsl;
+#ifdef GODOT_LIGHT_SLICE_PARAMETERS_ENABLED
+	// LIGHT_VERTEX_W is a custom shader built-in provided by the Godot Dimensions engine changes.
+	// Inject its assignment only when that built-in exists so stock-engine builds and GDExtension builds remain valid.
+	projected_shader_code = projected_shader_code.replace("/* LIGHT_VERTEX_W_ASSIGNMENT_THIS_IS_REPLACED_IN_TETRA_MATERIAL_CPP_CODE */", "LIGHT_VERTEX_W = middle_position_4d.w;");
+	projected_shader_code += tetra_light_shader_shader_glsl;
+#endif
+	_projected_shader_3d.instantiate();
+	_projected_shader_3d->set_name(String("Tetra Projected Shader"));
+	_projected_shader_3d->set_code(projected_shader_code);
+	if (rendering_server != nullptr) {
 		rendering_server->shader_set_path_hint(_projected_shader_3d->get_rid(), String("Tetra Projected Shader"));
 	}
+#endif // RD_ENABLED
 }
 
 void TetraMaterial4D::cleanup_shaders() {

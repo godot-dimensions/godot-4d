@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+Import("env")
+Import("env_modules")
+
+env_4d = env_modules.Clone()
+
+env_4d.GLSL_HEADER("cross_section/tetra_cross_section_shader.glsl")
+env_4d.GLSL_HEADER("shaders/tetra_light_shader.glsl")
+env_4d.GLSL_HEADER("shaders/wireframe_shader_3d.glsl")
+
+env_4d.add_source_files(env.modules_sources, "*.cpp")
+env_4d.add_source_files(env.modules_sources, "cross_section/*.cpp")
+
+# Godot 4.8+ sets the define in SConstruct from the `rendering_device` option.
+# Godot 4.7 and earlier set RD_ENABLED in each platform's detect.py, so check it.
+if "rendering_device" not in env:
+    # SCons 4.4 and earlier store CPPDEFINES entries inconsistently (bare strings
+    # or tuples), so unwrap each entry down to the define's name before comparing.
+    define_names = [d[0] if isinstance(d, (tuple, list)) else d for d in env["CPPDEFINES"]]
+    env["rendering_device"] = "RD_ENABLED" in define_names
+
+# The combined and projected engines require RenderingDevice, which not all platforms have.
+if env["rendering_device"]:
+    env_4d.GLSL_HEADER("combined/depth_capture.glsl")
+    env_4d.GLSL_HEADER("projected/normalize_transparency.glsl")
+    env_4d.GLSL_HEADER("projected/tetra_projected_shader.glsl")
+
+    env_4d.add_source_files(env.modules_sources, "combined/*.cpp")
+    env_4d.add_source_files(env.modules_sources, "projected/*.cpp")

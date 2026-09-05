@@ -60,9 +60,7 @@ sources = (
     + Glob("../../physics/shapes/*.cpp")
     + Glob("../../render/*.cpp")
     + Glob("../../render/3d/*.cpp")
-    + Glob("../../render/3d/combined/*.cpp")
     + Glob("../../render/3d/cross_section/*.cpp")
-    + Glob("../../render/3d/projected/*.cpp")
     + Glob("../../render/environment/*.cpp")
     + Glob("../../render/environment/cloud/*.cpp")
     + Glob("../../render/environment/sky/*.cpp")
@@ -71,6 +69,13 @@ sources = (
 
 
 env.Append(CPPDEFINES=["GDEXTENSION"])
+
+if env["platform"] != "web":
+    # RenderingDevice is not available on the web platform. This matches the
+    # define used by Godot engine module builds when RenderingDevice exists.
+    env.Append(CPPDEFINES=["RD_ENABLED"])
+    sources += Glob("../../render/3d/combined/*.cpp")
+    sources += Glob("../../render/3d/projected/*.cpp")
 
 if env["target"] == "editor":
     env.Append(
@@ -157,10 +162,12 @@ def add_glsl_header(source_path):
     env.Depends(target, header_builders.get_raw_header_dependencies(source_path))
 
 
-add_glsl_header("../../render/3d/combined/depth_capture.glsl")
+if env["platform"] != "web":
+    add_glsl_header("../../render/3d/combined/depth_capture.glsl")
+    add_glsl_header("../../render/3d/projected/normalize_transparency.glsl")
+    add_glsl_header("../../render/3d/projected/tetra_projected_shader.glsl")
+
 add_glsl_header("../../render/3d/cross_section/tetra_cross_section_shader.glsl")
-add_glsl_header("../../render/3d/projected/normalize_transparency.glsl")
-add_glsl_header("../../render/3d/projected/tetra_projected_shader.glsl")
 add_glsl_header("../../render/3d/shaders/tetra_light_shader.glsl")
 add_glsl_header("../../render/3d/shaders/wireframe_shader_3d.glsl")
 add_glsl_header("../../render/environment/cloud/gradient_sky_with_volumetric_clouds_full_res_main.glsl")
