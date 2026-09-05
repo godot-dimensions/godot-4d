@@ -183,7 +183,11 @@ Ref<Shader> VolumetricCloudMaterial4D::get_shader_for_sky_material(const Ref<Sky
 	const RenderingServer *rendering_server = RenderingServer::get_singleton();
 	// Compatibility has no RenderingDevice and, in older supported Godot versions, its sky
 	// subpasses do not compile reliably. Use a full-resolution fallback without engine changes.
+#ifdef RD_ENABLED
 	const bool use_full_resolution = rendering_server != nullptr && rendering_server->get_rendering_device() == nullptr;
+#else // Without RenderingDevice compiled in, only Compatibility can run.
+	const bool use_full_resolution = rendering_server != nullptr;
+#endif
 	if (p_sky_material.is_null()) {
 		return use_full_resolution ? _cloud_only_full_res_shader : _cloud_only_shader;
 	}
