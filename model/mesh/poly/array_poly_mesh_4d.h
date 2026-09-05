@@ -40,6 +40,10 @@ private:
 	HashSet<int32_t> _seam_face_indices;
 	PackedInt32Array _edge_vertex_indices;
 
+	template <typename T>
+	bool _validate_data_binding_shape_internal(const Vector2i p_key, const Vector<T> &p_binding, const String &p_binding_name) const;
+	void _delete_data_bindings_internal(const int32_t p_dimension, const int32_t p_index);
+
 	PackedInt32Array _get_cell_4_vertices_starting_from_face(const int64_t p_cell, const int64_t p_start_face) const;
 	void _get_cell_world_span_seed(const int64_t p_which_cell, Vector4 &r_world_x, Vector4 &r_world_y, Vector4 &r_world_z, int32_t &p_pivot) const;
 	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map);
@@ -58,6 +62,7 @@ private:
 
 protected:
 	static void _bind_methods();
+	bool _validate_poly_mesh_data_only() override;
 
 public:
 	// Append and delete functions.
