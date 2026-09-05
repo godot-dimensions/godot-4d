@@ -107,6 +107,7 @@
 			<param index="0" name="idempotent" type="bool" default="true" />
 			<description>
 				Copies the boundary cells of the mesh, swaps the first two faces in the cell to flip the orientation, and appends them to the mesh, effectively making the mesh double sided.
+				The copies have negated boundary and vertex normals. Vertex normals and texture coordinates remain associated with the same vertices even when flipping changes their order, and texture coordinate values are unchanged. Missing vertex-normal and texture-map data remains missing. Boundary pivot overrides are copied to the flipped cells.
 				If [param idempotent] is [code]true[/code] (default), the method will first check if the mesh already has the flipped version of a cell before adding a flipped cell, ensuring that running the method multiple times will not create duplicate cells. If [param idempotent] is [code]false[/code], the method will add a flipped cell for every existing cell without checking for duplicates, which may be faster when you know for certain that the source mesh does not already have double-sided cells, but will create duplicate cells if you run it multiple times or if the source mesh already has double-sided cells.
 			</description>
 		</method>

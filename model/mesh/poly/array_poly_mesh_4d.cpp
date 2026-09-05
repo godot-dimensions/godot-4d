@@ -488,11 +488,21 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot make double sided because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot make double sided for an invalid mesh.");
+	if (_poly_cell_indices[1].is_empty()) {
+		return;
+	}
 	if (!_all_poly_cell_normals.has(PER_CELL_KEY) || _all_poly_cell_normals[PER_CELL_KEY].is_empty() || _all_poly_cell_normals[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
 	}
 	Vector<PackedInt32Array> cell_face_indices = Vector<PackedInt32Array>(_poly_cell_indices[1]);
 	const int64_t original_cell_count = cell_face_indices.size();
+	const int64_t original_pivot_count = _poly_cell_boundary_pivot_overrides.size();
+	const bool has_vertex_normals = _all_poly_cell_normals.has(CELL_TO_VERT_KEY) && !_all_poly_cell_normals[CELL_TO_VERT_KEY].is_empty();
+	const bool has_texture_map = _all_poly_cell_texture_maps.has(CELL_TO_VERT_KEY) && !_all_poly_cell_texture_maps[CELL_TO_VERT_KEY].is_empty();
+	Vector<PackedInt32Array> original_cell_vertices;
+	if (has_vertex_normals || has_texture_map) {
+		original_cell_vertices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
+	}
 	// This has to be a copy, it's set back in place at the end of the function.
 	PackedVector4Array poly_cell_boundary_normals = _all_poly_cell_normals[PER_CELL_KEY][0];
 	CRASH_COND(poly_cell_boundary_normals.size() != original_cell_count);
@@ -527,31 +537,51 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 				continue;
 			}
 		}
-		// Copy the texture map if it exists for this cell before adding the flipped cell.
-		if (_all_poly_cell_texture_maps.has(CELL_TO_VERT_KEY)) {
-			// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
-			Vector<PackedVector3Array> &poly_cell_texture_maps = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
-			ERR_FAIL_COND(poly_cell_texture_maps.size() != poly_cell_boundary_normals.size());
-			if (cell_index < poly_cell_texture_maps.size()) {
-				const PackedVector3Array &flipped_cell_texture_map = poly_cell_texture_maps[cell_index];
-				poly_cell_texture_maps.append(flipped_cell_texture_map);
+		// Flipping a cell can permute its derived vertex order. Match attributes by vertex identity.
+		PackedInt32Array vertex_remap;
+		if (has_vertex_normals || has_texture_map) {
+			Vector<Vector<PackedInt32Array>> flipped_geometry = _poly_cell_indices;
+			flipped_geometry.set(1, Vector<PackedInt32Array>{ flipped_cell_faces });
+			const PackedInt32Array flipped_vertices = _get_vertex_indices_of_boundary_cells(flipped_geometry, _edge_vertex_indices, false)[0];
+			vertex_remap.resize(flipped_vertices.size());
+			for (int64_t i = 0; i < flipped_vertices.size(); i++) {
+				const int64_t original_vertex = original_cell_vertices[cell_index].find(flipped_vertices[i]);
+				CRASH_COND(original_vertex < 0);
+				vertex_remap.set(i, original_vertex);
 			}
 		}
+		// Copy texture coordinates without changing their values.
+		if (has_texture_map) {
+			// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
+			Vector<PackedVector3Array> &poly_cell_texture_maps = _all_poly_cell_texture_maps[CELL_TO_VERT_KEY];
+			const PackedVector3Array &source_texture_map = poly_cell_texture_maps[cell_index];
+			PackedVector3Array flipped_cell_texture_map;
+			flipped_cell_texture_map.resize(source_texture_map.size());
+			for (int64_t i = 0; i < source_texture_map.size(); i++) {
+				flipped_cell_texture_map.set(i, source_texture_map[vertex_remap[i]]);
+			}
+			poly_cell_texture_maps.append(flipped_cell_texture_map);
+		}
 		// Copy and flip the vertex normals if they exist for this cell before adding the flipped cell.
-		if (_all_poly_cell_normals.has(CELL_TO_VERT_KEY)) {
+		if (has_vertex_normals) {
 			// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
 			Vector<PackedVector4Array> &poly_cell_vertex_normals = _all_poly_cell_normals[CELL_TO_VERT_KEY];
-			ERR_FAIL_COND(poly_cell_vertex_normals.size() != poly_cell_boundary_normals.size());
-			if (cell_index < poly_cell_vertex_normals.size()) {
-				PackedVector4Array flipped_cell_vertex_normals = PackedVector4Array(poly_cell_vertex_normals[cell_index]);
-				for (int64_t vertex_in_cell = 0; vertex_in_cell < flipped_cell_vertex_normals.size(); vertex_in_cell++) {
-					flipped_cell_vertex_normals.set(vertex_in_cell, -flipped_cell_vertex_normals[vertex_in_cell]);
-				}
-				poly_cell_vertex_normals.append(flipped_cell_vertex_normals);
+			const PackedVector4Array &source_normals = poly_cell_vertex_normals[cell_index];
+			PackedVector4Array flipped_cell_vertex_normals;
+			flipped_cell_vertex_normals.resize(source_normals.size());
+			for (int64_t vertex_in_cell = 0; vertex_in_cell < source_normals.size(); vertex_in_cell++) {
+				flipped_cell_vertex_normals.set(vertex_in_cell, -source_normals[vertex_remap[vertex_in_cell]]);
 			}
+			poly_cell_vertex_normals.append(flipped_cell_vertex_normals);
 		}
 		// Append the flipped cell, and record its index for later when we update volumetric cells.
 		const int32_t new_flipped_cell_index = cell_face_indices.size();
+		if (cell_index < original_pivot_count) {
+			while (_poly_cell_boundary_pivot_overrides.size() < new_flipped_cell_index) {
+				_poly_cell_boundary_pivot_overrides.append(-1);
+			}
+			_poly_cell_boundary_pivot_overrides.append(_poly_cell_boundary_pivot_overrides[cell_index]);
+		}
 		cell_face_indices.append(flipped_cell_faces);
 		flipped_cell_index_for_original.set(cell_index, new_flipped_cell_index);
 		poly_cell_boundary_normals.append(-poly_cell_boundary_normals[cell_index]);
