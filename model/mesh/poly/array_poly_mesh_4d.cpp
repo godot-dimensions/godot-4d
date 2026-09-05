@@ -115,6 +115,7 @@ int64_t ArrayPolyMesh4D::append_poly_cell(const int32_t p_dimension, const Packe
 		Vector<PackedInt32Array> new_dim;
 		new_dim.append(p_cell);
 		_poly_cell_indices.append(new_dim);
+		poly_mesh_clear_cache();
 		return 0;
 	}
 	const int64_t poly_cell_dim_index = p_dimension - 2;
@@ -140,7 +141,7 @@ int64_t ArrayPolyMesh4D::append_poly_cell(const int32_t p_dimension, const Packe
 	}
 	existing_dim.append(p_cell);
 	_poly_cell_indices.set(poly_cell_dim_index, existing_dim);
-	reset_poly_mesh_data_validation();
+	poly_mesh_clear_cache();
 	return existing_cell_count;
 }
 
@@ -155,7 +156,7 @@ int32_t ArrayPolyMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_ded
 	}
 	ERR_FAIL_COND_V(_poly_cell_vertex_positions.size() > MAX_POLY_VERTICES, 2147483647);
 	_poly_cell_vertex_positions.push_back(p_vertex);
-	reset_poly_mesh_data_validation();
+	poly_mesh_clear_cache();
 	return vertex_count;
 }
 

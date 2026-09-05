@@ -639,6 +639,9 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 			surface_cells_to_use.set(i, i);
 		}
 	}
+	if (surface_cells_to_use.is_empty()) {
+		return; // A valid mesh can have no exposed boundary cells to decompose.
+	}
 	// Step 4: For each face, cache the vertex indices and which surface cells use that face.
 	// The vertex indices are needed several times for scoring and final triangulation.
 	Vector<PackedInt32Array> face_vertices_cache;
@@ -1204,7 +1207,8 @@ PackedInt32Array PolyMesh4D::get_simplex_cell_vertex_indices() {
 PackedVector4Array PolyMesh4D::get_simplex_cell_boundary_normals() {
 	if (_simplex_cell_boundary_normals_cache.is_empty()) {
 		if (_simplex_cell_vertex_indices_cache.is_empty()) {
-			_decompose_boundary_cells_into_simplexes(true);
+			// This populates `_simplex_cell_vertex_indices_cache`. This is internal, so we don't need the returned value (same array).
+			get_simplex_cell_vertex_indices();
 		}
 		const int64_t simplex_count = _simplex_cell_vertex_indices_cache.size() / 4;
 		_simplex_cell_boundary_normals_cache.resize(simplex_count);
@@ -1234,7 +1238,10 @@ PackedVector4Array PolyMesh4D::get_simplex_cell_vertex_normals() {
 		if (simplex_count == 0 || simplex_count * 4 != _simplex_cell_vertex_indices_cache.size()) {
 			_decompose_boundary_cells_into_simplexes(true);
 			simplex_count = _simplex_cell_source_poly_cells.size();
-			CRASH_COND_MSG(simplex_count == 0 || simplex_count * 4 != _simplex_cell_vertex_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
+			CRASH_COND_MSG(simplex_count * 4 != _simplex_cell_vertex_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
+		}
+		if (simplex_count == 0) {
+			return PackedVector4Array(); // No exposed simplexes need vertex normals.
 		}
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 		ERR_FAIL_COND_V_MSG(poly_cell_indices.size() < 2, PackedVector4Array(), "PolyMesh4D: No boundary cells available, cannot compute simplex vertex normals.");
@@ -1284,10 +1291,13 @@ PackedVector3Array PolyMesh4D::get_simplex_cell_texture_map() {
 			return PackedVector3Array(); // No texture map data available.
 		}
 		int64_t simplex_count = _simplex_cell_source_poly_cells.size();
-		if (simplex_count * 4 != _simplex_cell_vertex_indices_cache.size()) {
+		if (simplex_count == 0 || simplex_count * 4 != _simplex_cell_vertex_indices_cache.size()) {
 			_decompose_boundary_cells_into_simplexes(true);
 			simplex_count = _simplex_cell_source_poly_cells.size();
 			CRASH_COND_MSG(simplex_count * 4 != _simplex_cell_vertex_indices_cache.size(), "PolyMesh4D: Simplex cell indices cache is corrupt.");
+		}
+		if (simplex_count == 0) {
+			return PackedVector3Array(); // No exposed simplexes need texture coordinates.
 		}
 		const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 		ERR_FAIL_COND_V_MSG(poly_cell_indices.size() < 2, PackedVector3Array(), "PolyMesh4D: No boundary cells available, cannot compute simplex UVW map.");

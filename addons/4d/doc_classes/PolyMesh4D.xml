@@ -6,6 +6,7 @@
 	<description>
 		PolyMesh4D is the base class for all 4D polyhedral meshes. Polyhedral meshes are defined using a hierarchy of geometric data, each level used by the next level. Each edge is made of 2 vertices, each face is made of edges, each cell is made of faces, and optionally, each hypervolume is made of cells, mimicking the structure of OFF files, except for faces referencing edges instead of vertices directly.
 		Polyhedral meshes inherit [TetraMesh4D], and can be used anywhere a TetraMesh4D is expected. However, they are much slower than other types of tetra meshes, such as [ArrayTetraMesh4D]. Polyhedral meshes are useful when high-level editing of the mesh is needed, for the same reasons that N-gon meshes are useful in 3D modeling applications such as Blender.
+		The tetrahedral cell indices, normals, and texture mapping are generated on demand, regardless of which getter is called first. If there are no boundary cells, or all boundary cells are shared by multiple hypervolumes, these arrays are empty.
 		To make a PolyMesh4D, use one of the descendant classes, such as [ArrayPolyMesh4D] or [BoxPolyMesh4D]. Advanced users can create custom polyhedral mesh classes by extending PolyMesh4D.
 	</description>
 	<tutorials>
@@ -32,7 +33,7 @@
 		<method name="_get_poly_cell_texture_map" qualifiers="virtual">
 			<return type="PackedVector3Array[]" />
 			<description>
-				Callback method that should return the UVW texture mapping of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_texture_map] for details of the returned data.
+				Callback method that should return the texture mapping of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_texture_map] for details of the returned data.
 			</description>
 		</method>
 		<method name="_get_poly_cell_vertex_normals" qualifiers="virtual">
@@ -104,7 +105,8 @@
 		<method name="get_poly_cell_texture_map">
 			<return type="PackedVector3Array[]" />
 			<description>
-				Returns the UVW texture mapping of the polyhedral cells. Each item in this array is a [PackedVector3Array] containing the texture space mapping for the vertex instances of the corresponding cell in the [method get_poly_cell_indices] array. Each Vector3 in these arrays defines the UVW texture coordinates for the corresponding vertex instance in the cell, and is usually on the range from (0, 0, 0) to (1, 1, 1).
+				Returns the texture mapping of the polyhedral cells. Each item in this array is a [PackedVector3Array] containing the texture space mapping for the vertex instances of the corresponding cell in the [method get_poly_cell_indices] array. Each Vector3 in these arrays defines the texture coordinates for the corresponding vertex instance in the cell, and is usually on the range from (0, 0, 0) to (1, 1, 1).
+				The outer array may be empty for no texture mapping. Otherwise, it must contain one array per boundary cell; an individual cell's array may be empty for no texture mapping on that cell.
 			</description>
 		</method>
 		<method name="get_poly_cell_vertex_normals">

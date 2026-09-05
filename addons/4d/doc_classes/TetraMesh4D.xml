@@ -38,6 +38,7 @@
 			<return type="ArrayMesh" />
 			<description>
 				Exports the tetrahedral mesh's texture mapping as an [ArrayMesh]. This can help with visualizing the 3D texture space of the mesh, allowing you to create textures that can be applied to the mesh.
+				Returns [code]null[/code] if the mesh data is invalid. If the mesh has no texture mapping or all mapped cells are degenerate in texture space, returns an [ArrayMesh] with no surfaces.
 			</description>
 		</method>
 		<method name="get_signed_distance_to_mesh">

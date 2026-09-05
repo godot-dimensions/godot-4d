@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../../../../model/mesh/tetra/array_tetra_mesh_4d.h"
+#include "../../../../model/mesh/tetra/box_tetra_mesh_4d.h"
 
+#include "scene/resources/mesh.h"
 #include "tests/test_macros.h"
 
 namespace TestArrayTetraMesh4D {
@@ -116,5 +118,166 @@ TEST_CASE("[ArrayTetraMesh4D] Empty and invalid merge inputs") {
 	CHECK(mesh->get_simplex_cell_vertex_indices() == indices);
 	CHECK(mesh->get_simplex_cell_texture_map() == source->get_simplex_cell_texture_map());
 	CHECK(mesh->is_mesh_data_valid());
+}
+
+TEST_CASE("[SceneTree][ArrayTetraMesh4D] Direct proxy and texture export reject invalid data and recover") {
+	const Ref<ArrayTetraMesh4D> source = make_single_tetra_mesh(true);
+	for (const bool warm_proxy : { false, true }) {
+		for (int invalid_data = 0; invalid_data < 8; invalid_data++) {
+			CAPTURE(warm_proxy);
+			CAPTURE(invalid_data);
+			Ref<ArrayTetraMesh4D> mesh = make_single_tetra_mesh(true);
+			Ref<ArrayMesh> proxy;
+			if (warm_proxy) {
+				proxy = mesh->get_proxy_mesh_3d();
+				REQUIRE(proxy.is_valid());
+				REQUIRE(proxy->get_surface_count() == 1);
+				CHECK(proxy->surface_get_array_len(0) == 12);
+			}
+			switch (invalid_data) {
+				case 0:
+					mesh->set_simplex_cell_vertex_indices(PackedInt32Array{ 0, 1, 2 });
+					break;
+				case 1:
+					mesh->set_simplex_cell_vertex_indices(PackedInt32Array{ 0, 1, 2, -1 });
+					break;
+				case 2:
+					mesh->set_simplex_cell_vertex_indices(PackedInt32Array{ 0, 1, 2, 4 });
+					break;
+				case 3:
+					mesh->set_simplex_cell_texture_map(PackedVector3Array{ Vector3() });
+					break;
+				case 4: {
+					PackedVector3Array texture_map = mesh->get_simplex_cell_texture_map();
+					texture_map.append(Vector3());
+					mesh->set_simplex_cell_texture_map(texture_map);
+				} break;
+				case 5:
+					mesh->set_simplex_cell_vertex_normals(PackedVector4Array{ Vector4() });
+					break;
+				case 6:
+					mesh->set_simplex_cell_boundary_normals(PackedVector4Array{ Vector4(), Vector4() });
+					break;
+				case 7:
+					mesh->set_vertex_positions(PackedVector4Array());
+					break;
+			}
+			ERR_PRINT_OFF;
+			const Ref<ArrayMesh> invalid_proxy = mesh->get_proxy_mesh_3d();
+			ERR_PRINT_ON;
+			REQUIRE(invalid_proxy.is_valid());
+			CHECK(invalid_proxy->get_surface_count() == 0);
+			if (warm_proxy) {
+				CHECK(invalid_proxy == proxy);
+				CHECK(proxy->get_surface_count() == 0);
+			}
+			ERR_PRINT_OFF;
+			const Ref<ArrayMesh> invalid_export = mesh->export_texture_map_mesh();
+			ERR_PRINT_ON;
+			CHECK(invalid_export.is_null());
+
+			mesh->set_vertex_positions(source->get_vertex_positions());
+			mesh->set_simplex_cell_vertex_indices(source->get_simplex_cell_vertex_indices());
+			mesh->set_simplex_cell_vertex_normals(source->get_simplex_cell_vertex_normals());
+			mesh->set_simplex_cell_boundary_normals(source->get_simplex_cell_boundary_normals());
+			mesh->set_simplex_cell_texture_map(source->get_simplex_cell_texture_map());
+			proxy = mesh->get_proxy_mesh_3d();
+			REQUIRE(proxy.is_valid());
+			CHECK(proxy == invalid_proxy);
+			REQUIRE(proxy->get_surface_count() == 1);
+			CHECK(proxy->surface_get_array_len(0) == 12);
+			const Ref<ArrayMesh> exported = mesh->export_texture_map_mesh();
+			REQUIRE(exported.is_valid());
+			REQUIRE(exported->get_surface_count() == 1);
+			CHECK(exported->surface_get_array_len(0) == 12);
+		}
+	}
+}
+
+TEST_CASE("[SceneTree][ArrayTetraMesh4D] Appending a missing vertex rebuilds an invalid proxy") {
+	for (const bool cache_partial_positions : { false, true }) {
+		CAPTURE(cache_partial_positions);
+		Ref<ArrayTetraMesh4D> mesh = make_single_tetra_mesh(false);
+		mesh->set_simplex_cell_vertex_indices(PackedInt32Array{ 0, 1, 2, 4 });
+		if (cache_partial_positions) {
+			ERR_PRINT_OFF;
+			const PackedVector4Array partial_positions = mesh->get_simplex_cell_positions();
+			ERR_PRINT_ON;
+			CHECK(partial_positions.size() == 3);
+		}
+		ERR_PRINT_OFF;
+		const Ref<ArrayMesh> proxy = mesh->get_proxy_mesh_3d();
+		ERR_PRINT_ON;
+		REQUIRE(proxy.is_valid());
+		CHECK(proxy->get_surface_count() == 0);
+		const Vector4 missing_position(0, 0, 1, 1);
+		CHECK(mesh->append_vertex(missing_position) == 4);
+		const Ref<ArrayMesh> repaired_proxy = mesh->get_proxy_mesh_3d();
+		CHECK(repaired_proxy == proxy);
+		REQUIRE(repaired_proxy->get_surface_count() == 1);
+		CHECK(repaired_proxy->surface_get_array_len(0) == 12);
+		CHECK(mesh->get_simplex_cell_positions() == PackedVector4Array({ Vector4(), Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), missing_position }));
+	}
+}
+
+TEST_CASE("[SceneTree][ArrayTetraMesh4D] Empty and degenerate texture exports") {
+	Ref<ArrayTetraMesh4D> mesh;
+	mesh.instantiate();
+	CHECK(mesh->get_proxy_mesh_3d()->get_surface_count() == 0);
+	const Ref<ArrayMesh> empty_export = mesh->export_texture_map_mesh();
+	REQUIRE(empty_export.is_valid());
+	CHECK(empty_export->get_surface_count() == 0);
+
+	mesh = make_single_tetra_mesh(false);
+	CHECK(mesh->get_proxy_mesh_3d()->get_surface_count() == 1);
+	const Ref<ArrayMesh> unmapped_export = mesh->export_texture_map_mesh();
+	REQUIRE(unmapped_export.is_valid());
+	CHECK(unmapped_export->get_surface_count() == 0);
+
+	// Duplicate points and distinct coplanar points both describe degenerate texture cells.
+	for (const PackedVector3Array &texture_map : {
+				 PackedVector3Array{ Vector3(), Vector3(), Vector3(0, 1, 0), Vector3(0, 0, 1) },
+				 PackedVector3Array{ Vector3(), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(1, 1, 0) } }) {
+		mesh->set_simplex_cell_texture_map(texture_map);
+		const Ref<ArrayMesh> degenerate_export = mesh->export_texture_map_mesh();
+		REQUIRE(degenerate_export.is_valid());
+		CHECK(degenerate_export->get_surface_count() == 0);
+
+		const Ref<ArrayTetraMesh4D> mapped = make_single_tetra_mesh(true);
+		mesh->merge_with(mapped);
+		const Ref<ArrayMesh> mixed_export = mesh->export_texture_map_mesh();
+		REQUIRE(mixed_export.is_valid());
+		REQUIRE(mixed_export->get_surface_count() == 1);
+		CHECK(mixed_export->surface_get_array_len(0) == 12);
+		mesh = make_single_tetra_mesh(false);
+	}
+}
+
+TEST_CASE("[SceneTree][BoxTetraMesh4D] Texture export validates and preserves all mapping modes") {
+	class InvalidBoxMesh : public BoxTetraMesh4D {
+	public:
+		bool validate_mesh_data() override { return false; }
+	};
+	Ref<InvalidBoxMesh> invalid;
+	invalid.instantiate();
+	ERR_PRINT_OFF;
+	const Ref<ArrayMesh> invalid_export = invalid->export_texture_map_mesh();
+	ERR_PRINT_ON;
+	CHECK(invalid_export.is_null());
+
+	for (int decomposition = 0; decomposition < 3; decomposition++) {
+		for (int mapping = 0; mapping < 4; mapping++) {
+			CAPTURE(decomposition);
+			CAPTURE(mapping);
+			Ref<BoxTetraMesh4D> mesh;
+			mesh.instantiate();
+			mesh->set_tetra_decomp((BoxTetraMesh4D::BoxTetraDecomp)decomposition);
+			mesh->set_cell_texture_map((BoxTetraMesh4D::BoxCellTextureMap)mapping);
+			const Ref<ArrayMesh> exported = mesh->export_texture_map_mesh();
+			REQUIRE(exported.is_valid());
+			REQUIRE(exported->get_surface_count() == 1);
+			CHECK(exported->surface_get_array_len(0) == mesh->get_simplex_cell_vertex_indices().size() * 3);
+		}
+	}
 }
 } // namespace TestArrayTetraMesh4D

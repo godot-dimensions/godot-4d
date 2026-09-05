@@ -53,6 +53,7 @@ int ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_dedupl
 	}
 	ERR_FAIL_COND_V(_vertex_positions.size() > MAX_VERTICES, 2147483647);
 	_vertex_positions.push_back(p_vertex);
+	tetra_mesh_clear_cache();
 	reset_mesh_data_validation();
 	return vertex_count;
 }

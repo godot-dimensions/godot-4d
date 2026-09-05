@@ -43,6 +43,7 @@ void BoxTetraMesh4D::set_cell_texture_map(const BoxCellTextureMap p_map) {
 }
 
 Ref<ArrayMesh> BoxTetraMesh4D::export_texture_map_mesh() {
+	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Ref<ArrayMesh>(), "BoxTetraMesh4D: Cannot export texture map mesh for an invalid mesh.");
 	PackedVector3Array texture_map = get_simplex_cell_texture_map();
 	if (_cell_texture_map == BOX_CELL_TEXTURE_MAP_COMPACT_2X2X2_GRID) {
 		// Special case: For 3D rendering of the resulting mesh, flip the normals of the negative sides.

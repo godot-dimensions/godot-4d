@@ -340,17 +340,8 @@ Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedVector3Array
 }
 
 Ref<ArrayMesh> TetraMesh4D::export_texture_map_mesh() {
-	PackedVector3Array texture_map = get_simplex_cell_texture_map();
-	// Remove any degenerate entries created by cells without UVW maps.
-	for (int64_t i = texture_map.size() - 4; i >= 0; i -= 4) {
-		if (unlikely(texture_map[i] == texture_map[i + 1])) {
-			texture_map.remove_at(i + 3);
-			texture_map.remove_at(i + 2);
-			texture_map.remove_at(i + 1);
-			texture_map.remove_at(i);
-		}
-	}
-	return convert_texture_map_to_mesh(texture_map);
+	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Ref<ArrayMesh>(), "TetraMesh4D: Cannot export texture map mesh for an invalid mesh.");
+	return convert_texture_map_to_mesh(get_simplex_cell_texture_map());
 }
 
 bool TetraMesh4D::validate_mesh_data() {
@@ -361,7 +352,7 @@ bool TetraMesh4D::validate_mesh_data() {
 	}
 	ERR_FAIL_COND_V_MSG(cell_vertex_indices_count % 4 != 0, false, "TetraMesh4D: Cell vertex indices count must be a multiple of 4 (" + itos(cell_vertex_indices_count) + " % 4 != 0).");
 	const int64_t cell_texture_map_count = get_simplex_cell_texture_map().size();
-	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_vertex_indices_count, false, "TetraMesh4D: UVW texture map size (" + itos(cell_texture_map_count) + ") must match cell vertex indices size (" + itos(cell_vertex_indices_count) + ").");
+	ERR_FAIL_COND_V_MSG(cell_texture_map_count > 0 && cell_texture_map_count != cell_vertex_indices_count, false, "TetraMesh4D: Texture map size (" + itos(cell_texture_map_count) + ") must match cell vertex indices size (" + itos(cell_vertex_indices_count) + ").");
 	const int64_t cell_normals_count = get_simplex_cell_boundary_normals().size();
 	ERR_FAIL_COND_V_MSG(cell_normals_count > 0 && cell_normals_count * 4 != cell_vertex_indices_count, false, "TetraMesh4D: Boundary normals count (" + itos(cell_normals_count) + ") must have one per cell (expected " + itos(cell_vertex_indices_count / 4) + ")");
 	const int64_t vertex_count = get_vertex_positions().size();
@@ -516,6 +507,7 @@ PackedVector4Array TetraMesh4D::get_simplex_cell_positions() {
 void TetraMesh4D::update_proxy_mesh_3d() {
 	ERR_FAIL_COND(_proxy_mesh_3d.is_null());
 	_proxy_mesh_3d->clear_surfaces();
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "TetraMesh4D: Cannot update proxy mesh for an invalid mesh.");
 
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();

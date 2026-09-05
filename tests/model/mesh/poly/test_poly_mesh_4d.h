@@ -850,7 +850,165 @@ TEST_CASE("[PolyMesh4D] Cache clearing keeps results consistent") {
 	CHECK_MESSAGE(mesh->is_poly_mesh_data_valid(), "Revalidation after a reset must succeed for unchanged valid data.");
 }
 
+TEST_CASE("[PolyMesh4D] Derived attributes are independent of the first getter") {
+	const PackedVector4Array source_normals = { Vector4(1, 2, 3, 4), Vector4(5, 6, 7, 8), Vector4(9, 10, 11, 12), Vector4(13, 14, 15, 16) };
+	const PackedVector3Array source_texture = { Vector3(1, 2, 3), Vector3(4, 5, 6), Vector3(7, 8, 9), Vector3(10, 11, 12) };
+	PackedInt32Array reference_indices;
+	PackedVector4Array reference_normals;
+	PackedVector3Array reference_texture;
+	for (int first_getter = 0; first_getter < 4; first_getter++) {
+		CAPTURE(first_getter);
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		mesh->set_poly_cell_vertex_normals(Vector<PackedVector4Array>{ source_normals });
+		mesh->set_poly_cell_texture_map(Vector<PackedVector3Array>{ source_texture });
+		// Each getter must work on its first call, with no validation or other derived getter priming it.
+		switch (first_getter) {
+			case 0:
+				CHECK_FALSE(mesh->get_simplex_cell_vertex_indices().is_empty());
+				break;
+			case 1:
+				CHECK_FALSE(mesh->get_simplex_cell_vertex_normals().is_empty());
+				break;
+			case 2:
+				CHECK_FALSE(mesh->get_simplex_cell_texture_map().is_empty());
+				break;
+			case 3:
+				CHECK_FALSE(mesh->get_simplex_cell_boundary_normals().is_empty());
+				break;
+		}
+		const PackedInt32Array indices = mesh->get_simplex_cell_vertex_indices();
+		const PackedVector4Array normals = mesh->get_simplex_cell_vertex_normals();
+		const PackedVector3Array texture = mesh->get_simplex_cell_texture_map();
+		REQUIRE(indices.size() == 4);
+		REQUIRE(normals.size() == indices.size());
+		REQUIRE(texture.size() == indices.size());
+		for (int64_t i = 0; i < indices.size(); i++) {
+			CHECK(normals[i] == source_normals[indices[i]]);
+			CHECK(texture[i] == source_texture[indices[i]]);
+		}
+		if (first_getter == 0) {
+			reference_indices = indices;
+			reference_normals = normals;
+			reference_texture = texture;
+		} else {
+			CHECK(indices == reference_indices);
+			CHECK(normals == reference_normals);
+			CHECK(texture == reference_texture);
+		}
+		mesh->poly_mesh_clear_cache();
+		CHECK(mesh->get_simplex_cell_texture_map() == texture);
+		CHECK(mesh->get_simplex_cell_vertex_normals() == normals);
+		CHECK(mesh->get_simplex_cell_vertex_indices() == indices);
+		mesh->poly_mesh_clear_cache(true);
+		CHECK(mesh->get_simplex_cell_vertex_normals() == normals);
+		CHECK(mesh->get_simplex_cell_texture_map() == texture);
+		CHECK(mesh->is_mesh_data_valid());
+	}
+}
+
+TEST_CASE("[PolyMesh4D] Missing derived attributes remain empty") {
+	for (const bool empty_cell_entries : { false, true }) {
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		if (empty_cell_entries) {
+			mesh->set_poly_cell_vertex_normals(Vector<PackedVector4Array>{ PackedVector4Array() });
+			mesh->set_poly_cell_texture_map(Vector<PackedVector3Array>{ PackedVector3Array() });
+		}
+		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(mesh->get_simplex_cell_vertex_indices().size() == 4);
+		CHECK(mesh->get_simplex_cell_boundary_normals().size() == 1);
+		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(mesh->is_mesh_data_valid());
+	}
+}
+
+TEST_CASE("[PolyMesh4D] Fully covered boundary cells have empty derived attributes") {
+	Ref<BoxPolyMesh4D> box;
+	box.instantiate();
+	Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+	const Vector<PackedVector4Array> original_normals = mesh->get_poly_cell_vertex_normals();
+	const Vector<PackedVector3Array> original_texture = mesh->get_poly_cell_texture_map();
+	REQUIRE_FALSE(original_normals.is_empty());
+	REQUIRE_FALSE(original_texture.is_empty());
+	Vector<Vector<PackedInt32Array>> poly = mesh->get_poly_cell_indices();
+	REQUIRE(poly.size() == 3);
+	REQUIRE(poly[2].size() == 1);
+	// Each boundary cell is used twice, so none belongs to the exposed surface.
+	poly.ptrw()[2].append(poly[2][0]);
+	mesh->set_poly_cell_indices(poly);
+	REQUIRE(mesh->is_poly_mesh_data_valid());
+	for (int first_getter = 0; first_getter < 4; first_getter++) {
+		CAPTURE(first_getter);
+		mesh->poly_mesh_clear_cache();
+		switch (first_getter) {
+			case 0:
+				CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
+				break;
+			case 1:
+				CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+				break;
+			case 2:
+				CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+				break;
+			case 3:
+				CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
+				break;
+		}
+		CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
+		CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
+		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(mesh->get_simplex_cell_positions().is_empty());
+		CHECK(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions());
+		CHECK(mesh->is_mesh_data_valid());
+	}
+	CHECK(mesh->get_poly_cell_vertex_normals() == original_normals);
+	CHECK(mesh->get_poly_cell_texture_map() == original_texture);
+}
+
+TEST_CASE("[PolyMesh4D] Appended volumes invalidate derived data and validation") {
+	SUBCASE("A new volume can hide previously exposed boundary cells") {
+		Ref<BoxPolyMesh4D> box;
+		box.instantiate();
+		Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+		const PackedInt32Array volume = mesh->get_poly_cell_indices()[2][0];
+		REQUIRE_FALSE(mesh->get_simplex_cell_texture_map().is_empty());
+		REQUIRE_FALSE(mesh->get_simplex_cell_vertex_normals().is_empty());
+		REQUIRE(mesh->is_mesh_data_valid());
+		CHECK(mesh->append_poly_cell(4, volume, false) == 1);
+		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
+		CHECK(mesh->is_mesh_data_valid());
+	}
+	SUBCASE("Adding a new topology dimension resets cached validation") {
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		REQUIRE(mesh->is_poly_mesh_data_valid());
+		// This references an existing cell, but one cell cannot enclose a hypervolume.
+		CHECK(mesh->append_poly_cell(4, PackedInt32Array{ 0 }, false) == 0);
+		ERR_PRINT_OFF;
+		CHECK_FALSE(mesh->is_poly_mesh_data_valid());
+		ERR_PRINT_ON;
+	}
+}
+
 TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
+	SUBCASE("Empty meshes and empty boundary dimensions have no derived attributes") {
+		for (const bool has_empty_boundary_dimension : { false, true }) {
+			Ref<ArrayPolyMesh4D> mesh;
+			mesh.instantiate();
+			if (has_empty_boundary_dimension) {
+				mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ Vector<PackedInt32Array>(), Vector<PackedInt32Array>() });
+			}
+			CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
+			CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+			CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+			CHECK(mesh->get_simplex_cell_vertex_indices().is_empty());
+			CHECK(mesh->is_mesh_data_valid());
+		}
+	}
+
 	SUBCASE("A mesh with only vertices and edges") {
 		Ref<ArrayPolyMesh4D> mesh;
 		mesh.instantiate();
@@ -859,6 +1017,11 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 		CHECK(mesh->is_poly_mesh_data_valid());
 		CHECK_MESSAGE(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions(), "Without boundary cells, the simplex vertices are just the poly vertices.");
 		CHECK_MESSAGE(mesh->get_simplex_cell_vertex_indices().is_empty(), "Without boundary cells, there are no simplexes.");
+		CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
+		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
+		CHECK(mesh->append_vertex(Vector4(0, 1, 0, 0)) == 3);
+		CHECK(mesh->get_vertex_positions() == mesh->get_poly_cell_vertex_positions());
 	}
 
 	SUBCASE("A mesh with faces but no cells") {
@@ -873,6 +1036,9 @@ TEST_CASE("[PolyMesh4D] Meshes without boundary cells") {
 		mesh->append_poly_cell(2, PackedInt32Array{ 0, 2, 1 }, false);
 		CHECK(mesh->is_poly_mesh_data_valid());
 		CHECK_MESSAGE(mesh->get_simplex_cell_vertex_indices().is_empty(), "A face-only mesh has no boundary cells to decompose.");
+		CHECK(mesh->get_simplex_cell_boundary_normals().is_empty());
+		CHECK(mesh->get_simplex_cell_vertex_normals().is_empty());
+		CHECK(mesh->get_simplex_cell_texture_map().is_empty());
 		const Vector<PackedInt32Array> face_vertex_indices = mesh->get_all_face_vertex_indices();
 		REQUIRE(face_vertex_indices.size() == 1);
 		CHECK(face_vertex_indices[0].size() == 3);
