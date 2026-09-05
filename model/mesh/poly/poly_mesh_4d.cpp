@@ -124,6 +124,7 @@ bool PolyMesh4D::_validate_poly_mesh_data_only() {
 	const PackedInt32Array poly_cell_boundary_pivot_overrides = get_poly_cell_boundary_pivot_overrides();
 	if (poly_cell_boundary_pivot_overrides.size() != 0) {
 		ERR_FAIL_COND_V_MSG(poly_cell_dims < 2, false, "PolyMesh4D: Boundary pivot overrides provided without any 3D cells.");
+		ERR_FAIL_COND_V_MSG(poly_cell_boundary_pivot_overrides.size() > poly_cell_indices[1].size(), false, "PolyMesh4D: Boundary pivot overrides must have at most one entry per 3D cell.");
 		for (int64_t i = 0; i < poly_cell_boundary_pivot_overrides.size(); i++) {
 			const int32_t pivot_vertex_index = poly_cell_boundary_pivot_overrides[i];
 			if (pivot_vertex_index == -1) {

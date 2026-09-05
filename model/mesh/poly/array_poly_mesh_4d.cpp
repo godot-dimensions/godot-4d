@@ -157,6 +157,14 @@ void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
 	}
 	// Delete the vertex itself now that all dependent edges (and higher dimensions) are gone.
 	_poly_cell_vertex_positions.remove_at(p_index);
+	for (int64_t cell_index = 0; cell_index < _poly_cell_boundary_pivot_overrides.size(); cell_index++) {
+		const int32_t pivot = _poly_cell_boundary_pivot_overrides[cell_index];
+		if (pivot == p_index) {
+			_poly_cell_boundary_pivot_overrides.set(cell_index, -1);
+		} else if (pivot > p_index) {
+			_poly_cell_boundary_pivot_overrides.set(cell_index, pivot - 1);
+		}
+	}
 	// Shift remaining edge vertex references down to preserve index semantics.
 	for (int64_t edge_vertex_index = 0; edge_vertex_index < _edge_vertex_indices.size(); edge_vertex_index++) {
 		if (_edge_vertex_indices[edge_vertex_index] > p_index) {
@@ -230,6 +238,9 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_ce
 				texture_map_for_dim.remove_at(p_index);
 			}
 		}
+	}
+	if (p_poly_cell_index == 1 && p_index < _poly_cell_boundary_pivot_overrides.size()) {
+		_poly_cell_boundary_pivot_overrides.remove_at(p_index);
 	}
 	// Remove the element at p_index from _poly_cell_indices[p_dimension].
 	_poly_cell_indices.ptrw()[p_poly_cell_index].remove_at(p_index);
@@ -1522,7 +1533,8 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 			_poly_cell_boundary_pivot_overrides.set(i, -1);
 		}
 		for (int64_t i = 0; i < other_poly_cell_boundary_pivot_overrides.size(); i++) {
-			const int32_t new_pivot = other_poly_cell_boundary_pivot_overrides[i] + int32_t(start_vertex_count);
+			const int32_t other_pivot = other_poly_cell_boundary_pivot_overrides[i];
+			const int32_t new_pivot = other_pivot == -1 ? -1 : other_pivot + int32_t(start_vertex_count);
 			_poly_cell_boundary_pivot_overrides.set(start_required_amount + i, new_pivot);
 		}
 		for (int64_t i = start_required_amount + other_poly_cell_boundary_pivot_overrides.size(); i < _poly_cell_boundary_pivot_overrides.size(); i++) {

@@ -1175,4 +1175,48 @@ TEST_CASE("[ArrayPolyMesh4D] Duplicate preserves the normals and texture map dic
 	REQUIRE(duplicated_texture_maps[PolyMesh4D::FACE_TO_VERT_KEY].size() == 1);
 	CHECK(duplicated_texture_maps[PolyMesh4D::FACE_TO_VERT_KEY][0].size() == 3);
 }
+
+TEST_CASE("[ArrayPolyMesh4D] Boundary pivot overrides follow mesh edits") {
+	for (const bool source_has_overrides : { false, true }) {
+		Ref<ArrayPolyMesh4D> mesh = make_two_tetrahedra_cells_mesh();
+		Ref<ArrayPolyMesh4D> other = make_two_tetrahedra_cells_mesh();
+		// The omitted destination entry and an explicit source sentinel both mean no override.
+		mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ 2 });
+		if (source_has_overrides) {
+			other->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ -1, 4 });
+		}
+		mesh->merge_with(other, Transform4D(Basis4D(), Vector4(10, 0, 0, 0)));
+		CHECK(mesh->get_poly_cell_boundary_pivot_overrides() == PackedInt32Array({ 2, -1, -1, source_has_overrides ? 9 : -1 }));
+		CHECK(mesh->is_poly_mesh_data_valid());
+	}
+	{
+		Ref<ArrayPolyMesh4D> mesh = make_two_tetrahedra_cells_mesh();
+		mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ -1, -1, -1 });
+		ERR_PRINT_OFF;
+		CHECK_FALSE(mesh->is_poly_mesh_data_valid());
+		ERR_PRINT_ON;
+		mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ -1 });
+		CHECK(mesh->is_poly_mesh_data_valid());
+	}
+	{
+		Ref<ArrayPolyMesh4D> mesh = make_two_tetrahedra_cells_mesh();
+		mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ 2, 4 });
+		mesh->delete_poly_element(3, 0);
+		CHECK(mesh->get_poly_cell_boundary_pivot_overrides() == PackedInt32Array({ 4 }));
+		CHECK(mesh->is_poly_mesh_data_valid());
+	}
+	{
+		Ref<ArrayPolyMesh4D> mesh = make_two_tetrahedra_cells_mesh();
+		// External pivot vertices have no incident edges, so deleting them leaves both cells intact.
+		mesh->append_vertex(Vector4(7, 0, 0, 0));
+		mesh->append_vertex(Vector4(8, 0, 0, 0));
+		mesh->set_poly_cell_boundary_pivot_overrides(PackedInt32Array{ 5, 6 });
+		mesh->delete_poly_element(0, 5);
+		CHECK(mesh->get_poly_cell_boundary_pivot_overrides() == PackedInt32Array({ -1, 5 }));
+		CHECK(mesh->is_poly_mesh_data_valid());
+		mesh->delete_poly_element(0, 5);
+		CHECK(mesh->get_poly_cell_boundary_pivot_overrides() == PackedInt32Array({ -1, -1 }));
+		CHECK(mesh->is_poly_mesh_data_valid());
+	}
+}
 } // namespace TestArrayPolyMesh4D

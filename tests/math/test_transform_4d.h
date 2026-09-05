@@ -55,6 +55,7 @@ TEST_CASE("[Transform4D] Random Inversion") {
 		CHECK_MESSAGE(Transform4D().is_equal_approx(inverted * transform), "Transform4D inverted times transform should be the identity transform.");
 	}
 }
+
 TEST_CASE("[Transform4D] Xform Rect") {
 	// An identity transform must leave the rect untouched, including a rect that does not contain the origin.
 	const Transform4D identity = Transform4D();

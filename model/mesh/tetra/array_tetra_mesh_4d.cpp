@@ -98,9 +98,14 @@ void ArrayTetraMesh4D::set_flat_shading_normals(const bool p_force_recalculate_b
 		_simplex_cell_vertex_normals.set(cell_index * 4 + 2, boundary_normal);
 		_simplex_cell_vertex_normals.set(cell_index * 4 + 3, boundary_normal);
 	}
+	mark_proxy_mesh_3d_dirty();
+	reset_mesh_data_validation();
 }
 
 void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Transform4D &p_transform) {
+	ERR_FAIL_COND_MSG(p_other.is_null(), "ArrayTetraMesh4D: Cannot merge a null mesh.");
+	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayTetraMesh4D: Cannot merge into an invalid mesh.");
+	ERR_FAIL_COND_MSG(!p_other->is_mesh_data_valid(), "ArrayTetraMesh4D: Cannot merge an invalid mesh.");
 	const int64_t start_cell_vertex_index_count = _simplex_cell_vertex_indices.size();
 	const int64_t start_cell_boundary_normal_count = _simplex_cell_boundary_normals.size();
 	const int64_t start_cell_vertex_normal_count = _simplex_cell_vertex_normals.size();
@@ -143,7 +148,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 		}
 	}
 	if (start_cell_texture_map_count > 0 || other_cell_texture_map_count > 0) {
-		const int64_t end_cell_texture_map_count = end_cell_vertex_index_count / 4;
+		const int64_t end_cell_texture_map_count = end_cell_vertex_index_count;
 		_simplex_cell_texture_map.resize(end_cell_texture_map_count);
 		if (other_cell_texture_map_count > 0) {
 			const int64_t cell_texture_map_write_offset = end_cell_texture_map_count - other_cell_texture_map_count;
@@ -165,7 +170,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 			set_material(other_material);
 		}
 	}
-	_clear_cache();
+	tetra_mesh_clear_cache();
 	reset_mesh_data_validation();
 }
 
