@@ -146,18 +146,18 @@ int64_t ArrayPolyMesh4D::append_poly_cell(const int32_t p_dimension, const Packe
 }
 
 int32_t ArrayPolyMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
-	const int vertex_count = _poly_cell_vertex_positions.size();
+	const int64_t vertex_pos_count = _poly_cell_vertex_positions.size();
+	ERR_FAIL_COND_V_MSG(vertex_pos_count > MAX_POLY_VERTICES, -1, "ArrayPolyMesh4D: Cannot add more vertices to the mesh. Maximum vertex count exceeded.");
 	if (p_deduplicate_vertices) {
-		for (int i = 0; i < vertex_count; i++) {
+		for (int64_t i = 0; i < vertex_pos_count; i++) {
 			if (_poly_cell_vertex_positions[i] == p_vertex) {
 				return i;
 			}
 		}
 	}
-	ERR_FAIL_COND_V(_poly_cell_vertex_positions.size() > MAX_POLY_VERTICES, 2147483647);
 	_poly_cell_vertex_positions.push_back(p_vertex);
 	poly_mesh_clear_cache();
-	return vertex_count;
+	return (int32_t)vertex_pos_count;
 }
 
 PackedInt32Array ArrayPolyMesh4D::append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices) {
@@ -238,8 +238,8 @@ void ArrayPolyMesh4D::_delete_edge_internal(const int32_t p_index) {
 }
 
 void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
-	const int64_t vertex_count = _poly_cell_vertex_positions.size();
-	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= vertex_count, "ArrayPolyMesh4D: Vertex index is out of range.");
+	const int64_t vertex_pos_count = _poly_cell_vertex_positions.size();
+	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= vertex_pos_count, "ArrayPolyMesh4D: Vertex index is out of range.");
 	// Before deleting this vertex, we need to delete any edges that reference it,
 	// and any poly cells in higher dimensions that reference those edges.
 	const int32_t edge_count = _edge_vertex_indices.size() / 2;
@@ -424,9 +424,9 @@ void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, 
 	for (int64_t cell_index = 0; cell_index < cell_count; cell_index++) {
 		PackedVector4Array vertex_normals_for_cell;
 		const Vector4 &cell_normal = poly_cell_boundary_normals[cell_index];
-		const int64_t cell_vertex_count = cell_vertex_indices[cell_index].size();
-		vertex_normals_for_cell.resize(cell_vertex_count);
-		for (int64_t vertex_index = 0; vertex_index < cell_vertex_count; vertex_index++) {
+		const int64_t cell_vertex_pos_count = cell_vertex_indices[cell_index].size();
+		vertex_normals_for_cell.resize(cell_vertex_pos_count);
+		for (int64_t vertex_index = 0; vertex_index < cell_vertex_pos_count; vertex_index++) {
 			vertex_normals_for_cell.set(vertex_index, cell_normal);
 		}
 		poly_cell_vertex_normals.set(cell_index, vertex_normals_for_cell);
@@ -473,9 +473,9 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 		for (const int32_t cell_index : cells_in_island) {
 			const PackedInt32Array &vertex_indices_for_cell = cell_vertex_indices[cell_index];
 			PackedVector4Array vertex_normals_for_cell;
-			const int64_t cell_vertex_count = vertex_indices_for_cell.size();
-			vertex_normals_for_cell.resize(cell_vertex_count);
-			for (int64_t vertex_in_cell = 0; vertex_in_cell < cell_vertex_count; vertex_in_cell++) {
+			const int64_t cell_vertex_pos_count = vertex_indices_for_cell.size();
+			vertex_normals_for_cell.resize(cell_vertex_pos_count);
+			for (int64_t vertex_in_cell = 0; vertex_in_cell < cell_vertex_pos_count; vertex_in_cell++) {
 				vertex_normals_for_cell.set(vertex_in_cell, vertex_normals[vertex_indices_for_cell[vertex_in_cell]]);
 			}
 			poly_cell_vertex_normals.set(cell_index, vertex_normals_for_cell);
@@ -1545,8 +1545,8 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 }
 
 void ArrayPolyMesh4D::transform_vertices(const Transform4D &p_transform) {
-	const int64_t vertex_count = _poly_cell_vertex_positions.size();
-	for (int64_t vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
+	const int64_t vertex_pos_count = _poly_cell_vertex_positions.size();
+	for (int64_t vertex_index = 0; vertex_index < vertex_pos_count; vertex_index++) {
 		_poly_cell_vertex_positions.set(vertex_index, p_transform.xform(_poly_cell_vertex_positions[vertex_index]));
 	}
 	poly_mesh_clear_cache();
@@ -1570,11 +1570,11 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	const PackedInt32Array &other_poly_cell_boundary_pivot_overrides = p_other->get_poly_cell_boundary_pivot_overrides();
 	const PackedInt32Array &other_edge_indices = p_other->get_edge_indices();
 	const HashSet<int32_t> &other_seam_face_indices = p_other->get_seam_face_indices();
-	const int64_t start_vertex_count = _poly_cell_vertex_positions.size();
+	const int64_t start_vertex_pos_count = _poly_cell_vertex_positions.size();
 	const int64_t start_edge_index_count = _edge_vertex_indices.size();
-	const int64_t other_vertex_count = other_poly_cell_vertices.size();
+	const int64_t other_vertex_pos_count = other_poly_cell_vertices.size();
 	const int64_t other_edge_index_count = other_edge_indices.size();
-	const int64_t end_vertex_count = start_vertex_count + other_vertex_count;
+	const int64_t end_vertex_pos_count = start_vertex_pos_count + other_vertex_pos_count;
 	const int64_t end_edge_index_count = start_edge_index_count + other_edge_index_count;
 	// Expand the poly cell indices dimensions if needed and count how many entries are in each dimension.
 	const int64_t poly_cell_indices_dims = MAX(_poly_cell_indices.size(), other_poly_cell_indices.size());
@@ -1596,15 +1596,15 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		}
 	}
 	// Merge vertices.
-	_poly_cell_vertex_positions.resize(end_vertex_count);
-	for (int64_t i = 0; i < other_vertex_count; i++) {
-		_poly_cell_vertex_positions.set(start_vertex_count + i, p_transform * other_poly_cell_vertices[i]);
+	_poly_cell_vertex_positions.resize(end_vertex_pos_count);
+	for (int64_t i = 0; i < other_vertex_pos_count; i++) {
+		_poly_cell_vertex_positions.set(start_vertex_pos_count + i, p_transform * other_poly_cell_vertices[i]);
 	}
 	// Merge edges.
 	_edge_vertex_indices.resize(end_edge_index_count);
 	for (int64_t i = 0; i < other_edge_index_count; i += 2) {
-		_edge_vertex_indices.set(start_edge_index_count + i, other_edge_indices[i] + int32_t(start_vertex_count));
-		_edge_vertex_indices.set(start_edge_index_count + i + 1, other_edge_indices[i + 1] + int32_t(start_vertex_count));
+		_edge_vertex_indices.set(start_edge_index_count + i, other_edge_indices[i] + int32_t(start_vertex_pos_count));
+		_edge_vertex_indices.set(start_edge_index_count + i + 1, other_edge_indices[i + 1] + int32_t(start_vertex_pos_count));
 	}
 	// Compute cell vertex instances for the original cells before merging poly cell indices.
 	// This must happen before the merge so the result only spans the original cells,
@@ -1648,7 +1648,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		}
 		for (int64_t i = 0; i < other_poly_cell_boundary_pivot_overrides.size(); i++) {
 			const int32_t other_pivot = other_poly_cell_boundary_pivot_overrides[i];
-			const int32_t new_pivot = other_pivot == -1 ? -1 : other_pivot + int32_t(start_vertex_count);
+			const int32_t new_pivot = other_pivot == -1 ? -1 : other_pivot + int32_t(start_vertex_pos_count);
 			_poly_cell_boundary_pivot_overrides.set(start_required_amount + i, new_pivot);
 		}
 		for (int64_t i = start_required_amount + other_poly_cell_boundary_pivot_overrides.size(); i < _poly_cell_boundary_pivot_overrides.size(); i++) {
@@ -1693,7 +1693,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 			// Use pre-merge counts to check if the original mesh was missing entries.
 			int64_t start_cell_count_for_geom_dim = 0;
 			if (key.x == 0) {
-				start_cell_count_for_geom_dim = start_vertex_count;
+				start_cell_count_for_geom_dim = start_vertex_pos_count;
 			} else if (key.x == 1) {
 				start_cell_count_for_geom_dim = start_edge_index_count / 2;
 			} else if (key.x > 1 && (key.x - 2) < poly_cell_indices_dims) {
@@ -1796,7 +1796,7 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 			// Use pre-merge counts to check if the original mesh was missing entries.
 			int64_t start_cell_count_for_geom_dim = 0;
 			if (key.x == 0) {
-				start_cell_count_for_geom_dim = start_vertex_count;
+				start_cell_count_for_geom_dim = start_vertex_pos_count;
 			} else if (key.x == 1) {
 				start_cell_count_for_geom_dim = start_edge_index_count / 2;
 			} else if (key.x > 1 && (key.x - 2) < poly_cell_indices_dims) {
@@ -1956,10 +1956,10 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	if (other_material.is_valid()) {
 		Ref<Material4D> self_material = get_material();
 		if (self_material.is_valid()) {
-			self_material->merge_with(other_material, start_vertex_count, other_vertex_count);
+			self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);
 		} else if (other_material->get_albedo_color_array().size() > 0) {
 			self_material.instantiate();
-			self_material->merge_with(other_material, start_vertex_count, other_vertex_count);
+			self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);
 			set_material(self_material);
 		} else {
 			set_material(other_material);

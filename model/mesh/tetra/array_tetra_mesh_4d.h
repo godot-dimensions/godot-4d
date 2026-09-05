@@ -22,8 +22,8 @@ protected:
 
 public:
 	void append_tetra_cell_points(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c, const Vector4 &p_d, const bool p_deduplicate_vertices = true);
-	void append_tetra_cell_indices(const int p_index_a, const int p_index_b, const int p_index_c, const int p_index_d);
-	int append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
+	void append_tetra_cell_indices(const int32_t p_index_a, const int32_t p_index_b, const int32_t p_index_c, const int32_t p_index_d);
+	int32_t append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 
 	void calculate_boundary_normals(const bool p_keep_existing = false);

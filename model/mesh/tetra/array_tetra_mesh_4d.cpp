@@ -17,23 +17,23 @@ bool ArrayTetraMesh4D::validate_mesh_data() {
 	ERR_FAIL_COND_V_MSG(cell_boundary_normals_count > 0 && cell_boundary_normals_count * 4 != cell_vertex_indices_count, false, "ArrayTetraMesh4D: Simplex cell boundary normals size must be one fourth of simplex cell vertex indices size (or empty).");
 	const int64_t cell_vertex_normals_count = _simplex_cell_vertex_normals.size();
 	ERR_FAIL_COND_V_MSG(cell_vertex_normals_count > 0 && cell_vertex_normals_count != cell_vertex_indices_count, false, "ArrayTetraMesh4D: Simplex cell vertex normals size must be the same as simplex cell vertex indices size (or empty).");
-	const int64_t vertex_count = _vertex_positions.size();
+	const int64_t vertex_pos_count = _vertex_positions.size();
 	for (int32_t cell_vertex_index : _simplex_cell_vertex_indices) {
-		ERR_FAIL_COND_V_MSG(cell_vertex_index < 0 || cell_vertex_index >= vertex_count, false, "ArrayTetraMesh4D: Simplex cell vertex indices must reference valid vertices.");
+		ERR_FAIL_COND_V_MSG(cell_vertex_index < 0 || cell_vertex_index >= vertex_pos_count, false, "ArrayTetraMesh4D: Simplex cell vertex indices must reference valid vertices.");
 	}
 	return true;
 }
 
 void ArrayTetraMesh4D::append_tetra_cell_points(const Vector4 &p_a, const Vector4 &p_b, const Vector4 &p_c, const Vector4 &p_d, const bool p_deduplicate_vertices) {
-	const int index_a = append_vertex(p_a, p_deduplicate_vertices);
-	const int index_b = append_vertex(p_b, p_deduplicate_vertices);
-	const int index_c = append_vertex(p_c, p_deduplicate_vertices);
-	const int index_d = append_vertex(p_d, p_deduplicate_vertices);
+	const int32_t index_a = append_vertex(p_a, p_deduplicate_vertices);
+	const int32_t index_b = append_vertex(p_b, p_deduplicate_vertices);
+	const int32_t index_c = append_vertex(p_c, p_deduplicate_vertices);
+	const int32_t index_d = append_vertex(p_d, p_deduplicate_vertices);
 	append_tetra_cell_indices(index_a, index_b, index_c, index_d);
 	reset_mesh_data_validation();
 }
 
-void ArrayTetraMesh4D::append_tetra_cell_indices(const int p_index_a, const int p_index_b, const int p_index_c, const int p_index_d) {
+void ArrayTetraMesh4D::append_tetra_cell_indices(const int32_t p_index_a, const int32_t p_index_b, const int32_t p_index_c, const int32_t p_index_d) {
 	_simplex_cell_vertex_indices.append(p_index_a);
 	_simplex_cell_vertex_indices.append(p_index_b);
 	_simplex_cell_vertex_indices.append(p_index_c);
@@ -42,20 +42,20 @@ void ArrayTetraMesh4D::append_tetra_cell_indices(const int p_index_a, const int 
 	reset_mesh_data_validation();
 }
 
-int ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
-	const int vertex_count = _vertex_positions.size();
+int32_t ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
+	const int64_t vertex_pos_count = _vertex_positions.size();
+	ERR_FAIL_COND_V_MSG(vertex_pos_count > Mesh4D::MAX_VERTICES, -1, "ArrayTetraMesh4D: Cannot add more vertices to the mesh. Maximum vertex count exceeded.");
 	if (p_deduplicate_vertices) {
-		for (int i = 0; i < vertex_count; i++) {
+		for (int64_t i = 0; i < vertex_pos_count; i++) {
 			if (_vertex_positions[i] == p_vertex) {
 				return i;
 			}
 		}
 	}
-	ERR_FAIL_COND_V(_vertex_positions.size() > MAX_VERTICES, 2147483647);
 	_vertex_positions.push_back(p_vertex);
 	tetra_mesh_clear_cache();
 	reset_mesh_data_validation();
-	return vertex_count;
+	return (int32_t)vertex_pos_count;
 }
 
 PackedInt32Array ArrayTetraMesh4D::append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices) {
@@ -111,21 +111,21 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 	const int64_t start_cell_boundary_normal_count = _simplex_cell_boundary_normals.size();
 	const int64_t start_cell_vertex_normal_count = _simplex_cell_vertex_normals.size();
 	const int64_t start_cell_texture_map_count = _simplex_cell_texture_map.size();
-	const int64_t start_vertex_count = _vertex_positions.size();
+	const int64_t start_vertex_pos_count = _vertex_positions.size();
 	const int64_t other_cell_vertex_index_count = p_other->_simplex_cell_vertex_indices.size();
 	const int64_t other_cell_boundary_normal_count = p_other->_simplex_cell_boundary_normals.size();
 	const int64_t other_cell_vertex_normal_count = p_other->_simplex_cell_vertex_normals.size();
 	const int64_t other_cell_texture_map_count = p_other->_simplex_cell_texture_map.size();
-	const int64_t other_vertex_count = p_other->_vertex_positions.size();
+	const int64_t other_vertex_pos_count = p_other->_vertex_positions.size();
 	const int64_t end_cell_vertex_index_count = start_cell_vertex_index_count + other_cell_vertex_index_count;
-	const int64_t end_vertex_count = start_vertex_count + other_vertex_count;
+	const int64_t end_vertex_pos_count = start_vertex_pos_count + other_vertex_pos_count;
 	_simplex_cell_vertex_indices.resize(end_cell_vertex_index_count);
-	_vertex_positions.resize(end_vertex_count);
+	_vertex_positions.resize(end_vertex_pos_count);
 	for (int64_t i = 0; i < other_cell_vertex_index_count; i++) {
-		_simplex_cell_vertex_indices.set(start_cell_vertex_index_count + i, p_other->_simplex_cell_vertex_indices[i] + start_vertex_count);
+		_simplex_cell_vertex_indices.set(start_cell_vertex_index_count + i, p_other->_simplex_cell_vertex_indices[i] + start_vertex_pos_count);
 	}
-	for (int64_t i = 0; i < other_vertex_count; i++) {
-		_vertex_positions.set(start_vertex_count + i, p_transform * p_other->_vertex_positions[i]);
+	for (int64_t i = 0; i < other_vertex_pos_count; i++) {
+		_vertex_positions.set(start_vertex_pos_count + i, p_transform * p_other->_vertex_positions[i]);
 	}
 	// Can't simply add these together in case the first mesh has no normals or UVW maps.
 	if (start_cell_boundary_normal_count > 0 || other_cell_boundary_normal_count > 0) {
@@ -162,10 +162,10 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 	if (other_material.is_valid()) {
 		Ref<Material4D> self_material = get_material();
 		if (self_material.is_valid()) {
-			self_material->merge_with(other_material, start_vertex_count, other_vertex_count);
+			self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);
 		} else if (other_material->get_albedo_color_array().size() > 0) {
 			self_material.instantiate();
-			self_material->merge_with(other_material, start_vertex_count, other_vertex_count);
+			self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);
 			set_material(self_material);
 		} else {
 			set_material(other_material);

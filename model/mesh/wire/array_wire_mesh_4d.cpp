@@ -26,7 +26,7 @@ int32_t ArrayWireMesh4D::append_edge_points(const Vector4 &p_point_a, const Vect
 	return append_edge_indices(index_a, index_b, p_deduplicate);
 }
 
-int32_t ArrayWireMesh4D::append_edge_indices(int p_index_a, int p_index_b, const bool p_deduplicate) {
+int32_t ArrayWireMesh4D::append_edge_indices(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate) {
 	const int64_t edge_count = _edge_vertex_indices.size() / 2;
 	if (p_index_a > p_index_b) {
 		SWAP(p_index_a, p_index_b);
@@ -45,19 +45,19 @@ int32_t ArrayWireMesh4D::append_edge_indices(int p_index_a, int p_index_b, const
 	return edge_count;
 }
 
-int ArrayWireMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
-	const int vertex_pos_count = _vertex_positions.size();
+int32_t ArrayWireMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
+	const int64_t vertex_pos_count = _vertex_positions.size();
+	ERR_FAIL_COND_V_MSG(vertex_pos_count > Mesh4D::MAX_VERTICES, -1, "ArrayWireMesh4D: Cannot add more vertices to the mesh. Maximum vertex count exceeded.");
 	if (p_deduplicate_vertices) {
-		for (int i = 0; i < vertex_pos_count; i++) {
+		for (int64_t i = 0; i < vertex_pos_count; i++) {
 			if (_vertex_positions[i] == p_vertex) {
 				return i;
 			}
 		}
 	}
-	ERR_FAIL_COND_V(_vertex_positions.size() > MAX_VERTICES, 2147483647);
 	_vertex_positions.push_back(p_vertex);
 	reset_mesh_data_validation();
-	return vertex_pos_count;
+	return (int32_t)vertex_pos_count;
 }
 
 PackedInt32Array ArrayWireMesh4D::append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices) {
@@ -138,19 +138,19 @@ void ArrayWireMesh4D::transform_vertices_bind(const Vector4 &p_offset, const Pro
 }
 
 void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Transform4D &p_transform) {
-	const int start_edge_count = _edge_vertex_indices.size();
-	const int start_vertex_count = _vertex_positions.size();
-	const int other_edge_count = p_other->_edge_vertex_indices.size();
-	const int other_vertex_count = p_other->_vertex_positions.size();
-	const int end_edge_count = start_edge_count + other_edge_count;
-	const int end_vertex_count = start_vertex_count + other_vertex_count;
+	const int64_t start_edge_count = _edge_vertex_indices.size();
+	const int64_t start_vertex_pos_count = _vertex_positions.size();
+	const int64_t other_edge_count = p_other->_edge_vertex_indices.size();
+	const int64_t other_vertex_pos_count = p_other->_vertex_positions.size();
+	const int64_t end_edge_count = start_edge_count + other_edge_count;
+	const int64_t end_vertex_pos_count = start_vertex_pos_count + other_vertex_pos_count;
 	_edge_vertex_indices.resize(end_edge_count);
-	_vertex_positions.resize(end_vertex_count);
-	for (int i = 0; i < other_edge_count; i++) {
-		_edge_vertex_indices.set(start_edge_count + i, p_other->_edge_vertex_indices[i] + start_vertex_count);
+	_vertex_positions.resize(end_vertex_pos_count);
+	for (int64_t i = 0; i < other_edge_count; i++) {
+		_edge_vertex_indices.set(start_edge_count + i, p_other->_edge_vertex_indices[i] + start_vertex_pos_count);
 	}
-	for (int i = 0; i < other_vertex_count; i++) {
-		_vertex_positions.set(start_vertex_count + i, p_transform * p_other->_vertex_positions[i]);
+	for (int64_t i = 0; i < other_vertex_pos_count; i++) {
+		_vertex_positions.set(start_vertex_pos_count + i, p_transform * p_other->_vertex_positions[i]);
 	}
 	Ref<Material4D> other_material = p_other->get_material();
 	if (other_material.is_valid()) {
@@ -178,22 +178,22 @@ void ArrayWireMesh4D::subdivide_edges(const int64_t p_subdivision_segments) {
 	const int64_t old_edge_indices_size = _edge_vertex_indices.size();
 	const int64_t old_edge_count = old_edge_indices_size / 2;
 	int64_t used_edge_index_count = old_edge_indices_size;
-	int64_t used_vertex_count = _vertex_positions.size();
-	const int64_t final_vertex_count = used_vertex_count + old_edge_count * (p_subdivision_segments - 1);
-	ERR_FAIL_COND_MSG(final_vertex_count > 2147483647, "ArrayWireMesh4D: Too many vertices after subdivision.");
+	int64_t used_vertex_pos_count = _vertex_positions.size();
+	const int64_t final_vertex_pos_count = used_vertex_pos_count + old_edge_count * (p_subdivision_segments - 1);
+	ERR_FAIL_COND_MSG(final_vertex_pos_count > Mesh4D::MAX_VERTICES, "ArrayWireMesh4D: Too many vertices after subdivision.");
 	_edge_vertex_indices.resize(old_edge_indices_size * p_subdivision_segments);
-	_vertex_positions.resize(final_vertex_count);
+	_vertex_positions.resize(final_vertex_pos_count);
 	for (int64_t edge_index = 0; edge_index < old_edge_indices_size; edge_index += 2) {
 		const Vector4 start_point = _vertex_positions[_edge_vertex_indices[edge_index]];
 		const Vector4 end_point = _vertex_positions[_edge_vertex_indices[edge_index + 1]];
 		const Vector4 step = (end_point - start_point) / p_subdivision_segments;
 		const int32_t end_edge_index = _edge_vertex_indices[edge_index + 1];
-		_edge_vertex_indices.set(edge_index + 1, used_vertex_count);
+		_edge_vertex_indices.set(edge_index + 1, used_vertex_pos_count);
 		for (int64_t i = 1; i < p_subdivision_segments; i++) {
 			const Vector4 new_point = start_point + step * i;
-			_vertex_positions.set(used_vertex_count, new_point);
-			_edge_vertex_indices.set(used_edge_index_count, used_vertex_count);
-			used_vertex_count++;
+			_vertex_positions.set(used_vertex_pos_count, new_point);
+			_edge_vertex_indices.set(used_edge_index_count, used_vertex_pos_count);
+			used_vertex_pos_count++;
 			used_edge_index_count++;
 			if (i == p_subdivision_segments - 1) {
 				// This is the end of the loop, so the endpoint of this
@@ -202,13 +202,13 @@ void ArrayWireMesh4D::subdivide_edges(const int64_t p_subdivision_segments) {
 			} else {
 				// This isn't the end of the loop, so the endpoint of this
 				// edge is the vertex added by the next loop iteration.
-				_edge_vertex_indices.set(used_edge_index_count, used_vertex_count);
+				_edge_vertex_indices.set(used_edge_index_count, used_vertex_pos_count);
 			}
 			used_edge_index_count++;
 		}
 	}
 	// This should never fail, but if it does, we need to be noisy about it.
-	CRASH_COND(used_edge_index_count != _edge_vertex_indices.size() || used_vertex_count != _vertex_positions.size());
+	CRASH_COND(used_edge_index_count != _edge_vertex_indices.size() || used_vertex_pos_count != _vertex_positions.size());
 	wire_mesh_clear_cache();
 }
 
@@ -220,19 +220,19 @@ void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int6
 	ERR_FAIL_INDEX_MSG(end_edge_index, _edge_vertex_indices.size(), "ArrayWireMesh4D: Edge number " + itos(p_edge_number) + " does not exist.");
 	const int64_t original_edge_end = _edge_vertex_indices[end_edge_index];
 	int64_t used_edge_index_count = _edge_vertex_indices.size();
-	int64_t used_vertex_count = _vertex_positions.size();
+	int64_t used_vertex_pos_count = _vertex_positions.size();
 	const int64_t new_vertices = p_subdivision_segments - 1;
 	_edge_vertex_indices.resize(used_edge_index_count + new_vertices * 2);
-	_vertex_positions.resize(used_vertex_count + new_vertices);
+	_vertex_positions.resize(used_vertex_pos_count + new_vertices);
 	const Vector4 start_point = _vertex_positions[_edge_vertex_indices[start_edge_index]];
 	const Vector4 end_point = _vertex_positions[_edge_vertex_indices[end_edge_index]];
 	const Vector4 step = (end_point - start_point) / p_subdivision_segments;
-	_edge_vertex_indices.set(end_edge_index, used_vertex_count);
+	_edge_vertex_indices.set(end_edge_index, used_vertex_pos_count);
 	for (int64_t i = 1; i < p_subdivision_segments; i++) {
 		const Vector4 new_point = start_point + step * i;
-		_vertex_positions.set(used_vertex_count, new_point);
-		_edge_vertex_indices.set(used_edge_index_count, used_vertex_count);
-		used_vertex_count++;
+		_vertex_positions.set(used_vertex_pos_count, new_point);
+		_edge_vertex_indices.set(used_edge_index_count, used_vertex_pos_count);
+		used_vertex_pos_count++;
 		used_edge_index_count++;
 		if (i == p_subdivision_segments - 1) {
 			// This is the end of the loop, so the endpoint of this
@@ -241,7 +241,7 @@ void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int6
 		} else {
 			// This isn't the end of the loop, so the endpoint of this
 			// edge is the vertex added by the next loop iteration.
-			_edge_vertex_indices.set(used_edge_index_count, used_vertex_count);
+			_edge_vertex_indices.set(used_edge_index_count, used_vertex_pos_count);
 		}
 		used_edge_index_count++;
 	}
