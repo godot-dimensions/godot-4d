@@ -68,6 +68,7 @@ void G4MFMeshSurface4D::convert_separated_geometry_into_packed_bind(const Ref<G4
 }
 
 Vector<Vector<PackedInt32Array>> G4MFMeshSurface4D::load_geometry_separated(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Vector<Vector<PackedInt32Array>>());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	Vector<Vector<PackedInt32Array>> all_separated;
 	all_separated.resize(_geometry_accessor_indices.size());
@@ -75,14 +76,15 @@ Vector<Vector<PackedInt32Array>> G4MFMeshSurface4D::load_geometry_separated(cons
 		const int accessor_index = _geometry_accessor_indices[geom_index];
 		ERR_FAIL_INDEX_V(accessor_index, state_accessors.size(), Vector<Vector<PackedInt32Array>>());
 		const Ref<G4MFAccessor4D> accessor = state_accessors[accessor_index];
+		ERR_FAIL_COND_V(accessor.is_null(), Vector<Vector<PackedInt32Array>>());
 		const PackedInt32Array packed_geometry_data = accessor->decode_int32s_from_bytes(p_g4mf_state);
 		const int64_t packed_geometry_data_size = packed_geometry_data.size();
 		Vector<PackedInt32Array> separated_geometry_data;
-		int cell_start = 0;
+		int64_t cell_start = 0;
 		while (cell_start < packed_geometry_data_size) {
 			const int cell_vertex_count = packed_geometry_data[cell_start];
 			ERR_FAIL_COND_V(cell_vertex_count <= 0, Vector<Vector<PackedInt32Array>>());
-			ERR_FAIL_INDEX_V(cell_start + cell_vertex_count, packed_geometry_data_size, Vector<Vector<PackedInt32Array>>());
+			ERR_FAIL_COND_V(cell_vertex_count > packed_geometry_data_size - cell_start - 1, Vector<Vector<PackedInt32Array>>());
 			cell_start += 1; // Move past the vertex count to the start of the vertex indices.
 			PackedInt32Array cell_vertex_indices;
 			cell_vertex_indices.resize(cell_vertex_count);
@@ -98,30 +100,14 @@ Vector<Vector<PackedInt32Array>> G4MFMeshSurface4D::load_geometry_separated(cons
 }
 
 TypedArray<Array> G4MFMeshSurface4D::load_geometry_separated_bind(const Ref<G4MFState4D> &p_g4mf_state) const {
-	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
+	const Vector<Vector<PackedInt32Array>> separated = load_geometry_separated(p_g4mf_state);
 	TypedArray<Array> all_separated;
-	all_separated.resize(_geometry_accessor_indices.size());
-	for (int geom_index = 0; geom_index < _geometry_accessor_indices.size(); geom_index++) {
-		const int accessor_index = _geometry_accessor_indices[geom_index];
-		ERR_FAIL_INDEX_V(accessor_index, state_accessors.size(), Array());
-		const Ref<G4MFAccessor4D> accessor = state_accessors[accessor_index];
-		const PackedInt32Array packed_geometry_data = accessor->decode_int32s_from_bytes(p_g4mf_state);
-		const int64_t packed_geometry_data_size = packed_geometry_data.size();
+	all_separated.resize(separated.size());
+	for (int geom_index = 0; geom_index < separated.size(); geom_index++) {
 		// This should be TypedArray<PackedInt32Array> but Godot's type system doesn't allow nested typed arrays.
 		Array separated_geometry_data;
-		int cell_start = 0;
-		while (cell_start < packed_geometry_data_size) {
-			const int cell_vertex_count = packed_geometry_data[cell_start];
-			ERR_FAIL_COND_V(cell_vertex_count <= 0, Array());
-			ERR_FAIL_INDEX_V(cell_start + cell_vertex_count, packed_geometry_data_size, Array());
-			cell_start += 1; // Move past the vertex count to the start of the vertex indices.
-			PackedInt32Array cell_vertex_indices;
-			cell_vertex_indices.resize(cell_vertex_count);
-			for (int i = 0; i < cell_vertex_count; i++) {
-				cell_vertex_indices.set(i, packed_geometry_data[cell_start + i]);
-			}
-			separated_geometry_data.append(cell_vertex_indices);
-			cell_start += cell_vertex_count;
+		for (const PackedInt32Array &cell : separated[geom_index]) {
+			separated_geometry_data.append(cell);
 		}
 		all_separated[geom_index] = separated_geometry_data;
 	}
@@ -129,42 +115,52 @@ TypedArray<Array> G4MFMeshSurface4D::load_geometry_separated_bind(const Ref<G4MF
 }
 
 PackedInt32Array G4MFMeshSurface4D::load_edge_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedInt32Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_edges_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_edges_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedInt32Array());
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 PackedInt32Array G4MFMeshSurface4D::load_seam_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedInt32Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_seams_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_seams_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedInt32Array());
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 PackedInt32Array G4MFMeshSurface4D::load_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedInt32Array());
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_simplexes_accessor_index, state_accessors.size(), PackedInt32Array());
 	const Ref<G4MFAccessor4D> accessor = state_accessors[_simplexes_accessor_index];
+	ERR_FAIL_COND_V(accessor.is_null(), PackedInt32Array());
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
 Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Ref<ArrayPolyMesh4D>());
 	Ref<ArrayPolyMesh4D> poly_mesh;
 	poly_mesh.instantiate();
 	poly_mesh->set_poly_cell_vertex_positions(p_vertices);
 	if (_edges_accessor_index >= 0) {
-		poly_mesh->set_edge_vertex_indices(load_edge_indices(p_g4mf_state));
+		const PackedInt32Array edge_indices = load_edge_indices(p_g4mf_state);
+		poly_mesh->set_edge_vertex_indices(edge_indices);
 	}
 	if (_geometry_accessor_indices.size() > 0) {
-		ERR_FAIL_COND_V_MSG(_edges_accessor_index < 0, poly_mesh, "G4MFMeshSurface4D: Cannot import poly mesh surface geometry because edges are missing.");
+		ERR_FAIL_COND_V_MSG(_edges_accessor_index < 0, Ref<ArrayPolyMesh4D>(), "G4MFMeshSurface4D: Cannot import poly mesh surface geometry because edges are missing.");
 		const Vector<Vector<PackedInt32Array>> geom_sep = load_geometry_separated(p_g4mf_state);
+		ERR_FAIL_COND_V_MSG(geom_sep.size() != _geometry_accessor_indices.size(), Ref<ArrayPolyMesh4D>(), "G4MFMeshSurface4D: Failed to decode poly mesh geometry.");
 		poly_mesh->set_poly_cell_indices(geom_sep);
 		if (geom_sep.size() > 1) {
 			if (_normals_binding.is_valid()) {
 				const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _normals_binding->get_geometry_bindings();
 				for (int bind_geom_index = 0; bind_geom_index < geometry_decompositions.size(); bind_geom_index++) {
 					const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition = geometry_decompositions[bind_geom_index];
+					ERR_FAIL_COND_V(geometry_decomposition.is_null(), Ref<ArrayPolyMesh4D>());
 					// Look for 3D poly cells (geom dimension 3) decomposed into vertices (decomp dim 0).
 					if (geometry_decomposition->get_geometry_dimension() == 3 && geometry_decomposition->get_decompose_dimension() == 0) {
 						const PackedVector4Array normal_values = _normals_binding->load_values_as_vector4s(p_g4mf_state);
@@ -174,9 +170,11 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 						while (norm_index_index < normal_indices.size()) {
 							PackedVector4Array this_cell_vertex_normals;
 							const int vertex_count = normal_indices[norm_index_index];
+							ERR_FAIL_COND_V_MSG(vertex_count < 0 || vertex_count > normal_indices.size() - norm_index_index - 1, Ref<ArrayPolyMesh4D>(), "G4MFMeshSurface4D: Invalid packed normal binding count.");
 							this_cell_vertex_normals.resize(vertex_count);
 							norm_index_index += 1;
 							for (int i = 0; i < vertex_count; i++) {
+								ERR_FAIL_INDEX_V(normal_indices[norm_index_index], normal_values.size(), Ref<ArrayPolyMesh4D>());
 								this_cell_vertex_normals.set(i, normal_values[normal_indices[norm_index_index]]);
 								norm_index_index += 1;
 							}
@@ -191,6 +189,7 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 				const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _texture_map_binding->get_geometry_bindings();
 				for (int bind_geom_index = 0; bind_geom_index < geometry_decompositions.size(); bind_geom_index++) {
 					const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition = geometry_decompositions[bind_geom_index];
+					ERR_FAIL_COND_V(geometry_decomposition.is_null(), Ref<ArrayPolyMesh4D>());
 					// Look for 3D poly cells (geom dimension 3) decomposed into vertices (decomp dim 0).
 					if (geometry_decomposition->get_geometry_dimension() == 3 && geometry_decomposition->get_decompose_dimension() == 0) {
 						const PackedVector3Array texture_map_values = _texture_map_binding->load_values_as_vector3s(p_g4mf_state);
@@ -200,9 +199,11 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 						while (tex_index_index < texture_map_indices.size()) {
 							PackedVector3Array this_cell_texture_map;
 							const int vertex_count = texture_map_indices[tex_index_index];
+							ERR_FAIL_COND_V_MSG(vertex_count < 0 || vertex_count > texture_map_indices.size() - tex_index_index - 1, Ref<ArrayPolyMesh4D>(), "G4MFMeshSurface4D: Invalid packed texture map binding count.");
 							this_cell_texture_map.resize(vertex_count);
 							tex_index_index += 1;
 							for (int i = 0; i < vertex_count; i++) {
+								ERR_FAIL_INDEX_V(texture_map_indices[tex_index_index], texture_map_values.size(), Ref<ArrayPolyMesh4D>());
 								this_cell_texture_map.set(i, texture_map_values[texture_map_indices[tex_index_index]]);
 								tex_index_index += 1;
 							}
@@ -220,7 +221,9 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 	}
 	const bool is_valid = poly_mesh->is_mesh_data_valid();
 	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayPolyMesh4D>(), "G4MFMeshSurface4D: The mesh data is not valid. Returning an empty mesh instead.");
-	poly_mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+	if (poly_mesh->get_poly_cell_indices().size() > 1 && !poly_mesh->get_poly_cell_indices()[1].is_empty()) {
+		poly_mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+	}
 	if (_material_index >= 0) {
 		const TypedArray<G4MFMaterial4D> materials = p_g4mf_state->get_g4mf_materials();
 		ERR_FAIL_INDEX_V(_material_index, materials.size(), poly_mesh);
@@ -233,11 +236,14 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 }
 
 Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Ref<ArrayTetraMesh4D>());
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
 	tetra_mesh->set_vertex_positions(p_vertices);
 	if (_simplexes_accessor_index >= 0) {
-		tetra_mesh->set_simplex_cell_vertex_indices(load_simplex_indices(p_g4mf_state));
+		const PackedInt32Array simplex_indices = load_simplex_indices(p_g4mf_state);
+		tetra_mesh->set_simplex_cell_vertex_indices(simplex_indices);
+		ERR_FAIL_COND_V_MSG(!tetra_mesh->is_mesh_data_valid(), Ref<ArrayTetraMesh4D>(), "G4MFMeshSurface4D: Invalid simplex geometry.");
 		tetra_mesh->calculate_boundary_normals();
 	}
 	if (_normals_binding.is_valid() && _normals_binding->get_simplexes_accessor_index() >= 0) {
@@ -248,7 +254,7 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 			sampled_normals.resize(normal_indices.size());
 			for (int i = 0; i < normal_indices.size(); i++) {
 				const int normal_index = normal_indices[i];
-				ERR_FAIL_INDEX_V(normal_index, normal_values.size(), tetra_mesh);
+				ERR_FAIL_INDEX_V(normal_index, normal_values.size(), Ref<ArrayTetraMesh4D>());
 				sampled_normals.set(i, normal_values[normal_index]);
 			}
 			tetra_mesh->set_simplex_cell_vertex_normals(sampled_normals);
@@ -262,7 +268,7 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 			sampled_texture_map.resize(texture_map_indices.size());
 			for (int i = 0; i < texture_map_indices.size(); i++) {
 				const int texture_map_index = texture_map_indices[i];
-				ERR_FAIL_INDEX_V(texture_map_index, texture_map_values.size(), tetra_mesh);
+				ERR_FAIL_INDEX_V(texture_map_index, texture_map_values.size(), Ref<ArrayTetraMesh4D>());
 				sampled_texture_map.set(i, texture_map_values[texture_map_index]);
 			}
 			tetra_mesh->set_simplex_cell_texture_map(sampled_texture_map);
@@ -282,14 +288,17 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 }
 
 Ref<ArrayWireMesh4D> G4MFMeshSurface4D::generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Ref<ArrayWireMesh4D>());
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
 	wire_mesh->set_vertex_positions(p_vertices);
 	if (_edges_accessor_index >= 0) {
-		wire_mesh->set_edge_indices(load_edge_indices(p_g4mf_state));
+		const PackedInt32Array edge_indices = load_edge_indices(p_g4mf_state);
+		wire_mesh->set_edge_indices(edge_indices);
 	} else if (_simplexes_accessor_index >= 0) {
 		// Calculate edges from simplex cells.
 		const PackedInt32Array simplex_indices = load_simplex_indices(p_g4mf_state);
+		ERR_FAIL_COND_V_MSG(simplex_indices.size() % 4 != 0, Ref<ArrayWireMesh4D>(), "G4MFMeshSurface4D: Invalid simplex geometry.");
 		const PackedInt32Array edge_indices = TetraMesh4D::calculate_edge_indices_from_simplex_cell_vertex_indices(simplex_indices);
 		wire_mesh->set_edge_indices(edge_indices);
 	}
@@ -314,11 +323,11 @@ void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState
 	const Vector<PackedVector4Array> poly_cell_vertex_normals = p_poly_mesh->get_poly_cell_vertex_normals();
 	if (!poly_cell_vertex_normals.is_empty()) {
 		PackedInt32Array geom1_vertex_normal_indices;
+		bool has_normal_data = false;
 		for (int cell_index = 0; cell_index < poly_cell_vertex_normals.size(); cell_index++) {
 			const PackedVector4Array &this_cell_vertex_normals = poly_cell_vertex_normals[cell_index];
-			if (this_cell_vertex_normals.is_empty()) {
-				continue;
-			}
+			has_normal_data = has_normal_data || !this_cell_vertex_normals.is_empty();
+			// Zero counts preserve the positions of cells with no binding data.
 			geom1_vertex_normal_indices.append(this_cell_vertex_normals.size());
 			for (int vert_norm_index = 0; vert_norm_index < this_cell_vertex_normals.size(); vert_norm_index++) {
 				const Vector4 &normal_value = this_cell_vertex_normals[vert_norm_index];
@@ -333,7 +342,7 @@ void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState
 				}
 			}
 		}
-		if (!geom1_vertex_normal_indices.is_empty()) {
+		if (has_normal_data) {
 			if (_normals_binding.is_null()) {
 				_normals_binding.instantiate();
 			}
@@ -351,11 +360,11 @@ void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState
 	const Vector<PackedVector3Array> poly_cell_texture_map = p_poly_mesh->get_poly_cell_texture_map();
 	if (!poly_cell_texture_map.is_empty()) {
 		PackedInt32Array geom1_vertex_texture_map_indices;
+		bool has_texture_map_data = false;
 		for (int cell_index = 0; cell_index < poly_cell_texture_map.size(); cell_index++) {
 			const PackedVector3Array &this_cell_texture_map = poly_cell_texture_map[cell_index];
-			if (this_cell_texture_map.is_empty()) {
-				continue;
-			}
+			has_texture_map_data = has_texture_map_data || !this_cell_texture_map.is_empty();
+			// Zero counts preserve the positions of cells with no binding data.
 			geom1_vertex_texture_map_indices.append(this_cell_texture_map.size());
 			for (int vert_tex_index = 0; vert_tex_index < this_cell_texture_map.size(); vert_tex_index++) {
 				const Vector3 &texture_map_value = this_cell_texture_map[vert_tex_index];
@@ -370,7 +379,7 @@ void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState
 				}
 			}
 		}
-		if (!geom1_vertex_texture_map_indices.is_empty()) {
+		if (has_texture_map_data) {
 			if (_texture_map_binding.is_null()) {
 				_texture_map_binding.instantiate();
 			}

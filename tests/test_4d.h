@@ -16,6 +16,7 @@
 #include "math/test_vector_4d.h"
 
 // Model.
+#include "model/g4mf/test_g4mf_mesh_surface_4d.h"
 #include "model/mesh/poly/test_array_poly_mesh_4d.h"
 #include "model/mesh/poly/test_poly_mesh_4d.h"
 #include "model/mesh/poly/test_poly_mesh_builder_4d.h"

@@ -518,9 +518,11 @@ String G4MFAccessor4D::minimal_component_type_for_vector4s(const PackedVector4Ar
 // Decode functions.
 
 PackedByteArray G4MFAccessor4D::load_bytes_from_buffer_view(const Ref<G4MFState4D> &p_g4mf_state) const {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedByteArray());
 	const TypedArray<G4MFBufferView4D> state_buffer_views = p_g4mf_state->get_g4mf_buffer_views();
 	ERR_FAIL_INDEX_V_MSG(_buffer_view_index, state_buffer_views.size(), PackedByteArray(), "G4MF import: The buffer view index is out of bounds. Returning an empty byte array.");
 	const Ref<G4MFBufferView4D> buffer_view = state_buffer_views[_buffer_view_index];
+	ERR_FAIL_COND_V(buffer_view.is_null(), PackedByteArray());
 	const PackedByteArray raw_bytes = buffer_view->read_buffer_view_data(p_g4mf_state);
 	const int64_t bytes_per_vector = get_bytes_per_vector();
 	ERR_FAIL_COND_V_MSG(bytes_per_vector <= 0, PackedByteArray(), "G4MF import: Failed to determine the number of bytes per vector. Returning an empty byte array.");

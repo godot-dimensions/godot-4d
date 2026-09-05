@@ -19,6 +19,7 @@
 			<param index="2" name="deduplicate" type="bool" default="true" />
 			<description>
 				Converts the given [Mesh4D] into encoded G4MF mesh data and stores this inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF. The returned [G4MFMeshSurface4D] is intended to be used by a [G4MFMesh4D], which goes inside of the [G4MFState4D]. See [method G4MFMesh4D.export_convert_mesh_into_state].
+				For polyhedral meshes, cells without vertex normals or texture mapping retain empty entries in the packed geometry bindings, so later cells keep their corresponding data. If no cell has data for a binding, that geometry binding is omitted.
 			</description>
 		</method>
 		<method name="convert_separated_geometry_into_packed">
@@ -43,7 +44,7 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="vertices" type="PackedVector4Array" />
 			<description>
-				Generates an [ArrayTetraMesh4D] from the G4MF mesh surface data inside of the [G4MFState4D]. This is used for importing a mesh from G4MF. This function will only work properly if the surface has cell indices defined.
+				Generates an [ArrayTetraMesh4D] from the G4MF mesh surface data inside of the [G4MFState4D]. This is used for importing a mesh from G4MF. If the surface has no simplex cells, the supplied [param vertices] are still preserved in the returned mesh.
 			</description>
 		</method>
 		<method name="generate_wire_mesh_surface" qualifiers="const">
