@@ -111,8 +111,23 @@ void Material4D::merge_with(const Ref<Material4D> &p_material, const int p_first
 	}
 }
 
-Material4D::ColorSourceFlags Material4D::get_albedo_source_flags() const {
-	return _albedo_source_flags;
+void Material4D::set_texture_transform_mode(const TextureTransformMode p_texture_transform_mode) {
+	_texture_transform_mode = p_texture_transform_mode;
+	update_cross_section_material_3d();
+	update_projected_material_3d();
+	notify_property_list_changed();
+}
+
+void Material4D::set_texture_map_offset(const Vector3 &p_texture_map_offset) {
+	_texture_map_offset = p_texture_map_offset;
+	update_cross_section_material_3d();
+	update_projected_material_3d();
+}
+
+void Material4D::set_texture_map_scale(const Vector3 &p_texture_map_scale) {
+	_texture_map_scale = p_texture_map_scale;
+	update_cross_section_material_3d();
+	update_projected_material_3d();
 }
 
 void Material4D::set_albedo_source_flags(const ColorSourceFlags p_albedo_source_flags) {
@@ -120,10 +135,7 @@ void Material4D::set_albedo_source_flags(const ColorSourceFlags p_albedo_source_
 	_edge_albedo_color_cache.clear();
 	update_cross_section_material_3d();
 	update_projected_material_3d();
-}
-
-Color Material4D::get_albedo_color() const {
-	return _albedo_color;
+	notify_property_list_changed();
 }
 
 void Material4D::set_albedo_color(const Color &p_albedo_color) {
@@ -131,10 +143,6 @@ void Material4D::set_albedo_color(const Color &p_albedo_color) {
 	_edge_albedo_color_cache.clear();
 	update_cross_section_material_3d();
 	update_projected_material_3d();
-}
-
-PackedColorArray Material4D::get_albedo_color_array() const {
-	return _albedo_color_array;
 }
 
 void Material4D::set_albedo_color_array(const PackedColorArray &p_albedo_color_array) {
@@ -162,6 +170,40 @@ void Material4D::resize_albedo_color_array(const int64_t p_size, const Color &p_
 	update_projected_material_3d();
 }
 
+void Material4D::set_albedo_texture_map_offset(const Vector3 &p_albedo_texture_map_offset) {
+	_albedo_texture_map_offset = p_albedo_texture_map_offset;
+	update_cross_section_material_3d();
+	update_projected_material_3d();
+}
+
+void Material4D::set_albedo_texture_map_scale(const Vector3 &p_albedo_texture_map_scale) {
+	_albedo_texture_map_scale = p_albedo_texture_map_scale;
+	update_cross_section_material_3d();
+	update_projected_material_3d();
+}
+
+Vector3 Material4D::get_effective_albedo_texture_map_offset() const {
+	switch (get_texture_transform_mode()) {
+		case TEXTURE_TRANSFORM_MODE_ALL_CHANNELS:
+			return _texture_map_offset;
+		case TEXTURE_TRANSFORM_MODE_PER_CHANNEL:
+			return _albedo_texture_map_offset;
+		default:
+			return Vector3(0.0, 0.0, 0.0);
+	}
+}
+
+Vector3 Material4D::get_effective_albedo_texture_map_scale() const {
+	switch (get_texture_transform_mode()) {
+		case TEXTURE_TRANSFORM_MODE_ALL_CHANNELS:
+			return _texture_map_scale;
+		case TEXTURE_TRANSFORM_MODE_PER_CHANNEL:
+			return _albedo_texture_map_scale;
+		default:
+			return Vector3(1.0, 1.0, 1.0);
+	}
+}
+
 Ref<ShaderMaterial> Material4D::get_cross_section_material_3d() {
 	if (_cross_section_material_3d.is_null()) {
 		_cross_section_material_3d.instantiate();
@@ -183,16 +225,29 @@ Ref<ShaderMaterial> Material4D::get_projected_material_3d() {
 }
 
 void Material4D::update_cross_section_material_3d() {
+	GDVIRTUAL_CALL(_update_cross_section_material_3d);
 }
 
 void Material4D::update_projected_material_3d() {
+	GDVIRTUAL_CALL(_update_projected_material_3d);
 }
 
 void Material4D::_bind_methods() {
+	// Common functions.
 	ClassDB::bind_method(D_METHOD("get_albedo_color_of_edge", "edge_index", "for_mesh"), &Material4D::get_albedo_color_of_edge);
 	ClassDB::bind_method(D_METHOD("is_default_material"), &Material4D::is_default_material);
 	ClassDB::bind_method(D_METHOD("merge_with", "material", "first_item_count", "second_item_count"), &Material4D::merge_with);
 
+	// Shared properties.
+	ClassDB::bind_method(D_METHOD("get_texture_transform_mode"), &Material4D::get_texture_transform_mode);
+	ClassDB::bind_method(D_METHOD("set_texture_transform_mode", "texture_transform_mode"), &Material4D::set_texture_transform_mode);
+
+	ClassDB::bind_method(D_METHOD("get_texture_map_offset"), &Material4D::get_texture_map_offset);
+	ClassDB::bind_method(D_METHOD("set_texture_map_offset", "texture_map_offset"), &Material4D::set_texture_map_offset);
+	ClassDB::bind_method(D_METHOD("get_texture_map_scale"), &Material4D::get_texture_map_scale);
+	ClassDB::bind_method(D_METHOD("set_texture_map_scale", "texture_map_scale"), &Material4D::set_texture_map_scale);
+
+	// Albedo.
 	ClassDB::bind_method(D_METHOD("get_albedo_source_flags"), &Material4D::get_albedo_source_flags);
 	ClassDB::bind_method(D_METHOD("set_albedo_source_flags", "albedo_source_flags"), &Material4D::set_albedo_source_flags);
 
@@ -204,8 +259,20 @@ void Material4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_albedo_color", "albedo_color"), &Material4D::append_albedo_color);
 	ClassDB::bind_method(D_METHOD("resize_albedo_color_array", "size", "fill_color"), &Material4D::resize_albedo_color_array, DEFVAL(Color(1, 1, 1, 1)));
 
+	ClassDB::bind_method(D_METHOD("get_albedo_texture_map_offset"), &Material4D::get_albedo_texture_map_offset);
+	ClassDB::bind_method(D_METHOD("set_albedo_texture_map_offset", "albedo_texture_map_offset"), &Material4D::set_albedo_texture_map_offset);
+	ClassDB::bind_method(D_METHOD("get_albedo_texture_map_scale"), &Material4D::get_albedo_texture_map_scale);
+	ClassDB::bind_method(D_METHOD("set_albedo_texture_map_scale", "albedo_texture_map_scale"), &Material4D::set_albedo_texture_map_scale);
+
+	ClassDB::bind_method(D_METHOD("get_effective_albedo_texture_map_offset"), &Material4D::get_effective_albedo_texture_map_offset);
+	ClassDB::bind_method(D_METHOD("get_effective_albedo_texture_map_scale"), &Material4D::get_effective_albedo_texture_map_scale);
+
+	// Materials used for 4D rendering engines based on Godot3DRenderingEngine4D.
 	ClassDB::bind_method(D_METHOD("get_cross_section_material_3d"), &Material4D::get_cross_section_material_3d);
 	ClassDB::bind_method(D_METHOD("get_projected_material_3d"), &Material4D::get_projected_material_3d);
+
+	GDVIRTUAL_BIND(_update_cross_section_material_3d);
+	GDVIRTUAL_BIND(_update_projected_material_3d);
 
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_SINGLE_COLOR);
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_PER_VERT);
@@ -217,4 +284,8 @@ void Material4D::_bind_methods() {
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_TEXTURE3D_FACE_UVW);
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW);
 	BIND_ENUM_CONSTANT(COLOR_SOURCE_FLAG_TEXTURE4D_DIRECT);
+
+	BIND_ENUM_CONSTANT(TEXTURE_TRANSFORM_MODE_NONE);
+	BIND_ENUM_CONSTANT(TEXTURE_TRANSFORM_MODE_ALL_CHANNELS);
+	BIND_ENUM_CONSTANT(TEXTURE_TRANSFORM_MODE_PER_CHANNEL);
 }

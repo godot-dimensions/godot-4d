@@ -19,6 +19,8 @@ instance uniform float skewness = 0.0; // -1 to 1. Offsets the perspective proje
 
 uniform vec4 albedo : source_color;
 uniform sampler3D albedo_texture : hint_default_white, source_color;
+uniform vec3 albedo_texture_map_offset;
+uniform vec3 albedo_texture_map_scale;
 // Clip-space depth from the cross-section pass.
 // Defaults to 0 (the far plane, under Forward+'s reverse-Z convention) when there's no
 // cross-section pass to read from.
@@ -260,7 +262,7 @@ void fragment() {
 	/* LIGHT_VERTEX_W_ASSIGNMENT_THIS_IS_REPLACED_IN_TETRA_MATERIAL_CPP_CODE */
 	vec3 other_uvw = mix(center_uvw + (uvw - center_uvw) / (1.0 - centerness), other_center_uvw, other_centerness);
 	vec3 middle_uvw = mix(uvw, other_uvw, middle_weight);
-	ALBEDO = albedo.rgb * texture(albedo_texture, middle_uvw).rgb;
+	ALBEDO = albedo.rgb * texture(albedo_texture, middle_uvw * albedo_texture_map_scale + albedo_texture_map_offset).rgb;
 	ALPHA = sqrt(max(thickness, 0.0) / 2.0); // The sqrt is to compensate for a bug in the definition of Godot's add blend mode.
 	ALBEDO *= ALPHA; // Also compensating for the bug.
 }

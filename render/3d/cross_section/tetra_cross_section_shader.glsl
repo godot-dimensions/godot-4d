@@ -13,6 +13,8 @@ instance uniform vec4 modelview_basis_w;
 
 uniform vec4 albedo : source_color;
 uniform sampler3D albedo_texture : hint_default_white, source_color;
+uniform vec3 albedo_texture_map_offset;
+uniform vec3 albedo_texture_map_scale;
 
 varying vec3 uvw;
 // Flat shading currently computes this from the transformed cell positions. Future smooth shading
@@ -134,6 +136,6 @@ void vertex() {
 
 void fragment() {
 	NORMAL = normalize(NORMAL);
-	ALBEDO = albedo.rgb * texture(albedo_texture, uvw).rgb;
+	ALBEDO = albedo.rgb * texture(albedo_texture, uvw * albedo_texture_map_scale + albedo_texture_map_offset).rgb;
 	// Previous angle-based shading also included: * ((dot((vec4(NORMAL, 0.0) * INV_VIEW_MATRIX).xyz, vec3(0.0, 1.0, 0.0)) / 2.0) + 0.5);
 }

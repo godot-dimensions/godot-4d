@@ -181,6 +181,8 @@ void TetraMaterial4D::update_cross_section_material_3d() {
 	const Variant albedo_texture = (flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW) ? Variant(_albedo_texture_3d) : Variant();
 	_cross_section_material_3d->set_shader_parameter("albedo", albedo);
 	_cross_section_material_3d->set_shader_parameter("albedo_texture", albedo_texture);
+	_cross_section_material_3d->set_shader_parameter("albedo_texture_map_offset", get_effective_albedo_texture_map_offset());
+	_cross_section_material_3d->set_shader_parameter("albedo_texture_map_scale", get_effective_albedo_texture_map_scale());
 }
 
 void TetraMaterial4D::update_projected_material_3d() {
@@ -206,15 +208,29 @@ void TetraMaterial4D::update_projected_material_3d() {
 	const Variant albedo_texture = (flags & Material4D::COLOR_SOURCE_FLAG_TEXTURE3D_CELL_UVW) ? Variant(_albedo_texture_3d) : Variant();
 	_projected_material_3d->set_shader_parameter("albedo", albedo);
 	_projected_material_3d->set_shader_parameter("albedo_texture", albedo_texture);
+	_projected_material_3d->set_shader_parameter("albedo_texture_map_offset", get_effective_albedo_texture_map_offset());
+	_projected_material_3d->set_shader_parameter("albedo_texture_map_scale", get_effective_albedo_texture_map_scale());
 }
 
 void TetraMaterial4D::_validate_property(PropertyInfo &p_property) const {
+	const bool albedo_texture_3d_used = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_TEXTURE_3D) != 0;
+	const bool any_texture_3d_used = albedo_texture_3d_used; // Update this if more 3D textures are added in the future.
+	const bool texture_transform_mode_all_channels = (_texture_transform_mode == TEXTURE_TRANSFORM_MODE_ALL_CHANNELS);
+	const bool texture_transform_mode_per_channel = (_texture_transform_mode == TEXTURE_TRANSFORM_MODE_PER_CHANNEL);
 	if (p_property.name == StringName("albedo_color")) {
 		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	} else if (p_property.name == StringName("albedo_color_array")) {
 		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	} else if (p_property.name == StringName("albedo_texture_3d")) {
-		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_TEXTURE_3D) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+		p_property.usage = (albedo_texture_3d_used) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+	} else if (p_property.name == StringName("albedo_texture_map_offset")) {
+		p_property.usage = (albedo_texture_3d_used && texture_transform_mode_per_channel) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+	} else if (p_property.name == StringName("albedo_texture_map_scale")) {
+		p_property.usage = (albedo_texture_3d_used && texture_transform_mode_per_channel) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+	} else if (p_property.name == StringName("texture_map_offset")) {
+		p_property.usage = (any_texture_3d_used && texture_transform_mode_all_channels) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+	} else if (p_property.name == StringName("texture_map_scale")) {
+		p_property.usage = (any_texture_3d_used && texture_transform_mode_all_channels) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	}
 }
 
@@ -272,11 +288,18 @@ void TetraMaterial4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_albedo_texture_3d"), &TetraMaterial4D::get_albedo_texture_3d);
 	ClassDB::bind_method(D_METHOD("set_albedo_texture_3d", "texture"), &TetraMaterial4D::set_albedo_texture_3d);
 
+	// Don't show the per-channel option in the inspector until we actually have multiple channels to work with.
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "texture_transform_mode", PROPERTY_HINT_ENUM, "None,All Channels"), "set_texture_transform_mode", "get_texture_transform_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "texture_map_offset"), "set_texture_map_offset", "get_texture_map_offset");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "texture_map_scale", PROPERTY_HINT_LINK), "set_texture_map_scale", "get_texture_map_scale");
+
 	//ADD_GROUP("Albedo", "albedo_");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "albedo_source", PROPERTY_HINT_ENUM, "Single Color,Per Vertex Only,Per Cell Only,Texture3D Only,Texture4D Only,Per Vertex and Single Color,Per Cell and Single Color,Texture3D and Single Color,Texture4D and Single Color"), "set_albedo_source", "get_albedo_source");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "albedo_color"), "set_albedo_color", "get_albedo_color");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "albedo_color_array"), "set_albedo_color_array", "get_albedo_color_array");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "albedo_texture_3d", PROPERTY_HINT_RESOURCE_TYPE, "Texture3D"), "set_albedo_texture_3d", "get_albedo_texture_3d");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "albedo_texture_map_offset"), "set_albedo_texture_map_offset", "get_albedo_texture_map_offset");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "albedo_texture_map_scale", PROPERTY_HINT_LINK), "set_albedo_texture_map_scale", "get_albedo_texture_map_scale");
 
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_SINGLE_COLOR);
 	BIND_ENUM_CONSTANT(TETRA_COLOR_SOURCE_PER_VERT_ONLY);

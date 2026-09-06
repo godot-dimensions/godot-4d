@@ -20,7 +20,26 @@
 			The albedo source of the material, an enum specific to tetrahedral meshes. Can be a single color, per-vertex, per-cell, per-cell UVW coordinates, 4D texture, or a combination of single color and the other color sources.
 		</member>
 		<member name="albedo_texture_3d" type="Texture3D" setter="set_albedo_texture_3d" getter="get_albedo_texture_3d">
-			The albedo texture of the material as a Texture3D. Used by the cross-section and projected renderers when [member albedo_source] is [constant TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY] or [constant TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE].
+			The albedo texture of the material as a [Texture3D]. Used by the cross-section and projected renderers when [member albedo_source] is [constant TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY] or [constant TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE].
+		</member>
+		<member name="albedo_texture_map_offset" type="Vector3" setter="set_albedo_texture_map_offset" getter="get_albedo_texture_map_offset">
+			The offset of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when [member albedo_source] is set to use a [Texture3D], and only when the texture transform mode is set to [constant Material4D.TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
+			This offset controls the texture map, not the texture itself. An offset of (0.25, 0.25, 0.25) will add this value to all texture coordinates, making a texture coordinate of zero start at a quarter of the way into the texture, which visually shifts the texture in the opposite direction of the offset. This is equivalent to Godot's [member BaseMaterial3D.uv1_offset] property, but is specific to the albedo material channel.
+		</member>
+		<member name="albedo_texture_map_scale" type="Vector3" setter="set_albedo_texture_map_scale" getter="get_albedo_texture_map_scale">
+			The scale of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when [member albedo_source] is set to use a [Texture3D], and only when the texture transform mode is set to [constant Material4D.TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
+			This scale controls the texture map, not the texture itself. A scale of (2, 2, 2) will make the texture map cover the texture twice as many times on each axis, which has the effect of tiling the texture in a 2x2x2 pattern, making each visual copy of the texture appear half the size. This is equivalent to Godot's [member BaseMaterial3D.uv1_scale] property, but is specific to the albedo material channel.
+		</member>
+		<member name="texture_map_offset" type="Vector3" setter="set_texture_map_offset" getter="get_texture_map_offset">
+			Gets the offset of the texture map (UV map or UVW map) applied to all material channels (albedo, emissive, normal, ORM, etc). This is only used when the texture transform mode is set to [constant Material4D.TEXTURE_TRANSFORM_MODE_ALL_CHANNELS] and at least one channel uses a 3D texture.
+			This offset controls the texture map, not the texture itself. An offset of (0.25, 0.25, 0.25) will add this value to all texture coordinates, making a texture coordinate of zero start at a quarter of the way into the texture, which visually shifts the texture in the opposite direction of the offset. This is equivalent to Godot's [member BaseMaterial3D.uv1_offset] property.
+		</member>
+		<member name="texture_map_scale" type="Vector3" setter="set_texture_map_scale" getter="get_texture_map_scale">
+			Gets the offset of the texture map (UV map or UVW map) applied to all material channels (albedo, emissive, normal, ORM, etc). This is only used when the texture transform mode is set to [constant Material4D.TEXTURE_TRANSFORM_MODE_ALL_CHANNELS] and at least one channel uses a 3D texture.
+			This scale controls the texture map, not the texture itself. A scale of (2, 2, 2) will make the texture map cover the texture twice as many times on each axis, which has the effect of tiling the texture in a 2x2x2 pattern, making each visual copy of the texture appear half the size. This is equivalent to Godot's [member BaseMaterial3D.uv1_scale] property.
+		</member>
+		<member name="texture_transform_mode" type="int" setter="set_texture_transform_mode" getter="get_texture_transform_mode" enum="Material4D.TextureTransformMode" default="0">
+			Gets the texture transform mode, which determines how the texture transform is applied to the various material channels. Texture transforms are only useful when the material uses 3D textures, such as when [member albedo_source] is set to use a [Texture3D]. See [enum Material4D.TextureTransformMode] for options.
 		</member>
 	</members>
 	<constants>

@@ -12,7 +12,7 @@ class TetraMaterial4D : public Material4D {
 	GDCLASS(TetraMaterial4D, Material4D);
 
 public:
-	enum TetraColorSource {
+	enum TetraColorSource : uint8_t {
 		TETRA_COLOR_SOURCE_SINGLE_COLOR,
 		TETRA_COLOR_SOURCE_PER_VERT_ONLY,
 		TETRA_COLOR_SOURCE_PER_CELL_ONLY,
