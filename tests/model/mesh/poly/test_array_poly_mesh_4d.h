@@ -1890,8 +1890,9 @@ TEST_CASE("[ArrayPolyMesh4D] Double sided empty boundary levels are unchanged") 
 		Ref<ArrayPolyMesh4D> mesh;
 		mesh.instantiate();
 		mesh->set_poly_cell_vertex_positions(PackedVector4Array{ Vector4() });
-		Vector<Vector<PackedInt32Array>> poly;
-		poly.resize(2);
+		// Constructed directly with two empty levels instead of resize(2), because MinGW GCC's
+		// -Werror=aggressive-loop-optimizations misfires on the inlined CowData shrink path.
+		const Vector<Vector<PackedInt32Array>> poly = { Vector<PackedInt32Array>(), Vector<PackedInt32Array>() };
 		mesh->set_poly_cell_indices(poly);
 		REQUIRE(mesh->is_mesh_data_valid());
 		mesh->make_double_sided(idempotent);

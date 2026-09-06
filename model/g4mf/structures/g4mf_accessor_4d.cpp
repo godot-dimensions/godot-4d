@@ -307,36 +307,41 @@ String G4MFAccessor4D::_minimal_component_type_given_bits(const uint32_t p_float
 				PackedByteArray packed_array;                                                                                                                                                     \
 				packed_array.resize(nums_to_read);                                                                                                                                                \
 				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
-					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
+					packed_array.set(j, m_numbers[numbers_offset + j]);                                                                                                                           \
 				}                                                                                                                                                                                 \
+				m_values[value_index] = packed_array;                                                                                                                                             \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT32_ARRAY: {                                                                                                                                                   \
 				PackedInt32Array packed_array;                                                                                                                                                    \
 				packed_array.resize(nums_to_read);                                                                                                                                                \
 				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
-					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
+					packed_array.set(j, m_numbers[numbers_offset + j]);                                                                                                                           \
 				}                                                                                                                                                                                 \
+				m_values[value_index] = packed_array;                                                                                                                                             \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_INT64_ARRAY: {                                                                                                                                                   \
 				PackedInt64Array packed_array;                                                                                                                                                    \
 				packed_array.resize(nums_to_read);                                                                                                                                                \
 				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
-					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
+					packed_array.set(j, m_numbers[numbers_offset + j]);                                                                                                                           \
 				}                                                                                                                                                                                 \
+				m_values[value_index] = packed_array;                                                                                                                                             \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT32_ARRAY: {                                                                                                                                                 \
 				PackedFloat32Array packed_array;                                                                                                                                                  \
 				packed_array.resize(nums_to_read);                                                                                                                                                \
 				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
-					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
+					packed_array.set(j, m_numbers[numbers_offset + j]);                                                                                                                           \
 				}                                                                                                                                                                                 \
+				m_values[value_index] = packed_array;                                                                                                                                             \
 			} break;                                                                                                                                                                              \
 			case Variant::PACKED_FLOAT64_ARRAY: {                                                                                                                                                 \
 				PackedFloat64Array packed_array;                                                                                                                                                  \
 				packed_array.resize(nums_to_read);                                                                                                                                                \
 				for (int64_t j = 0; j < nums_to_read; j++) {                                                                                                                                      \
-					packed_array.set(value_index, m_numbers[numbers_offset + j]);                                                                                                                 \
+					packed_array.set(j, m_numbers[numbers_offset + j]);                                                                                                                           \
 				}                                                                                                                                                                                 \
+				m_values[value_index] = packed_array;                                                                                                                                             \
 			} break;                                                                                                                                                                              \
 			default: {                                                                                                                                                                            \
 				ERR_FAIL_V_MSG(m_values, "G4MF import: Cannot decode accessor as Variant of type " + Variant::get_type_name(p_variant_type) + ". Returning an empty array.");                     \

@@ -59,16 +59,24 @@ int G4MFBufferView4D::write_new_buffer_view_into_state(const Ref<G4MFState4D> &p
 	const int64_t input_data_size = p_input_data.size();
 	// This is used by accessors. The byte offset of an accessor's buffer view MUST be a multiple of the accessor's primitive size.
 	// https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/data.md#accessors
-	int64_t byte_offset = state_buffer.size();
+	const int64_t old_buffer_size = state_buffer.size();
+	int64_t byte_offset = old_buffer_size;
 	if (p_alignment > 1) {
 		if (byte_offset % p_alignment != 0) {
 			byte_offset += p_alignment - (byte_offset % p_alignment);
 		}
 	}
 	state_buffer.resize(byte_offset + input_data_size);
-	if (input_data_size > 0) {
+	if (byte_offset > old_buffer_size || input_data_size > 0) {
 		uint8_t *buffer_ptr = state_buffer.ptrw();
-		memcpy(buffer_ptr + byte_offset, p_input_data.ptr(), input_data_size);
+		// Zero the alignment padding, since Vector::resize() leaves the new bytes
+		// uninitialized and they would otherwise be written to the output file.
+		if (byte_offset > old_buffer_size) {
+			memset(buffer_ptr + old_buffer_size, 0, byte_offset - old_buffer_size);
+		}
+		if (input_data_size > 0) {
+			memcpy(buffer_ptr + byte_offset, p_input_data.ptr(), input_data_size);
+		}
 	}
 	state_buffers[p_buffer_index] = state_buffer;
 	p_g4mf_state->set_g4mf_buffers(state_buffers);
