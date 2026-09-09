@@ -9,6 +9,13 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_append_proxy_mesh_surfaces_3d" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="proxy_mesh" type="ArrayMesh" />
+			<description>
+				Callback method that should append surfaces to the given 3D proxy mesh. Do not call this method directly. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method append_proxy_mesh_surfaces_3d] for details.
+			</description>
+		</method>
 		<method name="_get_edge_indices" qualifiers="virtual">
 			<return type="PackedInt32Array" />
 			<description>
@@ -45,12 +52,6 @@
 				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertex_positions] for details of the returned data.
 			</description>
 		</method>
-		<method name="_update_proxy_mesh_3d" qualifiers="virtual">
-			<return type="void" />
-			<description>
-				Rebuilds the proxy 3D mesh this mesh is rendered through. Can be called to force the proxy mesh to be updated, but typically should only be called internally. Subclasses can override this, but most cases should be covered by the default implementation.
-			</description>
-		</method>
 		<method name="_validate_material_for_mesh" qualifiers="virtual">
 			<return type="void" />
 			<param index="0" name="material" type="Material4D" />
@@ -62,6 +63,13 @@
 			<return type="bool" />
 			<description>
 				Callback method that should validate the mesh data. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. This method should return [code]true[/code] if the mesh data is valid, and [code]false[/code] if it is not. If the mesh data is invalid, the mesh will be skipped when rendering.
+			</description>
+		</method>
+		<method name="append_proxy_mesh_surfaces_3d">
+			<return type="void" />
+			<param index="0" name="proxy_mesh" type="ArrayMesh" />
+			<description>
+				Rebuilds the 3D mesh surfaces used to represent this Mesh4D in 3D-based rendering engines, and commit those surfaces to the given 3D proxy mesh. Existing surfaces will be kept. Can be called to commit the current state to a custom proxy mesh, but typically should only be called internally.
 			</description>
 		</method>
 		<method name="deduplicate_edge_indices" qualifiers="static">
@@ -155,12 +163,6 @@
 				Converts this Mesh4D to a [WireMesh4D]. This method will use the best conversion available. For example, a [BoxTetraMesh4D] will be converted to a [BoxWireMesh4D]. If no specialized conversion is available, the method will return an [ArrayWireMesh4D]. See [method to_array_wire_mesh] for more details. The new mesh will have the same vertices, edges, and material as this mesh. The material will be shared between the two meshes, but everything else will be a copy.
 			</description>
 		</method>
-		<method name="update_proxy_mesh_3d">
-			<return type="void" />
-			<description>
-				Rebuilds the proxy 3D mesh this mesh is rendered through. Can be called to force the proxy mesh to be updated, but typically should only be called internally.
-			</description>
-		</method>
 		<method name="validate_material_for_mesh">
 			<return type="void" />
 			<param index="0" name="material" type="Material4D" />
@@ -174,4 +176,11 @@
 			The [Material4D] used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. If no material is set, the mesh should render with default settings. The material may be overridden on a [MeshInstance4D] node by setting the [member MeshInstance4D.material_override] property.
 		</member>
 	</members>
+	<signals>
+		<signal name="mesh_data_validation_reset">
+			<description>
+				Emitted when the mesh data's validation is reset and needs to be revalidated. This will happen when any of the mesh's data is modified or cleared. Listeners should NOT immediately call [method is_mesh_data_valid] in response to this signal, because this may be emitted in the middle of a larger editing operation. Instead, this can be used to flag that the mesh needs to be revalidated at a later point. This is especially useful if additional validation is required beyond the automatic checks performed by the mesh itself.
+			</description>
+		</signal>
+	</signals>
 </class>

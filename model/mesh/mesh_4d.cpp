@@ -56,6 +56,7 @@ bool Mesh4D::is_mesh_data_valid() {
 
 void Mesh4D::reset_mesh_data_validation() {
 	_is_mesh_data_valid = false;
+	emit_signal("mesh_data_validation_reset");
 }
 
 bool Mesh4D::validate_mesh_data() {
@@ -64,8 +65,8 @@ bool Mesh4D::validate_mesh_data() {
 	return ret;
 }
 
-void Mesh4D::update_proxy_mesh_3d() {
-	GDVIRTUAL_CALL(_update_proxy_mesh_3d);
+void Mesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) {
+	GDVIRTUAL_CALL(_append_proxy_mesh_surfaces_3d, p_proxy_mesh);
 }
 
 void Mesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
@@ -124,7 +125,8 @@ Ref<ArrayMesh> Mesh4D::get_proxy_mesh_3d() {
 		const String mesh_path_or_name = get_path().is_empty() ? get_name() : get_path();
 		const String proxy_mesh_hint = mesh_path_or_name + String(" Proxy Mesh 3D");
 		_proxy_mesh_3d->set_name(proxy_mesh_hint);
-		update_proxy_mesh_3d();
+		_proxy_mesh_3d->clear_surfaces();
+		append_proxy_mesh_surfaces_3d(_proxy_mesh_3d);
 		_is_proxy_mesh_3d_dirty = false;
 #if GODOT_MODULE
 		if (RenderingServer::get_singleton() != nullptr && _proxy_mesh_3d->get_rid().is_valid()) {
@@ -180,6 +182,8 @@ PackedVector3Array Mesh4D::get_texture_map_values() {
 }
 
 void Mesh4D::_bind_methods() {
+	ADD_SIGNAL(MethodInfo("mesh_data_validation_reset"));
+
 	ClassDB::bind_static_method("Mesh4D", D_METHOD("deduplicate_edge_indices", "items"), &Mesh4D::deduplicate_edge_indices);
 	ClassDB::bind_method(D_METHOD("has_edge_indices", "first", "second"), &Mesh4D::has_edge_indices);
 
@@ -188,7 +192,7 @@ void Mesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("validate_material_for_mesh", "material"), &Mesh4D::validate_material_for_mesh);
 	ClassDB::bind_method(D_METHOD("mark_proxy_mesh_3d_dirty"), &Mesh4D::mark_proxy_mesh_3d_dirty);
 	ClassDB::bind_method(D_METHOD("mark_mesh_bounds_and_proxy_mesh_3d_dirty"), &Mesh4D::mark_mesh_bounds_and_proxy_mesh_3d_dirty);
-	ClassDB::bind_method(D_METHOD("update_proxy_mesh_3d"), &Mesh4D::update_proxy_mesh_3d);
+	ClassDB::bind_method(D_METHOD("append_proxy_mesh_surfaces_3d", "proxy_mesh"), &Mesh4D::append_proxy_mesh_surfaces_3d);
 
 	ClassDB::bind_method(D_METHOD("to_array_wire_mesh"), &Mesh4D::to_array_wire_mesh);
 	ClassDB::bind_method(D_METHOD("to_wire_mesh"), &Mesh4D::to_wire_mesh);
@@ -213,5 +217,5 @@ void Mesh4D::_bind_methods() {
 	GDVIRTUAL_BIND(_get_fallback_material);
 	GDVIRTUAL_BIND(_validate_material_for_mesh, "material");
 	GDVIRTUAL_BIND(_validate_mesh_data);
-	GDVIRTUAL_BIND(_update_proxy_mesh_3d);
+	GDVIRTUAL_BIND(_append_proxy_mesh_surfaces_3d, "proxy_mesh");
 }

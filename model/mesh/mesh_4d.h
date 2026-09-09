@@ -16,6 +16,7 @@ class Mesh4D : public Resource {
 	GDCLASS(Mesh4D, Resource);
 
 	Rect4 _rect_bounds;
+	Ref<ArrayMesh> _proxy_mesh_3d;
 	Ref<Material4D> _material;
 	bool _is_mesh_data_valid = false;
 	bool _is_proxy_mesh_3d_dirty = true;
@@ -24,7 +25,6 @@ class Mesh4D : public Resource {
 protected:
 	// Slightly under the 32-bit integer limit to avoid overflows.
 	static constexpr int64_t MAX_VERTICES = 2147483640;
-	Ref<ArrayMesh> _proxy_mesh_3d;
 
 	static void _bind_methods();
 	virtual bool validate_mesh_data();
@@ -35,13 +35,13 @@ protected:
 		_is_proxy_mesh_3d_dirty = true;
 		_is_rect_bounds_dirty = true;
 	}
-	// Called when the proxy 3D mesh is requested and has been marked dirty.
-	// Update the mesh referenced by _proxy_mesh_3d to match the current state of the mesh.
-	virtual void update_proxy_mesh_3d();
 
 public:
 	static PackedInt32Array deduplicate_edge_indices(const PackedInt32Array &p_items);
 	bool has_edge_indices(int p_first, int p_second);
+
+	// Called when the proxy 3D mesh is requested and has been marked dirty.
+	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh);
 
 	bool is_mesh_data_valid();
 	void reset_mesh_data_validation();
@@ -72,6 +72,6 @@ public:
 
 	GDVIRTUAL0R(bool, _validate_mesh_data);
 	GDVIRTUAL0R(Ref<Material4D>, _get_fallback_material);
-	GDVIRTUAL0(_update_proxy_mesh_3d);
+	GDVIRTUAL1(_append_proxy_mesh_surfaces_3d, Ref<ArrayMesh>);
 	GDVIRTUAL1(_validate_material_for_mesh, Ref<Material4D>);
 };

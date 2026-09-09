@@ -40,10 +40,8 @@ void WireMesh4D::cleanup_fallback_material() {
 	_fallback_material.unref();
 }
 
-void WireMesh4D::update_proxy_mesh_3d() {
-	ERR_FAIL_COND(_proxy_mesh_3d.is_null());
-	_proxy_mesh_3d->clear_surfaces();
-
+void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) {
+	ERR_FAIL_COND(p_proxy_mesh.is_null());
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
 	surface_tool->begin(Mesh::PRIMITIVE_LINES);
@@ -59,7 +57,7 @@ void WireMesh4D::update_proxy_mesh_3d() {
 		// Not using these positions because it doesn't fit the full vec4, but might as well set it to something sane.
 		surface_tool->add_vertex(Vector3(edge_vert.x, edge_vert.y, edge_vert.z));
 	}
-	surface_tool->commit(_proxy_mesh_3d);
+	surface_tool->commit(p_proxy_mesh);
 }
 
 void WireMesh4D::_bind_methods() {

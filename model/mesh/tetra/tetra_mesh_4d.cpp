@@ -523,9 +523,8 @@ PackedVector4Array TetraMesh4D::get_simplex_cell_positions() {
 	return _simplex_positions_cache;
 }
 
-void TetraMesh4D::update_proxy_mesh_3d() {
-	ERR_FAIL_COND(_proxy_mesh_3d.is_null());
-	_proxy_mesh_3d->clear_surfaces();
+void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) {
+	ERR_FAIL_COND(p_proxy_mesh.is_null());
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "TetraMesh4D: Cannot update proxy mesh for an invalid mesh.");
 
 	Ref<SurfaceTool> surface_tool;
@@ -627,9 +626,7 @@ void TetraMesh4D::update_proxy_mesh_3d() {
 		surface_tool->add_vertex(Vector3(10.0, uvw2.z, uvw3.z));
 		surface_tool->add_vertex(Vector3(11.0, uvw2.z, uvw3.z));
 	}
-	surface_tool->commit(_proxy_mesh_3d);
-
-	// TODO Second surface for 4D "shadow" effect.
+	surface_tool->commit(p_proxy_mesh);
 }
 
 void TetraMesh4D::_bind_methods() {

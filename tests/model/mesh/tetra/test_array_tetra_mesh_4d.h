@@ -23,11 +23,11 @@ static Ref<ArrayTetraMesh4D> make_single_tetra_mesh(const bool p_with_attributes
 	return mesh;
 }
 
-TEST_CASE("[ArrayTetraMesh4D] Calculate Normals") {
+TEST_CASE("[ArrayTetraMesh4D] Calculate Normals and Verify Proxy Mesh Caching") {
 	class ProxyUpdateProbe : public ArrayTetraMesh4D {
 	public:
 		int proxy_updates = 0;
-		void update_proxy_mesh_3d() override { proxy_updates++; }
+		void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) override { proxy_updates++; }
 	};
 	Ref<ProxyUpdateProbe> mesh;
 	mesh.instantiate();

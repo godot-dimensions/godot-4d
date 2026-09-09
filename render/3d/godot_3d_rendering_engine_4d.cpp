@@ -143,6 +143,7 @@ void Godot3DRenderingEngine4D::_update_3d_mesh_instances() {
 		if (!mesh_4d.is_valid()) {
 			continue;
 		}
+		// This is not a trivial getter: this will update the proxy mesh if it needs updating.
 		Ref<Mesh> mesh_3d = mesh_4d->get_proxy_mesh_3d();
 		ERR_CONTINUE(!mesh_3d.is_valid());
 

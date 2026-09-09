@@ -22,7 +22,6 @@ protected:
 	PackedFloat64Array _nearest_tetra_inverse_metric_cache;
 
 	Ref<ArrayMesh> convert_texture_map_to_mesh(const PackedInt32Array &p_texture_map_indices);
-	virtual void update_proxy_mesh_3d() override;
 
 public:
 	// Nearest point and signed distance.
@@ -55,6 +54,9 @@ public:
 	static PackedInt32Array calculate_edge_indices_from_simplex_cell_vertex_indices(const PackedInt32Array &p_simplex_cell_vertex_indices, const bool p_deduplicate = true);
 	virtual PackedInt32Array get_edge_indices() override;
 	virtual PackedVector4Array get_edge_positions() override;
+
+	// 3D.
+	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) override;
 
 	// Fallback material.
 	Ref<Material4D> get_fallback_material() override;

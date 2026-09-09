@@ -201,7 +201,7 @@ Vector4 Vector4D::rotate_in_plane(const Vector4 &p_vector, const Vector4 &p_plan
 	const real_t angle_sin = Math::sin(p_angle);
 	const Vector4 dest_cos = plane_cos * angle_cos + plane_sin * angle_sin;
 	const Vector4 dest_sin = plane_cos * -angle_sin + plane_sin * angle_cos;
-	// Reproject the vector onto the plane.
+	// Re-project the vector onto the plane.
 	const real_t dot_cos = p_vector.dot(plane_cos);
 	const real_t dot_sin = p_vector.dot(plane_sin);
 	return p_vector - (plane_cos * dot_cos + plane_sin * dot_sin) + (dest_cos * dot_cos + dest_sin * dot_sin);

@@ -9,13 +9,14 @@ class WireMesh4D : public Mesh4D {
 
 protected:
 	static void _bind_methods();
-	void update_proxy_mesh_3d() override;
 
 	PackedVector4Array _edge_positions_cache;
 
 public:
 	void wire_mesh_clear_cache();
 	virtual PackedVector4Array get_edge_positions() override;
+
+	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) override;
 
 	Ref<Material4D> get_fallback_material() override;
 	static void init_fallback_material();
