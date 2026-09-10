@@ -338,7 +338,7 @@ Ref<ArrayWireMesh4D> G4MFMeshSurface4D::import_generate_wire_mesh_surface(const 
 	return wire_mesh;
 }
 
-Ref<Mesh4D> G4MFMeshSurface4D::import_generate_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+Ref<SingleSurfaceMesh4D> G4MFMeshSurface4D::import_generate_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
 	const G4MFMeshSurface4D::MeshSurfaceFormat compatible_mesh_surface_format = _get_compatible_mesh_surface_format(p_g4mf_state->get_preferred_mesh_surface_format());
 	switch (compatible_mesh_surface_format) {
 		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE:
@@ -348,7 +348,7 @@ Ref<Mesh4D> G4MFMeshSurface4D::import_generate_mesh_surface(const Ref<G4MFState4
 		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME:
 			return import_generate_wire_mesh_surface(p_g4mf_state, p_vertices);
 	}
-	ERR_FAIL_V_MSG(Ref<Mesh4D>(), "G4MFMeshSurface4D::import_generate_mesh_surface: No compatible mesh format found for the mesh.");
+	ERR_FAIL_V_MSG(Ref<SingleSurfaceMesh4D>(), "G4MFMeshSurface4D::import_generate_mesh_surface: No compatible mesh format found for the mesh.");
 }
 
 void G4MFMeshSurface4D::_export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const bool p_deduplicate) {
@@ -443,7 +443,7 @@ void G4MFMeshSurface4D::_export_convert_tetra_mesh_surface_for_state(const Ref<G
 	}
 }
 
-Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_surface_mesh, const bool p_deduplicate) {
+Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<SingleSurfaceMesh4D> &p_surface_mesh, const bool p_deduplicate) {
 	Ref<G4MFMeshSurface4D> surface;
 	surface.instantiate();
 	// Convert the material.

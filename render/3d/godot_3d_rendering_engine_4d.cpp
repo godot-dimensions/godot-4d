@@ -2,6 +2,7 @@
 
 #include "../../model/mesh/mesh_instance_4d.h"
 #include "../../model/mesh/poly/poly_material_4d.h"
+#include "../../model/mesh/single_surface_mesh_4d.h"
 #include "../../nodes/camera_4d.h"
 
 #if GDEXTENSION
@@ -168,7 +169,10 @@ void Godot3DRenderingEngine4D::_update_3d_mesh_instances() {
 
 		Ref<Material4D> material_4d = mesh_instance_4d->get_active_material();
 		if (!material_4d.is_valid()) {
-			material_4d = mesh_4d->get_fallback_material();
+			const Ref<SingleSurfaceMesh4D> surface_mesh_4d = mesh_4d;
+			if (surface_mesh_4d.is_valid()) {
+				material_4d = surface_mesh_4d->get_fallback_material();
+			}
 		}
 		RID override_material_rid_3d = RID();
 		if (material_4d.is_valid()) {

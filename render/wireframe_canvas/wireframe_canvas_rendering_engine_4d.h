@@ -3,7 +3,7 @@
 #include "../rendering_engine_4d.h"
 
 class Material4D;
-class Mesh4D;
+class SingleSurfaceMesh4D;
 class WireframeRenderCanvas4D;
 
 // Trivial CPU-based renderer that draws wireframes to a Control-based canvas.
@@ -12,7 +12,7 @@ class WireframeRenderCanvas4D;
 class WireframeCanvasRenderingEngine4D : public RenderingEngine4D {
 	GDCLASS(WireframeCanvasRenderingEngine4D, RenderingEngine4D);
 
-	static Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index);
+	static Color _get_material_edge_color(const Ref<Material4D> &p_material, const Ref<SingleSurfaceMesh4D> &p_mesh, int p_edge_index);
 	static WireframeRenderCanvas4D *_get_valid_render_canvas(const Viewport *p_viewport);
 
 protected:

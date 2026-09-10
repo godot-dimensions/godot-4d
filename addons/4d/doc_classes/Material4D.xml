@@ -44,7 +44,7 @@
 		<method name="get_albedo_color_of_edge">
 			<return type="Color" />
 			<param index="0" name="edge_index" type="int" />
-			<param index="1" name="for_mesh" type="Mesh4D" />
+			<param index="1" name="for_mesh" type="SingleSurfaceMesh4D" />
 			<description>
 				Gets the albedo color of the edge with the given index. The [param for_mesh] parameter is used to determine which mesh the edge belongs to. This function will cache the calculated edge colors, so it can be called multiple times without performance issues.
 			</description>

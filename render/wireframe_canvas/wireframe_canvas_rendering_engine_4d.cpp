@@ -1,13 +1,14 @@
 #include "wireframe_canvas_rendering_engine_4d.h"
 
 #include "../../model/mesh/mesh_instance_4d.h"
+#include "../../model/mesh/single_surface_mesh_4d.h"
 #include "../../model/mesh/wire/wire_material_4d.h"
 #include "../environment/sky/plain_sky_material_4d.h"
 #include "../environment/world_environment_4d.h"
 #include "../rendering_server_4d.h"
 #include "wireframe_render_canvas_4d.h"
 
-Color WireframeCanvasRenderingEngine4D::_get_material_edge_color(const Ref<Material4D> &p_material, const Ref<Mesh4D> &p_mesh, int p_edge_index) {
+Color WireframeCanvasRenderingEngine4D::_get_material_edge_color(const Ref<Material4D> &p_material, const Ref<SingleSurfaceMesh4D> &p_mesh, int p_edge_index) {
 	if (p_material.is_null()) {
 		return Color(1.0f, 1.0f, 1.0f);
 	}
@@ -70,120 +71,123 @@ void WireframeCanvasRenderingEngine4D::_render_frame_callback() {
 		const ObjectID mesh_instance_object_id = (ObjectID)mesh_instance_object_ids[mesh_index];
 		MeshInstance4D *mesh_inst = Object::cast_to<MeshInstance4D>(ObjectDB::get_instance(mesh_instance_object_id));
 		ERR_CONTINUE(mesh_inst == nullptr);
-		const Ref<Material4D> material = mesh_inst->get_active_material();
-		Projection mesh_relative_basis = mesh_relative_basises[mesh_index];
-		Vector4 mesh_relative_position = mesh_relative_positions[mesh_index];
-		const PackedVector4Array camera_relative_vertices = Transform4D(mesh_relative_basis, mesh_relative_position).xform_many(mesh_inst->get_mesh()->get_vertex_positions());
-		if (camera_relative_vertices.is_empty()) {
-			continue;
-		}
-		PackedVector2Array projected_vertices;
+		const Ref<Mesh4D> mesh_4d = mesh_inst->get_mesh();
+		ERR_CONTINUE(mesh_4d.is_null());
+		const Transform4D mesh_relative_transform = Transform4D(mesh_relative_basises[mesh_index], mesh_relative_positions[mesh_index]);
 		{
-			const int64_t vertex_count = camera_relative_vertices.size();
-			projected_vertices.resize(vertex_count);
-			for (int vertex = 0; vertex < vertex_count; vertex++) {
-				projected_vertices.set(vertex, camera->world_to_viewport_local_normal(camera_relative_vertices[vertex]));
+			const Ref<SingleSurfaceMesh4D> surface_mesh_4d = mesh_4d;
+			ERR_CONTINUE(surface_mesh_4d.is_null());
+			const PackedVector4Array camera_relative_vertices = mesh_relative_transform.xform_many(surface_mesh_4d->get_vertex_positions());
+			if (camera_relative_vertices.is_empty()) {
+				continue;
 			}
-		}
-		PackedColorArray edge_colors;
-		PackedVector2Array edge_vertices;
-		const PackedInt32Array edge_indices = mesh_inst->get_mesh()->get_edge_indices();
-		for (int edge_index = 0; edge_index < edge_indices.size() / 2; edge_index++) {
-			const int a_index = edge_indices[edge_index * 2];
-			const int b_index = edge_indices[edge_index * 2 + 1];
-			const Vector4 a_vert_4d = camera_relative_vertices[a_index];
-			const Vector4 b_vert_4d = camera_relative_vertices[b_index];
-			// Cull edges that are too far in the W axis.
-			if (camera_has_w_fading) {
-				real_t fade_denom = camera_w_fade_distance;
-				if (camera_has_perspective) {
-					fade_denom += camera_w_fade_slope * -0.5f * (a_vert_4d.z + b_vert_4d.z);
-				}
-				if (Math::abs((a_vert_4d.w + b_vert_4d.w) / 2.0f) > fade_denom) {
-					// The edge is too far in the W axis from the camera, so we can skip this edge.
-					continue;
+			const Ref<Material4D> material_4d = mesh_inst->get_active_material();
+			const PackedInt32Array edge_indices = surface_mesh_4d->get_edge_indices();
+			PackedVector2Array projected_vertices;
+			{
+				const int64_t vertex_count = camera_relative_vertices.size();
+				projected_vertices.resize(vertex_count);
+				for (int vertex = 0; vertex < vertex_count; vertex++) {
+					projected_vertices.set(vertex, camera->world_to_viewport_local_normal(camera_relative_vertices[vertex]));
 				}
 			}
-			// Cull or clip edges that are behind the camera.
-			if (a_vert_4d.z > negative_camera_clip_depth_near) {
-				if (b_vert_4d.z > negative_camera_clip_depth_near) {
-					// Both points are behind the camera, so we skip this edge.
-					continue;
-				} else {
-					// A is behind the camera, while B is in front of the camera.
-					const real_t factor = (a_vert_4d.z + camera_clip_depth_near) / (a_vert_4d.z - b_vert_4d.z);
-					const Vector4 clipped = a_vert_4d.lerp(b_vert_4d, factor);
-					edge_vertices.push_back(camera->world_to_viewport_local_normal(clipped));
-					edge_vertices.push_back(projected_vertices[b_index]);
-				}
-			} else {
-				edge_vertices.push_back(projected_vertices[a_index]);
-				if (b_vert_4d.z > negative_camera_clip_depth_near) {
-					// B is behind the camera, while A is in front of the camera.
-					const real_t factor = (b_vert_4d.z + camera_clip_depth_near) / (b_vert_4d.z - a_vert_4d.z);
-					const Vector4 clipped = b_vert_4d.lerp(a_vert_4d, factor);
-					edge_vertices.push_back(camera->world_to_viewport_local_normal(clipped));
-				} else {
-					// Both points are in front of the camera, so render the edge as-is.
-					edge_vertices.push_back(projected_vertices[b_index]);
-				}
-			}
-			Color edge_color = _get_material_edge_color(material, mesh_inst->get_mesh(), edge_index);
-			if (camera_has_w_fading) {
-				real_t fade_denom = camera_w_fade_distance;
-				if (camera_has_perspective) {
-					fade_denom += camera_w_fade_slope * -0.5f * (a_vert_4d.z + b_vert_4d.z);
-				}
-				const real_t fade_factor = (a_vert_4d.w + b_vert_4d.w) * (0.5f / fade_denom);
-				if (camera_has_w_fade_hue_shift) {
-					if (fade_factor < 0.0f) {
-						edge_color = edge_color.lerp(camera->get_w_fade_color_negative() * edge_color.get_v(), MIN(1.0f, -fade_factor));
-					} else {
-						edge_color = edge_color.lerp(camera->get_w_fade_color_positive() * edge_color.get_v(), MIN(1.0f, fade_factor));
+			PackedColorArray edge_colors;
+			PackedVector2Array edge_vertices;
+			for (int edge_index = 0; edge_index < edge_indices.size() / 2; edge_index++) {
+				const int a_index = edge_indices[edge_index * 2];
+				const int b_index = edge_indices[edge_index * 2 + 1];
+				const Vector4 a_vert_4d = camera_relative_vertices[a_index];
+				const Vector4 b_vert_4d = camera_relative_vertices[b_index];
+				// Cull edges that are too far in the W axis.
+				if (camera_has_w_fading) {
+					real_t fade_denom = camera_w_fade_distance;
+					if (camera_has_perspective) {
+						fade_denom += camera_w_fade_slope * -0.5f * (a_vert_4d.z + b_vert_4d.z);
+					}
+					if (Math::abs((a_vert_4d.w + b_vert_4d.w) / 2.0f) > fade_denom) {
+						// The edge is too far in the W axis from the camera, so we can skip this edge.
+						continue;
 					}
 				}
-				if (camera_has_w_fade_transparency) {
-					edge_color.a *= 1.0f - MIN(1.0f, ABS(fade_factor));
-				}
-			}
-			const Camera4D::DepthFadeMode depth_fade_mode = camera->get_depth_fade_mode();
-			if (depth_fade_mode != Camera4D::DEPTH_FADE_DISABLED) {
-				real_t depth;
-				// Add together, then multiply by 0.5, to use the midpoint of the edge.
-				if (depth_fade_mode == Camera4D::DEPTH_FADE_DISTANCE) {
-					depth = a_vert_4d.length() + b_vert_4d.length();
-				} else if (depth_fade_mode == Camera4D::DEPTH_FADE_XYZ_ONLY) {
-					depth = Vector3(a_vert_4d.x, a_vert_4d.y, a_vert_4d.z).length() + Vector3(b_vert_4d.x, b_vert_4d.y, b_vert_4d.z).length();
-				} else { //  if (depth_fade_mode == Camera4D::DEPTH_FADE_Z_ONLY)
-					depth = Math::abs(a_vert_4d.z + b_vert_4d.z);
-				}
-				depth *= 0.5f;
-				real_t alpha = 1.0;
-
-				if (depth > camera_clip_depth_far) {
-					alpha = 0.0;
-				} else if (depth < camera_depth_fade_start) {
-					alpha = 1.0;
+				// Cull or clip edges that are behind the camera.
+				if (a_vert_4d.z > negative_camera_clip_depth_near) {
+					if (b_vert_4d.z > negative_camera_clip_depth_near) {
+						// Both points are behind the camera, so we skip this edge.
+						continue;
+					} else {
+						// A is behind the camera, while B is in front of the camera.
+						const real_t factor = (a_vert_4d.z + camera_clip_depth_near) / (a_vert_4d.z - b_vert_4d.z);
+						const Vector4 clipped = a_vert_4d.lerp(b_vert_4d, factor);
+						edge_vertices.push_back(camera->world_to_viewport_local_normal(clipped));
+						edge_vertices.push_back(projected_vertices[b_index]);
+					}
 				} else {
-					const real_t unit_distance = (depth - camera_depth_fade_start) / (camera_clip_depth_far - camera_depth_fade_start); // Inverse lerp
-					alpha = 1.0 - unit_distance;
+					edge_vertices.push_back(projected_vertices[a_index]);
+					if (b_vert_4d.z > negative_camera_clip_depth_near) {
+						// B is behind the camera, while A is in front of the camera.
+						const real_t factor = (b_vert_4d.z + camera_clip_depth_near) / (b_vert_4d.z - a_vert_4d.z);
+						const Vector4 clipped = b_vert_4d.lerp(a_vert_4d, factor);
+						edge_vertices.push_back(camera->world_to_viewport_local_normal(clipped));
+					} else {
+						// Both points are in front of the camera, so render the edge as-is.
+						edge_vertices.push_back(projected_vertices[b_index]);
+					}
 				}
-
-				edge_color.a *= alpha;
+				Color edge_color = _get_material_edge_color(material_4d, surface_mesh_4d, edge_index);
+				if (camera_has_w_fading) {
+					real_t fade_denom = camera_w_fade_distance;
+					if (camera_has_perspective) {
+						fade_denom += camera_w_fade_slope * -0.5f * (a_vert_4d.z + b_vert_4d.z);
+					}
+					const real_t fade_factor = (a_vert_4d.w + b_vert_4d.w) * (0.5f / fade_denom);
+					if (camera_has_w_fade_hue_shift) {
+						if (fade_factor < 0.0f) {
+							edge_color = edge_color.lerp(camera->get_w_fade_color_negative() * edge_color.get_v(), MIN(1.0f, -fade_factor));
+						} else {
+							edge_color = edge_color.lerp(camera->get_w_fade_color_positive() * edge_color.get_v(), MIN(1.0f, fade_factor));
+						}
+					}
+					if (camera_has_w_fade_transparency) {
+						edge_color.a *= 1.0f - MIN(1.0f, ABS(fade_factor));
+					}
+				}
+				const Camera4D::DepthFadeMode depth_fade_mode = camera->get_depth_fade_mode();
+				if (depth_fade_mode != Camera4D::DEPTH_FADE_DISABLED) {
+					real_t depth;
+					// Add together, then multiply by 0.5, to use the midpoint of the edge.
+					if (depth_fade_mode == Camera4D::DEPTH_FADE_DISTANCE) {
+						depth = a_vert_4d.length() + b_vert_4d.length();
+					} else if (depth_fade_mode == Camera4D::DEPTH_FADE_XYZ_ONLY) {
+						depth = Vector3(a_vert_4d.x, a_vert_4d.y, a_vert_4d.z).length() + Vector3(b_vert_4d.x, b_vert_4d.y, b_vert_4d.z).length();
+					} else { //  if (depth_fade_mode == Camera4D::DEPTH_FADE_Z_ONLY)
+						depth = Math::abs(a_vert_4d.z + b_vert_4d.z);
+					}
+					depth *= 0.5f;
+					real_t alpha = 1.0;
+					if (depth > camera_clip_depth_far) {
+						alpha = 0.0;
+					} else if (depth < camera_depth_fade_start) {
+						alpha = 1.0;
+					} else {
+						const real_t unit_distance = (depth - camera_depth_fade_start) / (camera_clip_depth_far - camera_depth_fade_start); // Inverse lerp
+						alpha = 1.0 - unit_distance;
+					}
+					edge_color.a *= alpha;
+				}
+				edge_colors.push_back(edge_color);
 			}
-			edge_colors.push_back(edge_color);
+			if (edge_vertices.is_empty()) {
+				continue;
+			}
+			edge_colors_to_draw.push_back(edge_colors);
+			const Ref<WireMaterial4D> wire_material_4d = material_4d;
+			if (wire_material_4d.is_valid()) {
+				edge_thicknesses_to_draw.push_back(wire_material_4d->get_line_thickness() > 0.0f ? wire_material_4d->get_line_thickness() : -1.0f);
+			} else {
+				edge_thicknesses_to_draw.push_back(-1.0f);
+			}
+			edge_vertices_to_draw.push_back(edge_vertices);
 		}
-		if (edge_vertices.is_empty()) {
-			continue;
-		}
-		edge_colors_to_draw.push_back(edge_colors);
-		const Ref<WireMaterial4D> wire_material = material;
-		if (wire_material.is_valid()) {
-			edge_thicknesses_to_draw.push_back(wire_material->get_line_thickness() > 0.0f ? wire_material->get_line_thickness() : -1.0f);
-		} else {
-			edge_thicknesses_to_draw.push_back(-1.0f);
-		}
-		edge_vertices_to_draw.push_back(edge_vertices);
 	}
 	wire_canvas->set_camera_aspect(camera->get_keep_aspect());
 	wire_canvas->set_edge_colors_to_draw(edge_colors_to_draw);

@@ -178,7 +178,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Virtual classes.
 		GDREGISTER_VIRTUAL_CLASS(CollisionObject4D);
 		GDREGISTER_VIRTUAL_CLASS(Material4D);
-		GDREGISTER_VIRTUAL_CLASS(Mesh4D);
+		GDREGISTER_ABSTRACT_CLASS(Mesh4D);
+		GDREGISTER_VIRTUAL_CLASS(SingleSurfaceMesh4D);
 		GDREGISTER_VIRTUAL_CLASS(PhysicsBody4D);
 		GDREGISTER_VIRTUAL_CLASS(Shape4D);
 		GDREGISTER_VIRTUAL_CLASS(TetraMesh4D);

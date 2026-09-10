@@ -40,7 +40,7 @@ protected:
 	void update_projected_material_3d() override;
 
 public:
-	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh) override;
+	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<SingleSurfaceMesh4D> &p_for_mesh) override;
 	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_item_count, const int p_second_item_count) override;
 
 	TetraColorSource get_albedo_source() const;

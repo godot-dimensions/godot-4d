@@ -19,14 +19,15 @@ void MeshInstance4D::_notification(int p_what) {
 }
 
 Ref<Material4D> MeshInstance4D::get_active_material() const {
+	const Ref<SingleSurfaceMesh4D> single_surface_mesh = _mesh;
 	Ref<Material4D> material;
 	if (_material_override.is_valid()) {
 		material = _material_override;
-	} else if (_mesh.is_valid()) {
-		material = _mesh->get_material();
+	} else if (single_surface_mesh.is_valid()) {
+		material = single_surface_mesh->get_material();
 	}
-	if (material.is_valid()) {
-		_mesh->validate_material_for_mesh(material);
+	if (material.is_valid() && single_surface_mesh.is_valid()) {
+		single_surface_mesh->validate_material_for_mesh(material);
 	}
 	return material;
 }

@@ -50,7 +50,7 @@ Material4D::ColorSourceFlags TetraMaterial4D::_tetra_source_to_flags(const Tetra
 	return Material4D::COLOR_SOURCE_FLAG_NONE;
 }
 
-Color TetraMaterial4D::get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh) {
+Color TetraMaterial4D::get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<SingleSurfaceMesh4D> &p_for_mesh) {
 	if (!(_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY)) {
 		// No need to allocate any memory for _edge_albedo_color_cache if the color array is not used.
 		if (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) {

@@ -1,5 +1,6 @@
 #include "convex_hull_shape_4d.h"
 
+#include "../../model/mesh/single_surface_mesh_4d.h"
 #include "../../model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../model/mesh/wire/array_wire_mesh_4d.h"
 
@@ -35,7 +36,14 @@ Ref<WireMesh4D> ConvexHullShape4D::to_wire_mesh(const Dictionary &p_options) con
 Ref<ConvexHullShape4D> ConvexHullShape4D::create_from_mesh(const Ref<Mesh4D> &p_mesh) {
 	Ref<ConvexHullShape4D> shape;
 	shape.instantiate();
-	shape->set_points(p_mesh->get_vertex_positions());
+	PackedVector4Array points;
+	const Ref<SingleSurfaceMesh4D> single_surface_mesh_4d = p_mesh;
+	if (single_surface_mesh_4d.is_valid()) {
+		points = single_surface_mesh_4d->get_vertex_positions();
+	} else {
+		ERR_FAIL_V_MSG(shape, "ConvexHullShape4D.create_from_mesh: Unhandled mesh type.");
+	}
+	shape->set_points(points);
 	ERR_PRINT("ConvexHullShape4D.create_from_mesh: Calculating the convex hull from mesh vertices is not implemented yet.");
 	return shape;
 }

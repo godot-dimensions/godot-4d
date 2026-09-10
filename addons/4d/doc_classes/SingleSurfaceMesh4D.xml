@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SingleSurfaceMesh4D" inherits="Mesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Base class for 4D meshes with a single surface.
+	</brief_description>
+	<description>
+		SingleSurfaceMesh4D is the base class for all 4D meshes with a single surface. Meshes are used to represent the visuals of objects in 4D space. All single-surface 4D meshes have vertices, and either have edges or can have edges computed.
+		For a wireframe-only mesh, use [WireMesh4D] or one of its descendants. Meshes may also have tetrahedral cells, which are the equivalent of triangles in 3D meshes. For a tetrahedral mesh, use [TetraMesh4D] or one of its descendants. Advanced users can create custom mesh classes by extending the appropriate class.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_edge_indices" qualifiers="virtual">
+			<return type="PackedInt32Array" />
+			<description>
+				Callback method that should return the edge indices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_edge_indices] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_edge_positions" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the edge positions of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_edge_positions] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_fallback_material" qualifiers="virtual">
+			<return type="Material4D" />
+			<description>
+				Callback method that should return a fallback [Material4D] for the mesh. This is used when neither the [MeshInstance4D] nor the [SingleSurfaceMesh4D] itself have a material defined. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. This is only needed when creating a completely custom [SingleSurfaceMesh4D] type; built-in types such as [TetraMesh4D] and [WireMesh4D] already define a fallback material, and overriding this function does nothing for them.
+			</description>
+		</method>
+		<method name="_get_normal_values" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the shared normal values of a mesh. Do not call this method. Override it when creating a custom mesh type. See [method get_normal_values] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_texture_map_values" qualifiers="virtual">
+			<return type="PackedVector3Array" />
+			<description>
+				Callback method that should return the shared texture map values of a mesh. Do not call this method. Override it when creating a custom mesh type. See [method get_texture_map_values] for details of the returned data.
+			</description>
+		</method>
+		<method name="_get_vertex_positions" qualifiers="virtual">
+			<return type="PackedVector4Array" />
+			<description>
+				Callback method that should return the vertices of a mesh. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_vertex_positions] for details of the returned data.
+			</description>
+		</method>
+		<method name="get_edge_indices">
+			<return type="PackedInt32Array" />
+			<description>
+				Gets the edge indices of the mesh. Every 2 integers defines an edge. Each integer is an index to the vertices array. Integers in this array should not exceed the length of the vertices array, or else the mesh is invalid.
+			</description>
+		</method>
+		<method name="get_edge_positions">
+			<return type="PackedVector4Array" />
+			<description>
+				Gets the edge positions of the mesh. Each Vector4 in the array is a position in meters in 4D space. Edges are defined by two vertices, and the positions in this array are the positions of the vertices that make up the edges. This value is usually calculated from a combination of the edge indices and the vertices arrays, see [method get_edge_indices] and [method get_vertex_positions].
+			</description>
+		</method>
+		<method name="get_normal_values">
+			<return type="PackedVector4Array" />
+			<description>
+				Returns the shared normal values referenced by [method TetraMesh4D.get_simplex_cell_normal_indices]. Each [Vector4] is a normal vector that should be normalized. The array may be empty when the mesh has no normals.
+			</description>
+		</method>
+		<method name="get_texture_map_values">
+			<return type="PackedVector3Array" />
+			<description>
+				Returns the shared texture map values referenced by [method TetraMesh4D.get_simplex_cell_texture_map_indices]. Each [Vector3] is a position in texture space, usually between 0.0 and 1.0 on each axis. The array may be empty when the mesh has no texture mapping.
+			</description>
+		</method>
+		<method name="get_vertex_positions">
+			<return type="PackedVector4Array" />
+			<description>
+				Gets the vertices of the mesh. Each Vector4 in the array is a vertex defined as a position in meters in 4D space. Vertices are referenced by many other arrays in the mesh, such as the edge indices or cell indices.
+			</description>
+		</method>
+		<method name="has_edge_indices">
+			<return type="bool" />
+			<param index="0" name="first" type="int" />
+			<param index="1" name="second" type="int" />
+			<description>
+				Returns [code]true[/code] if the mesh has an edge with the given indices. This method checks if there is an edge directly connecting the vertices with the given indices, by searching the array returned by [method get_edge_indices].
+				[b]Note:[/b] For efficiency, the input indices have their order normalized, so [code]has_edge_indices(2, 1)[/code] will be converted to [code]has_edge_indices(1, 2)[/code] before checking. You must ensure that your mesh has consistent edge ordering.
+			</description>
+		</method>
+		<method name="to_array_wire_mesh">
+			<return type="ArrayWireMesh4D" />
+			<description>
+				Converts this mesh to an [ArrayWireMesh4D]. The array mesh will have the same vertices and edges as the tetrahedral mesh. Converting to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or edges.
+				[b]Note:[/b] All of the mesh's edges are converted to the wireframe mesh. If the source is a tetrahedral mesh, this includes edges between tetrahedrons inside of each side, which may be undesired. If the source mesh is a subtype such as [BoxTetraMesh4D], consider using [method to_wire_mesh] instead to only get the wireframe of the outer edges.
+			</description>
+		</method>
+		<method name="to_wire_mesh">
+			<return type="WireMesh4D" />
+			<description>
+				Converts this mesh to a [WireMesh4D]. This method will use the best conversion available. For example, a [BoxTetraMesh4D] will be converted to a [BoxWireMesh4D]. If no specialized conversion is available, the method will return an [ArrayWireMesh4D]. See [method to_array_wire_mesh] for more details. The new mesh will have the same vertices, edges, and material as this mesh. The material will be shared between the two meshes, but everything else will be a copy.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="material" type="Material4D" setter="set_material" getter="get_material">
+			The [Material4D] used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. If no material is set, the mesh should render with default settings. The material may be overridden on a [MeshInstance4D] node by setting the [member MeshInstance4D.material_override] property.
+		</member>
+	</members>
+</class>

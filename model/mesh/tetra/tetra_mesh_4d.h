@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../mesh_4d.h"
+#include "../single_surface_mesh_4d.h"
 #include "tetra_material_4d.h"
 
 #if GDEXTENSION
@@ -11,8 +11,8 @@ class ArrayMesh;
 
 class ArrayTetraMesh4D;
 
-class TetraMesh4D : public Mesh4D {
-	GDCLASS(TetraMesh4D, Mesh4D);
+class TetraMesh4D : public SingleSurfaceMesh4D {
+	GDCLASS(TetraMesh4D, SingleSurfaceMesh4D);
 
 protected:
 	static void _bind_methods();

@@ -1,8 +1,8 @@
 #include "material_4d.h"
 
-#include "mesh_4d.h"
+#include "single_surface_mesh_4d.h"
 
-Color Material4D::get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh) {
+Color Material4D::get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<SingleSurfaceMesh4D> &p_for_mesh) {
 	if (!(_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY)) {
 		// No need to allocate any memory for _edge_albedo_color_cache if the color array is not used.
 		if (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) {

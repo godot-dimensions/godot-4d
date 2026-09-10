@@ -79,8 +79,8 @@ public:
 	Ref<ArrayPolyMesh4D> import_generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
 	Ref<ArrayTetraMesh4D> import_generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
 	Ref<ArrayWireMesh4D> import_generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
-	Ref<Mesh4D> import_generate_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
-	static Ref<G4MFMeshSurface4D> export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_surface_mesh, const bool p_deduplicate = true);
+	Ref<SingleSurfaceMesh4D> import_generate_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
+	static Ref<G4MFMeshSurface4D> export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<SingleSurfaceMesh4D> &p_surface_mesh, const bool p_deduplicate = true);
 
 	static Ref<G4MFMeshSurface4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;

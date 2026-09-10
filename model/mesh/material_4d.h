@@ -12,7 +12,7 @@
 #include "scene/resources/material.h"
 #endif
 
-class Mesh4D;
+class SingleSurfaceMesh4D;
 
 class Material4D : public Resource {
 	GDCLASS(Material4D, Resource);
@@ -78,7 +78,7 @@ protected:
 
 public:
 	// Common functions.
-	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<Mesh4D> &p_for_mesh);
+	virtual Color get_albedo_color_of_edge(const int64_t p_edge_index, const Ref<SingleSurfaceMesh4D> &p_for_mesh);
 	virtual bool is_default_material() const;
 	virtual void merge_with(const Ref<Material4D> &p_material, const int p_first_item_count, const int p_second_item_count);
 

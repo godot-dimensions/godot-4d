@@ -1,11 +1,10 @@
 #pragma once
 
-#include "../material_4d.h"
-#include "../mesh_4d.h"
+#include "../single_surface_mesh_4d.h"
 #include "wire_material_4d.h"
 
-class WireMesh4D : public Mesh4D {
-	GDCLASS(WireMesh4D, Mesh4D);
+class WireMesh4D : public SingleSurfaceMesh4D {
+	GDCLASS(WireMesh4D, SingleSurfaceMesh4D);
 
 protected:
 	static void _bind_methods();
