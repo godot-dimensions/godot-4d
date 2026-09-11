@@ -81,7 +81,7 @@ TEST_CASE("[ArrayTetraMesh4D] Merge Meshes") {
 				for (int i = 0; i < 4; i++) {
 					CHECK(normals[i] == (destination_has_attributes ? original_normals[i] : Vector4()));
 					CHECK(textures[i] == (destination_has_attributes ? original_textures[i] : Vector3()));
-					CHECK(normals[i + 4] == (source_has_attributes ? transform.basis * source_normals[i] : Vector4()));
+					CHECK(normals[i + 4] == (source_has_attributes ? transform.basis.inverse().transposed() * source_normals[i] : Vector4()));
 					CHECK(textures[i + 4] == (source_has_attributes ? source_textures[i] : Vector3()));
 				}
 				const PackedVector4Array boundary_normals = mesh->get_simplex_cell_boundary_normals();
@@ -96,6 +96,21 @@ TEST_CASE("[ArrayTetraMesh4D] Merge Meshes") {
 			CHECK(sample_texture_map_values(source) == source_textures);
 		}
 	}
+}
+
+TEST_CASE("[ArrayTetraMesh4D] Merge Meshes with non-uniform scale transforms normals by the inverse-transpose") {
+	Ref<ArrayTetraMesh4D> mesh = make_single_tetra_mesh(true);
+	const Ref<ArrayTetraMesh4D> source = make_single_tetra_mesh(true);
+	mesh->merge_with(source, Transform4D(Basis4D::from_scale(1, 1, 1, 2), Vector4(10, 0, 0, 0)));
+	REQUIRE(mesh->is_mesh_data_valid());
+	const PackedVector4Array normals = sample_normal_values(mesh);
+	REQUIRE(normals.size() == 8);
+	CHECK(normals[7].is_equal_approx(Vector4(0, 0, 0, 0.5)));
+	CHECK(normals[4].is_equal_approx(Vector4(1, 0, 0, 0)));
+	const PackedVector4Array boundary_normals = mesh->get_simplex_cell_boundary_normals();
+	REQUIRE(boundary_normals.size() == 2);
+	CHECK(boundary_normals[0].is_equal_approx(Vector4(0, 0, 0, -1)));
+	CHECK_MESSAGE(boundary_normals[1].is_equal_approx(Vector4(0, 0, 0, -0.5)), "Stretching W must shrink the merged W-facing boundary normal.");
 }
 
 TEST_CASE("[ArrayTetraMesh4D] Empty and invalid merge inputs") {

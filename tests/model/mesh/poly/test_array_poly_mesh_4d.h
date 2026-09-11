@@ -928,6 +928,18 @@ TEST_CASE("[ArrayPolyMesh4D] Merge meshes") {
 		CHECK(vertices[5].is_equal_approx(Vector4(9, 0, 0, 0)));
 	}
 
+	SUBCASE("Merging with non-uniform scale transforms the other mesh's normals by the inverse-transpose") {
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
+		mesh->calculate_boundary_normals();
+		other->calculate_boundary_normals();
+		mesh->merge_with(other, Transform4D(Basis4D::from_scale(1, 1, 1, 2), Vector4(10, 0, 0, 0)));
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(normals.size() == 2);
+		CHECK(normals[0].is_equal_approx(Vector4(0, 0, 0, 1)));
+		CHECK_MESSAGE(normals[1].is_equal_approx(Vector4(0, 0, 0, 0.5)), "Stretching W must shrink the merged W-facing boundary normal.");
+	}
+
 	SUBCASE("Merging offsets the other mesh's seam face indices") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
 		Ref<ArrayPolyMesh4D> other = make_tetrahedron_cell_mesh();
@@ -1621,7 +1633,7 @@ TEST_CASE("[ArrayPolyMesh4D] Dense merge preserves prefixes and pads at the geom
 								expected_texture = original_textures[key][0][i];
 								has_normal = true;
 							} else if (i >= count && source_data > 0 && i - count < source_normals[key][0].size()) {
-								expected_normal = transform.basis.xform(source_normals[key][0][i - count]);
+								expected_normal = transform.basis.inverse().transposed().xform(source_normals[key][0][i - count]);
 								expected_texture = source_textures[key][0][i - count];
 								has_normal = true;
 							}
@@ -1644,7 +1656,7 @@ TEST_CASE("[ArrayPolyMesh4D] Dense merge preserves prefixes and pads at the geom
 							} else if (i >= count && source_data > 0 && i - count < source_normals[key].size()) {
 								expected_normals = source_normals[key][i - count];
 								for (int64_t j = 0; j < expected_normals.size(); j++) {
-									expected_normals.set(j, transform.basis.xform(expected_normals[j]));
+									expected_normals.set(j, transform.basis.inverse().transposed().xform(expected_normals[j]));
 								}
 								expected_textures = source_textures[key][i - count];
 								has_normals = true;
@@ -1722,13 +1734,13 @@ TEST_CASE("[ArrayPolyMesh4D] Self merge snapshots dense attributes and clears pr
 			REQUIRE(merged[0].size() == count * 2);
 			for (int64_t i = 0; i < count; i++) {
 				CHECK(merged[0][i] == binding.value[0][i]);
-				CHECK(merged[0][i + count] == transform.basis.xform(binding.value[0][i]));
+				CHECK(merged[0][i + count] == transform.basis.inverse().transposed().xform(binding.value[0][i]));
 			}
 		} else {
 			REQUIRE(merged.size() == binding.value.size() * 2);
 			CHECK(merged[0] == binding.value[0]);
 			for (int64_t i = 0; i < merged[1].size(); i++) {
-				CHECK(merged[1][i] == transform.basis.xform(binding.value[0][i]));
+				CHECK(merged[1][i] == transform.basis.inverse().transposed().xform(binding.value[0][i]));
 			}
 		}
 	}

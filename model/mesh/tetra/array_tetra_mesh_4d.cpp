@@ -233,10 +233,11 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 	for (int64_t i = 0; i < other_vertex_pos_count; i++) {
 		_vertex_positions.set(start_vertex_pos_count + i, p_transform * p_other->_vertex_positions[i]);
 	}
-	// Merge the value pools. The other mesh's normal values need to be transformed.
+	// Merge the value pools. The other mesh's normals need to be transformed with the inverse-transpose to support non-uniform scaling.
+	const Basis4D inverse_transpose = p_transform.basis.inverse().transposed();
 	_normal_values.resize(start_normal_value_count + other_normal_value_count);
 	for (int64_t i = 0; i < other_normal_value_count; i++) {
-		_normal_values.set(start_normal_value_count + i, p_transform.basis * p_other->_normal_values[i]);
+		_normal_values.set(start_normal_value_count + i, inverse_transpose.xform(p_other->_normal_values[i]));
 	}
 	_texture_map_values.resize(start_texture_map_value_count + other_texture_map_value_count);
 	for (int64_t i = 0; i < other_texture_map_value_count; i++) {
@@ -249,7 +250,7 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 		if (other_cell_boundary_normal_count > 0) {
 			const int64_t cell_normal_write_offset = end_cell_boundary_normal_count - other_cell_boundary_normal_count;
 			for (int64_t i = 0; i < other_cell_boundary_normal_count; i++) {
-				_simplex_cell_boundary_normals.set(cell_normal_write_offset + i, p_transform.basis * p_other->_simplex_cell_boundary_normals[i]);
+				_simplex_cell_boundary_normals.set(cell_normal_write_offset + i, inverse_transpose.xform(p_other->_simplex_cell_boundary_normals[i]));
 			}
 		}
 	}
