@@ -183,6 +183,28 @@ void ArrayTetraMesh4D::set_flat_shading_normals(const bool p_force_recalculate_b
 	reset_mesh_data_validation();
 }
 
+void ArrayTetraMesh4D::transform_mesh(const Transform4D &p_transform) {
+	// Normal values need to be transformed with the inverse-transpose to support non-uniform scaling.
+	const Basis4D inverse_transpose = p_transform.basis.inverse().transposed();
+	const int64_t vertex_pos_count = _vertex_positions.size();
+	for (int64_t vertex_index = 0; vertex_index < vertex_pos_count; vertex_index++) {
+		_vertex_positions.set(vertex_index, p_transform.xform(_vertex_positions[vertex_index]));
+	}
+	const int64_t boundary_normal_count = _simplex_cell_boundary_normals.size();
+	for (int64_t i = 0; i < boundary_normal_count; i++) {
+		_simplex_cell_boundary_normals.set(i, inverse_transpose.xform(_simplex_cell_boundary_normals[i]));
+	}
+	const int64_t normal_val_count = _normal_values.size();
+	for (int64_t normal_index = 0; normal_index < normal_val_count; normal_index++) {
+		_normal_values.set(normal_index, inverse_transpose.xform(_normal_values[normal_index]));
+	}
+	_clear_cache();
+}
+
+void ArrayTetraMesh4D::transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis) {
+	transform_mesh(Transform4D(p_basis, p_offset));
+}
+
 void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Transform4D &p_transform) {
 	ERR_FAIL_COND_MSG(p_other.is_null(), "ArrayTetraMesh4D: Cannot merge a null mesh.");
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayTetraMesh4D: Cannot merge into an invalid mesh.");
@@ -443,6 +465,7 @@ void ArrayTetraMesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "keep_existing"), &ArrayTetraMesh4D::calculate_boundary_normals, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "force_recalculate_boundary_normals"), &ArrayTetraMesh4D::set_flat_shading_normals, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("transform_mesh", "offset", "basis"), &ArrayTetraMesh4D::transform_mesh_bind, DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayTetraMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 
 	// Only bind the setters here because the getters are already bound in TetraMesh4D.

@@ -110,7 +110,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 	// Start by copying the input mesh's data into the output mesh twice,
 	// offset by the extrusion vector in both negative and positive directions.
 	ret = p_input_mesh->duplicate();
-	ret->transform_vertices(Transform4D(Basis4D(), -p_extrusion_vector));
+	ret->transform_mesh(Transform4D(Basis4D(), -p_extrusion_vector));
 	ret->merge_with(p_input_mesh, Transform4D(Basis4D(), p_extrusion_vector));
 	Vector<Vector<PackedInt32Array>> poly_cell_indices = ret->get_poly_cell_indices();
 	// The two copies aren't connected yet, so it's safe to blindly force their normals outward (if any).

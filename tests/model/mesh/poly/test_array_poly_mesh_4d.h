@@ -852,9 +852,9 @@ TEST_CASE("[ArrayPolyMesh4D] Transform texture map and vertices") {
 		}
 	}
 
-	SUBCASE("Transforming vertices applies the basis and offset") {
+	SUBCASE("Transforming mesh transforms the vertices with basis and offset") {
 		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
-		mesh->transform_vertices(Transform4D(Basis4D::from_scale_uniform(2.0), Vector4(1, 2, 3, 4)));
+		mesh->transform_mesh(Transform4D(Basis4D::from_scale_uniform(2.0), Vector4(1, 2, 3, 4)));
 		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
 		REQUIRE(vertices.size() == 4);
 		CHECK(vertices[0].is_equal_approx(Vector4(1, 2, 3, 4)));

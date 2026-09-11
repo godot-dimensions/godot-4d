@@ -88,6 +88,14 @@
 				If [param force_recalculate_boundary_normals] is [code]true[/code], the method will first recalculate the boundary normals using [method calculate_boundary_normals] before setting the vertex instance normals. This is done automatically if the boundary normals are not already calculated.
 			</description>
 		</method>
+		<method name="transform_mesh">
+			<return type="void" />
+			<param index="0" name="offset" type="Vector4" />
+			<param index="1" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<description>
+				Transforms the vertex positions and normal values of the tetrahedral mesh by applying the given offset and basis transformation, which are assembled into a single [Transform4D] internally. The normal values are transformed using the inverse-transpose of the basis to ensure correct orientation under non-uniform scaling.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="normal_values" type="PackedVector4Array" setter="set_normal_values" getter="get_normal_values" default="PackedVector4Array()">

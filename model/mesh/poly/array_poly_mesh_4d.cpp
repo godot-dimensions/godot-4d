@@ -1648,16 +1648,22 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 	poly_mesh_clear_cache(false);
 }
 
-void ArrayPolyMesh4D::transform_vertices(const Transform4D &p_transform) {
+void ArrayPolyMesh4D::transform_mesh(const Transform4D &p_transform) {
+	// Normal values need to be transformed with the inverse-transpose to support non-uniform scaling.
+	const Basis4D inverse_transpose = p_transform.basis.inverse().transposed();
 	const int64_t vertex_pos_count = _poly_cell_vertex_positions.size();
 	for (int64_t vertex_index = 0; vertex_index < vertex_pos_count; vertex_index++) {
 		_poly_cell_vertex_positions.set(vertex_index, p_transform.xform(_poly_cell_vertex_positions[vertex_index]));
 	}
+	const int64_t normal_val_count = _poly_cell_normal_values.size();
+	for (int64_t normal_index = 0; normal_index < normal_val_count; normal_index++) {
+		_poly_cell_normal_values.set(normal_index, inverse_transpose.xform(_poly_cell_normal_values[normal_index]));
+	}
 	poly_mesh_clear_cache();
 }
 
-void ArrayPolyMesh4D::transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis) {
-	transform_vertices(Transform4D(p_basis, p_offset));
+void ArrayPolyMesh4D::transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis) {
+	transform_mesh(Transform4D(p_basis, p_offset));
 }
 
 void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform4D &p_transform) {
@@ -2512,7 +2518,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 
 	// Misc functions.
 	ClassDB::bind_method(D_METHOD("deduplicate_all_elements"), &ArrayPolyMesh4D::deduplicate_all_elements);
-	ClassDB::bind_method(D_METHOD("transform_vertices", "offset", "basis"), &ArrayPolyMesh4D::transform_vertices_bind, DEFVAL(Projection()));
+	ClassDB::bind_method(D_METHOD("transform_mesh", "offset", "basis"), &ArrayPolyMesh4D::transform_mesh_bind, DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayPolyMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("make_single_volume_from_all_cells"), &ArrayPolyMesh4D::make_single_volume_from_all_cells);
 

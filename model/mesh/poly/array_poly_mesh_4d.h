@@ -105,8 +105,8 @@ public:
 
 	// Misc functions.
 	void deduplicate_all_elements();
-	void transform_vertices(const Transform4D &p_transform);
-	void transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis = Projection());
+	void transform_mesh(const Transform4D &p_transform);
+	void transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis = Projection());
 	void merge_with(const Ref<PolyMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
 	void merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 

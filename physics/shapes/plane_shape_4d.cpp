@@ -124,7 +124,7 @@ Ref<WireMesh4D> PlaneShape4D::to_wire_mesh(const Dictionary &p_options) const {
 	const bool breakup_edges = p_options.has("breakup_edges") ? (bool)p_options["breakup_edges"] : false;
 	Ref<ArrayWireMesh4D> plane_wire_mesh = WireMeshBuilder4D::create_3d_subdivided_box(Vector3(size, size, size), subdiv, fill_cell, breakup_edges);
 	Basis4D swap_yw_rot = Basis4D::from_swap_rotation(1, 3);
-	plane_wire_mesh->transform_all_vertices(Transform4D(swap_yw_rot));
+	plane_wire_mesh->transform_mesh(Transform4D(swap_yw_rot));
 	// Make an arrow for the normal vector.
 	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 0));
 	plane_wire_mesh->append_edge_points(Vector4(0, 1, 0, 0), Vector4(+0.25, 0.75, 0, 0));

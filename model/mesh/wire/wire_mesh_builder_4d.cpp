@@ -133,7 +133,7 @@ Ref<ArrayWireMesh4D> WireMeshBuilder4D::extrude_linear(const Ref<ArrayWireMesh4D
 	// Start by copying the input mesh's data into the output mesh twice,
 	// offset by the extrusion vector in both negative and positive directions.
 	ret = p_input_mesh->duplicate();
-	ret->transform_vertices(Transform4D(Basis4D(), -p_extrusion_vector));
+	ret->transform_mesh(Transform4D(Basis4D(), -p_extrusion_vector));
 	ret->merge_with(p_input_mesh, Transform4D(Basis4D(), p_extrusion_vector));
 	// Form new edges between the vertices of the two copies of the input mesh.
 	{

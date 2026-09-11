@@ -161,20 +161,20 @@
 				If [param recalculate_boundary_normals] is [code]true[/code], or if the boundary normals are outdated, the method will first recalculate the boundary normals using [method calculate_boundary_normals] before setting the vertex instance normals, passing the given [param normals_mode] to that function. If boundary normals are already up to date and [param recalculate_boundary_normals] is [code]false[/code], the existing boundary normals will be used, and [param normals_mode] will be ignored.
 			</description>
 		</method>
+		<method name="transform_mesh">
+			<return type="void" />
+			<param index="0" name="offset" type="Vector4" />
+			<param index="1" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<description>
+				Transforms the vertex positions and normal values of the polyhedral mesh by applying the given offset and basis transformation, which are assembled into a single [Transform4D] internally. The normal values are transformed using the inverse-transpose of the basis to ensure correct orientation under non-uniform scaling.
+			</description>
+		</method>
 		<method name="transform_texture_map">
 			<return type="void" />
 			<param index="0" name="transform" type="Transform3D" />
 			<description>
 				Applies a 3D transformation to the texture coordinates of all polyhedral cells in the mesh. The transformation is applied to each vertex instance's texture coordinates, allowing for operations such as translation, rotation, and scaling of the texture mapping.
 				This method is useful for adjusting the texture mapping of the mesh after unwrapping or when modifying the mesh's geometry, ensuring that the texture coordinates remain aligned with the desired appearance.
-			</description>
-		</method>
-		<method name="transform_vertices">
-			<return type="void" />
-			<param index="0" name="offset" type="Vector4" />
-			<param index="1" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
-			<description>
-				Transforms the vertices of the polyhedral mesh by applying the given offset and basis transformation, which are assembled into a single [Transform4D] internally.
 			</description>
 		</method>
 		<method name="unwrap_texture_map">

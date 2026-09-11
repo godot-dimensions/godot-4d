@@ -20,15 +20,13 @@ public:
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 
 	void deduplicate_all_elements();
-	void transform_vertices(const Transform4D &p_transform);
-	void transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis = Projection());
+	void transform_mesh(const Transform4D &p_transform);
+	void transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis = Projection());
 	void merge_with(const Ref<ArrayWireMesh4D> &p_array_wire_mesh_4d, const Transform4D &p_transform = Transform4D());
 	void merge_with_bind(const Ref<ArrayWireMesh4D> &p_array_wire_mesh_4d, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 
 	void subdivide_edges(const int64_t p_subdivision_segments = 2);
 	void subdivide_one_edge(const int64_t p_edge_number, const int64_t p_subdivision_segments = 2);
-
-	void transform_all_vertices(const Transform4D &p_transform);
 
 	virtual PackedInt32Array get_edge_indices() override;
 	void set_edge_indices(const PackedInt32Array &p_edge_indices);

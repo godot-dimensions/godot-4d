@@ -125,7 +125,7 @@ void ArrayWireMesh4D::deduplicate_all_elements() {
 	wire_mesh_clear_cache();
 }
 
-void ArrayWireMesh4D::transform_vertices(const Transform4D &p_transform) {
+void ArrayWireMesh4D::transform_mesh(const Transform4D &p_transform) {
 	const int64_t vertex_pos_count = _vertex_positions.size();
 	for (int64_t vertex_pos_index = 0; vertex_pos_index < vertex_pos_count; vertex_pos_index++) {
 		_vertex_positions.set(vertex_pos_index, p_transform.xform(_vertex_positions[vertex_pos_index]));
@@ -133,8 +133,8 @@ void ArrayWireMesh4D::transform_vertices(const Transform4D &p_transform) {
 	wire_mesh_clear_cache();
 }
 
-void ArrayWireMesh4D::transform_vertices_bind(const Vector4 &p_offset, const Projection &p_basis) {
-	transform_vertices(Transform4D(p_basis, p_offset));
+void ArrayWireMesh4D::transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis) {
+	transform_mesh(Transform4D(p_basis, p_offset));
 }
 
 void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Transform4D &p_transform) {
@@ -248,13 +248,6 @@ void ArrayWireMesh4D::subdivide_one_edge(const int64_t p_edge_number, const int6
 	wire_mesh_clear_cache();
 }
 
-void ArrayWireMesh4D::transform_all_vertices(const Transform4D &p_transform) {
-	for (int64_t i = 0; i < _vertex_positions.size(); i++) {
-		_vertex_positions.set(i, p_transform * _vertex_positions[i]);
-	}
-	wire_mesh_clear_cache();
-}
-
 PackedInt32Array ArrayWireMesh4D::get_edge_indices() {
 	return _edge_vertex_indices;
 }
@@ -283,7 +276,7 @@ void ArrayWireMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate"), &ArrayWireMesh4D::append_vertices, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("deduplicate_all_elements"), &ArrayWireMesh4D::deduplicate_all_elements);
-	ClassDB::bind_method(D_METHOD("transform_vertices", "offset", "basis"), &ArrayWireMesh4D::transform_vertices_bind, DEFVAL(Projection()));
+	ClassDB::bind_method(D_METHOD("transform_mesh", "offset", "basis"), &ArrayWireMesh4D::transform_mesh_bind, DEFVAL(Projection()));
 	ClassDB::bind_method(D_METHOD("merge_with", "other", "offset", "basis"), &ArrayWireMesh4D::merge_with_bind, DEFVAL(Vector4()), DEFVAL(Projection()));
 
 	ClassDB::bind_method(D_METHOD("subdivide_edges", "subdivision_segments"), &ArrayWireMesh4D::subdivide_edges, DEFVAL(2));
