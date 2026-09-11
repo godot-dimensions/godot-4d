@@ -156,7 +156,9 @@ void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Tran
 	if (other_material.is_valid()) {
 		Ref<Material4D> self_material = get_material();
 		if (self_material.is_valid()) {
+			self_material = self_material->duplicate();
 			self_material->merge_with(other_material, start_edge_count / 2, other_edge_count / 2);
+			set_material(self_material);
 		} else if (other_material->get_albedo_color_array().size() > 0) {
 			self_material.instantiate();
 			self_material->merge_with(other_material, start_edge_count / 2, other_edge_count / 2);

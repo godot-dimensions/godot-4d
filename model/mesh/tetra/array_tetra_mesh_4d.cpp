@@ -294,7 +294,9 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 	if (other_material.is_valid()) {
 		Ref<Material4D> self_material = get_material();
 		if (self_material.is_valid()) {
+			self_material = self_material->duplicate();
 			self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);
+			set_material(self_material);
 		} else if (other_material->get_albedo_color_array().size() > 0) {
 			self_material.instantiate();
 			self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);

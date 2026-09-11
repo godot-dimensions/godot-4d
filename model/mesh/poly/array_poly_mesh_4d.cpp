@@ -2,6 +2,7 @@
 
 #include "../../../math/math_4d.h"
 #include "../../../math/vector_4d.h"
+#include "poly_material_4d.h"
 
 bool ArrayPolyMesh4D::_validate_data_binding_shape_internal(const Vector2i p_key, const Vector<PackedInt32Array> &p_binding, const int64_t p_value_count, const String &p_binding_name) const {
 	ERR_FAIL_COND_V_MSG(p_key.x < 0 || p_key.y < 0 || p_key.y > p_key.x, false, "ArrayPolyMesh4D: " + p_binding_name + " binding key " + String(p_key) + " must have a decomposition dimension between zero and its geometry dimension.");
@@ -2113,14 +2114,31 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	// Merge materials.
 	Ref<Material4D> other_material = p_other->get_material();
 	if (other_material.is_valid()) {
+		// A PolyMaterial4D colors the polyhedral boundary cells, while other materials color the vertices.
+		const int64_t start_boundary_cell_count = poly_cell_indices_dims > 1 ? start_poly_cell_indices_counts[1] : 0;
+		const int64_t other_boundary_cell_count = poly_cell_indices_dims > 1 ? other_poly_cell_indices_counts[1] : 0;
+		const Ref<PolyMaterial4D> other_poly_material = other_material;
 		Ref<Material4D> self_material = get_material();
 		if (self_material.is_valid()) {
-			self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);
-		} else if (other_material->get_albedo_color_array().size() > 0) {
+			// Merging mutates the material, so do not alter one that may be shared with other meshes.
+			self_material = self_material->duplicate();
+		} else if (other_poly_material.is_valid() && !other_poly_material->get_poly_albedo_color_array().is_empty()) {
+			Ref<PolyMaterial4D> new_poly_material;
+			new_poly_material.instantiate();
+			self_material = new_poly_material;
+		} else if (!other_material->get_albedo_color_array().is_empty()) {
 			self_material.instantiate();
-			self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);
+		}
+		if (self_material.is_valid()) {
+			const Ref<PolyMaterial4D> self_poly_material = self_material;
+			if (self_poly_material.is_valid()) {
+				self_material->merge_with(other_material, start_boundary_cell_count, other_boundary_cell_count);
+			} else {
+				self_material->merge_with(other_material, start_vertex_pos_count, other_vertex_pos_count);
+			}
 			set_material(self_material);
 		} else {
+			// This mesh had no material and the other material has no per-item colors, so it can be shared as-is.
 			set_material(other_material);
 		}
 	}

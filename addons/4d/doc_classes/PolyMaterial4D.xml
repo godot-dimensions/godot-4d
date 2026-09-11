@@ -21,6 +21,7 @@
 	<members>
 		<member name="poly_albedo_color_array" type="PackedColorArray" setter="set_poly_albedo_color_array" getter="get_poly_albedo_color_array">
 			Array of albedo colors for the cells in a polyhedral mesh. The length of this array should equal the cell count of the mesh. See [method populate_albedo_color_array_for_poly_mesh] for details.
+			When merging with [method Material4D.merge_with], this is the array that gets merged, so the item counts passed to that method should be the boundary cell counts of the meshes. If the other material is not a PolyMaterial4D, its color array cannot be mapped onto cells and only its single color is used.
 		</member>
 	</members>
 </class>
