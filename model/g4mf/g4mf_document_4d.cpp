@@ -1227,12 +1227,12 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 	// Figure out what mesh format to use based on:
 	// - The preferred mesh format set in the state.
 	// - What's possible to generate from the meshes in the file.
-	G4MFMesh4D::MeshFormat mesh_format = p_g4mf_state->get_preferred_mesh_format();
-	if (mesh_format != G4MFMesh4D::MESH_FORMAT_WIREFRAME) {
+	G4MFMeshSurface4D::MeshSurfaceFormat mesh_format = p_g4mf_state->get_preferred_mesh_surface_format();
+	if (mesh_format != G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME) {
 		for (int i = 0; i < mesh_count; i++) {
 			Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[i];
 			mesh_format = g4mf_mesh->get_compatible_mesh_format(mesh_format);
-			if (mesh_format == G4MFMesh4D::MESH_FORMAT_WIREFRAME) {
+			if (mesh_format == G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME) {
 				break;
 			}
 		}
@@ -1255,7 +1255,7 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 		ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
 		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
 		switch (mesh_format) {
-			case G4MFMesh4D::MESH_FORMAT_POLYTOPE: {
+			case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE: {
 				Ref<ArrayPolyMesh4D> combined_poly_mesh = combined_mesh;
 				if (combined_poly_mesh.is_null()) {
 					combined_poly_mesh.instantiate();
@@ -1266,7 +1266,7 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 					combined_poly_mesh->merge_with(this_poly_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 				}
 			} break;
-			case G4MFMesh4D::MESH_FORMAT_TETRAHEDRAL: {
+			case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_TETRAHEDRAL: {
 				Ref<ArrayTetraMesh4D> combined_tetra_mesh = combined_mesh;
 				if (combined_tetra_mesh.is_null()) {
 					combined_tetra_mesh.instantiate();
@@ -1277,7 +1277,7 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 					combined_tetra_mesh->merge_with(this_tetra_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 				}
 			} break;
-			case G4MFMesh4D::MESH_FORMAT_WIREFRAME: {
+			case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME: {
 				Ref<ArrayWireMesh4D> combined_wire_mesh = combined_mesh;
 				if (combined_wire_mesh.is_null()) {
 					combined_wire_mesh.instantiate();

@@ -57,7 +57,7 @@ TEST_CASE("[G4MFMeshSurface4D] Poly bindings retain missing cell positions on ro
 			if (missing_pattern >= 3) {
 				ERR_PRINT_OFF; // Sampling a mixture of populated and missing cells intentionally warns.
 			}
-			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(state, source, deduplicate);
+			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, deduplicate);
 			if (missing_pattern >= 3) {
 				ERR_PRINT_ON;
 			}
@@ -80,7 +80,7 @@ TEST_CASE("[G4MFMeshSurface4D] Poly bindings retain missing cell positions on ro
 			if (missing_pattern >= 3) {
 				ERR_PRINT_OFF; // Import validation samples the deliberately partial texture mapping.
 			}
-			const Ref<ArrayPolyMesh4D> imported = surface->generate_poly_mesh_surface(state, source->get_vertex_positions());
+			const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 			if (missing_pattern >= 3) {
 				ERR_PRINT_ON;
 			}
@@ -91,7 +91,7 @@ TEST_CASE("[G4MFMeshSurface4D] Poly bindings retain missing cell positions on ro
 			CHECK(imported->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY) == (has_binding ? texture : Vector<PackedVector3Array>()));
 			CHECK(imported->is_poly_mesh_data_valid());
 			if (missing_pattern == 0) {
-				const Ref<ArrayTetraMesh4D> tetra = surface->generate_tetra_mesh_surface(state, source->get_vertex_positions());
+				const Ref<ArrayTetraMesh4D> tetra = surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions());
 				REQUIRE(tetra.is_valid());
 				CHECK(tetra->get_simplex_cell_vertex_indices() == source->get_simplex_cell_vertex_indices());
 				CHECK(tetra->get_normal_values() == source->get_normal_values());
@@ -121,12 +121,12 @@ TEST_CASE("[G4MFMeshSurface4D] Invalid packed binding counts and indices are rej
 			Ref<G4MFState4D> state;
 			state.instantiate();
 			const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
-			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(state, source);
+			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = binding->get_geometry_bindings()[0];
 			geometry_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, packed));
 			ERR_PRINT_OFF;
-			const Ref<ArrayPolyMesh4D> poly_mesh_surface = surface->generate_poly_mesh_surface(state, source->get_vertex_positions());
+			const Ref<ArrayPolyMesh4D> poly_mesh_surface = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 			ERR_PRINT_ON;
 			CHECK(poly_mesh_surface.is_null());
 		}
@@ -141,7 +141,7 @@ TEST_CASE("[G4MFMeshSurface4D] Missing accessor objects and truncated buffers fa
 			Ref<G4MFState4D> state;
 			state.instantiate();
 			const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
-			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(state, source);
+			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = binding->get_geometry_bindings()[0];
 			const int accessor_index = geometry_binding->get_indices_accessor_index();
@@ -171,7 +171,7 @@ TEST_CASE("[G4MFMeshSurface4D] Missing accessor objects and truncated buffers fa
 				CHECK(indices.is_empty());
 			} else {
 				ERR_PRINT_OFF;
-				Ref<ArrayPolyMesh4D> poly_mesh_surface = surface->generate_poly_mesh_surface(state, source->get_vertex_positions());
+				Ref<ArrayPolyMesh4D> poly_mesh_surface = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 				ERR_PRINT_ON;
 				CHECK(poly_mesh_surface.is_null());
 			}
@@ -209,7 +209,7 @@ TEST_CASE("[G4MFMeshSurface4D] Declared zero-length accessors preserve empty geo
 	surface->set_normals_binding(normals);
 	surface->set_texture_map_binding(texture);
 	const PackedVector4Array vertices = { Vector4(1, 2, 3, 4), Vector4(5, 6, 7, 8) };
-	const Ref<ArrayTetraMesh4D> tetra = surface->generate_tetra_mesh_surface(state, vertices);
+	const Ref<ArrayTetraMesh4D> tetra = surface->import_generate_tetra_mesh_surface(state, vertices);
 	REQUIRE(tetra.is_valid());
 	CHECK(tetra->get_vertex_positions() == vertices);
 	CHECK(tetra->get_simplex_cell_vertex_indices().is_empty());
@@ -217,7 +217,7 @@ TEST_CASE("[G4MFMeshSurface4D] Declared zero-length accessors preserve empty geo
 	CHECK(tetra->get_normal_values().is_empty());
 	CHECK(tetra->get_simplex_cell_texture_map_indices().is_empty());
 	CHECK(tetra->get_texture_map_values().is_empty());
-	const Ref<ArrayPolyMesh4D> poly = surface->generate_poly_mesh_surface(state, vertices);
+	const Ref<ArrayPolyMesh4D> poly = surface->import_generate_poly_mesh_surface(state, vertices);
 	REQUIRE(poly.is_valid());
 	CHECK(poly->get_poly_cell_vertex_positions() == vertices);
 	CHECK(poly->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY).is_empty());
@@ -230,7 +230,7 @@ TEST_CASE("[G4MFMeshSurface4D] Declared zero-length accessors preserve empty geo
 	REQUIRE(separated_bind.size() == 2);
 	CHECK(Array(separated_bind[0]).is_empty());
 	CHECK(Array(separated_bind[1]).is_empty());
-	const Ref<ArrayWireMesh4D> wire = surface->generate_wire_mesh_surface(state, vertices);
+	const Ref<ArrayWireMesh4D> wire = surface->import_generate_wire_mesh_surface(state, vertices);
 	REQUIRE(wire.is_valid());
 	CHECK(wire->get_vertex_positions() == vertices);
 }
@@ -240,12 +240,12 @@ TEST_CASE("[G4MFMeshSurface4D] Zero-count cell bindings may reference an empty v
 		Ref<G4MFState4D> state;
 		state.instantiate();
 		const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
-		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(state, source);
+		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 		const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 		const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = binding->get_geometry_bindings()[0];
 		geometry_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, PackedInt32Array{ 0, 0, 0, 0, 0, 0, 0, 0 }));
 		binding->set_values_accessor_index(make_empty_accessor(state, normal_binding ? 4 : 3));
-		const Ref<ArrayPolyMesh4D> imported = surface->generate_poly_mesh_surface(state, source->get_vertex_positions());
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 		REQUIRE(imported.is_valid());
 		if (normal_binding) {
 			const Vector<PackedVector4Array> normals = imported->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
@@ -287,11 +287,11 @@ TEST_CASE("[G4MFMeshSurface4D] Packed geometry and simplex references are checke
 		surface.instantiate();
 		surface->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices));
 		ERR_PRINT_OFF;
-		const Ref<ArrayTetraMesh4D> tetra_mesh_surface = surface->generate_tetra_mesh_surface(state, vertices);
+		const Ref<ArrayTetraMesh4D> tetra_mesh_surface = surface->import_generate_tetra_mesh_surface(state, vertices);
 		ERR_PRINT_ON;
 		CHECK(tetra_mesh_surface.is_null());
 		ERR_PRINT_OFF;
-		const Ref<ArrayWireMesh4D> wire_mesh_surface = surface->generate_wire_mesh_surface(state, vertices);
+		const Ref<ArrayWireMesh4D> wire_mesh_surface = surface->import_generate_wire_mesh_surface(state, vertices);
 		ERR_PRINT_ON;
 		CHECK(wire_mesh_surface.is_null());
 	}
@@ -305,7 +305,7 @@ TEST_CASE("[G4MFMeshSurface4D] Simplex attribute counts and value ranges are val
 			Ref<G4MFState4D> state;
 			state.instantiate();
 			const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
-			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(state, source);
+			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 			PackedInt32Array indices = binding->load_simplex_indices(state);
 			REQUIRE(indices.size() > 1);
@@ -318,7 +318,7 @@ TEST_CASE("[G4MFMeshSurface4D] Simplex attribute counts and value ranges are val
 			}
 			binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices));
 			ERR_PRINT_OFF;
-			const Ref<ArrayTetraMesh4D> tetra_mesh_surface = surface->generate_tetra_mesh_surface(state, source->get_vertex_positions());
+			const Ref<ArrayTetraMesh4D> tetra_mesh_surface = surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions());
 			ERR_PRINT_ON;
 			CHECK(tetra_mesh_surface.is_null());
 		}
@@ -335,10 +335,10 @@ TEST_CASE("[G4MFMeshSurface4D] Hidden boundary cells retain geometry binding val
 	for (const bool deduplicate : { false, true }) {
 		Ref<G4MFState4D> state;
 		state.instantiate();
-		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(state, source, deduplicate);
+		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, deduplicate);
 		REQUIRE(surface.is_valid());
 		CHECK(surface->get_simplexes_accessor_index() == -1);
-		const Ref<ArrayPolyMesh4D> imported = surface->generate_poly_mesh_surface(state, source->get_poly_cell_vertex_positions());
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_poly_cell_vertex_positions());
 		REQUIRE(imported.is_valid());
 		CHECK(imported->get_poly_cell_normal_values() == source->get_poly_cell_normal_values());
 		CHECK(imported->get_poly_cell_texture_map_values() == source->get_poly_cell_texture_map_values());
@@ -357,7 +357,7 @@ TEST_CASE("[G4MFMeshSurface4D] Unreferenced value pools do not create bindings")
 	for (const bool deduplicate : { false, true }) {
 		Ref<G4MFState4D> state;
 		state.instantiate();
-		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::convert_mesh_surface_for_state(state, source, deduplicate);
+		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, deduplicate);
 		REQUIRE(surface.is_valid());
 		CHECK(surface->get_simplexes_accessor_index() >= 0);
 		CHECK(surface->get_normals_binding().is_null());
@@ -388,11 +388,11 @@ TEST_CASE("[G4MFMeshSurface4D] Empty-cell imports and conversions preserve verte
 			surface->set_edges_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, PackedInt32Array{ 0, 1, 1, 2, 2, 0 }));
 			surface->convert_separated_geometry_into_packed(state, Vector<Vector<PackedInt32Array>>{ Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2 } } }, true);
 		}
-		const Ref<ArrayPolyMesh4D> poly = surface->generate_poly_mesh_surface(state, vertices);
+		const Ref<ArrayPolyMesh4D> poly = surface->import_generate_poly_mesh_surface(state, vertices);
 		REQUIRE(poly.is_valid());
 		CHECK(poly->get_poly_cell_vertex_positions() == vertices);
 		CHECK(poly->get_simplex_cell_vertex_indices().is_empty());
-		const Ref<ArrayWireMesh4D> wire = surface->generate_wire_mesh_surface(state, vertices);
+		const Ref<ArrayWireMesh4D> wire = surface->import_generate_wire_mesh_surface(state, vertices);
 		REQUIRE(wire.is_valid());
 		CHECK(wire->get_vertex_positions() == vertices);
 	}

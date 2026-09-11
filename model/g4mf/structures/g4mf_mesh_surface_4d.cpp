@@ -3,6 +3,27 @@
 #include "../../mesh/tetra/box_tetra_mesh_4d.h"
 #include "../g4mf_state_4d.h"
 
+G4MFMeshSurface4D::MeshSurfaceFormat G4MFMeshSurface4D::_get_compatible_mesh_surface_format(MeshSurfaceFormat p_preferred_mesh_surface_format) const {
+	if (p_preferred_mesh_surface_format == MESH_SURFACE_FORMAT_POLYTOPE) {
+		// Poly mesh data is populated by edges and geometry (polytopes). Prefer generating
+		// poly meshes only when the geometry is defined, because otherwise the poly mesh
+		// would just be wireframe, therefore we may as well generate wire meshes instead.
+		if (get_geometry_accessor_indices().is_empty()) {
+			p_preferred_mesh_surface_format = MESH_SURFACE_FORMAT_TETRAHEDRAL;
+		}
+	}
+	if (p_preferred_mesh_surface_format == MESH_SURFACE_FORMAT_TETRAHEDRAL) {
+		// Tetra mesh data is populated by simplexes (tetrahedra). However, we can also
+		// decompose tetrahedra from geometry (polyhedra) if simplexes are not available,
+		// but only if the dimension includes 3D cells (those which bound a 4D mesh).
+		// Index 0 holds 2D faces made of 1D edges, and index 1 holds 3D cells made of those 2D faces.
+		if (get_simplexes_accessor_index() < 0 && get_geometry_accessor_indices().size() < 2) {
+			p_preferred_mesh_surface_format = MESH_SURFACE_FORMAT_WIREFRAME;
+		}
+	}
+	return p_preferred_mesh_surface_format;
+}
+
 bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const {
 	if (p_other.is_null()) {
 		return false;
@@ -141,7 +162,7 @@ PackedInt32Array G4MFMeshSurface4D::load_simplex_indices(const Ref<G4MFState4D> 
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
-Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::import_generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Ref<ArrayPolyMesh4D>());
 	Ref<ArrayPolyMesh4D> poly_mesh;
 	poly_mesh.instantiate();
@@ -245,7 +266,7 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::generate_poly_mesh_surface(const Ref<G4M
 	return poly_mesh;
 }
 
-Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::import_generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Ref<ArrayTetraMesh4D>());
 	Ref<ArrayTetraMesh4D> tetra_mesh;
 	tetra_mesh.instantiate();
@@ -289,7 +310,7 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::generate_tetra_mesh_surface(const Ref<G
 	return tetra_mesh;
 }
 
-Ref<ArrayWireMesh4D> G4MFMeshSurface4D::generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+Ref<ArrayWireMesh4D> G4MFMeshSurface4D::import_generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Ref<ArrayWireMesh4D>());
 	Ref<ArrayWireMesh4D> wire_mesh;
 	wire_mesh.instantiate();
@@ -317,7 +338,20 @@ Ref<ArrayWireMesh4D> G4MFMeshSurface4D::generate_wire_mesh_surface(const Ref<G4M
 	return wire_mesh;
 }
 
-void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const bool p_deduplicate) {
+Ref<Mesh4D> G4MFMeshSurface4D::import_generate_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+	const G4MFMeshSurface4D::MeshSurfaceFormat compatible_mesh_surface_format = _get_compatible_mesh_surface_format(p_g4mf_state->get_preferred_mesh_surface_format());
+	switch (compatible_mesh_surface_format) {
+		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE:
+			return import_generate_poly_mesh_surface(p_g4mf_state, p_vertices);
+		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_TETRAHEDRAL:
+			return import_generate_tetra_mesh_surface(p_g4mf_state, p_vertices);
+		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME:
+			return import_generate_wire_mesh_surface(p_g4mf_state, p_vertices);
+	}
+	ERR_FAIL_V_MSG(Ref<Mesh4D>(), "G4MFMeshSurface4D::import_generate_mesh_surface: No compatible mesh format found for the mesh.");
+}
+
+void G4MFMeshSurface4D::_export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const bool p_deduplicate) {
 	const Vector<Vector<PackedInt32Array>> separated_geometry = p_poly_mesh->get_poly_cell_indices();
 	if (!separated_geometry.is_empty()) {
 		convert_separated_geometry_into_packed(p_g4mf_state, separated_geometry, p_deduplicate);
@@ -378,7 +412,7 @@ void G4MFMeshSurface4D::_convert_poly_mesh_surface_for_state(const Ref<G4MFState
 	}
 }
 
-void G4MFMeshSurface4D::_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate) {
+void G4MFMeshSurface4D::_export_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate) {
 	const PackedInt32Array simplex_vertex_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
 	if (!simplex_vertex_indices.is_empty()) {
 		Array simplex_indices_variants;
@@ -409,11 +443,11 @@ void G4MFMeshSurface4D::_convert_tetra_mesh_surface_for_state(const Ref<G4MFStat
 	}
 }
 
-Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate) {
+Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_surface_mesh, const bool p_deduplicate) {
 	Ref<G4MFMeshSurface4D> surface;
 	surface.instantiate();
 	// Convert the material.
-	const Ref<Material4D> material = p_mesh->get_material();
+	const Ref<Material4D> material = p_surface_mesh->get_material();
 	if (material.is_valid() && !material->is_default_material()) {
 		const int material_index = G4MFMaterial4D::convert_material_into_state(p_g4mf_state, material, p_deduplicate);
 		surface->set_material_index(material_index);
@@ -422,22 +456,22 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 		}
 	}
 	bool export_edges = true;
-	const Ref<PolyMesh4D> poly_mesh = p_mesh;
+	const Ref<PolyMesh4D> poly_mesh = p_surface_mesh;
 	if (poly_mesh.is_valid()) {
 		// For poly meshes, convert both poly cell geometry and tetrahedral simplex cells into accessors.
 		// When simplex bindings exist, their values are a superset of the poly cell values,
 		// so both representations can share one values accessor per binding.
-		surface->_convert_poly_mesh_surface_for_state(p_g4mf_state, poly_mesh, p_deduplicate);
-		surface->_convert_tetra_mesh_surface_for_state(p_g4mf_state, poly_mesh, p_deduplicate);
+		surface->_export_convert_poly_mesh_surface_for_state(p_g4mf_state, poly_mesh, p_deduplicate);
+		surface->_export_convert_tetra_mesh_surface_for_state(p_g4mf_state, poly_mesh, p_deduplicate);
 		// Don't return here: Always convert edges for poly meshes.
 	} else {
 		// For tetra meshes, convert tetrahedral simplex cells into an accessor.
-		const Ref<TetraMesh4D> tetra_mesh = p_mesh;
+		const Ref<TetraMesh4D> tetra_mesh = p_surface_mesh;
 		if (tetra_mesh.is_valid()) {
-			surface->_convert_tetra_mesh_surface_for_state(p_g4mf_state, tetra_mesh, p_deduplicate);
+			surface->_export_convert_tetra_mesh_surface_for_state(p_g4mf_state, tetra_mesh, p_deduplicate);
 			// For BoxTetraMesh4D in polytope mode, use its explicitly defined edges.
 			// Other meshes can skip saving this and rely on implicitly calculated ones.
-			const Ref<BoxTetraMesh4D> box_tetra_mesh = p_mesh;
+			const Ref<BoxTetraMesh4D> box_tetra_mesh = p_surface_mesh;
 			if (box_tetra_mesh.is_valid() && box_tetra_mesh->get_tetra_decomp() == BoxTetraMesh4D::BOX_TETRA_DECOMP_48_CELL_POLYTOPE) {
 				surface->set_polytope_simplexes(true);
 				// Don't return here, so that we keep the edge indices code below.
@@ -449,7 +483,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 	// Only encode value pools used by a geometry or simplex binding. An unused
 	// pool does not imply that the surface has normal or texture map data.
 	if (surface->_normals_binding.is_valid()) {
-		PackedVector4Array normal_values = p_mesh->get_normal_values();
+		PackedVector4Array normal_values = p_surface_mesh->get_normal_values();
 		if (normal_values.is_empty() && poly_mesh.is_valid()) {
 			// A poly mesh can have geometry bindings but no exposed simplexes.
 			normal_values = poly_mesh->get_poly_cell_normal_values();
@@ -459,7 +493,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 		surface->_normals_binding->set_values_accessor_index(normal_values_accessor);
 	}
 	if (surface->_texture_map_binding.is_valid()) {
-		PackedVector3Array texture_map_values = p_mesh->get_texture_map_values();
+		PackedVector3Array texture_map_values = p_surface_mesh->get_texture_map_values();
 		if (texture_map_values.is_empty() && poly_mesh.is_valid()) {
 			texture_map_values = poly_mesh->get_poly_cell_texture_map_values();
 		}
@@ -471,7 +505,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::convert_mesh_surface_for_state(Ref<G4M
 		return surface;
 	}
 	// Convert edges into an accessor.
-	const PackedInt32Array edge_indices = p_mesh->get_edge_indices();
+	const PackedInt32Array edge_indices = p_surface_mesh->get_edge_indices();
 	ERR_FAIL_COND_V_MSG(edge_indices.is_empty(), surface, "G4MFMeshSurface4D: Mesh4D has no edges.");
 	Array edge_indices_variants;
 	edge_indices_variants.resize(edge_indices.size());
@@ -580,9 +614,9 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_edge_indices", "g4mf_state"), &G4MFMeshSurface4D::load_edge_indices);
 	ClassDB::bind_method(D_METHOD("load_seam_indices", "g4mf_state"), &G4MFMeshSurface4D::load_seam_indices);
 	ClassDB::bind_method(D_METHOD("load_simplex_indices", "g4mf_state"), &G4MFMeshSurface4D::load_simplex_indices);
-	ClassDB::bind_method(D_METHOD("generate_tetra_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::generate_tetra_mesh_surface);
-	ClassDB::bind_method(D_METHOD("generate_wire_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::generate_wire_mesh_surface);
-	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("convert_mesh_surface_for_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMeshSurface4D::convert_mesh_surface_for_state, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("import_generate_tetra_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::import_generate_tetra_mesh_surface);
+	ClassDB::bind_method(D_METHOD("import_generate_wire_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::import_generate_wire_mesh_surface);
+	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("export_convert_mesh_surface_for_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMeshSurface4D::export_convert_mesh_surface_for_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("from_dictionary", "dict"), &G4MFMeshSurface4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurface4D::to_dictionary);
@@ -595,4 +629,8 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seams_accessor_index"), "set_seams_accessor_index", "get_seams_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "simplexes_accessor_index"), "set_simplexes_accessor_index", "get_simplexes_accessor_index");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_map_binding", PROPERTY_HINT_RESOURCE_TYPE, "G4MFMeshSurfaceBinding4D"), "set_texture_map_binding", "get_texture_map_binding");
+
+	BIND_ENUM_CONSTANT(MESH_SURFACE_FORMAT_POLYTOPE);
+	BIND_ENUM_CONSTANT(MESH_SURFACE_FORMAT_TETRAHEDRAL);
+	BIND_ENUM_CONSTANT(MESH_SURFACE_FORMAT_WIREFRAME);
 }

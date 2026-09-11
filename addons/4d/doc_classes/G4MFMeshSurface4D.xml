@@ -12,16 +12,6 @@
 		<link title="G4MF Mesh Surface Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.mesh.surface.schema.json</link>
 	</tutorials>
 	<methods>
-		<method name="convert_mesh_surface_for_state" qualifiers="static">
-			<return type="G4MFMeshSurface4D" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="mesh" type="Mesh4D" />
-			<param index="2" name="deduplicate" type="bool" default="true" />
-			<description>
-				Converts the given [Mesh4D] into encoded G4MF mesh data and stores this inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF. The returned [G4MFMeshSurface4D] is intended to be used by a [G4MFMesh4D], which goes inside of the [G4MFState4D]. See [method G4MFMesh4D.export_convert_mesh_into_state].
-				For polyhedral meshes, cells without vertex normals or texture mapping retain empty entries in the packed geometry bindings, so later cells keep their corresponding data. If no cell has data for a binding, that geometry binding is omitted.
-			</description>
-		</method>
 		<method name="convert_separated_geometry_into_packed">
 			<return type="void" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -32,6 +22,16 @@
 				For example, if the input separated geometry is [code][[[0, 1, 2], [0, 3, 4], [1, 4, 5], [2, 5, 3]], [[0, 1, 2, 3]]][/code], then the first accessor will contain [code]3 0 1 2 3 0 3 4 3 1 4 5 3 2 5 3[/code] and the second accessor will contain [code]4 0 1 2 3[/code] (the encoding of a tetrahedron), and the [member geometry_accessor_indices] will be set to the indices of these two new accessors.
 			</description>
 		</method>
+		<method name="export_convert_mesh_surface_for_state" qualifiers="static">
+			<return type="G4MFMeshSurface4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="mesh" type="Mesh4D" />
+			<param index="2" name="deduplicate" type="bool" default="true" />
+			<description>
+				Converts the given [Mesh4D] into encoded G4MF mesh data and stores this inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF. The returned [G4MFMeshSurface4D] is intended to be used by a [G4MFMesh4D], which goes inside of the [G4MFState4D]. See [method G4MFMesh4D.export_convert_mesh_into_state].
+				For polyhedral meshes, cells without vertex normals or texture mapping retain empty entries in the packed geometry bindings, so later cells keep their corresponding data. If no cell has data for a binding, that geometry binding is omitted.
+			</description>
+		</method>
 		<method name="from_dictionary" qualifiers="static">
 			<return type="G4MFMeshSurface4D" />
 			<param index="0" name="dict" type="Dictionary" />
@@ -39,7 +39,7 @@
 				Converts the given [Dictionary] representing the JSON of a G4MF mesh to a [G4MFMeshSurface4D]. This will set the fields of the [G4MFMeshSurface4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
 			</description>
 		</method>
-		<method name="generate_tetra_mesh_surface" qualifiers="const">
+		<method name="import_generate_tetra_mesh_surface" qualifiers="const">
 			<return type="ArrayTetraMesh4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="vertices" type="PackedVector4Array" />
@@ -47,7 +47,7 @@
 				Generates an [ArrayTetraMesh4D] from the G4MF mesh surface data inside of the [G4MFState4D]. This is used for importing a mesh from G4MF. If the surface has no simplex cells, the supplied [param vertices] are still preserved in the returned mesh.
 			</description>
 		</method>
-		<method name="generate_wire_mesh_surface" qualifiers="const">
+		<method name="import_generate_wire_mesh_surface" qualifiers="const">
 			<return type="ArrayWireMesh4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="vertices" type="PackedVector4Array" />
@@ -126,4 +126,15 @@
 			The binding that defines the texture map coordinates for this mesh surface. If not defined, the surface does not have texture mapping.
 		</member>
 	</members>
+	<constants>
+		<constant name="MESH_SURFACE_FORMAT_POLYTOPE" value="0" enum="MeshSurfaceFormat">
+			On import, try to generate mesh surfaces as [ArrayPolyMesh4D] when possible. If no polytope mesh data is available, fall back to [constant MESH_SURFACE_FORMAT_TETRAHEDRAL].
+		</constant>
+		<constant name="MESH_SURFACE_FORMAT_TETRAHEDRAL" value="1" enum="MeshSurfaceFormat">
+			On import, try to generate mesh surfaces as [ArrayTetraMesh4D] when possible. If no tetrahedral mesh data is available, fall back to [constant MESH_SURFACE_FORMAT_WIREFRAME].
+		</constant>
+		<constant name="MESH_SURFACE_FORMAT_WIREFRAME" value="2" enum="MeshSurfaceFormat">
+			On import, generate mesh surfaces as [ArrayWireMesh4D].
+		</constant>
+	</constants>
 </class>

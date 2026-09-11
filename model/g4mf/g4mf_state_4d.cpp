@@ -137,8 +137,8 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_external_data_mode", "mode"), &G4MFState4D::set_external_data_mode);
 	ClassDB::bind_method(D_METHOD("should_separate_resource_files"), &G4MFState4D::should_separate_resource_files);
 
-	ClassDB::bind_method(D_METHOD("get_preferred_mesh_format"), &G4MFState4D::get_preferred_mesh_format);
-	ClassDB::bind_method(D_METHOD("set_preferred_mesh_format", "preferred_mesh_format"), &G4MFState4D::set_preferred_mesh_format);
+	ClassDB::bind_method(D_METHOD("get_preferred_mesh_surface_format"), &G4MFState4D::get_preferred_mesh_surface_format);
+	ClassDB::bind_method(D_METHOD("set_preferred_mesh_surface_format", "preferred_format"), &G4MFState4D::set_preferred_mesh_surface_format);
 
 	// Data for the contents of the file.
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "g4mf_json"), "set_g4mf_json", "get_g4mf_json");
@@ -160,7 +160,7 @@ void G4MFState4D::_bind_methods() {
 
 	// Settings for handling the file.
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "external_data_mode", PROPERTY_HINT_ENUM, "Automatic,Embed Everything,Separate All Files,Separate Binary Blobs,Separate Resource Files"), "set_external_data_mode", "get_external_data_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "preferred_mesh_format", PROPERTY_HINT_ENUM, "Polytope,Tetrahedral,Wireframe"), "set_preferred_mesh_format", "get_preferred_mesh_format");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "preferred_mesh_surface_format", PROPERTY_HINT_ENUM, "Polytope,Tetrahedral,Wireframe"), "set_preferred_mesh_surface_format", "get_preferred_mesh_surface_format");
 
 	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_AUTOMATIC);
 	BIND_ENUM_CONSTANT(EXTERNAL_DATA_MODE_EMBED_EVERYTHING);

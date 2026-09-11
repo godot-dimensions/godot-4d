@@ -35,7 +35,7 @@ public:
 
 	bool can_generate_poly_meshes_for_all_surfaces() const;
 	bool can_generate_tetra_meshes_for_all_surfaces() const;
-	MeshFormat get_compatible_mesh_format(MeshFormat p_preferred_mesh_format) const;
+	G4MFMeshSurface4D::MeshSurfaceFormat get_compatible_mesh_format(G4MFMeshSurface4D::MeshSurfaceFormat p_preferred_mesh_format) const;
 	bool is_equal_exact(const Ref<G4MFMesh4D> &p_other) const;
 
 	PackedVector4Array load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const;
@@ -48,5 +48,3 @@ public:
 	static Ref<G4MFMesh4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;
 };
-
-VARIANT_ENUM_CAST(G4MFMesh4D::MeshFormat);

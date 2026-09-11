@@ -32,7 +32,7 @@ TypedArray<Dictionary> EditorImportPluginG4MFScene4D::_get_import_options(const 
 	Dictionary preferred_mesh_format;
 	preferred_mesh_format["name"] = "preferred_mesh_format";
 	preferred_mesh_format["type"] = Variant::INT;
-	preferred_mesh_format["default_value"] = G4MFMesh4D::MESH_FORMAT_POLYTOPE;
+	preferred_mesh_format["default_value"] = G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE;
 	preferred_mesh_format["hint"] = PropertyHint::PROPERTY_HINT_ENUM;
 	preferred_mesh_format["hint_string"] = "Polytope,Tetrahedral,Wireframe";
 	options.append(preferred_mesh_format);
@@ -42,7 +42,7 @@ TypedArray<Dictionary> EditorImportPluginG4MFScene4D::_get_import_options(const 
 Error EditorImportPluginG4MFScene4D::_import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const
 #elif GODOT_MODULE
 void EditorImportPluginG4MFScene4D::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "preferred_mesh_format", PROPERTY_HINT_ENUM, "Polytope,Tetrahedral,Wireframe"), G4MFMesh4D::MESH_FORMAT_POLYTOPE));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "preferred_mesh_format", PROPERTY_HINT_ENUM, "Polytope,Tetrahedral,Wireframe"), G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE));
 }
 
 #if VERSION_HEX < 0x040400
@@ -56,7 +56,7 @@ Error EditorImportPluginG4MFScene4D::import(ResourceUID::ID p_source_id, const S
 	Ref<G4MFState4D> g4mf_state;
 	g4mf_doc.instantiate();
 	g4mf_state.instantiate();
-	g4mf_state->set_preferred_mesh_format(G4MFMesh4D::MeshFormat(int(p_options[StringName("preferred_mesh_format")])));
+	g4mf_state->set_preferred_mesh_surface_format(G4MFMeshSurface4D::MeshSurfaceFormat(int(p_options[StringName("preferred_mesh_format")])));
 	Error err = g4mf_doc->import_read_from_file(g4mf_state, p_source_file);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "Editor: Failed to read G4MF document from file. Aborting file import.");
 #if 0

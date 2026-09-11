@@ -17,6 +17,15 @@ class G4MFState4D;
 class G4MFMeshSurface4D : public G4MFItem4D {
 	GDCLASS(G4MFMeshSurface4D, G4MFItem4D);
 
+public:
+	// These values need to be kept stable as new ones are introduced.
+	enum MeshSurfaceFormat : uint8_t {
+		MESH_SURFACE_FORMAT_POLYTOPE = 0,
+		MESH_SURFACE_FORMAT_TETRAHEDRAL = 1,
+		MESH_SURFACE_FORMAT_WIREFRAME = 2,
+	};
+
+private:
 	Ref<G4MFMeshSurfaceBinding4D> _normals_binding;
 	Ref<G4MFMeshSurfaceBinding4D> _texture_map_binding;
 	PackedInt32Array _geometry_accessor_indices;
@@ -26,8 +35,9 @@ class G4MFMeshSurface4D : public G4MFItem4D {
 	int _simplexes_accessor_index = -1;
 	bool _polytope_simplexes = false;
 
-	void _convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const bool p_deduplicate);
-	void _convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate);
+	void _export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const bool p_deduplicate);
+	void _export_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate);
+	MeshSurfaceFormat _get_compatible_mesh_surface_format(MeshSurfaceFormat p_preferred_mesh_surface_format) const;
 
 protected:
 	static void _bind_methods();
@@ -66,11 +76,14 @@ public:
 	PackedInt32Array load_seam_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 	PackedInt32Array load_simplex_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 
-	Ref<ArrayPolyMesh4D> generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
-	Ref<ArrayTetraMesh4D> generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
-	Ref<ArrayWireMesh4D> generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
-	static Ref<G4MFMeshSurface4D> convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate = true);
+	Ref<ArrayPolyMesh4D> import_generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
+	Ref<ArrayTetraMesh4D> import_generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
+	Ref<ArrayWireMesh4D> import_generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
+	Ref<Mesh4D> import_generate_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
+	static Ref<G4MFMeshSurface4D> export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_surface_mesh, const bool p_deduplicate = true);
 
 	static Ref<G4MFMeshSurface4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;
 };
+
+VARIANT_ENUM_CAST(G4MFMeshSurface4D::MeshSurfaceFormat);
