@@ -358,6 +358,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		EditorColorMap::add_conversion_color_pair("ba7", "6b5f3f");
 		EditorColorMap::add_conversion_color_pair("982", "4a3f0d");
 		EditorColorMap::add_conversion_color_pair("761", "2b2507");
+		EditorColorMap::add_conversion_color_pair("d95", "a63"); // Hox
+		EditorColorMap::add_conversion_color_pair("9ca69e", "78807a"); // G4MF
 #endif // GDEXTENSION or GODOT_MODULE
 		EditorPlugins::add_by_type<Godot4DEditorPlugin>();
 #endif // TOOLS_ENABLED
