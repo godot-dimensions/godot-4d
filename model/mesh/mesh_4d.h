@@ -5,6 +5,8 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/array_mesh.hpp>
+
+#include <godot_cpp/core/gdvirtual.gen.inc>
 #elif GODOT_MODULE
 #include "scene/resources/mesh.h"
 #endif
@@ -15,12 +17,16 @@ class WireMesh4D;
 class Mesh4D : public Resource {
 	GDCLASS(Mesh4D, Resource);
 
-	Rect4 _rect_bounds;
+protected:
+	// Rect bounds need to be defined on the base Mesh4D class.
+	Rect4 _rect_bounds = Rect4();
+	bool _is_rect_bounds_dirty = true;
+
+private:
 	Ref<ArrayMesh> _proxy_mesh_3d;
 	Ref<Material4D> _material;
 	bool _is_mesh_data_valid = false;
 	bool _is_proxy_mesh_3d_dirty = true;
-	bool _is_rect_bounds_dirty = true;
 
 protected:
 	// Slightly under the 32-bit integer limit to avoid overflows.
@@ -40,6 +46,9 @@ public:
 	static PackedInt32Array deduplicate_edge_indices(const PackedInt32Array &p_items);
 	bool has_edge_indices(int p_first, int p_second);
 
+	virtual const Rect4 &get_rect_bounds();
+	PackedVector4Array get_rect_bounds_bind();
+
 	// Called when the proxy 3D mesh is requested and has been marked dirty.
 	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh);
 
@@ -50,7 +59,6 @@ public:
 	Ref<ArrayWireMesh4D> to_array_wire_mesh();
 	virtual Ref<WireMesh4D> to_wire_mesh();
 
-	Rect4 get_rect_bounds();
 	// Returns a 3D mesh with the 4D vertex data awkwardly packed into various vertex properties.
 	Ref<ArrayMesh> get_proxy_mesh_3d();
 

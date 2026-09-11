@@ -54,12 +54,12 @@ TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on deduplicate") {
 	mesh->append_edge_indices(0, 1, false);
 	mesh->append_edge_indices(0, 2, false); // duplicate edge via different vertex
 
-	Rect4 bounds_before = mesh->get_rect_bounds();
+	const Rect4 &bounds_before = mesh->get_rect_bounds();
 	CHECK(bounds_before == Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 1)));
 
 	// Deduplicate should not change bounds (since duplicate vertex was at same position)
 	mesh->deduplicate_all_elements();
-	Rect4 bounds_after = mesh->get_rect_bounds();
+	const Rect4 &bounds_after = mesh->get_rect_bounds();
 	CHECK(bounds_after == bounds_before);
 }
 
@@ -69,7 +69,7 @@ TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on merge") {
 	mesh1->set_vertex_positions(PackedVector4Array({ Vector4(-1, -1, -1, -1), Vector4(1, 1, 1, 1) }));
 	mesh1->append_edge_indices(0, 1, false);
 
-	Rect4 bounds1 = mesh1->get_rect_bounds();
+	const Rect4 &bounds1 = mesh1->get_rect_bounds();
 	CHECK(bounds1 == Rect4(Vector4(-1, -1, -1, -1), Vector4(2, 2, 2, 2)));
 
 	// Create second mesh with vertices outside first mesh's bounds
@@ -82,7 +82,7 @@ TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on merge") {
 	mesh1->merge_with(mesh2);
 
 	// Bounds should expand to include merged vertices
-	Rect4 bounds_after_merge = mesh1->get_rect_bounds();
+	const Rect4 &bounds_after_merge = mesh1->get_rect_bounds();
 	CHECK(bounds_after_merge == Rect4(Vector4(-1, -1, -1, -1), Vector4(11, 11, 11, 11)));
 }
 
@@ -92,7 +92,7 @@ TEST_CASE("[ArrayTetraMesh4D] Bounds cache invalidation on merge") {
 	tetra1->set_vertex_positions(PackedVector4Array({ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0) }));
 	tetra1->set_simplex_cell_vertex_indices(PackedInt32Array({ 0, 1, 2, 3 }));
 
-	Rect4 bounds1 = tetra1->get_rect_bounds();
+	const Rect4 &bounds1 = tetra1->get_rect_bounds();
 	CHECK(bounds1 == Rect4(Vector4(0, 0, 0, 0), Vector4(1, 1, 1, 0)));
 
 	// Create second tetra mesh with vertices outside first mesh's bounds
@@ -105,7 +105,7 @@ TEST_CASE("[ArrayTetraMesh4D] Bounds cache invalidation on merge") {
 	tetra1->merge_with(tetra2);
 
 	// Bounds should expand to include merged vertices
-	Rect4 bounds_after_merge = tetra1->get_rect_bounds();
+	const Rect4 &bounds_after_merge = tetra1->get_rect_bounds();
 	CHECK(bounds_after_merge == Rect4(Vector4(0, 0, 0, 0), Vector4(6, 6, 6, 5)));
 }
 
@@ -115,9 +115,9 @@ TEST_CASE("[Mesh4D] Bounds cache persists across multiple accesses") {
 	mesh->set_vertex_positions(PackedVector4Array({ Vector4(-2, -2, -2, -2), Vector4(3, 3, 3, 3) }));
 
 	// Access bounds multiple times - should use cached value
-	Rect4 bounds1 = mesh->get_rect_bounds();
-	Rect4 bounds2 = mesh->get_rect_bounds();
-	Rect4 bounds3 = mesh->get_rect_bounds();
+	const Rect4 &bounds1 = mesh->get_rect_bounds();
+	const Rect4 &bounds2 = mesh->get_rect_bounds();
+	const Rect4 &bounds3 = mesh->get_rect_bounds();
 
 	CHECK(bounds1 == bounds2);
 	CHECK(bounds2 == bounds3);

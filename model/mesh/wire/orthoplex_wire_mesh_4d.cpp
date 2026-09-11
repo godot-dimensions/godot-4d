@@ -23,6 +23,16 @@ void OrthoplexWireMesh4D::set_size(const Vector4 &p_size) {
 	}
 }
 
+const Rect4 &OrthoplexWireMesh4D::get_rect_bounds() {
+	if (likely(!_is_rect_bounds_dirty)) {
+		return _rect_bounds;
+	}
+	const Vector4 he = get_half_extents();
+	_rect_bounds = Rect4(-he, _size);
+	_is_rect_bounds_dirty = false;
+	return _rect_bounds;
+}
+
 PackedInt32Array OrthoplexWireMesh4D::get_edge_indices() {
 	return ORTHOPLEX_EDGE_INDICES;
 }

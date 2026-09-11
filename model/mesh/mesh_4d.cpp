@@ -104,7 +104,7 @@ Ref<WireMesh4D> Mesh4D::to_wire_mesh() {
 	return to_array_wire_mesh();
 }
 
-Rect4 Mesh4D::get_rect_bounds() {
+const Rect4 &Mesh4D::get_rect_bounds() {
 	if (likely(!_is_rect_bounds_dirty)) {
 		return _rect_bounds;
 	}
@@ -115,6 +115,14 @@ Rect4 Mesh4D::get_rect_bounds() {
 	}
 	_is_rect_bounds_dirty = false;
 	return _rect_bounds;
+}
+
+PackedVector4Array Mesh4D::get_rect_bounds_bind() {
+	const Rect4 &rect_bounds = get_rect_bounds();
+	PackedVector4Array ret;
+	ret.push_back(rect_bounds.position);
+	ret.push_back(rect_bounds.size);
+	return ret;
 }
 
 Ref<ArrayMesh> Mesh4D::get_proxy_mesh_3d() {
@@ -186,6 +194,7 @@ void Mesh4D::_bind_methods() {
 
 	ClassDB::bind_static_method("Mesh4D", D_METHOD("deduplicate_edge_indices", "items"), &Mesh4D::deduplicate_edge_indices);
 	ClassDB::bind_method(D_METHOD("has_edge_indices", "first", "second"), &Mesh4D::has_edge_indices);
+	ClassDB::bind_method(D_METHOD("get_rect_bounds"), &Mesh4D::get_rect_bounds_bind);
 
 	ClassDB::bind_method(D_METHOD("is_mesh_data_valid"), &Mesh4D::is_mesh_data_valid);
 	ClassDB::bind_method(D_METHOD("reset_mesh_data_validation"), &Mesh4D::reset_mesh_data_validation);

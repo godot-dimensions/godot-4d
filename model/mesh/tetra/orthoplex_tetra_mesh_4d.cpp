@@ -27,6 +27,16 @@ void OrthoplexTetraMesh4D::set_size(const Vector4 &p_size) {
 	_clear_caches();
 }
 
+const Rect4 &OrthoplexTetraMesh4D::get_rect_bounds() {
+	if (likely(!_is_rect_bounds_dirty)) {
+		return _rect_bounds;
+	}
+	const Vector4 he = get_half_extents();
+	_rect_bounds = Rect4(-he, _size);
+	_is_rect_bounds_dirty = false;
+	return _rect_bounds;
+}
+
 PackedInt32Array OrthoplexTetraMesh4D::get_simplex_cell_vertex_indices() {
 	return ORTHOPLEX_CELL_VERTEX_INDICES;
 }

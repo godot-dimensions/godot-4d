@@ -380,6 +380,10 @@ bool TetraMesh4D::validate_mesh_data() {
 }
 
 void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
+	// Always call the parent class's `validate_material_for_mesh`. This also calls the
+	// virtual method, which allows derived classes to provide more material validation.
+	Mesh4D::validate_material_for_mesh(p_material);
+	// For TetraMesh4D-derived classes: Validate the material's color arrays against the simplex cells.
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
 	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
 		const PackedInt32Array simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
@@ -389,7 +393,6 @@ void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) 
 			p_material->resize_albedo_color_array(cell_count);
 		}
 	}
-	Mesh4D::validate_material_for_mesh(p_material);
 }
 
 Ref<TetraMaterial4D> TetraMesh4D::_fallback_material;

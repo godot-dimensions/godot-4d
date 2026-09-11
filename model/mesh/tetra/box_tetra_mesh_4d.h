@@ -49,6 +49,7 @@ public:
 	void set_cell_texture_map(const BoxCellTextureMap p_map);
 
 	virtual Ref<ArrayMesh> export_texture_map_mesh() override;
+	virtual const Rect4 &get_rect_bounds() override;
 	virtual PackedInt32Array get_simplex_cell_vertex_indices() override;
 	virtual PackedInt32Array get_simplex_cell_normal_indices() override;
 	virtual PackedInt32Array get_simplex_cell_texture_map_indices() override;

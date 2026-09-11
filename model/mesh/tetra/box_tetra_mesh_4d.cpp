@@ -42,6 +42,16 @@ void BoxTetraMesh4D::set_cell_texture_map(const BoxCellTextureMap p_map) {
 	mark_proxy_mesh_3d_dirty();
 }
 
+const Rect4 &BoxTetraMesh4D::get_rect_bounds() {
+	if (likely(!_is_rect_bounds_dirty)) {
+		return _rect_bounds;
+	}
+	const Vector4 he = get_half_extents();
+	_rect_bounds = Rect4(-he, _size);
+	_is_rect_bounds_dirty = false;
+	return _rect_bounds;
+}
+
 Ref<ArrayMesh> BoxTetraMesh4D::export_texture_map_mesh() {
 	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Ref<ArrayMesh>(), "BoxTetraMesh4D: Cannot export texture map mesh for an invalid mesh.");
 	PackedInt32Array texture_map_indices = get_simplex_cell_texture_map_indices();

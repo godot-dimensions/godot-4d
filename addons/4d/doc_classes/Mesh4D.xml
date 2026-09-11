@@ -104,6 +104,12 @@
 				Returns the proxy 3D mesh that the tetrahedral renderers hand to Godot's own 3D renderer. It stores this mesh's 4D data in its ordinary vertex channels, so it will only render properly with one of the shader materials from [method Material4D.get_cross_section_material_3d] or [method Material4D.get_projected_material_3d], depending on which renderer is in use.
 			</description>
 		</method>
+		<method name="get_rect_bounds">
+			<return type="PackedVector4Array" />
+			<description>
+				Returns the rectangular bounds of the mesh in 4D space. The bounds are represented as a [PackedVector4Array] containing the position and size of the bounding box. The first element is the position (minimum corner) and the second element is the size, where the maximum corner can be calculated as the sum of the position and size. This matches Godot's 3D [AABB] structure.
+			</description>
+		</method>
 		<method name="get_texture_map_values">
 			<return type="PackedVector3Array" />
 			<description>

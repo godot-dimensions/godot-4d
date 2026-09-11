@@ -26,6 +26,7 @@ public:
 	Vector4 get_size() const;
 	void set_size(const Vector4 &p_size);
 
+	virtual const Rect4 &get_rect_bounds() override;
 	virtual PackedInt32Array get_simplex_cell_vertex_indices() override;
 	virtual PackedInt32Array get_simplex_cell_normal_indices() override;
 	virtual PackedInt32Array get_simplex_cell_texture_map_indices() override;
