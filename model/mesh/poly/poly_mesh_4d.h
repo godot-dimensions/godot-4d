@@ -8,6 +8,9 @@
 #include <godot_cpp/templates/hash_set.hpp>
 #elif GODOT_MODULE
 class ArrayMesh;
+#if GODOT_HAS_TYPED_DICTIONARY
+#include "core/variant/typed_dictionary.h"
+#endif
 #endif
 
 class ArrayPolyMesh4D;
@@ -73,6 +76,19 @@ protected:
 public:
 	bool is_poly_mesh_data_valid();
 	void reset_poly_mesh_data_validation();
+
+	virtual HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_normal_indices();
+	virtual HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_texture_map_indices();
+
+#if GODOT_HAS_TYPED_DICTIONARY
+	using PolyDataDictionary = TypedDictionary<Vector2i, Array>;
+#else
+	// Godot 4.3 and earlier do not have TypedDictionary, so use a plain Dictionary.
+	// The dictionaries must still be bound so they are kept by duplication and serialization.
+	using PolyDataDictionary = Dictionary;
+#endif // GODOT_HAS_TYPED_DICTIONARY
+	PolyDataDictionary get_all_poly_cell_normal_indices_bind();
+	PolyDataDictionary get_all_poly_cell_texture_map_indices_bind();
 
 	Vector<PackedInt32Array> get_all_face_vertex_indices();
 	TypedArray<PackedInt32Array> get_all_face_vertex_indices_bind();

@@ -2151,7 +2151,7 @@ void ArrayPolyMesh4D::merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vect
 
 // Getters and setters.
 
-HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_normal_indices() const {
+HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_normal_indices() {
 	return HashMap<Vector2i, Vector<PackedInt32Array>>(_all_poly_cell_normal_indices);
 }
 
@@ -2224,7 +2224,7 @@ void ArrayPolyMesh4D::set_poly_cell_dense_texture_map(const Vector2i &p_key, con
 	poly_mesh_clear_cache(false);
 }
 
-HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_texture_map_indices() const {
+HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_texture_map_indices() {
 	return HashMap<Vector2i, Vector<PackedInt32Array>>(_all_poly_cell_texture_map_indices);
 }
 
@@ -2236,21 +2236,6 @@ void ArrayPolyMesh4D::set_all_poly_cell_normal_indices(const HashMap<Vector2i, V
 void ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_texture_maps) {
 	_all_poly_cell_texture_map_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_texture_maps);
 	poly_mesh_clear_cache(false);
-}
-
-ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_normal_indices_bind() const {
-	PolyDataDictionary result;
-	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_normal_indices) {
-		const Vector2i &key = kv.key;
-		const Vector<PackedInt32Array> &normals_data = kv.value;
-		Array normals_array;
-		normals_array.resize(normals_data.size());
-		for (int64_t i = 0; i < normals_data.size(); i++) {
-			normals_array[i] = normals_data[i];
-		}
-		result[key] = normals_array;
-	}
-	return result;
 }
 
 void ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind(const PolyDataDictionary &p_all_poly_cell_normals) {
@@ -2268,21 +2253,6 @@ void ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind(const PolyDataDictio
 		normals_hashmap.insert(key, normals_data);
 	}
 	set_all_poly_cell_normal_indices(normals_hashmap);
-}
-
-ArrayPolyMesh4D::PolyDataDictionary ArrayPolyMesh4D::get_all_poly_cell_texture_map_indices_bind() const {
-	PolyDataDictionary result;
-	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_texture_map_indices) {
-		const Vector2i &key = kv.key;
-		const Vector<PackedInt32Array> &texture_map_data = kv.value;
-		Array texture_map_array;
-		texture_map_array.resize(texture_map_data.size());
-		for (int64_t i = 0; i < texture_map_data.size(); i++) {
-			texture_map_array[i] = texture_map_data[i];
-		}
-		result[key] = texture_map_array;
-	}
-	return result;
 }
 
 void ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices_bind(const PolyDataDictionary &p_all_poly_cell_texture_map_indices) {
@@ -2564,9 +2534,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "edge_indices"), "set_edge_indices", "get_edge_indices");
 
 	// Normals and texture maps. The "all" ones need the getters bound here.
-	ClassDB::bind_method(D_METHOD("get_all_poly_cell_normal_indices"), &ArrayPolyMesh4D::get_all_poly_cell_normal_indices_bind);
 	ClassDB::bind_method(D_METHOD("set_all_poly_cell_normal_indices", "all_poly_cell_normal_indices"), &ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind);
-	ClassDB::bind_method(D_METHOD("get_all_poly_cell_texture_map_indices"), &ArrayPolyMesh4D::get_all_poly_cell_texture_map_indices_bind);
 	ClassDB::bind_method(D_METHOD("set_all_poly_cell_texture_map_indices", "all_poly_cell_texture_map_indices"), &ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices_bind);
 #if GODOT_HAS_TYPED_DICTIONARY
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normal_indices", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_normal_indices", "get_all_poly_cell_normal_indices");

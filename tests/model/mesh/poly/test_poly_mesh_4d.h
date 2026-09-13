@@ -775,6 +775,15 @@ TEST_CASE("[PolyMesh4D] To array poly mesh") {
 		for (int64_t cell_index = 0; cell_index < array_texture_map_indices.size(); cell_index++) {
 			CHECK(array_texture_map_indices[cell_index] == box_texture_map_indices[cell_index]);
 		}
+		// The base class exposes the per-vertex bindings under the cell-to-vertex key.
+		const HashMap<Vector2i, Vector<PackedInt32Array>> box_all_normal_indices = box->get_all_poly_cell_normal_indices();
+		const HashMap<Vector2i, Vector<PackedInt32Array>> box_all_texture_map_indices = box->get_all_poly_cell_texture_map_indices();
+		REQUIRE(box_all_normal_indices.size() == 1);
+		REQUIRE(box_all_texture_map_indices.size() == 1);
+		REQUIRE(box_all_normal_indices.has(PolyMesh4D::CELL_TO_VERT_KEY));
+		REQUIRE(box_all_texture_map_indices.has(PolyMesh4D::CELL_TO_VERT_KEY));
+		CHECK(box_all_normal_indices[PolyMesh4D::CELL_TO_VERT_KEY] == box_normal_indices);
+		CHECK(box_all_texture_map_indices[PolyMesh4D::CELL_TO_VERT_KEY] == box_texture_map_indices);
 		CHECK_MESSAGE(array_mesh->is_poly_mesh_data_valid(), "The converted array mesh must be valid.");
 		CHECK_MESSAGE(array_mesh->get_simplex_cell_vertex_indices() == box->get_simplex_cell_vertex_indices(), "The converted array mesh must decompose identically.");
 	}

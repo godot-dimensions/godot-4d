@@ -3,10 +3,6 @@
 #include "../../../math/transform_4d.h"
 #include "poly_mesh_4d.h"
 
-#if GODOT_HAS_TYPED_DICTIONARY
-#include "core/variant/typed_dictionary.h"
-#endif
-
 class ArrayPolyMesh4D : public PolyMesh4D {
 	GDCLASS(ArrayPolyMesh4D, PolyMesh4D);
 
@@ -111,9 +107,9 @@ public:
 	void merge_with_bind(const Ref<PolyMesh4D> &p_other, const Vector4 &p_offset = Vector4(), const Projection &p_basis = Projection());
 
 	// Getters and setters.
-	HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_normal_indices() const;
+	virtual HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_normal_indices() override;
 	void set_all_poly_cell_normal_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_normal_indices);
-	HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_texture_map_indices() const;
+	virtual HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_texture_map_indices() override;
 	void set_all_poly_cell_texture_map_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_texture_map_indices);
 
 	// Dense views of the indexed data bindings, for code that works with expanded values.
@@ -123,16 +119,7 @@ public:
 	Vector<PackedVector3Array> get_poly_cell_dense_texture_map(const Vector2i &p_key) const;
 	void set_poly_cell_dense_texture_map(const Vector2i &p_key, const Vector<PackedVector3Array> &p_dense_texture_map);
 
-#if GODOT_HAS_TYPED_DICTIONARY
-	using PolyDataDictionary = TypedDictionary<Vector2i, Array>;
-#else
-	// Godot 4.3 and earlier do not have TypedDictionary, so use a plain Dictionary.
-	// The dictionaries must still be bound so they are kept by duplication and serialization.
-	using PolyDataDictionary = Dictionary;
-#endif // GODOT_HAS_TYPED_DICTIONARY
-	PolyDataDictionary get_all_poly_cell_normal_indices_bind() const;
 	void set_all_poly_cell_normal_indices_bind(const PolyDataDictionary &p_all_poly_cell_normal_indices);
-	PolyDataDictionary get_all_poly_cell_texture_map_indices_bind() const;
 	void set_all_poly_cell_texture_map_indices_bind(const PolyDataDictionary &p_all_poly_cell_texture_map_indices);
 
 	virtual PackedInt32Array get_edge_indices() override { return _edge_vertex_indices; }

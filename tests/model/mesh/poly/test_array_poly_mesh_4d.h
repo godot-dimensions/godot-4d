@@ -12,7 +12,8 @@ using namespace TestMeshAttributes4D;
 
 static HashMap<Vector2i, Vector<PackedVector4Array>> get_all_dense_normals(const Ref<ArrayPolyMesh4D> &p_mesh) {
 	HashMap<Vector2i, Vector<PackedVector4Array>> result;
-	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : p_mesh->get_all_poly_cell_normal_indices()) {
+	const HashMap<Vector2i, Vector<PackedInt32Array>> all_poly_cell_normal_indices = p_mesh->get_all_poly_cell_normal_indices();
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : all_poly_cell_normal_indices) {
 		result.insert(binding.key, p_mesh->get_poly_cell_dense_normals(binding.key));
 	}
 	return result;
@@ -20,7 +21,8 @@ static HashMap<Vector2i, Vector<PackedVector4Array>> get_all_dense_normals(const
 
 static HashMap<Vector2i, Vector<PackedVector3Array>> get_all_dense_texture_maps(const Ref<ArrayPolyMesh4D> &p_mesh) {
 	HashMap<Vector2i, Vector<PackedVector3Array>> result;
-	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : p_mesh->get_all_poly_cell_texture_map_indices()) {
+	const HashMap<Vector2i, Vector<PackedInt32Array>> all_poly_cell_texture_map_indices = p_mesh->get_all_poly_cell_texture_map_indices();
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : all_poly_cell_texture_map_indices) {
 		result.insert(binding.key, p_mesh->get_poly_cell_dense_texture_map(binding.key));
 	}
 	return result;
