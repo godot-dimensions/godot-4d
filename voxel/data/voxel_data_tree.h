@@ -92,11 +92,22 @@ public:
 	// store the surface data
 	void generate(const Ref<VoxelGenerator> &p_generator);
 
+	// Grafts a generated chunk into this tree at the chunk's own bounds,
+	// subdividing undefined nodes down to it, and takes ownership of the
+	// chunk. The chunk is discarded if that part of the tree is already
+	// defined.
+	void apply_generated_chunk(VoxelDataTree *p_chunk);
+
 	// Descends the tree to the deepest existing node whose bounds contain the
 	// given voxel, which is never a parent. Returns nullptr if the voxel is
 	// outside of this node's bounds.
 	VoxelDataTree *find_deepest_node(const Vector4i &p_voxel);
 	const VoxelDataTree *find_deepest_node(const Vector4i &p_voxel) const;
+
+	// Whether no voxel of the given region inside this node's bounds is
+	// undefined. Parts of the region outside the bounds are not considered;
+	// the caller is responsible for them.
+	bool is_region_defined(const Rect4i &p_region) const;
 
 	// The value of the voxel at the given coordinates, or a value with the
 	// UNDEFINED material if the voxel is undefined or outside of this node's

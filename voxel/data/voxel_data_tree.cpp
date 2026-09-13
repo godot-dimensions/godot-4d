@@ -228,6 +228,75 @@ void VoxelDataTree::generate(const Ref<VoxelGenerator> &p_generator) {
 	set_leaf_data(leaf);
 }
 
+void VoxelDataTree::apply_generated_chunk(VoxelDataTree *p_chunk) {
+	ERR_FAIL_NULL(p_chunk);
+	const Vector4i position = p_chunk->_bounds.position;
+	if (!has_voxel(position)) {
+		memdelete(p_chunk);
+		ERR_FAIL_MSG("VoxelDataTree cannot store a chunk outside of its bounds.");
+	}
+	VoxelDataTree *node = this;
+	while (node->_bounds != p_chunk->_bounds) {
+		if (node->_bounds.size.x <= p_chunk->_bounds.size.x) {
+			memdelete(p_chunk);
+			ERR_FAIL_MSG("VoxelDataTree chunks must line up with the tree's subdivisions.");
+		}
+		if (node->_type == TYPE_UNDEFINED) {
+			node->subdivide();
+		} else if (node->_type != TYPE_PARENT) {
+			break;
+		}
+		node = &node->_children[node->get_child_index_containing(position)];
+	}
+	if (node->_type != TYPE_UNDEFINED) {
+		// That part of the tree is already defined; discard the chunk.
+		memdelete(p_chunk);
+		return;
+	}
+	// Move the chunk's contents into the node, whose bounds are identical.
+	node->_type = p_chunk->_type;
+	switch (p_chunk->_type) {
+		case TYPE_UNDEFINED: {
+		} break;
+		case TYPE_PARENT: {
+			node->_children = p_chunk->_children;
+		} break;
+		case TYPE_LEAF: {
+			node->_data = p_chunk->_data;
+		} break;
+		case TYPE_CONSTANT: {
+			node->_constant_value = p_chunk->_constant_value;
+		} break;
+	}
+	p_chunk->_type = TYPE_UNDEFINED;
+	p_chunk->_children = nullptr;
+	memdelete(p_chunk);
+}
+
+bool VoxelDataTree::is_region_defined(const Rect4i &p_region) const {
+	if (!_bounds.intersects_exclusive(p_region)) {
+		return true;
+	}
+	switch (_type) {
+		case TYPE_UNDEFINED: {
+			return false;
+		} break;
+		case TYPE_PARENT: {
+			for (int i = 0; i < CHILD_COUNT; i++) {
+				if (!_children[i].is_region_defined(p_region)) {
+					return false;
+				}
+			}
+			return true;
+		} break;
+		case TYPE_LEAF:
+		case TYPE_CONSTANT: {
+			return true;
+		} break;
+	}
+	return false;
+}
+
 VoxelValue VoxelDataTree::get_value(const Vector4i &p_voxel) const {
 	const VoxelDataTree *node = find_deepest_node(p_voxel);
 	if (node != nullptr) {

@@ -41,6 +41,7 @@ TEST_CASE("[VoxelMesher] Eigendecomposition") {
 TEST_CASE("[VoxelMesher] Chunk meshes") {
 	Ref<VoxelData> data;
 	data.instantiate();
+	data->load_all_chunks();
 
 	// The chunk-sized region centered on the origin is entirely inside the
 	// tiger's hole, where there are no solid voxels.

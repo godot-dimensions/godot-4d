@@ -99,6 +99,17 @@ TEST_CASE("[VoxelDataTree] Voxel value lookup") {
 	CHECK_MESSAGE(tree.get_value(Vector4i(6, 4, 4, 4)) == VoxelValue(), "VoxelDataTree get_value should not smear leaf values across neighboring voxels at full detail.");
 }
 
+TEST_CASE("[VoxelDataTree] Region definedness") {
+	VoxelDataTree tree = VoxelDataTree(Rect4i(0, 0, 0, 0, 8, 8, 8, 8));
+	CHECK_MESSAGE(!tree.is_region_defined(Rect4i(1, 1, 1, 1, 2, 2, 2, 2)), "VoxelDataTree regions inside an undefined node should not be defined.");
+	VoxelDataTree *children = tree.subdivide();
+	children[0].set_constant_value(SOLID_VALUE);
+	children[1].set_leaf_data(memnew(VoxelDataLeaf));
+	CHECK_MESSAGE(tree.is_region_defined(Rect4i(0, 0, 0, 0, 4, 4, 4, 4)), "VoxelDataTree regions inside a constant node should be defined.");
+	CHECK_MESSAGE(tree.is_region_defined(Rect4i(2, 1, 1, 1, 4, 2, 2, 2)), "VoxelDataTree regions spanning a constant node and a leaf should be defined.");
+	CHECK_MESSAGE(!tree.is_region_defined(Rect4i(1, 1, 1, 1, 2, 4, 2, 2)), "VoxelDataTree regions overlapping any undefined node should not be defined.");
+}
+
 TEST_CASE("[VoxelDataTree] Generate") {
 	VoxelDataTree tree = VoxelDataTree(Rect4i(-8, -8, -8, -8, 16, 16, 16, 16));
 	Ref<UniformSolidGenerator> solid_generator;

@@ -37,6 +37,7 @@
 
 // Voxel.
 #include "voxel/test_tiger_test_generator.h"
+#include "voxel/test_voxel_chunk_loader.h"
 #include "voxel/test_voxel_data.h"
 #include "voxel/test_voxel_data_leaf.h"
 #include "voxel/test_voxel_data_tree.h"

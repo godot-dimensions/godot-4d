@@ -9,6 +9,8 @@
 #endif
 
 // Virtual base class, produces the voxel content that fills a VoxelData volume.
+// Chunks are generated on worker threads, so implementations must be safe to
+// call from several threads at once.
 class VoxelGenerator : public RefCounted {
 	GDCLASS(VoxelGenerator, RefCounted);
 
