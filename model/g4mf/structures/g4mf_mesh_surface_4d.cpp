@@ -63,7 +63,7 @@ void G4MFMeshSurface4D::convert_separated_geometry_into_packed(const Ref<G4MFSta
 				packed_geometry_data.append(cell_vertex_indices[i]);
 			}
 		}
-		const int geom_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, packed_geometry_data, p_deduplicate);
+		const int geom_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, packed_geometry_data, 1, p_deduplicate);
 		ERR_FAIL_COND(geom_accessor_index == -1);
 		_geometry_accessor_indices.append(geom_accessor_index);
 	}
@@ -82,7 +82,7 @@ void G4MFMeshSurface4D::convert_separated_geometry_into_packed_bind(const Ref<G4
 				packed_geometry_data.append(cell_vertex_indices[i]);
 			}
 		}
-		const int geom_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, packed_geometry_data, p_deduplicate);
+		const int geom_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, packed_geometry_data, 1, p_deduplicate);
 		ERR_FAIL_COND(geom_accessor_index == -1);
 		_geometry_accessor_indices.set(geom_index, geom_accessor_index);
 	}
@@ -373,7 +373,7 @@ void G4MFMeshSurface4D::_export_convert_poly_mesh_surface_for_state(const Ref<G4
 			if (_normals_binding.is_null()) {
 				_normals_binding.instantiate();
 			}
-			const int indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, geom1_vertex_normal_indices, p_deduplicate);
+			const int indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, geom1_vertex_normal_indices, 1, p_deduplicate);
 			ERR_FAIL_COND(indices_accessor_index < 0);
 			Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition;
 			geometry_decomposition.instantiate();
@@ -399,7 +399,7 @@ void G4MFMeshSurface4D::_export_convert_poly_mesh_surface_for_state(const Ref<G4
 			if (_texture_map_binding.is_null()) {
 				_texture_map_binding.instantiate();
 			}
-			const int indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, geom1_vertex_texture_map_indices, p_deduplicate);
+			const int indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, geom1_vertex_texture_map_indices, 1, p_deduplicate);
 			ERR_FAIL_COND(indices_accessor_index < 0);
 			Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition;
 			geometry_decomposition.instantiate();
@@ -432,14 +432,14 @@ void G4MFMeshSurface4D::_export_convert_tetra_mesh_surface_for_state(const Ref<G
 		if (_normals_binding.is_null()) {
 			_normals_binding.instantiate();
 		}
-		_normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, simplex_normal_indices, p_deduplicate));
+		_normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, simplex_normal_indices, 4, p_deduplicate));
 	}
 	const PackedInt32Array simplex_texture_map_indices = p_tetra_mesh->get_simplex_cell_texture_map_indices();
 	if (!simplex_texture_map_indices.is_empty()) {
 		if (_texture_map_binding.is_null()) {
 			_texture_map_binding.instantiate();
 		}
-		_texture_map_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, simplex_texture_map_indices, p_deduplicate));
+		_texture_map_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, simplex_texture_map_indices, 4, p_deduplicate));
 	}
 }
 

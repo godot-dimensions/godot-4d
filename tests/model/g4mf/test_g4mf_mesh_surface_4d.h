@@ -124,7 +124,7 @@ TEST_CASE("[G4MFMeshSurface4D] Invalid packed binding counts and indices are rej
 			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = binding->get_geometry_bindings()[0];
-			geometry_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, packed));
+			geometry_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, packed, 1));
 			ERR_PRINT_OFF;
 			const Ref<ArrayPolyMesh4D> poly_mesh_surface = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 			ERR_PRINT_ON;
@@ -243,7 +243,7 @@ TEST_CASE("[G4MFMeshSurface4D] Zero-count cell bindings may reference an empty v
 		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 		const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 		const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = binding->get_geometry_bindings()[0];
-		geometry_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, PackedInt32Array{ 0, 0, 0, 0, 0, 0, 0, 0 }));
+		geometry_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, PackedInt32Array{ 0, 0, 0, 0, 0, 0, 0, 0 }, 1));
 		binding->set_values_accessor_index(make_empty_accessor(state, normal_binding ? 4 : 3));
 		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 		REQUIRE(imported.is_valid());
@@ -269,7 +269,7 @@ TEST_CASE("[G4MFMeshSurface4D] Packed geometry and simplex references are checke
 		state.instantiate();
 		Ref<G4MFMeshSurface4D> surface;
 		surface.instantiate();
-		surface->set_geometry_accessor_indices(PackedInt32Array{ G4MFAccessor4D::encode_new_accessor_from_int32s(state, packed) });
+		surface->set_geometry_accessor_indices(PackedInt32Array{ G4MFAccessor4D::encode_new_accessor_from_int32s(state, packed, 1) });
 		ERR_PRINT_OFF;
 		const Vector<Vector<PackedInt32Array>> separated = surface->load_geometry_separated(state);
 		ERR_PRINT_ON;
@@ -285,7 +285,10 @@ TEST_CASE("[G4MFMeshSurface4D] Packed geometry and simplex references are checke
 		state.instantiate();
 		Ref<G4MFMeshSurface4D> surface;
 		surface.instantiate();
-		surface->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices));
+		// The export refuses to encode a count that is not a multiple of the vector size, so store
+		// a wrong count as scalars to ensure the accessor exists and the import has to reject it.
+		const int vector_size = indices.size() % 4 == 0 ? 4 : 1;
+		surface->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices, vector_size));
 		ERR_PRINT_OFF;
 		const Ref<ArrayTetraMesh4D> tetra_mesh_surface = surface->import_generate_tetra_mesh_surface(state, vertices);
 		ERR_PRINT_ON;
@@ -313,10 +316,15 @@ TEST_CASE("[G4MFMeshSurface4D] Simplex attribute counts and value ranges are val
 				indices.resize(indices.size() - 1);
 			} else if (corruption == 1) {
 				indices.append(indices[0]);
+			} else if (corruption == 2) {
+				indices.set(0, -1);
 			} else {
-				indices.set(0, corruption == 2 ? -1 : INT32_MAX);
+				indices.set(0, INT32_MAX);
 			}
-			binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices));
+			// The export refuses to encode a count that is not a multiple of the vector size, so store
+			// a wrong count as scalars to ensure the accessor exists and the import has to reject it.
+			const int vector_size = corruption < 2 ? 1 : 4;
+			binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices, vector_size));
 			ERR_PRINT_OFF;
 			const Ref<ArrayTetraMesh4D> tetra_mesh_surface = surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions());
 			ERR_PRINT_ON;
@@ -385,7 +393,7 @@ TEST_CASE("[G4MFMeshSurface4D] Empty-cell imports and conversions preserve verte
 	surface.instantiate();
 	for (const bool with_edges : { false, true }) {
 		if (with_edges) {
-			surface->set_edges_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, PackedInt32Array{ 0, 1, 1, 2, 2, 0 }));
+			surface->set_edges_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, PackedInt32Array{ 0, 1, 1, 2, 2, 0 }, 2));
 			surface->convert_separated_geometry_into_packed(state, Vector<Vector<PackedInt32Array>>{ Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2 } } }, true);
 		}
 		const Ref<ArrayPolyMesh4D> poly = surface->import_generate_poly_mesh_surface(state, vertices);

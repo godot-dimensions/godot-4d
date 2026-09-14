@@ -33,6 +33,7 @@ public:
 	void set_geometry_dimension(const int p_geometry_dimension) { _geometry_dimension = p_geometry_dimension; }
 
 	bool is_equal_exact(const Ref<G4MFMeshSurfaceBindingGeometry4D> &p_other) const;
+	Vector2i get_poly_mesh_key() const { return Vector2i(_geometry_dimension, _decompose_dimension); }
 	PackedInt32Array load_indices(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	static Ref<G4MFMeshSurfaceBindingGeometry4D> from_dictionary(const Dictionary &p_dict);

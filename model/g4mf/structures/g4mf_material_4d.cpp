@@ -137,7 +137,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 		TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_bindings;
 		// Deduplicate colors with indices to store the data in the G4MF style.
 		PackedColorArray deduplicated_colors;
-		PackedInt64Array deduplicated_simplex_indices;
+		PackedInt32Array deduplicated_simplex_indices;
 		deduplicated_simplex_indices.resize(albedo_colors.size());
 		HashMap<Color, int> color_to_index_map;
 		for (int i = 0; i < albedo_colors.size(); i++) {
@@ -155,7 +155,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 		Ref<PolyMaterial4D> poly_material = p_material;
 		if (poly_material.is_valid()) {
 			const PackedColorArray poly_array = poly_material->get_poly_albedo_color_array();
-			PackedInt64Array deduplicated_poly_indices;
+			PackedInt32Array deduplicated_poly_indices;
 			deduplicated_poly_indices.resize(poly_array.size());
 			for (int i = 0; i < poly_array.size(); i++) {
 				const Color color = poly_array[i];
@@ -168,7 +168,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 					deduplicated_poly_indices.set(i, new_index);
 				}
 			}
-			const int poly_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, deduplicated_poly_indices, p_deduplicate);
+			const int poly_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, deduplicated_poly_indices, 1, p_deduplicate);
 			if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
 				_append_geometry_binding(geometry_bindings, 3, 3, poly_indices_accessor_index);
 			} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_FACE) {
@@ -183,13 +183,13 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 		}
 		// Handle the main material's color array.
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
-			int simplex_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, deduplicated_simplex_indices, p_deduplicate);
+			int simplex_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, deduplicated_simplex_indices, 1, p_deduplicate);
 			element_map_binding->set_per_simplex_accessor_index(simplex_indices_accessor_index);
 		} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
 			// Only encode per-edge indices here if it wasn't already handled above by the poly material's per-vertex/edge/face/cell colors.
 			// deduplicated_simplex_indices is just the data from the array, it is not necessarily exactly the same simplex indices as the tetrahedra.
 			if (poly_material.is_null()) {
-				int edge_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int64s(p_g4mf_state, deduplicated_simplex_indices, p_deduplicate);
+				int edge_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, deduplicated_simplex_indices, 1, p_deduplicate);
 				_append_geometry_binding(geometry_bindings, 1, 1, edge_indices_accessor_index);
 			}
 		} else {

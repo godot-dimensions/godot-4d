@@ -1118,17 +1118,19 @@ int G4MFAccessor4D::encode_new_accessor_from_colors(const Ref<G4MFState4D> &p_g4
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
 
-int G4MFAccessor4D::encode_new_accessor_from_int32s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt32Array &p_input_data, const bool p_deduplicate) {
+int G4MFAccessor4D::encode_new_accessor_from_int32s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt32Array &p_input_data, const int p_vector_size, const bool p_deduplicate) {
+	ERR_FAIL_COND_V_MSG(p_vector_size < 1 || p_input_data.size() % p_vector_size != 0, -1, "G4MF export: Input data size is not a multiple of the vector size.");
 	const String prim_type = G4MFAccessor4D::minimal_component_type_for_int32s(p_input_data);
-	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 1);
+	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, p_vector_size);
 	PackedByteArray encoded_bytes = accessor->encode_int32s_as_bytes(p_input_data);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
 }
 
-int G4MFAccessor4D::encode_new_accessor_from_int64s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt64Array &p_input_data, const bool p_deduplicate) {
+int G4MFAccessor4D::encode_new_accessor_from_int64s(const Ref<G4MFState4D> &p_g4mf_state, const PackedInt64Array &p_input_data, const int p_vector_size, const bool p_deduplicate) {
+	ERR_FAIL_COND_V_MSG(p_vector_size < 1 || p_input_data.size() % p_vector_size != 0, -1, "G4MF export: Input data size is not a multiple of the vector size.");
 	const String prim_type = G4MFAccessor4D::minimal_component_type_for_int64s(p_input_data);
-	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, 1);
+	Ref<G4MFAccessor4D> accessor = make_new_accessor_without_data(prim_type, p_vector_size);
 	PackedByteArray encoded_bytes = accessor->encode_int64s_as_bytes(p_input_data);
 	ERR_FAIL_COND_V_MSG(encoded_bytes.is_empty(), -1, "G4MF export: Accessor failed to encode data as bytes (was the input data empty?).");
 	return accessor->store_accessor_data_into_state(p_g4mf_state, encoded_bytes, p_deduplicate);
@@ -1234,8 +1236,8 @@ void G4MFAccessor4D::_bind_methods() {
 	// High-level encode functions.
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_variants", "g4mf_state", "input_data", "component_type", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_variants, DEFVAL(true));
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_colors", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_colors, DEFVAL(true));
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_int32s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_int32s, DEFVAL(true));
-	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_int64s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_int64s, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_int32s", "g4mf_state", "input_data", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_int32s, DEFVAL(1), DEFVAL(true));
+	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_int64s", "g4mf_state", "input_data", "vector_size", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_int64s, DEFVAL(1), DEFVAL(true));
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_vector3s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_vector3s, DEFVAL(true));
 	ClassDB::bind_static_method("G4MFAccessor4D", D_METHOD("encode_new_accessor_from_vector4s", "g4mf_state", "input_data", "deduplicate"), &G4MFAccessor4D::encode_new_accessor_from_vector4s, DEFVAL(true));
 
