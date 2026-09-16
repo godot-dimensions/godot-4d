@@ -13,9 +13,14 @@ class VoxelDataLeaf;
 // with 16 children each covering one orthant of its bounds, a leaf holding
 // a chunk of actual voxel data in a VoxelDataLeaf, or constant, holding a
 // single value shared by every voxel in its bounds.
-// Always a power-of-2 sized hypercube.
+// Always a power-of-2 sized hypercube, positioned at a multiple of half its
+// size on every axis; leaf positions are a multiple of their full size.
 // Nodes own their children and leaf data, and free them when cleared or destroyed.
 class VoxelDataTree {
+	// VoxelData contracts and replaces the root in ways that only make sense
+	// for a whole tree, working with the node internals directly.
+	friend class VoxelData;
+
 public:
 	enum Type {
 		TYPE_UNDEFINED,
@@ -38,6 +43,10 @@ private:
 		// The value of every voxel in the bounds. Only valid when _type == TYPE_CONSTANT.
 		VoxelValue _constant_value;
 	};
+
+	// Moves the donor's contents into this node, which must be undefined and
+	// have identical bounds. The donor is left undefined.
+	void _take_contents(VoxelDataTree &p_donor);
 
 public:
 	Type get_type() const { return _type; }
@@ -97,6 +106,11 @@ public:
 	// chunk. The chunk is discarded if that part of the tree is already
 	// defined.
 	void apply_generated_chunk(VoxelDataTree *p_chunk);
+
+	// Makes the chunk containing the given voxel undefined again, subdividing
+	// constants that cover more than the chunk, and collapsing parents whose
+	// children become all undefined. Returns whether any data was unloaded.
+	bool clear_chunk(const Vector4i &p_voxel);
 
 	// Descends the tree to the deepest existing node whose bounds contain the
 	// given voxel, which is never a parent. Returns nullptr if the voxel is

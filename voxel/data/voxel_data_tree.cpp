@@ -86,10 +86,17 @@ const VoxelDataTree *VoxelDataTree::get_child_containing(const Vector4i &p_voxel
 
 void VoxelDataTree::set_leaf_data(VoxelDataLeaf *p_data) {
 	clear();
-	if (p_data != nullptr) {
-		_data = p_data;
-		_type = TYPE_LEAF;
+	if (p_data == nullptr) {
+		return;
 	}
+	const Vector4i position = _bounds.position;
+	const int32_t size_mask = _bounds.size.x - 1;
+	if ((position.x & size_mask) != 0 || (position.y & size_mask) != 0 || (position.z & size_mask) != 0 || (position.w & size_mask) != 0) {
+		memdelete(p_data);
+		ERR_FAIL_MSG("VoxelDataTree leaf positions must be a multiple of their size on every axis.");
+	}
+	_data = p_data;
+	_type = TYPE_LEAF;
 }
 
 VoxelDataLeaf *VoxelDataTree::get_leaf_data() {
@@ -253,24 +260,56 @@ void VoxelDataTree::apply_generated_chunk(VoxelDataTree *p_chunk) {
 		memdelete(p_chunk);
 		return;
 	}
-	// Move the chunk's contents into the node, whose bounds are identical.
-	node->_type = p_chunk->_type;
-	switch (p_chunk->_type) {
+	node->_take_contents(*p_chunk);
+	memdelete(p_chunk);
+}
+
+void VoxelDataTree::_take_contents(VoxelDataTree &p_donor) {
+	ERR_FAIL_COND_MSG(_type != TYPE_UNDEFINED, "VoxelDataTree can only take contents into an undefined node.");
+	ERR_FAIL_COND_MSG(_bounds != p_donor._bounds, "VoxelDataTree can only take the contents of a node with identical bounds.");
+	_type = p_donor._type;
+	switch (p_donor._type) {
 		case TYPE_UNDEFINED: {
 		} break;
 		case TYPE_PARENT: {
-			node->_children = p_chunk->_children;
+			_children = p_donor._children;
 		} break;
 		case TYPE_LEAF: {
-			node->_data = p_chunk->_data;
+			_data = p_donor._data;
 		} break;
 		case TYPE_CONSTANT: {
-			node->_constant_value = p_chunk->_constant_value;
+			_constant_value = p_donor._constant_value;
 		} break;
 	}
-	p_chunk->_type = TYPE_UNDEFINED;
-	p_chunk->_children = nullptr;
-	memdelete(p_chunk);
+	p_donor._type = TYPE_UNDEFINED;
+	p_donor._children = nullptr;
+}
+
+bool VoxelDataTree::clear_chunk(const Vector4i &p_voxel) {
+	if (_type == TYPE_UNDEFINED || !has_voxel(p_voxel)) {
+		return false;
+	}
+	if (_bounds.size.x == VOXEL_DATA_CHUNK_SIZE) {
+		clear();
+		return true;
+	}
+	if (_type == TYPE_CONSTANT) {
+		const VoxelValue constant_value = _constant_value;
+		clear();
+		VoxelDataTree *constant_children = subdivide();
+		for (int i = 0; i < CHILD_COUNT; i++) {
+			constant_children[i].set_constant_value(constant_value);
+		}
+	}
+	ERR_FAIL_COND_V_MSG(_type != TYPE_PARENT, false, "VoxelDataTree nodes larger than a chunk should be parents, constants, or undefined.");
+	const bool unloaded = get_child_containing(p_voxel)->clear_chunk(p_voxel);
+	for (int i = 0; i < CHILD_COUNT; i++) {
+		if (!_children[i].is_undefined()) {
+			return unloaded;
+		}
+	}
+	clear();
+	return unloaded;
 }
 
 bool VoxelDataTree::is_region_defined(const Rect4i &p_region) const {
@@ -331,4 +370,7 @@ VoxelDataTree::VoxelDataTree(const Rect4i &p_bounds) :
 		_bounds(p_bounds) {
 	const Vector4i size = p_bounds.size;
 	ERR_FAIL_COND_MSG(size.x < 1 || (size.x & (size.x - 1)) != 0 || size.y != size.x || size.z != size.x || size.w != size.x, "VoxelDataTree bounds size must be the same power of two on every axis.");
+	const Vector4i position = p_bounds.position;
+	const int32_t half_size_mask = (size.x >> 1) - 1;
+	ERR_FAIL_COND_MSG(size.x > 1 && ((position.x & half_size_mask) != 0 || (position.y & half_size_mask) != 0 || (position.z & half_size_mask) != 0 || (position.w & half_size_mask) != 0), "VoxelDataTree bounds position must be a multiple of half the size on every axis.");
 }

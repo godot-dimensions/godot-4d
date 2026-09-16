@@ -35,6 +35,10 @@ class EditorCameraSettings4D : public Object {
 	double _projection_opacity = 1.0;
 	double _projection_opacity_base = 1.0;
 
+	// Keep these default values in sync with the VoxelLoadTrigger4D defaults.
+	double _voxel_load_distance = 16.0;
+	double _voxel_unload_distance_ratio = 1.5;
+
 	Ref<ConfigFile> _4d_editor_config_file;
 	String _4d_editor_config_file_path = "";
 	String _rendering_engine_name = "";
@@ -97,6 +101,12 @@ public:
 
 	double get_projection_opacity_base() const { return _projection_opacity_base; }
 	void set_projection_opacity_base(const double p_projection_opacity_base);
+
+	double get_voxel_load_distance() const { return _voxel_load_distance; }
+	void set_voxel_load_distance(const double p_voxel_load_distance);
+
+	double get_voxel_unload_distance_ratio() const { return _voxel_unload_distance_ratio; }
+	void set_voxel_unload_distance_ratio(const double p_voxel_unload_distance_ratio);
 
 	// Only a setter because the source of truth for this should be the rendering engine menu.
 	void set_rendering_engine_name(const String &p_rendering_engine_name);

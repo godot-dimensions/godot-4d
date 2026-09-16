@@ -27,7 +27,7 @@ static void _queue_all_chunks(VoxelChunkLoader *p_loader, const Rect4i &p_bounds
 // finished chunk loads are delivered through.
 TEST_CASE("[VoxelChunkLoader][SceneTree] Dynamic loading") {
 	VoxelWorld4D *world = memnew(VoxelWorld4D);
-	const Rect4i bounds = world->get_voxel_data()->get_bounds();
+	const Rect4i bounds = Rect4i(VOXEL_DATA_CHUNK_SIZE_VECTOR * -2, VOXEL_DATA_CHUNK_SIZE_VECTOR * 4);
 	{
 		// A loader destroyed while loads are pending must wait for its worker
 		// tasks and free the content that was never stored.

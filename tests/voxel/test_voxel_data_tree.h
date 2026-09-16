@@ -31,7 +31,8 @@ public:
 };
 
 TEST_CASE("[VoxelDataTree] Node types and clearing") {
-	VoxelDataTree tree = VoxelDataTree(Rect4i(-8, -8, -8, -8, 16, 16, 16, 16));
+	// Fully aligned so that the root itself may become a leaf.
+	VoxelDataTree tree = VoxelDataTree(Rect4i(-16, -16, -16, -16, 16, 16, 16, 16));
 	CHECK_MESSAGE(tree.is_undefined(), "VoxelDataTree nodes should start out undefined.");
 
 	tree.set_leaf_data(memnew(VoxelDataLeaf));
@@ -111,7 +112,10 @@ TEST_CASE("[VoxelDataTree] Region definedness") {
 }
 
 TEST_CASE("[VoxelDataTree] Generate") {
-	VoxelDataTree tree = VoxelDataTree(Rect4i(-8, -8, -8, -8, 16, 16, 16, 16));
+	// Four chunks per axis, so that along X there are two chunks on each side
+	// of the material boundary at 0: one touching it and one away from it.
+	const Vector4i corner = VOXEL_DATA_CHUNK_SIZE_VECTOR * -2;
+	VoxelDataTree tree = VoxelDataTree(Rect4i(corner, VOXEL_DATA_CHUNK_SIZE_VECTOR * 4));
 	Ref<UniformSolidGenerator> solid_generator;
 	solid_generator.instantiate();
 	tree.generate(solid_generator);
@@ -122,19 +126,20 @@ TEST_CASE("[VoxelDataTree] Generate") {
 	half_space_generator.instantiate();
 	tree.generate(half_space_generator);
 	CHECK_MESSAGE(tree.is_parent(), "VoxelDataTree generate should not merge children with different values.");
-	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(-8, -8, -8, -8))->is_constant(), "VoxelDataTree generate should make uniform chunks away from a material boundary constant.");
-	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(-1, -8, -8, -8))->is_leaf(), "VoxelDataTree generate should keep a uniform chunk as a leaf when it borders a different material.");
-	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(0, -8, -8, -8))->is_leaf(), "VoxelDataTree generate should keep a uniform solid chunk as a leaf when it borders air.");
+	CHECK_MESSAGE(tree.find_deepest_node(corner)->is_constant(), "VoxelDataTree generate should make uniform chunks away from a material boundary constant.");
+	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(-1, corner.y, corner.z, corner.w))->is_leaf(), "VoxelDataTree generate should keep a uniform chunk as a leaf when it borders a different material.");
+	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(0, corner.y, corner.z, corner.w))->is_leaf(), "VoxelDataTree generate should keep a uniform solid chunk as a leaf when it borders air.");
 	CHECK_MESSAGE(!tree.get_value(Vector4i(-1, 3, -3, 5)).is_opaque(), "VoxelDataTree generate should store the generated values.");
 	CHECK_MESSAGE(tree.get_value(Vector4i(0, 3, -3, 5)).is_opaque(), "VoxelDataTree generate should store the generated values.");
 
-	VoxelDataLeaf *border_leaf = tree.find_deepest_node(Vector4i(-1, -8, -8, -8))->get_leaf_data();
+	VoxelDataLeaf *border_leaf = tree.find_deepest_node(Vector4i(-1, corner.y, corner.z, corner.w))->get_leaf_data();
 	REQUIRE(border_leaf != nullptr);
-	CHECK_MESSAGE(border_leaf->has_edge_normal(Vector4i(3, 0, 0, 0), 0), "VoxelDataTree generate should store a normal on an edge crossing the material boundary.");
-	CHECK_MESSAGE(!border_leaf->has_edge_normal(Vector4i(3, 0, 0, 0), 1), "VoxelDataTree generate should not store normals on edges between voxels of the same material.");
-	CHECK_MESSAGE(border_leaf->get_edge_normal(Vector4i(3, 0, 0, 0), 0) == Vector4(-1, 0, 0, 0), "VoxelDataTree generate should store the generator's normal for an active edge.");
+	const Vector4i crossing_voxel = Vector4i(VOXEL_DATA_CHUNK_SIZE - 1, 0, 0, 0);
+	CHECK_MESSAGE(border_leaf->has_edge_normal(crossing_voxel, 0), "VoxelDataTree generate should store a normal on an edge crossing the material boundary.");
+	CHECK_MESSAGE(!border_leaf->has_edge_normal(crossing_voxel, 1), "VoxelDataTree generate should not store normals on edges between voxels of the same material.");
+	CHECK_MESSAGE(border_leaf->get_edge_normal(crossing_voxel, 0) == Vector4(-1, 0, 0, 0), "VoxelDataTree generate should store the generator's normal for an active edge.");
 	CHECK_MESSAGE(border_leaf->get_edge_normal_count() == VOXEL_DATA_CHUNK_SIZE * VOXEL_DATA_CHUNK_SIZE * VOXEL_DATA_CHUNK_SIZE, "VoxelDataTree generate should store one normal per active edge, including edges crossing into the next chunk.");
-	VoxelDataLeaf *solid_leaf = tree.find_deepest_node(Vector4i(0, -8, -8, -8))->get_leaf_data();
+	VoxelDataLeaf *solid_leaf = tree.find_deepest_node(Vector4i(0, corner.y, corner.z, corner.w))->get_leaf_data();
 	REQUIRE(solid_leaf != nullptr);
 	CHECK_MESSAGE(solid_leaf->get_edge_normal_count() == 0, "VoxelDataTree generate should not store normals in a chunk that owns no active edges, since edges belong to the chunk of their lower voxel.");
 

@@ -91,6 +91,7 @@
 #include "voxel/data/voxel_data.h"
 #include "voxel/generators/tiger_test_generator.h"
 #include "voxel/generators/voxel_generator.h"
+#include "voxel/voxel_load_trigger_4d.h"
 #include "voxel/voxel_world_4d.h"
 
 #if GDEXTENSION
@@ -270,6 +271,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_ABSTRACT_CLASS(VoxelGenerator);
 		GDREGISTER_CLASS(TigerTestGenerator);
 		GDREGISTER_CLASS(VoxelData);
+		GDREGISTER_CLASS(VoxelLoadTrigger4D);
 		GDREGISTER_CLASS(VoxelWorld4D);
 #if GDEXTENSION
 		GDREGISTER_CLASS(AxisAlignedBoxPhysicsEngine4D);

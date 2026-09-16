@@ -113,6 +113,7 @@ def get_doc_classes():
 		"TigerTestGenerator",
 		"VoxelData",
 		"VoxelGenerator",
+		"VoxelLoadTrigger4D",
 		"VoxelWorld4D",
 	]
 

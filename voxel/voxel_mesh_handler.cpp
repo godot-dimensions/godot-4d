@@ -15,8 +15,11 @@ void VoxelMeshHandler::mark_region_dirty(const Rect4i &p_region) {
 	ERR_FAIL_NULL(_world);
 	// A chunk's mesh reads the voxel values and edge normals up to one step
 	// outside of the chunk, so the meshes to regenerate are those of the
-	// chunks overlapping the changed region grown by 1.
-	const Rect4i affected = p_region.grow(1).intersection(_world->get_voxel_data()->get_bounds());
+	// chunks overlapping the changed region grown by 1. The region is not
+	// clamped to the data bounds: those may already have contracted away from
+	// an unloaded chunk whose mesh still needs removing, and out-of-bounds
+	// chunks cost only a definedness check.
+	const Rect4i affected = p_region.grow(1);
 	const Vector4i start = Vector4i(
 			_floor_to_mesh_chunk_grid(affected.position.x),
 			_floor_to_mesh_chunk_grid(affected.position.y),
@@ -42,9 +45,15 @@ void VoxelMeshHandler::update_dirty_meshes() {
 		const Vector4i chunk_position = *_dirty_chunks.begin();
 		_dirty_chunks.erase(chunk_position);
 		// A chunk whose region is only partially defined gets no mesh, so
-		// that chunks aren't repeatedly re-meshed as more parts load.
+		// that chunks aren't repeatedly re-meshed as more parts load. A
+		// region without a tree node of its own is covered by an undefined or
+		// constant ancestor, and a constant region generates as constant only
+		// when its border matches too, so both mean an empty mesh without
+		// running the mesher.
+		const Rect4i mesh_region = Rect4i(chunk_position, VOXEL_MESH_CHUNK_SIZE_VECTOR);
+		const VoxelDataTree *region_node = voxel_data->find_region_node(mesh_region);
 		Ref<Mesh4D> mesh;
-		if (voxel_data->is_region_defined(Rect4i(chunk_position, VOXEL_MESH_CHUNK_SIZE_VECTOR))) {
+		if (region_node != nullptr && !region_node->is_constant() && region_node->is_region_defined(mesh_region)) {
 			updated_count++;
 			mesh = VoxelMesher::generate_chunk_mesh(voxel_data, chunk_position);
 		}
