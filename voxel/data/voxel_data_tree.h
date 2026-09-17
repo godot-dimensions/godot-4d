@@ -5,6 +5,7 @@
 #include "voxel_value.h"
 
 class VoxelDataLeaf;
+class VoxelEdit;
 
 // A sparse tree over 4D voxel space, the 4D analog of a quadtree or octree,
 // so each subdivided node has 16 children ("16-tree"). Each node covers an
@@ -47,6 +48,8 @@ private:
 	// Moves the donor's contents into this node, which must be undefined and
 	// have identical bounds. The donor is left undefined.
 	void _take_contents(VoxelDataTree &p_donor);
+
+	void _apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTree &p_root);
 
 public:
 	Type get_type() const { return _type; }
@@ -111,6 +114,11 @@ public:
 	// constants that cover more than the chunk, and collapsing parents whose
 	// children become all undefined. Returns whether any data was unloaded.
 	bool clear_chunk(const Vector4i &p_voxel);
+
+	// Overlays the edit's values onto the defined parts of this tree, and
+	// updates the stored normal of every edge the edit touches. Parts of the
+	// edit over undefined chunks are discarded.
+	void apply_edit(const Ref<VoxelEdit> &p_edit);
 
 	// Descends the tree to the deepest existing node whose bounds contain the
 	// given voxel, which is never a parent. Returns nullptr if the voxel is

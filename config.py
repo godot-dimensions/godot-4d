@@ -110,8 +110,10 @@ def get_doc_classes():
 		"G4MFState4D",
 		"G4MFDocument4D",
 		# Voxel.
+		"SphereVoxelEdit",
 		"TigerTestGenerator",
 		"VoxelData",
+		"VoxelEdit",
 		"VoxelGenerator",
 		"VoxelLoadTrigger4D",
 		"VoxelWorld4D",

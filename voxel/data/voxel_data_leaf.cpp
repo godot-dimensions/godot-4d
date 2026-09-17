@@ -43,6 +43,22 @@ void VoxelDataLeaf::set_edge_normal(const Vector4i &p_local_voxel, const int p_a
 	_edge_normals.insert(position, encoded);
 }
 
+void VoxelDataLeaf::clear_edge_normal(const Vector4i &p_local_voxel, const int p_axis) {
+	ERR_FAIL_INDEX(p_axis, 4);
+	ERR_FAIL_COND(!has_voxel(p_local_voxel));
+	const int32_t edge_index = get_edge_index(p_local_voxel, p_axis);
+	const uint64_t bit = (uint64_t)1 << (edge_index & 63);
+	if ((_edge_normal_bits[edge_index >> 6] & bit) == 0) {
+		return;
+	}
+	const int32_t position = _get_edge_normal_position(edge_index);
+	_edge_normal_bits[edge_index >> 6] &= ~bit;
+	for (int32_t word = (edge_index >> 6) + 1; word < EDGE_WORD_COUNT; word++) {
+		_edge_normal_ranks[word]--;
+	}
+	_edge_normals.remove_at(position);
+}
+
 void VoxelDataLeaf::clear_edge_normals() {
 	for (int32_t word = 0; word < EDGE_WORD_COUNT; word++) {
 		_edge_normal_bits[word] = 0;

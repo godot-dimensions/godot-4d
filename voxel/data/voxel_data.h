@@ -8,6 +8,8 @@
 #include "core/object/ref_counted.h"
 #endif
 
+class VoxelEdit;
+
 // A 4D volume of voxel data that can be expanded indefinitely.
 class VoxelData : public RefCounted {
 	GDCLASS(VoxelData, RefCounted);
@@ -53,6 +55,10 @@ public:
 	// chunk is discarded if that chunk of the data is already defined. Main
 	// thread only.
 	void apply_generated_chunk(VoxelDataTree *p_chunk);
+
+	// Overlays the edit onto the defined parts of the data; parts of the edit
+	// over undefined chunks are discarded. Main thread only.
+	void apply_edit(const Ref<VoxelEdit> &p_edit);
 
 	// Makes the data chunk containing the given voxel undefined again.
 	// Returns whether any data was unloaded. Main thread only.

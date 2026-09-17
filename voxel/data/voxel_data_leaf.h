@@ -61,6 +61,8 @@ public:
 	bool has_edge_normal(const Vector4i &p_local_voxel, const int p_axis) const;
 	Vector4 get_edge_normal(const Vector4i &p_local_voxel, const int p_axis) const;
 	void set_edge_normal(const Vector4i &p_local_voxel, const int p_axis, const Vector4 &p_normal);
+	// Removes the normal stored for the edge, if there is one.
+	void clear_edge_normal(const Vector4i &p_local_voxel, const int p_axis);
 	int64_t get_edge_normal_count() const { return _edge_normals.size(); }
 	void clear_edge_normals();
 };

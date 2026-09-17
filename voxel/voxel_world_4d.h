@@ -5,6 +5,8 @@
 #include "voxel_chunk_loader.h"
 #include "voxel_mesh_handler.h"
 
+class VoxelEdit;
+
 // Places a volume of 4D voxel data (VoxelData) into the scene tree.
 // May be used to represent smaller voxel-based objects, not just whole worlds.
 class VoxelWorld4D : public Node4D {
@@ -22,6 +24,8 @@ protected:
 public:
 	Ref<VoxelData> get_voxel_data() const { return _voxel_data; }
 	VoxelMeshHandler &get_mesh_handler() { return _mesh_handler; }
+
+	void apply_edit(const Ref<VoxelEdit> &p_edit);
 
 	VoxelWorld4D();
 	~VoxelWorld4D();

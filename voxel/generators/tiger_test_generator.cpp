@@ -1,8 +1,9 @@
 #include "tiger_test_generator.h"
 
 // How quickly density grows with distance from the surface, in density units
-// per voxel. Densities saturate at 255 / 64 = ~4 voxels from the surface.
-static constexpr double DENSITY_PER_DISTANCE = 64.0;
+// per voxel: following the VoxelValue convention, densities saturate at
+// exactly 1 voxel from the surface.
+static constexpr double DENSITY_PER_DISTANCE = 255.0;
 
 void TigerTestGenerator::_bind_methods() {
 }

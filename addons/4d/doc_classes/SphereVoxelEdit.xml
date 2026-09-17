@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SphereVoxelEdit" inherits="VoxelEdit" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		An edit that fills a hypersphere with one material.
+	</brief_description>
+	<description>
+		SphereVoxelEdit fills a hypersphere of the given center and radius with one material.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="center" type="Vector4" setter="set_center" getter="get_center" default="Vector4(0, 0, 0, 0)">
+			The center of the sphere, in voxel coordinates.
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="1.0">
+			The radius of the sphere, in voxels.
+		</member>
+		<member name="material" type="int" setter="set_material" getter="get_material" default="2">
+			The material the sphere is filled with: [code]1[/code] for air, carving matter out, or [code]2[/code] for solid, adding it.
+		</member>
+	</members>
+</class>

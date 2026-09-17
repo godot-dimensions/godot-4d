@@ -36,6 +36,7 @@ env.Append(
         "../../render/wireframe_canvas",
         "../../voxel",
         "../../voxel/data",
+        "../../voxel/edit",
         "../../voxel/generators",
     ]
 )
@@ -72,6 +73,7 @@ sources = (
     + Glob("../../render/wireframe_canvas/*.cpp")
     + Glob("../../voxel/*.cpp")
     + Glob("../../voxel/data/*.cpp")
+    + Glob("../../voxel/edit/*.cpp")
     + Glob("../../voxel/generators/*.cpp")
 )
 

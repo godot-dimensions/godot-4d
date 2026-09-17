@@ -1,5 +1,6 @@
 #include "voxel_data.h"
 
+#include "../edit/voxel_edit.h"
 #include "../generators/tiger_test_generator.h"
 #include "../voxel_constants.h"
 
@@ -129,6 +130,14 @@ void VoxelData::expand_bounds(const Vector4i &p_toward) {
 	}
 	memdelete(_tree);
 	_tree = new_root;
+}
+
+void VoxelData::apply_edit(const Ref<VoxelEdit> &p_edit) {
+	ERR_FAIL_COND(p_edit.is_null());
+	if (_tree == nullptr) {
+		return;
+	}
+	_tree->apply_edit(p_edit);
 }
 
 bool VoxelData::unload_chunk(const Vector4i &p_voxel) {

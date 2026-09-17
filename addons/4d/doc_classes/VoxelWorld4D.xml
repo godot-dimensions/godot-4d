@@ -9,6 +9,13 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="apply_edit">
+			<return type="void" />
+			<param index="0" name="edit" type="VoxelEdit" />
+			<description>
+				Applies the edit to this world's voxel data and queues the affected meshes for regeneration. Parts of the edit over chunks that are not loaded are discarded.
+			</description>
+		</method>
 		<method name="get_voxel_data" qualifiers="const">
 			<return type="VoxelData" />
 			<description>

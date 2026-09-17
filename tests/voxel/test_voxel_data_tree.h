@@ -19,14 +19,20 @@ public:
 // Solid where X is non-negative, with the surface normal pointing towards -X.
 class HalfSpaceGenerator : public VoxelGenerator {
 public:
-	virtual VoxelValue get_value(const Vector4i &p_voxel) const override { return p_voxel.x >= 0 ? SOLID_VALUE : AIR_VALUE; }
+	virtual VoxelValue get_value(const Vector4i &p_voxel) const override {
+		const uint8_t density = (uint8_t)MIN(Math::abs(p_voxel.x + 0.5) * 255.0, 255.0);
+		return { p_voxel.x >= 0 ? VoxelMaterial::SOLID : VoxelMaterial::AIR, density };
+	}
 	virtual Vector4 get_normal(const Vector4i &, const int, const VoxelValue &, const VoxelValue &) const override { return Vector4(-1, 0, 0, 0); }
 };
 
 // Solid where X + Y is non-negative.
 class DiagonalHalfSpaceGenerator : public VoxelGenerator {
 public:
-	virtual VoxelValue get_value(const Vector4i &p_voxel) const override { return p_voxel.x + p_voxel.y >= 0 ? SOLID_VALUE : AIR_VALUE; }
+	virtual VoxelValue get_value(const Vector4i &p_voxel) const override {
+		const uint8_t density = (uint8_t)MIN(Math::abs(p_voxel.x + p_voxel.y + 0.5) * Math_SQRT12 * 255.0, 255.0);
+		return { p_voxel.x + p_voxel.y >= 0 ? VoxelMaterial::SOLID : VoxelMaterial::AIR, density };
+	}
 	virtual Vector4 get_normal(const Vector4i &, const int, const VoxelValue &, const VoxelValue &) const override { return Vector4(-1, -1, 0, 0).normalized(); }
 };
 
@@ -127,8 +133,8 @@ TEST_CASE("[VoxelDataTree] Generate") {
 	tree.generate(half_space_generator);
 	CHECK_MESSAGE(tree.is_parent(), "VoxelDataTree generate should not merge children with different values.");
 	CHECK_MESSAGE(tree.find_deepest_node(corner)->is_constant(), "VoxelDataTree generate should make uniform chunks away from a material boundary constant.");
-	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(-1, corner.y, corner.z, corner.w))->is_leaf(), "VoxelDataTree generate should keep a uniform chunk as a leaf when it borders a different material.");
-	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(0, corner.y, corner.z, corner.w))->is_leaf(), "VoxelDataTree generate should keep a uniform solid chunk as a leaf when it borders air.");
+	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(-1, corner.y, corner.z, corner.w))->is_leaf(), "VoxelDataTree generate should keep a chunk that borders a different material as a leaf.");
+	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(0, corner.y, corner.z, corner.w))->is_leaf(), "VoxelDataTree generate should keep a solid chunk that borders air as a leaf.");
 	CHECK_MESSAGE(!tree.get_value(Vector4i(-1, 3, -3, 5)).is_opaque(), "VoxelDataTree generate should store the generated values.");
 	CHECK_MESSAGE(tree.get_value(Vector4i(0, 3, -3, 5)).is_opaque(), "VoxelDataTree generate should store the generated values.");
 

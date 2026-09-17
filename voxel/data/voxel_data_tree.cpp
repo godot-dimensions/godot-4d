@@ -1,5 +1,6 @@
 #include "voxel_data_tree.h"
 
+#include "../edit/voxel_edit.h"
 #include "voxel_data_leaf.h"
 
 bool VoxelDataTree::has_voxel(const Vector4i &p_voxel) const {
@@ -310,6 +311,108 @@ bool VoxelDataTree::clear_chunk(const Vector4i &p_voxel) {
 	}
 	clear();
 	return unloaded;
+}
+
+void VoxelDataTree::apply_edit(const Ref<VoxelEdit> &p_edit) {
+	ERR_FAIL_COND(p_edit.is_null());
+	_apply_edit(p_edit, *this);
+}
+
+void VoxelDataTree::_apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTree &p_root) {
+	const Rect4i edit_bounds = p_edit->get_bounds();
+	if (_type == TYPE_UNDEFINED || !_bounds.intersects_exclusive(edit_bounds)) {
+		return;
+	}
+	if (_type == TYPE_CONSTANT) {
+		const VoxelValue constant_value = _constant_value;
+		if (_bounds.size.x > VOXEL_DATA_CHUNK_SIZE) {
+			// Split, so that only the parts overlapping the edit lose their
+			// constant representation.
+			clear();
+			VoxelDataTree *constant_children = subdivide();
+			for (int i = 0; i < CHILD_COUNT; i++) {
+				constant_children[i].set_constant_value(constant_value);
+			}
+		} else {
+			// The edit may make the chunk non-uniform or give it normals.
+			VoxelDataLeaf *leaf = memnew(VoxelDataLeaf);
+			for (int32_t w = 0; w < _bounds.size.w; w++) {
+				for (int32_t z = 0; z < _bounds.size.z; z++) {
+					for (int32_t y = 0; y < _bounds.size.y; y++) {
+						for (int32_t x = 0; x < _bounds.size.x; x++) {
+							leaf->set_value(Vector4i(x, y, z, w), constant_value);
+						}
+					}
+				}
+			}
+			set_leaf_data(leaf);
+		}
+	}
+	if (_type == TYPE_PARENT) {
+		for (int i = 0; i < CHILD_COUNT; i++) {
+			_children[i]._apply_edit(p_edit, p_root);
+		}
+		return;
+	}
+	const Rect4i affected = _bounds.intersection(edit_bounds);
+	const Vector4i end = affected.get_end();
+	for (int32_t w = affected.position.w; w < end.w; w++) {
+		for (int32_t z = affected.position.z; z < end.z; z++) {
+			for (int32_t y = affected.position.y; y < end.y; y++) {
+				for (int32_t x = affected.position.x; x < end.x; x++) {
+					const Vector4i voxel = Vector4i(x, y, z, w);
+					const Vector4i local_voxel = voxel - _bounds.position;
+					_data->set_value(local_voxel, p_edit->get_value(voxel).overlay(_data->get_value(local_voxel)));
+				}
+			}
+		}
+	}
+	// Update the normals of the edges the edit touches: those where the edit
+	// is not UNDEFINED on both sides. The edit's undefined border layer means
+	// every touched edge lies strictly inside the edit bounds, so its lower,
+	// owning voxel is in the affected region.
+	for (int32_t w = affected.position.w; w < end.w; w++) {
+		for (int32_t z = affected.position.z; z < end.z; z++) {
+			for (int32_t y = affected.position.y; y < end.y; y++) {
+				for (int32_t x = affected.position.x; x < end.x; x++) {
+					const Vector4i voxel = Vector4i(x, y, z, w);
+					for (int axis = 0; axis < 4; axis++) {
+						Vector4i upper_voxel = voxel;
+						upper_voxel[axis]++;
+						if (!edit_bounds.has_point(upper_voxel)) {
+							continue;
+						}
+						if (p_edit->get_value(voxel).material == VoxelMaterial::UNDEFINED && p_edit->get_value(upper_voxel).material == VoxelMaterial::UNDEFINED) {
+							continue;
+						}
+						const Vector4i local_voxel = voxel - _bounds.position;
+						const VoxelValue value_1 = _data->get_value(local_voxel);
+						VoxelValue value_2;
+						if (_bounds.has_point(upper_voxel)) {
+							value_2 = _data->get_value(upper_voxel - _bounds.position);
+						} else {
+							// The neighboring chunk may not have been edited
+							// yet, but overlay is idempotent, so overlaying
+							// again gives the value it will end up with.
+							value_2 = p_edit->get_value(upper_voxel).overlay(p_root.get_value(upper_voxel));
+						}
+						if (value_1.material == VoxelMaterial::UNDEFINED || value_2.material == VoxelMaterial::UNDEFINED) {
+							// The edge leads into an undefined chunk.
+							continue;
+						}
+						if (value_1.material != value_2.material) {
+							// A touched active edge always takes the edit's
+							// normal, even where the pre-existing surface is
+							// nearer to the edge's crossing.
+							_data->set_edge_normal(local_voxel, axis, p_edit->get_normal(voxel, axis, value_1, value_2));
+						} else {
+							_data->clear_edge_normal(local_voxel, axis);
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 bool VoxelDataTree::is_region_defined(const Rect4i &p_region) const {
