@@ -84,22 +84,16 @@ static Vector4 _place_vertex(const Ref<VoxelData> &p_voxel_data, const Vector4i 
 			}
 			Vector4i upper = lower;
 			upper[axis] += 1;
-			const VoxelValue lower_value = p_voxel_data->get_value(lower);
-			const VoxelValue upper_value = p_voxel_data->get_value(upper);
-			if (lower_value.material == upper_value.material || lower_value.material == VoxelMaterial::UNDEFINED || upper_value.material == VoxelMaterial::UNDEFINED) {
+			const VoxelMaterial lower_material = p_voxel_data->get_material(lower);
+			const VoxelMaterial upper_material = p_voxel_data->get_material(upper);
+			if (lower_material == upper_material || lower_material == VoxelMaterial::UNDEFINED || upper_material == VoxelMaterial::UNDEFINED) {
 				continue;
 			}
-			const Vector4 normal = p_voxel_data->get_edge_normal(lower, axis);
-			if (normal == Vector4()) {
-				continue;
-			}
-			// The surface crosses the edge a / (a + b) of the way between the
-			// two voxel centers.
-			const real_t a = lower_value.density;
-			const real_t b = upper_value.density;
-			const real_t crossing = a + b > 0.0f ? a / (a + b) : 0.5f;
+			// Every active edge between defined voxels has stored data.
+			const VoxelEdgeData edge_data = p_voxel_data->get_edge_data(lower, axis);
+			const Vector4 normal = edge_data.decode_normal();
 			Vector4 point = Vector4(lower - p_lattice_point) + Vector4(0.5f, 0.5f, 0.5f, 0.5f);
-			point[axis] += crossing;
+			point[axis] += edge_data.decode_position();
 			const real_t normal_dot_point = normal.dot(point);
 			for (int j = 0; j < 4; j++) {
 				ata[j] += normal * normal[j];
@@ -198,13 +192,13 @@ Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const Ref<VoxelData> &p_voxel_data,
 			for (local.y = 0; local.y < VOXEL_MESH_CHUNK_SIZE; local.y++) {
 				for (local.x = 0; local.x < VOXEL_MESH_CHUNK_SIZE; local.x++) {
 					const Vector4i voxel = p_chunk_position + local;
-					if (!p_voxel_data->get_value(voxel).is_opaque()) {
+					if (!is_material_opaque(p_voxel_data->get_material(voxel))) {
 						continue;
 					}
 					for (int direction_index = 0; direction_index < 8; direction_index++) {
 						const FaceDirection &direction = face_directions[direction_index];
 						const Vector4i facing_voxel = voxel + direction.normal;
-						if (p_voxel_data->get_value(facing_voxel).material != VoxelMaterial::AIR) {
+						if (p_voxel_data->get_material(facing_voxel) != VoxelMaterial::AIR) {
 							continue;
 						}
 						const Vector4i base_corner = local + direction.normal.maxi(0);

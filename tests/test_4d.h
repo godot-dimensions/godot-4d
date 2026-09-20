@@ -41,5 +41,6 @@
 #include "voxel/test_voxel_data.h"
 #include "voxel/test_voxel_data_leaf.h"
 #include "voxel/test_voxel_data_tree.h"
+#include "voxel/test_voxel_edge_data.h"
 #include "voxel/test_voxel_mesh_handler.h"
 #include "voxel/test_voxel_mesher.h"

@@ -110,15 +110,15 @@ const VoxelDataLeaf *VoxelDataTree::get_leaf_data() const {
 	return _data;
 }
 
-void VoxelDataTree::set_constant_value(const VoxelValue p_value) {
+void VoxelDataTree::set_constant_material(const VoxelMaterial p_material) {
 	clear();
-	_constant_value = p_value;
+	_constant_material = p_material;
 	_type = TYPE_CONSTANT;
 }
 
-VoxelValue VoxelDataTree::get_constant_value() const {
-	ERR_FAIL_COND_V_MSG(_type != TYPE_CONSTANT, VoxelValue(), "VoxelDataTree node is not constant, it has no constant value.");
-	return _constant_value;
+VoxelMaterial VoxelDataTree::get_constant_material() const {
+	ERR_FAIL_COND_V_MSG(_type != TYPE_CONSTANT, VoxelMaterial::UNDEFINED, "VoxelDataTree node is not constant, it has no constant value.");
+	return _constant_material;
 }
 
 VoxelDataTree *VoxelDataTree::find_deepest_node(const Vector4i &p_voxel) {
@@ -141,11 +141,11 @@ bool VoxelDataTree::merge_constant_children() {
 		return false;
 	}
 	for (int i = 0; i < CHILD_COUNT; i++) {
-		if (_children[i]._type != TYPE_CONSTANT || _children[i]._constant_value != _children[0]._constant_value) {
+		if (_children[i]._type != TYPE_CONSTANT || _children[i]._constant_material != _children[0]._constant_material) {
 			return false;
 		}
 	}
-	set_constant_value(_children[0]._constant_value);
+	set_constant_material(_children[0]._constant_material);
 	return true;
 }
 
@@ -168,7 +168,7 @@ static bool _borders_different_material(const Ref<VoxelGenerator> &p_generator, 
 					outside[other_axes[1]] = p_bounds.position[other_axes[1]] + c1;
 					for (int32_t c2 = 0; c2 < p_bounds.size[other_axes[2]]; c2++) {
 						outside[other_axes[2]] = p_bounds.position[other_axes[2]] + c2;
-						if (p_generator->get_value(outside).material != p_material) {
+						if (p_generator->get_material(outside) != p_material) {
 							return true;
 						}
 					}
@@ -191,16 +191,16 @@ void VoxelDataTree::generate(const Ref<VoxelGenerator> &p_generator) {
 		return;
 	}
 	VoxelDataLeaf *leaf = memnew(VoxelDataLeaf);
-	const VoxelValue first_value = p_generator->get_value(_bounds.position);
+	const VoxelMaterial first_material = p_generator->get_material(_bounds.position);
 	bool uniform = true;
 	for (int32_t w = 0; w < _bounds.size.w; w++) {
 		for (int32_t z = 0; z < _bounds.size.z; z++) {
 			for (int32_t y = 0; y < _bounds.size.y; y++) {
 				for (int32_t x = 0; x < _bounds.size.x; x++) {
 					const Vector4i local_voxel = Vector4i(x, y, z, w);
-					const VoxelValue value = p_generator->get_value(_bounds.position + local_voxel);
-					leaf->set_value(local_voxel, value);
-					uniform = uniform && value == first_value;
+					const VoxelMaterial material = p_generator->get_material(_bounds.position + local_voxel);
+					leaf->set_material(local_voxel, material);
+					uniform = uniform && material == first_material;
 				}
 			}
 		}
@@ -208,25 +208,25 @@ void VoxelDataTree::generate(const Ref<VoxelGenerator> &p_generator) {
 	// A chunk bordering a different material has active edges, whose surface
 	// normals can only be stored in a leaf, so it must stay a leaf even when
 	// its own voxels are uniform.
-	if (uniform && !_borders_different_material(p_generator, _bounds, first_value.material)) {
+	if (uniform && !_borders_different_material(p_generator, _bounds, first_material)) {
 		memdelete(leaf);
-		set_constant_value(first_value);
+		set_constant_material(first_material);
 		return;
 	}
-	// Store the surface normals of the leaf's active edges. Edges are visited
+	// Store the surface data of the leaf's active edges. Edges are visited
 	// in edge index order, so each insert appends to the end of the array.
 	for (int32_t w = 0; w < _bounds.size.w; w++) {
 		for (int32_t z = 0; z < _bounds.size.z; z++) {
 			for (int32_t y = 0; y < _bounds.size.y; y++) {
 				for (int32_t x = 0; x < _bounds.size.x; x++) {
 					const Vector4i local_voxel = Vector4i(x, y, z, w);
-					const VoxelValue value = leaf->get_value(local_voxel);
+					const VoxelMaterial material = leaf->get_material(local_voxel);
 					for (int axis = 0; axis < 4; axis++) {
 						Vector4i neighbor_local = local_voxel;
 						neighbor_local[axis] += 1;
-						const VoxelValue neighbor_value = neighbor_local[axis] < _bounds.size[axis] ? leaf->get_value(neighbor_local) : p_generator->get_value(_bounds.position + neighbor_local);
-						if (value.material != neighbor_value.material) {
-							leaf->set_edge_normal(local_voxel, axis, p_generator->get_normal(_bounds.position + local_voxel, axis, value, neighbor_value));
+						const VoxelMaterial neighbor_material = neighbor_local[axis] < _bounds.size[axis] ? leaf->get_material(neighbor_local) : p_generator->get_material(_bounds.position + neighbor_local);
+						if (material != neighbor_material) {
+							leaf->set_edge_data(local_voxel, axis, p_generator->get_edge_data(_bounds.position + local_voxel, axis));
 						}
 					}
 				}
@@ -279,7 +279,7 @@ void VoxelDataTree::_take_contents(VoxelDataTree &p_donor) {
 			_data = p_donor._data;
 		} break;
 		case TYPE_CONSTANT: {
-			_constant_value = p_donor._constant_value;
+			_constant_material = p_donor._constant_material;
 		} break;
 	}
 	p_donor._type = TYPE_UNDEFINED;
@@ -295,11 +295,11 @@ bool VoxelDataTree::clear_chunk(const Vector4i &p_voxel) {
 		return true;
 	}
 	if (_type == TYPE_CONSTANT) {
-		const VoxelValue constant_value = _constant_value;
+		const VoxelMaterial constant_material = _constant_material;
 		clear();
 		VoxelDataTree *constant_children = subdivide();
 		for (int i = 0; i < CHILD_COUNT; i++) {
-			constant_children[i].set_constant_value(constant_value);
+			constant_children[i].set_constant_material(constant_material);
 		}
 	}
 	ERR_FAIL_COND_V_MSG(_type != TYPE_PARENT, false, "VoxelDataTree nodes larger than a chunk should be parents, constants, or undefined.");
@@ -313,25 +313,26 @@ bool VoxelDataTree::clear_chunk(const Vector4i &p_voxel) {
 	return unloaded;
 }
 
-void VoxelDataTree::apply_edit(const Ref<VoxelEdit> &p_edit) {
-	ERR_FAIL_COND(p_edit.is_null());
-	_apply_edit(p_edit, *this);
-}
-
 void VoxelDataTree::_apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTree &p_root) {
 	const Rect4i edit_bounds = p_edit->get_bounds();
-	if (_type == TYPE_UNDEFINED || !_bounds.intersects_exclusive(edit_bounds)) {
+	// Edges owned by the voxels one step below the edit bounds still reach
+	// into them, so those voxels' chunks are affected too.
+	const Rect4i edge_bounds = Rect4i(edit_bounds.position - Vector4i(1, 1, 1, 1), edit_bounds.size + Vector4i(1, 1, 1, 1));
+	// Constant chunks are not permitted to be adjacent to voxels of a different
+	// material to them.
+	const Rect4i face_bounds = edit_bounds.grow(1);
+	if (_type == TYPE_UNDEFINED || !_bounds.intersects_exclusive(face_bounds)) {
 		return;
 	}
 	if (_type == TYPE_CONSTANT) {
-		const VoxelValue constant_value = _constant_value;
+		const VoxelMaterial constant_material = _constant_material;
 		if (_bounds.size.x > VOXEL_DATA_CHUNK_SIZE) {
 			// Split, so that only the parts overlapping the edit lose their
 			// constant representation.
 			clear();
 			VoxelDataTree *constant_children = subdivide();
 			for (int i = 0; i < CHILD_COUNT; i++) {
-				constant_children[i].set_constant_value(constant_value);
+				constant_children[i].set_constant_material(constant_material);
 			}
 		} else {
 			// The edit may make the chunk non-uniform or give it normals.
@@ -340,7 +341,7 @@ void VoxelDataTree::_apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTre
 				for (int32_t z = 0; z < _bounds.size.z; z++) {
 					for (int32_t y = 0; y < _bounds.size.y; y++) {
 						for (int32_t x = 0; x < _bounds.size.x; x++) {
-							leaf->set_value(Vector4i(x, y, z, w), constant_value);
+							leaf->set_material(Vector4i(x, y, z, w), constant_material);
 						}
 					}
 				}
@@ -354,6 +355,64 @@ void VoxelDataTree::_apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTre
 		}
 		return;
 	}
+	// The surface data of the edges the edit touches, those where the edit is
+	// not UNDEFINED on both sides, is updated before the materials, because
+	// the rules below need the materials from before the edit. That holds for
+	// upper voxels beyond this chunk too: children are visited in index
+	// order, so the chunk containing an edge's upper voxel is always visited
+	// after the chunk owning the edge.
+	const Rect4i edge_affected = _bounds.intersection(edge_bounds);
+	const Vector4i edge_end = edge_affected.get_end();
+	for (int32_t w = edge_affected.position.w; w < edge_end.w; w++) {
+		for (int32_t z = edge_affected.position.z; z < edge_end.z; z++) {
+			for (int32_t y = edge_affected.position.y; y < edge_end.y; y++) {
+				for (int32_t x = edge_affected.position.x; x < edge_end.x; x++) {
+					const Vector4i voxel = Vector4i(x, y, z, w);
+					const Vector4i local_voxel = voxel - _bounds.position;
+					for (int axis = 0; axis < 4; axis++) {
+						Vector4i upper_voxel = voxel;
+						upper_voxel[axis]++;
+						const VoxelMaterial edit_lower = edit_bounds.has_point(voxel) ? p_edit->get_material(voxel) : VoxelMaterial::UNDEFINED;
+						const VoxelMaterial edit_upper = edit_bounds.has_point(upper_voxel) ? p_edit->get_material(upper_voxel) : VoxelMaterial::UNDEFINED;
+						const bool lower_defined = edit_lower != VoxelMaterial::UNDEFINED;
+						const bool upper_defined = edit_upper != VoxelMaterial::UNDEFINED;
+						if (!lower_defined && !upper_defined) {
+							continue;
+						}
+						const VoxelMaterial old_lower = _data->get_material(local_voxel);
+						const VoxelMaterial old_upper = _bounds.has_point(upper_voxel) ? _data->get_material(upper_voxel - _bounds.position) : p_root.get_material(upper_voxel);
+						const VoxelMaterial new_lower = overlay_material(edit_lower, old_lower);
+						const VoxelMaterial new_upper = overlay_material(edit_upper, old_upper);
+						if (new_lower == VoxelMaterial::UNDEFINED || new_upper == VoxelMaterial::UNDEFINED) {
+							// The edge leads into an undefined chunk.
+							continue;
+						}
+						if (new_lower == new_upper) {
+							_data->clear_edge_data(local_voxel, axis);
+							continue;
+						}
+						const VoxelEdgeData edit_edge_data = p_edit->get_edge_data(voxel, axis);
+						if (lower_defined != upper_defined && _data->has_edge_data(local_voxel, axis)) {
+							const bool same_material = lower_defined ? edit_lower == old_lower : edit_upper == old_upper;
+							if (same_material) {
+								// Writing a material over itself extends its
+								// region, so the combined region's surface is
+								// whichever crossing lies farther from the
+								// edit-defined end.
+								const real_t old_position = _data->get_edge_data(local_voxel, axis).decode_position();
+								const real_t edit_position = edit_edge_data.decode_position();
+								const bool old_is_farther = lower_defined ? old_position > edit_position : old_position < edit_position;
+								if (old_is_farther) {
+									continue;
+								}
+							}
+						}
+						_data->set_edge_data(local_voxel, axis, edit_edge_data);
+					}
+				}
+			}
+		}
+	}
 	const Rect4i affected = _bounds.intersection(edit_bounds);
 	const Vector4i end = affected.get_end();
 	for (int32_t w = affected.position.w; w < end.w; w++) {
@@ -362,53 +421,7 @@ void VoxelDataTree::_apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTre
 				for (int32_t x = affected.position.x; x < end.x; x++) {
 					const Vector4i voxel = Vector4i(x, y, z, w);
 					const Vector4i local_voxel = voxel - _bounds.position;
-					_data->set_value(local_voxel, p_edit->get_value(voxel).overlay(_data->get_value(local_voxel)));
-				}
-			}
-		}
-	}
-	// Update the normals of the edges the edit touches: those where the edit
-	// is not UNDEFINED on both sides. The edit's undefined border layer means
-	// every touched edge lies strictly inside the edit bounds, so its lower,
-	// owning voxel is in the affected region.
-	for (int32_t w = affected.position.w; w < end.w; w++) {
-		for (int32_t z = affected.position.z; z < end.z; z++) {
-			for (int32_t y = affected.position.y; y < end.y; y++) {
-				for (int32_t x = affected.position.x; x < end.x; x++) {
-					const Vector4i voxel = Vector4i(x, y, z, w);
-					for (int axis = 0; axis < 4; axis++) {
-						Vector4i upper_voxel = voxel;
-						upper_voxel[axis]++;
-						if (!edit_bounds.has_point(upper_voxel)) {
-							continue;
-						}
-						if (p_edit->get_value(voxel).material == VoxelMaterial::UNDEFINED && p_edit->get_value(upper_voxel).material == VoxelMaterial::UNDEFINED) {
-							continue;
-						}
-						const Vector4i local_voxel = voxel - _bounds.position;
-						const VoxelValue value_1 = _data->get_value(local_voxel);
-						VoxelValue value_2;
-						if (_bounds.has_point(upper_voxel)) {
-							value_2 = _data->get_value(upper_voxel - _bounds.position);
-						} else {
-							// The neighboring chunk may not have been edited
-							// yet, but overlay is idempotent, so overlaying
-							// again gives the value it will end up with.
-							value_2 = p_edit->get_value(upper_voxel).overlay(p_root.get_value(upper_voxel));
-						}
-						if (value_1.material == VoxelMaterial::UNDEFINED || value_2.material == VoxelMaterial::UNDEFINED) {
-							// The edge leads into an undefined chunk.
-							continue;
-						}
-						if (value_1.material != value_2.material) {
-							// A touched active edge always takes the edit's
-							// normal, even where the pre-existing surface is
-							// nearer to the edge's crossing.
-							_data->set_edge_normal(local_voxel, axis, p_edit->get_normal(voxel, axis, value_1, value_2));
-						} else {
-							_data->clear_edge_normal(local_voxel, axis);
-						}
-					}
+					_data->set_material(local_voxel, overlay_material(p_edit->get_material(voxel), _data->get_material(local_voxel)));
 				}
 			}
 		}
@@ -439,7 +452,7 @@ bool VoxelDataTree::is_region_defined(const Rect4i &p_region) const {
 	return false;
 }
 
-VoxelValue VoxelDataTree::get_value(const Vector4i &p_voxel) const {
+VoxelMaterial VoxelDataTree::get_material(const Vector4i &p_voxel) const {
 	const VoxelDataTree *node = find_deepest_node(p_voxel);
 	if (node != nullptr) {
 		switch (node->_type) {
@@ -447,26 +460,26 @@ VoxelValue VoxelDataTree::get_value(const Vector4i &p_voxel) const {
 			case TYPE_PARENT: {
 			} break;
 			case TYPE_LEAF: {
-				return node->_data->get_value(p_voxel - node->_bounds.position);
+				return node->_data->get_material(p_voxel - node->_bounds.position);
 			} break;
 			case TYPE_CONSTANT: {
-				return node->_constant_value;
+				return node->_constant_material;
 			} break;
 		}
 	}
-	return VoxelValue();
+	return VoxelMaterial::UNDEFINED;
 }
 
-Vector4 VoxelDataTree::get_edge_normal(const Vector4i &p_voxel, const int p_axis) const {
+VoxelEdgeData VoxelDataTree::get_edge_data(const Vector4i &p_voxel, const int p_axis) const {
 	const VoxelDataTree *node = find_deepest_node(p_voxel);
 	if (node == nullptr || node->_type != TYPE_LEAF) {
-		return Vector4();
+		return VoxelEdgeData();
 	}
 	const Vector4i local_voxel = p_voxel - node->_bounds.position;
-	if (!node->_data->has_edge_normal(local_voxel, p_axis)) {
-		return Vector4();
+	if (!node->_data->has_edge_data(local_voxel, p_axis)) {
+		return VoxelEdgeData();
 	}
-	return node->_data->get_edge_normal(local_voxel, p_axis);
+	return node->_data->get_edge_data(local_voxel, p_axis);
 }
 
 VoxelDataTree::VoxelDataTree(const Rect4i &p_bounds) :

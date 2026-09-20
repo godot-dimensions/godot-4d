@@ -2,7 +2,8 @@
 
 #include "../../math/rect4i.h"
 #include "../generators/voxel_generator.h"
-#include "voxel_value.h"
+#include "voxel_edge_data.h"
+#include "voxel_material.h"
 
 class VoxelDataLeaf;
 class VoxelEdit;
@@ -13,7 +14,7 @@ class VoxelEdit;
 // undefined (covers space with no voxel data, needs no storage), a parent
 // with 16 children each covering one orthant of its bounds, a leaf holding
 // a chunk of actual voxel data in a VoxelDataLeaf, or constant, holding a
-// single value shared by every voxel in its bounds.
+// single material shared by every voxel in its bounds.
 // Always a power-of-2 sized hypercube, positioned at a multiple of half its
 // size on every axis; leaf positions are a multiple of their full size.
 // Nodes own their children and leaf data, and free them when cleared or destroyed.
@@ -41,15 +42,13 @@ private:
 		VoxelDataTree *_children = nullptr;
 		// Chunk of voxel data. Only valid when _type == TYPE_LEAF.
 		VoxelDataLeaf *_data;
-		// The value of every voxel in the bounds. Only valid when _type == TYPE_CONSTANT.
-		VoxelValue _constant_value;
+		// The material of every voxel in the bounds. Only valid when _type == TYPE_CONSTANT.
+		VoxelMaterial _constant_material;
 	};
 
 	// Moves the donor's contents into this node, which must be undefined and
 	// have identical bounds. The donor is left undefined.
 	void _take_contents(VoxelDataTree &p_donor);
-
-	void _apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTree &p_root);
 
 public:
 	Type get_type() const { return _type; }
@@ -87,21 +86,20 @@ public:
 	VoxelDataLeaf *get_leaf_data();
 	const VoxelDataLeaf *get_leaf_data() const;
 
-	// Turns the node into a constant, one value shared by every voxel in its
-	// bounds, freeing any previous contents.
-	void set_constant_value(const VoxelValue p_value);
-	VoxelValue get_constant_value() const;
+	// Turns the node into a constant, one material shared by every voxel in
+	// its bounds, freeing any previous contents.
+	void set_constant_material(const VoxelMaterial p_material);
+	VoxelMaterial get_constant_material() const;
 
 	// If this node is a parent whose children are all constants with the same
-	// value, replaces them with a single constant node and returns true.
+	// material, replaces them with a single constant node and returns true.
 	bool merge_constant_children();
 
 	// Discards any existing contents and fills the node at full detail with
-	// the values the given generator returns for each voxel, and with the
-	// surface normals of the active edges. Uniform regions are stored as
-	// constant nodes, merged into larger ones where possible, except chunks
-	// that border a different material, which stay leaves so that they can
-	// store the surface data
+	// the data the given generator returns for each voxel. Uniform regions
+	// are stored as constant nodes, merged into larger ones where possible,
+	// except chunks that border a different material, which stay leaves so
+	// that they can store the surface data
 	void generate(const Ref<VoxelGenerator> &p_generator);
 
 	// Grafts a generated chunk into this tree at the chunk's own bounds,
@@ -115,10 +113,10 @@ public:
 	// children become all undefined. Returns whether any data was unloaded.
 	bool clear_chunk(const Vector4i &p_voxel);
 
-	// Overlays the edit's values onto the defined parts of this tree, and
-	// updates the stored normal of every edge the edit touches. Parts of the
-	// edit over undefined chunks are discarded.
-	void apply_edit(const Ref<VoxelEdit> &p_edit);
+	// Overlays the edit's materials onto the defined parts of this subtree,
+	// and updates the stored surface data of every edge the edit touches.
+	// The materials other chunks had before the edit are read through p_root.
+	void apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTree &p_root);
 
 	// Descends the tree to the deepest existing node whose bounds contain the
 	// given voxel, which is never a parent. Returns nullptr if the voxel is
@@ -131,15 +129,14 @@ public:
 	// the caller is responsible for them.
 	bool is_region_defined(const Rect4i &p_region) const;
 
-	// The value of the voxel at the given coordinates, or a value with the
-	// UNDEFINED material if the voxel is undefined or outside of this node's
-	// bounds.
-	VoxelValue get_value(const Vector4i &p_voxel) const;
+	// The material of the voxel at the given coordinates, or the UNDEFINED
+	// material if the voxel is undefined or outside of this node's bounds.
+	VoxelMaterial get_material(const Vector4i &p_voxel) const;
 
-	// The stored surface normal of the edge from the given voxel to its
-	// neighbor one step along the given axis, or Vector4() if no normal is
-	// stored for that edge.
-	Vector4 get_edge_normal(const Vector4i &p_voxel, const int p_axis) const;
+	// The stored surface data of the edge from the given voxel to its
+	// neighbor one step along the given axis, still encoded, or arbitrary data
+	// if none is stored for that edge.
+	VoxelEdgeData get_edge_data(const Vector4i &p_voxel, const int p_axis) const;
 
 	// Nodes own their children and leaf data, so copying is not allowed.
 	VoxelDataTree(const VoxelDataTree &) = delete;

@@ -6,7 +6,6 @@
 
 void VoxelData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_voxel_defined", "voxel"), &VoxelData::is_voxel_defined);
-	ClassDB::bind_method(D_METHOD("get_density", "voxel"), &VoxelData::get_density);
 }
 
 bool VoxelData::is_voxel_defined(const Vector4i &p_voxel) const {
@@ -24,16 +23,12 @@ bool VoxelData::is_region_defined(const Rect4i &p_region) const {
 	return _tree->is_region_defined(p_region);
 }
 
-VoxelValue VoxelData::get_value(const Vector4i &p_voxel) const {
-	return _tree == nullptr ? VoxelValue() : _tree->get_value(p_voxel);
+VoxelMaterial VoxelData::get_material(const Vector4i &p_voxel) const {
+	return _tree == nullptr ? VoxelMaterial::UNDEFINED : _tree->get_material(p_voxel);
 }
 
-int VoxelData::get_density(const Vector4i &p_voxel) const {
-	return get_value(p_voxel).density;
-}
-
-Vector4 VoxelData::get_edge_normal(const Vector4i &p_voxel, const int p_axis) const {
-	return _tree == nullptr ? Vector4() : _tree->get_edge_normal(p_voxel, p_axis);
+VoxelEdgeData VoxelData::get_edge_data(const Vector4i &p_voxel, const int p_axis) const {
+	return _tree == nullptr ? VoxelEdgeData() : _tree->get_edge_data(p_voxel, p_axis);
 }
 
 Vector4i VoxelData::get_chunk_position(const Vector4i &p_voxel) const {
@@ -104,11 +99,11 @@ void VoxelData::expand_bounds(const Vector4i &p_toward) {
 		// root's children coincides with a grandchild of the new root instead.
 		if (_tree->is_constant()) {
 			// Split the constant so that its parts can move separately.
-			const VoxelValue constant_value = _tree->get_constant_value();
+			const VoxelMaterial constant_material = _tree->get_constant_material();
 			_tree->clear();
 			VoxelDataTree *split = _tree->subdivide();
 			for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
-				split[i].set_constant_value(constant_value);
+				split[i].set_constant_material(constant_material);
 			}
 		}
 		// A half-aligned leaf cannot exist under the alignment invariant, so
@@ -137,7 +132,7 @@ void VoxelData::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	if (_tree == nullptr) {
 		return;
 	}
-	_tree->apply_edit(p_edit);
+	_tree->apply_edit(p_edit, *_tree);
 }
 
 bool VoxelData::unload_chunk(const Vector4i &p_voxel) {

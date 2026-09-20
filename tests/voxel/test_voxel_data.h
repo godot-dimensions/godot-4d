@@ -23,11 +23,9 @@ TEST_CASE("[VoxelData] Hard-coded test data") {
 	CHECK_MESSAGE(!data->is_region_defined(Rect4i(test_region.get_end().x + 1, 0, 0, 0, 1, 1, 1, 1)), "VoxelData regions entirely outside the bounds should not be defined.");
 	// The remaining samples are fixed locations on the test tiger, inside the
 	// test region for any chunk size of at least 4.
-	CHECK_MESSAGE(!data->get_value(Vector4i(0, 0, 0, 0)).is_opaque(), "VoxelData test shape should be empty at the origin.");
-	CHECK_MESSAGE(data->get_value(Vector4i(10, 0, 10, 0)).is_opaque(), "VoxelData test shape should be solid on the tiger's core circles.");
-	CHECK_MESSAGE(data->get_value(Vector4i(100000, -5, 3, 12)) == VoxelValue(), "VoxelData get_value outside the bounds should return the default value.");
-	CHECK_MESSAGE(data->get_density(Vector4i(14, 0, 10, 0)) < data->get_density(Vector4i(0, 0, 0, 0)), "VoxelData density should be lower near the surface than deep inside a material.");
-	CHECK_MESSAGE(data->get_density(Vector4i(10, 0, 10, 0)) > 128, "VoxelData density should be high deep inside the solid.");
+	CHECK_MESSAGE(data->get_material(Vector4i(0, 0, 0, 0)) == VoxelMaterial::AIR, "VoxelData test shape should be empty at the origin.");
+	CHECK_MESSAGE(data->get_material(Vector4i(10, 0, 10, 0)) == VoxelMaterial::SOLID, "VoxelData test shape should be solid on the tiger's core circles.");
+	CHECK_MESSAGE(data->get_material(Vector4i(100000, -5, 3, 12)) == VoxelMaterial::UNDEFINED, "VoxelData get_material outside the bounds should return UNDEFINED.");
 }
 
 static bool _bounds_alignment_holds(const Rect4i &p_bounds) {
@@ -49,9 +47,9 @@ TEST_CASE("[VoxelData] Bounds expansion and contraction") {
 
 	// The content must survive every reshaping of the bounds below unchanged.
 	const Vector4i samples[3] = { Vector4i(0, 0, 0, 0), Vector4i(3, 2, 1, 0), Vector4i(1, 3, 3, 3) };
-	VoxelValue sample_values[3];
+	VoxelMaterial sample_materials[3];
 	for (int i = 0; i < 3; i++) {
-		sample_values[i] = data->get_value(samples[i]);
+		sample_materials[i] = data->get_material(samples[i]);
 	}
 
 	const Vector4i far_voxel = Vector4i(65, 2, -7, 0);
@@ -60,13 +58,13 @@ TEST_CASE("[VoxelData] Bounds expansion and contraction") {
 	CHECK_MESSAGE(data->get_bounds().encloses_inclusive(origin_chunk_bounds), "VoxelData expanded bounds should still cover the old content.");
 	CHECK_MESSAGE(_bounds_alignment_holds(data->get_bounds()), "VoxelData expanded bounds should satisfy the alignment invariant.");
 	for (int i = 0; i < 3; i++) {
-		CHECK_MESSAGE(data->get_value(samples[i]) == sample_values[i], "VoxelData expansion should preserve the stored values.");
+		CHECK_MESSAGE(data->get_material(samples[i]) == sample_materials[i], "VoxelData expansion should preserve the stored values.");
 	}
 
 	data->unload_chunk(far_voxel);
 	CHECK_MESSAGE(data->get_bounds() == origin_chunk_bounds, "VoxelData bounds should contract back to the remaining content once the far chunk is unloaded.");
 	for (int i = 0; i < 3; i++) {
-		CHECK_MESSAGE(data->get_value(samples[i]) == sample_values[i], "VoxelData contraction should preserve the stored values.");
+		CHECK_MESSAGE(data->get_material(samples[i]) == sample_materials[i], "VoxelData contraction should preserve the stored values.");
 	}
 
 	// A chunk on the other side of the origin: the two chunks together only
@@ -87,19 +85,19 @@ TEST_CASE("[VoxelData] Bounds expansion and contraction") {
 	CHECK_MESSAGE(data->get_bounds().position.x == -VOXEL_DATA_CHUNK_SIZE, "VoxelData contraction should restore the half-aligned root around the straddling chunks.");
 	CHECK_MESSAGE(data->is_voxel_defined(Vector4i(-1, 0, 0, 0)), "VoxelData contraction should keep both straddling chunks.");
 	for (int i = 0; i < 3; i++) {
-		CHECK_MESSAGE(data->get_value(samples[i]) == sample_values[i], "VoxelData middle expansion and contraction should preserve the stored values.");
+		CHECK_MESSAGE(data->get_material(samples[i]) == sample_materials[i], "VoxelData middle expansion and contraction should preserve the stored values.");
 	}
 
 	data->unload_chunk(Vector4i(-1, 0, 0, 0));
 	data->unload_chunk(Vector4i(0, 0, 0, 0));
 	CHECK_MESSAGE(data->get_bounds().size == Vector4i(), "VoxelData bounds should become empty once everything is unloaded.");
 	CHECK_MESSAGE(!data->is_voxel_defined(Vector4i(0, 0, 0, 0)), "VoxelData voxels should be undefined once everything is unloaded.");
-	CHECK_MESSAGE(data->get_value(Vector4i(0, 0, 0, 0)) == VoxelValue(), "VoxelData get_value should return the default value once everything is unloaded.");
+	CHECK_MESSAGE(data->get_material(Vector4i(0, 0, 0, 0)) == VoxelMaterial::UNDEFINED, "VoxelData get_material should return UNDEFINED once everything is unloaded.");
 
 	data->apply_generated_chunk(data->generate_chunk_content(Vector4i(0, 0, 0, 0)));
 	CHECK_MESSAGE(data->get_bounds() == origin_chunk_bounds, "VoxelData should accept chunks again after everything was unloaded.");
 	for (int i = 0; i < 3; i++) {
-		CHECK_MESSAGE(data->get_value(samples[i]) == sample_values[i], "VoxelData chunks reloaded after a full unload should regenerate the same values.");
+		CHECK_MESSAGE(data->get_material(samples[i]) == sample_materials[i], "VoxelData chunks reloaded after a full unload should regenerate the same values.");
 	}
 }
 } // namespace TestVoxelData

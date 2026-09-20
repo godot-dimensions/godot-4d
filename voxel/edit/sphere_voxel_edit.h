@@ -15,8 +15,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	virtual VoxelValue get_value(const Vector4i &p_voxel) const override;
-	virtual Vector4 get_normal(const Vector4i &p_voxel, const int p_axis, const VoxelValue &p_value_1, const VoxelValue &p_value_2) const override;
+	virtual VoxelMaterial get_material(const Vector4i &p_voxel) const override;
+	virtual VoxelEdgeData get_edge_data(const Vector4i &p_voxel, const int p_axis) const override;
 
 	Vector4 get_center() const { return _center; }
 	void set_center(const Vector4 &p_center);
@@ -24,8 +24,8 @@ public:
 	double get_radius() const { return _radius; }
 	void set_radius(const double p_radius);
 
-	int get_material() const { return (int)_material; }
-	void set_material(const int p_material);
+	int get_fill_material() const { return (int)_material; }
+	void set_fill_material(const int p_fill_material);
 
 	SphereVoxelEdit() { _update_bounds(); }
 	SphereVoxelEdit(const Vector4 &p_center, const double p_radius, const VoxelMaterial p_material) :

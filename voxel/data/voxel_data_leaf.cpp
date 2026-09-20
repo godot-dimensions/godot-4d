@@ -7,62 +7,61 @@ static int32_t _count_set_bits(uint64_t p_bits) {
 	return (int32_t)((p_bits * 0x0101010101010101ULL) >> 56);
 }
 
-int32_t VoxelDataLeaf::_get_edge_normal_position(const int32_t p_edge_index) const {
+int32_t VoxelDataLeaf::_get_edge_data_index(const int32_t p_edge_index) const {
 	const int32_t word = p_edge_index >> 6;
-	const uint64_t bits_below = _edge_normal_bits[word] & (((uint64_t)1 << (p_edge_index & 63)) - 1);
-	return _edge_normal_ranks[word] + _count_set_bits(bits_below);
+	const uint64_t bits_below = _edge_data_bits[word] & (((uint64_t)1 << (p_edge_index & 63)) - 1);
+	return _edge_data_ranks[word] + _count_set_bits(bits_below);
 }
 
-bool VoxelDataLeaf::has_edge_normal(const Vector4i &p_local_voxel, const int p_axis) const {
+bool VoxelDataLeaf::has_edge_data(const Vector4i &p_local_voxel, const int p_axis) const {
 	ERR_FAIL_INDEX_V(p_axis, 4, false);
 	ERR_FAIL_COND_V(!has_voxel(p_local_voxel), false);
 	const int32_t edge_index = get_edge_index(p_local_voxel, p_axis);
-	return (_edge_normal_bits[edge_index >> 6] & ((uint64_t)1 << (edge_index & 63))) != 0;
+	return (_edge_data_bits[edge_index >> 6] & ((uint64_t)1 << (edge_index & 63))) != 0;
 }
 
-Vector4 VoxelDataLeaf::get_edge_normal(const Vector4i &p_local_voxel, const int p_axis) const {
-	ERR_FAIL_COND_V_MSG(!has_edge_normal(p_local_voxel, p_axis), Vector4(), "VoxelDataLeaf has no normal stored for this edge.");
-	return _edge_normals[_get_edge_normal_position(get_edge_index(p_local_voxel, p_axis))].decode();
+VoxelEdgeData VoxelDataLeaf::get_edge_data(const Vector4i &p_local_voxel, const int p_axis) const {
+	ERR_FAIL_COND_V_MSG(!has_edge_data(p_local_voxel, p_axis), VoxelEdgeData(), "VoxelDataLeaf has no data stored for this edge.");
+	return _edge_data[_get_edge_data_index(get_edge_index(p_local_voxel, p_axis))];
 }
 
-void VoxelDataLeaf::set_edge_normal(const Vector4i &p_local_voxel, const int p_axis, const Vector4 &p_normal) {
+void VoxelDataLeaf::set_edge_data(const Vector4i &p_local_voxel, const int p_axis, const VoxelEdgeData p_edge_data) {
 	ERR_FAIL_INDEX(p_axis, 4);
 	ERR_FAIL_COND(!has_voxel(p_local_voxel));
 	const int32_t edge_index = get_edge_index(p_local_voxel, p_axis);
-	const VoxelEdgeNormal encoded = VoxelEdgeNormal::encode(p_normal);
-	const int32_t position = _get_edge_normal_position(edge_index);
+	const int32_t data_index = _get_edge_data_index(edge_index);
 	const uint64_t bit = (uint64_t)1 << (edge_index & 63);
-	if ((_edge_normal_bits[edge_index >> 6] & bit) != 0) {
-		_edge_normals[position] = encoded;
+	if ((_edge_data_bits[edge_index >> 6] & bit) != 0) {
+		_edge_data[data_index] = p_edge_data;
 		return;
 	}
-	_edge_normal_bits[edge_index >> 6] |= bit;
+	_edge_data_bits[edge_index >> 6] |= bit;
 	for (int32_t word = (edge_index >> 6) + 1; word < EDGE_WORD_COUNT; word++) {
-		_edge_normal_ranks[word]++;
+		_edge_data_ranks[word]++;
 	}
-	_edge_normals.insert(position, encoded);
+	_edge_data.insert(data_index, p_edge_data);
 }
 
-void VoxelDataLeaf::clear_edge_normal(const Vector4i &p_local_voxel, const int p_axis) {
+void VoxelDataLeaf::clear_edge_data(const Vector4i &p_local_voxel, const int p_axis) {
 	ERR_FAIL_INDEX(p_axis, 4);
 	ERR_FAIL_COND(!has_voxel(p_local_voxel));
 	const int32_t edge_index = get_edge_index(p_local_voxel, p_axis);
 	const uint64_t bit = (uint64_t)1 << (edge_index & 63);
-	if ((_edge_normal_bits[edge_index >> 6] & bit) == 0) {
+	if ((_edge_data_bits[edge_index >> 6] & bit) == 0) {
 		return;
 	}
-	const int32_t position = _get_edge_normal_position(edge_index);
-	_edge_normal_bits[edge_index >> 6] &= ~bit;
+	const int32_t data_index = _get_edge_data_index(edge_index);
+	_edge_data_bits[edge_index >> 6] &= ~bit;
 	for (int32_t word = (edge_index >> 6) + 1; word < EDGE_WORD_COUNT; word++) {
-		_edge_normal_ranks[word]--;
+		_edge_data_ranks[word]--;
 	}
-	_edge_normals.remove_at(position);
+	_edge_data.remove_at(data_index);
 }
 
-void VoxelDataLeaf::clear_edge_normals() {
+void VoxelDataLeaf::clear_all_edge_data() {
 	for (int32_t word = 0; word < EDGE_WORD_COUNT; word++) {
-		_edge_normal_bits[word] = 0;
-		_edge_normal_ranks[word] = 0;
+		_edge_data_bits[word] = 0;
+		_edge_data_ranks[word] = 0;
 	}
-	_edge_normals.clear();
+	_edge_data.clear();
 }

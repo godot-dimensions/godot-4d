@@ -4,7 +4,7 @@
 		Abstract base class for 4D voxel content generators.
 	</brief_description>
 	<description>
-		A VoxelGenerator produces the voxel content that fills a [VoxelData] volume: the material and density of any voxel, and the surface normals where the generated surface crosses the voxel grid's edges. Each subclass generates one kind of content, configured by the parameters it is instantiated with.
+		A VoxelGenerator produces the voxel content that fills a [VoxelData] volume: the material of any voxel, and the surface normal and crossing position wherever the generated surface crosses the voxel grid's edges. Each subclass generates one kind of content, configured by the parameters it is instantiated with.
 		Generators are currently only usable from C++ code.
 	</description>
 	<tutorials>

@@ -29,13 +29,12 @@ public:
 	// Whether every voxel in the given region is defined. Regions reaching
 	// outside the defined bounds are not fully defined.
 	bool is_region_defined(const Rect4i &p_region) const;
-	VoxelValue get_value(const Vector4i &p_voxel) const;
-	int get_density(const Vector4i &p_voxel) const;
+	VoxelMaterial get_material(const Vector4i &p_voxel) const;
 
-	// The stored surface normal of the edge from the given voxel to its
-	// neighbor one step along the given axis, or Vector4() if no normal is
-	// stored for that edge.
-	Vector4 get_edge_normal(const Vector4i &p_voxel, const int p_axis) const;
+	// The stored surface data of the edge from the given voxel to its
+	// neighbor one step along the given axis, still encoded, or arbitrary data
+	// if none is stored for that edge.
+	VoxelEdgeData get_edge_data(const Vector4i &p_voxel, const int p_axis) const;
 
 	// The lowest voxel of the data chunk containing the given voxel. Chunks
 	// are aligned to the global chunk-sized grid anchored at the origin.
