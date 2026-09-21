@@ -22,6 +22,8 @@ class VoxelDataTree {
 	// VoxelData contracts and replaces the root in ways that only make sense
 	// for a whole tree, working with the node internals directly.
 	friend class VoxelData;
+	// Grafting a generated chunk moves its contents with _take_contents.
+	friend struct VoxelDataNeighbourhood;
 
 public:
 	enum Type {
@@ -102,12 +104,6 @@ public:
 	// that they can store the surface data
 	void generate(const Ref<VoxelGenerator> &p_generator);
 
-	// Grafts a generated chunk into this tree at the chunk's own bounds,
-	// subdividing undefined nodes down to it, and takes ownership of the
-	// chunk. The chunk is discarded if that part of the tree is already
-	// defined.
-	void apply_generated_chunk(VoxelDataTree *p_chunk);
-
 	// Makes the chunk containing the given voxel undefined again, subdividing
 	// constants that cover more than the chunk, and collapsing parents whose
 	// children become all undefined. Returns whether any data was unloaded.
@@ -144,6 +140,8 @@ public:
 // A temporary view of a tree node together with the nodes bordering it, for
 // operations that read across node boundaries. While it exists, it borrows
 // ownership of the nodes, so they may not be modified except through it.
+// Generally, modifying neighbourhood means modifying its centre node, but
+// sometimes things like the surface data for the neighbours may also change.
 struct VoxelDataNeighbourhood {
 	// Neighbour directions are indexed in base 3: the node one step in
 	// direction d, where each component of d is -1, 0, or +1, is at index
@@ -166,6 +164,14 @@ struct VoxelDataNeighbourhood {
 	// neighbour covering it.
 	VoxelMaterial get_material(const Vector4i &p_voxel) const;
 
-	// Updates the centre node by overlaying the edit's data where it's defined.
+	// Grafts a generated chunk into the tree at the chunk's own bounds,
+	// subdividing undefined nodes down to it, and takes ownership of the
+	// chunk. The chunk is discarded if that part of the tree is already
+	// defined. The surface data of the edges crossing the chunk's borders is
+	// then reconciled with the actual bordering materials, which edits may
+	// have changed from what the generator produced.
+	void apply_generated_chunk(VoxelDataTree *p_chunk);
+
+	// Updates the node by overlaying the edit's data where it's defined.
 	void apply_edit(const Ref<VoxelEdit> &p_edit);
 };

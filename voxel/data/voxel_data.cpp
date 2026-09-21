@@ -68,7 +68,7 @@ void VoxelData::apply_generated_chunk(VoxelDataTree *p_chunk) {
 	while (!_tree->get_bounds().encloses_inclusive(chunk_bounds)) {
 		expand_bounds(chunk_bounds.position);
 	}
-	_tree->apply_generated_chunk(p_chunk);
+	VoxelDataNeighbourhood{ _tree }.apply_generated_chunk(p_chunk);
 	// Sometimes bounds of the same size as they were, just shifted, suffice.
 	trim_bounds();
 }

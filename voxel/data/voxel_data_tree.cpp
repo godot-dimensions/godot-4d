@@ -236,35 +236,6 @@ void VoxelDataTree::generate(const Ref<VoxelGenerator> &p_generator) {
 	set_leaf_data(leaf);
 }
 
-void VoxelDataTree::apply_generated_chunk(VoxelDataTree *p_chunk) {
-	ERR_FAIL_NULL(p_chunk);
-	const Vector4i position = p_chunk->_bounds.position;
-	if (!has_voxel(position)) {
-		memdelete(p_chunk);
-		ERR_FAIL_MSG("VoxelDataTree cannot store a chunk outside of its bounds.");
-	}
-	VoxelDataTree *node = this;
-	while (node->_bounds != p_chunk->_bounds) {
-		if (node->_bounds.size.x <= p_chunk->_bounds.size.x) {
-			memdelete(p_chunk);
-			ERR_FAIL_MSG("VoxelDataTree chunks must line up with the tree's subdivisions.");
-		}
-		if (node->_type == TYPE_UNDEFINED) {
-			node->subdivide();
-		} else if (node->_type != TYPE_PARENT) {
-			break;
-		}
-		node = &node->_children[node->get_child_index_containing(position)];
-	}
-	if (node->_type != TYPE_UNDEFINED) {
-		// That part of the tree is already defined; discard the chunk.
-		memdelete(p_chunk);
-		return;
-	}
-	node->_take_contents(*p_chunk);
-	memdelete(p_chunk);
-}
-
 void VoxelDataTree::_take_contents(VoxelDataTree &p_donor) {
 	ERR_FAIL_COND_MSG(_type != TYPE_UNDEFINED, "VoxelDataTree can only take contents into an undefined node.");
 	ERR_FAIL_COND_MSG(_bounds != p_donor._bounds, "VoxelDataTree can only take the contents of a node with identical bounds.");
@@ -431,6 +402,171 @@ VoxelMaterial VoxelDataNeighbourhood::get_material(const Vector4i &p_voxel) cons
 	return neighbour == nullptr ? VoxelMaterial::UNDEFINED : neighbour->get_material(p_voxel);
 }
 
+// Subdivides a constant node into constant children, or turns a chunk-sized
+// one into a leaf, so that parts of it can diverge or store edge data.
+static void _split_constant(VoxelDataTree *p_node) {
+	const VoxelMaterial constant_material = p_node->get_constant_material();
+	const Rect4i bounds = p_node->get_bounds();
+	if (bounds.size.x > VOXEL_DATA_CHUNK_SIZE) {
+		p_node->clear();
+		VoxelDataTree *constant_children = p_node->subdivide();
+		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
+			constant_children[i].set_constant_material(constant_material);
+		}
+		return;
+	}
+	VoxelDataLeaf *leaf = memnew(VoxelDataLeaf);
+	for (int32_t w = 0; w < bounds.size.w; w++) {
+		for (int32_t z = 0; z < bounds.size.z; z++) {
+			for (int32_t y = 0; y < bounds.size.y; y++) {
+				for (int32_t x = 0; x < bounds.size.x; x++) {
+					leaf->set_material(Vector4i(x, y, z, w), constant_material);
+				}
+			}
+		}
+	}
+	p_node->set_leaf_data(leaf);
+}
+
+// Whether every defined voxel in the given region of the node has the given
+// material. The node must be a leaf or a constant.
+static bool _region_matches_material(const VoxelDataTree *p_node, const Rect4i &p_region, const VoxelMaterial p_material) {
+	if (p_node->is_constant()) {
+		const VoxelMaterial constant_material = p_node->get_constant_material();
+		return constant_material == VoxelMaterial::UNDEFINED || constant_material == p_material;
+	}
+	const VoxelDataLeaf *leaf = p_node->get_leaf_data();
+	const Vector4i origin = p_node->get_bounds().position;
+	const Vector4i end = p_region.get_end();
+	for (int32_t w = p_region.position.w; w < end.w; w++) {
+		for (int32_t z = p_region.position.z; z < end.z; z++) {
+			for (int32_t y = p_region.position.y; y < end.y; y++) {
+				for (int32_t x = p_region.position.x; x < end.x; x++) {
+					const VoxelMaterial material = leaf->get_material(Vector4i(x, y, z, w) - origin);
+					if (material != VoxelMaterial::UNDEFINED && material != p_material) {
+						return false;
+					}
+				}
+			}
+		}
+	}
+	return true;
+}
+
+// Makes the stored surface data of the edges crossing the border between two
+// adjacent regions consistent with the materials at their ends, after edits
+// may have changed one side relative to what the other side's generation
+// assumed. If a surface must be added, it's flat on the border.
+static void _reconcile_border(VoxelDataTree *p_lower, VoxelDataTree *p_upper, const int p_axis) {
+	if (p_lower == nullptr || p_upper == nullptr || p_lower->is_undefined() || p_upper->is_undefined()) {
+		return;
+	}
+	if (p_lower->is_parent() || p_upper->is_parent()) {
+		// When both are parents they have equal sizes, so the facing children
+		// pair up; a childless side is instead paired with each of the other
+		// side's facing children.
+		const int axis_bit = 1 << p_axis;
+		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
+			if ((i & axis_bit) != 0) {
+				continue;
+			}
+			VoxelDataTree *lower_part = p_lower->is_parent() ? p_lower->get_child(i | axis_bit) : p_lower;
+			VoxelDataTree *upper_part = p_upper->is_parent() ? p_upper->get_child(i) : p_upper;
+			_reconcile_border(lower_part, upper_part, p_axis);
+		}
+		return;
+	}
+	// The layers of voxels on either side of the shared part of the border.
+	Rect4i lower_layer = p_upper->get_bounds();
+	lower_layer.position[p_axis] -= 1;
+	lower_layer.size[p_axis] = 1;
+	lower_layer = lower_layer.intersection(p_lower->get_bounds());
+	Rect4i upper_layer = lower_layer;
+	upper_layer.position[p_axis] += 1;
+	// Constants cannot store edge data and may not border a different
+	// material, so a constant with any mismatch on the border stops being one.
+	if (p_lower->is_constant()) {
+		if (_region_matches_material(p_upper, upper_layer, p_lower->get_constant_material())) {
+			// Constants store no edge data, so there is nothing to remove.
+			return;
+		}
+		_split_constant(p_lower);
+		_reconcile_border(p_lower, p_upper, p_axis);
+		return;
+	}
+	if (p_upper->is_constant() && !_region_matches_material(p_lower, lower_layer, p_upper->get_constant_material())) {
+		_split_constant(p_upper);
+		_reconcile_border(p_lower, p_upper, p_axis);
+		return;
+	}
+	VoxelDataLeaf *lower_leaf = p_lower->get_leaf_data();
+	const VoxelDataLeaf *upper_leaf = p_upper->is_leaf() ? p_upper->get_leaf_data() : nullptr;
+	const Vector4i lower_origin = p_lower->get_bounds().position;
+	const Vector4i upper_origin = p_upper->get_bounds().position;
+	Vector4 border_normal;
+	border_normal[p_axis] = 1.0f;
+	const VoxelEdgeData border_crossing = VoxelEdgeData::encode(border_normal, 0.5f);
+	const Vector4i end = lower_layer.get_end();
+	for (int32_t w = lower_layer.position.w; w < end.w; w++) {
+		for (int32_t z = lower_layer.position.z; z < end.z; z++) {
+			for (int32_t y = lower_layer.position.y; y < end.y; y++) {
+				for (int32_t x = lower_layer.position.x; x < end.x; x++) {
+					const Vector4i voxel = Vector4i(x, y, z, w);
+					const Vector4i local_voxel = voxel - lower_origin;
+					const VoxelMaterial lower_material = lower_leaf->get_material(local_voxel);
+					Vector4i upper_voxel = voxel;
+					upper_voxel[p_axis]++;
+					const VoxelMaterial upper_material = upper_leaf != nullptr ? upper_leaf->get_material(upper_voxel - upper_origin) : p_upper->get_constant_material();
+					if (lower_material == VoxelMaterial::UNDEFINED || upper_material == VoxelMaterial::UNDEFINED) {
+						continue;
+					}
+					if (lower_material == upper_material) {
+						lower_leaf->clear_edge_data(local_voxel, p_axis);
+					} else if (!lower_leaf->has_edge_data(local_voxel, p_axis)) {
+						lower_leaf->set_edge_data(local_voxel, p_axis, border_crossing);
+					}
+				}
+			}
+		}
+	}
+}
+
+void VoxelDataNeighbourhood::apply_generated_chunk(VoxelDataTree *p_chunk) {
+	ERR_FAIL_NULL(p_chunk);
+	const Rect4i chunk_bounds = p_chunk->get_bounds();
+	if (node == nullptr || !node->has_voxel(chunk_bounds.position)) {
+		memdelete(p_chunk);
+		ERR_FAIL_MSG("VoxelDataTree cannot store a chunk outside of its bounds.");
+	}
+	VoxelDataNeighbourhood target = *this;
+	while (target.node->get_bounds() != chunk_bounds) {
+		if (target.node->get_bounds().size.x <= chunk_bounds.size.x) {
+			memdelete(p_chunk);
+			ERR_FAIL_MSG("VoxelDataTree chunks must line up with the tree's subdivisions.");
+		}
+		if (target.node->is_undefined()) {
+			target.node->subdivide();
+		} else if (!target.node->is_parent()) {
+			break;
+		}
+		target = target.get_child(target.node->get_child_index_containing(chunk_bounds.position));
+	}
+	if (!target.node->is_undefined()) {
+		// That part of the tree is already defined; discard the chunk.
+		memdelete(p_chunk);
+		return;
+	}
+	target.node->_take_contents(*p_chunk);
+	memdelete(p_chunk);
+	// The new node generated its contents assuming the generator's materials
+	// around it, but edits may have changed them, so the surface data of the
+	// edges crossing its borders needs reconciling on both sides.
+	for (int axis = 0, power = 1; axis < 4; axis++, power *= 3) {
+		_reconcile_border(target.neighbours[CENTRE_DIRECTION - power], target.node, axis);
+		_reconcile_border(target.node, target.neighbours[CENTRE_DIRECTION + power], axis);
+	}
+}
+
 void VoxelDataNeighbourhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	ERR_FAIL_NULL(node);
 	const Rect4i edit_bounds = p_edit->get_bounds();
@@ -445,29 +581,10 @@ void VoxelDataNeighbourhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
 		return;
 	}
 	if (node->is_constant()) {
-		const VoxelMaterial constant_material = node->get_constant_material();
-		if (bounds.size.x > VOXEL_DATA_CHUNK_SIZE) {
-			// Split, so that only the parts overlapping the edit lose their
-			// constant representation.
-			node->clear();
-			VoxelDataTree *constant_children = node->subdivide();
-			for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
-				constant_children[i].set_constant_material(constant_material);
-			}
-		} else {
-			// The edit may make the chunk non-uniform or give it normals.
-			VoxelDataLeaf *leaf = memnew(VoxelDataLeaf);
-			for (int32_t w = 0; w < bounds.size.w; w++) {
-				for (int32_t z = 0; z < bounds.size.z; z++) {
-					for (int32_t y = 0; y < bounds.size.y; y++) {
-						for (int32_t x = 0; x < bounds.size.x; x++) {
-							leaf->set_material(Vector4i(x, y, z, w), constant_material);
-						}
-					}
-				}
-			}
-			node->set_leaf_data(leaf);
-		}
+		// The edit may make the node non-uniform or give it normals; a larger
+		// constant is only split, so that just the parts near the edit lose
+		// their constant representation.
+		_split_constant(node);
 	}
 	if (node->is_parent()) {
 		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
