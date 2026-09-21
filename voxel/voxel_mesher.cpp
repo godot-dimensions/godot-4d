@@ -162,7 +162,7 @@ Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const Ref<VoxelData> &p_voxel_data,
 	for (int face_axis = 0; face_axis < 4; face_axis++) {
 		for (int side_index = 0; side_index < 2; side_index++) {
 			FaceDirection &direction = face_directions[face_axis * 2 + side_index];
-			direction.normal[face_axis] = side_index == 0 ? -1 : 1;
+			direction.normal[face_axis] = side_index == 0 ? 1 : -1;
 			int spanning_axis_count = 0;
 			for (int i = 0; i < 4; i++) {
 				if (i != face_axis) {
@@ -177,7 +177,7 @@ Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const Ref<VoxelData> &p_voxel_data,
 			// no per-cell orientation check. In ascending order the parity of
 			// the permutation is the parity of the face axis's index.
 			const bool ascending_is_even = (face_axis & 1) == 0;
-			const bool want_even = side_index == 1;
+			const bool want_even = side_index == 0;
 			if (ascending_is_even != want_even) {
 				SWAP(direction.tangents[1], direction.tangents[2]);
 			}

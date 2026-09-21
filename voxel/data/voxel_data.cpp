@@ -132,7 +132,7 @@ void VoxelData::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	if (_tree == nullptr) {
 		return;
 	}
-	_tree->apply_edit(p_edit, *_tree);
+	VoxelDataNeighbourhood{ _tree }.apply_edit(p_edit);
 }
 
 bool VoxelData::unload_chunk(const Vector4i &p_voxel) {

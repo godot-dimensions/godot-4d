@@ -113,11 +113,6 @@ public:
 	// children become all undefined. Returns whether any data was unloaded.
 	bool clear_chunk(const Vector4i &p_voxel);
 
-	// Overlays the edit's materials onto the defined parts of this subtree,
-	// and updates the stored surface data of every edge the edit touches.
-	// The materials other chunks had before the edit are read through p_root.
-	void apply_edit(const Ref<VoxelEdit> &p_edit, const VoxelDataTree &p_root);
-
 	// Descends the tree to the deepest existing node whose bounds contain the
 	// given voxel, which is never a parent. Returns nullptr if the voxel is
 	// outside of this node's bounds.
@@ -144,4 +139,33 @@ public:
 
 	explicit VoxelDataTree(const Rect4i &p_bounds);
 	~VoxelDataTree() { clear(); }
+};
+
+// A temporary view of a tree node together with the nodes bordering it, for
+// operations that read across node boundaries. While it exists, it borrows
+// ownership of the nodes, so they may not be modified except through it.
+struct VoxelDataNeighbourhood {
+	// Neighbour directions are indexed in base 3: the node one step in
+	// direction d, where each component of d is -1, 0, or +1, is at index
+	// (d.x + 1) + (d.y + 1) * 3 + (d.z + 1) * 9 + (d.w + 1) * 27.
+	static constexpr int DIRECTION_COUNT = 81;
+	// The zero direction; its neighbours entry is unused.
+	static constexpr int CENTRE_DIRECTION = 40;
+
+	VoxelDataTree *node = nullptr;
+	// The nodes bordering the centre node, including diagonally.
+	// Null where the neighbouring region is outside the entire tree.
+	// Each neighbour either is the same size as the centre node, or is larger
+	// and doesn't have children.
+	VoxelDataTree *neighbours[DIRECTION_COUNT] = {};
+
+	// The neighbourhood of the given child of the centre node.
+	VoxelDataNeighbourhood get_child(const int p_index) const;
+
+	// The material of the given voxel, read from the centre node or the
+	// neighbour covering it.
+	VoxelMaterial get_material(const Vector4i &p_voxel) const;
+
+	// Updates the centre node by overlaying the edit's data where it's defined.
+	void apply_edit(const Ref<VoxelEdit> &p_edit);
 };
