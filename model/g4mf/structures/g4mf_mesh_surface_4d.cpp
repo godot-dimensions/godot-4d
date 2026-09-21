@@ -260,8 +260,8 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::import_generate_poly_mesh_surface(const 
 		ERR_FAIL_INDEX_V(_material_index, materials.size(), poly_mesh);
 		const Ref<G4MFMaterial4D> g4mf_material = materials[_material_index];
 		ERR_FAIL_COND_V(g4mf_material.is_null(), poly_mesh);
-		Ref<TetraMaterial4D> tetra_material = g4mf_material->generate_tetra_material(p_g4mf_state);
-		poly_mesh->set_material(tetra_material);
+		Ref<PolyMaterial4D> poly_material = g4mf_material->import_get_or_generate_poly_material(p_g4mf_state);
+		poly_mesh->set_material(poly_material);
 	}
 	return poly_mesh;
 }
@@ -304,7 +304,7 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::import_generate_tetra_mesh_surface(cons
 		ERR_FAIL_INDEX_V(_material_index, materials.size(), tetra_mesh);
 		const Ref<G4MFMaterial4D> g4mf_material = materials[_material_index];
 		ERR_FAIL_COND_V(g4mf_material.is_null(), tetra_mesh);
-		Ref<TetraMaterial4D> tetra_material = g4mf_material->generate_tetra_material(p_g4mf_state);
+		Ref<TetraMaterial4D> tetra_material = g4mf_material->import_get_or_generate_tetra_material(p_g4mf_state);
 		tetra_mesh->set_material(tetra_material);
 	}
 	return tetra_mesh;
@@ -332,7 +332,7 @@ Ref<ArrayWireMesh4D> G4MFMeshSurface4D::import_generate_wire_mesh_surface(const 
 		ERR_FAIL_INDEX_V(_material_index, materials.size(), wire_mesh);
 		const Ref<G4MFMaterial4D> g4mf_material = materials[_material_index];
 		ERR_FAIL_COND_V(g4mf_material.is_null(), wire_mesh);
-		Ref<WireMaterial4D> wire_material = g4mf_material->generate_wire_material(p_g4mf_state);
+		Ref<WireMaterial4D> wire_material = g4mf_material->import_get_or_generate_wire_material(p_g4mf_state);
 		wire_mesh->set_material(wire_material);
 	}
 	return wire_mesh;
@@ -449,7 +449,7 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(
 	// Convert the material.
 	const Ref<Material4D> material = p_surface_mesh->get_material();
 	if (material.is_valid() && !material->is_default_material()) {
-		const int material_index = G4MFMaterial4D::convert_material_into_state(p_g4mf_state, material, p_deduplicate);
+		const int material_index = G4MFMaterial4D::export_convert_material_into_state(p_g4mf_state, material, p_deduplicate);
 		surface->set_material_index(material_index);
 		if (material_index < 0) {
 			ERR_PRINT("G4MFMeshSurface4D: Failed to encode material into G4MFState4D.");

@@ -9,19 +9,22 @@ MeshInstance4D *G4MFMeshInstance4D::import_generate_mesh_instance(const Ref<G4MF
 		ret_node->set_name(get_item_name());
 	}
 	Ref<G4MFMesh4D> g4mf_mesh;
+	Ref<Mesh4D> godot_mesh_4d;
 	if (_mesh_index >= 0) {
 		const TypedArray<G4MFMesh4D> state_g4mf_meshes = p_g4mf_state->get_g4mf_meshes();
 		ERR_FAIL_INDEX_V(_mesh_index, state_g4mf_meshes.size(), ret_node);
 		g4mf_mesh = state_g4mf_meshes[_mesh_index];
 		ERR_FAIL_COND_V(g4mf_mesh.is_null(), ret_node);
-		Ref<Mesh4D> mesh = g4mf_mesh->import_generate_mesh(p_g4mf_state);
-		if (mesh.is_valid()) {
-			ret_node->set_mesh(mesh);
+		godot_mesh_4d = g4mf_mesh->import_get_or_generate_mesh(p_g4mf_state);
+		if (godot_mesh_4d.is_valid()) {
+			ret_node->set_mesh(godot_mesh_4d);
 		}
 	}
 	if (g4mf_mesh.is_null()) {
 		return ret_node;
 	}
+	// The override material's class must match the kind of mesh that was generated.
+	const Ref<PolyMesh4D> godot_poly_mesh_4d = godot_mesh_4d;
 	const TypedArray<G4MFMeshSurface4D> g4mf_mesh_surfaces = g4mf_mesh->get_surfaces();
 	const TypedArray<G4MFMaterial4D> state_g4mf_materials = p_g4mf_state->get_g4mf_materials();
 	const int64_t mat_and_surface_count = MIN(_material_indices.size(), (int64_t)g4mf_mesh_surfaces.size());
@@ -35,10 +38,12 @@ MeshInstance4D *G4MFMeshInstance4D::import_generate_mesh_instance(const Ref<G4MF
 		const Ref<G4MFMeshSurface4D> surface = g4mf_mesh_surfaces[surface_index];
 		ERR_FAIL_COND_V(g4mf_material.is_null() || surface.is_null(), ret_node);
 		Ref<Material4D> material;
-		if (surface->get_simplexes_accessor_index() < 0) {
-			material = g4mf_material->generate_wire_material(p_g4mf_state);
+		if (godot_poly_mesh_4d.is_valid()) {
+			material = g4mf_material->import_get_or_generate_poly_material(p_g4mf_state);
+		} else if (surface->get_simplexes_accessor_index() < 0) {
+			material = g4mf_material->import_get_or_generate_wire_material(p_g4mf_state);
 		} else {
-			material = g4mf_material->generate_tetra_material(p_g4mf_state);
+			material = g4mf_material->import_get_or_generate_tetra_material(p_g4mf_state);
 		}
 		if (material.is_valid()) {
 			// TODO: Support per-surface material overrides instead of just the single override.
@@ -61,7 +66,7 @@ Ref<G4MFMeshInstance4D> G4MFMeshInstance4D::export_convert_mesh_instance(const R
 		if (material.is_valid()) {
 			PackedInt32Array material_indices;
 			// TODO: Support per-surface material overrides instead of just the single override.
-			material_indices.append(G4MFMaterial4D::convert_material_into_state(p_g4mf_state, material, true));
+			material_indices.append(G4MFMaterial4D::export_convert_material_into_state(p_g4mf_state, material, true));
 			ret->set_material_indices(material_indices);
 		}
 	}

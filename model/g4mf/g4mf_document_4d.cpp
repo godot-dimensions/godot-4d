@@ -1261,7 +1261,7 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 					combined_poly_mesh.instantiate();
 					combined_mesh = combined_poly_mesh;
 				}
-				Ref<ArrayPolyMesh4D> this_poly_mesh = g4mf_mesh->import_generate_poly_mesh(p_g4mf_state);
+				Ref<ArrayPolyMesh4D> this_poly_mesh = g4mf_mesh->import_generate_new_poly_mesh(p_g4mf_state);
 				if (this_poly_mesh.is_valid()) {
 					combined_poly_mesh->merge_with(this_poly_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 				}
@@ -1272,7 +1272,7 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 					combined_tetra_mesh.instantiate();
 					combined_mesh = combined_tetra_mesh;
 				}
-				Ref<ArrayTetraMesh4D> this_tetra_mesh = g4mf_mesh->import_generate_tetra_mesh(p_g4mf_state);
+				Ref<ArrayTetraMesh4D> this_tetra_mesh = g4mf_mesh->import_generate_new_tetra_mesh(p_g4mf_state);
 				if (this_tetra_mesh.is_valid()) {
 					combined_tetra_mesh->merge_with(this_tetra_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 				}
@@ -1283,7 +1283,7 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 					combined_wire_mesh.instantiate();
 					combined_mesh = combined_wire_mesh;
 				}
-				Ref<ArrayWireMesh4D> this_wire_mesh = g4mf_mesh->import_generate_wire_mesh(p_g4mf_state);
+				Ref<ArrayWireMesh4D> this_wire_mesh = g4mf_mesh->import_generate_new_wire_mesh(p_g4mf_state);
 				if (this_wire_mesh.is_valid()) {
 					combined_wire_mesh->merge_with(this_wire_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 				}
@@ -1532,7 +1532,7 @@ Node *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state)
 		ERR_FAIL_COND_V_MSG(state_g4mf_meshes.is_empty(), nullptr, "G4MF import: This G4MF file (" + p_g4mf_state->get_original_path() + ") has no nodes or meshes, so it cannot be imported as a scene.");
 		MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
 		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[0];
-		mesh_instance->set_mesh(g4mf_mesh->import_generate_mesh(p_g4mf_state));
+		mesh_instance->set_mesh(g4mf_mesh->import_get_or_generate_mesh(p_g4mf_state));
 		const String mesh_name = g4mf_mesh->get_name();
 		if (mesh_name.is_empty()) {
 			mesh_instance->set_name(p_g4mf_state->get_g4mf_filename().get_basename());
@@ -1556,7 +1556,7 @@ Ref<Mesh4D> G4MFDocument4D::import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_s
 	if (p_which_mesh_index >= 0) {
 		ERR_FAIL_INDEX_V_MSG(p_which_mesh_index, mesh_count, Ref<Mesh4D>(), "G4MF import: Specified mesh index is out of range.");
 		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[p_which_mesh_index];
-		return g4mf_mesh->import_generate_mesh(p_g4mf_state);
+		return g4mf_mesh->import_get_or_generate_mesh(p_g4mf_state);
 	}
 	// If p_which_mesh_index is negative (default), generate a combined mesh using the nodes.
 	const TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
@@ -1567,7 +1567,7 @@ Ref<Mesh4D> G4MFDocument4D::import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_s
 			WARN_PRINT("G4MF import: This G4MF file has multiple meshes, but only the first mesh will be imported.");
 		}
 		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[0];
-		return g4mf_mesh->import_generate_mesh(p_g4mf_state);
+		return g4mf_mesh->import_get_or_generate_mesh(p_g4mf_state);
 	}
 	// If there are nodes, generate a combined mesh.
 	return _import_generate_combined_mesh(p_g4mf_state, p_include_invisible);

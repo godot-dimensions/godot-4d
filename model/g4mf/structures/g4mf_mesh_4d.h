@@ -17,6 +17,7 @@ public:
 
 private:
 	TypedArray<G4MFMeshSurface4D> _surfaces;
+	Ref<Mesh4D> _godot_mesh_4d;
 	int _vertices_accessor_index = -1;
 
 	Ref<ArrayPolyMesh4D> _generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertex_positions, const int p_surface) const;
@@ -39,10 +40,14 @@ public:
 	bool is_equal_exact(const Ref<G4MFMesh4D> &p_other) const;
 
 	PackedVector4Array load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Ref<PolyMesh4D> import_generate_poly_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Ref<TetraMesh4D> import_generate_tetra_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Ref<WireMesh4D> import_generate_wire_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Ref<Mesh4D> import_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface = false) const;
+
+	Ref<PolyMesh4D> import_generate_new_poly_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Ref<TetraMesh4D> import_generate_new_tetra_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Ref<WireMesh4D> import_generate_new_wire_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
+
+	Ref<Mesh4D> import_generate_new_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface = false) const;
+	Ref<Mesh4D> import_get_or_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface = false);
+
 	static int export_convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate = true);
 
 	static Ref<G4MFMesh4D> from_dictionary(const Dictionary &p_dict);

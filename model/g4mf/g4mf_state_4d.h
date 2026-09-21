@@ -45,7 +45,6 @@ private:
 	HashSet<String> _unique_names;
 	Dictionary _g4mf_json;
 	int _declared_dimension = 4;
-	G4MFMeshSurface4D::MeshSurfaceFormat _preferred_mesh_surface_format = G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE;
 
 	// Path data for the file.
 	String _g4mf_base_path = "";
@@ -54,6 +53,7 @@ private:
 
 	// Settings for handling the file.
 	ExternalDataMode _external_data_mode = ExternalDataMode::EXTERNAL_DATA_MODE_AUTOMATIC;
+	G4MFMeshSurface4D::MeshSurfaceFormat _preferred_mesh_surface_format = G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE;
 
 protected:
 	static void _bind_methods();
@@ -103,9 +103,6 @@ public:
 	// Do not expose this setter! It has exactly one usage in G4MFDocument4D when importing a file.
 	void set_declared_dimension(const int p_declared_dimension) { _declared_dimension = p_declared_dimension; }
 
-	G4MFMeshSurface4D::MeshSurfaceFormat get_preferred_mesh_surface_format() const { return _preferred_mesh_surface_format; }
-	void set_preferred_mesh_surface_format(const G4MFMeshSurface4D::MeshSurfaceFormat p_preferred_format) { _preferred_mesh_surface_format = p_preferred_format; }
-
 	// Path data for the file.
 	String get_g4mf_base_path() const { return _g4mf_base_path; }
 	void set_g4mf_base_path(const String &p_g4mf_base_path) { _g4mf_base_path = p_g4mf_base_path; }
@@ -119,6 +116,10 @@ public:
 	// Settings for handling the file.
 	ExternalDataMode get_external_data_mode() const { return _external_data_mode; }
 	void set_external_data_mode(ExternalDataMode p_external_data_mode) { _external_data_mode = p_external_data_mode; }
+
+	G4MFMeshSurface4D::MeshSurfaceFormat get_preferred_mesh_surface_format() const { return _preferred_mesh_surface_format; }
+	void set_preferred_mesh_surface_format(const G4MFMeshSurface4D::MeshSurfaceFormat p_preferred_format) { _preferred_mesh_surface_format = p_preferred_format; }
+
 	bool is_text_file() const;
 	bool should_separate_binary_blobs(const int64_t p_blob_size) const;
 	bool should_separate_resource_files() const;

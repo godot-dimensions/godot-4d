@@ -28,7 +28,92 @@ bool G4MFMaterial4D::is_equal_exact(const Ref<G4MFMaterial4D> &p_other) const {
 	return true;
 }
 
-Ref<TetraMaterial4D> G4MFMaterial4D::generate_tetra_material(const Ref<G4MFState4D> &p_g4mf_state) const {
+Ref<PolyMaterial4D> G4MFMaterial4D::import_get_or_generate_poly_material(const Ref<G4MFState4D> &p_g4mf_state) {
+	if (_godot_poly_material_4d.is_valid()) {
+		return _godot_poly_material_4d;
+	}
+	_godot_poly_material_4d = import_generate_new_poly_material(p_g4mf_state);
+	return _godot_poly_material_4d;
+}
+
+Ref<TetraMaterial4D> G4MFMaterial4D::import_get_or_generate_tetra_material(const Ref<G4MFState4D> &p_g4mf_state) {
+	if (_godot_tetra_material_4d.is_valid()) {
+		return _godot_tetra_material_4d;
+	}
+	_godot_tetra_material_4d = import_generate_new_tetra_material(p_g4mf_state);
+	return _godot_tetra_material_4d;
+}
+
+Ref<WireMaterial4D> G4MFMaterial4D::import_get_or_generate_wire_material(const Ref<G4MFState4D> &p_g4mf_state) {
+	if (_godot_wire_material_4d.is_valid()) {
+		return _godot_wire_material_4d;
+	}
+	_godot_wire_material_4d = import_generate_new_wire_material(p_g4mf_state);
+	return _godot_wire_material_4d;
+}
+
+Ref<PolyMaterial4D> G4MFMaterial4D::import_generate_new_poly_material(const Ref<G4MFState4D> &p_g4mf_state) const {
+	Ref<PolyMaterial4D> poly_material;
+	poly_material.instantiate();
+	poly_material->set_name(get_name());
+	if (_base_color_channel.is_valid()) {
+		const Color single_base_color = _base_color_channel->get_factor();
+		const bool has_single_base_color = single_base_color.r > -1 && !Color(1, 1, 1, 1).is_equal_approx(single_base_color);
+		if (has_single_base_color) {
+			poly_material->set_albedo_color(single_base_color);
+		}
+		const Ref<G4MFMeshSurfaceBinding4D> base_color_binding = _base_color_channel->get_element_map_binding();
+		if (base_color_binding.is_valid()) {
+			const PackedColorArray original_colors = base_color_binding->load_values_as_colors(p_g4mf_state);
+			const PackedInt32Array per_poly_cell_indices = base_color_binding->load_geometry_binding_indices(p_g4mf_state, 3, 3);
+			if (per_poly_cell_indices.size() > 0) {
+				// Sample per-poly-cell colors from the indices into the colors array.
+				PackedColorArray per_poly_cell_colors;
+				per_poly_cell_colors.resize(per_poly_cell_indices.size());
+				for (int i = 0; i < per_poly_cell_indices.size(); i++) {
+					const int color_index = per_poly_cell_indices[i];
+					ERR_FAIL_INDEX_V(color_index, original_colors.size(), poly_material);
+					per_poly_cell_colors.set(i, original_colors[color_index]);
+				}
+				poly_material->set_poly_albedo_color_array(per_poly_cell_colors);
+				if (has_single_base_color) {
+					poly_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
+				} else {
+					poly_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_ONLY);
+				}
+			} else if (base_color_binding->get_per_simplex_accessor_index() >= 0) {
+				// No per-polytope-cell colors, but there are per-simplex colors, such as from a TetraMaterial4D used on a poly mesh.
+				// PolyMaterial4D inherits the per-tetrahedron color array, which is used as-is when the per-cell array is empty.
+				const PackedInt32Array per_simplex_indices = base_color_binding->load_per_simplex_indices(p_g4mf_state);
+				PackedColorArray per_simplex_colors;
+				per_simplex_colors.resize(per_simplex_indices.size());
+				for (int i = 0; i < per_simplex_indices.size(); i++) {
+					const int color_index = per_simplex_indices[i];
+					ERR_FAIL_INDEX_V(color_index, original_colors.size(), poly_material);
+					per_simplex_colors.set(i, original_colors[color_index]);
+				}
+				poly_material->set_albedo_color_array(per_simplex_colors);
+				if (has_single_base_color) {
+					poly_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
+				} else {
+					poly_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_ONLY);
+				}
+			}
+		}
+	}
+	if (_emissive_channel.is_valid()) {
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_poly_material: Emissive maps are not supported yet.");
+	}
+	if (_normal_channel.is_valid()) {
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_poly_material: Normal maps are not supported yet.");
+	}
+	if (_orm_channel.is_valid()) {
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_poly_material: ORM maps are not supported yet.");
+	}
+	return poly_material;
+}
+
+Ref<TetraMaterial4D> G4MFMaterial4D::import_generate_new_tetra_material(const Ref<G4MFState4D> &p_g4mf_state) const {
 	Ref<TetraMaterial4D> tetra_material;
 	tetra_material.instantiate();
 	tetra_material->set_name(get_name());
@@ -40,17 +125,18 @@ Ref<TetraMaterial4D> G4MFMaterial4D::generate_tetra_material(const Ref<G4MFState
 		}
 		const Ref<G4MFMeshSurfaceBinding4D> base_color_binding = _base_color_channel->get_element_map_binding();
 		if (base_color_binding.is_valid()) {
-			const PackedColorArray original_colors = base_color_binding->load_values_as_colors(p_g4mf_state);
 			if (base_color_binding->get_per_simplex_accessor_index() >= 0) {
-				PackedInt32Array simplex_indices = base_color_binding->load_per_simplex_indices(p_g4mf_state);
-				PackedColorArray simplex_colors;
-				simplex_colors.resize(simplex_indices.size());
-				for (int i = 0; i < simplex_indices.size(); i++) {
-					const int color_index = simplex_indices[i];
+				const PackedColorArray original_colors = base_color_binding->load_values_as_colors(p_g4mf_state);
+				const PackedInt32Array per_simplex_indices = base_color_binding->load_per_simplex_indices(p_g4mf_state);
+				// Sample per-simplex colors from the indices into the colors array.
+				PackedColorArray per_simplex_colors;
+				per_simplex_colors.resize(per_simplex_indices.size());
+				for (int i = 0; i < per_simplex_indices.size(); i++) {
+					const int color_index = per_simplex_indices[i];
 					ERR_FAIL_INDEX_V(color_index, original_colors.size(), tetra_material);
-					simplex_colors.set(i, original_colors[color_index]);
+					per_simplex_colors.set(i, original_colors[color_index]);
 				}
-				tetra_material->set_albedo_color_array(simplex_colors);
+				tetra_material->set_albedo_color_array(per_simplex_colors);
 				if (has_single_base_color) {
 					tetra_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_PER_CELL_AND_SINGLE);
 				} else {
@@ -60,18 +146,18 @@ Ref<TetraMaterial4D> G4MFMaterial4D::generate_tetra_material(const Ref<G4MFState
 		}
 	}
 	if (_emissive_channel.is_valid()) {
-		WARN_PRINT("G4MFMaterial4D.generate_tetra_material: Emissive maps are not supported yet.");
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_tetra_material: Emissive maps are not supported yet.");
 	}
 	if (_normal_channel.is_valid()) {
-		WARN_PRINT("G4MFMaterial4D.generate_tetra_material: Normal maps are not supported yet.");
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_tetra_material: Normal maps are not supported yet.");
 	}
 	if (_orm_channel.is_valid()) {
-		WARN_PRINT("G4MFMaterial4D.generate_tetra_material: ORM maps are not supported yet.");
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_tetra_material: ORM maps are not supported yet.");
 	}
 	return tetra_material;
 }
 
-Ref<WireMaterial4D> G4MFMaterial4D::generate_wire_material(const Ref<G4MFState4D> &p_g4mf_state) const {
+Ref<WireMaterial4D> G4MFMaterial4D::import_generate_new_wire_material(const Ref<G4MFState4D> &p_g4mf_state) const {
 	Ref<WireMaterial4D> wire_material;
 	wire_material.instantiate();
 	wire_material->set_name(get_name());
@@ -103,13 +189,13 @@ Ref<WireMaterial4D> G4MFMaterial4D::generate_wire_material(const Ref<G4MFState4D
 		}
 	}
 	if (_emissive_channel.is_valid()) {
-		WARN_PRINT("G4MFMaterial4D.generate_wire_material: Emissive maps are not supported yet.");
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_wire_material: Emissive maps are not supported yet.");
 	}
 	if (_normal_channel.is_valid()) {
-		WARN_PRINT("G4MFMaterial4D.generate_wire_material: Normal maps are not supported yet.");
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_wire_material: Normal maps are not supported yet.");
 	}
 	if (_orm_channel.is_valid()) {
-		WARN_PRINT("G4MFMaterial4D.generate_wire_material: ORM maps are not supported yet.");
+		WARN_PRINT("G4MFMaterial4D.import_generate_new_wire_material: ORM maps are not supported yet.");
 	}
 	return wire_material;
 }
@@ -123,13 +209,17 @@ void G4MFMaterial4D::_append_geometry_binding(TypedArray<G4MFMeshSurfaceBindingG
 	p_geometry_bindings.append(geom);
 }
 
-int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Material4D> &p_material, const bool p_deduplicate) {
+int G4MFMaterial4D::export_convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Material4D> &p_material, const bool p_deduplicate) {
 	Ref<G4MFMaterial4D> g4mf_material;
 	g4mf_material.instantiate();
 	g4mf_material->set_item_name(p_material->get_name());
 	const Material4D::ColorSourceFlags albedo_source_flags = p_material->get_albedo_source_flags();
 	const PackedColorArray albedo_colors = p_material->get_albedo_color_array();
-	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY && albedo_colors.size() > 0) {
+	// A PolyMaterial4D keeps its real per-cell colors in a separate array. Its inherited color array is only
+	// a per-tetrahedron cache that is empty until the material has been used to render a mesh.
+	const Ref<PolyMaterial4D> poly_material = p_material;
+	const PackedColorArray poly_array = poly_material.is_valid() ? poly_material->get_poly_albedo_color_array() : PackedColorArray();
+	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_COLOR_ARRAY && (albedo_colors.size() > 0 || poly_array.size() > 0)) {
 		Ref<G4MFMaterialChannel4D> base_color_channel;
 		base_color_channel.instantiate();
 		Ref<G4MFMeshSurfaceBinding4D> element_map_binding;
@@ -152,9 +242,10 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 			}
 		}
 		// Handle PolyMaterial4D's separate color array.
-		Ref<PolyMaterial4D> poly_material = p_material;
-		if (poly_material.is_valid()) {
-			const PackedColorArray poly_array = poly_material->get_poly_albedo_color_array();
+		if (poly_array.size() > 0) {
+			if (albedo_colors.is_empty()) {
+				WARN_PRINT("G4MFMaterial4D.export_convert_material_into_state: The PolyMaterial4D '" + p_material->get_name() + "' has per-cell colors but its per-tetrahedron color array is empty, so only per-polytope-cell colors will be exported. Tetrahedral-only importers will not see these colors. To include them, render the mesh first or call PolyMaterial4D.populate_albedo_color_array_for_poly_mesh with the mesh before exporting.");
+			}
 			PackedInt32Array deduplicated_poly_indices;
 			deduplicated_poly_indices.resize(poly_array.size());
 			for (int i = 0; i < poly_array.size(); i++) {
@@ -178,13 +269,16 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 			} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_VERT) {
 				_append_geometry_binding(geometry_bindings, 0, 0, poly_indices_accessor_index);
 			} else {
-				ERR_PRINT("G4MFMaterial4D.convert_material_into_state: Unhandled albedo source flag for poly material.");
+				ERR_PRINT("G4MFMaterial4D.export_convert_material_into_state: Unhandled albedo source flag for poly material.");
 			}
 		}
 		// Handle the main material's color array.
 		if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_CELL) {
-			int simplex_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, deduplicated_simplex_indices, 1, p_deduplicate);
-			element_map_binding->set_per_simplex_accessor_index(simplex_indices_accessor_index);
+			// A PolyMaterial4D's per-tetrahedron cache may be empty, in which case only the per-cell binding above is written.
+			if (albedo_colors.size() > 0) {
+				int simplex_indices_accessor_index = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, deduplicated_simplex_indices, 1, p_deduplicate);
+				element_map_binding->set_per_simplex_accessor_index(simplex_indices_accessor_index);
+			}
 		} else if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {
 			// Only encode per-edge indices here if it wasn't already handled above by the poly material's per-vertex/edge/face/cell colors.
 			// deduplicated_simplex_indices is just the data from the array, it is not necessarily exactly the same simplex indices as the tetrahedra.
@@ -193,7 +287,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 				_append_geometry_binding(geometry_bindings, 1, 1, edge_indices_accessor_index);
 			}
 		} else {
-			ERR_PRINT("G4MFMaterial4D.convert_material_into_state: Unhandled albedo source flag.");
+			ERR_PRINT("G4MFMaterial4D.export_convert_material_into_state: Unhandled albedo source flag.");
 		}
 		// Set the bindings, values, and factor for the material channel.
 		element_map_binding->set_geometry_bindings(geometry_bindings);
@@ -213,7 +307,7 @@ int G4MFMaterial4D::convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, c
 		}
 	}
 	if (albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_USES_TEXTURE_MAP) {
-		ERR_PRINT("G4MFMaterial4D.convert_material_into_state: Texture maps are not supported yet.");
+		ERR_PRINT("G4MFMaterial4D.export_convert_material_into_state: Texture maps are not supported yet.");
 	}
 	// Add the G4MFMaterial4D to the G4MFState4D, but check for duplicates first.
 	TypedArray<G4MFMaterial4D> state_materials = p_g4mf_state->get_g4mf_materials();
@@ -280,9 +374,15 @@ void G4MFMaterial4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMaterial4D::is_equal_exact);
 
-	ClassDB::bind_method(D_METHOD("generate_tetra_material", "g4mf_state"), &G4MFMaterial4D::generate_tetra_material);
-	ClassDB::bind_method(D_METHOD("generate_wire_material", "g4mf_state"), &G4MFMaterial4D::generate_wire_material);
-	ClassDB::bind_static_method("G4MFMaterial4D", D_METHOD("convert_material_into_state", "g4mf_state", "material", "deduplicate"), &G4MFMaterial4D::convert_material_into_state, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("import_get_or_generate_poly_material", "g4mf_state"), &G4MFMaterial4D::import_get_or_generate_poly_material);
+	ClassDB::bind_method(D_METHOD("import_get_or_generate_tetra_material", "g4mf_state"), &G4MFMaterial4D::import_get_or_generate_tetra_material);
+	ClassDB::bind_method(D_METHOD("import_get_or_generate_wire_material", "g4mf_state"), &G4MFMaterial4D::import_get_or_generate_wire_material);
+
+	ClassDB::bind_method(D_METHOD("import_generate_new_poly_material", "g4mf_state"), &G4MFMaterial4D::import_generate_new_poly_material);
+	ClassDB::bind_method(D_METHOD("import_generate_new_tetra_material", "g4mf_state"), &G4MFMaterial4D::import_generate_new_tetra_material);
+	ClassDB::bind_method(D_METHOD("import_generate_new_wire_material", "g4mf_state"), &G4MFMaterial4D::import_generate_new_wire_material);
+
+	ClassDB::bind_static_method("G4MFMaterial4D", D_METHOD("export_convert_material_into_state", "g4mf_state", "material", "deduplicate"), &G4MFMaterial4D::export_convert_material_into_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMaterial4D", D_METHOD("from_dictionary", "dict"), &G4MFMaterial4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMaterial4D::to_dictionary);

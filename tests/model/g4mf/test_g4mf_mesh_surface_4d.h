@@ -383,7 +383,7 @@ TEST_CASE("[G4MFMeshSurface4D] Empty-cell imports and conversions preserve verte
 	const int mesh_index = G4MFMesh4D::export_convert_mesh_into_state(state, source);
 	REQUIRE(mesh_index >= 0);
 	const Ref<G4MFMesh4D> stored_mesh = state->get_g4mf_meshes()[mesh_index];
-	const Ref<TetraMesh4D> imported = stored_mesh->import_generate_tetra_mesh(state);
+	const Ref<TetraMesh4D> imported = stored_mesh->import_generate_new_tetra_mesh(state);
 	REQUIRE(imported.is_valid());
 	CHECK(imported->get_vertex_positions() == vertices);
 	CHECK(imported->get_simplex_cell_vertex_indices().is_empty());

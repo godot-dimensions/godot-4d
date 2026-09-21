@@ -30,7 +30,7 @@
 			<return type="MeshInstance4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Generates a [MeshInstance4D] node with a generated [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. This function wraps around [method G4MFMesh4D.import_generate_mesh] to generate the mesh, and then creates a [MeshInstance4D] with the generated mesh. This is used for importing a mesh from G4MF, and is the inverse of [method export_convert_mesh_instance].
+				Generates a [MeshInstance4D] node with a generated [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. This function wraps around [method G4MFMesh4D.import_get_or_generate_mesh] to generate the mesh, and then creates a [MeshInstance4D] with the generated mesh. This is used for importing a mesh from G4MF, and is the inverse of [method export_convert_mesh_instance].
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">

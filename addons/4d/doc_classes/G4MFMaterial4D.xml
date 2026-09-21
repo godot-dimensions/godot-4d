@@ -12,7 +12,7 @@
 		<link title="G4MF Material Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.material.schema.json</link>
 	</tutorials>
 	<methods>
-		<method name="convert_material_into_state" qualifiers="static">
+		<method name="export_convert_material_into_state" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="material" type="Material4D" />
@@ -28,18 +28,46 @@
 				Converts the given [Dictionary] representing the JSON of a G4MF material to a [G4MFMaterial4D]. This will set the fields of the [G4MFMaterial4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
 			</description>
 		</method>
-		<method name="generate_tetra_material" qualifiers="const">
+		<method name="import_generate_new_poly_material" qualifiers="const">
+			<return type="PolyMaterial4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Generates a [PolyMaterial4D] from the G4MF material data, always creating a new object, which is not cached. This is used for importing a material used on a [G4MFMesh4D] with surfaces that get imported as an [ArrayPolyMesh4D].
+			</description>
+		</method>
+		<method name="import_generate_new_tetra_material" qualifiers="const">
 			<return type="TetraMaterial4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Generates a [TetraMaterial4D] from the G4MF material data. This is used for importing a material used on a [G4MFMesh4D] with cells that get imported as an [ArrayTetraMesh4D].
+				Generates a [TetraMaterial4D] from the G4MF material data, always creating a new object, which is not cached. This is used for importing a material used on a [G4MFMesh4D] with cells that get imported as an [ArrayTetraMesh4D].
 			</description>
 		</method>
-		<method name="generate_wire_material" qualifiers="const">
+		<method name="import_generate_new_wire_material" qualifiers="const">
 			<return type="WireMaterial4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Generates a [WireMaterial4D] from the G4MF material data. This is used for importing a material used on a [G4MFMesh4D] with edges that get imported as an [ArrayWireMesh4D].
+				Generates a [WireMaterial4D] from the G4MF material data, always creating a new object, which is not cached. This is used for importing a material used on a [G4MFMesh4D] with edges that get imported as an [ArrayWireMesh4D].
+			</description>
+		</method>
+		<method name="import_get_or_generate_poly_material">
+			<return type="PolyMaterial4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Returns a cached [PolyMaterial4D] from the G4MF material data if it exists, or generates a new one if it does not. This is used for importing a material used on a [G4MFMesh4D] with surfaces that get imported as an [ArrayPolyMesh4D].
+			</description>
+		</method>
+		<method name="import_get_or_generate_tetra_material">
+			<return type="TetraMaterial4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Returns a cached [TetraMaterial4D] from the G4MF material data if it exists, or generates a new one if it does not. This is used for importing a material used on a [G4MFMesh4D] with cells that get imported as an [ArrayTetraMesh4D].
+			</description>
+		</method>
+		<method name="import_get_or_generate_wire_material">
+			<return type="WireMaterial4D" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Returns a cached [WireMaterial4D] from the G4MF material data if it exists, or generates a new one if it does not. This is used for importing a material used on a [G4MFMesh4D] with edges that get imported as an [ArrayWireMesh4D].
 			</description>
 		</method>
 		<method name="is_equal_exact" qualifiers="const">

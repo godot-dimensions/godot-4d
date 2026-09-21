@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../mesh/poly/poly_material_4d.h"
 #include "../../mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../mesh/tetra/tetra_material_4d.h"
 #include "../../mesh/wire/array_wire_mesh_4d.h"
@@ -15,6 +16,10 @@ class G4MFMaterial4D : public G4MFItem4D {
 	Ref<G4MFMaterialChannel4D> _emissive_channel;
 	Ref<G4MFMaterialChannel4D> _normal_channel;
 	Ref<G4MFMaterialChannel4D> _orm_channel;
+
+	Ref<PolyMaterial4D> _godot_poly_material_4d;
+	Ref<TetraMaterial4D> _godot_tetra_material_4d;
+	Ref<WireMaterial4D> _godot_wire_material_4d;
 
 	static void _append_geometry_binding(TypedArray<G4MFMeshSurfaceBindingGeometry4D> &p_geometry_bindings, const int p_geometry_dimension, const int p_decompose_dimension, const int p_indices_accessor_index);
 
@@ -36,9 +41,15 @@ public:
 
 	bool is_equal_exact(const Ref<G4MFMaterial4D> &p_other) const;
 
-	Ref<TetraMaterial4D> generate_tetra_material(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Ref<WireMaterial4D> generate_wire_material(const Ref<G4MFState4D> &p_g4mf_state) const;
-	static int convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Material4D> &p_material, const bool p_deduplicate = true);
+	Ref<PolyMaterial4D> import_get_or_generate_poly_material(const Ref<G4MFState4D> &p_g4mf_state);
+	Ref<TetraMaterial4D> import_get_or_generate_tetra_material(const Ref<G4MFState4D> &p_g4mf_state);
+	Ref<WireMaterial4D> import_get_or_generate_wire_material(const Ref<G4MFState4D> &p_g4mf_state);
+
+	Ref<PolyMaterial4D> import_generate_new_poly_material(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Ref<TetraMaterial4D> import_generate_new_tetra_material(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Ref<WireMaterial4D> import_generate_new_wire_material(const Ref<G4MFState4D> &p_g4mf_state) const;
+
+	static int export_convert_material_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Material4D> &p_material, const bool p_deduplicate = true);
 
 	static Ref<G4MFMaterial4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;
