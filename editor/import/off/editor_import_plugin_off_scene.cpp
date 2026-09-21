@@ -41,21 +41,7 @@ TypedArray<Dictionary> EditorImportPluginOFFScene::_get_import_options(const Str
 	return options;
 }
 
-Error EditorImportPluginOFFScene::_import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const {
-	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_read_from_file(p_source_file);
-	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
-	Node *node = off_doc->import_generate_node(p_options[StringName("deduplicate_edges")], p_options[StringName("per_face_vertices")]);
-	ERR_FAIL_NULL_V(node, ERR_FILE_CORRUPT);
-	String file = p_source_file.get_file();
-	node->get("mesh").call("set_name", file);
-	node->set_name(file.get_basename());
-	Ref<PackedScene> packed_scene;
-	packed_scene.instantiate();
-	Error err = packed_scene->pack(node);
-	ERR_FAIL_COND_V(err != OK, err);
-	err = ResourceSaver::get_singleton()->save(packed_scene, p_save_path + String(".scn"));
-	return err;
-}
+Error EditorImportPluginOFFScene::_import(const String &p_source_file, const String &p_save_path, const Dictionary &p_options, const TypedArray<String> &p_platform_variants, const TypedArray<String> &p_gen_files) const
 #elif GODOT_MODULE
 void EditorImportPluginOFFScene::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "deduplicate_edges"), true));
@@ -66,7 +52,8 @@ void EditorImportPluginOFFScene::get_import_options(const String &p_path, List<I
 Error EditorImportPluginOFFScene::import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
 #else
 Error EditorImportPluginOFFScene::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
-#endif
+#endif // VERSION_HEX
+#endif // GDExtension or module.
 {
 	Ref<OFFDocument4D> off_doc = OFFDocument4D::import_read_from_file(p_source_file);
 	ERR_FAIL_COND_V(off_doc.is_null(), ERR_FILE_CANT_OPEN);
@@ -79,7 +66,11 @@ Error EditorImportPluginOFFScene::import(ResourceUID::ID p_source_id, const Stri
 	packed_scene.instantiate();
 	Error err = packed_scene->pack(node);
 	ERR_FAIL_COND_V(err != OK, err);
-	err = ResourceSaver::save(packed_scene, p_save_path + String(".scn"));
+	const String save_path_with_ext = p_save_path + String(".scn");
+#if GDEXTENSION
+	err = ResourceSaver::get_singleton()->save(packed_scene, save_path_with_ext);
+#elif GODOT_MODULE
+	err = ResourceSaver::save(packed_scene, save_path_with_ext);
+#endif
 	return err;
 }
-#endif
