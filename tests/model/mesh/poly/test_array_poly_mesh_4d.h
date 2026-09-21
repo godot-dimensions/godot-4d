@@ -1953,4 +1953,156 @@ TEST_CASE("[ArrayPolyMesh4D] Explicit compaction removes unreferenced data and r
 	CHECK(mesh->get_all_poly_cell_texture_map_indices()[boundary_key][0][0] == 0);
 	CHECK(mesh->get_poly_cell_boundary_normals()[0] == normal_b);
 }
+
+TEST_CASE("[ArrayPolyMesh4D] Orient cells to boundary normals") {
+	Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+	REQUIRE(mesh->is_mesh_data_valid());
+	mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+	const PackedVector4Array original_normals = mesh->get_poly_cell_boundary_normals();
+	const int64_t cell_count = original_normals.size();
+	REQUIRE(cell_count == 8);
+	const Vector<Vector<PackedInt32Array>> original_cells = mesh->get_poly_cell_indices();
+	// The box is centered on the origin, so an outward tetrahedron's perpendicular points along its centroid.
+	auto count_tetrahedra_facing_outward = [&](int64_t &r_outward, int64_t &r_inward) {
+		r_outward = 0;
+		r_inward = 0;
+		const PackedVector4Array positions = mesh->get_simplex_cell_positions();
+		for (int64_t t = 0; t < positions.size() / 4; t++) {
+			const Vector4 &a = positions[t * 4];
+			const Vector4 centroid = (a + positions[t * 4 + 1] + positions[t * 4 + 2] + positions[t * 4 + 3]) / 4.0f;
+			const Vector4 perp = Vector4D::perpendicular(positions[t * 4 + 1] - a, positions[t * 4 + 2] - a, positions[t * 4 + 3] - a);
+			if (perp.dot(centroid) > 0.0) {
+				r_outward++;
+			} else {
+				r_inward++;
+			}
+		}
+	};
+	int64_t outward = 0;
+	int64_t inward = 0;
+	count_tetrahedra_facing_outward(outward, inward);
+	REQUIRE(outward > 0);
+	REQUIRE(inward == 0);
+
+	SUBCASE("Matching or zero normals leave the cells untouched") {
+		mesh->orient_cells_to_boundary_normals(original_normals);
+		CHECK(mesh->get_poly_cell_indices() == original_cells);
+		CHECK(mesh->get_poly_cell_boundary_normals() == original_normals);
+		PackedVector4Array zeros;
+		zeros.resize(cell_count);
+		zeros.fill(Vector4());
+		mesh->orient_cells_to_boundary_normals(zeros);
+		CHECK(mesh->get_poly_cell_indices() == original_cells);
+		CHECK(mesh->get_poly_cell_boundary_normals() == original_normals);
+	}
+
+	SUBCASE("Opposite normals reverse the orientation of every cell") {
+		PackedVector4Array desired;
+		for (const Vector4 &normal : original_normals) {
+			desired.append(-normal * 0.5f); // Only the side matters, not the length.
+		}
+		mesh->orient_cells_to_boundary_normals(desired);
+		CHECK(mesh->is_mesh_data_valid());
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(normals.size() == cell_count);
+		const Vector<Vector<PackedInt32Array>> cells = mesh->get_poly_cell_indices();
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			CHECK(normals[cell].is_equal_approx(-original_normals[cell]));
+			// The first two faces were swapped, so the cell structure itself now encodes the new orientation.
+			CHECK(cells[1][cell][0] == original_cells[1][cell][1]);
+			CHECK(cells[1][cell][1] == original_cells[1][cell][0]);
+		}
+		mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			CHECK(mesh->get_poly_cell_boundary_normals()[cell].is_equal_approx(-original_normals[cell]));
+		}
+		count_tetrahedra_facing_outward(outward, inward);
+		CHECK(outward == 0);
+		CHECK(inward > 0);
+	}
+
+	SUBCASE("A shorter array only affects the cells it covers") {
+		PackedVector4Array desired = { -original_normals[0], -original_normals[1] };
+		mesh->orient_cells_to_boundary_normals(desired);
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		const Vector<Vector<PackedInt32Array>> cells = mesh->get_poly_cell_indices();
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			if (cell < 2) {
+				CHECK(normals[cell].is_equal_approx(-original_normals[cell]));
+				CHECK(cells[1][cell] != original_cells[1][cell]);
+			} else {
+				CHECK(normals[cell].is_equal_approx(original_normals[cell]));
+				CHECK(cells[1][cell] == original_cells[1][cell]);
+			}
+		}
+	}
+
+	SUBCASE("Per-cell-vertex bindings stay attached to their vertices when cells are flipped") {
+		// Give every cell corner a distinct normal and texture coordinate, positioned by the current traversal order.
+		const Vector<PackedInt32Array> cells_before = mesh->get_all_boundary_cell_vertex_indices(false);
+		Vector<PackedVector4Array> corner_normals;
+		Vector<PackedVector3Array> corner_texture;
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			PackedVector4Array cell_normals;
+			PackedVector3Array cell_texture;
+			for (int64_t corner = 0; corner < cells_before[cell].size(); corner++) {
+				cell_normals.append(Vector4(0.125f * cell, 0.0625f * corner, 0.5f, 0.25f).normalized());
+				cell_texture.append(Vector3(0.125f * cell, 0.0625f * corner, 0.5f));
+			}
+			corner_normals.push_back(cell_normals);
+			corner_texture.push_back(cell_texture);
+		}
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, corner_normals);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, corner_texture);
+		REQUIRE(mesh->is_mesh_data_valid());
+		PackedVector4Array desired;
+		for (const Vector4 &normal : original_normals) {
+			desired.append(-normal);
+		}
+		mesh->orient_cells_to_boundary_normals(desired);
+		REQUIRE(mesh->is_mesh_data_valid());
+		// The traversal order of every flipped cell changed, but each corner's data must still belong to the same vertex.
+		const Vector<PackedInt32Array> cells_after = mesh->get_all_boundary_cell_vertex_indices(false);
+		const Vector<PackedVector4Array> normals_after = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
+		const Vector<PackedVector3Array> texture_after = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(cells_after.size() == cell_count);
+		REQUIRE(normals_after.size() == cell_count);
+		REQUIRE(texture_after.size() == cell_count);
+		int64_t reordered_cells = 0;
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			REQUIRE(cells_after[cell].size() == cells_before[cell].size());
+			if (cells_after[cell] != cells_before[cell]) {
+				reordered_cells++;
+			}
+			for (int64_t corner_after = 0; corner_after < cells_after[cell].size(); corner_after++) {
+				const int64_t corner_before = cells_before[cell].find(cells_after[cell][corner_after]);
+				REQUIRE(corner_before >= 0);
+				CHECK(normals_after[cell][corner_after].is_equal_approx(corner_normals[cell][corner_before]));
+				CHECK(texture_after[cell][corner_after].is_equal_approx(corner_texture[cell][corner_before]));
+			}
+		}
+		CHECK(reordered_cells > 0); // Otherwise this test would not be exercising the resampling.
+	}
+
+	SUBCASE("Cells without a desired normal keep their stored normal") {
+		PackedVector4Array custom_normals = original_normals;
+		const Vector4 tilted = (original_normals[3] + Vector4(0.1f, 0.1f, 0.1f, 0.1f)).normalized();
+		custom_normals.set(3, tilted);
+		mesh->set_poly_cell_boundary_normals(custom_normals);
+		PackedVector4Array desired;
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			desired.append(cell == 3 ? Vector4() : -original_normals[cell]);
+		}
+		mesh->orient_cells_to_boundary_normals(desired);
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(normals.size() == cell_count);
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			if (cell == 3) {
+				CHECK(normals[cell].is_equal_approx(tilted));
+			} else {
+				CHECK(normals[cell].is_equal_approx(-original_normals[cell]));
+			}
+		}
+	}
+}
 } // namespace TestArrayPolyMesh4D

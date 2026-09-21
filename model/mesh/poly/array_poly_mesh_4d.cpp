@@ -587,6 +587,112 @@ void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode
 	poly_mesh_clear_cache();
 }
 
+void ArrayPolyMesh4D::orient_cells_to_boundary_normals(const PackedVector4Array &p_desired_boundary_normals) {
+	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot orient cells because there are no boundary cells.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot orient cells for invalid poly mesh data.");
+	Vector<PackedInt32Array> boundary_cell_indices = _poly_cell_indices[1];
+	const int64_t cell_count = boundary_cell_indices.size();
+	ERR_FAIL_COND_MSG(p_desired_boundary_normals.size() > cell_count, "ArrayPolyMesh4D: Cannot orient cells because there are more desired normals (" + itos(p_desired_boundary_normals.size()) + ") than 3D cells (" + itos(cell_count) + ").");
+	// Find the cells whose orientation implies a normal facing away from the desired one.
+	Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
+	ERR_FAIL_COND(cell_vertex_indices.size() != cell_count);
+	PackedVector4Array oriented_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, false);
+	ERR_FAIL_COND(oriented_normals.size() != cell_count);
+	// Cells without a desired normal keep their stored normal, if any, so remember those before anything changes.
+	const PackedVector4Array existing_normals = get_poly_cell_boundary_normals();
+	bool flipped_any = false;
+	for (int64_t cell_index = 0; cell_index < p_desired_boundary_normals.size(); cell_index++) {
+		const Vector4 &desired_normal = p_desired_boundary_normals[cell_index];
+		if (desired_normal.is_zero_approx() || oriented_normals[cell_index].dot(desired_normal) >= 0.0) {
+			continue; // No preference for this cell, or it already faces the desired way.
+		}
+		PackedInt32Array cell_face_indices = boundary_cell_indices[cell_index];
+		if (cell_face_indices.size() < 2) {
+			WARN_PRINT("ArrayPolyMesh4D: Cell " + itos(cell_index) + " has fewer than 2 faces, so its orientation cannot be flipped to match its desired boundary normal.");
+			continue;
+		}
+		// Swapping the first two faces reverses the cell's orientation, the same
+		// way that COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION does.
+		const int32_t first_face = cell_face_indices[0];
+		cell_face_indices.set(0, cell_face_indices[1]);
+		cell_face_indices.set(1, first_face);
+		boundary_cell_indices.set(cell_index, cell_face_indices);
+		flipped_any = true;
+	}
+	if (flipped_any) {
+		// Swapping faces changes the order in which a cell's vertices, edges, and faces are traversed, and the
+		// decomposed bindings (such as the per-cell-vertex normals and texture map) are positioned by that order.
+		// Snapshot the traversal of every decomposed binding key before the flip, so the data can be resampled after.
+		HashMap<Vector2i, Vector<PackedInt32Array>> *data_binding_maps[2] = { &_all_poly_cell_normal_indices, &_all_poly_cell_texture_map_indices };
+		HashMap<Vector2i, Vector<PackedInt32Array>> pre_flip_poly;
+		for (HashMap<Vector2i, Vector<PackedInt32Array>> *data_binding_map : data_binding_maps) {
+			for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : *data_binding_map) {
+				const Vector2i key = kv.key;
+				if (key.x != key.y && !kv.value.is_empty() && !pre_flip_poly.has(key)) {
+					pre_flip_poly.insert(key, get_all_poly_cell_poly_indices(key.x, key.y));
+				}
+			}
+		}
+		_poly_cell_indices.set(1, boundary_cell_indices);
+		// The cell orientation changed, so the cached boundary cell traversal and simplexes are stale.
+		poly_mesh_clear_cache();
+		// Resample the bindings of any decomposed elements whose traversal order changed, like `deduplicate_all_elements` does.
+		for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &pre_kv : pre_flip_poly) {
+			const Vector2i key = pre_kv.key;
+			const Vector<PackedInt32Array> &pre_flip_cells = pre_kv.value;
+			const Vector<PackedInt32Array> post_flip_cells = get_all_poly_cell_poly_indices(key.x, key.y);
+			ERR_CONTINUE_MSG(pre_flip_cells.size() != post_flip_cells.size(), "ArrayPolyMesh4D: The number of cells changed while orienting them, which should not happen. The " + String(key) + " bindings may be misaligned.");
+			for (HashMap<Vector2i, Vector<PackedInt32Array>> *data_binding_map : data_binding_maps) {
+				if (!data_binding_map->has(key)) {
+					continue;
+				}
+				Vector<PackedInt32Array> data_bindings = (*data_binding_map)[key];
+				for (int64_t cell_index = 0; cell_index < data_bindings.size() && cell_index < pre_flip_cells.size(); cell_index++) {
+					const PackedInt32Array &pre_flip_cell = pre_flip_cells[cell_index];
+					const PackedInt32Array &post_flip_cell = post_flip_cells[cell_index];
+					const PackedInt32Array &old_cell_value_indices = data_bindings[cell_index];
+					if (old_cell_value_indices.is_empty() || pre_flip_cell == post_flip_cell) {
+						continue; // No data, or this cell's traversal did not change, so its binding is still correct.
+					}
+					if (pre_flip_cell.size() != post_flip_cell.size() || old_cell_value_indices.size() != pre_flip_cell.size()) {
+						continue; // Malformed for this cell, leave the data alone and let validation report it.
+					}
+					PackedInt32Array new_cell_value_indices;
+					new_cell_value_indices.resize(old_cell_value_indices.size());
+					for (int64_t element_index = 0; element_index < pre_flip_cell.size(); element_index++) {
+						const int64_t destination_index = post_flip_cell.find(pre_flip_cell[element_index]);
+						if (destination_index >= 0) {
+							new_cell_value_indices.set(destination_index, old_cell_value_indices[element_index]);
+						}
+					}
+					data_bindings.set(cell_index, new_cell_value_indices);
+				}
+				data_binding_map->insert(key, data_bindings);
+			}
+		}
+		cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
+		oriented_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, false);
+		ERR_FAIL_COND(oriented_normals.size() != cell_count);
+		for (int64_t cell_index = 0; cell_index < p_desired_boundary_normals.size(); cell_index++) {
+			const Vector4 &desired_normal = p_desired_boundary_normals[cell_index];
+			if (!desired_normal.is_zero_approx() && oriented_normals[cell_index].dot(desired_normal) < 0.0) {
+				WARN_PRINT("ArrayPolyMesh4D: Cell " + itos(cell_index) + " still faces away from its desired boundary normal after flipping its orientation. Its normal may be stored facing the wrong way.");
+			}
+		}
+	}
+	// Store the normals implied by the corrected orientation, which are exactly perpendicular to the cells,
+	// rather than the desired normals, which only need to point to the correct side. Cells with no desired
+	// normal keep the normal they already had, so that custom normals on them are left as-is.
+	for (int64_t cell_index = 0; cell_index < cell_count; cell_index++) {
+		const bool has_desired = cell_index < p_desired_boundary_normals.size() && !p_desired_boundary_normals[cell_index].is_zero_approx();
+		if (!has_desired && cell_index < existing_normals.size() && !existing_normals[cell_index].is_zero_approx()) {
+			oriented_normals.set(cell_index, existing_normals[cell_index]);
+		}
+	}
+	_all_poly_cell_normal_indices.insert(PER_CELL_KEY, Vector<PackedInt32Array>{ _normal_indices_for_values_internal(oriented_normals) });
+	poly_mesh_clear_cache(true);
+}
+
 void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
 	_all_poly_cell_normal_indices.erase(CELL_TO_VERT_KEY);
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
@@ -2495,6 +2601,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 
 	// Normal calculation functions.
 	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "normals_mode", "keep_existing"), &ArrayPolyMesh4D::calculate_boundary_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("orient_cells_to_boundary_normals", "desired_boundary_normals"), &ArrayPolyMesh4D::orient_cells_to_boundary_normals);
 	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_flat_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("set_smooth_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_smooth_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("make_double_sided", "idempotent"), &ArrayPolyMesh4D::make_double_sided, DEFVAL(true));

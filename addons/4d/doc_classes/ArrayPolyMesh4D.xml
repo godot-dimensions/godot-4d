@@ -143,6 +143,14 @@
 				This method will also attempt to merge the materials of the two meshes, by calling [method Material4D.merge_with] on this mesh's material and passing the other mesh's material as an argument. See [method Material4D.merge_with] for more information.
 			</description>
 		</method>
+		<method name="orient_cells_to_boundary_normals">
+			<return type="void" />
+			<param index="0" name="desired_boundary_normals" type="PackedVector4Array" />
+			<description>
+				Orients the 3D cells so that their boundary normals point to the same side as [param desired_boundary_normals], then calculates the boundary normals from the corrected orientation. Each desired normal only chooses a side: cells whose orientation implies a normal facing the opposite way have their first two faces swapped, which reverses their orientation, and the stored normals are the exact perpendiculars of the cells rather than the desired vectors. A zero desired normal leaves that cell's orientation and stored normal as-is, and the array may be shorter than the number of cells, in which case the remaining cells are left as-is. Flipping a cell changes the order in which its vertices, edges, and faces are traversed, so any decomposed bindings on it, such as per-cell-vertex normals and texture coordinates, are resampled to stay attached to the same elements.
+				This is useful for importers that know which side of each cell faces outward, such as from the conventions of the source data, but whose cell structure does not reliably encode it. Compare [constant COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION], which also fixes the orientation but decides the outward side geometrically.
+			</description>
+		</method>
 		<method name="set_flat_shading_normals">
 			<return type="void" />
 			<param index="0" name="normals_mode" type="int" enum="ArrayPolyMesh4D.ComputeNormalsMode" default="0" />
