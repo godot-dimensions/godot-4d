@@ -529,7 +529,13 @@ PackedVector4Array TetraMesh4D::get_simplex_cell_positions() {
 void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) {
 	ERR_FAIL_COND(p_proxy_mesh.is_null());
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "TetraMesh4D: Cannot update proxy mesh for an invalid mesh.");
-
+	// Refuse to build a surface that would overflow Godot's rendering server and crash. See the constants in the header.
+	const int64_t tet_count = get_simplex_cell_vertex_indices().size() / 4;
+	if (tet_count > PROXY_MAX_TETS_PER_SURFACE) {
+		const int64_t vert_count = tet_count * PROXY_VERTS_PER_TET;
+		ERR_FAIL_MSG("TetraMesh4D: Mesh '" + get_name() + "' has " + itos(tet_count) + " tetrahedra, which would make a proxy surface of " + itos(vert_count) + " vertices and " + itos(vert_count * PROXY_BYTES_PER_VERT) + " bytes, but Godot's rendering server can only handle a surface of at most " + itos(PROXY_MAX_TETS_PER_SURFACE) + " tetrahedra (" + itos(PROXY_MAX_VERTS_PER_SURFACE) + " vertices, " + itos(PROXY_MAX_VERTS_PER_SURFACE * PROXY_BYTES_PER_VERT) + " bytes). This surface will not be rendered. Split the mesh into multiple surfaces with different names or materials, or reduce its detail.");
+	}
+	// Set up SurfaceTool.
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
 	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
@@ -585,6 +591,11 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 		// Some alternative strategies:
 		// - ImmediateMesh to compute cross-section on the CPU every frame, but that's likely slower.
 		// - Some kind of compute shader or custom render pipeline, but that's not supported on the Compatibility renderer.
+		// - Emitting fewer vertices per cell and reading the shared per-cell data from a buffer or texture instead of
+		//   duplicating it into all twelve vertices. Each tetrahedron currently costs PROXY_VERTS_PER_TET * PROXY_BYTES_PER_VERT
+		//   bytes, so this would cut memory several times over and raise PROXY_MAX_TETS_PER_SURFACE by the same factor.
+		// - Generating triangles directly from the source data (such as hoxels) instead of going through polytopes and
+		//   tetrahedra, for sources where the cross-section can be computed more directly.
 
 		//// Shared attrs for both triangles:
 

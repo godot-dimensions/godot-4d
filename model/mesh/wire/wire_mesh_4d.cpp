@@ -42,6 +42,14 @@ void WireMesh4D::cleanup_fallback_material() {
 
 void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) {
 	ERR_FAIL_COND(p_proxy_mesh.is_null());
+	// Refuse to build a surface that would overflow Godot's rendering server and crash. See the constants in the header.
+	const PackedVector4Array edges = get_edge_positions();
+	const int64_t edge_count = edges.size() / 2;
+	if (edge_count > PROXY_MAX_EDGES_PER_SURFACE) {
+		const int64_t vert_count = edge_count * PROXY_VERTS_PER_EDGE;
+		ERR_FAIL_MSG("WireMesh4D: Mesh '" + get_name() + "' has " + itos(edge_count) + " edges, which would make a proxy surface of " + itos(vert_count) + " vertices and " + itos(vert_count * PROXY_BYTES_PER_VERT) + " bytes, but Godot's rendering server can only handle a surface of at most " + itos(PROXY_MAX_EDGES_PER_SURFACE) + " edges (" + itos(PROXY_MAX_VERTS_PER_SURFACE) + " vertices, " + itos(PROXY_MAX_VERTS_PER_SURFACE * PROXY_BYTES_PER_VERT) + " bytes). This surface will not be rendered. Split the mesh into multiple surfaces with different names or materials, or reduce its detail.");
+	}
+	// Set up SurfaceTool.
 	Ref<SurfaceTool> surface_tool;
 	surface_tool.instantiate();
 	surface_tool->begin(Mesh::PRIMITIVE_LINES);
@@ -50,8 +58,7 @@ void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mes
 	if (material.is_valid()) {
 		surface_tool->set_material(material->get_cross_section_material_3d());
 	}
-
-	PackedVector4Array edges = get_edge_positions();
+	// Iterate over the mesh data and append it to the SurfaceTool.
 	for (Vector4 edge_vert : edges) {
 		surface_tool->set_custom(0, Vector4D::to_color(edge_vert));
 		// Not using these positions because it doesn't fit the full vec4, but might as well set it to something sane.
