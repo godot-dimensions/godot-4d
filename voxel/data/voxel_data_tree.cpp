@@ -149,6 +149,20 @@ bool VoxelDataTree::merge_constant_children() {
 	return true;
 }
 
+void VoxelDataTree::mark_edited(const Rect4i &p_edited_region) {
+	if (!_bounds.grow(1).intersects_exclusive(p_edited_region)) {
+		return;
+	}
+	if (_type == TYPE_LEAF) {
+		_edited_since_merge = true;
+	} else if (_type == TYPE_PARENT) {
+		_edited_since_merge = true;
+		for (int i = 0; i < CHILD_COUNT; i++) {
+			_children[i].mark_edited(p_edited_region);
+		}
+	}
+}
+
 static bool _borders_different_material(const Ref<VoxelGenerator> &p_generator, const Rect4i &p_bounds, const VoxelMaterial p_material) {
 	const Vector4i end = p_bounds.get_end();
 	for (int axis = 0; axis < 4; axis++) {
@@ -531,39 +545,11 @@ static void _reconcile_border(VoxelDataTree *p_lower, VoxelDataTree *p_upper, co
 	}
 }
 
-void VoxelDataNeighbourhood::apply_generated_chunk(VoxelDataTree *p_chunk) {
-	ERR_FAIL_NULL(p_chunk);
-	const Rect4i chunk_bounds = p_chunk->get_bounds();
-	if (node == nullptr || !node->has_voxel(chunk_bounds.position)) {
-		memdelete(p_chunk);
-		ERR_FAIL_MSG("VoxelDataTree cannot store a chunk outside of its bounds.");
-	}
-	VoxelDataNeighbourhood target = *this;
-	while (target.node->get_bounds() != chunk_bounds) {
-		if (target.node->get_bounds().size.x <= chunk_bounds.size.x) {
-			memdelete(p_chunk);
-			ERR_FAIL_MSG("VoxelDataTree chunks must line up with the tree's subdivisions.");
-		}
-		if (target.node->is_undefined()) {
-			target.node->subdivide();
-		} else if (!target.node->is_parent()) {
-			break;
-		}
-		target = target.get_child(target.node->get_child_index_containing(chunk_bounds.position));
-	}
-	if (!target.node->is_undefined()) {
-		// That part of the tree is already defined; discard the chunk.
-		memdelete(p_chunk);
-		return;
-	}
-	target.node->_take_contents(*p_chunk);
-	memdelete(p_chunk);
-	// The new node generated its contents assuming the generator's materials
-	// around it, but edits may have changed them, so the surface data of the
-	// edges crossing its borders needs reconciling on both sides.
+void VoxelDataNeighbourhood::reconcile_borders() {
+	ERR_FAIL_NULL(node);
 	for (int axis = 0, power = 1; axis < 4; axis++, power *= 3) {
-		_reconcile_border(target.neighbours[CENTRE_DIRECTION - power], target.node, axis);
-		_reconcile_border(target.node, target.neighbours[CENTRE_DIRECTION + power], axis);
+		_reconcile_border(neighbours[CENTRE_DIRECTION - power], node, axis);
+		_reconcile_border(node, neighbours[CENTRE_DIRECTION + power], axis);
 	}
 }
 
@@ -580,6 +566,7 @@ void VoxelDataNeighbourhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	if (node->is_undefined() || !bounds.intersects_exclusive(face_bounds)) {
 		return;
 	}
+	node->_edited_since_merge = true;
 	if (node->is_constant()) {
 		// The edit may make the node non-uniform or give it normals; a larger
 		// constant is only split, so that just the parts near the edit lose
@@ -667,4 +654,67 @@ void VoxelDataNeighbourhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
 			}
 		}
 	}
+}
+
+void VoxelDataNeighbourhood::merge_edited_constants() {
+	ERR_FAIL_NULL(node);
+	if (!node->_edited_since_merge) {
+		return;
+	}
+	node->_edited_since_merge = false;
+	if (node->is_parent()) {
+		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
+			// Checked here to skip building neighbourhoods of unmarked children.
+			if (node->get_child(i)->_edited_since_merge) {
+				get_child(i).merge_edited_constants();
+			}
+		}
+		node->merge_constant_children();
+		return;
+	}
+	if (!node->is_leaf()) {
+		return;
+	}
+	// A leaf can revert to a constant when its voxels are uniform, it stores
+	// no edge data (constants cannot, and border data kept for undefined
+	// neighbours must survive), and no defined voxel bordering it has a
+	// different material (constants may not border one).
+	const VoxelDataLeaf *leaf_data = node->get_leaf_data();
+	if (leaf_data->get_edge_data_count() != 0) {
+		return;
+	}
+	const VoxelMaterial material = leaf_data->get_material(Vector4i());
+	const Rect4i bounds = node->get_bounds();
+	for (int32_t w = 0; w < bounds.size.w; w++) {
+		for (int32_t z = 0; z < bounds.size.z; z++) {
+			for (int32_t y = 0; y < bounds.size.y; y++) {
+				for (int32_t x = 0; x < bounds.size.x; x++) {
+					if (leaf_data->get_material(Vector4i(x, y, z, w)) != material) {
+						return;
+					}
+				}
+			}
+		}
+	}
+	for (int axis = 0; axis < 4; axis++) {
+		for (int side = 0; side < 2; side++) {
+			Rect4i outside_layer = bounds;
+			outside_layer.position[axis] = side == 0 ? bounds.get_end()[axis] : bounds.position[axis] - 1;
+			outside_layer.size[axis] = 1;
+			const Vector4i end = outside_layer.get_end();
+			for (int32_t w = outside_layer.position.w; w < end.w; w++) {
+				for (int32_t z = outside_layer.position.z; z < end.z; z++) {
+					for (int32_t y = outside_layer.position.y; y < end.y; y++) {
+						for (int32_t x = outside_layer.position.x; x < end.x; x++) {
+							const VoxelMaterial outside_material = get_material(Vector4i(x, y, z, w));
+							if (outside_material != VoxelMaterial::UNDEFINED && outside_material != material) {
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	node->set_constant_material(material);
 }

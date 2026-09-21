@@ -5,7 +5,7 @@ void SphereVoxelEdit::set_center(const Vector4 &p_center) {
 	_update_bounds();
 }
 
-void SphereVoxelEdit::set_radius(const double p_radius) {
+void SphereVoxelEdit::set_radius(const real_t p_radius) {
 	ERR_FAIL_COND_MSG(p_radius < 0.0, "SphereVoxelEdit radius must not be negative. Refusing to set.");
 	_radius = p_radius;
 	_update_bounds();
@@ -42,7 +42,7 @@ void SphereVoxelEdit::_update_bounds() {
 
 VoxelMaterial SphereVoxelEdit::get_material(const Vector4i &p_voxel) const {
 	const Vector4 point = Vector4(p_voxel.x + 0.5f, p_voxel.y + 0.5f, p_voxel.z + 0.5f, p_voxel.w + 0.5f);
-	const double signed_distance = _radius - point.distance_to(_center);
+	const real_t signed_distance = _radius - point.distance_to(_center);
 	return signed_distance > 0.0 ? _material : VoxelMaterial::UNDEFINED;
 }
 
@@ -52,10 +52,10 @@ VoxelEdgeData SphereVoxelEdit::get_edge_data(const Vector4i &p_voxel, const int 
 	// Solving |from_center + crossing * axis|² = radius² gives the exact
 	// position where the edge crosses the sphere. An active edge crosses the
 	// surface exactly once, so exactly one root lies on the edge.
-	const double half_b = from_center[p_axis];
-	const double constant_term = from_center.length_squared() - _radius * _radius;
-	const double sqrt_discriminant = Math::sqrt(MAX(half_b * half_b - constant_term, 0.0));
-	double crossing = -half_b - sqrt_discriminant;
+	const real_t half_b = from_center[p_axis];
+	const real_t constant_term = from_center.length_squared() - _radius * _radius;
+	const real_t sqrt_discriminant = Math::sqrt(MAX(half_b * half_b - constant_term, (real_t)0.0));
+	real_t crossing = -half_b - sqrt_discriminant;
 	if (crossing < 0.0 || crossing > 1.0) {
 		crossing = -half_b + sqrt_discriminant;
 	}

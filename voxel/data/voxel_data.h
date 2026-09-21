@@ -11,6 +11,8 @@
 class VoxelEdit;
 
 // A 4D volume of voxel data that can be expanded indefinitely.
+// Stores the data using a VoxelDataTree, but any logic that must
+// apply to a whole tree at once (not arbitrary sub-trees) goes here.
 class VoxelData : public RefCounted {
 	GDCLASS(VoxelData, RefCounted);
 
@@ -51,13 +53,19 @@ public:
 	VoxelDataTree *generate_chunk_content(const Vector4i &p_voxel) const;
 
 	// Grafts a generated chunk into the data, taking ownership of it. The
-	// chunk is discarded if that chunk of the data is already defined. Main
-	// thread only.
+	// chunk is discarded if that chunk of the data is already defined. The
+	// surface data of the edges crossing the chunk's borders is reconciled
+	// with the actual bordering materials, which edits may have changed from
+	// what the generator produced. Main thread only.
 	void apply_generated_chunk(VoxelDataTree *p_chunk);
 
 	// Overlays the edit onto the defined parts of the data; parts of the edit
 	// over undefined chunks are discarded. Main thread only.
 	void apply_edit(const Ref<VoxelEdit> &p_edit);
+
+	// Reverts nodes that edits since the last call have made representable as
+	// constants. Main thread only.
+	void merge_edited_constants();
 
 	// Makes the data chunk containing the given voxel undefined again.
 	// Returns whether any data was unloaded. Main thread only.

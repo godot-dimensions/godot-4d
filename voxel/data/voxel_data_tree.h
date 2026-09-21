@@ -22,7 +22,7 @@ class VoxelDataTree {
 	// VoxelData contracts and replaces the root in ways that only make sense
 	// for a whole tree, working with the node internals directly.
 	friend class VoxelData;
-	// Grafting a generated chunk moves its contents with _take_contents.
+	// Edits set, and the constant-merging pass consumes, _edited_since_merge.
 	friend struct VoxelDataNeighbourhood;
 
 public:
@@ -39,6 +39,10 @@ private:
 	// The region of voxel space this node covers.
 	const Rect4i _bounds;
 	Type _type = TYPE_UNDEFINED;
+	// Whether this subtree, or the 1-voxel border around it, has been edited
+	// since the last constant-merging pass over it (see
+	// VoxelDataNeighbourhood::merge_edited_constants).
+	bool _edited_since_merge = false;
 	union {
 		// Array of CHILD_COUNT children allocated with memalloc. Only valid when _type == TYPE_PARENT.
 		VoxelDataTree *_children = nullptr;
@@ -96,6 +100,11 @@ public:
 	// If this node is a parent whose children are all constants with the same
 	// material, replaces them with a single constant node and returns true.
 	bool merge_constant_children();
+
+	// Marks every leaf and parent whose bounds, grown by a 1-voxel border,
+	// intersect the given edited region, so that the next constant-merging
+	// pass rechecks them.
+	void mark_edited(const Rect4i &p_edited_region);
 
 	// Discards any existing contents and fills the node at full detail with
 	// the data the given generator returns for each voxel. Uniform regions
@@ -164,14 +173,17 @@ struct VoxelDataNeighbourhood {
 	// neighbour covering it.
 	VoxelMaterial get_material(const Vector4i &p_voxel) const;
 
-	// Grafts a generated chunk into the tree at the chunk's own bounds,
-	// subdividing undefined nodes down to it, and takes ownership of the
-	// chunk. The chunk is discarded if that part of the tree is already
-	// defined. The surface data of the edges crossing the chunk's borders is
-	// then reconciled with the actual bordering materials, which edits may
-	// have changed from what the generator produced.
-	void apply_generated_chunk(VoxelDataTree *p_chunk);
+	// Makes the stored surface data of the edges crossing the centre node's
+	// borders consistent with the materials on their two ends, and splits any
+	// constant that turns out to border a different material.
+	void reconcile_borders();
 
 	// Updates the node by overlaying the edit's data where it's defined.
 	void apply_edit(const Ref<VoxelEdit> &p_edit);
+
+	// Simplifies nodes that edits have made representable as constants: leaves
+	// whose voxels are uniform, store no edge data, and border no defined
+	// voxel of a different material, and parents whose children all become
+	// constants of one material. Uses _edited_since_merge
+	void merge_edited_constants();
 };

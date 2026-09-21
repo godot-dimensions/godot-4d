@@ -22,6 +22,7 @@ void VoxelWorld4D::_notification(int p_what) {
 		} break;
 		case NOTIFICATION_PROCESS: {
 			_chunk_loader->update_loaded_chunks();
+			_voxel_data->merge_edited_constants();
 			_mesh_handler.update_dirty_meshes();
 		} break;
 	}

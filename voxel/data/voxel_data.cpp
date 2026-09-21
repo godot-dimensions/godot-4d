@@ -60,6 +60,7 @@ VoxelDataTree *VoxelData::generate_chunk_content(const Vector4i &p_voxel) const 
 }
 
 void VoxelData::apply_generated_chunk(VoxelDataTree *p_chunk) {
+	ERR_FAIL_NULL(p_chunk);
 	if (_tree == nullptr) {
 		_tree = p_chunk;
 		return;
@@ -68,7 +69,34 @@ void VoxelData::apply_generated_chunk(VoxelDataTree *p_chunk) {
 	while (!_tree->get_bounds().encloses_inclusive(chunk_bounds)) {
 		expand_bounds(chunk_bounds.position);
 	}
-	VoxelDataNeighbourhood{ _tree }.apply_generated_chunk(p_chunk);
+	VoxelDataNeighbourhood target{ _tree };
+	while (target.node->get_bounds() != chunk_bounds) {
+		if (target.node->get_bounds().size.x <= chunk_bounds.size.x) {
+			memdelete(p_chunk);
+			ERR_FAIL_MSG("VoxelDataTree chunks must line up with the tree's subdivisions.");
+		}
+		if (target.node->is_undefined()) {
+			target.node->subdivide();
+		} else if (!target.node->is_parent()) {
+			break;
+		}
+		target = target.get_child(target.node->get_child_index_containing(chunk_bounds.position));
+	}
+	if (!target.node->is_undefined()) {
+		// That part of the tree is already defined; discard the chunk.
+		memdelete(p_chunk);
+		return;
+	}
+	target.node->_take_contents(*p_chunk);
+	memdelete(p_chunk);
+	// The new node generated its contents assuming the generator's materials
+	// around it, but edits may have changed them, so the surface data of the
+	// edges crossing its borders needs reconciling on both sides.
+	target.reconcile_borders();
+	// Loading counts as an edit for the constant-merging pass: it can complete
+	// a parent's set of constant children, and reconciliation can clear stale
+	// edge data in bordering chunks.
+	_tree->mark_edited(chunk_bounds);
 	// Sometimes bounds of the same size as they were, just shifted, suffice.
 	trim_bounds();
 }
@@ -133,6 +161,13 @@ void VoxelData::apply_edit(const Ref<VoxelEdit> &p_edit) {
 		return;
 	}
 	VoxelDataNeighbourhood{ _tree }.apply_edit(p_edit);
+}
+
+void VoxelData::merge_edited_constants() {
+	if (_tree == nullptr) {
+		return;
+	}
+	VoxelDataNeighbourhood{ _tree }.merge_edited_constants();
 }
 
 bool VoxelData::unload_chunk(const Vector4i &p_voxel) {
