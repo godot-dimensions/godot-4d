@@ -27,8 +27,10 @@
 #include "nodes/light/spot_light_4d.h"
 
 // Model.
+#include "model/4do/4do_document_4d.h"
 #include "model/g4mf/g4mf_document_4d.h"
 #include "model/g4mf/structures/g4mf_model_4d.h"
+#include "model/hox/hox_document_4d.h"
 #include "model/mesh/mesh_instance_4d.h"
 #include "model/mesh/multi_surface_mesh_4d.h"
 #include "model/mesh/poly/array_poly_mesh_4d.h"
@@ -97,7 +99,10 @@
 #include "render/environment/render_bridge_4d_to_3d.h"
 #include "render/wireframe_canvas/wireframe_render_canvas_4d.h"
 #ifdef TOOLS_ENABLED
-#include "editor/import/off/editor_import_plugin_off_base.h"
+#include "editor/import/4do/editor_import_plugin_4do_multi_4d.h"
+#include "editor/import/hox/editor_import_plugin_hox_multi_4d.h"
+#include "editor/import/hox/editor_import_plugin_hox_poly_4d.h"
+#include "editor/import/hox/editor_import_plugin_hox_scene_4d.h"
 #include "editor/import/off/editor_import_plugin_off_mesh_3d.h"
 #include "editor/import/off/editor_import_plugin_off_poly_4d.h"
 #include "editor/import/off/editor_import_plugin_off_scene.h"
@@ -219,6 +224,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		add_godot_singleton("PolyMeshBuilder4D", memnew(PolyMeshBuilder4D));
 		add_godot_singleton("WireMeshBuilder4D", memnew(WireMeshBuilder4D));
 		// Depends on mesh.
+		GDREGISTER_CLASS(FourDODocument4D);
+		GDREGISTER_CLASS(HoxDocument4D);
 		GDREGISTER_CLASS(Marker4D);
 		GDREGISTER_CLASS(OFFDocument4D);
 		// Physics.
@@ -326,8 +333,14 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(EditorExportSettingsG4MF4D);
 		GDREGISTER_CLASS(EditorExportDialogG4MF4D);
 		GDREGISTER_CLASS(EditorImportPluginBase4D);
+		GDREGISTER_CLASS(EditorImportPlugin4DOBase4D);
+		GDREGISTER_CLASS(EditorImportPlugin4DOMulti4D);
 		GDREGISTER_CLASS(EditorImportPluginG4MFMesh4D);
 		GDREGISTER_CLASS(EditorImportPluginG4MFScene4D);
+		GDREGISTER_CLASS(EditorImportPluginHoxBase4D);
+		GDREGISTER_CLASS(EditorImportPluginHoxMulti4D);
+		GDREGISTER_CLASS(EditorImportPluginHoxPoly4D);
+		GDREGISTER_CLASS(EditorImportPluginHoxScene4D);
 		GDREGISTER_CLASS(EditorImportPluginOFFBase);
 		GDREGISTER_CLASS(EditorImportPluginOFFMesh3D);
 		GDREGISTER_CLASS(EditorImportPluginOFFPoly4D);

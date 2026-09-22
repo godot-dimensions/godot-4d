@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FourDODocument4D" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports data from 4DO [code].4do[/code] files.
+	</brief_description>
+	<description>
+		FourDODocument4D represents data imported from 4DO [code].4do[/code] files. The class name starts with "Four" because identifiers cannot start with a digit, therefore "4DODocument4D" would not be a valid identifier.
+		The geometry is imported in the coordinate system the file was authored in, and the [code]orient[/code] command is not applied. HoxelDraw writes Z-up files, so the editor import plugin offers an option to convert Z-up to Y-up. Commands that are not understood are skipped with a warning. Material metallic and roughness factors are read but not used yet.
+	</description>
+	<tutorials>
+		<link title="4DO Specification">https://github.com/HoxelDraw-Org/4DO-Specification/</link>
+	</tutorials>
+	<methods>
+		<method name="import_generate_multi_surface_mesh_4d" qualifiers="const">
+			<return type="MultiSurfaceMesh4D" />
+			<description>
+				Generates a [MultiSurfaceMesh4D] from the imported 4DO data, with one surface per 4DO material, each named after that material. Surfaces containing only tetrahedra become [ArrayTetraMesh4D], surfaces containing cuboids or polyhedra become [ArrayPolyMesh4D], and polylines become [ArrayWireMesh4D] surfaces.
+				Vertex normals and texture coordinates are imported when present. A vertex without a normal uses the flat shading normal of its cell. A cell without texture coordinates is left unmapped in polytope surfaces, and uses a texture coordinate of zero in tetrahedral surfaces.
+				Colors are imported into the surface's material, multiplied by the 4DO material's base color factor if there is one. Per-cell colors, which version 1 files declare with a color index at the start of each cell, become a [PolyMaterial4D] with per-cell colors for polytope surfaces or a per-cell [TetraMaterial4D] for tetrahedral surfaces. Per-vertex colors, which version 2 files declare with [code]vc[/code] in the vertex format, become a per-vertex [TetraMaterial4D]. If a surface has both, only the per-cell colors are used. Polyline colors are not imported.
+			</description>
+		</method>
+		<method name="import_read_from_byte_array" qualifiers="static">
+			<return type="FourDODocument4D" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<param index="1" name="base_path" type="String" />
+			<param index="2" name="filename" type="String" />
+			<description>
+				Reads a 4DO [code].4do[/code] file from an in-memory byte array and returns a FourDODocument4D with the data. If [param base_path] is set, it will be used as the base path for resolving any relative file references within the 4DO data, such as a material file. If [param filename] is set, it will be used in error messages.
+			</description>
+		</method>
+		<method name="import_read_from_file" qualifiers="static">
+			<return type="FourDODocument4D" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Reads a 4DO [code].4do[/code] file from disk and returns a FourDODocument4D with the data.
+			</description>
+		</method>
+		<method name="import_read_materials_from_byte_array">
+			<return type="int" enum="Error" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<description>
+				Reads 4DO material data from an in-memory byte array and returns an error code indicating success or failure. This is useful when the material file is not directly accessible on disk. This function does not need to be called when importing a 4DO file from disk using [method import_read_from_file] so long as the relative path in the 4DO file correctly points to the material file.
+			</description>
+		</method>
+		<method name="import_read_materials_from_file">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Reads 4DO material data from a file on disk and returns an error code indicating success or failure. This is useful when the material file is not referenced by the 4DO file, or is stored somewhere else. This function does not need to be called when importing a 4DO file from disk using [method import_read_from_file] so long as the relative path in the 4DO file correctly points to the material file.
+			</description>
+		</method>
+	</methods>
+</class>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="HoxDocument4D" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Imports data from HoxelDraw [code].hox[/code] files.
+	</brief_description>
+	<description>
+		HoxDocument4D represents data imported from HoxelDraw [code].hox[/code] files. A file holds one or more hoxel grids, each a sparse set of 4D voxels ("hoxels") with a material index, plus the list of materials. Each hoxel becomes a tesseract-shaped cell of a polyhedral mesh, sharing its vertices, edges, and faces with its neighbors.
+		HoxelDraw is Z-up, so the geometry is imported as authored, and the editor import plugins offer an option to convert Z-up to Y-up. The import plugins also expose the [code]include_interior[/code] and [code]mesh_format[/code] options described below.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="import_generate_multi_surface_mesh_4d" qualifiers="const">
+			<return type="MultiSurfaceMesh4D" />
+			<param index="0" name="include_interior" type="bool" default="false" />
+			<param index="1" name="mesh_format" type="int" enum="HoxDocument4D.HoxMeshFormat" default="0" />
+			<description>
+				Generates a 4D [MultiSurfaceMesh4D] resource from the HoxelDraw [code].hox[/code] data, for use with [MeshInstance4D]. Different materials will appear as separate surfaces within the mesh, which allow assigning a separate [Material4D] to each surface. This is useful when customizing individual materials is desired.
+				If [param include_interior] is [code]false[/code] (default), only the externally visible cells are generated, making the mesh hollow: cells between two hoxels are skipped, and no 4D volumes are created. If [code]true[/code], the complete polyhedral hierarchy is generated, including the cells between hoxels and one 4D volume per hoxel. Including the interior preserves all of the data, but generates several times more geometry and takes much longer for large files.
+				The [param mesh_format] selects the type of the generated surfaces. [constant HOX_MESH_FORMAT_POLYTOPE] generates [ArrayPolyMesh4D] surfaces, which keep the polyhedral structure. [constant HOX_MESH_FORMAT_TETRAHEDRAL] generates [ArrayTetraMesh4D] surfaces by decomposing the boundary cells into tetrahedra at import time, which only keeps the renderable geometry. Tetrahedral surfaces are much faster to load, since the decomposition does not need to be redone, but the polyhedral structure is lost. [param include_interior] still decides which cells exist before the decomposition: cells between two hoxels of the same surface are never rendered either way, but cells between two different materials are only kept when the interior is included. Keeping them is useful for transparent materials, such as glass that should show the hoxels behind it without showing its own internal walls.
+			</description>
+		</method>
+		<method name="import_generate_poly_mesh_4d" qualifiers="const">
+			<return type="ArrayPolyMesh4D" />
+			<param index="0" name="include_interior" type="bool" default="false" />
+			<description>
+				Generates a 4D [ArrayPolyMesh4D] resource from the HoxelDraw [code].hox[/code] data, for use with [MeshInstance4D]. Different materials will be merged together into a single surface, with a [Texture3D] built from a tiling of the individual material colors. This is useful when the colors and material properties do not need to change between different parts of the mesh, and when a texture atlas is preferred over multiple materials.
+				If [param include_interior] is [code]false[/code] (default), only the externally visible cells are generated, making the mesh hollow: cells between two hoxels are skipped, and no 4D volumes are created. If [code]true[/code], the complete polyhedral hierarchy is generated, including the cells between hoxels and one 4D volume per hoxel. Including the interior preserves all of the data, but generates several times more geometry and takes much longer for large files.
+			</description>
+		</method>
+		<method name="import_generate_scene" qualifiers="const">
+			<return type="Node4D" />
+			<param index="0" name="include_interior" type="bool" default="false" />
+			<param index="1" name="mesh_format" type="int" enum="HoxDocument4D.HoxMeshFormat" default="0" />
+			<description>
+				Generates a 4D scene from the HoxelDraw [code].hox[/code] data. For a single-grid file, this returns a [MeshInstance4D] whose mesh has the grid's transform baked into its vertices. For a multi-grid file, this returns a [Node4D] with one [MeshInstance4D] child per grid, where each child's transform is the grid's transform and each mesh is in the grid's local space, so the grids stay separately adjustable.
+				If [param include_interior] is [code]false[/code] (default), only the externally visible cells are generated, making the mesh hollow: cells between two hoxels are skipped, and no 4D volumes are created. If [code]true[/code], the complete polyhedral hierarchy is generated, including the cells between hoxels and one 4D volume per hoxel. Including the interior preserves all of the data, but generates several times more geometry and takes much longer for large files.
+				The [param mesh_format] selects the type of the generated surfaces. [constant HOX_MESH_FORMAT_POLYTOPE] generates [ArrayPolyMesh4D] surfaces, which keep the polyhedral structure. [constant HOX_MESH_FORMAT_TETRAHEDRAL] generates [ArrayTetraMesh4D] surfaces by decomposing the boundary cells into tetrahedra at import time, which only keeps the renderable geometry. Tetrahedral surfaces are much faster to load, since the decomposition does not need to be redone, but the polyhedral structure is lost. [param include_interior] still decides which cells exist before the decomposition: cells between two hoxels of the same surface are never rendered either way, but cells between two different materials are only kept when the interior is included. Keeping them is useful for transparent materials, such as glass that should show the hoxels behind it without showing its own internal walls.
+			</description>
+		</method>
+		<method name="import_read_from_byte_array" qualifiers="static">
+			<return type="HoxDocument4D" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<param index="1" name="filename" type="String" />
+			<description>
+				Reads a HoxelDraw [code].hox[/code] file from an in-memory byte array and returns a HoxDocument4D with the data.
+			</description>
+		</method>
+		<method name="import_read_from_file" qualifiers="static">
+			<return type="HoxDocument4D" />
+			<param index="0" name="path" type="String" />
+			<description>
+				Reads a HoxelDraw [code].hox[/code] file from disk and returns a HoxDocument4D with the data.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="HOX_MESH_FORMAT_POLYTOPE" value="0" enum="HoxMeshFormat">
+			Generate [ArrayPolyMesh4D] surfaces. This keeps the full polyhedral structure of the hoxels, at the cost of the boundary cells being decomposed into tetrahedra every time the mesh is loaded.
+		</constant>
+		<constant name="HOX_MESH_FORMAT_TETRAHEDRAL" value="1" enum="HoxMeshFormat">
+			Generate [ArrayTetraMesh4D] surfaces by decomposing the boundary cells into tetrahedra at import time. This only keeps the renderable geometry, so it is smaller to store and much faster to load, but the polyhedral structure is lost.
+		</constant>
+	</constants>
+</class>

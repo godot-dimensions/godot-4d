@@ -11,9 +11,11 @@ env.Append(
         "../../math",
         "../../math/geometric_algebra",
         "../../model",
+        "../../model/4do",
         "../../model/g4mf",
         "../../model/g4mf/structures",
         "../../model/g4mf/structures/physics",
+        "../../model/hox",
         "../../model/mesh",
         "../../model/mesh/poly",
         "../../model/mesh/tetra",
@@ -44,9 +46,11 @@ sources = (
     + Glob("../../math/*.cpp")
     + Glob("../../math/geometric_algebra/*.cpp")
     + Glob("../../model/*.cpp")
+    + Glob("../../model/4do/*.cpp")
     + Glob("../../model/g4mf/*.cpp")
     + Glob("../../model/g4mf/structures/*.cpp")
     + Glob("../../model/g4mf/structures/physics/*.cpp")
+    + Glob("../../model/hox/*.cpp")
     + Glob("../../model/mesh/*.cpp")
     + Glob("../../model/mesh/poly/*.cpp")
     + Glob("../../model/mesh/tetra/*.cpp")
@@ -83,7 +87,9 @@ if env["target"] == "editor":
             "../../editor",
             "../../editor/icons",
             "../../editor/import",
+            "../../editor/import/4do",
             "../../editor/import/g4mf",
+            "../../editor/import/hox",
             "../../editor/import/off",
             "../../editor/viewport",
         ]
@@ -91,7 +97,9 @@ if env["target"] == "editor":
     sources += Glob("../../editor/*.cpp")
     sources += Glob("../../editor/icons/*.cpp")
     sources += Glob("../../editor/import/*.cpp")
+    sources += Glob("../../editor/import/4do/*.cpp")
     sources += Glob("../../editor/import/g4mf/*.cpp")
+    sources += Glob("../../editor/import/hox/*.cpp")
     sources += Glob("../../editor/import/off/*.cpp")
     sources += Glob("../../editor/viewport/*.cpp")
 

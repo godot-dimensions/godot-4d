@@ -179,15 +179,23 @@ void Godot4DEditorPlugin::_create_4d_scene() {
 void Godot4DEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+			_4do_multi_4d_importer.instantiate();
 			_g4mf_mesh_4d_importer.instantiate();
 			_g4mf_scene_4d_importer.instantiate();
+			_hox_multi_4d_importer.instantiate();
+			_hox_poly_4d_importer.instantiate();
+			_hox_scene_4d_importer.instantiate();
 			_off_mesh_3d_importer.instantiate();
 			_off_scene_importer.instantiate();
 			_off_poly_4d_importer.instantiate();
 			_off_tetra_4d_importer.instantiate();
 			_off_wire_4d_importer.instantiate();
+			add_import_plugin(_4do_multi_4d_importer);
 			add_import_plugin(_g4mf_mesh_4d_importer);
 			add_import_plugin(_g4mf_scene_4d_importer);
+			add_import_plugin(_hox_multi_4d_importer);
+			add_import_plugin(_hox_poly_4d_importer);
+			add_import_plugin(_hox_scene_4d_importer);
 			add_import_plugin(_off_mesh_3d_importer);
 			add_import_plugin(_off_scene_importer);
 			add_import_plugin(_off_poly_4d_importer);
@@ -213,15 +221,23 @@ void Godot4DEditorPlugin::_notification(int p_what) {
 			remove_import_plugin(_off_poly_4d_importer);
 			remove_import_plugin(_off_scene_importer);
 			remove_import_plugin(_off_mesh_3d_importer);
+			remove_import_plugin(_hox_scene_4d_importer);
+			remove_import_plugin(_hox_poly_4d_importer);
+			remove_import_plugin(_hox_multi_4d_importer);
 			remove_import_plugin(_g4mf_scene_4d_importer);
 			remove_import_plugin(_g4mf_mesh_4d_importer);
+			remove_import_plugin(_4do_multi_4d_importer);
 			_off_wire_4d_importer.unref();
 			_off_tetra_4d_importer.unref();
 			_off_poly_4d_importer.unref();
 			_off_scene_importer.unref();
 			_off_mesh_3d_importer.unref();
+			_hox_scene_4d_importer.unref();
+			_hox_poly_4d_importer.unref();
+			_hox_multi_4d_importer.unref();
 			_g4mf_scene_4d_importer.unref();
 			_g4mf_mesh_4d_importer.unref();
+			_4do_multi_4d_importer.unref();
 		} break;
 	}
 }

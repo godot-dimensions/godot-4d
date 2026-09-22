@@ -6,6 +6,8 @@ Import("env_modules")
 env_4d = env_modules.Clone()
 
 env_4d.add_source_files(env.modules_sources, "*.cpp")
+env_4d.add_source_files(env.modules_sources, "4do/*.cpp")
+env_4d.add_source_files(env.modules_sources, "hox/*.cpp")
 env_4d.add_source_files(env.modules_sources, "off/*.cpp")
 
 SConscript("g4mf/SCsub")
