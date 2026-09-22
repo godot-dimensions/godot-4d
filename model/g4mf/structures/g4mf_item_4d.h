@@ -20,7 +20,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	String get_item_name() const;
+	inline String get_item_name() const { return get_name(); }
 	void set_item_name(const String &p_desired_name);
 	static String sanitize_item_name(const String &p_desired_name);
 

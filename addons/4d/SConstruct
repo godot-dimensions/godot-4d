@@ -90,6 +90,7 @@ if env["target"] == "editor":
     )
     sources += Glob("../../editor/*.cpp")
     sources += Glob("../../editor/icons/*.cpp")
+    sources += Glob("../../editor/import/*.cpp")
     sources += Glob("../../editor/import/g4mf/*.cpp")
     sources += Glob("../../editor/import/off/*.cpp")
     sources += Glob("../../editor/viewport/*.cpp")

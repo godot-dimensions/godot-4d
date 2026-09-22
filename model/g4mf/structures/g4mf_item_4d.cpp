@@ -1,9 +1,5 @@
 #include "g4mf_item_4d.h"
 
-String G4MFItem4D::get_item_name() const {
-	return get_name();
-}
-
 void G4MFItem4D::set_item_name(const String &p_desired_name) {
 	set_name(sanitize_item_name(p_desired_name));
 }

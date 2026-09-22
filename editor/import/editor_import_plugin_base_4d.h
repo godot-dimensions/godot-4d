@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../godot_4d_defines.h"
+#include "../../math/transform_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/editor_import_plugin.hpp>
@@ -33,6 +33,7 @@ class EditorImportPluginBase4D : public EditorImportPlugin {
 	GDCLASS(EditorImportPluginBase4D, EditorImportPlugin);
 
 protected:
+	static const Transform4D CONVERT_Z_UP_TO_Y_UP_TRANSFORM;
 	static void _bind_methods() {}
 
 public:

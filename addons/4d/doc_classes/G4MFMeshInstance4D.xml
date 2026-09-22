@@ -16,7 +16,7 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="mesh_instance" type="MeshInstance4D" />
 			<description>
-				Converts the given [MeshInstance4D] into a [G4MFMeshInstance4D] which can be used on a [G4MFNode4D]. This function wraps around [method G4MFMesh4D.export_convert_mesh_into_state] to convert the mesh of the [MeshInstance4D] into a [G4MFMesh4D] in the [G4MFState4D], and then includes material overrides if the [MeshInstance4D] has a material override. This is used for exporting the mesh to G4MF, and is the inverse of [method import_generate_mesh_instance]. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the index of the new mesh will be returned, which may be used on nodes or anything else. If this function fails, it will return [code]-1[/code].
+				Converts the given [MeshInstance4D] into a [G4MFMeshInstance4D] which can be used on a [G4MFNode4D]. This function wraps around [method G4MFMesh4D.export_convert_mesh_into_state] to convert the mesh of the [MeshInstance4D] into a [G4MFMesh4D] in the [G4MFState4D], and then includes material overrides if the [MeshInstance4D] has a material override. This is used for exporting the mesh to G4MF, and is the inverse of [method import_generate_mesh_instance]. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the returned [G4MFMeshInstance4D] refers to it by index, so it can be set on a [G4MFNode4D].
 			</description>
 		</method>
 		<method name="from_dictionary" qualifiers="static">
