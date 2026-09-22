@@ -278,12 +278,21 @@ Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Ve
 	return result;
 }
 
-void TetraMesh4D::tetra_mesh_clear_cache() {
+void TetraMesh4D::_tetra_mesh_clear_cache_internal() {
 	_simplex_positions_cache.clear();
 	_edge_positions_cache.clear();
 	_edge_indices_cache.clear();
 	_nearest_tetra_inverse_metric_cache.clear();
-	mark_mesh_bounds_and_proxy_mesh_3d_dirty();
+}
+
+void TetraMesh4D::tetra_mesh_clear_cache(const bool p_reset_validation) {
+	_tetra_mesh_clear_cache_internal();
+	// The proxy mesh and rect bounds are also caches, so they are always marked dirty here.
+	if (p_reset_validation) {
+		reset_mesh_data_validation(); // This also marks the mesh bounds and proxy mesh as dirty.
+	} else {
+		mark_mesh_bounds_and_proxy_mesh_3d_dirty();
+	}
 }
 
 Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedInt32Array &p_texture_map_indices) {
@@ -651,7 +660,7 @@ void TetraMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("raycast_intersects_fast", "local_from", "local_direction", "max_distance"), &TetraMesh4D::raycast_intersects_fast, DEFVAL(BINDING_SAFE_INF));
 	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction", "max_distance"), &TetraMesh4D::raycast_intersects, DEFVAL(BINDING_SAFE_INF));
 	// Cache (validation is bound in base Mesh4D).
-	ClassDB::bind_method(D_METHOD("tetra_mesh_clear_cache"), &TetraMesh4D::tetra_mesh_clear_cache);
+	ClassDB::bind_method(D_METHOD("tetra_mesh_clear_cache", "reset_validation"), &TetraMesh4D::tetra_mesh_clear_cache, DEFVAL(true));
 	// Conversion.
 	ClassDB::bind_method(D_METHOD("export_texture_map_mesh"), &TetraMesh4D::export_texture_map_mesh);
 	ClassDB::bind_method(D_METHOD("to_array_tetra_mesh"), &TetraMesh4D::to_array_tetra_mesh);

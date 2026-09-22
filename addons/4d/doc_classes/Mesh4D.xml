@@ -67,19 +67,19 @@
 		<method name="mark_mesh_bounds_and_proxy_mesh_3d_dirty">
 			<return type="void" />
 			<description>
-				Marks the mesh bounds and the proxy 3D mesh as dirty, meaning they need to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes. This implies [method mark_proxy_mesh_3d_dirty], so there is no need to also call that method when calling this one.
+				Marks the mesh bounds and the proxy 3D mesh as dirty, meaning they need to be updated, and emits [signal proxy_mesh_3d_marked_dirty]. Must be called by subclasses whenever the vertex positions change without the structure of the mesh changing, such as when transforming the mesh. If the structure of the mesh changes, call [method reset_mesh_data_validation] instead, which implies this method. This implies [method mark_proxy_mesh_3d_dirty], so there is no need to also call that method when calling this one.
 			</description>
 		</method>
 		<method name="mark_proxy_mesh_3d_dirty">
 			<return type="void" />
 			<description>
-				Marks the proxy 3D mesh as dirty, meaning it needs to be updated. Must be called by subclasses whenever the underlying 4D mesh data changes.
+				Marks the proxy 3D mesh as dirty, meaning it needs to be updated, and emits [signal proxy_mesh_3d_marked_dirty]. Must be called by subclasses whenever the underlying 4D mesh data changes in a way that affects the rendered mesh but not the mesh bounds or the mesh's validity, such as changing a texture map. If the vertex positions change, call [method mark_mesh_bounds_and_proxy_mesh_3d_dirty] instead, and if the structure of the mesh changes, call [method reset_mesh_data_validation] instead. Both of those imply this method.
 			</description>
 		</method>
 		<method name="reset_mesh_data_validation">
 			<return type="void" />
 			<description>
-				Resets the validation state of the mesh data. This method clears the cached validation state of the mesh data, so that the next call to [method is_mesh_data_valid] will revalidate the mesh data. This is useful when the mesh data has changed and you want to ensure that the mesh is revalidated before rendering. This will be called automatically on built-in types such as [ArrayTetraMesh4D] and [ArrayWireMesh4D] when the mesh data changes.
+				Resets the validation state of the mesh data, so that the next call to [method is_mesh_data_valid] will revalidate the mesh data, and emits [signal mesh_data_validation_reset]. Since a change to the mesh data also changes the rendered mesh, this then calls [method mark_mesh_bounds_and_proxy_mesh_3d_dirty], which emits [signal proxy_mesh_3d_marked_dirty]. Must be called by subclasses whenever the structure of the mesh data changes, such as the amount of vertices or the indices that reference them. This will be called automatically on built-in types such as [ArrayTetraMesh4D] and [ArrayWireMesh4D] when the mesh data changes.
 			</description>
 		</method>
 		<method name="validate_material_for_mesh">
@@ -93,7 +93,13 @@
 	<signals>
 		<signal name="mesh_data_validation_reset">
 			<description>
-				Emitted when the mesh data's validation is reset and needs to be revalidated. This will happen when any of the mesh's data is modified or cleared. Listeners should NOT immediately call [method is_mesh_data_valid] in response to this signal, because this may be emitted in the middle of a larger editing operation. Instead, this can be used to flag that the mesh needs to be revalidated at a later point. This is especially useful if additional validation is required beyond the automatic checks performed by the mesh itself.
+				Emitted when the mesh data's validation is reset and needs to be revalidated. This will happen when any of the mesh's structural data is modified or cleared, such as the amount of vertices or the indices that reference them, but not when only the vertex positions are transformed by [code]transform_mesh[/code] functions, and not when the size of a primitive mesh changes. Every emission of this signal is followed by an emission of [signal proxy_mesh_3d_marked_dirty].
+				Listeners should NOT immediately call [method is_mesh_data_valid] in response to this signal, because this may be emitted in the middle of a larger editing operation. Instead, this can be used to flag that the mesh needs to be revalidated at a later point. This is especially useful if additional validation is required beyond the automatic checks performed by the mesh itself.
+			</description>
+		</signal>
+		<signal name="proxy_mesh_3d_marked_dirty">
+			<description>
+				Emitted when the proxy 3D mesh has been marked as dirty and needs to be updated. This will happen when any of the mesh's data is modified or cleared, including vertex transformations from [code]transform_mesh[/code] functions and size changes of primitive meshes. Every emission of [signal mesh_data_validation_reset] is followed by an emission of this signal, so there is no need to connect to both signals. Connect to this signal to be notified of every change to the rendered mesh, or to [signal mesh_data_validation_reset] to only be notified of changes that may affect the mesh's validity.
 			</description>
 		</signal>
 	</signals>

@@ -41,7 +41,6 @@ int32_t ArrayWireMesh4D::append_edge_indices(int32_t p_index_a, int32_t p_index_
 	_edge_vertex_indices.append(p_index_a);
 	_edge_vertex_indices.append(p_index_b);
 	wire_mesh_clear_cache();
-	reset_mesh_data_validation();
 	return edge_count;
 }
 
@@ -65,7 +64,6 @@ PackedInt32Array ArrayWireMesh4D::append_vertices(const PackedVector4Array &p_ve
 	for (int i = 0; i < p_vertices.size(); i++) {
 		indices.append(append_vertex(p_vertices[i], p_deduplicate_vertices));
 	}
-	reset_mesh_data_validation();
 	return indices;
 }
 
@@ -130,7 +128,7 @@ void ArrayWireMesh4D::transform_mesh(const Transform4D &p_transform) {
 	for (int64_t vertex_pos_index = 0; vertex_pos_index < vertex_pos_count; vertex_pos_index++) {
 		_vertex_positions.set(vertex_pos_index, p_transform.xform(_vertex_positions[vertex_pos_index]));
 	}
-	wire_mesh_clear_cache();
+	wire_mesh_clear_cache(false);
 }
 
 void ArrayWireMesh4D::transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis) {
@@ -168,7 +166,6 @@ void ArrayWireMesh4D::merge_with(const Ref<ArrayWireMesh4D> &p_other, const Tran
 		}
 	}
 	wire_mesh_clear_cache();
-	reset_mesh_data_validation();
 }
 
 void ArrayWireMesh4D::merge_with_bind(const Ref<ArrayWireMesh4D> &p_other, const Vector4 &p_offset, const Projection &p_basis) {
@@ -257,7 +254,6 @@ PackedInt32Array ArrayWireMesh4D::get_edge_indices() {
 void ArrayWireMesh4D::set_edge_indices(const PackedInt32Array &p_edge_indices) {
 	_edge_vertex_indices = p_edge_indices;
 	wire_mesh_clear_cache();
-	reset_mesh_data_validation();
 }
 
 PackedVector4Array ArrayWireMesh4D::get_vertex_positions() {
@@ -268,7 +264,6 @@ void ArrayWireMesh4D::set_vertex_positions(const PackedVector4Array &p_vertex_po
 	ERR_FAIL_COND(p_vertex_positions.size() > MAX_VERTICES);
 	_vertex_positions = p_vertex_positions;
 	wire_mesh_clear_cache();
-	reset_mesh_data_validation();
 }
 
 void ArrayWireMesh4D::_bind_methods() {

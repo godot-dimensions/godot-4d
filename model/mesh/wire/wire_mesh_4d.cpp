@@ -8,9 +8,14 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
-void WireMesh4D::wire_mesh_clear_cache() {
+void WireMesh4D::wire_mesh_clear_cache(const bool p_reset_validation) {
 	_edge_positions_cache.clear();
-	mark_mesh_bounds_and_proxy_mesh_3d_dirty();
+	// The proxy mesh and rect bounds are also caches, so they are always marked dirty here.
+	if (p_reset_validation) {
+		reset_mesh_data_validation(); // This also marks the mesh bounds and proxy mesh as dirty.
+	} else {
+		mark_mesh_bounds_and_proxy_mesh_3d_dirty();
+	}
 }
 
 PackedVector4Array WireMesh4D::get_edge_positions() {
@@ -68,5 +73,5 @@ void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mes
 }
 
 void WireMesh4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("wire_mesh_clear_cache"), &WireMesh4D::wire_mesh_clear_cache);
+	ClassDB::bind_method(D_METHOD("wire_mesh_clear_cache", "reset_validation"), &WireMesh4D::wire_mesh_clear_cache, DEFVAL(true));
 }

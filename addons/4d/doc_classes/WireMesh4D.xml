@@ -12,8 +12,9 @@
 	<methods>
 		<method name="wire_mesh_clear_cache">
 			<return type="void" />
+			<param index="0" name="reset_validation" type="bool" default="true" />
 			<description>
-				WireMesh4D caches the edge positions for performance reasons. This method clears the cache, forcing the edge positions to be recalculated the next time they are requested. You should run this method if you are making your own [WireMesh4D]-derived class and you change the vertices or cells. You do not need to run this when using the built-in classes such as [ArrayWireMesh4D] or [BoxWireMesh4D], they will automatically clear the cache when needed.
+				WireMesh4D caches the edge positions for performance reasons. This method clears the cache, forcing the edge positions to be recalculated the next time they are requested. You should run this method if you are making your own [WireMesh4D]-derived class and you change the vertices or edges. The proxy 3D mesh and the rect bounds are also caches, so this always calls [method Mesh4D.mark_mesh_bounds_and_proxy_mesh_3d_dirty]. If [param reset_validation] is [code]true[/code], this also calls [method Mesh4D.reset_mesh_data_validation], which should be the case whenever the structure of the mesh changed. Pass [code]false[/code] when only the vertex positions moved, such as when transforming the mesh. You do not need to run this when using the built-in classes such as [ArrayWireMesh4D] or [BoxWireMesh4D], they will automatically clear the cache when needed.
 			</description>
 		</method>
 	</methods>

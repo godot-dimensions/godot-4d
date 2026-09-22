@@ -596,7 +596,8 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 	if (!is_poly_mesh_data_valid()) {
 		return;
 	}
-	poly_mesh_clear_cache();
+	// This fills a cache rather than changing the mesh, so only clear the old caches without marking anything dirty.
+	_poly_mesh_clear_cache_internal(false);
 	// Step 1: Gather information needed to compute the simplex decomposition.
 	_simplex_cell_vertex_positions_cache = get_poly_cell_vertex_positions();
 	const PackedInt32Array all_edge_indices = get_edge_indices();
@@ -1098,14 +1099,12 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_poly_indices_bind(con
 	return ret;
 }
 
-void PolyMesh4D::poly_mesh_clear_cache(const bool p_normals_only) {
+void PolyMesh4D::_poly_mesh_clear_cache_internal(const bool p_normals_only) {
 	_simplex_cell_boundary_normals_cache.clear();
 	_simplex_cell_normal_indices_cache.clear();
 	_simplex_cell_normal_values_cache.clear();
-	reset_poly_mesh_data_validation();
-	// Normals can be computed separately from the rest, so allow resetting just them (and mark the proxy mesh 3D dirty).
+	// Normals can be computed separately from the rest, so allow clearing just them.
 	if (p_normals_only) {
-		mark_proxy_mesh_3d_dirty();
 		return;
 	}
 	_simplex_cell_vertex_indices_cache.clear();
@@ -1113,7 +1112,17 @@ void PolyMesh4D::poly_mesh_clear_cache(const bool p_normals_only) {
 	_simplex_cell_vertex_positions_cache.clear();
 	_simplex_cell_texture_map_indices_cache.clear();
 	_simplex_cell_texture_map_values_cache.clear();
-	tetra_mesh_clear_cache();
+	_tetra_mesh_clear_cache_internal();
+}
+
+void PolyMesh4D::poly_mesh_clear_cache(const bool p_reset_validation, const bool p_normals_only) {
+	_poly_mesh_clear_cache_internal(p_normals_only);
+	// The proxy mesh and rect bounds are also caches, so they are always marked dirty here.
+	if (p_reset_validation) {
+		reset_poly_mesh_data_validation(); // This also marks the mesh bounds and proxy mesh as dirty.
+	} else {
+		mark_mesh_bounds_and_proxy_mesh_3d_dirty();
+	}
 }
 
 Ref<ArrayPolyMesh4D> PolyMesh4D::to_array_poly_mesh() {
@@ -1545,7 +1554,7 @@ void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_vertex_indices", "cell_dimension", "start_with_canonical_span"), &PolyMesh4D::get_all_poly_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_poly_indices", "cell_dimension", "decomposition_dimension"), &PolyMesh4D::get_all_poly_cell_poly_indices_bind);
-	ClassDB::bind_method(D_METHOD("poly_mesh_clear_cache", "normals_only"), &PolyMesh4D::poly_mesh_clear_cache, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("poly_mesh_clear_cache", "reset_validation", "normals_only"), &PolyMesh4D::poly_mesh_clear_cache, DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("to_array_poly_mesh"), &PolyMesh4D::to_array_poly_mesh);
 
 	ClassDB::bind_method(D_METHOD("get_source_poly_cell_for_simplex_cell", "simplex_cell_index"), &PolyMesh4D::get_source_poly_cell_for_simplex_cell);

@@ -112,8 +112,6 @@ PackedVector3Array SingleSurfaceMesh4D::get_texture_map_values() {
 void SingleSurfaceMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("has_edge_indices", "first", "second"), &SingleSurfaceMesh4D::has_edge_indices);
 
-	ClassDB::bind_method(D_METHOD("mark_mesh_bounds_and_proxy_mesh_3d_dirty"), &SingleSurfaceMesh4D::mark_mesh_bounds_and_proxy_mesh_3d_dirty);
-
 	ClassDB::bind_method(D_METHOD("to_array_wire_mesh"), &SingleSurfaceMesh4D::to_array_wire_mesh);
 	ClassDB::bind_method(D_METHOD("to_wire_mesh"), &SingleSurfaceMesh4D::to_wire_mesh);
 

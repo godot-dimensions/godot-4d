@@ -68,6 +68,7 @@ protected:
 	static void _bind_methods();
 	virtual bool validate_mesh_data() override;
 	virtual bool _validate_poly_mesh_data_only();
+	void _poly_mesh_clear_cache_internal(const bool p_normals_only);
 
 	// Protected helper functions used by both PolyMesh4D and ArrayPolyMesh4D.
 	Vector<PackedInt32Array> _get_vertex_indices_of_boundary_cells(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const bool p_start_with_canonical_span);
@@ -98,7 +99,7 @@ public:
 	TypedArray<PackedInt32Array> get_all_poly_cell_vertex_indices_bind(const int p_cell_dimension, const bool p_start_with_canonical_span);
 	Vector<PackedInt32Array> get_all_poly_cell_poly_indices(const int p_cell_dimension, const int p_decomposition_dimension);
 	TypedArray<PackedInt32Array> get_all_poly_cell_poly_indices_bind(const int p_cell_dimension, const int p_decomposition_dimension);
-	void poly_mesh_clear_cache(const bool p_normals_only = false);
+	void poly_mesh_clear_cache(const bool p_reset_validation = true, const bool p_normals_only = false);
 	Ref<ArrayPolyMesh4D> to_array_poly_mesh();
 
 	int32_t get_source_poly_cell_for_simplex_cell(const int32_t p_simplex_cell_index) const;

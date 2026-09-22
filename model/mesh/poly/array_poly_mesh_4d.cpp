@@ -96,11 +96,10 @@ int64_t ArrayPolyMesh4D::append_edge_indices(int32_t p_index_a, int32_t p_index_
 			}
 		}
 	}
-	// Append a new edge. We don't need to clear the poly mesh cache, but TetraMesh4D does cache edges.
+	// Append a new edge. The simplex decomposition does not change, but TetraMesh4D does cache edges.
 	_edge_vertex_indices.append(p_index_a);
 	_edge_vertex_indices.append(p_index_b);
-	tetra_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
+	poly_mesh_clear_cache();
 	return old_edge_count;
 }
 
@@ -170,7 +169,6 @@ PackedInt32Array ArrayPolyMesh4D::append_vertices(const PackedVector4Array &p_ve
 	for (int i = 0; i < p_vertices.size(); i++) {
 		indices.append(append_vertex(p_vertices[i], p_deduplicate_vertices));
 	}
-	reset_poly_mesh_data_validation();
 	return indices;
 }
 
@@ -364,15 +362,13 @@ void ArrayPolyMesh4D::_compact_texture_map_values_internal() {
 void ArrayPolyMesh4D::compact_normal_values() {
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot compact normal values of an invalid mesh.");
 	_compact_normal_values_internal();
-	poly_mesh_clear_cache(true);
-	reset_poly_mesh_data_validation();
+	poly_mesh_clear_cache(true, true);
 }
 
 void ArrayPolyMesh4D::compact_texture_map_values() {
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot compact texture map values of an invalid mesh.");
 	_compact_texture_map_values_internal();
 	poly_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
 }
 
 void ArrayPolyMesh4D::_delete_edge_internal(const int32_t p_index) {
@@ -536,7 +532,6 @@ void ArrayPolyMesh4D::delete_poly_element(const int32_t p_dimension, const int32
 		_delete_poly_cell_element_internal(poly_cell_index, p_index);
 	}
 	poly_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
 }
 
 // Normal calculation functions.
@@ -635,7 +630,8 @@ void ArrayPolyMesh4D::orient_cells_to_boundary_normals(const PackedVector4Array 
 		}
 		_poly_cell_indices.set(1, boundary_cell_indices);
 		// The cell orientation changed, so the cached boundary cell traversal and simplexes are stale.
-		poly_mesh_clear_cache();
+		// Validation is reset once at the end of this function, after the bindings have been resampled.
+		poly_mesh_clear_cache(false);
 		// Resample the bindings of any decomposed elements whose traversal order changed, like `deduplicate_all_elements` does.
 		for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &pre_kv : pre_flip_poly) {
 			const Vector2i key = pre_kv.key;
@@ -690,7 +686,7 @@ void ArrayPolyMesh4D::orient_cells_to_boundary_normals(const PackedVector4Array 
 		}
 	}
 	_all_poly_cell_normal_indices.insert(PER_CELL_KEY, Vector<PackedInt32Array>{ _normal_indices_for_values_internal(oriented_normals) });
-	poly_mesh_clear_cache(true);
+	poly_mesh_clear_cache(true, true);
 }
 
 void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
@@ -1752,7 +1748,7 @@ void ArrayPolyMesh4D::deduplicate_all_elements() {
 	// Deduplication can leave the value pools with unreferenced values, so compact them.
 	_compact_normal_values_internal();
 	_compact_texture_map_values_internal();
-	poly_mesh_clear_cache(false);
+	poly_mesh_clear_cache();
 }
 
 void ArrayPolyMesh4D::transform_mesh(const Transform4D &p_transform) {
@@ -1766,7 +1762,7 @@ void ArrayPolyMesh4D::transform_mesh(const Transform4D &p_transform) {
 	for (int64_t normal_index = 0; normal_index < normal_val_count; normal_index++) {
 		_poly_cell_normal_values.set(normal_index, inverse_transpose.xform(_poly_cell_normal_values[normal_index]));
 	}
-	poly_mesh_clear_cache();
+	poly_mesh_clear_cache(false);
 }
 
 void ArrayPolyMesh4D::transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis) {
@@ -2285,7 +2281,7 @@ void ArrayPolyMesh4D::set_poly_cell_dense_normals(const Vector2i &p_key, const V
 		}
 		_all_poly_cell_normal_indices.insert(p_key, index_arrays);
 	}
-	poly_mesh_clear_cache(true);
+	poly_mesh_clear_cache(true, true);
 }
 
 Vector<PackedVector3Array> ArrayPolyMesh4D::get_poly_cell_dense_texture_map(const Vector2i &p_key) const {
@@ -2327,7 +2323,7 @@ void ArrayPolyMesh4D::set_poly_cell_dense_texture_map(const Vector2i &p_key, con
 		}
 		_all_poly_cell_texture_map_indices.insert(p_key, index_arrays);
 	}
-	poly_mesh_clear_cache(false);
+	poly_mesh_clear_cache();
 }
 
 HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_texture_map_indices() {
@@ -2336,12 +2332,12 @@ HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_t
 
 void ArrayPolyMesh4D::set_all_poly_cell_normal_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_normals) {
 	_all_poly_cell_normal_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_normals);
-	poly_mesh_clear_cache(true);
+	poly_mesh_clear_cache(true, true);
 }
 
 void ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_texture_maps) {
 	_all_poly_cell_texture_map_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_texture_maps);
-	poly_mesh_clear_cache(false);
+	poly_mesh_clear_cache();
 }
 
 void ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind(const PolyDataDictionary &p_all_poly_cell_normals) {
@@ -2381,13 +2377,11 @@ void ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices_bind(const PolyDataD
 void ArrayPolyMesh4D::set_edge_vertex_indices(const PackedInt32Array &p_edge_indices) {
 	_edge_vertex_indices = PackedInt32Array(p_edge_indices);
 	poly_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
 }
 
 void ArrayPolyMesh4D::set_poly_cell_indices(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices) {
 	_poly_cell_indices = p_poly_cell_indices;
 	poly_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
 }
 
 #define IS_NOT_INDICES_ARRAY(m_var) (m_var.get_type() != Variant::PACKED_INT32_ARRAY && m_var.get_type() != Variant::ARRAY)
@@ -2426,7 +2420,7 @@ void ArrayPolyMesh4D::set_poly_cell_boundary_normals(const PackedVector4Array &p
 	} else {
 		_all_poly_cell_normal_indices.insert(PER_CELL_KEY, Vector<PackedInt32Array>{ _normal_indices_for_values_internal(p_poly_cell_boundary_normals) });
 	}
-	poly_mesh_clear_cache(true);
+	poly_mesh_clear_cache(true, true);
 }
 
 PackedInt32Array ArrayPolyMesh4D::get_poly_cell_boundary_pivot_overrides() {
@@ -2435,7 +2429,7 @@ PackedInt32Array ArrayPolyMesh4D::get_poly_cell_boundary_pivot_overrides() {
 
 void ArrayPolyMesh4D::set_poly_cell_boundary_pivot_overrides(const PackedInt32Array &p_poly_cell_boundary_pivot_overrides) {
 	_poly_cell_boundary_pivot_overrides = p_poly_cell_boundary_pivot_overrides;
-	poly_mesh_clear_cache(false);
+	poly_mesh_clear_cache();
 }
 
 Vector<PackedInt32Array> ArrayPolyMesh4D::get_poly_cell_normal_indices() {
@@ -2451,7 +2445,7 @@ void ArrayPolyMesh4D::set_poly_cell_normal_indices(const Vector<PackedInt32Array
 	} else {
 		_all_poly_cell_normal_indices.insert(CELL_TO_VERT_KEY, p_poly_cell_normal_indices);
 	}
-	poly_mesh_clear_cache(true);
+	poly_mesh_clear_cache(true, true);
 }
 
 void ArrayPolyMesh4D::set_poly_cell_normal_indices_bind(const TypedArray<PackedInt32Array> &p_poly_cell_normal_indices) {
@@ -2476,7 +2470,7 @@ void ArrayPolyMesh4D::set_poly_cell_texture_map_indices(const Vector<PackedInt32
 	} else {
 		_all_poly_cell_texture_map_indices.insert(CELL_TO_VERT_KEY, p_poly_cell_texture_map);
 	}
-	poly_mesh_clear_cache(false);
+	poly_mesh_clear_cache();
 }
 
 void ArrayPolyMesh4D::set_poly_cell_texture_map_indices_bind(const TypedArray<PackedInt32Array> &p_poly_cell_texture_map) {
@@ -2521,7 +2515,6 @@ void ArrayPolyMesh4D::set_poly_cell_vertex_positions(const PackedVector4Array &p
 	ERR_FAIL_COND(p_vertex_positions.size() > MAX_POLY_VERTICES); // Prevent overflow.
 	_poly_cell_vertex_positions = p_vertex_positions;
 	poly_mesh_clear_cache();
-	reset_poly_mesh_data_validation();
 }
 
 PackedVector4Array ArrayPolyMesh4D::get_poly_cell_normal_values() {
@@ -2530,7 +2523,7 @@ PackedVector4Array ArrayPolyMesh4D::get_poly_cell_normal_values() {
 
 void ArrayPolyMesh4D::set_poly_cell_normal_values(const PackedVector4Array &p_normal_values) {
 	_poly_cell_normal_values = p_normal_values;
-	poly_mesh_clear_cache(true);
+	poly_mesh_clear_cache(true, true);
 }
 
 PackedVector3Array ArrayPolyMesh4D::get_poly_cell_texture_map_values() {
@@ -2539,7 +2532,7 @@ PackedVector3Array ArrayPolyMesh4D::get_poly_cell_texture_map_values() {
 
 void ArrayPolyMesh4D::set_poly_cell_texture_map_values(const PackedVector3Array &p_tex_map_values) {
 	_poly_cell_texture_map_values = p_tex_map_values;
-	poly_mesh_clear_cache(false);
+	poly_mesh_clear_cache();
 }
 
 bool ArrayPolyMesh4D::_set(const StringName &p_name, const Variant &p_value) {

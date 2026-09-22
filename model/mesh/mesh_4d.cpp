@@ -30,6 +30,18 @@ PackedInt32Array Mesh4D::deduplicate_edge_indices(const PackedInt32Array &p_item
 	return deduplicated_items;
 }
 
+void Mesh4D::mark_proxy_mesh_3d_dirty() {
+	_is_proxy_mesh_3d_dirty = true;
+	emit_signal(StringName("proxy_mesh_3d_marked_dirty"));
+}
+
+void Mesh4D::mark_mesh_bounds_and_proxy_mesh_3d_dirty() {
+	_is_proxy_mesh_3d_dirty = true;
+	_is_rect_bounds_dirty = true;
+	emit_signal(StringName("proxy_mesh_3d_marked_dirty"));
+	// Only use signals as needed, so no separate rect bounds signal here.
+}
+
 bool Mesh4D::is_mesh_data_valid() {
 	if (likely(_is_mesh_data_valid)) {
 		return true;
@@ -43,7 +55,9 @@ bool Mesh4D::is_mesh_data_valid() {
 
 void Mesh4D::reset_mesh_data_validation() {
 	_is_mesh_data_valid = false;
-	emit_signal("mesh_data_validation_reset");
+	emit_signal(StringName("mesh_data_validation_reset"));
+	// Call this after so that external things which care about mesh validity are notified before things that just need to update their proxy meshes.
+	mark_mesh_bounds_and_proxy_mesh_3d_dirty();
 }
 
 bool Mesh4D::validate_mesh_data() {
@@ -91,13 +105,16 @@ void Mesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
 
 void Mesh4D::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("mesh_data_validation_reset"));
+	ADD_SIGNAL(MethodInfo("proxy_mesh_3d_marked_dirty"));
 
 	ClassDB::bind_static_method("Mesh4D", D_METHOD("deduplicate_edge_indices", "items"), &Mesh4D::deduplicate_edge_indices);
 	ClassDB::bind_method(D_METHOD("get_rect_bounds"), &Mesh4D::get_rect_bounds_bind);
 
 	ClassDB::bind_method(D_METHOD("get_proxy_mesh_3d"), &Mesh4D::get_proxy_mesh_3d);
 	ClassDB::bind_method(D_METHOD("append_proxy_mesh_surfaces_3d", "proxy_mesh"), &Mesh4D::append_proxy_mesh_surfaces_3d);
+
 	ClassDB::bind_method(D_METHOD("mark_proxy_mesh_3d_dirty"), &Mesh4D::mark_proxy_mesh_3d_dirty);
+	ClassDB::bind_method(D_METHOD("mark_mesh_bounds_and_proxy_mesh_3d_dirty"), &Mesh4D::mark_mesh_bounds_and_proxy_mesh_3d_dirty);
 
 	ClassDB::bind_method(D_METHOD("is_mesh_data_valid"), &Mesh4D::is_mesh_data_valid);
 	ClassDB::bind_method(D_METHOD("reset_mesh_data_validation"), &Mesh4D::reset_mesh_data_validation);

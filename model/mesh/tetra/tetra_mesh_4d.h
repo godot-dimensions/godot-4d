@@ -20,6 +20,7 @@ protected:
 	PackedVector4Array _edge_positions_cache;
 	PackedVector4Array _simplex_positions_cache;
 	PackedFloat64Array _nearest_tetra_inverse_metric_cache;
+	void _tetra_mesh_clear_cache_internal();
 
 	Ref<ArrayMesh> convert_texture_map_to_mesh(const PackedInt32Array &p_texture_map_indices);
 
@@ -34,7 +35,7 @@ public:
 	Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF);
 
 	// Cache and validation.
-	void tetra_mesh_clear_cache();
+	void tetra_mesh_clear_cache(const bool p_reset_validation = true);
 	virtual bool validate_mesh_data() override;
 	virtual void validate_material_for_mesh(const Ref<Material4D> &p_material) override;
 

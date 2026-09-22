@@ -20,7 +20,7 @@ void BoxWireMesh4D::set_size(const Vector4 &p_size) {
 	if (p_size != _size) {
 		_size = p_size;
 		_vertices_cache.clear();
-		wire_mesh_clear_cache();
+		wire_mesh_clear_cache(false);
 	}
 }
 

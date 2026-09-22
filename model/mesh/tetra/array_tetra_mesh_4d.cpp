@@ -2,10 +2,10 @@
 
 #include "../../../math/vector_4d.h"
 
-void ArrayTetraMesh4D::_clear_cache() {
+void ArrayTetraMesh4D::_clear_cache(const bool p_reset_validation) {
 	_simplex_positions_cache.clear();
 	_simplex_cell_boundary_normals.clear();
-	tetra_mesh_clear_cache();
+	tetra_mesh_clear_cache(p_reset_validation);
 }
 
 bool ArrayTetraMesh4D::validate_mesh_data() {
@@ -38,7 +38,6 @@ void ArrayTetraMesh4D::append_tetra_cell_points(const Vector4 &p_a, const Vector
 	const int32_t index_c = append_vertex(p_c, p_deduplicate_vertices);
 	const int32_t index_d = append_vertex(p_d, p_deduplicate_vertices);
 	append_tetra_cell_indices(index_a, index_b, index_c, index_d);
-	reset_mesh_data_validation();
 }
 
 void ArrayTetraMesh4D::append_tetra_cell_indices(const int32_t p_index_a, const int32_t p_index_b, const int32_t p_index_c, const int32_t p_index_d) {
@@ -47,7 +46,6 @@ void ArrayTetraMesh4D::append_tetra_cell_indices(const int32_t p_index_a, const 
 	_simplex_cell_vertex_indices.append(p_index_c);
 	_simplex_cell_vertex_indices.append(p_index_d);
 	_clear_cache();
-	reset_mesh_data_validation();
 }
 
 int32_t ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
@@ -62,7 +60,6 @@ int32_t ArrayTetraMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_de
 	}
 	_vertex_positions.push_back(p_vertex);
 	tetra_mesh_clear_cache();
-	reset_mesh_data_validation();
 	return (int32_t)vertex_pos_count;
 }
 
@@ -71,7 +68,6 @@ PackedInt32Array ArrayTetraMesh4D::append_vertices(const PackedVector4Array &p_v
 	for (int i = 0; i < p_vertices.size(); i++) {
 		indices.append(append_vertex(p_vertices[i], p_deduplicate_vertices));
 	}
-	reset_mesh_data_validation();
 	return indices;
 }
 
@@ -109,7 +105,6 @@ void ArrayTetraMesh4D::compact_normal_values() {
 		_simplex_cell_normal_indices.set(i, old_to_new[_simplex_cell_normal_indices[i]]);
 	}
 	_normal_values = compacted_values;
-	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 
@@ -142,7 +137,6 @@ void ArrayTetraMesh4D::compact_texture_map_values() {
 		_simplex_cell_texture_map_indices.set(i, old_to_new[_simplex_cell_texture_map_indices[i]]);
 	}
 	_texture_map_values = compacted_values;
-	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 
@@ -179,7 +173,6 @@ void ArrayTetraMesh4D::set_flat_shading_normals(const bool p_force_recalculate_b
 		_simplex_cell_normal_indices.set(cell_index * 4 + 2, cell_index);
 		_simplex_cell_normal_indices.set(cell_index * 4 + 3, cell_index);
 	}
-	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 
@@ -198,7 +191,7 @@ void ArrayTetraMesh4D::transform_mesh(const Transform4D &p_transform) {
 	for (int64_t normal_index = 0; normal_index < normal_val_count; normal_index++) {
 		_normal_values.set(normal_index, inverse_transpose.xform(_normal_values[normal_index]));
 	}
-	_clear_cache();
+	_clear_cache(false);
 }
 
 void ArrayTetraMesh4D::transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis) {
@@ -306,7 +299,6 @@ void ArrayTetraMesh4D::merge_with(const Ref<ArrayTetraMesh4D> &p_other, const Tr
 		}
 	}
 	tetra_mesh_clear_cache();
-	reset_mesh_data_validation();
 }
 
 void ArrayTetraMesh4D::merge_with_bind(const Ref<ArrayTetraMesh4D> &p_other, const Vector4 &p_offset, const Projection &p_basis) {
@@ -328,18 +320,15 @@ PackedInt32Array ArrayTetraMesh4D::get_simplex_cell_texture_map_indices() {
 void ArrayTetraMesh4D::set_simplex_cell_vertex_indices(const PackedInt32Array &p_simplex_cell_vertex_indices) {
 	_simplex_cell_vertex_indices = p_simplex_cell_vertex_indices;
 	_clear_cache();
-	reset_mesh_data_validation();
 }
 
 void ArrayTetraMesh4D::set_simplex_cell_normal_indices(const PackedInt32Array &p_simplex_cell_normal_indices) {
 	_simplex_cell_normal_indices = p_simplex_cell_normal_indices;
-	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 
 void ArrayTetraMesh4D::set_simplex_cell_texture_map_indices(const PackedInt32Array &p_simplex_cell_texture_map_indices) {
 	_simplex_cell_texture_map_indices = p_simplex_cell_texture_map_indices;
-	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 
@@ -353,7 +342,6 @@ PackedVector4Array ArrayTetraMesh4D::get_simplex_cell_boundary_normals() {
 void ArrayTetraMesh4D::set_simplex_cell_boundary_normals(const PackedVector4Array &p_simplex_cell_boundary_normals) {
 	_simplex_cell_boundary_normals = p_simplex_cell_boundary_normals;
 	tetra_mesh_clear_cache();
-	reset_mesh_data_validation();
 }
 
 PackedVector4Array ArrayTetraMesh4D::get_normal_values() {
@@ -362,7 +350,6 @@ PackedVector4Array ArrayTetraMesh4D::get_normal_values() {
 
 void ArrayTetraMesh4D::set_normal_values(const PackedVector4Array &p_normal_values) {
 	_normal_values = p_normal_values;
-	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 
@@ -372,7 +359,6 @@ PackedVector3Array ArrayTetraMesh4D::get_texture_map_values() {
 
 void ArrayTetraMesh4D::set_texture_map_values(const PackedVector3Array &p_texture_map_values) {
 	_texture_map_values = p_texture_map_values;
-	mark_proxy_mesh_3d_dirty();
 	reset_mesh_data_validation();
 }
 
@@ -384,7 +370,6 @@ void ArrayTetraMesh4D::set_vertex_positions(const PackedVector4Array &p_vertex_p
 	ERR_FAIL_COND(p_vertex_positions.size() > MAX_VERTICES); // Prevent overflow.
 	_vertex_positions = p_vertex_positions;
 	_clear_cache();
-	reset_mesh_data_validation();
 }
 
 bool ArrayTetraMesh4D::_set(const StringName &p_name, const Variant &p_value) {

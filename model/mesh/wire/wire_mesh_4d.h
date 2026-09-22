@@ -12,7 +12,7 @@ protected:
 	PackedVector4Array _edge_positions_cache;
 
 public:
-	void wire_mesh_clear_cache();
+	void wire_mesh_clear_cache(const bool p_reset_validation = true);
 	virtual PackedVector4Array get_edge_positions() override;
 
 	// The proxy 3D mesh encodes each edge as a line of two vertices. See `append_proxy_mesh_surfaces_3d` for the layout.

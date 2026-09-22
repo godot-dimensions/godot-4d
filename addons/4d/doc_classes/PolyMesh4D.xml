@@ -166,9 +166,10 @@
 		</method>
 		<method name="poly_mesh_clear_cache">
 			<return type="void" />
-			<param index="0" name="normals_only" type="bool" default="false" />
+			<param index="0" name="reset_validation" type="bool" default="true" />
+			<param index="1" name="normals_only" type="bool" default="false" />
 			<description>
-				Clears any cached data used by the polyhedral mesh, such as a cached tetrahedralization and its corresponding simplex normals and simplex texture map.
+				Clears any cached data used by the polyhedral mesh, such as a cached tetrahedralization and its corresponding simplex normals and simplex texture map. If [param normals_only] is [code]true[/code], only the cached normals are cleared, which is faster when only the normals changed. The proxy 3D mesh and the rect bounds are also caches, so this always calls [method Mesh4D.mark_mesh_bounds_and_proxy_mesh_3d_dirty]. If [param reset_validation] is [code]true[/code], this also calls [method Mesh4D.reset_mesh_data_validation], which should be the case whenever the structure of the mesh changed. Pass [code]false[/code] when only the vertex positions moved, such as when transforming the mesh. You do not need to run this when using the built-in classes such as [ArrayPolyMesh4D] or [BoxPolyMesh4D], they will automatically clear the cache when needed.
 			</description>
 		</method>
 		<method name="to_array_poly_mesh">

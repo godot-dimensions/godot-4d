@@ -6,7 +6,7 @@
 void OrthoplexTetraMesh4D::_clear_caches() {
 	_simplex_positions_cache.clear();
 	_vertices_cache.clear();
-	tetra_mesh_clear_cache();
+	tetra_mesh_clear_cache(false);
 }
 
 Vector4 OrthoplexTetraMesh4D::get_half_extents() const {

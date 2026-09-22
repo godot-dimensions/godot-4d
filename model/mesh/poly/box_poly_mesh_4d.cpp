@@ -7,7 +7,7 @@
 void BoxPolyMesh4D::_clear_caches() {
 	_simplex_positions_cache.clear();
 	_vertices_cache.clear();
-	poly_mesh_clear_cache();
+	poly_mesh_clear_cache(false);
 }
 
 Vector4 BoxPolyMesh4D::get_half_extents() const {
@@ -30,8 +30,9 @@ void BoxPolyMesh4D::set_size(const Vector4 &p_size) {
 
 void BoxPolyMesh4D::set_poly_texture_map(const BoxPolyTextureMap p_map) {
 	_poly_texture_map = p_map;
-	// The position caches can be kept, but the poly cache needs clearing.
-	poly_mesh_clear_cache();
+	// The position caches can be kept, but the poly cache needs clearing and the proxy mesh 3D needs to be rebuilt.
+	// The mesh is still valid, so do not reset the validation.
+	poly_mesh_clear_cache(false);
 }
 
 Vector<Vector<PackedInt32Array>> BoxPolyMesh4D::get_poly_cell_indices() {

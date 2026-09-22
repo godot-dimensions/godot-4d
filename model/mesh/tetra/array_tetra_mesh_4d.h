@@ -14,7 +14,7 @@ class ArrayTetraMesh4D : public TetraMesh4D {
 	PackedVector4Array _normal_values;
 	PackedVector3Array _texture_map_values;
 
-	void _clear_cache();
+	void _clear_cache(const bool p_reset_validation = true);
 
 protected:
 	bool _set(const StringName &p_name, const Variant &p_value);
