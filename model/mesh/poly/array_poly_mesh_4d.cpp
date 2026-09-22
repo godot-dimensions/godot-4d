@@ -614,7 +614,7 @@ void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for invalid poly mesh data.");
 	const PackedVector4Array &vertices = get_poly_cell_vertex_positions();
 	ERR_FAIL_COND_MSG(vertices.is_empty(), "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no vertices.");
-	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
+	const Vector<PackedInt32Array> cell_vertex_indices = _get_boundary_cell_vertex_indices_cached(true);
 	if (cell_vertex_indices.is_empty()) {
 		return;
 	}
@@ -662,7 +662,7 @@ void ArrayPolyMesh4D::orient_cells_to_boundary_normals(const PackedVector4Array 
 	const int64_t cell_count = boundary_cell_indices.size();
 	ERR_FAIL_COND_MSG(p_desired_boundary_normals.size() > cell_count, "ArrayPolyMesh4D: Cannot orient cells because there are more desired normals (" + itos(p_desired_boundary_normals.size()) + ") than 3D cells (" + itos(cell_count) + ").");
 	// Find the cells whose orientation implies a normal facing away from the desired one.
-	Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
+	Vector<PackedInt32Array> cell_vertex_indices = _get_boundary_cell_vertex_indices_cached(true);
 	ERR_FAIL_COND(cell_vertex_indices.size() != cell_count);
 	PackedVector4Array oriented_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, false);
 	ERR_FAIL_COND(oriented_normals.size() != cell_count);
@@ -739,7 +739,7 @@ void ArrayPolyMesh4D::orient_cells_to_boundary_normals(const PackedVector4Array 
 				data_binding_map->insert(key, data_bindings);
 			}
 		}
-		cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
+		cell_vertex_indices = _get_boundary_cell_vertex_indices_cached(true); // The clear above dropped the pre-flip traversal.
 		oriented_normals = _compute_boundary_normals_based_on_cell_orientation(cell_vertex_indices, false);
 		ERR_FAIL_COND(oriented_normals.size() != cell_count);
 		for (int64_t cell_index = 0; cell_index < p_desired_boundary_normals.size(); cell_index++) {
@@ -769,7 +769,7 @@ void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, 
 	if (p_recalculate_boundary_normals || !_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(p_mode);
 	}
-	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
+	const Vector<PackedInt32Array> &cell_vertex_indices = _get_boundary_cell_vertex_indices_cached(false);
 	const int64_t cell_count = cell_vertex_indices.size();
 	const PackedInt32Array &per_cell_normal_indices = _all_poly_cell_normal_indices[PER_CELL_KEY][0];
 	CRASH_COND(per_cell_normal_indices.size() != cell_count);
@@ -799,7 +799,7 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 	if (p_recalculate_boundary_normals || !_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(p_mode);
 	}
-	const Vector<PackedInt32Array> cell_vertex_indices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
+	const Vector<PackedInt32Array> &cell_vertex_indices = _get_boundary_cell_vertex_indices_cached(false);
 	const PackedVector4Array poly_cell_boundary_normals = _sample_normal_values_internal(_all_poly_cell_normal_indices[PER_CELL_KEY][0]);
 	CRASH_COND(poly_cell_boundary_normals.size() != cell_vertex_indices.size());
 	Vector<PackedInt32Array> poly_cell_normal_indices;
@@ -865,7 +865,7 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 	const bool has_texture_map = _all_poly_cell_texture_map_indices.has(CELL_TO_VERT_KEY) && !_all_poly_cell_texture_map_indices[CELL_TO_VERT_KEY].is_empty();
 	Vector<PackedInt32Array> original_cell_vertices;
 	if (has_vertex_normals || has_texture_map) {
-		original_cell_vertices = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
+		original_cell_vertices = _get_boundary_cell_vertex_indices_cached(false);
 	}
 	// This has to be a copy, it's set back in place at the end of the function.
 	PackedInt32Array per_cell_normal_indices = _all_poly_cell_normal_indices[PER_CELL_KEY][0];
@@ -906,6 +906,7 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 		if (has_vertex_normals || has_texture_map) {
 			Vector<Vector<PackedInt32Array>> flipped_geometry = _poly_cell_indices;
 			flipped_geometry.set(1, Vector<PackedInt32Array>{ flipped_cell_faces });
+			// This traverses a modified copy of the geometry, so it cannot use the cached traversal.
 			const PackedInt32Array flipped_vertices = _get_vertex_indices_of_boundary_cells(flipped_geometry, _edge_vertex_indices, false)[0];
 			vertex_remap.resize(flipped_vertices.size());
 			for (int64_t i = 0; i < flipped_vertices.size(); i++) {
@@ -1356,7 +1357,7 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 
 void ArrayPolyMesh4D::_unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
 	CRASH_COND(r_poly_cell_texture_map.size() != _poly_cell_indices[1].size());
-	const Vector<PackedInt32Array> cell_vert = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, false);
+	const Vector<PackedInt32Array> &cell_vert = _get_boundary_cell_vertex_indices_cached(false);
 	for (int64_t cell_index_index = 0; cell_index_index < p_cells_in_island.size(); cell_index_index++) {
 		if (p_keep_existing && !r_poly_cell_texture_map[p_cells_in_island[cell_index_index]].is_empty()) {
 			continue;
@@ -1653,6 +1654,9 @@ void ArrayPolyMesh4D::deduplicate_all_elements(const int64_t p_max_dimension) {
 	_poly_cell_vertex_positions = output_vertices;
 	_edge_vertex_indices = output_edge_vertex_indices;
 	_poly_cell_indices = output_poly_cell_indices;
+	// The traversals below must see the deduplicated geometry, not the cached pre-deduplication traversal.
+	// Validation is reset once at the end of this function, so only clear the caches here.
+	_poly_mesh_clear_cache_internal(false);
 	// Snapshot the sub-element traversal order for all decomposed bindings AFTER deduplication.
 	HashMap<Vector2i, Vector<PackedInt32Array>> post_dedup_poly;
 	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &post_kv : pre_dedup_poly) {
@@ -1799,6 +1803,7 @@ void ArrayPolyMesh4D::deduplicate_all_elements(const int64_t p_max_dimension) {
 		}
 		output_poly_cell_indices.set(1, all_cell_face_indices);
 		_poly_cell_indices = output_poly_cell_indices;
+		_poly_mesh_clear_cache_internal(false); // The swapped faces change the traversal order of those cells.
 		calculate_boundary_normals();
 		// Resample the bindings of any decomposed elements that were affected by the swap.
 		for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : remapped_poly_poly) {
@@ -1913,6 +1918,8 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 	// which is required later when filling in missing boundary normals.
 	Vector<PackedInt32Array> cell_vertex_instances_span_first;
 	if (poly_cell_indices_dims > 1) {
+		// The edges were already merged above, and the merged cells are traversed below before the caches are
+		// cleared at the end, so this function cannot use the cached traversal for the mid-merge geometry.
 		cell_vertex_instances_span_first = _get_vertex_indices_of_boundary_cells(_poly_cell_indices, _edge_vertex_indices, true);
 	}
 	// Merge poly cell indices.
