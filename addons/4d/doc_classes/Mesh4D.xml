@@ -51,6 +51,13 @@
 				Returns the proxy 3D mesh that the tetrahedral renderers hand to Godot's own 3D renderer. It stores this mesh's 4D data in its ordinary vertex channels, so it will only render properly with one of the shader materials from [method Material4D.get_cross_section_material_3d] or [method Material4D.get_projected_material_3d], depending on which renderer is in use.
 			</description>
 		</method>
+		<method name="get_proxy_surface_index_3d" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="surface_index_4d" type="int" />
+			<description>
+				Returns the index of the surface in the proxy 3D mesh (see [method get_proxy_mesh_3d]) that corresponds to the surface of this Mesh4D at [param surface_index_4d], or [code]-1[/code] if that surface did not produce any 3D geometry. Null and empty surfaces do not add a surface to the proxy mesh, so for a [MultiSurfaceMesh4D] the 3D surface indices do not line up with the 4D surface indices in general. Rendering engines should use this when assigning per-surface materials to the proxy mesh. The returned value is only meaningful after [method get_proxy_mesh_3d] has been called for the current state of the mesh.
+			</description>
+		</method>
 		<method name="get_rect_bounds">
 			<return type="PackedVector4Array" />
 			<description>

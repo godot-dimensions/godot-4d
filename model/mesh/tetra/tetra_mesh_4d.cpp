@@ -653,6 +653,7 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 	}
 	// Commit to the proxy mesh. Note that SurfaceTool adds no surface when there are no vertices,
 	// so an empty mesh results in a proxy mesh with zero surfaces rather than one empty surface.
+	// This is why renderers must use `Mesh4D::get_proxy_surface_index_3d` to find 3D surfaces.
 	surface_tool_3d->commit(p_proxy_mesh_3d);
 }
 

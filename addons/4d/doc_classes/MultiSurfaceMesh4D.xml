@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MultiSurfaceMesh4D" inherits="Mesh4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A mesh composed of multiple surface meshes.
+	</brief_description>
+	<description>
+		MultiSurfaceMesh4D is a type of Mesh4D that is composed of multiple surface meshes, allowing for a mesh with multiple materials or different mesh types in one mesh. The surfaces are represented by [SingleSurfaceMesh4D] instances.
+		Once a surface mesh is added to the MultiSurfaceMesh4D, it becomes conceptually owned by the MultiSurfaceMesh4D, and it should no longer be treated as a completely independent mesh. Editing operations done on the MultiSurfaceMesh4D will affect the individual surface meshes. Meshes used as a surface inside of a MultiSurfaceMesh4D may only be shared externally if it is considered acceptable for those meshes to be potentially modified at the whims of the MultiSurfaceMesh4D.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="merge_compatible_surfaces">
+			<return type="void" />
+			<description>
+				Merges surfaces in [member surface_meshes] that are compatible with each other. Surfaces are considered compatible for merging if they are not null, have the same name, share the same [Material4D] instance, are of the same type, and are writable ([ArrayPolyMesh4D], [ArrayTetraMesh4D], or [ArrayWireMesh4D]). Any of these conditions not being met will prevent the surfaces from being merged. Materials are compared by instance on purpose: two materials with equal values that are separate objects indicate separate surfaces, so those surfaces are kept apart.
+				Surfaces with invalid mesh data are kept separated and are not merged into or from.
+				Merging keeps the first of each kind of surface and merges subsequent compatible surfaces into it. This modifies the existing surface meshes, it does not create new mesh objects. The merged surface's material is duplicated before the per-item color arrays of the merged surfaces are combined into it (see [method Material4D.merge_with]), so the shared material itself is never modified, and surfaces sharing it keep merging into the same surface.
+			</description>
+		</method>
+		<method name="merge_with">
+			<return type="void" />
+			<param index="0" name="mesh" type="Mesh4D" />
+			<param index="1" name="offset" type="Vector4" default="Vector4(0, 0, 0, 0)" />
+			<param index="2" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<description>
+				Merges the given mesh into this MultiSurfaceMesh4D. A [SingleSurfaceMesh4D] is copied into a new [ArrayPolyMesh4D], [ArrayTetraMesh4D], or [ArrayWireMesh4D] surface with the given offset and basis applied, and a [MultiSurfaceMesh4D] adds one such surface per surface it has, skipping null entries. The given mesh is not modified unless it is this mesh itself, in which case copies of its original non-null surfaces are appended once. If you wish to merge the data into existing compatible surfaces, you should call [method merge_compatible_surfaces] after merging in all the desired meshes.
+			</description>
+		</method>
+		<method name="transform_mesh">
+			<return type="void" />
+			<param index="0" name="offset" type="Vector4" />
+			<param index="1" name="basis" type="Projection" default="Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)" />
+			<description>
+				Transforms the vertex positions and normal values of all surfaces of the mesh by applying the given offset and basis transformation, which are assembled into a single [Transform4D] internally. The normal values are transformed using the inverse-transpose of the basis to ensure correct orientation under non-uniform scaling.
+				Only [ArrayPolyMesh4D], [ArrayTetraMesh4D], and [ArrayWireMesh4D] surfaces can be transformed, so any other surface, such as a primitive like [BoxTetraMesh4D], is first replaced in [member surface_meshes] by an equivalent array mesh copy that keeps its name and material. Surfaces with invalid mesh data are left untouched with an error.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="surface_meshes" type="SingleSurfaceMesh4D[]" setter="set_surface_meshes" getter="get_surface_meshes" default="[]">
+			The array of meshes that serve as the multiple surfaces of this multi-surface mesh. Each element should be a valid [SingleSurfaceMesh4D] instance. Duplicate entries of the same surface mesh are not allowed, and will cause an error when setting the surface meshes.
+		</member>
+	</members>
+</class>

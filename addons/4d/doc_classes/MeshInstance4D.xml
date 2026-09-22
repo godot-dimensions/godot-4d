@@ -13,14 +13,20 @@
 	<methods>
 		<method name="get_active_material" qualifiers="const">
 			<return type="Material4D" />
+			<param index="0" name="surface_index" type="int" default="0" />
 			<description>
-				Returns the currently active [Material4D] for this mesh instance. If [member material_override] is set, this will return that material. Otherwise, if [member mesh] is set to a valid [Mesh4D], this will return the material set on that mesh. If neither of these are set, this will return null.
+				Returns the currently active [Material4D] for the surface of [member mesh] at [param surface_index]. The index only matters for a [MultiSurfaceMesh4D], since a [SingleSurfaceMesh4D] only has surface [code]0[/code]. This is the material that rendering engines use to draw that surface.
+				If [member material_overrides] has a single element, it is returned for every surface. Otherwise, the element at [param surface_index] is returned if there is one and it is not null. Otherwise, the surface's own [member SingleSurfaceMesh4D.material] is returned if it is set. Otherwise, the surface's fallback material is returned (see [method SingleSurfaceMesh4D._get_fallback_material]), which may be null if the surface has no fallback material. Materials found through the overrides or the surface are validated against the surface before being returned, but fallback materials are not.
+				If [member mesh] is not set, or [param surface_index] does not refer to a surface of the mesh, only the overrides are consulted, so this returns the override for that index or null.
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="material_override" type="Material4D" setter="set_material_override" getter="get_material_override">
-			The [Material4D] used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. This property overrides the per-mesh material set on the [Mesh4D] resource in the [member SingleSurfaceMesh4D.material] property.
+			The [Material4D] override used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. This property overrides the per-mesh material set on the [Mesh4D] resource in the [member SingleSurfaceMesh4D.material] property.
+		</member>
+		<member name="material_overrides" type="Material4D[]" setter="set_material_overrides" getter="get_material_overrides">
+			The [Material4D] overrides used to render the multiple surfaces of the mesh. If this array has a single element, it applies to all surfaces. If it has multiple elements, each element corresponds to a specific surface of the mesh. See also [member material_override].
 		</member>
 		<member name="mesh" type="Mesh4D" setter="set_mesh" getter="get_mesh">
 			The [Mesh4D] resource that defines the geometry of the mesh. This may be set to any [Mesh4D] derived class. [TetraMesh4D] allows for tetrahedral meshes, which are the equivalent of triangles in 3D. [WireMesh4D] allows for wireframe meshes, which behave very similarly to wireframes in 3D.

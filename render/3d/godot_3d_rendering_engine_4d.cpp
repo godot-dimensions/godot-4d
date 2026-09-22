@@ -1,6 +1,7 @@
 #include "godot_3d_rendering_engine_4d.h"
 
 #include "../../model/mesh/mesh_instance_4d.h"
+#include "../../model/mesh/multi_surface_mesh_4d.h"
 #include "../../model/mesh/poly/poly_material_4d.h"
 #include "../../model/mesh/single_surface_mesh_4d.h"
 #include "../../nodes/camera_4d.h"
@@ -167,31 +168,49 @@ void Godot3DRenderingEngine4D::_update_3d_mesh_instances() {
 			rendering_server->instance_set_base(mesh_render_instance_3d.instance, base_3d_rid);
 		}
 
-		Ref<Material4D> material_4d = mesh_instance_4d->get_active_material();
-		if (!material_4d.is_valid()) {
-			const Ref<SingleSurfaceMesh4D> surface_mesh_4d = mesh_4d;
-			if (surface_mesh_4d.is_valid()) {
-				material_4d = surface_mesh_4d->get_fallback_material();
+		// Set materials for each surface.
+		Vector<Ref<SingleSurfaceMesh4D>> surface_meshes;
+		const Ref<MultiSurfaceMesh4D> multi_surface_mesh_4d = mesh_4d;
+		if (multi_surface_mesh_4d.is_valid()) {
+			surface_meshes = multi_surface_mesh_4d->get_surface_meshes();
+		} else {
+			const Ref<SingleSurfaceMesh4D> single_surface_mesh_4d = mesh_4d;
+			if (single_surface_mesh_4d.is_valid()) {
+				surface_meshes.append(single_surface_mesh_4d);
 			}
 		}
-		RID override_material_rid_3d = RID();
-		if (material_4d.is_valid()) {
-			Ref<PolyMaterial4D> poly_material_4d = material_4d;
-			if (poly_material_4d.is_valid()) {
-				Ref<TetraMesh4D> poly_mesh_4d_or_poly_derived_tetra_mesh_4d = mesh_4d;
-				if (poly_mesh_4d_or_poly_derived_tetra_mesh_4d.is_valid()) {
-					poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
+		// The override material cache is indexed by 3D proxy surface, matching the rendering server.
+		// The mapping from 4D surfaces to 3D surfaces can shift when a surface becomes empty or
+		// non-empty, and indexing by 3D surface means a shifted mapping is detected as a change.
+		const int64_t surface_count_4d = surface_meshes.size();
+		mesh_render_instance_3d.surface_materials.resize(mesh_3d->get_surface_count());
+		for (int64_t surface_index_4d = 0; surface_index_4d < surface_count_4d; surface_index_4d++) {
+			// Null and empty 4D surfaces add no 3D surface to the proxy mesh, so ask the mesh
+			// which 3D surface this 4D surface ended up in, and skip 4D surfaces that have none.
+			const int surface_index_3d = mesh_4d->get_proxy_surface_index_3d(surface_index_4d);
+			if (surface_index_3d < 0 || surface_index_3d >= mesh_render_instance_3d.surface_materials.size()) {
+				continue;
+			}
+			Ref<Material4D> material_4d = mesh_instance_4d->get_active_material(surface_index_4d);
+			RID override_material_rid_3d = RID();
+			if (material_4d.is_valid()) {
+				Ref<PolyMaterial4D> poly_material_4d = material_4d;
+				if (poly_material_4d.is_valid()) {
+					const Ref<TetraMesh4D> poly_mesh_4d_or_poly_derived_tetra_mesh_4d = surface_meshes[surface_index_4d];
+					if (poly_mesh_4d_or_poly_derived_tetra_mesh_4d.is_valid()) {
+						poly_material_4d->populate_albedo_color_array_for_poly_mesh(poly_mesh_4d_or_poly_derived_tetra_mesh_4d);
+					}
+				}
+				const Ref<Material> override_material_3d = _get_material_3d(material_4d);
+				if (override_material_3d.is_valid()) {
+					override_material_rid_3d = override_material_3d->get_rid();
 				}
 			}
-			const Ref<Material> override_material_3d = _get_material_3d(material_4d);
-			if (override_material_3d.is_valid()) {
-				override_material_rid_3d = override_material_3d->get_rid();
+			// Godot clears surface override materials when an instance's base changes.
+			if (base_changed || mesh_render_instance_3d.surface_materials[surface_index_3d] != override_material_rid_3d) {
+				mesh_render_instance_3d.surface_materials.set(surface_index_3d, override_material_rid_3d);
+				rendering_server->instance_set_surface_override_material(mesh_render_instance_3d.instance, surface_index_3d, override_material_rid_3d);
 			}
-		}
-		// Godot clears surface override materials when an instance's base changes.
-		if (base_changed || mesh_render_instance_3d.material != override_material_rid_3d) {
-			mesh_render_instance_3d.material = override_material_rid_3d;
-			rendering_server->instance_set_surface_override_material(mesh_render_instance_3d.instance, 0, override_material_rid_3d);
 		}
 
 		const Projection modelview_basis = modelview_basises[mesh_index];

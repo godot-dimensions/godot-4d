@@ -44,6 +44,11 @@ public:
 	Ref<ArrayMesh> get_proxy_mesh_3d();
 	// Called when the proxy 3D mesh is requested and has been marked dirty.
 	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh_3d);
+	// Maps a surface index of this Mesh4D to the index of its surface in the proxy 3D mesh, or -1 if
+	// that surface produced no 3D geometry. Null and empty surfaces don't add a 3D surface, so the
+	// 3D indices don't line up with the 4D indices in general. Renderers should use this instead of
+	// assuming a 1:1 mapping. Only meaningful after `get_proxy_mesh_3d` has run for the current state.
+	virtual int get_proxy_surface_index_3d(const int p_surface_index_4d) const;
 
 	// Call when the mesh's data changes in a way that does not need revalidation, such as
 	// transforming the vertex positions, to indicate that the proxy 3D mesh used for rendering

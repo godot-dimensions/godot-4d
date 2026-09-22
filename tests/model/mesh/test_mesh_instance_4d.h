@@ -1,6 +1,9 @@
 #pragma once
 
 #include "../../../model/mesh/mesh_instance_4d.h"
+#include "../../../model/mesh/multi_surface_mesh_4d.h"
+#include "../../../model/mesh/tetra/box_tetra_mesh_4d.h"
+#include "../../../model/mesh/tetra/tetra_material_4d.h"
 #include "../../../model/mesh/wire/array_wire_mesh_4d.h"
 
 #include "tests/test_macros.h"
@@ -20,6 +23,43 @@ TEST_CASE("[MeshInstance4D] Bounds follow mesh data and target transform") {
 
 	const Transform4D to_target = Transform4D(Basis4D(), Vector4(10, 20, 30, 40));
 	CHECK(mesh_instance.get_rect_bounds_local(to_target) == Rect4(Vector4(8, 18, 28, 38), Vector4(5, 5, 5, 5)));
+}
+
+TEST_CASE("[MeshInstance4D] Material overrides apply per surface") {
+	Ref<TetraMaterial4D> red;
+	red.instantiate();
+	Ref<BoxTetraMesh4D> surface_a;
+	surface_a.instantiate();
+	surface_a->set_material(red);
+	Ref<BoxTetraMesh4D> surface_b;
+	surface_b.instantiate();
+	Ref<MultiSurfaceMesh4D> mesh;
+	mesh.instantiate();
+	mesh->set_surface_meshes({ surface_a, surface_b });
+	MeshInstance4D mesh_instance;
+	mesh_instance.set_mesh(mesh);
+	// Without overrides, each surface uses its own material, or its fallback material if it has none.
+	CHECK(mesh_instance.get_active_material(0) == red);
+	CHECK(mesh_instance.get_active_material(1) == surface_b->get_fallback_material());
+	CHECK(mesh_instance.get_active_material(2).is_null());
+	// A single override applies to every surface.
+	Ref<TetraMaterial4D> blue;
+	blue.instantiate();
+	mesh_instance.set_material_override(blue);
+	CHECK(mesh_instance.get_material_overrides().size() == 1);
+	CHECK(mesh_instance.get_active_material(0) == blue);
+	CHECK(mesh_instance.get_active_material(1) == blue);
+	// Per-surface overrides, where a null entry falls through to the surface's own material.
+	Ref<TetraMaterial4D> green;
+	green.instantiate();
+	mesh_instance.set_material_overrides({ Ref<Material4D>(), green });
+	CHECK(mesh_instance.get_material_override().is_null());
+	CHECK(mesh_instance.get_active_material(0) == red);
+	CHECK(mesh_instance.get_active_material(1) == green);
+	// Clearing the single override clears them all.
+	mesh_instance.set_material_override(Ref<Material4D>());
+	CHECK(mesh_instance.get_material_overrides().is_empty());
+	CHECK(mesh_instance.get_active_material(1) == surface_b->get_fallback_material());
 }
 
 TEST_CASE("[MeshInstance4D] Raycast fallback to bounds") {

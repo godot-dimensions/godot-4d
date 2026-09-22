@@ -34,7 +34,7 @@ private:
 	struct MeshRenderInstance3D {
 		RID base;
 		RID instance;
-		RID material;
+		Vector<RID> surface_materials; // Indexed by 3D proxy mesh surface, see Mesh4D::get_proxy_surface_index_3d.
 		int64_t last_used_pass = 0;
 	};
 	HashMap<ObjectID, MeshRenderInstance3D> _mesh_instances_3d;

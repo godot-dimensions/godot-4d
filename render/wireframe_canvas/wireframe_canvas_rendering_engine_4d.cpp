@@ -1,6 +1,7 @@
 #include "wireframe_canvas_rendering_engine_4d.h"
 
 #include "../../model/mesh/mesh_instance_4d.h"
+#include "../../model/mesh/multi_surface_mesh_4d.h"
 #include "../../model/mesh/single_surface_mesh_4d.h"
 #include "../../model/mesh/wire/wire_material_4d.h"
 #include "../environment/sky/plain_sky_material_4d.h"
@@ -74,14 +75,25 @@ void WireframeCanvasRenderingEngine4D::_render_frame_callback() {
 		const Ref<Mesh4D> mesh_4d = mesh_inst->get_mesh();
 		ERR_CONTINUE(mesh_4d.is_null());
 		const Transform4D mesh_relative_transform = Transform4D(mesh_relative_basises[mesh_index], mesh_relative_positions[mesh_index]);
-		{
-			const Ref<SingleSurfaceMesh4D> surface_mesh_4d = mesh_4d;
-			ERR_CONTINUE(surface_mesh_4d.is_null());
+		// Figure out if this is a single surface mesh or a multi-surface mesh.
+		Vector<Ref<SingleSurfaceMesh4D>> surface_meshes;
+		Ref<MultiSurfaceMesh4D> multi_surface_mesh_4d = mesh_4d;
+		if (multi_surface_mesh_4d.is_valid()) {
+			surface_meshes = multi_surface_mesh_4d->get_surface_meshes();
+		} else {
+			surface_meshes.append(mesh_4d);
+		}
+		// Iterate over each surface of this mesh (an array of one for single-surface meshes).
+		for (int surface_mesh_index = 0; surface_mesh_index < surface_meshes.size(); surface_mesh_index++) {
+			const Ref<SingleSurfaceMesh4D> surface_mesh_4d = surface_meshes[surface_mesh_index];
+			if (surface_mesh_4d.is_null()) {
+				continue; // Don't error: MultiSurfaceMesh4D may have null entries, leading to null here, so this is expected behavior.
+			}
 			const PackedVector4Array camera_relative_vertices = mesh_relative_transform.xform_many(surface_mesh_4d->get_vertex_positions());
 			if (camera_relative_vertices.is_empty()) {
 				continue;
 			}
-			const Ref<Material4D> material_4d = mesh_inst->get_active_material();
+			const Ref<Material4D> material_4d = mesh_inst->get_active_material(surface_mesh_index);
 			const PackedInt32Array edge_indices = surface_mesh_4d->get_edge_indices();
 			PackedVector2Array projected_vertices;
 			{

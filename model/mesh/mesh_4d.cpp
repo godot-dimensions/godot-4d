@@ -103,6 +103,14 @@ void Mesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) {
 	GDVIRTUAL_CALL(_validate_material_for_mesh, p_material);
 }
 
+int Mesh4D::get_proxy_surface_index_3d(const int p_surface_index_4d) const {
+	// A base Mesh4D has a single surface. It maps to the first 3D surface, if any 3D surface was generated.
+	if (p_surface_index_4d != 0 || _proxy_mesh_3d.is_null() || _proxy_mesh_3d->get_surface_count() == 0) {
+		return -1;
+	}
+	return 0;
+}
+
 void Mesh4D::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("mesh_data_validation_reset"));
 	ADD_SIGNAL(MethodInfo("proxy_mesh_3d_marked_dirty"));
@@ -111,6 +119,7 @@ void Mesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_rect_bounds"), &Mesh4D::get_rect_bounds_bind);
 
 	ClassDB::bind_method(D_METHOD("get_proxy_mesh_3d"), &Mesh4D::get_proxy_mesh_3d);
+	ClassDB::bind_method(D_METHOD("get_proxy_surface_index_3d", "surface_index_4d"), &Mesh4D::get_proxy_surface_index_3d);
 	ClassDB::bind_method(D_METHOD("append_proxy_mesh_surfaces_3d", "proxy_mesh_3d"), &Mesh4D::append_proxy_mesh_surfaces_3d);
 
 	ClassDB::bind_method(D_METHOD("mark_proxy_mesh_3d_dirty"), &Mesh4D::mark_proxy_mesh_3d_dirty);

@@ -48,6 +48,7 @@ def get_doc_classes():
 		"Material4D",
 		"Mesh4D",
 		"MeshInstance4D",
+		"MultiSurfaceMesh4D",
 		"PolyMaterial4D",
 		"PolyMesh4D",
 		"PolyMeshBuilder4D",

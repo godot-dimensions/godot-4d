@@ -30,6 +30,7 @@
 #include "model/g4mf/g4mf_document_4d.h"
 #include "model/g4mf/structures/g4mf_model_4d.h"
 #include "model/mesh/mesh_instance_4d.h"
+#include "model/mesh/multi_surface_mesh_4d.h"
 #include "model/mesh/poly/array_poly_mesh_4d.h"
 #include "model/mesh/poly/box_poly_mesh_4d.h"
 #include "model/mesh/poly/orthoplex_poly_mesh_4d.h"
@@ -209,6 +210,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(BoxTetraMesh4D);
 		GDREGISTER_CLASS(BoxWireMesh4D);
 		GDREGISTER_CLASS(MeshInstance4D);
+		GDREGISTER_CLASS(MultiSurfaceMesh4D);
 		GDREGISTER_CLASS(OrthoplexPolyMesh4D);
 		GDREGISTER_CLASS(OrthoplexTetraMesh4D);
 		GDREGISTER_CLASS(OrthoplexWireMesh4D);

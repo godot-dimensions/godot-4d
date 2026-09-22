@@ -1,5 +1,6 @@
 #include "convex_hull_shape_4d.h"
 
+#include "../../model/mesh/multi_surface_mesh_4d.h"
 #include "../../model/mesh/single_surface_mesh_4d.h"
 #include "../../model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../model/mesh/wire/array_wire_mesh_4d.h"
@@ -41,7 +42,18 @@ Ref<ConvexHullShape4D> ConvexHullShape4D::create_from_mesh(const Ref<Mesh4D> &p_
 	if (single_surface_mesh_4d.is_valid()) {
 		points = single_surface_mesh_4d->get_vertex_positions();
 	} else {
-		ERR_FAIL_V_MSG(shape, "ConvexHullShape4D.create_from_mesh: Unhandled mesh type.");
+		const Ref<MultiSurfaceMesh4D> multi_surface_mesh_4d = p_mesh;
+		if (multi_surface_mesh_4d.is_valid()) {
+			const Vector<Ref<SingleSurfaceMesh4D>> &surface_meshes = multi_surface_mesh_4d->get_surface_meshes();
+			for (int64_t surface_index = 0; surface_index < surface_meshes.size(); surface_index++) {
+				const Ref<SingleSurfaceMesh4D> &surface_mesh_4d = surface_meshes[surface_index];
+				if (surface_mesh_4d.is_valid()) {
+					points.append_array(surface_mesh_4d->get_vertex_positions());
+				}
+			}
+		} else {
+			ERR_FAIL_V_MSG(shape, "ConvexHullShape4D.create_from_mesh: Unhandled mesh type.");
+		}
 	}
 	shape->set_points(points);
 	ERR_PRINT("ConvexHullShape4D.create_from_mesh: Calculating the convex hull from mesh vertices is not implemented yet.");
