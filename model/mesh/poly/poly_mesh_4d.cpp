@@ -1158,10 +1158,32 @@ Ref<ArrayPolyMesh4D> PolyMesh4D::to_array_poly_mesh() {
 	// and the boundary normals last since they append to the normal values.
 	array_poly_mesh->set_poly_cell_normal_values(get_poly_cell_normal_values());
 	array_poly_mesh->set_poly_cell_texture_map_values(get_poly_cell_texture_map_values());
-	array_poly_mesh->set_poly_cell_normal_indices(get_poly_cell_normal_indices());
-	array_poly_mesh->set_poly_cell_texture_map_indices(get_poly_cell_texture_map_indices());
-	array_poly_mesh->set_poly_cell_boundary_normals(get_poly_cell_boundary_normals());
+	// Copy every binding. ArrayPolyMesh4D overrides these getters to return all of its keys.
+	const HashMap<Vector2i, Vector<PackedInt32Array>> all_normal_indices = get_all_poly_cell_normal_indices();
+	array_poly_mesh->set_all_poly_cell_normal_indices(all_normal_indices);
+	array_poly_mesh->set_all_poly_cell_texture_map_indices(get_all_poly_cell_texture_map_indices());
+	if (!all_normal_indices.has(PER_CELL_KEY)) {
+		// The bindings did not include the boundary normals (the base class only exposes them separately), so append them.
+		array_poly_mesh->set_poly_cell_boundary_normals(get_poly_cell_boundary_normals());
+	}
+	array_poly_mesh->set_poly_cell_boundary_pivot_overrides(get_poly_cell_boundary_pivot_overrides());
+	array_poly_mesh->set_seam_face_indices(get_seam_face_indices());
 	array_poly_mesh->set_material(get_material());
+	array_poly_mesh->set_name(get_name());
+	// Copy metadata.
+#if GDEXTENSION
+	TypedArray<StringName> meta_list = get_meta_list();
+	for (int i = 0; i < meta_list.size(); i++) {
+		const StringName meta_key = meta_list[i];
+		array_poly_mesh->set_meta(meta_key, get_meta(meta_key));
+	}
+#elif GODOT_MODULE
+	List<StringName> meta_list;
+	get_meta_list(&meta_list);
+	for (const StringName &meta_key : meta_list) {
+		array_poly_mesh->set_meta(meta_key, get_meta(meta_key));
+	}
+#endif
 	return array_poly_mesh;
 }
 

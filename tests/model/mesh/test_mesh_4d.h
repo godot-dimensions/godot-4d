@@ -240,4 +240,33 @@ TEST_CASE("[Mesh4D] Primitive size changes mark bounds and proxy dirty without r
 		_unwatch_signals(mesh.ptr());
 	}
 }
+
+TEST_CASE("[SingleSurfaceMesh4D] Array conversions keep the name and metadata") {
+	Ref<BoxTetraMesh4D> box_tetra;
+	box_tetra.instantiate();
+	box_tetra->set_name("TetraNamed");
+	box_tetra->set_meta("source_file", "box.g4tf");
+	const Ref<ArrayTetraMesh4D> array_tetra = box_tetra->to_array_tetra_mesh();
+	CHECK(array_tetra->get_name() == "TetraNamed");
+	CHECK(array_tetra->get_meta("source_file") == Variant("box.g4tf"));
+	const Ref<ArrayWireMesh4D> wire_from_tetra = array_tetra->to_array_wire_mesh();
+	CHECK(wire_from_tetra->get_name() == "TetraNamed");
+	CHECK(wire_from_tetra->get_meta("source_file") == Variant("box.g4tf"));
+
+	Ref<BoxPolyMesh4D> box_poly;
+	box_poly.instantiate();
+	box_poly->set_name("PolyNamed");
+	box_poly->set_meta("source_file", "box.hox");
+	const Ref<ArrayPolyMesh4D> array_poly = box_poly->to_array_poly_mesh();
+	CHECK(array_poly->get_name() == "PolyNamed");
+	CHECK(array_poly->get_meta("source_file") == Variant("box.hox"));
+
+	Ref<BoxWireMesh4D> box_wire;
+	box_wire.instantiate();
+	box_wire->set_name("WireNamed");
+	box_wire->set_meta("source_file", "box.off");
+	const Ref<ArrayWireMesh4D> array_wire = box_wire->to_array_wire_mesh();
+	CHECK(array_wire->get_name() == "WireNamed");
+	CHECK(array_wire->get_meta("source_file") == Variant("box.off"));
+}
 } // namespace TestMesh4D

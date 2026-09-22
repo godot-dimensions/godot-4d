@@ -175,7 +175,7 @@
 		<method name="to_array_poly_mesh">
 			<return type="ArrayPolyMesh4D" />
 			<description>
-				Converts this polyhedral mesh into an [ArrayPolyMesh4D], copying all mesh data into the new mesh. This is useful for converting specific polyhedral mesh types into a standard array-based representation for easier processing and manipulation. This performs a deep copy of all mesh data, except for the material, which is shared by default.
+				Converts this polyhedral mesh into an [ArrayPolyMesh4D], copying all mesh data into the new mesh, including every normal and texture map binding, the boundary normals, the boundary pivot overrides, the seam faces, the resource name, and the metadata. This is useful for converting specific polyhedral mesh types into a standard array-based representation for easier processing and manipulation. This performs a deep copy of all mesh data, except for the material, which is shared by default.
 			</description>
 		</method>
 	</methods>

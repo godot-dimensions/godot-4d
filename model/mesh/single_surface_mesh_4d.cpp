@@ -21,6 +21,21 @@ Ref<ArrayWireMesh4D> SingleSurfaceMesh4D::to_array_wire_mesh() {
 	wire_mesh->set_vertex_positions(get_vertex_positions());
 	wire_mesh->set_edge_indices(get_edge_indices());
 	wire_mesh->set_material(get_material());
+	wire_mesh->set_name(get_name());
+	// Copy metadata.
+#if GDEXTENSION
+	TypedArray<StringName> meta_list = get_meta_list();
+	for (int i = 0; i < meta_list.size(); i++) {
+		const StringName meta_key = meta_list[i];
+		wire_mesh->set_meta(meta_key, get_meta(meta_key));
+	}
+#elif GODOT_MODULE
+	List<StringName> meta_list;
+	get_meta_list(&meta_list);
+	for (const StringName &meta_key : meta_list) {
+		wire_mesh->set_meta(meta_key, get_meta(meta_key));
+	}
+#endif
 	return wire_mesh;
 }
 

@@ -122,7 +122,7 @@
 		<method name="to_array_tetra_mesh">
 			<return type="ArrayTetraMesh4D" />
 			<description>
-				Converts this TetraMesh4D to an [ArrayTetraMesh4D]. Even if the mesh is already an [ArrayTetraMesh4D], this method will make a copy, but this method is intended for converting subtypes such as [BoxTetraMesh4D]. The array mesh will have the same vertices, cells, and material as this mesh. The material will be shared between the two meshes, but everything else will be a copy. Converting a non-array mesh to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or cells.
+				Converts this TetraMesh4D to an [ArrayTetraMesh4D]. Even if the mesh is already an [ArrayTetraMesh4D], this method will make a copy, but this method is intended for converting subtypes such as [BoxTetraMesh4D]. The array mesh will have the same vertices, cells, normals, texture map, material, resource name, and metadata as this mesh. The material will be shared between the two meshes, but everything else will be a copy. Converting a non-array mesh to an array mesh is useful for modifying the geometry of the mesh, such as adding or removing vertices or cells.
 			</description>
 		</method>
 		<method name="to_tetra_mesh">
