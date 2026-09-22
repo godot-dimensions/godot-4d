@@ -35,10 +35,10 @@ private:
 	int _simplexes_accessor_index = -1;
 	bool _polytope_simplexes = false;
 
-	static bool _import_load_cell_vertex_binding_indices(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFMeshSurfaceBinding4D> &p_binding, PackedInt32Array &r_packed_indices, const String &p_binding_name);
-	static bool _import_decode_cell_vertex_binding(const PackedInt32Array &p_packed_indices, const int64_t p_boundary_cell_count, const int64_t p_value_count, Vector<PackedInt32Array> &r_cell_indices, const String &p_binding_name);
+	bool _import_decode_geometry_bindings(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFMeshSurfaceBinding4D> &p_binding, const int64_t p_vertex_count, const int64_t p_edge_count, const Vector<Vector<PackedInt32Array>> &p_separated_geometry, const int64_t p_value_count, HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, const String &p_binding_name) const;
 	static bool _import_pad_simplex_corner_binding(PackedInt32Array &r_indices, const int64_t p_simplex_corner_count, const int32_t p_zero_value_index, const String &p_binding_name);
-	void _export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const bool p_deduplicate);
+	static TypedArray<G4MFMeshSurfaceBindingGeometry4D> _export_encode_geometry_bindings(const Ref<G4MFState4D> &p_g4mf_state, const HashMap<Vector2i, Vector<PackedInt32Array>> &p_indices, const bool p_deduplicate);
+	void _export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, PackedVector4Array &r_normal_values, PackedVector3Array &r_texture_map_values, const bool p_deduplicate);
 	void _export_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate);
 	MeshSurfaceFormat _get_compatible_mesh_surface_format(MeshSurfaceFormat p_preferred_mesh_surface_format) const;
 

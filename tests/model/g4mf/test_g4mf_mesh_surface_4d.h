@@ -22,6 +22,20 @@ static int make_empty_accessor(const Ref<G4MFState4D> &p_state, const int p_vect
 	return index;
 }
 
+// Exported bindings may hold several geometry bindings, such as (3, 0) vertex normals next to (3, 3)
+// boundary normals, in HashMap order. Look up the wanted one by its dimensions instead of by position.
+static Ref<G4MFMeshSurfaceBindingGeometry4D> find_geometry_binding(const Ref<G4MFMeshSurfaceBinding4D> &p_binding, const int p_geometry_dimension, const int p_decompose_dimension) {
+	REQUIRE(p_binding.is_valid());
+	const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_bindings = p_binding->get_geometry_bindings();
+	for (int i = 0; i < geometry_bindings.size(); i++) {
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = geometry_bindings[i];
+		if (geometry_binding.is_valid() && geometry_binding->get_geometry_dimension() == p_geometry_dimension && geometry_binding->get_decompose_dimension() == p_decompose_dimension) {
+			return geometry_binding;
+		}
+	}
+	return Ref<G4MFMeshSurfaceBindingGeometry4D>();
+}
+
 TEST_CASE("[G4MFMeshSurface4D] Poly bindings retain missing cell positions on round trip") {
 	for (const bool deduplicate : { false, true }) {
 		for (int missing_pattern = 0; missing_pattern < 5; missing_pattern++) {
@@ -62,10 +76,14 @@ TEST_CASE("[G4MFMeshSurface4D] Poly bindings retain missing cell positions on ro
 				ERR_PRINT_ON;
 			}
 			REQUIRE(surface.is_valid());
-			const bool has_binding = missing_pattern != 1 && missing_pattern != 2;
-			CHECK(surface->get_normals_binding().is_valid() == has_binding);
-			CHECK(surface->get_texture_map_binding().is_valid() == has_binding);
-			if (has_binding) {
+			const bool has_vertex_binding = missing_pattern != 1 && missing_pattern != 2;
+			// Boundary normals are always exported as a (3, 3) binding, so the normals binding exists
+			// even without vertex normals. Texture maps have no such fallback.
+			CHECK(surface->get_normals_binding().is_valid());
+			CHECK(find_geometry_binding(surface->get_normals_binding(), 3, 3).is_valid());
+			CHECK(find_geometry_binding(surface->get_normals_binding(), 3, 0).is_valid() == has_vertex_binding);
+			CHECK(surface->get_texture_map_binding().is_valid() == has_vertex_binding);
+			if (has_vertex_binding) {
 				for (const Ref<G4MFMeshSurfaceBinding4D> &binding : { surface->get_normals_binding(), surface->get_texture_map_binding() }) {
 					const PackedInt32Array packed = binding->load_geometry_binding_indices(state, 3, 0);
 					int64_t offset = 0;
@@ -87,8 +105,9 @@ TEST_CASE("[G4MFMeshSurface4D] Poly bindings retain missing cell positions on ro
 			REQUIRE(imported.is_valid());
 			CHECK(imported->get_poly_cell_vertex_positions() == source->get_vertex_positions());
 			CHECK(imported->get_poly_cell_indices() == source->get_poly_cell_indices());
-			CHECK(imported->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY) == (has_binding ? normals : Vector<PackedVector4Array>()));
-			CHECK(imported->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY) == (has_binding ? texture : Vector<PackedVector3Array>()));
+			CHECK(imported->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY) == (has_vertex_binding ? normals : Vector<PackedVector4Array>()));
+			CHECK(imported->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY) == (has_vertex_binding ? texture : Vector<PackedVector3Array>()));
+			CHECK(imported->get_poly_cell_boundary_normals() == source->get_poly_cell_boundary_normals());
 			CHECK(imported->is_poly_mesh_data_valid());
 			if (missing_pattern == 0) {
 				const Ref<ArrayTetraMesh4D> tetra = surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions());
@@ -122,7 +141,8 @@ TEST_CASE("[G4MFMeshSurface4D] Invalid packed binding counts and indices are rej
 			const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
 			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
-			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = binding->get_geometry_bindings()[0];
+			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = find_geometry_binding(binding, 3, 0);
+			REQUIRE(geometry_binding.is_valid());
 			geometry_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, packed, 1));
 			ERR_PRINT_OFF;
 			const Ref<ArrayPolyMesh4D> poly_mesh_surface = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
@@ -142,7 +162,8 @@ TEST_CASE("[G4MFMeshSurface4D] Missing accessor objects and truncated buffers fa
 			const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
 			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
-			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = binding->get_geometry_bindings()[0];
+			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = find_geometry_binding(binding, 3, 0);
+			REQUIRE(geometry_binding.is_valid());
 			const int accessor_index = geometry_binding->get_indices_accessor_index();
 			if (corruption == 0) {
 				TypedArray<G4MFAccessor4D> accessors = state->get_g4mf_accessors();
@@ -241,8 +262,14 @@ TEST_CASE("[G4MFMeshSurface4D] Zero-count cell bindings may reference an empty v
 		const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
 		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 		const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
-		const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = binding->get_geometry_bindings()[0];
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = find_geometry_binding(binding, 3, 0);
+		REQUIRE(geometry_binding.is_valid());
 		geometry_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, PackedInt32Array{ 0, 0, 0, 0, 0, 0, 0, 0 }, 1));
+		// Keep only the zero-count binding. The exported (3, 3) boundary normals reference real values,
+		// which an empty values accessor could not satisfy, and they are not what this test is about.
+		TypedArray<G4MFMeshSurfaceBindingGeometry4D> only_zero_count;
+		only_zero_count.append(geometry_binding);
+		binding->set_geometry_bindings(only_zero_count);
 		binding->set_values_accessor_index(make_empty_accessor(state, normal_binding ? 4 : 3));
 		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 		REQUIRE(imported.is_valid());
@@ -382,7 +409,9 @@ TEST_CASE("[G4MFMeshSurface4D] Empty-cell imports and conversions preserve verte
 	const int mesh_index = G4MFMesh4D::export_convert_mesh_into_state(state, source);
 	REQUIRE(mesh_index >= 0);
 	const Ref<G4MFMesh4D> stored_mesh = state->get_g4mf_meshes()[mesh_index];
-	const Ref<TetraMesh4D> imported = stored_mesh->import_generate_new_tetra_mesh(state);
+	const Ref<G4MFMeshSurface4D> stored_surface = stored_mesh->get_surfaces()[0];
+	const PackedVector4Array stored_vertices = stored_mesh->load_vertices(state);
+	const Ref<TetraMesh4D> imported = stored_surface->import_generate_tetra_mesh_surface(state, stored_vertices);
 	REQUIRE(imported.is_valid());
 	CHECK(imported->get_vertex_positions() == vertices);
 	CHECK(imported->get_simplex_cell_vertex_indices().is_empty());
@@ -408,33 +437,90 @@ TEST_CASE("[G4MFMeshSurface4D] Empty-cell imports and conversions preserve verte
 TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import with default values") {
 	Ref<G4MFState4D> state;
 	state.instantiate();
-	const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
+	Ref<ArrayPolyMesh4D> source = make_poly_mesh();
+	// Give the box per-edge-vertex normals so the (1, 0) dense-pair layout is exercised.
+	const PackedInt32Array edge_indices = source->get_edge_indices();
+	const int64_t edge_count = edge_indices.size() / 2;
+	REQUIRE(edge_count > 2);
+	const PackedVector4Array vertices = source->get_vertex_positions();
+	Vector<PackedVector4Array> edge_vertex_normals;
+	for (int64_t edge = 0; edge < edge_count; edge++) {
+		edge_vertex_normals.push_back({ vertices[edge_indices[edge * 2]].normalized(), vertices[edge_indices[edge * 2 + 1]].normalized() });
+	}
+	source->set_poly_cell_dense_normals(Vector2i(1, 0), edge_vertex_normals);
 	REQUIRE(source->is_mesh_data_valid());
-	const int64_t cell_count = source->get_poly_cell_indices()[1].size();
-	REQUIRE(cell_count == 8);
 	const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
 	REQUIRE(surface.is_valid());
 	const Ref<G4MFMeshSurfaceBinding4D> normals_binding = surface->get_normals_binding();
-	const Ref<G4MFMeshSurfaceBinding4D> texture_map_binding = surface->get_texture_map_binding();
 	REQUIRE(normals_binding.is_valid());
-	REQUIRE(texture_map_binding.is_valid());
-	const Ref<G4MFMeshSurfaceBindingGeometry4D> cell_vertex_normals = normals_binding->get_geometry_bindings()[0];
-	REQUIRE(cell_vertex_normals.is_valid());
-	const PackedInt32Array packed = cell_vertex_normals->load_indices(state);
-	// Each packed record is a member count followed by the members, so walk the records to cut between them.
-	auto record_start = [&packed](const int64_t p_record) {
-		int64_t offset = 0;
-		for (int64_t record = 0; record < p_record; record++) {
-			offset += 1 + packed[offset];
-		}
-		return offset;
-	};
-	REQUIRE(record_start(cell_count) == packed.size());
 
-	SUBCASE("A short boundary cell vertex binding leaves the trailing cells without data") {
+	SUBCASE("A short edge-vertex geometry binding keeps the edges it covers") {
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> edge_binding = find_geometry_binding(normals_binding, 1, 0);
+		REQUIRE(edge_binding.is_valid());
+		PackedInt32Array indices = edge_binding->load_indices(state);
+		REQUIRE(indices.size() == edge_count * 2);
+		const int64_t kept_edges = edge_count / 2;
+		indices.resize(kept_edges * 2);
+		edge_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices, 2, false));
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
+		REQUIRE(imported.is_valid());
+		CHECK(imported->is_mesh_data_valid());
+		const Vector<PackedVector4Array> imported_edge_normals = imported->get_poly_cell_dense_normals(Vector2i(1, 0));
+		REQUIRE(imported_edge_normals.size() == kept_edges);
+		for (int64_t edge = 0; edge < kept_edges; edge++) {
+			CHECK(imported_edge_normals[edge] == edge_vertex_normals[edge]);
+		}
+	}
+
+	SUBCASE("An odd number of edge-vertex indices is rejected") {
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> edge_binding = find_geometry_binding(normals_binding, 1, 0);
+		REQUIRE(edge_binding.is_valid());
+		PackedInt32Array indices = edge_binding->load_indices(state);
+		indices.resize(indices.size() - 1);
+		edge_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices, 1, false));
+		ERR_PRINT_OFF;
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
+		ERR_PRINT_ON;
+		CHECK(imported.is_null());
+	}
+
+	SUBCASE("A short simplex corner binding pads the missing corners with a zero value") {
+		REQUIRE(normals_binding->get_simplexes_accessor_index() >= 0);
+		PackedInt32Array corner_indices = normals_binding->load_simplex_indices(state);
+		const int64_t corner_count = source->get_simplex_cell_vertex_indices().size();
+		REQUIRE(corner_indices.size() == corner_count);
+		const int64_t kept_corners = corner_count / 2;
+		corner_indices.resize(kept_corners);
+		normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, corner_indices, 4, false));
+		const Ref<ArrayTetraMesh4D> imported = surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions());
+		REQUIRE(imported.is_valid());
+		CHECK(imported->is_mesh_data_valid());
+		const PackedInt32Array imported_indices = imported->get_simplex_cell_normal_indices();
+		const PackedVector4Array imported_values = imported->get_normal_values();
+		REQUIRE(imported_indices.size() == corner_count);
+		const PackedVector4Array source_values = source->get_normal_values();
+		for (int64_t i = 0; i < corner_count; i++) {
+			if (i < kept_corners) {
+				CHECK(imported_values[imported_indices[i]] == source_values[corner_indices[i]]);
+			} else {
+				CHECK(imported_values[imported_indices[i]] == Vector4());
+			}
+		}
+	}
+
+	SUBCASE("A short boundary cell vertex binding is padded with cells that have no data") {
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> cell_vertex_binding = find_geometry_binding(normals_binding, 3, 0);
+		REQUIRE(cell_vertex_binding.is_valid());
+		const int64_t cell_count = source->get_poly_cell_indices()[1].size();
+		REQUIRE(cell_count == 8);
+		const PackedInt32Array packed = cell_vertex_binding->load_indices(state);
+		// Each packed record is a member count followed by the members, so walk the records to cut between them.
+		int64_t cut = 0;
 		const int64_t kept_cells = 5;
-		const PackedInt32Array short_packed = packed.slice(0, record_start(kept_cells));
-		cell_vertex_normals->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, short_packed, 1));
+		for (int64_t record = 0; record < kept_cells; record++) {
+			cut += 1 + packed[cut];
+		}
+		cell_vertex_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, packed.slice(0, cut), 1, false));
 		ERR_PRINT_OFF; // Validation samples the simplex normals, and the padded cells intentionally have none.
 		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 		REQUIRE(imported.is_valid());
@@ -453,37 +539,29 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 	}
 
 	SUBCASE("More cell records than boundary cells are rejected") {
-		PackedInt32Array long_packed = packed;
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> cell_vertex_binding = find_geometry_binding(normals_binding, 3, 0);
+		REQUIRE(cell_vertex_binding.is_valid());
+		PackedInt32Array long_packed = cell_vertex_binding->load_indices(state);
 		long_packed.append(0); // One extra record with zero members.
-		cell_vertex_normals->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, long_packed, 1));
+		cell_vertex_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, long_packed, 1, false));
 		ERR_PRINT_OFF;
 		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 		ERR_PRINT_ON;
 		CHECK(imported.is_null());
 	}
 
-	SUBCASE("A short simplex corner binding pads the missing corners with a zero value") {
-		REQUIRE(texture_map_binding->get_simplexes_accessor_index() >= 0);
-		PackedInt32Array corner_indices = texture_map_binding->load_simplex_indices(state);
-		const int64_t corner_count = source->get_simplex_cell_vertex_indices().size();
-		REQUIRE(corner_indices.size() == corner_count);
-		const int64_t kept_corners = corner_count / 2;
-		corner_indices.resize(kept_corners);
-		texture_map_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, corner_indices, 4, false));
-		const Ref<ArrayTetraMesh4D> imported = surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions());
+	SUBCASE("A short boundary normals binding is padded and the missing normals are recalculated") {
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> boundary_normals_binding = find_geometry_binding(normals_binding, 3, 3);
+		REQUIRE(boundary_normals_binding.is_valid());
+		PackedInt32Array indices = boundary_normals_binding->load_indices(state);
+		REQUIRE(indices.size() == source->get_poly_cell_indices()[1].size());
+		indices.resize(indices.size() / 2);
+		boundary_normals_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices, 1, false));
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 		REQUIRE(imported.is_valid());
 		CHECK(imported->is_mesh_data_valid());
-		const PackedInt32Array imported_indices = imported->get_simplex_cell_texture_map_indices();
-		const PackedVector3Array imported_values = imported->get_texture_map_values();
-		const PackedVector3Array source_values = source->get_texture_map_values();
-		REQUIRE(imported_indices.size() == corner_count);
-		for (int64_t i = 0; i < corner_count; i++) {
-			if (i < kept_corners) {
-				CHECK(imported_values[imported_indices[i]] == source_values[corner_indices[i]]);
-			} else {
-				CHECK(imported_values[imported_indices[i]] == Vector3());
-			}
-		}
+		// The box's exported normals came from its cell orientations, so recalculating the missing half reproduces them.
+		CHECK(imported->get_poly_cell_boundary_normals() == source->get_poly_cell_boundary_normals());
 	}
 
 	SUBCASE("Simplex corner bindings with a partial simplex or too many corners are rejected") {
