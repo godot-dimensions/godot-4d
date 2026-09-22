@@ -45,8 +45,8 @@ void WireMesh4D::cleanup_fallback_material() {
 	_fallback_material.unref();
 }
 
-void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) {
-	ERR_FAIL_COND(p_proxy_mesh.is_null());
+void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh_3d) {
+	ERR_FAIL_COND(p_proxy_mesh_3d.is_null());
 	// Refuse to build a surface that would overflow Godot's rendering server and crash. See the constants in the header.
 	const PackedVector4Array edges = get_edge_positions();
 	const int64_t edge_count = edges.size() / 2;
@@ -55,21 +55,25 @@ void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mes
 		ERR_FAIL_MSG("WireMesh4D: Mesh '" + get_name() + "' has " + itos(edge_count) + " edges, which would make a proxy surface of " + itos(vert_count) + " vertices and " + itos(vert_count * PROXY_BYTES_PER_VERT) + " bytes, but Godot's rendering server can only handle a surface of at most " + itos(PROXY_MAX_EDGES_PER_SURFACE) + " edges (" + itos(PROXY_MAX_VERTS_PER_SURFACE) + " vertices, " + itos(PROXY_MAX_VERTS_PER_SURFACE * PROXY_BYTES_PER_VERT) + " bytes). This surface will not be rendered. Split the mesh into multiple surfaces with different names or materials, or reduce its detail.");
 	}
 	// Set up SurfaceTool.
-	Ref<SurfaceTool> surface_tool;
-	surface_tool.instantiate();
-	surface_tool->begin(Mesh::PRIMITIVE_LINES);
-	surface_tool->set_custom_format(0, SurfaceTool::CUSTOM_RGBA_FLOAT);
-	Ref<Material4D> material = get_material();
-	if (material.is_valid()) {
-		surface_tool->set_material(material->get_cross_section_material_3d());
+	Ref<SurfaceTool> surface_tool_3d;
+	surface_tool_3d.instantiate();
+	surface_tool_3d->begin(Mesh::PRIMITIVE_LINES);
+	// Set up the custom format flags for the SurfaceTool.
+	surface_tool_3d->set_custom_format(0, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	// Set the material, which SurfaceTool applies to the committed surface.
+	const Ref<Material4D> material_4d = get_material();
+	if (material_4d.is_valid()) {
+		surface_tool_3d->set_material(material_4d->get_cross_section_material_3d());
 	}
 	// Iterate over the mesh data and append it to the SurfaceTool.
 	for (Vector4 edge_vert : edges) {
-		surface_tool->set_custom(0, Vector4D::to_color(edge_vert));
+		surface_tool_3d->set_custom(0, Vector4D::to_color(edge_vert));
 		// Not using these positions because it doesn't fit the full vec4, but might as well set it to something sane.
-		surface_tool->add_vertex(Vector3(edge_vert.x, edge_vert.y, edge_vert.z));
+		surface_tool_3d->add_vertex(Vector3(edge_vert.x, edge_vert.y, edge_vert.z));
 	}
-	surface_tool->commit(p_proxy_mesh);
+	// Commit to the proxy mesh. Note that SurfaceTool adds no surface when there are no vertices,
+	// so an empty mesh results in a proxy mesh with zero surfaces rather than one empty surface.
+	surface_tool_3d->commit(p_proxy_mesh_3d);
 }
 
 void WireMesh4D::_bind_methods() {

@@ -12,7 +12,7 @@
 	<methods>
 		<method name="_append_proxy_mesh_surfaces_3d" qualifiers="virtual">
 			<return type="void" />
-			<param index="0" name="proxy_mesh" type="ArrayMesh" />
+			<param index="0" name="proxy_mesh_3d" type="ArrayMesh" />
 			<description>
 				Callback method that should append surfaces to the given 3D proxy mesh. Do not call this method directly. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method append_proxy_mesh_surfaces_3d] for details.
 			</description>
@@ -32,7 +32,7 @@
 		</method>
 		<method name="append_proxy_mesh_surfaces_3d">
 			<return type="void" />
-			<param index="0" name="proxy_mesh" type="ArrayMesh" />
+			<param index="0" name="proxy_mesh_3d" type="ArrayMesh" />
 			<description>
 				Rebuilds the 3D mesh surfaces used to represent this Mesh4D in 3D-based rendering engines, and commit those surfaces to the given 3D proxy mesh. Existing surfaces will be kept. Can be called to commit the current state to a custom proxy mesh, but typically should only be called internally.
 			</description>

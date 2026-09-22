@@ -28,7 +28,7 @@ public:
 	static constexpr int64_t PROXY_MAX_VERTS_PER_SURFACE = PROXY_MAX_BUFFER_BYTES / PROXY_ATTRIBUTE_BYTES_PER_VERT;
 	static constexpr int64_t PROXY_MAX_EDGES_PER_SURFACE = PROXY_MAX_VERTS_PER_SURFACE / PROXY_VERTS_PER_EDGE;
 
-	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) override;
+	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh_3d) override;
 
 	Ref<Material4D> get_fallback_material() override;
 	static void init_fallback_material();

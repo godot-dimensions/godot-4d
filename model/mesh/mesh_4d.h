@@ -43,7 +43,7 @@ public:
 	// Returns a 3D mesh with the 4D vertex data awkwardly packed into various vertex properties.
 	Ref<ArrayMesh> get_proxy_mesh_3d();
 	// Called when the proxy 3D mesh is requested and has been marked dirty.
-	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh);
+	virtual void append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh_3d);
 
 	// Call when the mesh's data changes in a way that does not need revalidation, such as
 	// transforming the vertex positions, to indicate that the proxy 3D mesh used for rendering

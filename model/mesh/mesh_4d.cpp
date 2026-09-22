@@ -66,8 +66,8 @@ bool Mesh4D::validate_mesh_data() {
 	return ret;
 }
 
-void Mesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) {
-	GDVIRTUAL_CALL(_append_proxy_mesh_surfaces_3d, p_proxy_mesh);
+void Mesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh_3d) {
+	GDVIRTUAL_CALL(_append_proxy_mesh_surfaces_3d, p_proxy_mesh_3d);
 }
 
 PackedVector4Array Mesh4D::get_rect_bounds_bind() {
@@ -111,7 +111,7 @@ void Mesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_rect_bounds"), &Mesh4D::get_rect_bounds_bind);
 
 	ClassDB::bind_method(D_METHOD("get_proxy_mesh_3d"), &Mesh4D::get_proxy_mesh_3d);
-	ClassDB::bind_method(D_METHOD("append_proxy_mesh_surfaces_3d", "proxy_mesh"), &Mesh4D::append_proxy_mesh_surfaces_3d);
+	ClassDB::bind_method(D_METHOD("append_proxy_mesh_surfaces_3d", "proxy_mesh_3d"), &Mesh4D::append_proxy_mesh_surfaces_3d);
 
 	ClassDB::bind_method(D_METHOD("mark_proxy_mesh_3d_dirty"), &Mesh4D::mark_proxy_mesh_3d_dirty);
 	ClassDB::bind_method(D_METHOD("mark_mesh_bounds_and_proxy_mesh_3d_dirty"), &Mesh4D::mark_mesh_bounds_and_proxy_mesh_3d_dirty);
@@ -120,7 +120,7 @@ void Mesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("reset_mesh_data_validation"), &Mesh4D::reset_mesh_data_validation);
 	ClassDB::bind_method(D_METHOD("validate_material_for_mesh", "material"), &Mesh4D::validate_material_for_mesh);
 
-	GDVIRTUAL_BIND(_append_proxy_mesh_surfaces_3d, "proxy_mesh");
+	GDVIRTUAL_BIND(_append_proxy_mesh_surfaces_3d, "proxy_mesh_3d");
 	GDVIRTUAL_BIND(_validate_mesh_data);
 	GDVIRTUAL_BIND(_validate_material_for_mesh, "material");
 }

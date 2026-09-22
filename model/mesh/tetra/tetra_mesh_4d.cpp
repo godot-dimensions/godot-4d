@@ -535,8 +535,8 @@ PackedVector4Array TetraMesh4D::get_simplex_cell_positions() {
 	return _simplex_positions_cache;
 }
 
-void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh) {
-	ERR_FAIL_COND(p_proxy_mesh.is_null());
+void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh_3d) {
+	ERR_FAIL_COND(p_proxy_mesh_3d.is_null());
 	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "TetraMesh4D: Cannot update proxy mesh for an invalid mesh.");
 	// Refuse to build a surface that would overflow Godot's rendering server and crash. See the constants in the header.
 	const int64_t tet_count = get_simplex_cell_vertex_indices().size() / 4;
@@ -545,11 +545,21 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 		ERR_FAIL_MSG("TetraMesh4D: Mesh '" + get_name() + "' has " + itos(tet_count) + " tetrahedra, which would make a proxy surface of " + itos(vert_count) + " vertices and " + itos(vert_count * PROXY_BYTES_PER_VERT) + " bytes, but Godot's rendering server can only handle a surface of at most " + itos(PROXY_MAX_TETS_PER_SURFACE) + " tetrahedra (" + itos(PROXY_MAX_VERTS_PER_SURFACE) + " vertices, " + itos(PROXY_MAX_VERTS_PER_SURFACE * PROXY_BYTES_PER_VERT) + " bytes). This surface will not be rendered. Split the mesh into multiple surfaces with different names or materials, or reduce its detail.");
 	}
 	// Set up SurfaceTool.
-	Ref<SurfaceTool> surface_tool;
-	surface_tool.instantiate();
-	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
-	surface_tool->set_smooth_group(-1);
-
+	Ref<SurfaceTool> surface_tool_3d;
+	surface_tool_3d.instantiate();
+	surface_tool_3d->begin(Mesh::PRIMITIVE_TRIANGLES);
+	surface_tool_3d->set_smooth_group(-1);
+	// Set up the custom format flags for the SurfaceTool.
+	surface_tool_3d->set_custom_format(0, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	surface_tool_3d->set_custom_format(1, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	surface_tool_3d->set_custom_format(2, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	surface_tool_3d->set_custom_format(3, SurfaceTool::CUSTOM_RGBA_FLOAT);
+	// Set the material, which SurfaceTool applies to the committed surface.
+	const Ref<Material4D> material_4d = get_material();
+	if (material_4d.is_valid()) {
+		surface_tool_3d->set_material(material_4d->get_cross_section_material_3d());
+	}
+	// Iterate over the mesh data and append it to the SurfaceTool.
 	const PackedVector4Array cell_positions = get_simplex_cell_positions();
 	const PackedVector4Array cell_normals = get_simplex_cell_boundary_normals();
 	(void)cell_normals; // Unused for now, should be used for smooth shading in the future.
@@ -575,14 +585,6 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 			}
 		}
 	}
-	Ref<Material4D> material = get_material();
-	if (material.is_valid()) {
-		surface_tool->set_material(material->get_cross_section_material_3d());
-	}
-	surface_tool->set_custom_format(0, SurfaceTool::CUSTOM_RGBA_FLOAT);
-	surface_tool->set_custom_format(1, SurfaceTool::CUSTOM_RGBA_FLOAT);
-	surface_tool->set_custom_format(2, SurfaceTool::CUSTOM_RGBA_FLOAT);
-	surface_tool->set_custom_format(3, SurfaceTool::CUSTOM_RGBA_FLOAT);
 	for (int i = 0; i < cell_positions.size(); i += 4) {
 		// Cramming a bunch of data where it fits. Each cell's cross section can be 0-2 triangles. We create two triangles for each cell
 		// with all the info about the cell and figure everything out in the vertex shader after transforms have been applied.
@@ -609,10 +611,10 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 		//// Shared attrs for both triangles:
 
 		// Cell vertex positions: Using custom because there are conveniently four of them and they each take a vector4.
-		surface_tool->set_custom(0, Vector4D::to_color(cell_positions[i]));
-		surface_tool->set_custom(1, Vector4D::to_color(cell_positions[i + 1]));
-		surface_tool->set_custom(2, Vector4D::to_color(cell_positions[i + 2]));
-		surface_tool->set_custom(3, Vector4D::to_color(cell_positions[i + 3]));
+		surface_tool_3d->set_custom(0, Vector4D::to_color(cell_positions[i]));
+		surface_tool_3d->set_custom(1, Vector4D::to_color(cell_positions[i + 1]));
+		surface_tool_3d->set_custom(2, Vector4D::to_color(cell_positions[i + 2]));
+		surface_tool_3d->set_custom(3, Vector4D::to_color(cell_positions[i + 3]));
 
 		// UVW texture coords, need 4*3 float slots.  Using UV, UV2, Normal, Color, vertex.y, and vertex.z.
 		// Normal gets normalized somewhere in the pipeline, so last coord of 1.0 will get set to whatever we need to divide by to get
@@ -621,11 +623,11 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 		const Vector3 &uvw2 = tex_map_values[cell_tex_map_indices[i + 1]];
 		const Vector3 &uvw3 = tex_map_values[cell_tex_map_indices[i + 2]];
 		const Vector3 &uvw4 = tex_map_values[cell_tex_map_indices[i + 3]];
-		surface_tool->set_uv(Vector2(uvw1.x, uvw1.y));
-		surface_tool->set_uv2(Vector2(uvw2.x, uvw2.y));
-		surface_tool->set_normal(Vector3(uvw3.x, uvw3.y, 1.0));
+		surface_tool_3d->set_uv(Vector2(uvw1.x, uvw1.y));
+		surface_tool_3d->set_uv2(Vector2(uvw2.x, uvw2.y));
+		surface_tool_3d->set_normal(Vector3(uvw3.x, uvw3.y, 1.0));
 		// This one gets clamped to [0,1], which should be fine for texture coords.
-		surface_tool->set_color(Color(uvw4.x, uvw4.y, uvw4.z, uvw1.z));
+		surface_tool_3d->set_color(Color(uvw4.x, uvw4.y, uvw4.z, uvw1.z));
 
 		// Not enough slots left for normals. Also interpolating the 4D normals gives weird results, needs more experimentation.
 		// Currently flat normals are computed in the vertex shader.
@@ -633,23 +635,25 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 		//// Vertices:
 
 		// Not storing actual position data in the vertex positions, x is an index, y is UVW data, z is unused.
-		surface_tool->add_vertex(Vector3(0.0, uvw2.z, uvw3.z));
-		surface_tool->add_vertex(Vector3(1.0, uvw2.z, uvw3.z));
-		surface_tool->add_vertex(Vector3(2.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(0.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(1.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(2.0, uvw2.z, uvw3.z));
 
-		surface_tool->add_vertex(Vector3(3.0, uvw2.z, uvw3.z));
-		surface_tool->add_vertex(Vector3(4.0, uvw2.z, uvw3.z));
-		surface_tool->add_vertex(Vector3(5.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(3.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(4.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(5.0, uvw2.z, uvw3.z));
 
-		surface_tool->add_vertex(Vector3(6.0, uvw2.z, uvw3.z));
-		surface_tool->add_vertex(Vector3(7.0, uvw2.z, uvw3.z));
-		surface_tool->add_vertex(Vector3(8.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(6.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(7.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(8.0, uvw2.z, uvw3.z));
 
-		surface_tool->add_vertex(Vector3(9.0, uvw2.z, uvw3.z));
-		surface_tool->add_vertex(Vector3(10.0, uvw2.z, uvw3.z));
-		surface_tool->add_vertex(Vector3(11.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(9.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(10.0, uvw2.z, uvw3.z));
+		surface_tool_3d->add_vertex(Vector3(11.0, uvw2.z, uvw3.z));
 	}
-	surface_tool->commit(p_proxy_mesh);
+	// Commit to the proxy mesh. Note that SurfaceTool adds no surface when there are no vertices,
+	// so an empty mesh results in a proxy mesh with zero surfaces rather than one empty surface.
+	surface_tool_3d->commit(p_proxy_mesh_3d);
 }
 
 void TetraMesh4D::_bind_methods() {
