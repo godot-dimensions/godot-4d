@@ -7,22 +7,9 @@ class G4MFState4D;
 class G4MFMesh4D : public G4MFItem4D {
 	GDCLASS(G4MFMesh4D, G4MFItem4D);
 
-public:
-	// These values need to be kept stable as new ones are introduced.
-	enum MeshFormat {
-		MESH_FORMAT_POLYTOPE = 0,
-		MESH_FORMAT_TETRAHEDRAL = 1,
-		MESH_FORMAT_WIREFRAME = 2,
-	};
-
-private:
 	TypedArray<G4MFMeshSurface4D> _surfaces;
 	Ref<Mesh4D> _godot_mesh_4d;
 	int _vertices_accessor_index = -1;
-
-	Ref<ArrayPolyMesh4D> _generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertex_positions, const int p_surface) const;
-	Ref<ArrayTetraMesh4D> _generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertex_positions, const int p_surface) const;
-	Ref<ArrayWireMesh4D> _generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array p_vertex_positions, const int p_surface) const;
 
 protected:
 	static void _bind_methods();
@@ -34,19 +21,12 @@ public:
 	int get_vertices_accessor_index() const { return _vertices_accessor_index; }
 	void set_vertices_accessor_index(const int p_vertices_accessor_index) { _vertices_accessor_index = p_vertices_accessor_index; }
 
-	bool can_generate_poly_meshes_for_all_surfaces() const;
-	bool can_generate_tetra_meshes_for_all_surfaces() const;
-	G4MFMeshSurface4D::MeshSurfaceFormat get_compatible_mesh_format(G4MFMeshSurface4D::MeshSurfaceFormat p_preferred_mesh_format) const;
 	bool is_equal_exact(const Ref<G4MFMesh4D> &p_other) const;
 
 	PackedVector4Array load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const;
 
-	Ref<PolyMesh4D> import_generate_new_poly_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Ref<TetraMesh4D> import_generate_new_tetra_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
-	Ref<WireMesh4D> import_generate_new_wire_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
-
-	Ref<Mesh4D> import_generate_new_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface = false) const;
-	Ref<Mesh4D> import_get_or_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state, const bool p_force_single_surface = false);
+	Ref<Mesh4D> import_generate_new_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;
+	Ref<Mesh4D> import_get_or_generate_mesh(const Ref<G4MFState4D> &p_g4mf_state);
 
 	static int export_convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, const Ref<Mesh4D> &p_mesh, const bool p_deduplicate = true);
 

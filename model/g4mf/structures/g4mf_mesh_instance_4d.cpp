@@ -1,6 +1,8 @@
 #include "g4mf_mesh_instance_4d.h"
 
 #include "../../mesh/mesh_instance_4d.h"
+#include "../../mesh/multi_surface_mesh_4d.h"
+#include "../../mesh/single_surface_mesh_4d.h"
 #include "../g4mf_state_4d.h"
 
 MeshInstance4D *G4MFMeshInstance4D::import_generate_mesh_instance(const Ref<G4MFState4D> &p_g4mf_state) const {
@@ -23,32 +25,70 @@ MeshInstance4D *G4MFMeshInstance4D::import_generate_mesh_instance(const Ref<G4MF
 	if (g4mf_mesh.is_null()) {
 		return ret_node;
 	}
-	// The override material's class must match the kind of mesh that was generated.
-	const Ref<PolyMesh4D> godot_poly_mesh_4d = godot_mesh_4d;
+	const int64_t material_count = _material_indices.size();
+	if (material_count == 0) {
+		return ret_node; // No material overrides.
+	}
+	const Ref<MultiSurfaceMesh4D> godot_multi_surface_mesh_4d = godot_mesh_4d;
 	const TypedArray<G4MFMeshSurface4D> g4mf_mesh_surfaces = g4mf_mesh->get_surfaces();
 	const TypedArray<G4MFMaterial4D> state_g4mf_materials = p_g4mf_state->get_g4mf_materials();
-	const int64_t mat_and_surface_count = MIN(_material_indices.size(), (int64_t)g4mf_mesh_surfaces.size());
-	for (int64_t surface_index = 0; surface_index < mat_and_surface_count; surface_index++) {
-		int material_index = _material_indices[surface_index];
+	const int64_t surface_count = g4mf_mesh_surfaces.size();
+	// G4MF and MeshInstance4D share the same rule: a single index overrides every surface,
+	// otherwise there is one index per surface, with -1 meaning that surface is not overridden.
+	if (material_count != 1 && material_count != surface_count) {
+		WARN_PRINT("G4MF import: Mesh instance '" + get_item_name() + "' has " + itos(material_count) + " material overrides for a mesh with " + itos(surface_count) + " surfaces. The array should have one entry, or one entry per surface.");
+	}
+	Vector<Ref<Material4D>> material_overrides;
+	material_overrides.resize(surface_count);
+	bool has_any_override = false;
+	for (int64_t override_index = 0; override_index < material_overrides.size(); override_index++) {
+		const int material_index = material_count == 1 ? _material_indices[0] : (override_index < material_count ? _material_indices[override_index] : -1);
 		if (material_index == -1) {
 			continue; // Not overriding a material is allowed.
 		}
 		ERR_FAIL_INDEX_V(material_index, state_g4mf_materials.size(), ret_node);
 		const Ref<G4MFMaterial4D> g4mf_material = state_g4mf_materials[material_index];
-		const Ref<G4MFMeshSurface4D> surface = g4mf_mesh_surfaces[surface_index];
-		ERR_FAIL_COND_V(g4mf_material.is_null() || surface.is_null(), ret_node);
+		ERR_FAIL_COND_V(g4mf_material.is_null(), ret_node);
+		// The override material's class must match the kind of mesh surface that was generated.
+		// Even a single G4MF override may need different runtime material classes for different surfaces.
+		const int64_t surface_index = override_index;
+		Ref<Mesh4D> godot_surface_mesh_4d = godot_mesh_4d;
+		if (godot_multi_surface_mesh_4d.is_valid() && surface_index >= 0 && surface_index < godot_multi_surface_mesh_4d->get_surface_meshes().size()) {
+			godot_surface_mesh_4d = godot_multi_surface_mesh_4d->get_surface_meshes()[surface_index];
+		}
+		if (godot_surface_mesh_4d.is_null()) {
+			continue;
+		}
+		const Ref<PolyMesh4D> godot_poly_mesh_4d = godot_surface_mesh_4d;
+		const Ref<WireMesh4D> godot_wire_mesh_4d = godot_surface_mesh_4d;
 		Ref<Material4D> material;
 		if (godot_poly_mesh_4d.is_valid()) {
 			material = g4mf_material->import_get_or_generate_poly_material(p_g4mf_state);
-		} else if (surface->get_simplexes_accessor_index() < 0) {
+		} else if (godot_wire_mesh_4d.is_valid()) {
 			material = g4mf_material->import_get_or_generate_wire_material(p_g4mf_state);
 		} else {
 			material = g4mf_material->import_get_or_generate_tetra_material(p_g4mf_state);
 		}
 		if (material.is_valid()) {
-			// TODO: Support per-surface material overrides instead of just the single override.
-			ret_node->set_material_override(material);
+			material_overrides.set(override_index, material);
+			has_any_override = true;
 		}
+	}
+	if (has_any_override) {
+		// Keep the single-override representation when every surface can use the same cached material.
+		if (material_count == 1 && material_overrides.size() > 1) {
+			bool all_same = true;
+			for (int64_t i = 1; i < material_overrides.size(); i++) {
+				if (material_overrides[i] != material_overrides[0]) {
+					all_same = false;
+					break;
+				}
+			}
+			if (all_same) {
+				material_overrides.resize(1);
+			}
+		}
+		ret_node->set_material_overrides(material_overrides);
 	}
 	return ret_node;
 }
@@ -62,12 +102,41 @@ Ref<G4MFMeshInstance4D> G4MFMeshInstance4D::export_convert_mesh_instance(const R
 	if (mesh.is_valid()) {
 		const int mesh_index = G4MFMesh4D::export_convert_mesh_into_state(p_g4mf_state, mesh, true);
 		ret->set_mesh_index(mesh_index);
-		Ref<Material4D> material = p_mesh_instance->get_material_override();
-		if (material.is_valid()) {
+		const Vector<Ref<Material4D>> material_overrides = p_mesh_instance->get_material_overrides();
+		if (!material_overrides.is_empty()) {
+			// G4MF and MeshInstance4D share the same rule: a single index overrides every surface, otherwise
+			// there must be one index per surface of the mesh, with -1 meaning that surface is not overridden.
 			PackedInt32Array material_indices;
-			// TODO: Support per-surface material overrides instead of just the single override.
-			material_indices.append(G4MFMaterial4D::export_convert_material_into_state(p_g4mf_state, material, true));
-			ret->set_material_indices(material_indices);
+			bool has_any_override = false;
+			if (material_overrides.size() == 1) {
+				const int material_index = material_overrides[0].is_valid() ? G4MFMaterial4D::export_convert_material_into_state(p_g4mf_state, material_overrides[0], true) : -1;
+				material_indices.append(material_index);
+				has_any_override = material_index >= 0;
+			} else {
+				// Null surfaces of a MultiSurfaceMesh4D are not exported, so walk the mesh's surfaces and skip
+				// the null ones to keep the material indices aligned with the G4MF surfaces that were exported.
+				Vector<Ref<SingleSurfaceMesh4D>> surface_meshes;
+				const Ref<MultiSurfaceMesh4D> multi_surface_mesh = mesh;
+				if (multi_surface_mesh.is_valid()) {
+					surface_meshes = multi_surface_mesh->get_surface_meshes();
+				} else {
+					surface_meshes.append(mesh);
+				}
+				for (int64_t surface_index = 0; surface_index < surface_meshes.size(); surface_index++) {
+					if (surface_meshes[surface_index].is_null()) {
+						continue;
+					}
+					int material_index = -1;
+					if (surface_index < material_overrides.size() && material_overrides[surface_index].is_valid()) {
+						material_index = G4MFMaterial4D::export_convert_material_into_state(p_g4mf_state, material_overrides[surface_index], true);
+					}
+					material_indices.append(material_index);
+					has_any_override = has_any_override || material_index >= 0;
+				}
+			}
+			if (has_any_override) {
+				ret->set_material_indices(material_indices);
+			}
 		}
 	}
 	return ret;

@@ -1,6 +1,7 @@
 #include "g4mf_document_4d.h"
 
 #include "../mesh/mesh_instance_4d.h"
+#include "../mesh/multi_surface_mesh_4d.h"
 #include "../off/off_document_4d.h"
 #include "structures/g4mf_model_4d.h"
 
@@ -1224,72 +1225,41 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 	const int mesh_count = state_g4mf_meshes.size();
 	const TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	const int node_count = state_g4mf_nodes.size();
-	// Figure out what mesh format to use based on:
-	// - The preferred mesh format set in the state.
-	// - What's possible to generate from the meshes in the file.
-	G4MFMeshSurface4D::MeshSurfaceFormat mesh_format = p_g4mf_state->get_preferred_mesh_surface_format();
-	if (mesh_format != G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME) {
-		for (int i = 0; i < mesh_count; i++) {
-			Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[i];
-			mesh_format = g4mf_mesh->get_compatible_mesh_format(mesh_format);
-			if (mesh_format == G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME) {
-				break;
-			}
-		}
-	}
-	// Generate the combined mesh in the best possible format.
-	Ref<Mesh4D> combined_mesh;
+	// Meshes are generated lazily and cached on each G4MFMesh4D, so instancing a mesh many times only generates it once.
+	Ref<MultiSurfaceMesh4D> combined_mesh;
+	combined_mesh.instantiate();
+	// Iterate over all mesh nodes. `import_generate_godot_mesh` only calls this function when there are nodes.
 	for (int i = 0; i < node_count; i++) {
 		const Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[i];
 		const Ref<G4MFMeshInstance4D> mesh_instance = g4mf_node->get_mesh_instance();
-		if (mesh_instance.is_null()) {
-			continue;
+		if (likely(mesh_instance.is_null())) {
+			continue; // Expected, don't error: Nodes are often not mesh instances.
 		}
 		const int mesh_index = mesh_instance->get_mesh_index();
 		if (mesh_index < 0) {
-			continue;
+			continue; // Unusual but valid, don't error: Mesh instances usually have a valid mesh index.
 		}
 		if (!(p_include_invisible || g4mf_node->get_visible())) {
-			continue;
+			continue; // Skip invisible nodes unless explicitly included.
 		}
 		ERR_FAIL_INDEX_V(mesh_index, mesh_count, Ref<Mesh4D>());
-		Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
-		switch (mesh_format) {
-			case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE: {
-				Ref<ArrayPolyMesh4D> combined_poly_mesh = combined_mesh;
-				if (combined_poly_mesh.is_null()) {
-					combined_poly_mesh.instantiate();
-					combined_mesh = combined_poly_mesh;
-				}
-				Ref<ArrayPolyMesh4D> this_poly_mesh = g4mf_mesh->import_generate_new_poly_mesh(p_g4mf_state);
-				if (this_poly_mesh.is_valid()) {
-					combined_poly_mesh->merge_with(this_poly_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
-				}
-			} break;
-			case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_TETRAHEDRAL: {
-				Ref<ArrayTetraMesh4D> combined_tetra_mesh = combined_mesh;
-				if (combined_tetra_mesh.is_null()) {
-					combined_tetra_mesh.instantiate();
-					combined_mesh = combined_tetra_mesh;
-				}
-				Ref<ArrayTetraMesh4D> this_tetra_mesh = g4mf_mesh->import_generate_new_tetra_mesh(p_g4mf_state);
-				if (this_tetra_mesh.is_valid()) {
-					combined_tetra_mesh->merge_with(this_tetra_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
-				}
-			} break;
-			case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME: {
-				Ref<ArrayWireMesh4D> combined_wire_mesh = combined_mesh;
-				if (combined_wire_mesh.is_null()) {
-					combined_wire_mesh.instantiate();
-					combined_mesh = combined_wire_mesh;
-				}
-				Ref<ArrayWireMesh4D> this_wire_mesh = g4mf_mesh->import_generate_new_wire_mesh(p_g4mf_state);
-				if (this_wire_mesh.is_valid()) {
-					combined_wire_mesh->merge_with(this_wire_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
-				}
-			} break;
-		}
+		const Ref<G4MFMesh4D> g4mf_mesh = state_g4mf_meshes[mesh_index];
+		ERR_FAIL_COND_V(g4mf_mesh.is_null(), Ref<Mesh4D>());
+		const Ref<Mesh4D> generated_mesh = g4mf_mesh->import_get_or_generate_mesh(p_g4mf_state);
+		// One broken mesh should not take the rest of the scene down with it, so skip it and keep going.
+		ERR_CONTINUE_MSG(generated_mesh.is_null(), "G4MF import: Failed to generate mesh " + itos(mesh_index) + " for node '" + g4mf_node->get_name() + "', so it is left out of the combined mesh.");
+		combined_mesh->merge_with(generated_mesh, g4mf_node->get_scene_global_transform(p_g4mf_state));
 	}
+	combined_mesh->merge_compatible_surfaces();
+	const Vector<Ref<SingleSurfaceMesh4D>> &surface_meshes = combined_mesh->get_surface_meshes();
+	const int64_t surface_count = surface_meshes.size();
+	if (surface_count == 1) {
+		// If there's only one surface, return it as a single surface mesh.
+		return surface_meshes[0];
+	} else if (surface_count == 0) {
+		WARN_PRINT("G4MFDocument4D: Combined mesh has no surfaces. This G4MF file seems to have no visible meshes in the scene. Returning an empty multi-surface mesh.");
+	}
+	// If there are multiple surfaces, return the combined multi-surface mesh.
 	return combined_mesh;
 }
 

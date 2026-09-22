@@ -197,7 +197,8 @@ bool G4MFMeshSurface4D::_import_decode_geometry_bindings(const Ref<G4MFState4D> 
 			// is equal to "geometryDimension", are stored as a dense array of indices,
 			// where each index corresponds to a geometry item of the specified geometry dimension.
 			// There is no need to store an amount of members, because it is always 1.
-			// Fewer indices than geometry items is allowed, since trailing items may have no data.
+			// Fewer indices than geometry items is allowed, since trailing items may have no data. This happens for
+			// per-vertex bindings of multi-surface meshes, where a surface only spans the shared vertices it uses.
 			ERR_FAIL_COND_V_MSG(packed_count > geometry_item_count, false, "G4MFMeshSurface4D: " + p_binding_name + " geometry binding " + String(key) + " has " + itos(packed_count) + " indices, but the surface only has " + itos(geometry_item_count) + " geometry items of that dimension.");
 			poly_cell_indices.append(packed_indices);
 		} else if (key.x == 1 && key.y == 0) {
@@ -424,16 +425,22 @@ Ref<ArrayWireMesh4D> G4MFMeshSurface4D::import_generate_wire_mesh_surface(const 
 }
 
 Ref<SingleSurfaceMesh4D> G4MFMeshSurface4D::import_generate_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
+	Ref<SingleSurfaceMesh4D> single_surface_mesh;
 	const G4MFMeshSurface4D::MeshSurfaceFormat compatible_mesh_surface_format = _get_compatible_mesh_surface_format(p_g4mf_state->get_preferred_mesh_surface_format());
 	switch (compatible_mesh_surface_format) {
-		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE:
-			return import_generate_poly_mesh_surface(p_g4mf_state, p_vertices);
-		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_TETRAHEDRAL:
-			return import_generate_tetra_mesh_surface(p_g4mf_state, p_vertices);
-		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME:
-			return import_generate_wire_mesh_surface(p_g4mf_state, p_vertices);
+		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE: {
+			single_surface_mesh = import_generate_poly_mesh_surface(p_g4mf_state, p_vertices);
+		} break;
+		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_TETRAHEDRAL: {
+			single_surface_mesh = import_generate_tetra_mesh_surface(p_g4mf_state, p_vertices);
+		} break;
+		case G4MFMeshSurface4D::MESH_SURFACE_FORMAT_WIREFRAME: {
+			single_surface_mesh = import_generate_wire_mesh_surface(p_g4mf_state, p_vertices);
+		} break;
 	}
-	ERR_FAIL_V_MSG(Ref<SingleSurfaceMesh4D>(), "G4MFMeshSurface4D::import_generate_mesh_surface: No compatible mesh format found for the mesh.");
+	ERR_FAIL_COND_V_MSG(single_surface_mesh.is_null(), single_surface_mesh, "G4MFMeshSurface4D::import_generate_mesh_surface: No compatible mesh format found for the mesh.");
+	single_surface_mesh->set_name(get_item_name());
+	return single_surface_mesh;
 }
 
 void G4MFMeshSurface4D::_export_reposition_vertex_binding_to_shared(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, const PackedInt32Array &p_vertex_old_to_shared_map) {
@@ -658,13 +665,50 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(
 	ERR_FAIL_COND_V_MSG(!p_surface_mesh->is_mesh_data_valid(), Ref<G4MFMeshSurface4D>(), "G4MFMeshSurface4D: Cannot convert the mesh surface '" + p_surface_mesh->get_name() + "' to G4MF because its mesh data is invalid.");
 	Ref<G4MFMeshSurface4D> surface;
 	surface.instantiate();
+	surface->set_item_name(p_surface_mesh->get_name());
 	// G4MF meshes store vertex positions in a shared vertices accessor, so we need to add the surface's vertices to the shared array.
 	const PackedVector4Array vertex_positions = p_surface_mesh->get_vertex_positions();
+	const Ref<PolyMesh4D> poly_mesh = p_surface_mesh;
 	PackedInt32Array vertex_old_to_shared_map;
 	vertex_old_to_shared_map.resize(vertex_positions.size());
 	if (p_deduplicate) {
+		PackedInt32Array vertex_normal_indices;
+		PackedInt32Array vertex_texture_map_indices;
+		if (poly_mesh.is_valid()) {
+			const HashMap<Vector2i, Vector<PackedInt32Array>> normal_indices = poly_mesh->get_all_poly_cell_normal_indices();
+			const HashMap<Vector2i, Vector<PackedInt32Array>> texture_map_indices = poly_mesh->get_all_poly_cell_texture_map_indices();
+			const Vector<PackedInt32Array> *normal_binding = normal_indices.getptr(Vector2i(0, 0));
+			const Vector<PackedInt32Array> *texture_map_binding = texture_map_indices.getptr(Vector2i(0, 0));
+			if (normal_binding != nullptr && !normal_binding->is_empty()) {
+				vertex_normal_indices = (*normal_binding)[0];
+			}
+			if (texture_map_binding != nullptr && !texture_map_binding->is_empty()) {
+				vertex_texture_map_indices = (*texture_map_binding)[0];
+			}
+		}
+		// Dense bindings belong to this surface. Other surfaces can share its positions with different
+		// bindings, but two local vertices must not scatter conflicting bindings onto the same shared index.
+		HashMap<int32_t, Vector2i> shared_vertex_bindings;
 		for (int64_t i = 0; i < vertex_positions.size(); i++) {
-			const int64_t shared_index = Vector4D::vector4_array_append_deduplicate(r_shared_vertices, vertex_positions[i]);
+			if (vertex_normal_indices.is_empty() && vertex_texture_map_indices.is_empty()) {
+				vertex_old_to_shared_map.set(i, (int32_t)Vector4D::vector4_array_append_deduplicate(r_shared_vertices, vertex_positions[i]));
+				continue;
+			}
+			const Vector2i bindings(i < vertex_normal_indices.size() ? vertex_normal_indices[i] : -1, i < vertex_texture_map_indices.size() ? vertex_texture_map_indices[i] : -1);
+			int64_t shared_index = 0;
+			for (; shared_index < r_shared_vertices.size(); shared_index++) {
+				if (r_shared_vertices[shared_index] != vertex_positions[i]) {
+					continue;
+				}
+				const Vector2i *existing_bindings = shared_vertex_bindings.getptr((int32_t)shared_index);
+				if (existing_bindings == nullptr || *existing_bindings == bindings) {
+					break;
+				}
+			}
+			if (shared_index == r_shared_vertices.size()) {
+				r_shared_vertices.append(vertex_positions[i]);
+			}
+			shared_vertex_bindings.insert((int32_t)shared_index, bindings);
 			vertex_old_to_shared_map.set(i, (int32_t)shared_index);
 		}
 	} else {
@@ -685,7 +729,6 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(
 	}
 	PackedVector4Array normal_values = p_surface_mesh->get_normal_values();
 	PackedVector3Array texture_map_values = p_surface_mesh->get_texture_map_values();
-	const Ref<PolyMesh4D> poly_mesh = p_surface_mesh;
 	bool export_edges = true;
 	if (poly_mesh.is_valid()) {
 		// A poly mesh can have geometry bindings but no exposed simplexes. If that happens, these will be empty.

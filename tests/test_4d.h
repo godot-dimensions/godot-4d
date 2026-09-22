@@ -17,6 +17,7 @@
 
 // Model.
 #include "model/g4mf/test_g4mf_material_4d.h"
+#include "model/g4mf/test_g4mf_mesh_4d.h"
 #include "model/g4mf/test_g4mf_mesh_surface_4d.h"
 #include "model/mesh/poly/test_array_poly_mesh_4d.h"
 #include "model/mesh/poly/test_poly_material_4d.h"

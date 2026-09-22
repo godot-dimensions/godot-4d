@@ -5,32 +5,20 @@
 	</brief_description>
 	<description>
 		G4MFMesh4D is a class for 4D meshes in the G4MF format. It is used to represent visual geometry found in a G4MF scene. It may be attached to G4MF nodes using a [G4MFMeshInstance4D] so that it may be rendered in the Godot scene at the given transform. A mesh is a collection of surfaces, each of which may have different materials.
-		[b]Note:[/b] Godot 4D currently only supports one surface per mesh, but multiple surfaces are allowed in the G4MF format.
+		A mesh with a single surface imports as that surface's [ArrayPolyMesh4D], [ArrayTetraMesh4D], or [ArrayWireMesh4D], and a mesh with multiple surfaces imports as a [MultiSurfaceMesh4D] containing one of those per surface. See [method import_generate_new_mesh].
 	</description>
 	<tutorials>
 		<link title="G4MF Mesh Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/mesh.md</link>
 		<link title="G4MF Mesh Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf.mesh.schema.json</link>
 	</tutorials>
 	<methods>
-		<method name="can_generate_poly_meshes_for_all_surfaces" qualifiers="const">
-			<return type="bool" />
-			<description>
-				Checks if all surfaces in the mesh can generate polytope meshes, meaning that they all have a non-negative [member G4MFMeshSurface4D.geometry_accessor_indices] that refers to valid polytope geometry data. This does not check if the accessor exists or if it contains valid data. Returns [code]true[/code] if all surfaces can generate polytope meshes, and returns [code]false[/code] if even one surface cannot.
-			</description>
-		</method>
-		<method name="can_generate_tetra_meshes_for_all_surfaces" qualifiers="const">
-			<return type="bool" />
-			<description>
-				Checks if all surfaces in the mesh can generate tetrahedral meshes, meaning that they all have a non-negative [member G4MFMeshSurface4D.simplexes_accessor_index]. This does not check if the accessor exists or if it contains valid data. Returns [code]true[/code] if all surfaces can generate tetrahedral meshes, and returns [code]false[/code] if even one surface cannot.
-			</description>
-		</method>
 		<method name="export_convert_mesh_into_state" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="mesh" type="Mesh4D" />
 			<param index="2" name="deduplicate" type="bool" default="true" />
 			<description>
-				Converts the given [Mesh4D] into a [G4MFMesh4D] inside of the [G4MFState4D], encoding all data of the mesh inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF, and is the inverse of [method import_generate_new_mesh]. The mesh's vertices are encoded into one shared vertices accessor, which the surface's edges, simplexes, and vertex bindings reference, deduplicating identical vertex positions if [param deduplicate] is [code]true[/code]. For polyhedral meshes, every normal and texture map binding is exported as a geometry binding keyed by its geometry and decomposition dimensions, and the boundary normals are always exported as the [code](3, 3)[/code] geometry binding. Cells without vertex normals or texture mapping retain empty entries in the packed geometry bindings, so later cells keep their corresponding data, and if no cell has data for a binding, that geometry binding is omitted. The mesh data must be valid, otherwise this fails. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the index of the new mesh will be returned, which may be used on nodes or anything else. If this function fails, it will return [code]-1[/code].
+				Converts the given [Mesh4D] into a [G4MFMesh4D] inside of the [G4MFState4D], encoding all data of the mesh inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF, and is the inverse of [method import_generate_new_mesh]. The mesh's name becomes the [G4MFMesh4D] name. For a [MultiSurfaceMesh4D], each surface's name also becomes the name of its [G4MFMeshSurface4D], while a [SingleSurfaceMesh4D] leaves its one surface unnamed since the mesh already carries the name. The mesh's vertices are encoded into one shared vertices accessor, which the surface's edges, simplexes, and vertex bindings reference, deduplicating identical vertex positions if [param deduplicate] is [code]true[/code], while keeping vertices separate when their per-vertex normal or texture map bindings conflict within a surface. For polyhedral meshes, every normal and texture map binding is exported as a geometry binding keyed by its geometry and decomposition dimensions, and the boundary normals are always exported as the [code](3, 3)[/code] geometry binding. Cells without vertex normals or texture mapping retain empty entries in the packed geometry bindings, so later cells keep their corresponding data, and if no cell has data for a binding, that geometry binding is omitted. The mesh data must be valid, otherwise this fails. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the index of the new mesh will be returned, which may be used on nodes or anything else. If this function fails, it will return [code]-1[/code].
 			</description>
 		</method>
 		<method name="from_dictionary" qualifiers="static">
@@ -43,16 +31,14 @@
 		<method name="import_generate_new_mesh" qualifiers="const">
 			<return type="Mesh4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="force_single_surface" type="bool" default="false" />
 			<description>
-				Generates a [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. This will create either an [ArrayPolyMesh4D], [ArrayTetraMesh4D], or [ArrayWireMesh4D] and return it, always creating a new object, which is not cached. This is used for importing a mesh from G4MF, and is the inverse of [method export_convert_mesh_into_state].
-				The mesh will be polyhedral if [member G4MFState4D.preferred_mesh_surface_format] is [constant G4MFMeshSurface4D.MESH_SURFACE_FORMAT_POLYTOPE] and the mesh can be generated as a polytope mesh. Otherwise, the mesh will be tetrahedral if [member G4MFState4D.preferred_mesh_surface_format] is [constant G4MFMeshSurface4D.MESH_SURFACE_FORMAT_TETRAHEDRAL] or [constant G4MFMeshSurface4D.MESH_SURFACE_FORMAT_POLYTOPE], and the mesh can be generated as a tetrahedral mesh. Otherwise, the mesh will be wireframe.
+				Generates a [Mesh4D] from the [G4MFMesh4D] data inside of the [G4MFState4D]. For meshes with a single surface, this will create either an [ArrayPolyMesh4D], [ArrayTetraMesh4D], or [ArrayWireMesh4D] and return it, named after the mesh if the mesh has a name, otherwise after the surface. For meshes with multiple surfaces, this will create a [MultiSurfaceMesh4D] named after the mesh, containing all the surfaces, where each surface is one of those array mesh types. Surfaces keep their own names, and a surface without a name is named after the mesh followed by [code]_Surface[/code] and its index. A surface that fails to generate is kept as a null entry, so that the indices of the other surfaces still match the G4MF surfaces, which [member G4MFMeshInstance4D.material_indices] relies on. This always creates a new object, which is not cached; see [method import_get_or_generate_mesh] for the cached version. This is used for importing a mesh from G4MF, and is the inverse of [method export_convert_mesh_into_state].
+				Each surface will be polyhedral if [member G4MFState4D.preferred_mesh_surface_format] is [constant G4MFMeshSurface4D.MESH_SURFACE_FORMAT_POLYTOPE] and the surface can be generated as a polytope mesh. Otherwise, the surface will be tetrahedral if [member G4MFState4D.preferred_mesh_surface_format] is [constant G4MFMeshSurface4D.MESH_SURFACE_FORMAT_TETRAHEDRAL] or [constant G4MFMeshSurface4D.MESH_SURFACE_FORMAT_POLYTOPE], and the surface can be generated as a tetrahedral mesh. Otherwise, the surface will be wireframe.
 			</description>
 		</method>
 		<method name="import_get_or_generate_mesh">
 			<return type="Mesh4D" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="force_single_surface" type="bool" default="false" />
 			<description>
 				Returns a cached [Mesh4D] from the G4MF mesh data if it exists, or generates a new one if it does not. See [method import_generate_new_mesh] for details of how the mesh is generated.
 			</description>

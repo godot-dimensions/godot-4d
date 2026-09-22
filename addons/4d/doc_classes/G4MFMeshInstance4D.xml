@@ -16,7 +16,7 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="mesh_instance" type="MeshInstance4D" />
 			<description>
-				Converts the given [MeshInstance4D] into a [G4MFMeshInstance4D] which can be used on a [G4MFNode4D]. This function wraps around [method G4MFMesh4D.export_convert_mesh_into_state] to convert the mesh of the [MeshInstance4D] into a [G4MFMesh4D] in the [G4MFState4D], and then includes material overrides if the [MeshInstance4D] has a material override. This is used for exporting the mesh to G4MF, and is the inverse of [method import_generate_mesh_instance]. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the returned [G4MFMeshInstance4D] refers to it by index, so it can be set on a [G4MFNode4D].
+				Converts the given [MeshInstance4D] into a [G4MFMeshInstance4D] which can be used on a [G4MFNode4D]. This function wraps around [method G4MFMesh4D.export_convert_mesh_into_state] to convert the mesh of the [MeshInstance4D] into a [G4MFMesh4D] in the [G4MFState4D], and then converts the [member MeshInstance4D.material_overrides] into [member material_indices], with [code]-1[/code] for surfaces that are not overridden. This is used for exporting the mesh to G4MF, and is the inverse of [method import_generate_mesh_instance]. The [G4MFMesh4D] will be added to the [G4MFState4D]'s meshes array, and the returned [G4MFMeshInstance4D] refers to it by index, so it can be set on a [G4MFNode4D].
 			</description>
 		</method>
 		<method name="from_dictionary" qualifiers="static">
@@ -42,7 +42,7 @@
 	</methods>
 	<members>
 		<member name="material_indices" type="PackedInt32Array" setter="set_material_indices" getter="get_material_indices" default="PackedInt32Array()">
-			The indices of material overrides for the surfaces of the mesh referenced to by this mesh instance. Each index is the index of a [G4MFMaterial4D] in the [member G4MFState4D.g4mf_materials] array. If this array is empty or not present, no material overrides are applied. If some items are [code]-1[/code], the corresponding surface will not have a material override, and will use the material defined on the mesh itself instead.
+			The indices of material overrides for the surfaces of the mesh referenced to by this mesh instance. Each index is the index of a [G4MFMaterial4D] in the [member G4MFState4D.g4mf_materials] array. If this array is empty or not present, no material overrides are applied. If some items are [code]-1[/code], the corresponding surface will not have a material override, and will use the material defined on the mesh itself instead. As with [member MeshInstance4D.material_overrides], an array with a single index overrides every surface of the mesh, otherwise the array has one index per surface. On import, a single index may become multiple runtime material overrides so that each generated surface receives the appropriate material class.
 		</member>
 		<member name="mesh_index" type="int" setter="set_mesh_index" getter="get_mesh_index" default="-1">
 			The index of the [G4MFMesh4D] in the [member G4MFState4D.g4mf_meshes] array that this mesh instance references. If this is not a valid index, this mesh instance does not reference any mesh.
