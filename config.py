@@ -42,7 +42,6 @@ def get_doc_classes():
 		"BoxPolyMesh4D",
 		"BoxTetraMesh4D",
 		"BoxWireMesh4D",
-		"OFFDocument4D",
 		"OrthoplexPolyMesh4D",
 		"OrthoplexTetraMesh4D",
 		"OrthoplexWireMesh4D",
@@ -60,6 +59,7 @@ def get_doc_classes():
 		"WireMeshBuilder4D",
 		# Depends on mesh.
 		"Marker4D",
+		"OFFDocument4D",
 		# Physics.
 		"Area4D",
 		"BoxShape4D",

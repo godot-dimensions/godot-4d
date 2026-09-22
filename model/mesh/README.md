@@ -1,4 +1,4 @@
-# 4D Mesh Type Comparison
+# Godot 4D Mesh Type Comparison
 
 Godot 4D provides 3 main mesh types for representing visible 4D geometry:
 

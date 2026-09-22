@@ -149,6 +149,79 @@ int64_t ArrayPolyMesh4D::append_poly_cell(const int32_t p_dimension, const Packe
 	return existing_cell_count;
 }
 
+// Lightweight alternative to `merge_with` that does not handle bindings or deduplication.
+// Deduplicating elements is a relatively expensive operation, so it should be done explicitly
+// by the caller as needed by calling `deduplicate_all_elements` after appending everything.
+// This is meant for internal performance, so it is not exposed unless we later find a need for it.
+int64_t ArrayPolyMesh4D::append_poly_hierarchy(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_edge_vertex_indices) {
+	ERR_FAIL_COND_V(p_edge_vertex_indices.size() % 2 != 0, -1);
+	const int64_t edges_to_append = p_edge_vertex_indices.size() / 2;
+	const int64_t vert_pos_count = _poly_cell_vertex_positions.size();
+	const int64_t input_poly_dim_indices_count = p_poly_cell_indices.size();
+	// Validate all of the input before mutating anything, so that invalid input (such as a file's
+	// out-of-range vertex indices) fails cleanly and leaves the mesh and its caches untouched.
+	for (int64_t i = 0; i < p_edge_vertex_indices.size(); i++) {
+		ERR_FAIL_INDEX_V_MSG(p_edge_vertex_indices[i], vert_pos_count, -1, "ArrayPolyMesh4D: Cannot append a poly hierarchy whose edges reference vertex " + itos(p_edge_vertex_indices[i]) + ", the mesh only has " + itos(vert_pos_count) + " vertices.");
+	}
+	{
+		int64_t prev_dim_element_count = edges_to_append;
+		for (int64_t poly_dim_index = 0; poly_dim_index < input_poly_dim_indices_count; poly_dim_index++) {
+			const Vector<PackedInt32Array> &poly_dim_to_append = p_poly_cell_indices[poly_dim_index];
+			for (const PackedInt32Array &cell : poly_dim_to_append) {
+				for (const int32_t elem : cell) {
+					ERR_FAIL_INDEX_V_MSG(elem, prev_dim_element_count, -1, "ArrayPolyMesh4D: Cannot append a poly hierarchy whose " + itos(poly_dim_index + 2) + "D cells reference element " + itos(elem) + ", the hierarchy only has " + itos(prev_dim_element_count) + " elements of the lower dimension.");
+				}
+			}
+			prev_dim_element_count = poly_dim_to_append.size();
+		}
+	}
+	if (_poly_cell_indices.size() < input_poly_dim_indices_count) {
+		_poly_cell_indices.resize(input_poly_dim_indices_count);
+	}
+	// Insert edge indices and keep track of their new locations.
+	PackedInt32Array poly_remap;
+	poly_remap.resize(edges_to_append);
+	for (int64_t edge_index = 0; edge_index < edges_to_append; edge_index++) {
+		int32_t edge_index_a = p_edge_vertex_indices[edge_index * 2];
+		int32_t edge_index_b = p_edge_vertex_indices[edge_index * 2 + 1];
+		ERR_FAIL_INDEX_V(edge_index_a, vert_pos_count, -1);
+		ERR_FAIL_INDEX_V(edge_index_b, vert_pos_count, -1);
+		if (edge_index_a > edge_index_b) {
+			SWAP(edge_index_a, edge_index_b);
+		}
+		poly_remap.set(edge_index, _edge_vertex_indices.size() / 2);
+		_edge_vertex_indices.append(edge_index_a);
+		_edge_vertex_indices.append(edge_index_b);
+	}
+	// Insert faces, cells, volumes, and so on. Read the previous dim remap, write to the next dim remap.
+	PackedInt32Array next_poly_remap;
+	int64_t prev_dim_to_append_cell_count = edges_to_append;
+	for (int64_t poly_dim_index = 0; poly_dim_index < input_poly_dim_indices_count; poly_dim_index++) {
+		Vector<PackedInt32Array> &own_poly_dim = _poly_cell_indices.write[poly_dim_index];
+		const Vector<PackedInt32Array> &poly_dim_to_append = p_poly_cell_indices[poly_dim_index];
+		const int64_t next_dim_to_append_cell_count = poly_dim_to_append.size();
+		next_poly_remap.resize(next_dim_to_append_cell_count);
+		for (int64_t cell_index = 0; cell_index < next_dim_to_append_cell_count; cell_index++) {
+			PackedInt32Array cell = poly_dim_to_append[cell_index];
+			for (int64_t i = 0; i < cell.size(); i++) {
+				const int64_t elem = (int64_t)cell[i];
+				ERR_FAIL_INDEX_V(elem, prev_dim_to_append_cell_count, -1);
+				cell.set(i, poly_remap[elem]);
+			}
+			next_poly_remap.set(cell_index, own_poly_dim.size());
+			own_poly_dim.append(cell);
+		}
+		poly_remap = next_poly_remap;
+		prev_dim_to_append_cell_count = next_dim_to_append_cell_count;
+	}
+	// Validation must be reset by the end of this function.
+	poly_mesh_clear_cache();
+	if (prev_dim_to_append_cell_count == 1) {
+		return poly_remap[0];
+	}
+	return -1;
+}
+
 int32_t ArrayPolyMesh4D::append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices) {
 	const int64_t vertex_pos_count = _poly_cell_vertex_positions.size();
 	ERR_FAIL_COND_V_MSG(vertex_pos_count > MAX_POLY_VERTICES, -1, "ArrayPolyMesh4D: Cannot add more vertices to the mesh. Maximum vertex count exceeded.");
@@ -376,7 +449,7 @@ void ArrayPolyMesh4D::_delete_edge_internal(const int32_t p_index) {
 	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= edge_count, "ArrayPolyMesh4D: Edge index is out of range.");
 	// Before deleting this edge, we need to delete any poly cells in higher dimensions that reference it.
 	if (!_poly_cell_indices.is_empty()) {
-		Vector<int32_t> faces_to_delete;
+		PackedInt32Array faces_to_delete;
 		const Vector<PackedInt32Array> &face_edge_indices = _poly_cell_indices[0];
 		for (int32_t face_index = 0; face_index < face_edge_indices.size(); face_index++) {
 			if (face_edge_indices[face_index].has(p_index)) {
@@ -418,7 +491,7 @@ void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
 	// Before deleting this vertex, we need to delete any edges that reference it,
 	// and any poly cells in higher dimensions that reference those edges.
 	const int32_t edge_count = _edge_vertex_indices.size() / 2;
-	Vector<int32_t> edges_to_delete;
+	PackedInt32Array edges_to_delete;
 	for (int32_t edge_index = 0; edge_index < edge_count; edge_index++) {
 		if (_edge_vertex_indices[edge_index * 2] == p_index || _edge_vertex_indices[edge_index * 2 + 1] == p_index) {
 			edges_to_delete.push_back(edge_index);
@@ -453,7 +526,7 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_ce
 	const int32_t next_dim_poly_index = p_poly_cell_index + 1;
 	if (next_dim_poly_index < _poly_cell_indices.size()) {
 		// Collect indices in next_dim_poly_index whose elements reference p_index.
-		Vector<int32_t> to_delete;
+		PackedInt32Array to_delete;
 		const Vector<PackedInt32Array> &next_level = _poly_cell_indices[next_dim_poly_index];
 		for (int32_t j = 0; j < next_level.size(); j++) {
 			const PackedInt32Array &refs = next_level[j];

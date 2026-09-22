@@ -2084,6 +2084,28 @@ TEST_CASE("[ArrayPolyMesh4D] Orient cells to boundary normals") {
 		CHECK(reordered_cells > 0); // Otherwise this test would not be exercising the resampling.
 	}
 
+	SUBCASE("Appending an invalid poly hierarchy leaves the mesh untouched") {
+		const Vector<Vector<PackedInt32Array>> cells_before = mesh->get_poly_cell_indices();
+		const PackedInt32Array edges_before = mesh->get_edge_indices();
+		const Vector<Vector<PackedInt32Array>> tetrahedron = {
+			Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2 }, PackedInt32Array{ 0, 3, 4 }, PackedInt32Array{ 1, 3, 5 }, PackedInt32Array{ 2, 4, 5 } },
+			Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2, 3 } },
+		};
+		ERR_PRINT_OFF; // Both appends intentionally fail.
+		// An edge referencing a vertex the mesh does not have.
+		CHECK(mesh->append_poly_hierarchy(tetrahedron, { 0, 1, 0, 2, 1, 2, 0, 999, 1, 999, 2, 999 }) == -1);
+		// A face referencing an edge the hierarchy does not have.
+		const Vector<Vector<PackedInt32Array>> broken_hierarchy = {
+			Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 99 }, PackedInt32Array{ 0, 3, 4 }, PackedInt32Array{ 1, 3, 5 }, PackedInt32Array{ 2, 4, 5 } },
+			Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2, 3 } },
+		};
+		CHECK(mesh->append_poly_hierarchy(broken_hierarchy, { 0, 1, 0, 2, 1, 2, 0, 3, 1, 3, 2, 3 }) == -1);
+		ERR_PRINT_ON;
+		CHECK(mesh->get_poly_cell_indices() == cells_before);
+		CHECK(mesh->get_edge_indices() == edges_before);
+		CHECK(mesh->is_mesh_data_valid());
+	}
+
 	SUBCASE("Cells without a desired normal keep their stored normal") {
 		PackedVector4Array custom_normals = original_normals;
 		const Vector4 tilted = (original_normals[3] + Vector4(0.1f, 0.1f, 0.1f, 0.1f)).normalized();
