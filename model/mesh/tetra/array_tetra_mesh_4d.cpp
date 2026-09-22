@@ -191,7 +191,9 @@ void ArrayTetraMesh4D::transform_mesh(const Transform4D &p_transform) {
 	for (int64_t normal_index = 0; normal_index < normal_val_count; normal_index++) {
 		_normal_values.set(normal_index, inverse_transpose.xform(_normal_values[normal_index]));
 	}
-	_clear_cache(false);
+	// Keep the transformed boundary normals, including any explicitly supplied orientations.
+	// Only the derived positions, edges, metrics, bounds, and proxy mesh need invalidating.
+	tetra_mesh_clear_cache(false);
 }
 
 void ArrayTetraMesh4D::transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis) {

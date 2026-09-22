@@ -52,6 +52,48 @@ TEST_CASE("[ArrayTetraMesh4D] Calculate Normals and Verify Proxy Mesh Caching") 
 	CHECK(mesh->is_mesh_data_valid());
 }
 
+TEST_CASE("[ArrayTetraMesh4D] Transform preserves explicit boundary normals while refreshing position caches") {
+	const Vector<Transform4D> transforms = {
+		Transform4D(),
+		Transform4D(Basis4D(), Vector4(2, 3, 4, 5)),
+		Transform4D(Basis4D::from_scale(2, 3, 4, 5)),
+		Transform4D(Basis4D::from_scale(-1, 1, 1, 1)),
+	};
+	for (const Transform4D &transform : transforms) {
+		const Ref<ArrayTetraMesh4D> mesh = make_single_tetra_mesh(true);
+		// This fixture has a supplied -W boundary normal, opposite the normal derived from its winding.
+		const PackedVector4Array boundary_normals_before = mesh->get_simplex_cell_boundary_normals();
+		const PackedVector4Array normal_values_before = mesh->get_normal_values();
+		// Populate the derived caches before transforming, so stale cache contents cannot pass the checks.
+		const PackedVector4Array cell_positions_before = mesh->get_simplex_cell_positions();
+		const PackedVector4Array edge_positions_before = mesh->get_edge_positions();
+		REQUIRE(mesh->is_mesh_data_valid());
+		mesh->transform_mesh(transform);
+		CHECK(mesh->is_mesh_data_valid());
+		const Basis4D inverse_transpose = transform.basis.inverse().transposed();
+		const PackedVector4Array boundary_normals_after = mesh->get_simplex_cell_boundary_normals();
+		const PackedVector4Array normal_values_after = mesh->get_normal_values();
+		REQUIRE(boundary_normals_after.size() == boundary_normals_before.size());
+		REQUIRE(normal_values_after.size() == normal_values_before.size());
+		for (int64_t i = 0; i < boundary_normals_before.size(); i++) {
+			CHECK(boundary_normals_after[i].is_equal_approx(inverse_transpose.xform(boundary_normals_before[i])));
+		}
+		for (int64_t i = 0; i < normal_values_before.size(); i++) {
+			CHECK(normal_values_after[i].is_equal_approx(inverse_transpose.xform(normal_values_before[i])));
+		}
+		const PackedVector4Array cell_positions_after = mesh->get_simplex_cell_positions();
+		const PackedVector4Array edge_positions_after = mesh->get_edge_positions();
+		REQUIRE(cell_positions_after.size() == cell_positions_before.size());
+		REQUIRE(edge_positions_after.size() == edge_positions_before.size());
+		for (int64_t i = 0; i < cell_positions_before.size(); i++) {
+			CHECK(cell_positions_after[i].is_equal_approx(transform.xform(cell_positions_before[i])));
+		}
+		for (int64_t i = 0; i < edge_positions_before.size(); i++) {
+			CHECK(edge_positions_after[i].is_equal_approx(transform.xform(edge_positions_before[i])));
+		}
+	}
+}
+
 TEST_CASE("[ArrayTetraMesh4D] Merge Meshes") {
 	const Transform4D transform(Basis4D::from_scale_uniform(-1), Vector4(10, 0, 0, 0));
 	for (const bool destination_has_attributes : { false, true }) {
