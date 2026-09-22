@@ -2,6 +2,7 @@
 
 #include "../../../model/g4mf/g4mf_state_4d.h"
 #include "../../../model/mesh/poly/box_poly_mesh_4d.h"
+#include "../../../model/mesh/wire/array_wire_mesh_4d.h"
 
 #include "tests/test_macros.h"
 
@@ -71,7 +72,8 @@ TEST_CASE("[G4MFMeshSurface4D] Poly bindings retain missing cell positions on ro
 			if (missing_pattern >= 3) {
 				ERR_PRINT_OFF; // Sampling a mixture of populated and missing cells intentionally warns.
 			}
-			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, deduplicate);
+			PackedVector4Array shared_vertices;
+			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices, deduplicate);
 			if (missing_pattern >= 3) {
 				ERR_PRINT_ON;
 			}
@@ -118,6 +120,7 @@ TEST_CASE("[G4MFMeshSurface4D] Poly bindings retain missing cell positions on ro
 				CHECK(tetra->get_texture_map_values() == source->get_texture_map_values());
 				CHECK(tetra->get_simplex_cell_texture_map_indices() == source->get_simplex_cell_texture_map_indices());
 			}
+			CHECK(shared_vertices == source->get_vertex_positions());
 		}
 	}
 }
@@ -139,7 +142,8 @@ TEST_CASE("[G4MFMeshSurface4D] Invalid packed binding counts and indices are rej
 			Ref<G4MFState4D> state;
 			state.instantiate();
 			const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
-			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
+			PackedVector4Array shared_vertices;
+			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = find_geometry_binding(binding, 3, 0);
 			REQUIRE(geometry_binding.is_valid());
@@ -148,6 +152,7 @@ TEST_CASE("[G4MFMeshSurface4D] Invalid packed binding counts and indices are rej
 			const Ref<ArrayPolyMesh4D> poly_mesh_surface = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
 			ERR_PRINT_ON;
 			CHECK(poly_mesh_surface.is_null());
+			CHECK(shared_vertices == source->get_vertex_positions());
 		}
 	}
 }
@@ -160,7 +165,8 @@ TEST_CASE("[G4MFMeshSurface4D] Missing accessor objects and truncated buffers fa
 			Ref<G4MFState4D> state;
 			state.instantiate();
 			const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
-			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
+			PackedVector4Array shared_vertices;
+			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 			const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = find_geometry_binding(binding, 3, 0);
 			REQUIRE(geometry_binding.is_valid());
@@ -195,6 +201,7 @@ TEST_CASE("[G4MFMeshSurface4D] Missing accessor objects and truncated buffers fa
 				ERR_PRINT_ON;
 				CHECK(poly_mesh_surface.is_null());
 			}
+			CHECK(shared_vertices == source->get_vertex_positions());
 		}
 	}
 }
@@ -260,7 +267,8 @@ TEST_CASE("[G4MFMeshSurface4D] Zero-count cell bindings may reference an empty v
 		Ref<G4MFState4D> state;
 		state.instantiate();
 		const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
-		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
+		PackedVector4Array shared_vertices;
+		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices);
 		const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 		const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = find_geometry_binding(binding, 3, 0);
 		REQUIRE(geometry_binding.is_valid());
@@ -286,6 +294,7 @@ TEST_CASE("[G4MFMeshSurface4D] Zero-count cell bindings may reference an empty v
 				CHECK(cell.is_empty());
 			}
 		}
+		CHECK(shared_vertices == source->get_vertex_positions());
 	}
 }
 
@@ -334,7 +343,8 @@ TEST_CASE("[G4MFMeshSurface4D] Simplex attribute counts and value ranges are val
 			Ref<G4MFState4D> state;
 			state.instantiate();
 			const Ref<ArrayPolyMesh4D> source = make_poly_mesh();
-			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
+			PackedVector4Array shared_vertices;
+			const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices);
 			const Ref<G4MFMeshSurfaceBinding4D> binding = normal_binding ? surface->get_normals_binding() : surface->get_texture_map_binding();
 			PackedInt32Array indices = binding->load_simplex_indices(state);
 			REQUIRE(indices.size() > 1);
@@ -355,6 +365,7 @@ TEST_CASE("[G4MFMeshSurface4D] Simplex attribute counts and value ranges are val
 			const Ref<ArrayTetraMesh4D> tetra_mesh_surface = surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions());
 			ERR_PRINT_ON;
 			CHECK(tetra_mesh_surface.is_null());
+			CHECK(shared_vertices == source->get_vertex_positions());
 		}
 	}
 }
@@ -369,7 +380,8 @@ TEST_CASE("[G4MFMeshSurface4D] Hidden boundary cells retain geometry binding val
 	for (const bool deduplicate : { false, true }) {
 		Ref<G4MFState4D> state;
 		state.instantiate();
-		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, deduplicate);
+		PackedVector4Array shared_vertices;
+		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices, deduplicate);
 		REQUIRE(surface.is_valid());
 		CHECK(surface->get_simplexes_accessor_index() == -1);
 		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_poly_cell_vertex_positions());
@@ -378,6 +390,7 @@ TEST_CASE("[G4MFMeshSurface4D] Hidden boundary cells retain geometry binding val
 		CHECK(imported->get_poly_cell_texture_map_values() == source->get_poly_cell_texture_map_values());
 		CHECK(imported->get_poly_cell_normal_indices() == source->get_poly_cell_normal_indices());
 		CHECK(imported->get_poly_cell_texture_map_indices() == source->get_poly_cell_texture_map_indices());
+		CHECK(shared_vertices == source->get_vertex_positions());
 	}
 }
 
@@ -391,11 +404,13 @@ TEST_CASE("[G4MFMeshSurface4D] Unreferenced value pools do not create bindings")
 	for (const bool deduplicate : { false, true }) {
 		Ref<G4MFState4D> state;
 		state.instantiate();
-		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, deduplicate);
+		PackedVector4Array shared_vertices;
+		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices, deduplicate);
 		REQUIRE(surface.is_valid());
 		CHECK(surface->get_simplexes_accessor_index() >= 0);
 		CHECK(surface->get_normals_binding().is_null());
 		CHECK(surface->get_texture_map_binding().is_null());
+		CHECK(shared_vertices == source->get_vertex_positions());
 	}
 }
 
@@ -449,7 +464,8 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 	}
 	source->set_poly_cell_dense_normals(Vector2i(1, 0), edge_vertex_normals);
 	REQUIRE(source->is_mesh_data_valid());
-	const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
+	PackedVector4Array shared_vertices;
+	const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices);
 	REQUIRE(surface.is_valid());
 	const Ref<G4MFMeshSurfaceBinding4D> normals_binding = surface->get_normals_binding();
 	REQUIRE(normals_binding.is_valid());
@@ -462,7 +478,7 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 		const int64_t kept_edges = edge_count / 2;
 		indices.resize(kept_edges * 2);
 		edge_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices, 2, false));
-		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, shared_vertices);
 		REQUIRE(imported.is_valid());
 		CHECK(imported->is_mesh_data_valid());
 		const Vector<PackedVector4Array> imported_edge_normals = imported->get_poly_cell_dense_normals(Vector2i(1, 0));
@@ -479,7 +495,7 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 		indices.resize(indices.size() - 1);
 		edge_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices, 1, false));
 		ERR_PRINT_OFF;
-		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, shared_vertices);
 		ERR_PRINT_ON;
 		CHECK(imported.is_null());
 	}
@@ -492,7 +508,7 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 		const int64_t kept_corners = corner_count / 2;
 		corner_indices.resize(kept_corners);
 		normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, corner_indices, 4, false));
-		const Ref<ArrayTetraMesh4D> imported = surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions());
+		const Ref<ArrayTetraMesh4D> imported = surface->import_generate_tetra_mesh_surface(state, shared_vertices);
 		REQUIRE(imported.is_valid());
 		CHECK(imported->is_mesh_data_valid());
 		const PackedInt32Array imported_indices = imported->get_simplex_cell_normal_indices();
@@ -522,7 +538,7 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 		}
 		cell_vertex_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, packed.slice(0, cut), 1, false));
 		ERR_PRINT_OFF; // Validation samples the simplex normals, and the padded cells intentionally have none.
-		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, shared_vertices);
 		REQUIRE(imported.is_valid());
 		CHECK(imported->is_mesh_data_valid());
 		ERR_PRINT_ON;
@@ -545,7 +561,7 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 		long_packed.append(0); // One extra record with zero members.
 		cell_vertex_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, long_packed, 1, false));
 		ERR_PRINT_OFF;
-		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, shared_vertices);
 		ERR_PRINT_ON;
 		CHECK(imported.is_null());
 	}
@@ -557,7 +573,7 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 		REQUIRE(indices.size() == source->get_poly_cell_indices()[1].size());
 		indices.resize(indices.size() / 2);
 		boundary_normals_binding->set_indices_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, indices, 1, false));
-		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, source->get_vertex_positions());
+		const Ref<ArrayPolyMesh4D> imported = surface->import_generate_poly_mesh_surface(state, shared_vertices);
 		REQUIRE(imported.is_valid());
 		CHECK(imported->is_mesh_data_valid());
 		// The box's exported normals came from its cell orientations, so recalculating the missing half reproduces them.
@@ -573,7 +589,7 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 		partial_simplex.resize(corner_count - 1);
 		normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, partial_simplex, 1, false));
 		ERR_PRINT_OFF;
-		CHECK(surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions()).is_null());
+		CHECK(surface->import_generate_tetra_mesh_surface(state, shared_vertices).is_null());
 		ERR_PRINT_ON;
 		PackedInt32Array extra_simplex = corner_indices;
 		for (int i = 0; i < 4; i++) {
@@ -581,8 +597,39 @@ TEST_CASE("[G4MFMeshSurface4D] Bindings shorter than their element counts import
 		}
 		normals_binding->set_simplexes_accessor_index(G4MFAccessor4D::encode_new_accessor_from_int32s(state, extra_simplex, 4, false));
 		ERR_PRINT_OFF;
-		CHECK(surface->import_generate_tetra_mesh_surface(state, source->get_vertex_positions()).is_null());
+		CHECK(surface->import_generate_tetra_mesh_surface(state, shared_vertices).is_null());
 		ERR_PRINT_ON;
+	}
+}
+
+TEST_CASE("[G4MFMeshSurface4D] Surface vertices are appended to the shared vertices and remapped") {
+	// The third vertex duplicates the first, so deduplication merges them and remaps the second edge onto the first vertex.
+	Ref<ArrayWireMesh4D> source;
+	source.instantiate();
+	source->set_vertex_positions({ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 0) });
+	source->set_edge_indices({ 0, 1, 1, 2 });
+	REQUIRE(source->is_mesh_data_valid());
+	for (const bool deduplicate : { false, true }) {
+		CAPTURE(deduplicate);
+		Ref<G4MFState4D> state;
+		state.instantiate();
+		// Pretend another surface already contributed a vertex, so the remapping has a non-zero offset to get right.
+		PackedVector4Array shared_vertices = { Vector4(9, 9, 9, 9) };
+		const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices, deduplicate);
+		REQUIRE(surface.is_valid());
+		if (deduplicate) {
+			CHECK(shared_vertices == PackedVector4Array({ Vector4(9, 9, 9, 9), Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0) }));
+			CHECK(surface->load_edge_indices(state) == PackedInt32Array({ 1, 2, 2, 1 }));
+		} else {
+			CHECK(shared_vertices == PackedVector4Array({ Vector4(9, 9, 9, 9), Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 0) }));
+			CHECK(surface->load_edge_indices(state) == PackedInt32Array({ 1, 2, 2, 3 }));
+		}
+		// Importing against the shared array gives back a valid wire mesh with both edges.
+		const Ref<ArrayWireMesh4D> imported = surface->import_generate_wire_mesh_surface(state, shared_vertices);
+		REQUIRE(imported.is_valid());
+		CHECK(imported->is_mesh_data_valid());
+		CHECK(imported->get_vertex_positions() == shared_vertices);
+		CHECK(imported->get_edge_indices().size() == 4);
 	}
 }
 } // namespace TestG4MFMeshSurface4D

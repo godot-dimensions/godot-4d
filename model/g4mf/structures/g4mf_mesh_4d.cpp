@@ -186,11 +186,14 @@ int G4MFMesh4D::export_convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, co
 	// exist, this is where the mesh's surfaces will be iterated over instead.
 	const Ref<SingleSurfaceMesh4D> single_surface_mesh = p_mesh;
 	ERR_FAIL_COND_V_MSG(single_surface_mesh.is_null(), -1, "G4MFMesh4D: Only a SingleSurfaceMesh4D can be converted to a G4MF mesh.");
-	const PackedVector4Array vertex_positions = single_surface_mesh->get_vertex_positions();
-	ERR_FAIL_COND_V_MSG(vertex_positions.is_empty(), -1, "G4MFMesh4D: Mesh4D has no vertices, cannot convert to a G4MF mesh.");
-	const int vertices_accessor = G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, vertex_positions, p_deduplicate);
+	// A G4MF mesh stores one shared vertices accessor that all of its surfaces reference. Converting a surface
+	// appends its vertices to this array and remaps its edges, simplexes, and vertex bindings to reference it.
+	PackedVector4Array shared_vertices;
+	Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(p_g4mf_state, single_surface_mesh, shared_vertices, p_deduplicate);
+	ERR_FAIL_COND_V_MSG(surface.is_null(), -1, "G4MFMesh4D: Failed to convert the mesh '" + p_mesh->get_name() + "' to a G4MF mesh surface.");
+	ERR_FAIL_COND_V_MSG(shared_vertices.is_empty(), -1, "G4MFMesh4D: Mesh4D has no vertices, cannot convert to a G4MF mesh.");
+	const int vertices_accessor = G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, shared_vertices, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(vertices_accessor < 0, -1, "G4MFMesh4D: Failed to encode vertices into G4MFState4D.");
-	Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(p_g4mf_state, single_surface_mesh, p_deduplicate);
 	// Prepare a G4MFMesh4D with the surface.
 	TypedArray<G4MFMeshSurface4D> surfaces;
 	surfaces.append(surface);

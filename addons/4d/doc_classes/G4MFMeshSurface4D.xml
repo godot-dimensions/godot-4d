@@ -22,16 +22,6 @@
 				For example, if the input separated geometry is [code][[[0, 1, 2], [0, 3, 4], [1, 4, 5], [2, 5, 3]], [[0, 1, 2, 3]]][/code], then the first accessor will contain [code]3 0 1 2 3 0 3 4 3 1 4 5 3 2 5 3[/code] and the second accessor will contain [code]4 0 1 2 3[/code] (the encoding of a tetrahedron), and the [member geometry_accessor_indices] will be set to the indices of these two new accessors.
 			</description>
 		</method>
-		<method name="export_convert_mesh_surface_for_state" qualifiers="static">
-			<return type="G4MFMeshSurface4D" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="mesh" type="SingleSurfaceMesh4D" />
-			<param index="2" name="deduplicate" type="bool" default="true" />
-			<description>
-				Converts the given [SingleSurfaceMesh4D] into encoded G4MF mesh data and stores this inside of the buffers and accessors of the [G4MFState4D]. This is used for exporting the mesh to G4MF. The returned [G4MFMeshSurface4D] is intended to be used by a [G4MFMesh4D], which goes inside of the [G4MFState4D]. See [method G4MFMesh4D.export_convert_mesh_into_state].
-				For polyhedral meshes, every normal and texture map binding of the mesh is exported as a geometry binding keyed by its geometry and decomposition dimensions, and the boundary normals are always exported as the [code](3, 3)[/code] geometry binding. Cells without vertex normals or texture mapping retain empty entries in the packed geometry bindings, so later cells keep their corresponding data. If no cell has data for a binding, that geometry binding is omitted. The mesh data must be valid, otherwise this fails and returns null.
-			</description>
-		</method>
 		<method name="from_dictionary" qualifiers="static">
 			<return type="G4MFMeshSurface4D" />
 			<param index="0" name="dict" type="Dictionary" />

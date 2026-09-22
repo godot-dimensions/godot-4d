@@ -37,9 +37,12 @@ private:
 
 	bool _import_decode_geometry_bindings(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFMeshSurfaceBinding4D> &p_binding, const int64_t p_vertex_count, const int64_t p_edge_count, const Vector<Vector<PackedInt32Array>> &p_separated_geometry, const int64_t p_value_count, HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, const String &p_binding_name) const;
 	static bool _import_pad_simplex_corner_binding(PackedInt32Array &r_indices, const int64_t p_simplex_corner_count, const int32_t p_zero_value_index, const String &p_binding_name);
+	static void _export_reposition_vertex_binding_to_shared(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, const PackedInt32Array &p_vertex_old_to_shared_map);
+	static void _export_fill_vertex_binding_placeholders(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, PackedVector4Array &r_values);
+	static void _export_fill_vertex_binding_placeholders(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, PackedVector3Array &r_values);
 	static TypedArray<G4MFMeshSurfaceBindingGeometry4D> _export_encode_geometry_bindings(const Ref<G4MFState4D> &p_g4mf_state, const HashMap<Vector2i, Vector<PackedInt32Array>> &p_indices, const bool p_deduplicate);
-	void _export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, PackedVector4Array &r_normal_values, PackedVector3Array &r_texture_map_values, const bool p_deduplicate);
-	void _export_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate);
+	void _export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const PackedInt32Array &p_vertex_old_to_shared_map, PackedVector4Array &r_normal_values, PackedVector3Array &r_texture_map_values, const bool p_deduplicate);
+	void _export_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const PackedInt32Array &p_vertex_old_to_shared_map, const bool p_deduplicate);
 	MeshSurfaceFormat _get_compatible_mesh_surface_format(MeshSurfaceFormat p_preferred_mesh_surface_format) const;
 
 protected:
@@ -83,7 +86,8 @@ public:
 	Ref<ArrayTetraMesh4D> import_generate_tetra_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
 	Ref<ArrayWireMesh4D> import_generate_wire_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
 	Ref<SingleSurfaceMesh4D> import_generate_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const;
-	static Ref<G4MFMeshSurface4D> export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<SingleSurfaceMesh4D> &p_surface_mesh, const bool p_deduplicate = true);
+	// Appends the surface's vertices to the mesh's shared vertices, and remaps the surface's edges, simplexes, and vertex bindings into it.
+	static Ref<G4MFMeshSurface4D> export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<SingleSurfaceMesh4D> &p_surface_mesh, PackedVector4Array &r_shared_vertices, const bool p_deduplicate = true);
 
 	static Ref<G4MFMeshSurface4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;

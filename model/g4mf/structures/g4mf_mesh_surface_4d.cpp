@@ -436,6 +436,77 @@ Ref<SingleSurfaceMesh4D> G4MFMeshSurface4D::import_generate_mesh_surface(const R
 	ERR_FAIL_V_MSG(Ref<SingleSurfaceMesh4D>(), "G4MFMeshSurface4D::import_generate_mesh_surface: No compatible mesh format found for the mesh.");
 }
 
+void G4MFMeshSurface4D::_export_reposition_vertex_binding_to_shared(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, const PackedInt32Array &p_vertex_old_to_shared_map) {
+	// Special case: The dense (0, 0) binding is positioned by local vertex index, with each
+	// value being a value index (not a vertex index), so reposition it by scattering
+	// each entry to its shared vertex index rather than remapping the stored values.
+	if (!r_indices.has(Vector2i(0, 0))) {
+		return;
+	}
+	const Vector<PackedInt32Array> &old_binding = r_indices[Vector2i(0, 0)];
+	if (old_binding.is_empty() || old_binding[0].is_empty()) {
+		// A key with no data means the surface has no per-vertex values. Drop it so that it is
+		// not written as a binding made entirely of placeholders, which would imply it has data.
+		r_indices.erase(Vector2i(0, 0));
+		return;
+	}
+	const PackedInt32Array &old_vertex_bindings = old_binding[0];
+	// Only span this surface's own vertices. Other surfaces may add more shared vertices later,
+	// so the dense array may end up shorter than the mesh's vertex count, which the import allows.
+	int32_t shared_vertex_count = 0;
+	for (int64_t local_vertex_index = 0; local_vertex_index < old_vertex_bindings.size(); local_vertex_index++) {
+		shared_vertex_count = MAX(shared_vertex_count, p_vertex_old_to_shared_map[local_vertex_index] + 1);
+	}
+	// Shared vertices that belong only to other surfaces get -1 for now. It is replaced with a
+	// placeholder value index by `_export_fill_vertex_binding_placeholders`, since G4MF has no
+	// way to express a missing entry inside a dense binding.
+	PackedInt32Array shared_vertex_bindings;
+	shared_vertex_bindings.resize_uninitialized(shared_vertex_count);
+	for (int64_t i = 0; i < shared_vertex_count; i++) {
+		shared_vertex_bindings.set(i, -1);
+	}
+	for (int64_t local_vertex_index = 0; local_vertex_index < old_vertex_bindings.size(); local_vertex_index++) {
+		shared_vertex_bindings.set(p_vertex_old_to_shared_map[local_vertex_index], old_vertex_bindings[local_vertex_index]);
+	}
+	r_indices[Vector2i(0, 0)] = Vector<PackedInt32Array>{ shared_vertex_bindings };
+}
+
+void G4MFMeshSurface4D::_export_fill_vertex_binding_placeholders(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, PackedVector4Array &r_values) {
+	if (!r_indices.has(Vector2i(0, 0))) {
+		return;
+	}
+	PackedInt32Array vertex_bindings = r_indices[Vector2i(0, 0)][0];
+	if (!vertex_bindings.has(-1)) {
+		return; // Every shared vertex in range has a value, so no placeholder is needed.
+	}
+	// Append one zero value at most, reusing an existing zero if the pool already has one.
+	const int32_t placeholder_value_index = (int32_t)Vector4D::vector4_array_append_deduplicate(r_values, Vector4());
+	for (int64_t i = 0; i < vertex_bindings.size(); i++) {
+		if (vertex_bindings[i] == -1) {
+			vertex_bindings.set(i, placeholder_value_index);
+		}
+	}
+	r_indices[Vector2i(0, 0)] = Vector<PackedInt32Array>{ vertex_bindings };
+}
+
+void G4MFMeshSurface4D::_export_fill_vertex_binding_placeholders(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, PackedVector3Array &r_values) {
+	if (!r_indices.has(Vector2i(0, 0))) {
+		return;
+	}
+	PackedInt32Array vertex_bindings = r_indices[Vector2i(0, 0)][0];
+	if (!vertex_bindings.has(-1)) {
+		return; // Every shared vertex in range has a value, so no placeholder is needed.
+	}
+	// Append one zero value at most, reusing an existing zero if the pool already has one.
+	const int32_t placeholder_value_index = (int32_t)Vector4D::vector3_array_append_deduplicate(r_values, Vector3());
+	for (int64_t i = 0; i < vertex_bindings.size(); i++) {
+		if (vertex_bindings[i] == -1) {
+			vertex_bindings.set(i, placeholder_value_index);
+		}
+	}
+	r_indices[Vector2i(0, 0)] = Vector<PackedInt32Array>{ vertex_bindings };
+}
+
 TypedArray<G4MFMeshSurfaceBindingGeometry4D> G4MFMeshSurface4D::_export_encode_geometry_bindings(const Ref<G4MFState4D> &p_g4mf_state, const HashMap<Vector2i, Vector<PackedInt32Array>> &p_indices, const bool p_deduplicate) {
 	// The runtime mesh classes store indexed values, which is also how G4MF stores
 	// this data, so the indices can be packed and encoded with minimal conversion.
@@ -500,13 +571,15 @@ TypedArray<G4MFMeshSurfaceBindingGeometry4D> G4MFMeshSurface4D::_export_encode_g
 	return geometry_bindings;
 }
 
-void G4MFMeshSurface4D::_export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, PackedVector4Array &r_normal_values, PackedVector3Array &r_texture_map_values, const bool p_deduplicate) {
+void G4MFMeshSurface4D::_export_convert_poly_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<PolyMesh4D> &p_poly_mesh, const PackedInt32Array &p_vertex_old_to_shared_map, PackedVector4Array &r_normal_values, PackedVector3Array &r_texture_map_values, const bool p_deduplicate) {
 	const Vector<Vector<PackedInt32Array>> separated_geometry = p_poly_mesh->get_poly_cell_indices();
 	if (!separated_geometry.is_empty()) {
 		convert_separated_geometry_into_packed(p_g4mf_state, separated_geometry, p_deduplicate);
 	}
 	// Normals: Gather the poly mesh's normal bindings, then convert them into G4MF geometry bindings.
 	HashMap<Vector2i, Vector<PackedInt32Array>> all_poly_cell_normal_indices = p_poly_mesh->get_all_poly_cell_normal_indices();
+	_export_reposition_vertex_binding_to_shared(all_poly_cell_normal_indices, p_vertex_old_to_shared_map);
+	_export_fill_vertex_binding_placeholders(all_poly_cell_normal_indices, r_normal_values);
 	// Only for normals: Convert boundary normals into these bindings.
 	// ArrayPolyMesh4D already does this internally and will return a (3, 3) key, but this code works as a fallback.
 	if (!all_poly_cell_normal_indices.has(Vector2i(3, 3))) {
@@ -536,6 +609,8 @@ void G4MFMeshSurface4D::_export_convert_poly_mesh_surface_for_state(const Ref<G4
 	}
 	// Texture maps: Do the same thing, except there is no equivalent for boundary normals.
 	HashMap<Vector2i, Vector<PackedInt32Array>> all_poly_cell_texture_map_indices = p_poly_mesh->get_all_poly_cell_texture_map_indices();
+	_export_reposition_vertex_binding_to_shared(all_poly_cell_texture_map_indices, p_vertex_old_to_shared_map);
+	_export_fill_vertex_binding_placeholders(all_poly_cell_texture_map_indices, r_texture_map_values);
 	const TypedArray<G4MFMeshSurfaceBindingGeometry4D> texture_map_geometry_bindings = _export_encode_geometry_bindings(p_g4mf_state, all_poly_cell_texture_map_indices, p_deduplicate);
 	if (!texture_map_geometry_bindings.is_empty()) {
 		if (_texture_map_binding.is_null()) {
@@ -547,16 +622,15 @@ void G4MFMeshSurface4D::_export_convert_poly_mesh_surface_for_state(const Ref<G4
 	}
 }
 
-void G4MFMeshSurface4D::_export_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate) {
+void G4MFMeshSurface4D::_export_convert_tetra_mesh_surface_for_state(const Ref<G4MFState4D> &p_g4mf_state, const Ref<TetraMesh4D> &p_tetra_mesh, const PackedInt32Array &p_vertex_old_to_shared_map, const bool p_deduplicate) {
 	const PackedInt32Array simplex_vertex_indices = p_tetra_mesh->get_simplex_cell_vertex_indices();
 	if (!simplex_vertex_indices.is_empty()) {
-		Array simplex_indices_variants;
-		simplex_indices_variants.resize(simplex_vertex_indices.size());
-		for (int i = 0; i < simplex_vertex_indices.size(); i++) {
-			simplex_indices_variants[i] = simplex_vertex_indices[i];
+		PackedInt32Array shared_simplex_vertex_indices;
+		shared_simplex_vertex_indices.resize(simplex_vertex_indices.size());
+		for (int64_t i = 0; i < simplex_vertex_indices.size(); i++) {
+			shared_simplex_vertex_indices.set(i, p_vertex_old_to_shared_map[simplex_vertex_indices[i]]);
 		}
-		const String simplex_prim_type = G4MFAccessor4D::minimal_component_type_for_int32s(simplex_vertex_indices);
-		const int simplexes_accessor = G4MFAccessor4D::encode_new_accessor_from_variants(p_g4mf_state, simplex_indices_variants, simplex_prim_type, 4, p_deduplicate);
+		const int simplexes_accessor = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, shared_simplex_vertex_indices, 4, p_deduplicate);
 		ERR_FAIL_COND_MSG(simplexes_accessor < 0, "G4MFMeshSurface4D: Failed to encode simplex cells into G4MFState4D.");
 		set_simplexes_accessor_index(simplexes_accessor);
 	}
@@ -578,12 +652,28 @@ void G4MFMeshSurface4D::_export_convert_tetra_mesh_surface_for_state(const Ref<G
 	}
 }
 
-Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<SingleSurfaceMesh4D> &p_surface_mesh, const bool p_deduplicate) {
+Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(Ref<G4MFState4D> p_g4mf_state, const Ref<SingleSurfaceMesh4D> &p_surface_mesh, PackedVector4Array &r_shared_vertices, const bool p_deduplicate) {
 	ERR_FAIL_COND_V_MSG(p_surface_mesh.is_null(), Ref<G4MFMeshSurface4D>(), "G4MFMeshSurface4D: Cannot convert a null mesh surface to G4MF.");
 	// Validate first: the conversion below assumes consistent data, and only crashes (rather than erroring) on inconsistencies.
 	ERR_FAIL_COND_V_MSG(!p_surface_mesh->is_mesh_data_valid(), Ref<G4MFMeshSurface4D>(), "G4MFMeshSurface4D: Cannot convert the mesh surface '" + p_surface_mesh->get_name() + "' to G4MF because its mesh data is invalid.");
 	Ref<G4MFMeshSurface4D> surface;
 	surface.instantiate();
+	// G4MF meshes store vertex positions in a shared vertices accessor, so we need to add the surface's vertices to the shared array.
+	const PackedVector4Array vertex_positions = p_surface_mesh->get_vertex_positions();
+	PackedInt32Array vertex_old_to_shared_map;
+	vertex_old_to_shared_map.resize(vertex_positions.size());
+	if (p_deduplicate) {
+		for (int64_t i = 0; i < vertex_positions.size(); i++) {
+			const int64_t shared_index = Vector4D::vector4_array_append_deduplicate(r_shared_vertices, vertex_positions[i]);
+			vertex_old_to_shared_map.set(i, (int32_t)shared_index);
+		}
+	} else {
+		const int32_t shared_index_base = (int32_t)r_shared_vertices.size();
+		r_shared_vertices.append_array(vertex_positions);
+		for (int64_t i = 0; i < vertex_positions.size(); i++) {
+			vertex_old_to_shared_map.set(i, shared_index_base + (int32_t)i);
+		}
+	}
 	// Convert the material.
 	const Ref<Material4D> material = p_surface_mesh->get_material();
 	if (material.is_valid() && !material->is_default_material()) {
@@ -609,14 +699,14 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(
 		// For poly meshes, convert both poly cell geometry and tetrahedral simplex cells into accessors.
 		// When simplex bindings exist, their values are a superset of the poly cell values,
 		// so both representations can share one values accessor per binding.
-		surface->_export_convert_poly_mesh_surface_for_state(p_g4mf_state, poly_mesh, normal_values, texture_map_values, p_deduplicate);
-		surface->_export_convert_tetra_mesh_surface_for_state(p_g4mf_state, poly_mesh, p_deduplicate);
+		surface->_export_convert_poly_mesh_surface_for_state(p_g4mf_state, poly_mesh, vertex_old_to_shared_map, normal_values, texture_map_values, p_deduplicate);
+		surface->_export_convert_tetra_mesh_surface_for_state(p_g4mf_state, poly_mesh, vertex_old_to_shared_map, p_deduplicate);
 		// Don't return here: Always convert edges for poly meshes.
 	} else {
 		// For tetra meshes, convert tetrahedral simplex cells into an accessor.
 		const Ref<TetraMesh4D> tetra_mesh = p_surface_mesh;
 		if (tetra_mesh.is_valid()) {
-			surface->_export_convert_tetra_mesh_surface_for_state(p_g4mf_state, tetra_mesh, p_deduplicate);
+			surface->_export_convert_tetra_mesh_surface_for_state(p_g4mf_state, tetra_mesh, vertex_old_to_shared_map, p_deduplicate);
 			// For BoxTetraMesh4D in polytope mode, use its explicitly defined edges.
 			// Other meshes can skip saving this and rely on implicitly calculated ones.
 			const Ref<BoxTetraMesh4D> box_tetra_mesh = p_surface_mesh;
@@ -628,8 +718,9 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(
 			}
 		}
 	}
-	// Only encode value pools used by a geometry or simplex binding. An unused
-	// pool does not imply that the surface has normal or texture map data.
+	// Only encode value pools used by a geometry or simplex binding.
+	// An unused pool does not provide value if it is not used by any indices.
+	// External code can pre-initialize `_normals_binding` and `_texture_map_binding` to force writing these value pools anyway.
 	if (surface->_normals_binding.is_valid()) {
 		const int normal_values_accessor = G4MFAccessor4D::encode_new_accessor_from_vector4s(p_g4mf_state, normal_values, p_deduplicate);
 		ERR_FAIL_COND_V(normal_values_accessor < 0, surface);
@@ -646,13 +737,12 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(
 	// Convert edges into an accessor.
 	const PackedInt32Array edge_indices = p_surface_mesh->get_edge_indices();
 	ERR_FAIL_COND_V_MSG(edge_indices.is_empty(), surface, "G4MFMeshSurface4D: Mesh4D has no edges.");
-	Array edge_indices_variants;
-	edge_indices_variants.resize(edge_indices.size());
+	PackedInt32Array shared_edge_indices;
+	shared_edge_indices.resize(edge_indices.size());
 	for (int i = 0; i < edge_indices.size(); i++) {
-		edge_indices_variants[i] = edge_indices[i];
+		shared_edge_indices.set(i, vertex_old_to_shared_map[edge_indices[i]]);
 	}
-	const String edge_prim_type = G4MFAccessor4D::minimal_component_type_for_int32s(edge_indices);
-	const int edges_accessor = G4MFAccessor4D::encode_new_accessor_from_variants(p_g4mf_state, edge_indices_variants, edge_prim_type, 2, p_deduplicate);
+	const int edges_accessor = G4MFAccessor4D::encode_new_accessor_from_int32s(p_g4mf_state, shared_edge_indices, 2, p_deduplicate);
 	ERR_FAIL_COND_V_MSG(edges_accessor < 0, surface, "G4MFMeshSurface4D: Failed to encode edges into G4MFState4D.");
 	surface->set_edges_accessor_index(edges_accessor);
 	return surface;
@@ -755,7 +845,6 @@ void G4MFMeshSurface4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_simplex_indices", "g4mf_state"), &G4MFMeshSurface4D::load_simplex_indices);
 	ClassDB::bind_method(D_METHOD("import_generate_tetra_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::import_generate_tetra_mesh_surface);
 	ClassDB::bind_method(D_METHOD("import_generate_wire_mesh_surface", "g4mf_state", "vertices"), &G4MFMeshSurface4D::import_generate_wire_mesh_surface);
-	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("export_convert_mesh_surface_for_state", "g4mf_state", "mesh", "deduplicate"), &G4MFMeshSurface4D::export_convert_mesh_surface_for_state, DEFVAL(true));
 
 	ClassDB::bind_static_method("G4MFMeshSurface4D", D_METHOD("from_dictionary", "dict"), &G4MFMeshSurface4D::from_dictionary);
 	ClassDB::bind_method(D_METHOD("to_dictionary"), &G4MFMeshSurface4D::to_dictionary);

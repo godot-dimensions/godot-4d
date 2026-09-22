@@ -133,7 +133,8 @@ TEST_CASE("[G4MFMaterial4D] Poly mesh surface round trip keeps a PolyMaterial4D 
 	Ref<G4MFState4D> state;
 	state.instantiate();
 	ERR_PRINT_OFF; // Exporting an unrendered PolyMaterial4D intentionally warns that only per-cell colors are written.
-	const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source);
+	PackedVector4Array shared_vertices;
+	const Ref<G4MFMeshSurface4D> surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(state, source, shared_vertices);
 	ERR_PRINT_ON;
 	REQUIRE(surface.is_valid());
 	REQUIRE(surface->get_material_index() >= 0);
