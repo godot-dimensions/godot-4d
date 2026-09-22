@@ -2084,6 +2084,117 @@ TEST_CASE("[ArrayPolyMesh4D] Orient cells to boundary normals") {
 		CHECK(reordered_cells > 0); // Otherwise this test would not be exercising the resampling.
 	}
 
+	SUBCASE("An empty per-cell texture map binding is treated as no texture map") {
+		HashMap<Vector2i, Vector<PackedInt32Array>> texture_map_indices;
+		texture_map_indices.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedInt32Array>());
+		mesh->set_all_poly_cell_texture_map_indices(texture_map_indices);
+		REQUIRE(mesh->is_mesh_data_valid());
+		// Both calls must agree: the first one must not leave a half-built cache behind for the second to return.
+		CHECK(mesh->get_simplex_cell_texture_map_indices().is_empty());
+		CHECK(mesh->get_simplex_cell_texture_map_indices().is_empty());
+		CHECK(mesh->get_texture_map_values().is_empty());
+	}
+
+	SUBCASE("A per-cell texture map binding gives every simplex of a cell its texture coordinate") {
+		PackedVector3Array values;
+		PackedInt32Array per_cell;
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			values.append(Vector3(cell, 0.5, 0.25));
+			per_cell.append(cell);
+		}
+		mesh->set_poly_cell_texture_map_values(values);
+		HashMap<Vector2i, Vector<PackedInt32Array>> texture_map_indices;
+		texture_map_indices.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedInt32Array>{ per_cell });
+		mesh->set_all_poly_cell_texture_map_indices(texture_map_indices);
+		REQUIRE(mesh->is_mesh_data_valid());
+		const PackedInt32Array simplex_texture_map = mesh->get_simplex_cell_texture_map_indices();
+		const int64_t simplex_count = mesh->get_simplex_cell_vertex_indices().size() / 4;
+		REQUIRE(simplex_count > 0);
+		REQUIRE(simplex_texture_map.size() == simplex_count * 4);
+		const PackedVector3Array simplex_values = mesh->get_texture_map_values();
+		for (int64_t simplex = 0; simplex < simplex_count; simplex++) {
+			const int32_t source_cell = mesh->get_source_poly_cell_for_simplex_cell(simplex);
+			REQUIRE(source_cell >= 0);
+			for (int64_t corner = 0; corner < 4; corner++) {
+				CHECK(simplex_values[simplex_texture_map[simplex * 4 + corner]] == values[source_cell]);
+			}
+		}
+		CHECK_MESSAGE(simplex_values == values, "Per-cell texture maps need no derived values, so the pool should be unchanged.");
+	}
+
+	SUBCASE("A short per-cell texture map binding leaves the trailing cells unmapped") {
+		const int64_t mapped_cells = 5;
+		PackedVector3Array values;
+		PackedInt32Array per_cell;
+		for (int64_t cell = 0; cell < mapped_cells; cell++) {
+			values.append(Vector3(cell, 0.5, 0.25));
+			per_cell.append(cell);
+		}
+		mesh->set_poly_cell_texture_map_values(values);
+		HashMap<Vector2i, Vector<PackedInt32Array>> texture_map_indices;
+		texture_map_indices.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedInt32Array>{ per_cell });
+		mesh->set_all_poly_cell_texture_map_indices(texture_map_indices);
+		ERR_PRINT_OFF; // Validation samples the simplex texture map, and mixing mapped and unmapped cells intentionally warns.
+		REQUIRE(mesh->is_mesh_data_valid());
+		const PackedInt32Array simplex_texture_map = mesh->get_simplex_cell_texture_map_indices();
+		ERR_PRINT_ON;
+		const int64_t simplex_count = mesh->get_simplex_cell_vertex_indices().size() / 4;
+		REQUIRE(simplex_texture_map.size() == simplex_count * 4);
+		const PackedVector3Array simplex_values = mesh->get_texture_map_values();
+		for (int64_t simplex = 0; simplex < simplex_count; simplex++) {
+			const int32_t source_cell = mesh->get_source_poly_cell_for_simplex_cell(simplex);
+			const Vector3 expected = source_cell < mapped_cells ? values[source_cell] : Vector3();
+			for (int64_t corner = 0; corner < 4; corner++) {
+				CHECK(simplex_values[simplex_texture_map[simplex * 4 + corner]] == expected);
+			}
+		}
+	}
+
+	SUBCASE("Per-vertex texture maps take precedence over per-cell ones") {
+		const Vector<PackedInt32Array> cell_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
+		const PackedVector4Array vertices = mesh->get_vertex_positions();
+		Vector<PackedVector3Array> per_vertex;
+		for (int64_t cell = 0; cell < cell_count; cell++) {
+			PackedVector3Array cell_texture_map;
+			for (const int32_t vertex_index : cell_vertices[cell]) {
+				cell_texture_map.append(Vector3(vertices[vertex_index].x, vertices[vertex_index].y, vertices[vertex_index].z));
+			}
+			per_vertex.push_back(cell_texture_map);
+		}
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, per_vertex);
+		REQUIRE(mesh->is_mesh_data_valid());
+		const PackedInt32Array per_vertex_only = mesh->get_simplex_cell_texture_map_indices();
+		REQUIRE(!per_vertex_only.is_empty());
+		// Add a per-cell binding on top, pointing every cell at the first value.
+		HashMap<Vector2i, Vector<PackedInt32Array>> texture_map_indices = mesh->get_all_poly_cell_texture_map_indices();
+		PackedInt32Array per_cell;
+		per_cell.resize(cell_count);
+		per_cell.fill(0);
+		texture_map_indices.insert(PolyMesh4D::PER_CELL_KEY, Vector<PackedInt32Array>{ per_cell });
+		mesh->set_all_poly_cell_texture_map_indices(texture_map_indices);
+		REQUIRE(mesh->is_mesh_data_valid());
+		CHECK(mesh->get_simplex_cell_texture_map_indices() == per_vertex_only);
+	}
+
+	SUBCASE("Per-vertex bindings must cover every boundary cell") {
+		// Unlike auxiliary bindings such as the per-cell texture map, the boundary cell vertex bindings
+		// exposed by `poly_cell_normal_indices` and `poly_cell_texture_map_indices` may not be short.
+		const Vector<PackedInt32Array> cell_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
+		const PackedVector4Array vertices = mesh->get_vertex_positions();
+		Vector<PackedVector4Array> vertex_normals;
+		for (int64_t cell = 0; cell < cell_count - 1; cell++) {
+			PackedVector4Array cell_normals;
+			for (const int32_t vertex_index : cell_vertices[cell]) {
+				cell_normals.append(vertices[vertex_index].normalized());
+			}
+			vertex_normals.push_back(cell_normals);
+		}
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, vertex_normals);
+		ERR_PRINT_OFF; // The short binding intentionally fails validation.
+		CHECK_FALSE(mesh->is_mesh_data_valid());
+		ERR_PRINT_ON;
+	}
+
 	SUBCASE("Converting to an array mesh keeps every binding key, the seams, and the pivot overrides") {
 		const PackedVector4Array vertices = mesh->get_vertex_positions();
 		PackedVector4Array vertex_normals;
