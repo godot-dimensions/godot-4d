@@ -102,8 +102,9 @@
 		</method>
 		<method name="deduplicate_all_elements">
 			<return type="void" />
+			<param index="0" name="max_dimension" type="int" default="1000000000" />
 			<description>
-				Deduplicates all elements in the mesh, including vertices, edges, faces, cells, hypervolumes, etc. All associated data such as normals, texture maps, seam faces, pivot overrides, and so on will be updated to match the new deduplicated elements.
+				Deduplicates all elements in the mesh, including vertices, edges, faces, cells, hypervolumes, etc, up to and including the specified [param max_dimension], which refers to the topological dimension of the elements (or effectively endless if not specified). For example, [code]0[/code] deduplicates only vertices, [code]1[/code] deduplicates vertices and edges, [code]2[/code] deduplicates vertices, edges, and faces, and so on. Elements above [param max_dimension] are not deduplicated, but their indices are still remapped to point to the deduplicated lower-dimensional elements. All associated data such as normals, texture maps, seam faces, pivot overrides, and so on will be updated to match the new deduplicated elements.
 				Elements with the same structure and members but different ordering are considered duplicates, even if they have different winding. For example, a face with edges [code][0, 1, 2][/code] is considered the same as a face with edges [code][1, 0, 2][/code] and will be deduplicated. 3D boundary cells may have their first two elements swapped in order to preserve the original orientation, and if so, normal and texture map binding decompositions will be resampled to match the new deduplicated elements.
 			</description>
 		</method>

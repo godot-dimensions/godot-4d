@@ -101,7 +101,7 @@ public:
 	void transform_texture_map(const Transform3D &p_transform);
 
 	// Misc functions.
-	void deduplicate_all_elements();
+	void deduplicate_all_elements(const int64_t p_max_dimension = 1000000000);
 	void transform_mesh(const Transform4D &p_transform);
 	void transform_mesh_bind(const Vector4 &p_offset, const Projection &p_basis = Projection());
 	void merge_with(const Ref<PolyMesh4D> &p_other, const Transform4D &p_transform = Transform4D());
