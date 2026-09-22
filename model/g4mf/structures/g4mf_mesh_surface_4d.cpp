@@ -162,6 +162,64 @@ PackedInt32Array G4MFMeshSurface4D::load_simplex_indices(const Ref<G4MFState4D> 
 	return accessor->decode_int32s_from_bytes(p_g4mf_state);
 }
 
+bool G4MFMeshSurface4D::_import_load_cell_vertex_binding_indices(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFMeshSurfaceBinding4D> &p_binding, PackedInt32Array &r_packed_indices, const String &p_binding_name) {
+	// Look for 3D poly cells (geom dimension 3) decomposed into vertices (decomp dim 0).
+	// A null entry in the list is malformed data, so fail rather than skipping over it.
+	const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_bindings = p_binding->get_geometry_bindings();
+	for (int bind_geom_index = 0; bind_geom_index < geometry_bindings.size(); bind_geom_index++) {
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = geometry_bindings[bind_geom_index];
+		ERR_FAIL_COND_V_MSG(geometry_binding.is_null(), false, "G4MFMeshSurface4D: " + p_binding_name + " binding contains a null geometry binding.");
+		if (geometry_binding->get_geometry_dimension() == 3 && geometry_binding->get_decompose_dimension() == 0) {
+			r_packed_indices = geometry_binding->load_indices(p_g4mf_state);
+			return true;
+		}
+	}
+	return true; // No such binding, which leaves the packed indices empty.
+}
+
+bool G4MFMeshSurface4D::_import_decode_cell_vertex_binding(const PackedInt32Array &p_packed_indices, const int64_t p_boundary_cell_count, const int64_t p_value_count, Vector<PackedInt32Array> &r_cell_indices, const String &p_binding_name) {
+	// Each record is the amount of members in the cell, followed by those members.
+	const int64_t packed_count = p_packed_indices.size();
+	int64_t packed_index = 0;
+	while (packed_index < packed_count) {
+		const int64_t member_count = p_packed_indices[packed_index];
+		packed_index++;
+		// The count itself was just consumed, so all of the members must fit in what remains.
+		ERR_FAIL_COND_V_MSG(member_count < 0 || packed_index + member_count > packed_count, false, "G4MFMeshSurface4D: " + p_binding_name + " binding has a malformed or truncated packed cell record.");
+		PackedInt32Array cell_indices;
+		cell_indices.resize(member_count);
+		for (int64_t member_index = 0; member_index < member_count; member_index++) {
+			const int32_t value_index = p_packed_indices[packed_index];
+			ERR_FAIL_INDEX_V_MSG(value_index, p_value_count, false, "G4MFMeshSurface4D: " + p_binding_name + " binding references value " + itos(value_index) + ", but there are only " + itos(p_value_count) + " values.");
+			cell_indices.set(member_index, value_index);
+			packed_index++;
+		}
+		r_cell_indices.append(cell_indices);
+	}
+	ERR_FAIL_COND_V_MSG(r_cell_indices.size() > p_boundary_cell_count, false, "G4MFMeshSurface4D: " + p_binding_name + " binding has " + itos(r_cell_indices.size()) + " cell records, but the surface only has " + itos(p_boundary_cell_count) + " boundary cells.");
+	// G4MF allows a binding to be shorter than the number of geometry items, with the missing items having no data.
+	// The mesh classes need one record per boundary cell, so pad the missing cells with empty records, meaning no data.
+	if (r_cell_indices.size() < p_boundary_cell_count) {
+		r_cell_indices.resize(p_boundary_cell_count);
+	}
+	return true;
+}
+
+bool G4MFMeshSurface4D::_import_pad_simplex_corner_binding(PackedInt32Array &r_indices, const int64_t p_simplex_corner_count, const int32_t p_zero_value_index, const String &p_binding_name) {
+	const int64_t index_count = r_indices.size();
+	ERR_FAIL_COND_V_MSG(index_count % 4 != 0, false, "G4MFMeshSurface4D: " + p_binding_name + " simplex binding has " + itos(index_count) + " indices, which is not a multiple of the 4 corners per simplex.");
+	ERR_FAIL_COND_V_MSG(index_count > p_simplex_corner_count, false, "G4MFMeshSurface4D: " + p_binding_name + " simplex binding has " + itos(index_count) + " indices, but the surface only has " + itos(p_simplex_corner_count) + " simplex corners.");
+	// G4MF allows a simplex binding to be shorter than the number of corners, with the missing corners having
+	// default values. Tetrahedral meshes need one index per corner, so the missing corners point at a zero value.
+	if (index_count < p_simplex_corner_count) {
+		r_indices.resize(p_simplex_corner_count);
+		for (int64_t i = index_count; i < p_simplex_corner_count; i++) {
+			r_indices.set(i, p_zero_value_index);
+		}
+	}
+	return true;
+}
+
 Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::import_generate_poly_mesh_surface(const Ref<G4MFState4D> &p_g4mf_state, const PackedVector4Array &p_vertices) const {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), Ref<ArrayPolyMesh4D>());
 	Ref<ArrayPolyMesh4D> poly_mesh;
@@ -184,65 +242,28 @@ Ref<ArrayPolyMesh4D> G4MFMeshSurface4D::import_generate_poly_mesh_surface(const 
 		poly_mesh->set_poly_cell_indices(geom_sep);
 		if (geom_sep.size() > 1) {
 			// G4MF stores indexed values, which is also how the runtime mesh classes store
-			// their data, so the values and indices can be loaded without any conversion.
+			// their data, so the values and indices can be loaded with minimal conversion.
+			const int64_t boundary_cell_count = geom_sep[1].size();
 			if (_normals_binding.is_valid()) {
-				const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _normals_binding->get_geometry_bindings();
-				for (int bind_geom_index = 0; bind_geom_index < geometry_decompositions.size(); bind_geom_index++) {
-					const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition = geometry_decompositions[bind_geom_index];
-					ERR_FAIL_COND_V(geometry_decomposition.is_null(), Ref<ArrayPolyMesh4D>());
-					// Look for 3D poly cells (geom dimension 3) decomposed into vertices (decomp dim 0).
-					if (geometry_decomposition->get_geometry_dimension() == 3 && geometry_decomposition->get_decompose_dimension() == 0) {
-						const PackedInt32Array packed_normal_indices = geometry_decomposition->load_indices(p_g4mf_state);
-						Vector<PackedInt32Array> poly_cell_normal_indices;
-						int64_t norm_index_index = 0;
-						const int64_t value_count = poly_mesh->get_poly_cell_normal_values().size();
-						while (norm_index_index < packed_normal_indices.size()) {
-							PackedInt32Array this_cell_normal_indices;
-							const int vertex_count = packed_normal_indices[norm_index_index];
-							ERR_FAIL_COND_V_MSG(vertex_count < 0 || vertex_count > packed_normal_indices.size() - norm_index_index - 1, Ref<ArrayPolyMesh4D>(), "G4MFMeshSurface4D: Invalid packed normal binding count.");
-							this_cell_normal_indices.resize(vertex_count);
-							norm_index_index += 1;
-							for (int i = 0; i < vertex_count; i++) {
-								const int32_t value_index = packed_normal_indices[norm_index_index];
-								ERR_FAIL_INDEX_V(value_index, value_count, Ref<ArrayPolyMesh4D>());
-								this_cell_normal_indices.set(i, value_index);
-								norm_index_index += 1;
-							}
-							poly_cell_normal_indices.append(this_cell_normal_indices);
-						}
-						poly_mesh->set_poly_cell_normal_indices(poly_cell_normal_indices);
-						break;
-					}
+				PackedInt32Array packed_normal_indices;
+				const bool loaded = _import_load_cell_vertex_binding_indices(p_g4mf_state, _normals_binding, packed_normal_indices, "Normals");
+				ERR_FAIL_COND_V(!loaded, Ref<ArrayPolyMesh4D>());
+				if (!packed_normal_indices.is_empty()) {
+					Vector<PackedInt32Array> poly_cell_normal_indices;
+					const bool decoded = _import_decode_cell_vertex_binding(packed_normal_indices, boundary_cell_count, poly_mesh->get_poly_cell_normal_values().size(), poly_cell_normal_indices, "Normals");
+					ERR_FAIL_COND_V(!decoded, Ref<ArrayPolyMesh4D>());
+					poly_mesh->set_poly_cell_normal_indices(poly_cell_normal_indices);
 				}
 			}
 			if (_texture_map_binding.is_valid()) {
-				const TypedArray<G4MFMeshSurfaceBindingGeometry4D> geometry_decompositions = _texture_map_binding->get_geometry_bindings();
-				for (int bind_geom_index = 0; bind_geom_index < geometry_decompositions.size(); bind_geom_index++) {
-					const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_decomposition = geometry_decompositions[bind_geom_index];
-					ERR_FAIL_COND_V(geometry_decomposition.is_null(), Ref<ArrayPolyMesh4D>());
-					// Look for 3D poly cells (geom dimension 3) decomposed into vertices (decomp dim 0).
-					if (geometry_decomposition->get_geometry_dimension() == 3 && geometry_decomposition->get_decompose_dimension() == 0) {
-						const PackedInt32Array packed_texture_map_indices = geometry_decomposition->load_indices(p_g4mf_state);
-						Vector<PackedInt32Array> poly_cell_texture_map_indices;
-						int64_t tex_index_index = 0;
-						const int64_t value_count = poly_mesh->get_poly_cell_texture_map_values().size();
-						while (tex_index_index < packed_texture_map_indices.size()) {
-							PackedInt32Array this_cell_texture_map_indices;
-							const int vertex_count = packed_texture_map_indices[tex_index_index];
-							ERR_FAIL_COND_V_MSG(vertex_count < 0 || vertex_count > packed_texture_map_indices.size() - tex_index_index - 1, Ref<ArrayPolyMesh4D>(), "G4MFMeshSurface4D: Invalid packed texture map binding count.");
-							this_cell_texture_map_indices.resize(vertex_count);
-							tex_index_index += 1;
-							for (int i = 0; i < vertex_count; i++) {
-								const int32_t value_index = packed_texture_map_indices[tex_index_index];
-								ERR_FAIL_INDEX_V(value_index, value_count, Ref<ArrayPolyMesh4D>());
-								this_cell_texture_map_indices.set(i, value_index);
-								tex_index_index += 1;
-							}
-							poly_cell_texture_map_indices.append(this_cell_texture_map_indices);
-						}
-						poly_mesh->set_poly_cell_texture_map_indices(poly_cell_texture_map_indices);
-						break;
-					}
+				PackedInt32Array packed_texture_map_indices;
+				const bool loaded = _import_load_cell_vertex_binding_indices(p_g4mf_state, _texture_map_binding, packed_texture_map_indices, "Texture map");
+				ERR_FAIL_COND_V(!loaded, Ref<ArrayPolyMesh4D>());
+				if (!packed_texture_map_indices.is_empty()) {
+					Vector<PackedInt32Array> poly_cell_texture_map_indices;
+					const bool decoded = _import_decode_cell_vertex_binding(packed_texture_map_indices, boundary_cell_count, poly_mesh->get_poly_cell_texture_map_values().size(), poly_cell_texture_map_indices, "Texture map");
+					ERR_FAIL_COND_V(!decoded, Ref<ArrayPolyMesh4D>());
+					poly_mesh->set_poly_cell_texture_map_indices(poly_cell_texture_map_indices);
 				}
 			}
 		}
@@ -278,24 +299,34 @@ Ref<ArrayTetraMesh4D> G4MFMeshSurface4D::import_generate_tetra_mesh_surface(cons
 		tetra_mesh->calculate_boundary_normals();
 	}
 	// G4MF stores indexed values, which is also how the runtime mesh classes store
-	// their data, so the values and indices can be loaded without any conversion.
+	// their data, so the values and indices can be loaded with minimal conversion.
+	const int64_t simplex_corner_count = tetra_mesh->get_simplex_cell_vertex_indices().size();
 	if (_normals_binding.is_valid()) {
-		tetra_mesh->set_normal_values(_normals_binding->load_values_as_vector4s(p_g4mf_state));
+		PackedVector4Array normal_values = _normals_binding->load_values_as_vector4s(p_g4mf_state);
 		if (_normals_binding->get_simplexes_accessor_index() >= 0) {
-			const PackedInt32Array normal_indices = _normals_binding->load_simplex_indices(p_g4mf_state);
+			PackedInt32Array normal_indices = _normals_binding->load_simplex_indices(p_g4mf_state);
 			if (!normal_indices.is_empty()) {
+				// Only append a zero value if it is needed, and reuse an existing zero if the pool already has one.
+				const int32_t zero_normal_value_index = normal_indices.size() < simplex_corner_count ? (int32_t)Vector4D::vector4_array_append_deduplicate(normal_values, Vector4()) : -1;
+				const bool padded = _import_pad_simplex_corner_binding(normal_indices, simplex_corner_count, zero_normal_value_index, "Normals");
+				ERR_FAIL_COND_V(!padded, Ref<ArrayTetraMesh4D>());
 				tetra_mesh->set_simplex_cell_normal_indices(normal_indices);
 			}
 		}
+		tetra_mesh->set_normal_values(normal_values);
 	}
 	if (_texture_map_binding.is_valid()) {
-		tetra_mesh->set_texture_map_values(_texture_map_binding->load_values_as_vector3s(p_g4mf_state));
+		PackedVector3Array texture_map_values = _texture_map_binding->load_values_as_vector3s(p_g4mf_state);
 		if (_texture_map_binding->get_simplexes_accessor_index() >= 0) {
-			const PackedInt32Array texture_map_indices = _texture_map_binding->load_simplex_indices(p_g4mf_state);
+			PackedInt32Array texture_map_indices = _texture_map_binding->load_simplex_indices(p_g4mf_state);
 			if (!texture_map_indices.is_empty()) {
+				const int32_t zero_texture_map_value_index = texture_map_indices.size() < simplex_corner_count ? (int32_t)Vector4D::vector3_array_append_deduplicate(texture_map_values, Vector3()) : -1;
+				const bool padded = _import_pad_simplex_corner_binding(texture_map_indices, simplex_corner_count, zero_texture_map_value_index, "Texture map");
+				ERR_FAIL_COND_V(!padded, Ref<ArrayTetraMesh4D>());
 				tetra_mesh->set_simplex_cell_texture_map_indices(texture_map_indices);
 			}
 		}
+		tetra_mesh->set_texture_map_values(texture_map_values);
 	}
 	const bool is_valid = tetra_mesh->is_mesh_data_valid();
 	ERR_FAIL_COND_V_MSG(!is_valid, Ref<ArrayTetraMesh4D>(), "G4MFMeshSurface4D.generate_tetra_mesh_surface: The mesh data is not valid. Returning an empty mesh instead.");
