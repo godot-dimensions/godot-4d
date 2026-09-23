@@ -121,11 +121,11 @@ TEST_CASE("[VoxelData] Edits and constant merging") {
 		}
 	}
 	CHECK_MESSAGE(data->get_bounds() == cube_bounds, "VoxelData the loaded chunks should assemble into tight bounds around the cube.");
-	const VoxelDataTree *root = data->find_region_node(cube_bounds);
+	const VoxelDataTree *root = data->find_region_neighbourhood(cube_bounds).node;
 	REQUIRE_MESSAGE(root != nullptr, "VoxelData the cube should be covered by a single root node.");
 
 	data->merge_edited_constants();
-	root = data->find_region_node(cube_bounds);
+	root = data->find_region_neighbourhood(cube_bounds).node;
 	REQUIRE_MESSAGE(root != nullptr, "VoxelData the merged cube should still be a node with the cube's bounds.");
 	CHECK_MESSAGE(root->is_constant(), "VoxelData the merging pass should merge the all-air cube into one constant node.");
 	CHECK_MESSAGE(root->get_constant_material() == VoxelMaterial::AIR, "VoxelData the merged cube's constant material should be air.");
@@ -142,7 +142,7 @@ TEST_CASE("[VoxelData] Edits and constant merging") {
 	data->apply_edit(solid_edit);
 	data->merge_edited_constants();
 	CHECK_MESSAGE(data->get_bounds() == cube_bounds, "VoxelData edits should not change the bounds.");
-	const VoxelDataTree *solid_node = data->find_region_node(solid_chunk);
+	const VoxelDataTree *solid_node = data->find_region_neighbourhood(solid_chunk).node;
 	REQUIRE_MESSAGE(solid_node != nullptr, "VoxelData the chunk the ball covers should be a node of its own.");
 	CHECK_MESSAGE(solid_node->is_constant(), "VoxelData the merging pass should revert the chunk the ball covers to a constant.");
 	CHECK_MESSAGE(solid_node->get_constant_material() == VoxelMaterial::SOLID, "VoxelData the chunk the ball covers should be constant solid.");
@@ -161,7 +161,7 @@ TEST_CASE("[VoxelData] Edits and constant merging") {
 	Ref<SphereVoxelEdit> air_edit = memnew(SphereVoxelEdit(ball_center, ball_radius, VoxelMaterial::AIR));
 	data->apply_edit(air_edit);
 	data->merge_edited_constants();
-	root = data->find_region_node(cube_bounds);
+	root = data->find_region_neighbourhood(cube_bounds).node;
 	REQUIRE_MESSAGE(root != nullptr, "VoxelData the cube should merge back into a node with the cube's bounds.");
 	CHECK_MESSAGE(root->is_constant(), "VoxelData undoing the edit should let the merging pass merge the whole cube again.");
 	CHECK_MESSAGE(root->get_constant_material() == VoxelMaterial::AIR, "VoxelData the re-merged cube's constant material should be air.");
@@ -174,7 +174,7 @@ TEST_CASE("[VoxelData] Edits and constant merging") {
 // are not judged: they may keep data for chunks that load later.
 static bool _surface_data_invariant_holds(const Ref<VoxelData> &p_data) {
 	const Rect4i bounds = p_data->get_bounds();
-	const VoxelDataTree *root = p_data->find_region_node(bounds);
+	const VoxelDataTree *root = p_data->find_region_neighbourhood(bounds).node;
 	if (root == nullptr) {
 		return true;
 	}
@@ -214,7 +214,7 @@ static bool _surface_data_invariant_holds(const Ref<VoxelData> &p_data) {
 // of the observable state regardless of how the tree represents it.
 static Vector<int32_t> _region_state(const Ref<VoxelData> &p_data, const Rect4i &p_region) {
 	Vector<int32_t> state;
-	const VoxelDataTree *root = p_data->find_region_node(p_data->get_bounds());
+	const VoxelDataTree *root = p_data->find_region_neighbourhood(p_data->get_bounds()).node;
 	const Vector4i end = p_region.get_end();
 	for (int32_t w = p_region.position.w; w < end.w; w++) {
 		for (int32_t z = p_region.position.z; z < end.z; z++) {

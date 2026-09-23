@@ -46,16 +46,14 @@ void VoxelMeshHandler::update_dirty_meshes() {
 		_dirty_chunks.erase(chunk_position);
 		// A chunk whose region is only partially defined gets no mesh, so
 		// that chunks aren't repeatedly re-meshed as more parts load. A
-		// region without a tree node of its own is covered by an undefined or
-		// constant ancestor, and a constant region generates as constant only
-		// when its border matches too, so both mean an empty mesh without
-		// running the mesher.
+		// constant region needs no mesh either: constants never border a
+		// different material, so a constant region has no faces.
 		const Rect4i mesh_region = Rect4i(chunk_position, VOXEL_MESH_CHUNK_SIZE_VECTOR);
-		const VoxelDataTree *region_node = voxel_data->find_region_node(mesh_region);
+		const VoxelDataNeighbourhood neighbourhood = voxel_data->find_region_neighbourhood(mesh_region);
 		Ref<Mesh4D> mesh;
-		if (region_node != nullptr && !region_node->is_constant() && region_node->is_region_defined(mesh_region)) {
+		if (neighbourhood.node != nullptr && !neighbourhood.node->is_constant() && neighbourhood.node->is_region_defined(mesh_region)) {
 			updated_count++;
-			mesh = VoxelMesher::generate_chunk_mesh(voxel_data, chunk_position);
+			mesh = VoxelMesher::generate_chunk_mesh(neighbourhood, chunk_position);
 		}
 		HashMap<Vector4i, MeshInstance4D *>::Iterator existing = _chunk_meshes.find(chunk_position);
 		if (mesh.is_null() || mesh->get_vertices().is_empty()) {

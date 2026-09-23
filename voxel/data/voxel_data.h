@@ -42,10 +42,15 @@ public:
 	// are aligned to the global chunk-sized grid anchored at the origin.
 	Vector4i get_chunk_position(const Vector4i &p_voxel) const;
 
-	// The tree node whose bounds are exactly the given region, or null if no
-	// node has those bounds. The node stays owned by the data, and is only
-	// valid until the data is next modified.
-	const VoxelDataTree *find_region_node(const Rect4i &p_region) const;
+	// The neighbourhood of the smallest tree node containing the whole given
+	// region, or one with a null centre node if the region is not entirely
+	// inside the tree. When an undefined or constant node covers the region,
+	// the node may be larger than it.
+	VoxelDataNeighbourhood find_region_neighbourhood(const Rect4i &p_region);
+
+	// Sets the generator that provides chunk contents. Chunks already
+	// generated are unaffected.
+	void set_generator(const Ref<VoxelGenerator> &p_generator);
 
 	// Generates a detached chunk-sized tree with the content of the chunk
 	// containing the given voxel. This only reads the generator, so it can

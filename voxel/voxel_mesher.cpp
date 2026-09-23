@@ -172,7 +172,7 @@ struct CellSurfaces {
 // surface: crossings are grouped into surfaces as connected components, where
 // each of the cell's 24 squares connects its crossings as decided by
 // _pair_square_crossings.
-static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r_cells, PackedVector4Array &r_vertices, const Ref<VoxelData> &p_voxel_data, const Vector4i &p_chunk_position, const Vector4i &p_lattice_local) {
+static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r_cells, PackedVector4Array &r_vertices, const VoxelDataNeighbourhood &p_neighbourhood, const Vector4i &p_chunk_position, const Vector4i &p_lattice_local) {
 	CellSurfaces *existing = r_cells.getptr(p_lattice_local);
 	if (existing != nullptr) {
 		return *existing;
@@ -201,13 +201,13 @@ static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r
 			}
 			Vector4i upper = lower;
 			upper[axis] += 1;
-			const VoxelMaterial lower_material = p_voxel_data->get_material(lower);
-			const VoxelMaterial upper_material = p_voxel_data->get_material(upper);
+			const VoxelMaterial lower_material = p_neighbourhood.get_material(lower);
+			const VoxelMaterial upper_material = p_neighbourhood.get_material(upper);
 			if (lower_material == upper_material || lower_material == VoxelMaterial::UNDEFINED || upper_material == VoxelMaterial::UNDEFINED) {
 				continue;
 			}
 			// Every active edge between defined voxels has stored data.
-			const VoxelEdgeData edge_data = p_voxel_data->get_edge_data(lower, axis);
+			const VoxelEdgeData edge_data = p_neighbourhood.get_edge_data(lower, axis);
 			const int slot = axis * 8 + block;
 			active[slot] = true;
 			normals[slot] = edge_data.decode_normal();
@@ -312,21 +312,17 @@ constexpr int32_t FACE_CELLS_ODD[5][4] = {
 	{ 2, 6, 7, 4 },
 };
 
-Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const Ref<VoxelData> &p_voxel_data, const Vector4i &p_chunk_position) {
+Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &p_neighbourhood, const Vector4i &p_chunk_position) {
 	Ref<ArrayTetraMesh4D> mesh;
 	mesh.instantiate();
-	ERR_FAIL_COND_V(p_voxel_data.is_null(), mesh);
+	ERR_FAIL_NULL_V(p_neighbourhood.node, mesh);
 	struct FaceDirection {
-		int axis = 0;
-		Vector4i normal;
 		Vector4i tangents[3];
 	};
 	FaceDirection face_directions[8];
 	for (int face_axis = 0; face_axis < 4; face_axis++) {
 		for (int side_index = 0; side_index < 2; side_index++) {
 			FaceDirection &direction = face_directions[face_axis * 2 + side_index];
-			direction.axis = face_axis;
-			direction.normal[face_axis] = side_index == 0 ? 1 : -1;
 			int spanning_axis_count = 0;
 			for (int i = 0; i < 4; i++) {
 				if (i != face_axis) {
@@ -356,17 +352,27 @@ Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const Ref<VoxelData> &p_voxel_data,
 			for (local.y = 0; local.y < VOXEL_MESH_CHUNK_SIZE; local.y++) {
 				for (local.x = 0; local.x < VOXEL_MESH_CHUNK_SIZE; local.x++) {
 					const Vector4i voxel = p_chunk_position + local;
-					if (!is_material_opaque(p_voxel_data->get_material(voxel))) {
+					const VoxelMaterial material = p_neighbourhood.get_material(voxel);
+					if (material == VoxelMaterial::UNDEFINED) {
 						continue;
 					}
-					for (int direction_index = 0; direction_index < 8; direction_index++) {
-						const FaceDirection &direction = face_directions[direction_index];
-						const Vector4i facing_voxel = voxel + direction.normal;
-						if (p_voxel_data->get_material(facing_voxel) != VoxelMaterial::AIR) {
+					for (int axis = 0; axis < 4; axis++) {
+						Vector4i upper_voxel = voxel;
+						upper_voxel[axis]++;
+						const VoxelMaterial upper_material = p_neighbourhood.get_material(upper_voxel);
+						// A face separates a solid voxel from an air voxel, and
+						// belongs to the chunk containing the lower voxel of the
+						// edge it crosses, like the edge's surface data.
+						const bool lower_solid = is_material_opaque(material) && upper_material == VoxelMaterial::AIR;
+						const bool upper_solid = is_material_opaque(upper_material) && material == VoxelMaterial::AIR;
+						if (!lower_solid && !upper_solid) {
 							continue;
 						}
-						const Vector4i edge_lower = local + direction.normal.mini(0);
-						const Vector4i edge_upper = local + direction.normal.maxi(0);
+						// The face's winding must put its normal on the air side.
+						const FaceDirection &direction = face_directions[axis * 2 + (lower_solid ? 0 : 1)];
+						const Vector4i edge_lower = local;
+						Vector4i edge_upper = local;
+						edge_upper[axis]++;
 						int32_t corner_indices[8];
 						for (int i = 0; i < 8; i++) {
 							Vector4i corner = edge_upper;
@@ -378,8 +384,8 @@ Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const Ref<VoxelData> &p_voxel_data,
 							// The vertex of the surface crossing this face's
 							// primal edge, which is active, so it always has
 							// a surface.
-							const CellSurfaces &cell_surfaces = _get_cell_surfaces(cells, vertices, p_voxel_data, p_chunk_position, corner);
-							const int slot = _edge_slot(direction.axis, edge_lower - corner + Vector4i(1, 1, 1, 1));
+							const CellSurfaces &cell_surfaces = _get_cell_surfaces(cells, vertices, p_neighbourhood, p_chunk_position, corner);
+							const int slot = _edge_slot(axis, edge_lower - corner + Vector4i(1, 1, 1, 1));
 							corner_indices[i] = cell_surfaces.vertex_indices[cell_surfaces.edge_surfaces[slot]];
 						}
 						// Pick the decomposition whose central tetrahedron sits on the

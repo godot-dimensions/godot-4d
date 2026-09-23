@@ -397,10 +397,10 @@ VoxelDataNeighbourhood VoxelDataNeighbourhood::get_child(const int p_index) cons
 	return child;
 }
 
-VoxelMaterial VoxelDataNeighbourhood::get_material(const Vector4i &p_voxel) const {
-	ERR_FAIL_NULL_V(node, VoxelMaterial::UNDEFINED);
+VoxelDataTree *VoxelDataNeighbourhood::get_node_containing(const Vector4i &p_voxel) const {
+	ERR_FAIL_NULL_V(node, nullptr);
 	if (node->has_voxel(p_voxel)) {
-		return node->get_material(p_voxel);
+		return node;
 	}
 	const Rect4i bounds = node->get_bounds();
 	const Vector4i end = bounds.get_end();
@@ -412,8 +412,17 @@ VoxelMaterial VoxelDataNeighbourhood::get_material(const Vector4i &p_voxel) cons
 			direction += power;
 		}
 	}
-	VoxelDataTree *neighbour = neighbours[direction];
-	return neighbour == nullptr ? VoxelMaterial::UNDEFINED : neighbour->get_material(p_voxel);
+	return neighbours[direction];
+}
+
+VoxelMaterial VoxelDataNeighbourhood::get_material(const Vector4i &p_voxel) const {
+	const VoxelDataTree *containing = get_node_containing(p_voxel);
+	return containing == nullptr ? VoxelMaterial::UNDEFINED : containing->get_material(p_voxel);
+}
+
+VoxelEdgeData VoxelDataNeighbourhood::get_edge_data(const Vector4i &p_voxel, const int p_axis) const {
+	const VoxelDataTree *containing = get_node_containing(p_voxel);
+	return containing == nullptr ? VoxelEdgeData() : containing->get_edge_data(p_voxel, p_axis);
 }
 
 // Subdivides a constant node into constant children, or turns a chunk-sized

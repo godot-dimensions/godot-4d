@@ -169,9 +169,17 @@ struct VoxelDataNeighbourhood {
 	// The neighbourhood of the given child of the centre node.
 	VoxelDataNeighbourhood get_child(const int p_index) const;
 
-	// The material of the given voxel, read from the centre node or the
-	// neighbour covering it.
+	// The centre node or the neighbour whose region contains the given voxel,
+	// or null where the neighbourhood does not cover it. Only meaningful for
+	// voxels inside the centre node or one neighbour step outside it.
+	VoxelDataTree *get_node_containing(const Vector4i &p_voxel) const;
+
+	// The material of the given voxel, read from the node containing it.
 	VoxelMaterial get_material(const Vector4i &p_voxel) const;
+
+	// The stored surface data of the edge from the given voxel to its neighbor
+	// one step along the given axis, read from the node containing the voxel.
+	VoxelEdgeData get_edge_data(const Vector4i &p_voxel, const int p_axis) const;
 
 	// Makes the stored surface data of the edges crossing the centre node's
 	// borders consistent with the materials on their two ends, and splits any

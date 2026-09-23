@@ -39,24 +39,31 @@ Vector4i VoxelData::get_chunk_position(const Vector4i &p_voxel) const {
 	return chunk_position;
 }
 
-const VoxelDataTree *VoxelData::find_region_node(const Rect4i &p_region) const {
-	if (_tree == nullptr || !_tree->has_voxel(p_region.position)) {
-		return nullptr;
+VoxelDataNeighbourhood VoxelData::find_region_neighbourhood(const Rect4i &p_region) {
+	VoxelDataNeighbourhood neighbourhood;
+	if (_tree == nullptr || !_tree->get_bounds().encloses_inclusive(p_region)) {
+		return neighbourhood;
 	}
-	const VoxelDataTree *node = _tree;
-	while (node->get_bounds() != p_region) {
-		if (node->get_bounds().size.x <= p_region.size.x || !node->is_parent()) {
-			return nullptr;
+	neighbourhood.node = _tree;
+	while (neighbourhood.node->is_parent()) {
+		const int child_index = neighbourhood.node->get_child_index_containing(p_region.position);
+		if (!neighbourhood.node->get_child(child_index)->get_bounds().encloses_inclusive(p_region)) {
+			break;
 		}
-		node = node->get_child_containing(p_region.position);
+		neighbourhood = neighbourhood.get_child(child_index);
 	}
-	return node;
+	return neighbourhood;
 }
 
 VoxelDataTree *VoxelData::generate_chunk_content(const Vector4i &p_voxel) const {
 	VoxelDataTree *chunk = memnew(VoxelDataTree(Rect4i(get_chunk_position(p_voxel), VOXEL_DATA_CHUNK_SIZE_VECTOR)));
 	chunk->generate(_generator);
 	return chunk;
+}
+
+void VoxelData::set_generator(const Ref<VoxelGenerator> &p_generator) {
+	ERR_FAIL_COND(p_generator.is_null());
+	_generator = p_generator;
 }
 
 void VoxelData::apply_generated_chunk(VoxelDataTree *p_chunk) {
