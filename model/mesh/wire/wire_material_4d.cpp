@@ -64,16 +64,12 @@ void WireMaterial4D::set_line_thickness(const real_t p_line_thickness) {
 	_line_thickness = p_line_thickness;
 }
 
-void WireMaterial4D::_get_property_list(List<PropertyInfo> *p_list) const {
-	for (List<PropertyInfo>::Element *E = p_list->front(); E; E = E->next()) {
-		PropertyInfo &prop = E->get();
-		if (prop.name == StringName("albedo_color")) {
-			prop.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
-		} else if (prop.name == StringName("albedo_color_array")) {
-			prop.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
-		}
+void WireMaterial4D::_validate_property(PropertyInfo &p_property) const {
+	if (p_property.name == StringName("albedo_color")) {
+		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+	} else if (p_property.name == StringName("albedo_color_array")) {
+		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	}
-	Material4D::_get_property_list(p_list);
 }
 
 void WireMaterial4D::update_cross_section_material_3d() {

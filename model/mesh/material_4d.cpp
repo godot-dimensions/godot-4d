@@ -247,6 +247,14 @@ void Material4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_texture_map_scale"), &Material4D::get_texture_map_scale);
 	ClassDB::bind_method(D_METHOD("set_texture_map_scale", "texture_map_scale"), &Material4D::set_texture_map_scale);
 
+	// These are declared here, on the same class as the TextureTransformMode enum, so that the C# bindings
+	// generator disambiguates the enum against the same-named property. It only checks for that clash within
+	// one class, so declaring the property on a subclass instead would hide the inherited enum (CS0108).
+	// Subclasses that support texture mapping widen these to PROPERTY_USAGE_DEFAULT when a texture is in use.
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "texture_transform_mode", PROPERTY_HINT_ENUM, "None,All Channels,Per Channel", PROPERTY_USAGE_STORAGE), "set_texture_transform_mode", "get_texture_transform_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "texture_map_offset", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_texture_map_offset", "get_texture_map_offset");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "texture_map_scale", PROPERTY_HINT_LINK, "", PROPERTY_USAGE_STORAGE), "set_texture_map_scale", "get_texture_map_scale");
+
 	// Albedo.
 	ClassDB::bind_method(D_METHOD("get_albedo_source_flags"), &Material4D::get_albedo_source_flags);
 	ClassDB::bind_method(D_METHOD("set_albedo_source_flags", "albedo_source_flags"), &Material4D::set_albedo_source_flags);

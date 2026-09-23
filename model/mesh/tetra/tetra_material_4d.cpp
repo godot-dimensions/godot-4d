@@ -156,6 +156,7 @@ void TetraMaterial4D::set_albedo_texture_3d(const Ref<Texture3D> &p_albedo_textu
 	_albedo_texture_3d = p_albedo_texture_3d;
 	update_cross_section_material_3d();
 	update_projected_material_3d();
+	notify_property_list_changed();
 }
 
 void TetraMaterial4D::update_cross_section_material_3d() {
@@ -213,24 +214,29 @@ void TetraMaterial4D::update_projected_material_3d() {
 }
 
 void TetraMaterial4D::_validate_property(PropertyInfo &p_property) const {
-	const bool albedo_texture_3d_used = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_TEXTURE_3D) != 0;
-	const bool any_texture_3d_used = albedo_texture_3d_used; // Update this if more 3D textures are added in the future.
+	const bool albedo_texture_3d_allowed = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_TEXTURE_3D) != 0;
+	const bool albedo_texture_3d_present = albedo_texture_3d_allowed && _albedo_texture_3d.is_valid();
+	const bool any_texture_3d_present = albedo_texture_3d_present; // Update this if more 3D textures are added in the future.
 	const bool texture_transform_mode_all_channels = (_texture_transform_mode == TEXTURE_TRANSFORM_MODE_ALL_CHANNELS);
 	const bool texture_transform_mode_per_channel = (_texture_transform_mode == TEXTURE_TRANSFORM_MODE_PER_CHANNEL);
-	if (p_property.name == StringName("albedo_color")) {
+	if (p_property.name == StringName("texture_transform_mode")) {
+		// Don't show the per-channel option in the inspector until we actually have multiple channels to work with.
+		p_property.hint_string = "None,All Channels";
+		p_property.usage = (any_texture_3d_present) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_STORAGE;
+	} else if (p_property.name == StringName("albedo_color")) {
 		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_SINGLE_COLOR) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	} else if (p_property.name == StringName("albedo_color_array")) {
 		p_property.usage = (_albedo_source_flags & COLOR_SOURCE_FLAG_USES_COLOR_ARRAY) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	} else if (p_property.name == StringName("albedo_texture_3d")) {
-		p_property.usage = (albedo_texture_3d_used) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+		p_property.usage = (albedo_texture_3d_allowed) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	} else if (p_property.name == StringName("albedo_texture_map_offset")) {
-		p_property.usage = (albedo_texture_3d_used && texture_transform_mode_per_channel) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+		p_property.usage = (albedo_texture_3d_present && texture_transform_mode_per_channel) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	} else if (p_property.name == StringName("albedo_texture_map_scale")) {
-		p_property.usage = (albedo_texture_3d_used && texture_transform_mode_per_channel) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+		p_property.usage = (albedo_texture_3d_present && texture_transform_mode_per_channel) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	} else if (p_property.name == StringName("texture_map_offset")) {
-		p_property.usage = (any_texture_3d_used && texture_transform_mode_all_channels) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+		p_property.usage = (any_texture_3d_present && texture_transform_mode_all_channels) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	} else if (p_property.name == StringName("texture_map_scale")) {
-		p_property.usage = (any_texture_3d_used && texture_transform_mode_all_channels) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
+		p_property.usage = (any_texture_3d_present && texture_transform_mode_all_channels) ? PROPERTY_USAGE_DEFAULT : PROPERTY_USAGE_NONE;
 	}
 }
 
@@ -288,10 +294,9 @@ void TetraMaterial4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_albedo_texture_3d"), &TetraMaterial4D::get_albedo_texture_3d);
 	ClassDB::bind_method(D_METHOD("set_albedo_texture_3d", "texture"), &TetraMaterial4D::set_albedo_texture_3d);
 
-	// Don't show the per-channel option in the inspector until we actually have multiple channels to work with.
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "texture_transform_mode", PROPERTY_HINT_ENUM, "None,All Channels"), "set_texture_transform_mode", "get_texture_transform_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "texture_map_offset"), "set_texture_map_offset", "get_texture_map_offset");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "texture_map_scale", PROPERTY_HINT_LINK), "set_texture_map_scale", "get_texture_map_scale");
+	// Most properties are declared here, but the shared texture transform properties
+	// need to be declared by Material4D in order to fix a C# bindings issue.
+	// Those are PROPERTY_USAGE_STORAGE by default, only shown here via `_validate_property`.
 
 	//ADD_GROUP("Albedo", "albedo_");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "albedo_source", PROPERTY_HINT_ENUM, "Single Color,Per Vertex Only,Per Cell Only,Texture3D Only,Texture4D Only,Per Vertex and Single Color,Per Cell and Single Color,Texture3D and Single Color,Texture4D and Single Color"), "set_albedo_source", "get_albedo_source");
