@@ -109,11 +109,11 @@ int G4MFMesh4D::export_convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, co
 		ERR_FAIL_COND_V_MSG(multi_surface_mesh.is_null(), -1, "G4MFMesh4D: Unknown mesh type, cannot convert to a G4MF mesh.");
 		const Vector<Ref<SingleSurfaceMesh4D>> &surface_meshes = multi_surface_mesh->get_surface_meshes();
 		for (int64_t surface_index = 0; surface_index < surface_meshes.size(); surface_index++) {
-			const Ref<SingleSurfaceMesh4D> single_surface_mesh = surface_meshes[surface_index];
-			if (single_surface_mesh.is_null()) {
+			const Ref<SingleSurfaceMesh4D> this_surface_mesh = surface_meshes[surface_index];
+			if (this_surface_mesh.is_null()) {
 				continue; // Null entries are allowed while editing a MultiSurfaceMesh4D, and there is nothing to export for them.
 			}
-			Ref<G4MFMeshSurface4D> g4mf_surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(p_g4mf_state, single_surface_mesh, shared_vertices, p_deduplicate);
+			Ref<G4MFMeshSurface4D> g4mf_surface = G4MFMeshSurface4D::export_convert_mesh_surface_for_state(p_g4mf_state, this_surface_mesh, shared_vertices, p_deduplicate);
 			ERR_FAIL_COND_V_MSG(g4mf_surface.is_null(), -1, "G4MFMesh4D: Failed to convert surface " + itos(surface_index) + " of the mesh '" + p_mesh->get_name() + "' to a G4MF mesh surface.");
 			g4mf_surfaces.append(g4mf_surface);
 		}
