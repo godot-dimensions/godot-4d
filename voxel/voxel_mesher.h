@@ -17,8 +17,9 @@ void eigen_decompose_symmetric_4(const Basis4D &p_matrix, Vector4 &r_values, Bas
 // Generates the mesh for the VOXEL_MESH_CHUNK_SIZE hypercube of the given
 // voxel data whose lowest voxel coordinate is the given position, by dual
 // contouring: one cube-topology face per face of a solid voxel in the chunk
-// whose neighbor on that side is transparent, with each vertex placed to minimize
-// the quadratic error of the surface crossings on the grid edges around it.
+// whose neighbor on that side is transparent. The surface crossings on the
+// grid edges around each vertex are grouped into surfaces, with one vertex
+// per surface placed to minimize the quadratic error of its crossings.
 // Faces with an undefined voxel on either side are omitted, and a face
 // between two chunks belongs to the chunk that contains its solid voxel.
 // Vertex coordinates are local to the chunk, near the range
