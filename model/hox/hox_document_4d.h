@@ -36,7 +36,6 @@ private:
 		Vector4 translation = Vector4(0, 0, 0, 0);
 
 		Basis4D get_grid_rotation() const {
-			Basis4D result = Basis4D();
 			// The grid rotation's pivot is the origin corner of the hoxel grid.
 			// HoxelDraw's grid rotation values use radians, which matches Godot 4D.
 			const Basis4D yz_basis = Basis4D::from_yz(rotation.yz);
