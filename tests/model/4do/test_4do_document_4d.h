@@ -126,7 +126,6 @@ TEST_CASE("[FourDODocument4D] Cells face outward despite the inverted 4DO vertex
 	const PackedVector4Array normals = poly_mesh->get_poly_cell_boundary_normals();
 	REQUIRE(normals.size() == 2);
 	const int32_t cube_orders[2][8] = { { 7, 6, 5, 4, 3, 2, 1, 0 }, { 15, 14, 13, 12, 11, 10, 9, 8 } };
-	const PackedVector4Array cube_vertices = poly_mesh->get_poly_cell_vertex_positions();
 	// Deduplication can reorder vertices, so look positions up from the document's own vertex list instead.
 	PackedVector4Array file_vertices;
 	for (const String &line : text.split("\n", false)) {

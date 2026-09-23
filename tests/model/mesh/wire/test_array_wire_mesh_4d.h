@@ -27,7 +27,7 @@ TEST_CASE("[SceneTree][WireMesh4D] Proxy mesh size constants match Godot's surfa
 	const Array arrays = proxy->surface_get_arrays(0);
 	CHECK(PackedVector3Array(arrays[Mesh::ARRAY_VERTEX]).size() == edge_count * WireMesh4D::PROXY_VERTS_PER_EDGE);
 	// Ask the rendering server how many bytes each vertex takes in this surface's actual format.
-	uint32_t offsets[RS::ARRAY_MAX];
+	uint32_t offsets[RSE::ARRAY_MAX];
 	uint32_t vertex_element_size = 0;
 	uint32_t normal_element_size = 0;
 	uint32_t attrib_element_size = 0;

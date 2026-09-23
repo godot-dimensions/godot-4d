@@ -9,6 +9,8 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/file_access.hpp>
+#elif GODOT_MODULE
+#include "core/io/file_access.h"
 #endif
 
 FourDODocument4D::FourDOVertexInstance4D FourDODocument4D::_import_parse_vertex_instance(const String &p_vertex_instance_string, FourDOSurface4D &r_for_surface) const {
