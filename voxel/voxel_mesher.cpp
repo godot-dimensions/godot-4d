@@ -341,7 +341,7 @@ constexpr int32_t FACE_CELLS_ODD[5][4] = {
 	{ 2, 6, 7, 4 },
 };
 
-Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &p_neighbourhood, const Vector4i &p_chunk_position) {
+Ref<TetraMesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &p_neighbourhood, const Vector4i &p_chunk_position) {
 	Ref<ArrayTetraMesh4D> mesh;
 	mesh.instantiate();
 	ERR_FAIL_NULL_V(p_neighbourhood.node, mesh);
@@ -435,8 +435,8 @@ Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &p_nei
 			}
 		}
 	}
-	mesh->set_vertices(vertices);
-	mesh->set_simplex_cell_indices(cell_indices);
+	mesh->set_vertex_positions(vertices);
+	mesh->set_simplex_cell_vertex_indices(cell_indices);
 	mesh->set_flat_shading_normals();
 	return mesh;
 }

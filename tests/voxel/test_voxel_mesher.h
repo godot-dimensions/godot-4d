@@ -11,7 +11,7 @@ constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
 
 // Meshes one chunk the way the mesh handler does, through the neighbourhood
 // of the node covering the chunk's region.
-static Ref<Mesh4D> _mesh_chunk(const Ref<VoxelData> &p_data, const Vector4i &p_chunk_position) {
+static Ref<TetraMesh4D> _mesh_chunk(const Ref<VoxelData> &p_data, const Vector4i &p_chunk_position) {
 	return VoxelMesher::generate_chunk_mesh(p_data->find_region_neighbourhood(Rect4i(p_chunk_position, VOXEL_MESH_CHUNK_SIZE_VECTOR)), p_chunk_position);
 }
 
@@ -63,8 +63,8 @@ static bool _whole_world_triangles_paired(const Ref<VoxelData> &p_data) {
 				for (int32_t cx = bounds.position.x; cx < bounds.get_end().x; cx += VOXEL_MESH_CHUNK_SIZE) {
 					const Vector4i chunk = Vector4i(cx, cy, cz, cw);
 					Ref<ArrayTetraMesh4D> chunk_mesh = _mesh_chunk(p_data, chunk);
-					const PackedVector4Array chunk_vertices = chunk_mesh->get_vertices();
-					const PackedInt32Array chunk_cells = chunk_mesh->get_simplex_cell_indices();
+					const PackedVector4Array chunk_vertices = chunk_mesh->get_vertex_positions();
+					const PackedInt32Array chunk_cells = chunk_mesh->get_simplex_cell_vertex_indices();
 					LocalVector<int32_t> vertex_ids;
 					vertex_ids.resize(chunk_vertices.size());
 					for (int64_t i = 0; i < chunk_vertices.size(); i++) {
@@ -133,14 +133,14 @@ TEST_CASE("[VoxelMesher] Chunk meshes") {
 	// tiger's hole, where there are no solid voxels.
 	Ref<ArrayTetraMesh4D> empty_chunk = _mesh_chunk(data, Vector4i(-VOXEL_MESH_CHUNK_SIZE / 2, -VOXEL_MESH_CHUNK_SIZE / 2, -VOXEL_MESH_CHUNK_SIZE / 2, -VOXEL_MESH_CHUNK_SIZE / 2));
 	REQUIRE(empty_chunk.is_valid());
-	CHECK_MESSAGE(empty_chunk->get_simplex_cell_indices().is_empty(), "VoxelMesher should generate no cells for a chunk of empty voxels.");
+	CHECK_MESSAGE(empty_chunk->get_simplex_cell_vertex_indices().is_empty(), "VoxelMesher should generate no cells for a chunk of empty voxels.");
 
 	Ref<ArrayTetraMesh4D> surface_chunk = _mesh_chunk(data, Vector4i(12, 0, 12, 0));
-	const PackedInt32Array cell_indices = surface_chunk->get_simplex_cell_indices();
+	const PackedInt32Array cell_indices = surface_chunk->get_simplex_cell_vertex_indices();
 	CHECK_MESSAGE(cell_indices.size() > 0, "VoxelMesher should generate cells for a chunk on the test shape's surface.");
 	CHECK_MESSAGE(cell_indices.size() % 20 == 0, "VoxelMesher should generate 5 tetrahedra (20 indices) per face of the blocky topology.");
 
-	const PackedVector4Array vertices = surface_chunk->get_vertices();
+	const PackedVector4Array vertices = surface_chunk->get_vertex_positions();
 	bool vertices_in_range = vertices.size() > 0;
 	for (const Vector4 &vertex : vertices) {
 		for (int axis = 0; axis < 4; axis++) {

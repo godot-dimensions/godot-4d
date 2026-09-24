@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../math/basis_4d.h"
-#include "../model/mesh/mesh_4d.h"
+#include "../model/mesh/tetra/tetra_mesh_4d.h"
 #include "data/voxel_data_tree.h"
 #include "voxel_constants.h"
 
@@ -26,6 +26,6 @@ void eigen_decompose_symmetric_4(const Basis4D &p_matrix, Vector4 &r_values, Bas
 // its edge.
 // Vertex coordinates are local to the chunk, near the range
 // [0, VOXEL_MESH_CHUNK_SIZE].
-Ref<Mesh4D> generate_chunk_mesh(const VoxelDataNeighbourhood &p_neighbourhood, const Vector4i &p_chunk_position);
+Ref<TetraMesh4D> generate_chunk_mesh(const VoxelDataNeighbourhood &p_neighbourhood, const Vector4i &p_chunk_position);
 
 } // namespace VoxelMesher

@@ -50,13 +50,13 @@ void VoxelMeshHandler::update_dirty_meshes() {
 		// different material, so a constant region has no faces.
 		const Rect4i mesh_region = Rect4i(chunk_position, VOXEL_MESH_CHUNK_SIZE_VECTOR);
 		const VoxelDataNeighbourhood neighbourhood = voxel_data->find_region_neighbourhood(mesh_region);
-		Ref<Mesh4D> mesh;
+		Ref<TetraMesh4D> mesh;
 		if (neighbourhood.node != nullptr && !neighbourhood.node->is_constant() && neighbourhood.node->is_region_defined(mesh_region)) {
 			updated_count++;
 			mesh = VoxelMesher::generate_chunk_mesh(neighbourhood, chunk_position);
 		}
 		HashMap<Vector4i, MeshInstance4D *>::Iterator existing = _chunk_meshes.find(chunk_position);
-		if (mesh.is_null() || mesh->get_vertices().is_empty()) {
+		if (mesh.is_null() || mesh->get_vertex_positions().is_empty()) {
 			if (existing) {
 				memdelete(existing->value);
 				_chunk_meshes.remove(existing);
