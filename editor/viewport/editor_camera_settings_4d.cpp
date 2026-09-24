@@ -1,5 +1,6 @@
 #include "editor_camera_settings_4d.h"
 
+#include "../../voxel/voxel_load_trigger_4d.h"
 #include "editor_main_screen_4d.h"
 
 void EditorCameraSettings4D::set_view_angle_type(const Camera4D::ViewAngleType p_view_angle_type) {
@@ -117,6 +118,18 @@ void EditorCameraSettings4D::set_projection_opacity_base(const double p_projecti
 	write_to_config_file();
 }
 
+void EditorCameraSettings4D::set_voxel_load_distance(const double p_voxel_load_distance) {
+	_voxel_load_distance = p_voxel_load_distance;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
+void EditorCameraSettings4D::set_voxel_unload_distance_ratio(const double p_voxel_unload_distance_ratio) {
+	_voxel_unload_distance_ratio = p_voxel_unload_distance_ratio;
+	apply_to_cameras();
+	write_to_config_file();
+}
+
 void EditorCameraSettings4D::set_rendering_engine_name(const String &p_rendering_engine_name) {
 	_rendering_engine_name = p_rendering_engine_name;
 	notify_property_list_changed();
@@ -148,6 +161,13 @@ void EditorCameraSettings4D::apply_to_cameras() const {
 		camera->set_projection_opacity_base(_projection_opacity_base);
 		camera->set_rendering_engine_name(_rendering_engine_name);
 	}
+	TypedArray<Node> load_triggers = _editor_main_screen->find_children("*", "VoxelLoadTrigger4D", true, false);
+	for (int i = 0; i < load_triggers.size(); i++) {
+		VoxelLoadTrigger4D *load_trigger = Object::cast_to<VoxelLoadTrigger4D>(load_triggers[i]);
+		CRASH_COND(load_trigger == nullptr);
+		load_trigger->set_load_distance(_voxel_load_distance);
+		load_trigger->set_unload_distance_ratio(_voxel_unload_distance_ratio);
+	}
 }
 
 void EditorCameraSettings4D::setup(EditorMainScreen4D *p_editor_main_screen, Ref<ConfigFile> &p_config_file, const String &p_config_file_path) {
@@ -172,6 +192,8 @@ void EditorCameraSettings4D::setup(EditorMainScreen4D *p_editor_main_screen, Ref
 	_projection_opacity_base = p_config_file->get_value("camera", "projection_opacity_base", _projection_opacity_base);
 	// Keep this in sync with `EditorMainScreen4D::_update_rendering_engine_menu()`.
 	_rendering_engine_name = p_config_file->get_value("camera", "rendering_engine_name", _rendering_engine_name);
+	_voxel_load_distance = p_config_file->get_value("camera", "voxel_load_distance", _voxel_load_distance);
+	_voxel_unload_distance_ratio = p_config_file->get_value("camera", "voxel_unload_distance_ratio", _voxel_unload_distance_ratio);
 	apply_to_cameras();
 }
 
@@ -233,6 +255,12 @@ void EditorCameraSettings4D::write_to_config_file() const {
 	}
 	if (!_rendering_engine_name.is_empty()) {
 		_4d_editor_config_file->set_value("camera", "rendering_engine_name", _rendering_engine_name);
+	}
+	if (!Math::is_equal_approx(_voxel_load_distance, 16.0)) {
+		_4d_editor_config_file->set_value("camera", "voxel_load_distance", _voxel_load_distance);
+	}
+	if (!Math::is_equal_approx(_voxel_unload_distance_ratio, 1.5)) {
+		_4d_editor_config_file->set_value("camera", "voxel_unload_distance_ratio", _voxel_unload_distance_ratio);
 	}
 	_4d_editor_config_file->save(_4d_editor_config_file_path);
 }
@@ -349,4 +377,15 @@ void EditorCameraSettings4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_projection_opacity_base"), &EditorCameraSettings4D::get_projection_opacity_base);
 	ClassDB::bind_method(D_METHOD("set_projection_opacity_base", "projection_opacity_base"), &EditorCameraSettings4D::set_projection_opacity_base);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "projection_opacity_base", PROPERTY_HINT_RANGE, "0.01,10,0.001,or_greater,exp"), "set_projection_opacity_base", "get_projection_opacity_base");
+
+	// These are copies of the VoxelLoadTrigger4D properties, applied to the
+	// trigger attached to each editor camera. Be sure to keep these in sync.
+	ADD_GROUP("Voxel", "voxel_");
+	ClassDB::bind_method(D_METHOD("get_voxel_load_distance"), &EditorCameraSettings4D::get_voxel_load_distance);
+	ClassDB::bind_method(D_METHOD("set_voxel_load_distance", "voxel_load_distance"), &EditorCameraSettings4D::set_voxel_load_distance);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "voxel_load_distance", PROPERTY_HINT_RANGE, "0,100,0.001,or_greater"), "set_voxel_load_distance", "get_voxel_load_distance");
+
+	ClassDB::bind_method(D_METHOD("get_voxel_unload_distance_ratio"), &EditorCameraSettings4D::get_voxel_unload_distance_ratio);
+	ClassDB::bind_method(D_METHOD("set_voxel_unload_distance_ratio", "voxel_unload_distance_ratio"), &EditorCameraSettings4D::set_voxel_unload_distance_ratio);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "voxel_unload_distance_ratio", PROPERTY_HINT_RANGE, "1,4,0.01,or_greater"), "set_voxel_unload_distance_ratio", "get_voxel_unload_distance_ratio");
 }

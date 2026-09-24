@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelEdit" inherits="VoxelGenerator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Abstract base class for edits to 4D voxel data.
+	</brief_description>
+	<description>
+		A VoxelEdit produces the voxel content of one edited region to write into a [VoxelData] volume. It works exactly like the [VoxelGenerator] it is, except that it only covers the region inside its bounds rather than a whole world. Each subclass represents one shape of edit, configured by the parameters it is instantiated with.
+		Edits are applied with [method VoxelWorld4D.apply_edit]. New edit shapes can currently only be implemented in C++.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

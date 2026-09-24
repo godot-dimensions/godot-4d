@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TigerTestGenerator" inherits="VoxelGenerator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Temporary test voxel generator producing a tiger.
+	</brief_description>
+	<description>
+		TigerTestGenerator generates a hard-coded test shape: a tiger, the product of circles of the major radius in the XY and ZW planes, thickened into a tube of the minor radius. It just exists so that early voxel systems have something to show.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

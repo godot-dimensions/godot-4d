@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelData" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A 4D volume of voxel data.
+	</brief_description>
+	<description>
+		VoxelData holds a field of 4D voxel data. For each grid point in the region where it is defined, it gives a material and (if applicable) some surface data.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="is_voxel_defined" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="voxel" type="Vector4i" />
+			<description>
+				Returns whether the voxel data at the given coordinates is defined.
+			</description>
+		</method>
+	</methods>
+</class>

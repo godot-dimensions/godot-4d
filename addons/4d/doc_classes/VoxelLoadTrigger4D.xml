@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelLoadTrigger4D" inherits="Node4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A position around which voxel chunks are kept loaded.
+	</brief_description>
+	<description>
+		VoxelLoadTrigger4D marks a position around which a [VoxelWorld4D] keeps voxel chunks loaded. It is usually attached to the player, but can follow anything that should have terrain generated around it.
+		Chunks within [member load_distance] of the trigger's position are loaded. Loaded chunks are only unloaded once they are farther away than [member load_distance] times [member unload_distance_ratio], so that chunks near the boundary are not repeatedly loaded and unloaded as the trigger moves around.
+		By default a trigger applies to every VoxelWorld4D in the scene tree; set [member voxel_world_path] to restrict it to one specific world.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="load_distance" type="float" setter="set_load_distance" getter="get_load_distance" default="16.0">
+			The distance within which voxel chunks are loaded around this trigger.
+		</member>
+		<member name="unload_distance_ratio" type="float" setter="set_unload_distance_ratio" getter="get_unload_distance_ratio" default="1.5">
+			The ratio of the unload distance to [member load_distance]. Loaded chunks are unloaded once they are farther away than [member load_distance] times this ratio.
+		</member>
+		<member name="voxel_world_path" type="NodePath" setter="set_voxel_world_path" getter="get_voxel_world_path" default="NodePath(&quot;&quot;)">
+			The [VoxelWorld4D] this trigger applies to. When empty, the default, the trigger applies to every VoxelWorld4D in the scene tree.
+		</member>
+	</members>
+</class>

@@ -42,3 +42,13 @@
 #include "physics/shapes/test_capsule_shape_4d.h"
 #include "physics/shapes/test_orthoplex_shape_4d.h"
 #include "physics/shapes/test_sphere_shape_4d.h"
+
+// Voxel.
+#include "voxel/test_tiger_test_generator.h"
+#include "voxel/test_voxel_chunk_loader.h"
+#include "voxel/test_voxel_data.h"
+#include "voxel/test_voxel_data_leaf.h"
+#include "voxel/test_voxel_data_tree.h"
+#include "voxel/test_voxel_edge_data.h"
+#include "voxel/test_voxel_mesh_handler.h"
+#include "voxel/test_voxel_mesher.h"

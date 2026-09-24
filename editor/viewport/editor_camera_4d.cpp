@@ -1,6 +1,7 @@
 #include "editor_camera_4d.h"
 
 #include "../../nodes/camera_4d.h"
+#include "../../voxel/voxel_load_trigger_4d.h"
 
 void EditorCamera4D::_notification(int p_what) {
 	switch (p_what) {
@@ -218,6 +219,12 @@ void EditorCamera4D::setup() {
 	_camera->set_name(StringName("Camera4D"));
 	_camera->set_position(Vector4(0.0f, 0.0f, 4.0f, 0.0f));
 	add_child(_camera);
+
+	// Keeps voxel terrain loaded around the editor camera, just like a
+	// trigger attached to the player does in game.
+	VoxelLoadTrigger4D *load_trigger = memnew(VoxelLoadTrigger4D);
+	load_trigger->set_name(StringName("VoxelLoadTrigger4D"));
+	_camera->add_child(load_trigger);
 
 	orbit_rotate_ground_basis_and_pitch(Basis4D::from_zx(0.5f), -0.5f);
 	set_process(true);

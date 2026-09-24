@@ -142,23 +142,23 @@ Vector4i Rect4i::get_nearest_point(const Vector4i &p_point) const {
 	Vector4i closest = p_point;
 	if (p_point.x < position.x) {
 		closest.x = position.x;
-	} else if (p_point.x > end.x) {
-		closest.x = end.x;
+	} else if (p_point.x >= end.x) {
+		closest.x = end.x - 1;
 	}
 	if (p_point.y < position.y) {
 		closest.y = position.y;
-	} else if (p_point.y > end.y) {
-		closest.y = end.y;
+	} else if (p_point.y >= end.y) {
+		closest.y = end.y - 1;
 	}
 	if (p_point.z < position.z) {
 		closest.z = position.z;
-	} else if (p_point.z > end.z) {
-		closest.z = end.z;
+	} else if (p_point.z >= end.z) {
+		closest.z = end.z - 1;
 	}
 	if (p_point.w < position.w) {
 		closest.w = position.w;
-	} else if (p_point.w > end.w) {
-		closest.w = end.w;
+	} else if (p_point.w >= end.w) {
+		closest.w = end.w - 1;
 	}
 	return closest;
 }
@@ -173,23 +173,23 @@ Rect4i Rect4i::expand_to_point(const Vector4i &p_vector) const {
 	Rect4i new_rect = *this;
 	if (p_vector.x < position.x) {
 		new_rect.position.x = p_vector.x;
-	} else if (p_vector.x > end.x) {
-		end.x = p_vector.x;
+	} else if (p_vector.x >= end.x) {
+		end.x = p_vector.x + 1;
 	}
 	if (p_vector.y < position.y) {
 		new_rect.position.y = p_vector.y;
-	} else if (p_vector.y > end.y) {
-		end.y = p_vector.y;
+	} else if (p_vector.y >= end.y) {
+		end.y = p_vector.y + 1;
 	}
 	if (p_vector.z < position.z) {
 		new_rect.position.z = p_vector.z;
-	} else if (p_vector.z > end.z) {
-		end.z = p_vector.z;
+	} else if (p_vector.z >= end.z) {
+		end.z = p_vector.z + 1;
 	}
 	if (p_vector.w < position.w) {
 		new_rect.position.w = p_vector.w;
-	} else if (p_vector.w > end.w) {
-		end.w = p_vector.w;
+	} else if (p_vector.w >= end.w) {
+		end.w = p_vector.w + 1;
 	}
 	new_rect.set_end(end);
 	return new_rect;
@@ -201,10 +201,10 @@ bool Rect4i::has_point(const Vector4i &p_point) const {
 		ERR_PRINT("Rect4i size is negative, this is not supported. Use Rect4i.abs() to get a Rect4i with a positive size.");
 	}
 #endif
-	return p_point.x >= position.x && p_point.x <= position.x + size.x &&
-			p_point.y >= position.y && p_point.y <= position.y + size.y &&
-			p_point.z >= position.z && p_point.z <= position.z + size.z &&
-			p_point.w >= position.w && p_point.w <= position.w + size.w;
+	return p_point.x >= position.x && p_point.x < position.x + size.x &&
+			p_point.y >= position.y && p_point.y < position.y + size.y &&
+			p_point.z >= position.z && p_point.z < position.z + size.z &&
+			p_point.w >= position.w && p_point.w < position.w + size.w;
 }
 
 Vector4i Rect4i::get_support_point(const Vector4i &p_direction) const {
