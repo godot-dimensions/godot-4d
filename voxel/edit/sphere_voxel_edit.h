@@ -9,7 +9,7 @@ class SphereVoxelEdit : public VoxelEdit {
 
 	Vector4 _center = Vector4();
 	real_t _radius = 1.0;
-	VoxelMaterial _material = VoxelMaterial::SOLID;
+	VoxelMaterial _material = VoxelMaterial::AIR;
 
 protected:
 	static void _bind_methods();

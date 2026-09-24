@@ -2,8 +2,20 @@
 
 #include "../../godot_4d_defines.h"
 
-// The surface data of one active voxel grid edge, compressed to 16 bits: the
-// surface normal and the position along the edge where the surface crosses.
+// The surface data of one active voxel grid edge: the surface normal, whose
+// overall sign carries no meaning, and the position along the edge where the
+// surface crosses it, from 0 at the lower voxel's center to 1 at the upper's.
+struct VoxelEdgeData {
+	Vector4 normal;
+	real_t position = 0.0f;
+
+	VoxelEdgeData() {}
+	VoxelEdgeData(const Vector4 &p_normal, const real_t p_position) :
+			normal(p_normal),
+			position(p_position) {}
+};
+
+// Edge surface data compressed to the 16 bits in which chunks store it.
 //
 // The normal is stored as a point on the surface of a hypercube. 2 bits pick
 // the face its largest component points at (the normal's overall sign is not
@@ -16,18 +28,19 @@
 // differ only on face A. Edges and vertices may not be exactly representable
 // however. The remaining 5 bits store the crossing position, from 0 to 1
 // in steps of 1/31.
-struct VoxelEdgeData {
+struct PackedVoxelEdgeData {
 	uint16_t data = 0;
 
-	static VoxelEdgeData encode(const Vector4 &p_normal, const real_t p_position) {
+	static PackedVoxelEdgeData encode(const VoxelEdgeData &p_edge_data) {
+		const Vector4 &normal = p_edge_data.normal;
 		int face = 0;
 		for (int axis = 1; axis < 4; axis++) {
-			if (Math::abs(p_normal[axis]) > Math::abs(p_normal[face])) {
+			if (Math::abs(normal[axis]) > Math::abs(normal[face])) {
 				face = axis;
 			}
 		}
-		VoxelEdgeData encoded;
-		ERR_FAIL_COND_V_MSG(p_normal[face] == (real_t)0.0f, encoded, "VoxelEdgeData cannot encode a zero normal.");
+		PackedVoxelEdgeData encoded;
+		ERR_FAIL_COND_V_MSG(normal[face] == (real_t)0.0f, encoded, "PackedVoxelEdgeData cannot encode a zero normal.");
 		int32_t quarters[3] = { 0, 0, 0 };
 		for (int attempt = 0;; attempt++) {
 			int overflow_axis = -1;
@@ -37,7 +50,7 @@ struct VoxelEdgeData {
 					continue;
 				}
 				// Dividing by the signed component also folds away the sign.
-				real_t coordinate = p_normal[axis] / p_normal[face];
+				real_t coordinate = normal[axis] / normal[face];
 				if (axis < face) {
 					coordinate = -coordinate;
 				}
@@ -55,14 +68,14 @@ struct VoxelEdgeData {
 			// normals of common shapes land there.
 			face = overflow_axis;
 		}
-		const uint16_t position_bits = (uint16_t)Math::round(CLAMP(p_position, (real_t)0.0f, (real_t)1.0f) * (real_t)31.0f);
+		const uint16_t position_bits = (uint16_t)Math::round(CLAMP(p_edge_data.position, (real_t)0.0f, (real_t)1.0f) * (real_t)31.0f);
 		encoded.data = (uint16_t)((face << 14) | ((quarters[2] + 4) << 11) | ((quarters[1] + 4) << 8) | ((quarters[0] + 4) << 5) | position_bits);
 		return encoded;
 	}
 
-	// The decoded normal's sign is not meaningful: the component along the
-	// stored face axis is always positive.
-	Vector4 decode_normal() const {
+	// The decoded normal is normalized, with its component along the stored
+	// face axis always positive.
+	VoxelEdgeData decode() const {
 		const int face = data >> 14;
 		Vector4 normal = Vector4();
 		normal[face] = 1.0f;
@@ -78,12 +91,8 @@ struct VoxelEdgeData {
 			normal[axis] = coordinate;
 			slot++;
 		}
-		return normal.normalized();
-	}
-
-	real_t decode_position() const {
-		return (real_t)(data & 31) / (real_t)31.0f;
+		return VoxelEdgeData(normal.normalized(), (real_t)(data & 31) / (real_t)31.0f);
 	}
 };
 
-static_assert(sizeof(VoxelEdgeData) == 2);
+static_assert(sizeof(PackedVoxelEdgeData) == 2);

@@ -22,24 +22,25 @@ bool VoxelDataLeaf::has_edge_data(const Vector4i &p_local_voxel, const int p_axi
 
 VoxelEdgeData VoxelDataLeaf::get_edge_data(const Vector4i &p_local_voxel, const int p_axis) const {
 	ERR_FAIL_COND_V_MSG(!has_edge_data(p_local_voxel, p_axis), VoxelEdgeData(), "VoxelDataLeaf has no data stored for this edge.");
-	return _edge_data[_get_edge_data_index(get_edge_index(p_local_voxel, p_axis))];
+	return _edge_data[_get_edge_data_index(get_edge_index(p_local_voxel, p_axis))].decode();
 }
 
-void VoxelDataLeaf::set_edge_data(const Vector4i &p_local_voxel, const int p_axis, const VoxelEdgeData p_edge_data) {
+void VoxelDataLeaf::set_edge_data(const Vector4i &p_local_voxel, const int p_axis, const VoxelEdgeData &p_edge_data) {
 	ERR_FAIL_INDEX(p_axis, 4);
 	ERR_FAIL_COND(!has_voxel(p_local_voxel));
+	const PackedVoxelEdgeData packed = PackedVoxelEdgeData::encode(p_edge_data);
 	const int32_t edge_index = get_edge_index(p_local_voxel, p_axis);
 	const int32_t data_index = _get_edge_data_index(edge_index);
 	const uint64_t bit = (uint64_t)1 << (edge_index & 63);
 	if ((_edge_data_bits[edge_index >> 6] & bit) != 0) {
-		_edge_data[data_index] = p_edge_data;
+		_edge_data[data_index] = packed;
 		return;
 	}
 	_edge_data_bits[edge_index >> 6] |= bit;
 	for (int32_t word = (edge_index >> 6) + 1; word < EDGE_WORD_COUNT; word++) {
 		_edge_data_ranks[word]++;
 	}
-	_edge_data.insert(data_index, p_edge_data);
+	_edge_data.insert(data_index, packed);
 }
 
 void VoxelDataLeaf::clear_edge_data(const Vector4i &p_local_voxel, const int p_axis) {

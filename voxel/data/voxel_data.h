@@ -34,8 +34,8 @@ public:
 	VoxelMaterial get_material(const Vector4i &p_voxel) const;
 
 	// The stored surface data of the edge from the given voxel to its
-	// neighbor one step along the given axis, still encoded, or arbitrary data
-	// if none is stored for that edge.
+	// neighbor one step along the given axis, or arbitrary data if none is
+	// stored for that edge.
 	VoxelEdgeData get_edge_data(const Vector4i &p_voxel, const int p_axis) const;
 
 	// The lowest voxel of the data chunk containing the given voxel. Chunks

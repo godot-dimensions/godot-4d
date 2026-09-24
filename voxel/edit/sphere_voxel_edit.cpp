@@ -12,8 +12,9 @@ void SphereVoxelEdit::set_radius(const real_t p_radius) {
 }
 
 void SphereVoxelEdit::set_fill_material(const int p_fill_material) {
-	ERR_FAIL_COND_MSG(p_fill_material != (int)VoxelMaterial::AIR && p_fill_material != (int)VoxelMaterial::SOLID, "SphereVoxelEdit fill material must be AIR or SOLID. Refusing to set.");
-	_material = (VoxelMaterial)p_fill_material;
+	const VoxelMaterial material = (VoxelMaterial)p_fill_material;
+	ERR_FAIL_COND_MSG((int)material != p_fill_material || material == VoxelMaterial::UNDEFINED, "SphereVoxelEdit fill material must be a defined material. Refusing to set.");
+	_material = material;
 }
 
 void SphereVoxelEdit::_bind_methods() {
@@ -27,7 +28,7 @@ void SphereVoxelEdit::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_fill_material"), &SphereVoxelEdit::get_fill_material);
 	ClassDB::bind_method(D_METHOD("set_fill_material", "fill_material"), &SphereVoxelEdit::set_fill_material);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fill_material", PROPERTY_HINT_ENUM, "Air:1,Solid:2"), "set_fill_material", "get_fill_material");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fill_material", PROPERTY_HINT_RANGE, "1,255,1"), "set_fill_material", "get_fill_material");
 }
 
 void SphereVoxelEdit::_update_bounds() {
@@ -60,5 +61,5 @@ VoxelEdgeData SphereVoxelEdit::get_edge_data(const Vector4i &p_voxel, const int 
 		crossing = -half_b + sqrt_discriminant;
 	}
 	point[p_axis] += crossing;
-	return VoxelEdgeData::encode(point - _center, crossing);
+	return VoxelEdgeData(point - _center, crossing);
 }

@@ -528,7 +528,7 @@ static void _reconcile_border(VoxelDataTree *p_lower, VoxelDataTree *p_upper, co
 	const Vector4i upper_origin = p_upper->get_bounds().position;
 	Vector4 border_normal;
 	border_normal[p_axis] = 1.0f;
-	const VoxelEdgeData border_crossing = VoxelEdgeData::encode(border_normal, 0.5f);
+	const VoxelEdgeData border_crossing = VoxelEdgeData(border_normal, 0.5f);
 	const Vector4i end = lower_layer.get_end();
 	for (int32_t w = lower_layer.position.w; w < end.w; w++) {
 		for (int32_t z = lower_layer.position.z; z < end.z; z++) {
@@ -636,8 +636,8 @@ void VoxelDataNeighbourhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
 								// region, so the combined region's surface is
 								// whichever crossing lies farther from the
 								// edit-defined end.
-								const real_t old_position = leaf_data->get_edge_data(local_voxel, axis).decode_position();
-								const real_t edit_position = edit_edge_data.decode_position();
+								const real_t old_position = leaf_data->get_edge_data(local_voxel, axis).position;
+								const real_t edit_position = edit_edge_data.position;
 								const bool old_is_farther = lower_defined ? old_position > edit_position : old_position < edit_position;
 								if (old_is_farther) {
 									continue;

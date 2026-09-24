@@ -16,7 +16,7 @@
 			The radius of the sphere, in voxels.
 		</member>
 		<member name="fill_material" type="int" setter="set_fill_material" getter="get_fill_material" default="2">
-			The material the sphere is filled with: [code]1[/code] for air, carving matter out, or [code]2[/code] for solid, adding it.
+			The material the sphere is filled with: [code]1[/code] for air, carving matter out, or [code]2[/code] and above for the opaque materials, adding matter.
 		</member>
 	</members>
 </class>

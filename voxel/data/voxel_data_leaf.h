@@ -29,7 +29,7 @@ private:
 	// edge's entry in _edge_data can be found without a full scan.
 	uint16_t _edge_data_ranks[EDGE_WORD_COUNT] = {};
 	// The surface data of the active edges, in edge index order.
-	LocalVector<VoxelEdgeData> _edge_data;
+	LocalVector<PackedVoxelEdgeData> _edge_data;
 
 	int32_t _get_edge_data_index(const int32_t p_edge_index) const;
 
@@ -61,7 +61,7 @@ public:
 
 	bool has_edge_data(const Vector4i &p_local_voxel, const int p_axis) const;
 	VoxelEdgeData get_edge_data(const Vector4i &p_local_voxel, const int p_axis) const;
-	void set_edge_data(const Vector4i &p_local_voxel, const int p_axis, const VoxelEdgeData p_edge_data);
+	void set_edge_data(const Vector4i &p_local_voxel, const int p_axis, const VoxelEdgeData &p_edge_data);
 	// Removes the data stored for the edge, if there is any.
 	void clear_edge_data(const Vector4i &p_local_voxel, const int p_axis);
 	int64_t get_edge_data_count() const { return _edge_data.size(); }

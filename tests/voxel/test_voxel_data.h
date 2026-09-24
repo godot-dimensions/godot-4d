@@ -7,6 +7,8 @@
 #include "tests/test_macros.h"
 
 namespace TestVoxelData {
+constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
+
 TEST_CASE("[VoxelData] Hard-coded test data") {
 	Ref<VoxelData> data;
 	data.instantiate();
@@ -26,7 +28,7 @@ TEST_CASE("[VoxelData] Hard-coded test data") {
 	// The remaining samples are fixed locations on the test tiger, inside the
 	// test region for any chunk size of at least 4.
 	CHECK_MESSAGE(data->get_material(Vector4i(0, 0, 0, 0)) == VoxelMaterial::AIR, "VoxelData test shape should be empty at the origin.");
-	CHECK_MESSAGE(data->get_material(Vector4i(10, 0, 10, 0)) == VoxelMaterial::SOLID, "VoxelData test shape should be solid on the tiger's core circles.");
+	CHECK_MESSAGE(data->get_material(Vector4i(10, 0, 10, 0)) == SOLID_MATERIAL, "VoxelData test shape should be solid on the tiger's core circles.");
 	CHECK_MESSAGE(data->get_material(Vector4i(100000, -5, 3, 12)) == VoxelMaterial::UNDEFINED, "VoxelData get_material outside the bounds should return UNDEFINED.");
 }
 
@@ -138,21 +140,21 @@ TEST_CASE("[VoxelData] Edits and constant merging") {
 	const Vector4i ball_center_voxel = solid_chunk.position + VOXEL_DATA_CHUNK_SIZE_VECTOR / 2;
 	const Vector4 ball_center = Vector4(ball_center_voxel);
 	const real_t ball_radius = VOXEL_DATA_CHUNK_SIZE + 1.0;
-	Ref<SphereVoxelEdit> solid_edit = memnew(SphereVoxelEdit(ball_center, ball_radius, VoxelMaterial::SOLID));
+	Ref<SphereVoxelEdit> solid_edit = memnew(SphereVoxelEdit(ball_center, ball_radius, SOLID_MATERIAL));
 	data->apply_edit(solid_edit);
 	data->merge_edited_constants();
 	CHECK_MESSAGE(data->get_bounds() == cube_bounds, "VoxelData edits should not change the bounds.");
 	const VoxelDataTree *solid_node = data->find_region_neighbourhood(solid_chunk).node;
 	REQUIRE_MESSAGE(solid_node != nullptr, "VoxelData the chunk the ball covers should be a node of its own.");
 	CHECK_MESSAGE(solid_node->is_constant(), "VoxelData the merging pass should revert the chunk the ball covers to a constant.");
-	CHECK_MESSAGE(solid_node->get_constant_material() == VoxelMaterial::SOLID, "VoxelData the chunk the ball covers should be constant solid.");
+	CHECK_MESSAGE(solid_node->get_constant_material() == SOLID_MATERIAL, "VoxelData the chunk the ball covers should be constant solid.");
 	// Probes on either side of the ball's surface, both in the same chunk one
 	// step along X from the covered chunk.
 	Vector4i inside_probe = ball_center_voxel;
 	inside_probe.x += VOXEL_DATA_CHUNK_SIZE - 1;
 	Vector4i outside_probe = ball_center_voxel;
 	outside_probe.x += VOXEL_DATA_CHUNK_SIZE + 1;
-	CHECK_MESSAGE(data->get_material(inside_probe) == VoxelMaterial::SOLID, "VoxelData voxels just inside the ball's surface should be solid.");
+	CHECK_MESSAGE(data->get_material(inside_probe) == SOLID_MATERIAL, "VoxelData voxels just inside the ball's surface should be solid.");
 	CHECK_MESSAGE(data->get_material(outside_probe) == VoxelMaterial::AIR, "VoxelData voxels just outside the ball's surface should still be air.");
 	CHECK_MESSAGE(data->get_material(cube_position) == VoxelMaterial::AIR, "VoxelData the cube's near corner, far from the ball, should still be air.");
 	CHECK_MESSAGE(data->get_material(cube_bounds.get_end() - Vector4i(1, 1, 1, 1)) == VoxelMaterial::AIR, "VoxelData the cube's far corner should still be air.");
@@ -211,9 +213,10 @@ static bool _surface_data_invariant_holds(const Ref<VoxelData> &p_data) {
 }
 
 // Every material and stored edge datum in the region, for exact comparisons
-// of the observable state regardless of how the tree represents it.
-static Vector<int32_t> _region_state(const Ref<VoxelData> &p_data, const Rect4i &p_region) {
-	Vector<int32_t> state;
+// of the observable state regardless of how the tree represents it. Decoding
+// stored data is deterministic, so equal states mean equal stored bits.
+static Vector<real_t> _region_state(const Ref<VoxelData> &p_data, const Rect4i &p_region) {
+	Vector<real_t> state;
 	const VoxelDataTree *root = p_data->find_region_neighbourhood(p_data->get_bounds()).node;
 	const Vector4i end = p_region.get_end();
 	for (int32_t w = p_region.position.w; w < end.w; w++) {
@@ -221,15 +224,22 @@ static Vector<int32_t> _region_state(const Ref<VoxelData> &p_data, const Rect4i 
 			for (int32_t y = p_region.position.y; y < end.y; y++) {
 				for (int32_t x = p_region.position.x; x < end.x; x++) {
 					const Vector4i voxel = Vector4i(x, y, z, w);
-					state.push_back((int32_t)p_data->get_material(voxel));
+					state.push_back((real_t)(int)p_data->get_material(voxel));
 					const VoxelDataTree *node = root == nullptr ? nullptr : root->find_deepest_node(voxel);
 					const VoxelDataLeaf *leaf = node != nullptr && node->is_leaf() ? node->get_leaf_data() : nullptr;
 					for (int axis = 0; axis < 4; axis++) {
-						int32_t entry = 0;
 						if (leaf != nullptr && leaf->has_edge_data(voxel - node->get_bounds().position, axis)) {
-							entry = 0x10000 | leaf->get_edge_data(voxel - node->get_bounds().position, axis).data;
+							const VoxelEdgeData edge_data = leaf->get_edge_data(voxel - node->get_bounds().position, axis);
+							state.push_back(1.0f);
+							for (int i = 0; i < 4; i++) {
+								state.push_back(edge_data.normal[i]);
+							}
+							state.push_back(edge_data.position);
+						} else {
+							for (int i = 0; i < 6; i++) {
+								state.push_back(0.0f);
+							}
 						}
-						state.push_back(entry);
 					}
 				}
 			}
@@ -258,12 +268,12 @@ TEST_CASE("[VoxelData] Edit surface data invariant and idempotence") {
 
 	// Solid over air, then solid over the same solid at an offset (the
 	// same-material extension rule), then carving air out of the middle.
-	Ref<SphereVoxelEdit> first_solid = memnew(SphereVoxelEdit(cube_center, VOXEL_DATA_CHUNK_SIZE / 2.0 + 1.0, VoxelMaterial::SOLID));
+	Ref<SphereVoxelEdit> first_solid = memnew(SphereVoxelEdit(cube_center, VOXEL_DATA_CHUNK_SIZE / 2.0 + 1.0, SOLID_MATERIAL));
 	data->apply_edit(first_solid);
 	CHECK_MESSAGE(_surface_data_invariant_holds(data), "VoxelData a solid edit over air should leave the surface data consistent.");
 	Vector4 offset_center = cube_center;
 	offset_center.x += VOXEL_DATA_CHUNK_SIZE / 4.0;
-	Ref<SphereVoxelEdit> offset_solid = memnew(SphereVoxelEdit(offset_center, VOXEL_DATA_CHUNK_SIZE / 2.0 + 1.0, VoxelMaterial::SOLID));
+	Ref<SphereVoxelEdit> offset_solid = memnew(SphereVoxelEdit(offset_center, VOXEL_DATA_CHUNK_SIZE / 2.0 + 1.0, SOLID_MATERIAL));
 	data->apply_edit(offset_solid);
 	CHECK_MESSAGE(_surface_data_invariant_holds(data), "VoxelData an overlapping solid edit should leave the surface data consistent.");
 	Ref<SphereVoxelEdit> carve = memnew(SphereVoxelEdit(cube_center, VOXEL_DATA_CHUNK_SIZE / 2.0, VoxelMaterial::AIR));
@@ -272,9 +282,9 @@ TEST_CASE("[VoxelData] Edit surface data invariant and idempotence") {
 
 	// Applying an edit twice must be indistinguishable from applying it once.
 	data->apply_edit(first_solid);
-	const Vector<int32_t> state_once = _region_state(data, data->get_bounds());
+	const Vector<real_t> state_once = _region_state(data, data->get_bounds());
 	data->apply_edit(first_solid);
-	const Vector<int32_t> state_twice = _region_state(data, data->get_bounds());
+	const Vector<real_t> state_twice = _region_state(data, data->get_bounds());
 	CHECK_MESSAGE(state_twice == state_once, "VoxelData edits should be idempotent in both materials and surface data.");
 
 	data->merge_edited_constants();
@@ -295,15 +305,15 @@ TEST_CASE("[VoxelData] Edits reconcile with chunks loaded later") {
 	const Vector4i ball_center_voxel = neighbor_position + Vector4i(0, VOXEL_DATA_CHUNK_SIZE / 2, VOXEL_DATA_CHUNK_SIZE / 2, VOXEL_DATA_CHUNK_SIZE / 2);
 	const Vector4 ball_center = Vector4(ball_center_voxel);
 	const real_t ball_radius = VOXEL_DATA_CHUNK_SIZE / 2.0;
-	Ref<SphereVoxelEdit> solid_edit = memnew(SphereVoxelEdit(ball_center, ball_radius, VoxelMaterial::SOLID));
+	Ref<SphereVoxelEdit> solid_edit = memnew(SphereVoxelEdit(ball_center, ball_radius, SOLID_MATERIAL));
 	data->apply_edit(solid_edit);
 	const Vector4i inside_probe = ball_center_voxel - Vector4i(1, 0, 0, 0);
-	CHECK_MESSAGE(data->get_material(inside_probe) == VoxelMaterial::SOLID, "VoxelData the loaded half of the ball should become solid.");
+	CHECK_MESSAGE(data->get_material(inside_probe) == SOLID_MATERIAL, "VoxelData the loaded half of the ball should become solid.");
 	CHECK_MESSAGE(_surface_data_invariant_holds(data), "VoxelData the surface data invariant should hold before the neighbor loads.");
 
 	data->apply_generated_chunk(data->generate_chunk_content(neighbor_position));
 	CHECK_MESSAGE(data->get_material(ball_center_voxel) == VoxelMaterial::AIR, "VoxelData the discarded half of the ball should not reappear when its chunk loads.");
-	CHECK_MESSAGE(data->get_material(inside_probe) == VoxelMaterial::SOLID, "VoxelData the applied half of the ball should survive the neighbor loading.");
+	CHECK_MESSAGE(data->get_material(inside_probe) == SOLID_MATERIAL, "VoxelData the applied half of the ball should survive the neighbor loading.");
 	CHECK_MESSAGE(_surface_data_invariant_holds(data), "VoxelData loading next to an edit should reconcile the border's surface data.");
 
 	// Unloading the neighbor, carving the ball back out, and reloading leaves

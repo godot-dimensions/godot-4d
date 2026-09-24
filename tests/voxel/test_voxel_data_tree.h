@@ -7,11 +7,11 @@
 
 namespace TestVoxelDataTree {
 
-constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::SOLID;
+constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
 
 class UniformSolidGenerator : public VoxelGenerator {
 public:
-	virtual VoxelMaterial get_material(const Vector4i &) const override { return VoxelMaterial::SOLID; }
+	virtual VoxelMaterial get_material(const Vector4i &) const override { return SOLID_MATERIAL; }
 	virtual VoxelEdgeData get_edge_data(const Vector4i &, const int) const override { return VoxelEdgeData(); }
 };
 
@@ -20,10 +20,10 @@ public:
 class HalfSpaceGenerator : public VoxelGenerator {
 public:
 	virtual VoxelMaterial get_material(const Vector4i &p_voxel) const override {
-		return p_voxel.x >= 0 ? VoxelMaterial::SOLID : VoxelMaterial::AIR;
+		return p_voxel.x >= 0 ? SOLID_MATERIAL : VoxelMaterial::AIR;
 	}
 	virtual VoxelEdgeData get_edge_data(const Vector4i &, const int) const override {
-		return VoxelEdgeData::encode(Vector4(-1, 0, 0, 0), 0.5f);
+		return VoxelEdgeData(Vector4(-1, 0, 0, 0), 0.5f);
 	}
 };
 
@@ -31,10 +31,10 @@ public:
 class DiagonalHalfSpaceGenerator : public VoxelGenerator {
 public:
 	virtual VoxelMaterial get_material(const Vector4i &p_voxel) const override {
-		return p_voxel.x + p_voxel.y >= 0 ? VoxelMaterial::SOLID : VoxelMaterial::AIR;
+		return p_voxel.x + p_voxel.y >= 0 ? SOLID_MATERIAL : VoxelMaterial::AIR;
 	}
 	virtual VoxelEdgeData get_edge_data(const Vector4i &, const int) const override {
-		return VoxelEdgeData::encode(Vector4(-1, -1, 0, 0), 0.5f);
+		return VoxelEdgeData(Vector4(-1, -1, 0, 0), 0.5f);
 	}
 };
 
@@ -138,15 +138,15 @@ TEST_CASE("[VoxelDataTree] Generate") {
 	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(-1, corner.y, corner.z, corner.w))->is_leaf(), "VoxelDataTree generate should keep a chunk that borders a different material as a leaf.");
 	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(0, corner.y, corner.z, corner.w))->is_leaf(), "VoxelDataTree generate should keep a solid chunk that borders air as a leaf.");
 	CHECK_MESSAGE(tree.get_material(Vector4i(-1, 3, -3, 5)) == VoxelMaterial::AIR, "VoxelDataTree generate should store the generated materials.");
-	CHECK_MESSAGE(tree.get_material(Vector4i(0, 3, -3, 5)) == VoxelMaterial::SOLID, "VoxelDataTree generate should store the generated materials.");
+	CHECK_MESSAGE(tree.get_material(Vector4i(0, 3, -3, 5)) == SOLID_MATERIAL, "VoxelDataTree generate should store the generated materials.");
 
 	VoxelDataLeaf *border_leaf = tree.find_deepest_node(Vector4i(-1, corner.y, corner.z, corner.w))->get_leaf_data();
 	REQUIRE(border_leaf != nullptr);
 	const Vector4i crossing_voxel = Vector4i(VOXEL_DATA_CHUNK_SIZE - 1, 0, 0, 0);
 	CHECK_MESSAGE(border_leaf->has_edge_data(crossing_voxel, 0), "VoxelDataTree generate should store data on an edge crossing the material boundary.");
 	CHECK_MESSAGE(!border_leaf->has_edge_data(crossing_voxel, 1), "VoxelDataTree generate should not store data on edges between voxels of the same material.");
-	CHECK_MESSAGE(border_leaf->get_edge_data(crossing_voxel, 0).decode_normal() == Vector4(1, 0, 0, 0), "VoxelDataTree generate should store the generator's normal for an active edge, up to its sign.");
-	CHECK_MESSAGE(Math::abs(border_leaf->get_edge_data(crossing_voxel, 0).decode_position() - 0.5f) < 0.5f / 31.0f + 0.0001f, "VoxelDataTree generate should store the generator's crossing position for an active edge.");
+	CHECK_MESSAGE(border_leaf->get_edge_data(crossing_voxel, 0).normal == Vector4(1, 0, 0, 0), "VoxelDataTree generate should store the generator's normal for an active edge, up to its sign.");
+	CHECK_MESSAGE(Math::abs(border_leaf->get_edge_data(crossing_voxel, 0).position - 0.5f) < 0.5f / 31.0f + 0.0001f, "VoxelDataTree generate should store the generator's crossing position for an active edge.");
 	CHECK_MESSAGE(border_leaf->get_edge_data_count() == VOXEL_DATA_CHUNK_SIZE * VOXEL_DATA_CHUNK_SIZE * VOXEL_DATA_CHUNK_SIZE, "VoxelDataTree generate should store one entry per active edge, including edges crossing into the next chunk.");
 	VoxelDataLeaf *solid_leaf = tree.find_deepest_node(Vector4i(0, corner.y, corner.z, corner.w))->get_leaf_data();
 	REQUIRE(solid_leaf != nullptr);
@@ -156,7 +156,7 @@ TEST_CASE("[VoxelDataTree] Generate") {
 	diagonal_generator.instantiate();
 	tree.generate(diagonal_generator);
 	CHECK_MESSAGE(tree.find_deepest_node(Vector4i(2, -2, 0, 0))->is_leaf(), "VoxelDataTree generate should make a leaf for a chunk with mixed values.");
-	CHECK_MESSAGE(tree.get_material(Vector4i(2, -2, 0, 0)) == VoxelMaterial::SOLID, "VoxelDataTree generate should store mixed chunks at full detail.");
+	CHECK_MESSAGE(tree.get_material(Vector4i(2, -2, 0, 0)) == SOLID_MATERIAL, "VoxelDataTree generate should store mixed chunks at full detail.");
 	CHECK_MESSAGE(tree.get_material(Vector4i(2, -3, 0, 0)) == VoxelMaterial::AIR, "VoxelDataTree generate should store mixed chunks at full detail.");
 }
 } // namespace TestVoxelDataTree

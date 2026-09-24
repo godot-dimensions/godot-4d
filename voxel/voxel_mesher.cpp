@@ -109,21 +109,20 @@ static void _union_surfaces(int *p_parent, const int p_slot_a, const int p_slot_
 	p_parent[_find_surface_root(p_parent, p_slot_a)] = _find_surface_root(p_parent, p_slot_b);
 }
 
-// Connects the surfaces of the crossings on one square's edges, given in
-// cyclic order. 2 or 3 crossings all belong to one surface. 4 crossings pair
-// into two surfaces as the cyclically adjacent couples with the smaller total
-// mismatch, or, when the normals are all too close to perpendicular to the
-// square to tell the pairings apart, as the couples of nearest points.
-// p_points and p_normals are indexed by edge slot, like p_active.
-static void _pair_square_crossings(int *p_union_set, const bool *p_active, const int p_slots[4], const Vector4 *p_points, const Vector4 *p_normals) {
+// Connects the surfaces of the crossings on one square's edges. The edges are
+// given in cyclic order, and p_corner_materials[k] is the material of the
+// corner between edges k - 1 and k. 2 or 3 crossings always all belong to one
+// surface. 4 crossings pair into two surfaces as the cyclically adjacent
+// couples according to a heuristic based on the crossing locations, unless the
+// diagonal of corners that pairing leaves connected between its surfaces needs
+// a face between its materials: then the surfaces meet at a junction instead,
+// and all 4 crossings connect.
+static void _pair_square_crossings(int *p_union_set, const bool *p_active, const int p_slots[4], const VoxelMaterial p_corner_materials[4], const Vector4 *p_points, const Vector4 *p_normals) {
 	int active_count = 0;
 	for (int k = 0; k < 4; k++) {
 		if (p_active[p_slots[k]]) {
 			active_count++;
 		}
-	}
-	if (active_count < 2) {
-		return;
 	}
 	if (active_count < 4) {
 		int first = -1;
@@ -145,13 +144,22 @@ static void _pair_square_crossings(int *p_union_set, const bool *p_active, const
 	const Vector4 &point_1 = p_points[p_slots[1]];
 	const Vector4 &point_2 = p_points[p_slots[2]];
 	const Vector4 &point_3 = p_points[p_slots[3]];
-	real_t total_adjacent = _couple_mismatch(point_0, p_normals[p_slots[0]], point_1, p_normals[p_slots[1]]) + _couple_mismatch(point_2, p_normals[p_slots[2]], point_3, p_normals[p_slots[3]]);
-	real_t total_opposite = _couple_mismatch(point_0, p_normals[p_slots[0]], point_3, p_normals[p_slots[3]]) + _couple_mismatch(point_1, p_normals[p_slots[1]], point_2, p_normals[p_slots[2]]);
-	if (total_adjacent == total_opposite) {
-		total_adjacent = point_0.distance_squared_to(point_1) + point_2.distance_squared_to(point_3);
-		total_opposite = point_0.distance_squared_to(point_3) + point_1.distance_squared_to(point_2);
+	real_t total_01_23 = _couple_mismatch(point_0, p_normals[p_slots[0]], point_1, p_normals[p_slots[1]]) + _couple_mismatch(point_2, p_normals[p_slots[2]], point_3, p_normals[p_slots[3]]);
+	real_t total_03_12 = _couple_mismatch(point_0, p_normals[p_slots[0]], point_3, p_normals[p_slots[3]]) + _couple_mismatch(point_1, p_normals[p_slots[1]], point_2, p_normals[p_slots[2]]);
+	if (total_01_23 == total_03_12) {
+		total_01_23 = point_0.distance_squared_to(point_1) + point_2.distance_squared_to(point_3);
+		total_03_12 = point_0.distance_squared_to(point_3) + point_1.distance_squared_to(point_2);
 	}
-	if (total_adjacent <= total_opposite) {
+	const bool couple_01_23 = total_01_23 <= total_03_12;
+	// The pairing wraps the two corners its couples surround and leaves the
+	// other diagonal's corners in the region between its surfaces.
+	if (get_face_between(p_corner_materials[couple_01_23 ? 0 : 1], p_corner_materials[couple_01_23 ? 2 : 3]) != VoxelFace::NONE) {
+		_union_surfaces(p_union_set, p_slots[1], p_slots[0]);
+		_union_surfaces(p_union_set, p_slots[2], p_slots[0]);
+		_union_surfaces(p_union_set, p_slots[3], p_slots[0]);
+		return;
+	}
+	if (couple_01_23) {
 		_union_surfaces(p_union_set, p_slots[1], p_slots[0]);
 		_union_surfaces(p_union_set, p_slots[3], p_slots[2]);
 	} else {
@@ -182,11 +190,23 @@ static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r
 		cell.edge_surfaces[slot] = -1;
 	}
 	const Vector4i lattice_point = p_chunk_position + p_lattice_local;
+	// The materials of the cell's 16 voxels, indexed with one bit per axis.
+	VoxelMaterial cell_materials[16];
+	for (int i = 0; i < 16; i++) {
+		Vector4i voxel = lattice_point - Vector4i(1, 1, 1, 1);
+		for (int axis = 0; axis < 4; axis++) {
+			if ((i & (1 << axis)) != 0) {
+				voxel[axis] += 1;
+			}
+		}
+		cell_materials[i] = p_neighbourhood.get_material(voxel);
+	}
 	bool active[32] = {};
 	Vector4 points[32];
 	Vector4 normals[32];
 	for (int axis = 0; axis < 4; axis++) {
 		for (int block = 0; block < 8; block++) {
+			int lower_index = 0;
 			Vector4i lower = lattice_point;
 			lower[axis] -= 1;
 			int bit = 0;
@@ -196,13 +216,13 @@ static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r
 				}
 				if ((block & (1 << bit)) == 0) {
 					lower[i] -= 1;
+				} else {
+					lower_index |= 1 << i;
 				}
 				bit++;
 			}
-			Vector4i upper = lower;
-			upper[axis] += 1;
-			const VoxelMaterial lower_material = p_neighbourhood.get_material(lower);
-			const VoxelMaterial upper_material = p_neighbourhood.get_material(upper);
+			const VoxelMaterial lower_material = cell_materials[lower_index];
+			const VoxelMaterial upper_material = cell_materials[lower_index | (1 << axis)];
 			if (lower_material == upper_material || lower_material == VoxelMaterial::UNDEFINED || upper_material == VoxelMaterial::UNDEFINED) {
 				continue;
 			}
@@ -210,9 +230,9 @@ static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r
 			const VoxelEdgeData edge_data = p_neighbourhood.get_edge_data(lower, axis);
 			const int slot = axis * 8 + block;
 			active[slot] = true;
-			normals[slot] = edge_data.decode_normal();
+			normals[slot] = edge_data.normal;
 			Vector4 point = Vector4(lower - lattice_point) + Vector4(0.5f, 0.5f, 0.5f, 0.5f);
-			point[axis] += edge_data.decode_position();
+			point[axis] += edge_data.position;
 			points[slot] = point;
 		}
 	}
@@ -247,7 +267,16 @@ static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r
 				slots[2] = _edge_slot(axis_a, lower);
 				lower[axis_b] = 0;
 				slots[3] = _edge_slot(axis_b, lower);
-				_pair_square_crossings(union_set, active, slots, points, normals);
+				const int base_index = (base[other_axes[0]] << other_axes[0]) | (base[other_axes[1]] << other_axes[1]);
+				// The corner materials in cyclic order: corner k lies between
+				// edges k - 1 and k.
+				const VoxelMaterial corner_materials[4] = {
+					cell_materials[base_index],
+					cell_materials[base_index | (1 << axis_a)],
+					cell_materials[base_index | (1 << axis_a) | (1 << axis_b)],
+					cell_materials[base_index | (1 << axis_b)],
+				};
+				_pair_square_crossings(union_set, active, slots, corner_materials, points, normals);
 			}
 		}
 	}
@@ -360,16 +389,16 @@ Ref<Mesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &p_nei
 						Vector4i upper_voxel = voxel;
 						upper_voxel[axis]++;
 						const VoxelMaterial upper_material = p_neighbourhood.get_material(upper_voxel);
-						// A face separates a solid voxel from an air voxel, and
-						// belongs to the chunk containing the lower voxel of the
-						// edge it crosses, like the edge's surface data.
-						const bool lower_solid = is_material_opaque(material) && upper_material == VoxelMaterial::AIR;
-						const bool upper_solid = is_material_opaque(upper_material) && material == VoxelMaterial::AIR;
-						if (!lower_solid && !upper_solid) {
+						// A face belongs to the chunk containing the lower
+						// voxel of the edge it crosses, like the edge's
+						// surface data.
+						const VoxelFace face = get_face_between(material, upper_material);
+						if (face == VoxelFace::NONE) {
 							continue;
 						}
-						// The face's winding must put its normal on the air side.
-						const FaceDirection &direction = face_directions[axis * 2 + (lower_solid ? 0 : 1)];
+						// The face's winding must put its normal on the
+						// transparent side.
+						const FaceDirection &direction = face_directions[axis * 2 + (face == VoxelFace::TOWARD_SECOND ? 0 : 1)];
 						const Vector4i edge_lower = local;
 						Vector4i edge_upper = local;
 						edge_upper[axis]++;

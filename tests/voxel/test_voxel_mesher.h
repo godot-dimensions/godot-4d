@@ -7,6 +7,8 @@
 #include "tests/test_macros.h"
 
 namespace TestVoxelMesher {
+constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
+
 // Meshes one chunk the way the mesh handler does, through the neighbourhood
 // of the node covering the chunk's region.
 static Ref<Mesh4D> _mesh_chunk(const Ref<VoxelData> &p_data, const Vector4i &p_chunk_position) {
@@ -198,7 +200,17 @@ public:
 		if (!random_bounds.has_point(p_voxel)) {
 			return VoxelMaterial::AIR;
 		}
-		return (_position_hash(p_voxel, 0) & 1) != 0 ? VoxelMaterial::SOLID : VoxelMaterial::AIR;
+		// Half air, keeping the more important opaque-transparent boundaries
+		// common, then mostly the first opaque material, with two rarer
+		// opaque materials mixed in for opaque-opaque boundaries.
+		const uint32_t hash = _position_hash(p_voxel, 0);
+		if ((hash & 1) != 0) {
+			return VoxelMaterial::AIR;
+		}
+		if ((hash & 2) != 0) {
+			return SOLID_MATERIAL;
+		}
+		return (hash & 4) != 0 ? (VoxelMaterial)3 : (VoxelMaterial)4;
 	}
 
 	virtual VoxelEdgeData get_edge_data(const Vector4i &p_voxel, const int p_axis) const override {
@@ -211,7 +223,7 @@ public:
 			normal = Vector4(1, 0, 0, 0);
 		}
 		const real_t position = (real_t)(_scramble(hash) & 255) / (real_t)255.0;
-		return VoxelEdgeData::encode(normal, position);
+		return VoxelEdgeData(normal, position);
 	}
 };
 
