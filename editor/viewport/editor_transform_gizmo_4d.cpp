@@ -337,11 +337,24 @@ void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_came
 		_mesh_holder->set_global_transform(gizmo_transform);
 		return;
 	}
+	// Read the 3D gizmo size factor from the editor settings so that the 4D editor stays consistent with the 3D editor.
+	double gizmo_size_factor = (double)EDITOR_GET("editors/3d/manipulator_gizmo_size") / 140.0;
 	real_t scale_dist_number;
 	if (p_camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
-		scale_dist_number = p_camera->get_orthographic_size() * 0.4f;
+		scale_dist_number = p_camera->get_orthographic_size() * (gizmo_size_factor * 0.5);
 	} else {
-		scale_dist_number = gizmo_transform.origin.distance_to(camera_transform.origin) * 0.4f;
+		scale_dist_number = gizmo_transform.origin.distance_to(camera_transform.origin) * gizmo_size_factor;
+		// In order to keep the gizmo roughly the same visual size, we should adjust based not from the center, but from a radius.
+		// For isometric view in 3D the ideal value is `1/sqrt(3)`, and this is still ideal for our 4D cameras due to them
+		// having two screen-relative directions and one depth direction, for a total of 3 perspective-contributing axes.
+		constexpr double GIZMO_FOCUS_RADIUS = 0.5773502691896257645;
+		const Camera4D::ProjectionType4D projection_type = p_camera->get_projection_type();
+		if (projection_type & Camera4D::PROJECTION4D_PERSPECTIVE_3D) {
+			scale_dist_number /= p_camera->get_focal_length_3d() + gizmo_size_factor * GIZMO_FOCUS_RADIUS;
+		}
+		if (projection_type & Camera4D::PROJECTION4D_PERSPECTIVE_4D) {
+			scale_dist_number /= p_camera->get_focal_length_4d() + gizmo_size_factor * GIZMO_FOCUS_RADIUS;
+		}
 	}
 	if (scale_dist_number < 1e-4) {
 		scale_dist_number = 1e-4;

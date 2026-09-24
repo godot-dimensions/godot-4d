@@ -65,19 +65,33 @@ void Godot3DRenderingEngine4D::_update_3d_camera() {
 	Camera4D *camera = get_camera();
 	const float clip_near = camera->get_clip_near();
 	const float clip_far = camera->get_clip_far();
+	// Godot's 3D renderer breaks when the FOV is higher than ~179.5 degrees or ~3.133 radians. Limit to a bit below that.
+	constexpr float MAX_FOV_RADIANS = Math_PI - 0.01;
 	switch (camera->get_projection_type()) {
 		case Camera4D::PROJECTION4D_ORTHOGRAPHIC: {
 			RenderingServer::get_singleton()->camera_set_orthogonal(_camera_3d, camera->get_orthographic_size(), clip_near, clip_far);
 		} break;
 		case Camera4D::PROJECTION4D_PERSPECTIVE_4D: {
-			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(camera->get_field_of_view_4d()), clip_near, clip_far);
+			float fov_radians = camera->get_field_of_view_4d();
+			if (Math::is_equal_approx(fov_radians, (float)Math_PI, (float)0.01)) {
+				fov_radians = MAX_FOV_RADIANS;
+			}
+			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(fov_radians), clip_near, clip_far);
 		} break;
 		case Camera4D::PROJECTION4D_PERSPECTIVE_3D: {
-			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
+			float fov_radians = camera->get_field_of_view_3d();
+			if (Math::is_equal_approx(fov_radians, (float)Math_PI, (float)0.01)) {
+				fov_radians = MAX_FOV_RADIANS;
+			}
+			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(fov_radians), clip_near, clip_far);
 		} break;
 		case Camera4D::PROJECTION4D_PERSPECTIVE_DUAL: {
 			WARN_PRINT_ONCE("Dual-perspective is not supported by 4D renderers that use Godot's 3D rendering. Use PERSPECTIVE_3D, PERSPECTIVE_4D, or ORTHOGRAPHIC instead.");
-			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(camera->get_field_of_view_3d()), clip_near, clip_far);
+			float fov_radians = camera->get_field_of_view_3d();
+			if (Math::is_equal_approx(fov_radians, (float)Math_PI, (float)0.01)) {
+				fov_radians = MAX_FOV_RADIANS;
+			}
+			RenderingServer::get_singleton()->camera_set_perspective(_camera_3d, Math::rad_to_deg(fov_radians), clip_near, clip_far);
 		} break;
 	}
 }
