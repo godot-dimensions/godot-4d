@@ -28,6 +28,8 @@ public:
 	Rect4i get_bounds() const { return _tree == nullptr ? Rect4i() : _tree->get_bounds(); }
 
 	bool is_voxel_defined(const Vector4i &p_voxel) const;
+	// Whether the voxel is inside a defined chunk or one marked as pending.
+	bool is_voxel_defined_or_pending(const Vector4i &p_voxel) const;
 	// Whether every voxel in the given region is defined. Regions reaching
 	// outside the defined bounds are not fully defined.
 	bool is_region_defined(const Rect4i &p_region) const;
@@ -71,6 +73,10 @@ public:
 	// Reverts nodes that edits since the last call have made representable as
 	// constants. Main thread only.
 	void merge_edited_constants();
+
+	// Requests loads for the region: marks its undefined chunks as pending,
+	// expanding the bounds to cover it. Main thread only.
+	void mark_region_pending(const Rect4i &p_region);
 
 	// Makes the data chunk containing the given voxel undefined again.
 	// Returns whether any data was unloaded. Main thread only.

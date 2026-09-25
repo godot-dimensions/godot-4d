@@ -37,6 +37,93 @@ LocalVector<VoxelLoadTrigger4D *> VoxelChunkLoader::_get_load_triggers() const {
 	return triggers;
 }
 
+// One trigger's requirements, in voxel space.
+struct TriggerRange {
+	Vector4 center;
+	real_t load_radius = 0.0f;
+	real_t unload_radius = 0.0f;
+};
+
+// The squared distances from the point to the nearest and farthest chunk
+// centers in the region, which must be chunk-aligned.
+static void _chunk_center_distance_range(const Rect4i &p_region, const Vector4 &p_point, real_t &r_min_squared, real_t &r_max_squared) {
+	r_min_squared = 0.0f;
+	r_max_squared = 0.0f;
+	for (int axis = 0; axis < 4; axis++) {
+		const real_t low = p_region.position[axis] + (real_t)VOXEL_DATA_CHUNK_SIZE * 0.5f;
+		const real_t high = p_region.get_end()[axis] - (real_t)VOXEL_DATA_CHUNK_SIZE * 0.5f;
+		const real_t coordinate = p_point[axis];
+		const real_t outside = MAX(MAX(low - coordinate, coordinate - high), (real_t)0.0f);
+		r_min_squared += outside * outside;
+		const real_t farthest = MAX(Math::abs(coordinate - low), Math::abs(coordinate - high));
+		r_max_squared += farthest * farthest;
+	}
+}
+
+// Collects the chunks that the triggers require to be loaded or unloaded:
+// chunks whose center is within a load radius must be defined or pending, and
+// chunks whose center is within no unload radius must be neither. The
+// recursion stops at nodes that already satisfy every applicable requirement.
+// p_node is the deepest real node covering p_bounds: below childless nodes
+// the recursion continues over the regions where children would be, without
+// splitting the node. The scan does not modify the tree, so that its shape
+// stays stable while it is being traversed; the collected chunks are queued
+// and unloaded afterwards.
+static void _scan_required_chunks(const VoxelDataTree *p_node, const Rect4i &p_bounds, const LocalVector<TriggerRange> &p_triggers, LocalVector<Vector4i> &r_loads, LocalVector<Vector4i> &r_unloads) {
+	const bool covered = p_node->is_defined_or_pending();
+	if (p_bounds.size.x == VOXEL_DATA_CHUNK_SIZE) {
+		bool wanted = false;
+		bool keep = false;
+		for (const TriggerRange &trigger : p_triggers) {
+			real_t min_squared;
+			real_t max_squared;
+			_chunk_center_distance_range(p_bounds, trigger.center, min_squared, max_squared);
+			wanted = wanted || min_squared <= trigger.load_radius * trigger.load_radius;
+			keep = keep || min_squared <= trigger.unload_radius * trigger.unload_radius;
+		}
+		if (wanted && !covered) {
+			r_loads.push_back(p_bounds.position);
+		} else if (!keep && covered) {
+			r_unloads.push_back(p_bounds.position);
+		}
+		return;
+	}
+	bool any_load = false;
+	bool fully_kept = false;
+	for (const TriggerRange &trigger : p_triggers) {
+		real_t min_squared;
+		real_t max_squared;
+		_chunk_center_distance_range(p_bounds, trigger.center, min_squared, max_squared);
+		any_load = any_load || min_squared <= trigger.load_radius * trigger.load_radius;
+		fully_kept = fully_kept || max_squared <= trigger.unload_radius * trigger.unload_radius;
+	}
+	// Loads can only be needed where a load radius reaches a part that is not
+	// covered, and unloads only where something occupies a part not entirely
+	// within one trigger's unload radius. (Parts kept by a combination of
+	// several triggers' radii recurse needlessly, but settle correctly at the
+	// chunks.)
+	const bool occupied = p_node->is_parent() || covered;
+	if ((covered || !any_load) && (fully_kept || !occupied)) {
+		return;
+	}
+	if (p_node->is_parent()) {
+		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
+			const VoxelDataTree *child = p_node->get_child(i);
+			_scan_required_chunks(child, child->get_bounds(), p_triggers, r_loads, r_unloads);
+		}
+		return;
+	}
+	const Vector4i half_size = p_bounds.size / 2;
+	for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
+		const Vector4i offset = Vector4i(
+				(i & 1) ? half_size.x : 0,
+				(i & 2) ? half_size.y : 0,
+				(i & 4) ? half_size.z : 0,
+				(i & 8) ? half_size.w : 0);
+		_scan_required_chunks(p_node, Rect4i(p_bounds.position + offset, half_size), p_triggers, r_loads, r_unloads);
+	}
+}
+
 void VoxelChunkLoader::update_loaded_chunks() {
 	ERR_FAIL_NULL(_world);
 	const LocalVector<VoxelLoadTrigger4D *> load_triggers = _get_load_triggers();
@@ -45,31 +132,55 @@ void VoxelChunkLoader::update_loaded_chunks() {
 	}
 	const Ref<VoxelData> voxel_data = _world->get_voxel_data();
 	const Transform4D to_voxel_space = _world->get_global_transform().inverse();
+	LocalVector<TriggerRange> triggers;
+	triggers.reserve(load_triggers.size());
 	for (VoxelLoadTrigger4D *load_trigger : load_triggers) {
-		// The load distance is in voxel units, so only the trigger's position
-		// is mapped into voxel space, not the distance.
-		const Vector4 center = to_voxel_space.xform(load_trigger->get_global_position());
-		const real_t radius = load_trigger->get_load_distance();
-		const Vector4 extents = Vector4(radius, radius, radius, radius);
-		const Vector4i min_chunk = voxel_data->get_chunk_position(Vector4i((center - extents).floor()));
-		const Vector4i max_chunk = voxel_data->get_chunk_position(Vector4i((center + extents).floor()));
-		constexpr real_t HALF_CHUNK = VOXEL_DATA_CHUNK_SIZE * 0.5f;
-		for (int32_t w = min_chunk.w; w <= max_chunk.w; w += VOXEL_DATA_CHUNK_SIZE) {
-			for (int32_t z = min_chunk.z; z <= max_chunk.z; z += VOXEL_DATA_CHUNK_SIZE) {
-				for (int32_t y = min_chunk.y; y <= max_chunk.y; y += VOXEL_DATA_CHUNK_SIZE) {
-					for (int32_t x = min_chunk.x; x <= max_chunk.x; x += VOXEL_DATA_CHUNK_SIZE) {
-						const Vector4i chunk_position = Vector4i(x, y, z, w);
-						const Vector4 chunk_center = Vector4(chunk_position) + Vector4(HALF_CHUNK, HALF_CHUNK, HALF_CHUNK, HALF_CHUNK);
-						if (chunk_center.distance_squared_to(center) > radius * radius) {
-							continue;
-						}
-						if (!_pending_loads.has(chunk_position) && !voxel_data->is_region_defined(Rect4i(chunk_position, VOXEL_DATA_CHUNK_SIZE_VECTOR))) {
-							queue_load(chunk_position);
-						}
-					}
+		// The distances are in voxel units, so only the trigger's position is
+		// mapped into voxel space, not the distances.
+		TriggerRange trigger;
+		trigger.center = to_voxel_space.xform(load_trigger->get_global_position());
+		trigger.load_radius = load_trigger->get_load_distance();
+		trigger.unload_radius = load_trigger->get_unload_distance();
+		triggers.push_back(trigger);
+	}
+	// Load the extremes of each trigger's range first, so that the tree's
+	// bounds grow to cover every chunk the scan below could need to load;
+	// everything the scan finds then lies inside the tree.
+	for (const TriggerRange &trigger : triggers) {
+		const Vector4i center_chunk = voxel_data->get_chunk_position(Vector4i(trigger.center.floor()));
+		for (int axis = 0; axis < 4; axis++) {
+			for (int sign = -1; sign <= 1; sign += 2) {
+				Vector4 probe = trigger.center;
+				probe[axis] += sign * trigger.load_radius;
+				Vector4i chunk = voxel_data->get_chunk_position(Vector4i(probe.floor()));
+				// Walk inward to the farthest chunk actually in load range.
+				real_t min_squared;
+				real_t max_squared;
+				_chunk_center_distance_range(Rect4i(chunk, VOXEL_DATA_CHUNK_SIZE_VECTOR), trigger.center, min_squared, max_squared);
+				while (chunk != center_chunk && min_squared > trigger.load_radius * trigger.load_radius) {
+					chunk[axis] -= sign * VOXEL_DATA_CHUNK_SIZE;
+					_chunk_center_distance_range(Rect4i(chunk, VOXEL_DATA_CHUNK_SIZE_VECTOR), trigger.center, min_squared, max_squared);
+				}
+				if (min_squared <= trigger.load_radius * trigger.load_radius && !voxel_data->is_voxel_defined_or_pending(chunk)) {
+					queue_load(chunk);
 				}
 			}
 		}
+	}
+	const Rect4i bounds = voxel_data->get_bounds();
+	if (bounds.size == Vector4i()) {
+		return;
+	}
+	const VoxelDataTree *root = voxel_data->find_region_neighbourhood(bounds).node;
+	ERR_FAIL_NULL(root);
+	LocalVector<Vector4i> chunks_to_load;
+	LocalVector<Vector4i> chunks_to_unload;
+	_scan_required_chunks(root, bounds, triggers, chunks_to_load, chunks_to_unload);
+	for (const Vector4i &chunk_position : chunks_to_load) {
+		queue_load(chunk_position);
+	}
+	for (const Vector4i &chunk_position : chunks_to_unload) {
+		unload(chunk_position);
 	}
 }
 
@@ -93,6 +204,7 @@ void VoxelChunkLoader::queue_load(const Vector4i &p_voxel) {
 	if (_pending_loads.has(chunk_position)) {
 		return;
 	}
+	voxel_data->mark_region_pending(Rect4i(chunk_position, VOXEL_DATA_CHUNK_SIZE_VECTOR));
 	ChunkLoadTask *task = memnew(ChunkLoadTask);
 	task->data = voxel_data;
 	task->position = chunk_position;
