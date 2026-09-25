@@ -60,26 +60,47 @@ static void _chunk_center_distance_range(const Rect4i &p_region, const Vector4 &
 	}
 }
 
+// The nearest voxel inside the bounds, or the voxel itself if the bounds are
+// null (unlimited) or it is already inside.
+static Vector4i _clamp_voxel(const Vector4i &p_voxel, const Rect4i *p_bounds) {
+	if (p_bounds == nullptr) {
+		return p_voxel;
+	}
+	Vector4i clamped = p_voxel;
+	const Vector4i end = p_bounds->get_end();
+	for (int axis = 0; axis < 4; axis++) {
+		// Degenerate empty bounds collapse to their position corner; the upper
+		// limit must not drop below the lower, as the probe walk's termination
+		// relies on this clamp being monotone.
+		clamped[axis] = CLAMP(clamped[axis], p_bounds->position[axis], MAX(end[axis] - 1, p_bounds->position[axis]));
+	}
+	return clamped;
+}
+
 // Collects the chunks that the triggers require to be loaded or unloaded:
 // chunks whose center is within a load radius must be defined or pending, and
-// chunks whose center is within no unload radius must be neither. The
-// recursion stops at nodes that already satisfy every applicable requirement.
-// p_node is the deepest real node covering p_bounds: below childless nodes
-// the recursion continues over the regions where children would be, without
-// splitting the node. The scan does not modify the tree, so that its shape
-// stays stable while it is being traversed; the collected chunks are queued
-// and unloaded afterwards.
-static void _scan_required_chunks(const VoxelDataTree *p_node, const Rect4i &p_bounds, const LocalVector<TriggerRange> &p_triggers, LocalVector<Vector4i> &r_loads, LocalVector<Vector4i> &r_unloads) {
+// chunks whose center is within no unload radius must be neither. Chunks
+// entirely outside the world bounds (given as null when unlimited) may
+// neither load nor be kept. The recursion stops at nodes that already satisfy
+// every applicable requirement. p_node is the deepest real node covering
+// p_bounds: below childless nodes the recursion continues over the regions
+// where children would be, without splitting the node. The scan does not
+// modify the tree, so that its shape stays stable while it is being
+// traversed; the collected chunks are queued and unloaded afterwards.
+static void _scan_required_chunks(const VoxelDataTree *p_node, const Rect4i &p_bounds, const LocalVector<TriggerRange> &p_triggers, const Rect4i *p_world_bounds, LocalVector<Vector4i> &r_loads, LocalVector<Vector4i> &r_unloads) {
 	const bool covered = p_node->is_defined_or_pending();
+	const bool inside_world = p_world_bounds == nullptr || p_world_bounds->intersects_exclusive(p_bounds);
 	if (p_bounds.size.x == VOXEL_DATA_CHUNK_SIZE) {
 		bool wanted = false;
 		bool keep = false;
-		for (const TriggerRange &trigger : p_triggers) {
-			real_t min_squared;
-			real_t max_squared;
-			_chunk_center_distance_range(p_bounds, trigger.center, min_squared, max_squared);
-			wanted = wanted || min_squared <= trigger.load_radius * trigger.load_radius;
-			keep = keep || min_squared <= trigger.unload_radius * trigger.unload_radius;
+		if (inside_world) {
+			for (const TriggerRange &trigger : p_triggers) {
+				real_t min_squared;
+				real_t max_squared;
+				_chunk_center_distance_range(p_bounds, trigger.center, min_squared, max_squared);
+				wanted = wanted || min_squared <= trigger.load_radius * trigger.load_radius;
+				keep = keep || min_squared <= trigger.unload_radius * trigger.unload_radius;
+			}
 		}
 		if (wanted && !covered) {
 			r_loads.push_back(p_bounds.position);
@@ -90,12 +111,14 @@ static void _scan_required_chunks(const VoxelDataTree *p_node, const Rect4i &p_b
 	}
 	bool any_load = false;
 	bool fully_kept = false;
-	for (const TriggerRange &trigger : p_triggers) {
-		real_t min_squared;
-		real_t max_squared;
-		_chunk_center_distance_range(p_bounds, trigger.center, min_squared, max_squared);
-		any_load = any_load || min_squared <= trigger.load_radius * trigger.load_radius;
-		fully_kept = fully_kept || max_squared <= trigger.unload_radius * trigger.unload_radius;
+	if (inside_world) {
+		for (const TriggerRange &trigger : p_triggers) {
+			real_t min_squared;
+			real_t max_squared;
+			_chunk_center_distance_range(p_bounds, trigger.center, min_squared, max_squared);
+			any_load = any_load || min_squared <= trigger.load_radius * trigger.load_radius;
+			fully_kept = fully_kept || max_squared <= trigger.unload_radius * trigger.unload_radius;
+		}
 	}
 	// Loads can only be needed where a load radius reaches a part that is not
 	// covered, and unloads only where something occupies a part not entirely
@@ -109,7 +132,7 @@ static void _scan_required_chunks(const VoxelDataTree *p_node, const Rect4i &p_b
 	if (p_node->is_parent()) {
 		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
 			const VoxelDataTree *child = p_node->get_child(i);
-			_scan_required_chunks(child, child->get_bounds(), p_triggers, r_loads, r_unloads);
+			_scan_required_chunks(child, child->get_bounds(), p_triggers, p_world_bounds, r_loads, r_unloads);
 		}
 		return;
 	}
@@ -120,7 +143,7 @@ static void _scan_required_chunks(const VoxelDataTree *p_node, const Rect4i &p_b
 				(i & 2) ? half_size.y : 0,
 				(i & 4) ? half_size.z : 0,
 				(i & 8) ? half_size.w : 0);
-		_scan_required_chunks(p_node, Rect4i(p_bounds.position + offset, half_size), p_triggers, r_loads, r_unloads);
+		_scan_required_chunks(p_node, Rect4i(p_bounds.position + offset, half_size), p_triggers, p_world_bounds, r_loads, r_unloads);
 	}
 }
 
@@ -143,16 +166,20 @@ void VoxelChunkLoader::update_loaded_chunks() {
 		trigger.unload_radius = load_trigger->get_unload_distance();
 		triggers.push_back(trigger);
 	}
+	const Rect4i world_bounds_rect = _world->get_world_bounds();
+	const Rect4i *world_bounds = _world->is_world_bounds_enabled() ? &world_bounds_rect : nullptr;
 	// Load the extremes of each trigger's range first, so that the tree's
 	// bounds grow to cover every chunk the scan below could need to load;
-	// everything the scan finds then lies inside the tree.
+	// everything the scan finds then lies inside the tree. Clamping the probes
+	// into the world bounds keeps the whole walk within chunks that intersect
+	// them, and still reaches the extreme loadable chunks in each direction.
 	for (const TriggerRange &trigger : triggers) {
-		const Vector4i center_chunk = voxel_data->get_chunk_position(Vector4i(trigger.center.floor()));
+		const Vector4i center_chunk = voxel_data->get_chunk_position(_clamp_voxel(Vector4i(trigger.center.floor()), world_bounds));
 		for (int axis = 0; axis < 4; axis++) {
 			for (int sign = -1; sign <= 1; sign += 2) {
 				Vector4 probe = trigger.center;
 				probe[axis] += sign * trigger.load_radius;
-				Vector4i chunk = voxel_data->get_chunk_position(Vector4i(probe.floor()));
+				Vector4i chunk = voxel_data->get_chunk_position(_clamp_voxel(Vector4i(probe.floor()), world_bounds));
 				// Walk inward to the farthest chunk actually in load range.
 				real_t min_squared;
 				real_t max_squared;
@@ -161,7 +188,11 @@ void VoxelChunkLoader::update_loaded_chunks() {
 					chunk[axis] -= sign * VOXEL_DATA_CHUNK_SIZE;
 					_chunk_center_distance_range(Rect4i(chunk, VOXEL_DATA_CHUNK_SIZE_VECTOR), trigger.center, min_squared, max_squared);
 				}
-				if (min_squared <= trigger.load_radius * trigger.load_radius && !voxel_data->is_voxel_defined_or_pending(chunk)) {
+				// The intersection check only fails with degenerate world
+				// bounds that are empty on some axis.
+				if (min_squared <= trigger.load_radius * trigger.load_radius &&
+						(world_bounds == nullptr || world_bounds->intersects_exclusive(Rect4i(chunk, VOXEL_DATA_CHUNK_SIZE_VECTOR))) &&
+						!voxel_data->is_voxel_defined_or_pending(chunk)) {
 					queue_load(chunk);
 				}
 			}
@@ -175,7 +206,7 @@ void VoxelChunkLoader::update_loaded_chunks() {
 	ERR_FAIL_NULL(root);
 	LocalVector<Vector4i> chunks_to_load;
 	LocalVector<Vector4i> chunks_to_unload;
-	_scan_required_chunks(root, bounds, triggers, chunks_to_load, chunks_to_unload);
+	_scan_required_chunks(root, bounds, triggers, world_bounds, chunks_to_load, chunks_to_unload);
 	for (const Vector4i &chunk_position : chunks_to_load) {
 		queue_load(chunk_position);
 	}

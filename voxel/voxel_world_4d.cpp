@@ -5,6 +5,24 @@
 void VoxelWorld4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_data"), &VoxelWorld4D::get_voxel_data);
 	ClassDB::bind_method(D_METHOD("apply_edit", "edit"), &VoxelWorld4D::apply_edit);
+
+	ClassDB::bind_method(D_METHOD("is_world_bounds_enabled"), &VoxelWorld4D::is_world_bounds_enabled);
+	ClassDB::bind_method(D_METHOD("set_world_bounds_enabled", "enabled"), &VoxelWorld4D::set_world_bounds_enabled);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "world_bounds_enabled"), "set_world_bounds_enabled", "is_world_bounds_enabled");
+
+	ClassDB::bind_method(D_METHOD("get_world_bounds_position"), &VoxelWorld4D::get_world_bounds_position);
+	ClassDB::bind_method(D_METHOD("set_world_bounds_position", "position"), &VoxelWorld4D::set_world_bounds_position);
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4I, "world_bounds_position"), "set_world_bounds_position", "get_world_bounds_position");
+
+	ClassDB::bind_method(D_METHOD("get_world_bounds_size"), &VoxelWorld4D::get_world_bounds_size);
+	ClassDB::bind_method(D_METHOD("set_world_bounds_size", "size"), &VoxelWorld4D::set_world_bounds_size);
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4I, "world_bounds_size"), "set_world_bounds_size", "get_world_bounds_size");
+}
+
+void VoxelWorld4D::_validate_property(PropertyInfo &p_property) const {
+	if (!_world_bounds_enabled && (p_property.name == StringName("world_bounds_position") || p_property.name == StringName("world_bounds_size"))) {
+		p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+	}
 }
 
 void VoxelWorld4D::apply_edit(const Ref<VoxelEdit> &p_edit) {
