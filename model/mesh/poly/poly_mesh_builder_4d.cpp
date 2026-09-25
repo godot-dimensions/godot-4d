@@ -2,7 +2,7 @@
 
 #include "../../../math/math_4d.h"
 
-Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const Ref<ArrayMesh> &p_mesh_3d, const int p_which_surface, const bool p_deduplicate) {
+Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const Ref<Mesh> &p_mesh_3d, const int p_which_surface, const bool p_deduplicate) {
 	Ref<ArrayPolyMesh4D> ret;
 	ret.instantiate();
 	ERR_FAIL_COND_V_MSG(p_mesh_3d.is_null(), ret, "Input mesh is null.");
@@ -20,7 +20,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const R
 	Vector<PackedInt32Array> output_face_indices;
 	for (int surface_index = start_surface; surface_index < end_surface; surface_index++) {
 		const Array surface_arrays = p_mesh_3d->surface_get_arrays(surface_index);
-		CRASH_COND(surface_arrays.size() < Mesh::ARRAY_MAX); // ArrayMesh should always return surfaces arrays of length Mesh::ARRAY_MAX, even if some of them are empty.
+		CRASH_COND(surface_arrays.size() < Mesh::ARRAY_MAX); // Mesh should always return surfaces arrays of length Mesh::ARRAY_MAX, even if some of them are empty.
 		const PackedVector3Array surface_vertices = PackedVector3Array(surface_arrays[Mesh::ARRAY_VERTEX]);
 		const PackedVector3Array surface_normals = PackedVector3Array(surface_arrays[Mesh::ARRAY_NORMAL]);
 		const PackedVector2Array surface_uvs = PackedVector2Array(surface_arrays[Mesh::ARRAY_TEX_UV]);

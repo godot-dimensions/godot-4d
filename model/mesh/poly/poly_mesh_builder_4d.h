@@ -85,7 +85,7 @@ protected:
 
 public:
 	// These functions create new meshes from the given data.
-	static Ref<ArrayPolyMesh4D> convert_mesh_3d_to_4d_faces_only(const Ref<ArrayMesh> &p_mesh_3d, const int p_which_surface = -1, const bool p_deduplicate = true);
+	static Ref<ArrayPolyMesh4D> convert_mesh_3d_to_4d_faces_only(const Ref<Mesh> &p_mesh_3d, const int p_which_surface = -1, const bool p_deduplicate = true);
 	static Ref<ArrayPolyMesh4D> extrude_linear(const Ref<ArrayPolyMesh4D> &p_input_mesh, const Vector4 &p_extrusion_vector = Vector4(0, 0, 0, 1));
 	static Ref<ArrayPolyMesh4D> extrude_spin_from_faces_xw(const Ref<ArrayPolyMesh4D> &p_input_mesh, const int p_steps = 16);
 	static Ref<ArrayPolyMesh4D> reconstruct_from_tetra_mesh(const Ref<TetraMesh4D> &p_tetra_mesh);
