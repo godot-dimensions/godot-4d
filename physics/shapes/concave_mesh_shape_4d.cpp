@@ -40,7 +40,7 @@ PackedFloat64Array ConcaveMeshShape4D::_calculate_inverse_metric_cache(const Pac
 		const real_t gram11 = edge2.dot(edge2);
 		const real_t gram12 = edge2.dot(edge3);
 		const real_t gram22 = edge3.dot(edge3);
-		real_t inv_gram[6];
+		double inv_gram[6];
 		const bool valid = Geometry4D::compute_inverse_metric_3x3(gram00, gram01, gram02, gram11, gram12, gram22, inv_gram);
 		if (!valid) {
 			new_inverse_metric_cache.clear();

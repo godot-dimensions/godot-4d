@@ -10,7 +10,7 @@ inline PackedFloat64Array compute_tetrahedron_inverse_metric_cache(const Vector4
 	const Vector4 edge1 = p_vert1 - p_vert0;
 	const Vector4 edge2 = p_vert2 - p_vert0;
 	const Vector4 edge3 = p_vert3 - p_vert0;
-	real_t inv_gram[6];
+	double inv_gram[6];
 	const bool valid = Geometry4D::compute_inverse_metric_3x3(edge1.dot(edge1), edge1.dot(edge2), edge1.dot(edge3), edge2.dot(edge2), edge2.dot(edge3), edge3.dot(edge3), inv_gram);
 	CHECK_MESSAGE(valid, "Geometry4D compute_inverse_metric_3x3 should succeed for a non-degenerate tetrahedron.");
 	PackedFloat64Array cache;
@@ -23,13 +23,13 @@ inline PackedFloat64Array compute_tetrahedron_inverse_metric_cache(const Vector4
 TEST_CASE("[Geometry4D] Compute Inverse Metric 3x3") {
 	{
 		// Degenerate tetrahedron: collinear edges have a singular metric.
-		real_t inv_gram[6];
+		double inv_gram[6];
 		const bool valid = Geometry4D::compute_inverse_metric_3x3(1, 2, 0, 4, 0, 1, inv_gram);
 		CHECK_MESSAGE(!valid, "Geometry4D compute_inverse_metric_3x3 should fail for a singular metric.");
 	}
 	{
 		// Degenerate tetrahedron: a zero-length edge has a non-positive diagonal.
-		real_t inv_gram[6];
+		double inv_gram[6];
 		const bool valid = Geometry4D::compute_inverse_metric_3x3(0, 0, 0, 4, 0, 4, inv_gram);
 		CHECK_MESSAGE(!valid, "Geometry4D compute_inverse_metric_3x3 should fail for a metric with a zero diagonal.");
 	}

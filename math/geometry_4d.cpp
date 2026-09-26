@@ -5,30 +5,33 @@
 // Barycentric tetrahedra calculations. Don't expose these, it just needs to be efficient
 // and shared between TetraMesh4D, ConcaveMeshShape4D, ConvexHullShape4D, etc.
 
-bool Geometry4D::compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g01, const real_t p_g02, const real_t p_g11, const real_t p_g12, const real_t p_g22, real_t r_inv_symmetric[6]) {
+bool Geometry4D::compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g01, const real_t p_g02, const real_t p_g11, const real_t p_g12, const real_t p_g22, double r_inv_symmetric[6]) {
 	// This is the 3x3 symmetric metric matrix G_ij = e_i · e_j for the tetrahedron basis.
 	// Normalize each basis vector before checking the determinant so that valid small tetrahedra
 	// are not mistaken for degenerate ones. The normalized metric is a correlation matrix.
+	// This is standalone scalar math whose result is cached as doubles, so it is computed in double
+	// regardless of the precision of the vector types, which matters for thin tetrahedra in float builds.
 	if (unlikely(!Math::is_finite(p_g00) || !Math::is_finite(p_g11) || !Math::is_finite(p_g22) || p_g00 <= 0.0f || p_g11 <= 0.0f || p_g22 <= 0.0f)) {
 		return false;
 	}
-	const real_t inv_len0 = 1.0f / Math::sqrt(p_g00);
-	const real_t inv_len1 = 1.0f / Math::sqrt(p_g11);
-	const real_t inv_len2 = 1.0f / Math::sqrt(p_g22);
-	const real_t n01 = p_g01 * inv_len0 * inv_len1;
-	const real_t n02 = p_g02 * inv_len0 * inv_len2;
-	const real_t n12 = p_g12 * inv_len1 * inv_len2;
-	const real_t c00 = 1.0f - n12 * n12;
-	const real_t c01 = n02 * n12 - n01;
-	const real_t c02 = n01 * n12 - n02;
-	const real_t c11 = 1.0f - n02 * n02;
-	const real_t c12 = n02 * n01 - n12;
-	const real_t c22 = 1.0f - n01 * n01;
-	const real_t det = c00 + n01 * c01 + n02 * c02;
-	if (unlikely(!Math::is_finite(det) || det <= CMP_EPSILON)) {
+	const double inv_len0 = 1.0 / Math::sqrt((double)p_g00);
+	const double inv_len1 = 1.0 / Math::sqrt((double)p_g11);
+	const double inv_len2 = 1.0 / Math::sqrt((double)p_g22);
+	const double n01 = (double)p_g01 * inv_len0 * inv_len1;
+	const double n02 = (double)p_g02 * inv_len0 * inv_len2;
+	const double n12 = (double)p_g12 * inv_len1 * inv_len2;
+	const double c00 = 1.0 - n12 * n12;
+	const double c01 = n02 * n12 - n01;
+	const double c02 = n01 * n12 - n02;
+	const double c11 = 1.0 - n02 * n02;
+	const double c12 = n02 * n01 - n12;
+	const double c22 = 1.0 - n01 * n01;
+	const double det = c00 + n01 * c01 + n02 * c02;
+	constexpr double DETERMINANT_EPSILON = CMP_EPSILON;
+	if (unlikely(!Math::is_finite(det) || det <= DETERMINANT_EPSILON)) {
 		return false;
 	}
-	const real_t inv_det = (real_t)1.0 / det;
+	const double inv_det = 1.0 / det;
 	r_inv_symmetric[0] = c00 * inv_det * inv_len0 * inv_len0;
 	r_inv_symmetric[1] = c01 * inv_det * inv_len0 * inv_len1;
 	r_inv_symmetric[2] = c02 * inv_det * inv_len0 * inv_len2;
@@ -72,32 +75,35 @@ void Geometry4D::get_nearest_point_on_tetrahedron_barycentric(const Vector4 &p_v
 	const Vector4 edge2 = p_vert2 - p_vert0;
 	const Vector4 edge3 = p_vert3 - p_vert0;
 	// Solve for the barycentric coordinates, which implicitly solves local to the plane of the tetrahedron.
-	real_t bary0, bary1, bary2, bary3;
+	// The cached inverse metric is standalone scalar data stored as doubles, so the barycentric solve is done in
+	// double as well, and only the final combination with the edge vectors happens in the vector precision.
+	double bary1 = 0.0, bary2 = 0.0, bary3 = 0.0;
+	bool proj_inside = false;
 	{
 		const int64_t cache_offset = p_tetrahedron_index * 6;
+		const double inv00 = p_nearest_tetra_inverse_metric_cache[cache_offset + 0];
 		const Vector4 local = p_point - p_vert0;
-		const real_t edge1_alignment = edge1.dot(local);
-		const real_t edge2_alignment = edge2.dot(local);
-		const real_t edge3_alignment = edge3.dot(local);
-		const real_t inv00 = p_nearest_tetra_inverse_metric_cache[cache_offset + 0];
-		const real_t inv01 = p_nearest_tetra_inverse_metric_cache[cache_offset + 1];
-		const real_t inv02 = p_nearest_tetra_inverse_metric_cache[cache_offset + 2];
-		const real_t inv11 = p_nearest_tetra_inverse_metric_cache[cache_offset + 3];
-		const real_t inv12 = p_nearest_tetra_inverse_metric_cache[cache_offset + 4];
-		const real_t inv22 = p_nearest_tetra_inverse_metric_cache[cache_offset + 5];
+		const double edge1_alignment = edge1.dot(local);
+		const double edge2_alignment = edge2.dot(local);
+		const double edge3_alignment = edge3.dot(local);
+		const double inv01 = p_nearest_tetra_inverse_metric_cache[cache_offset + 1];
+		const double inv02 = p_nearest_tetra_inverse_metric_cache[cache_offset + 2];
+		const double inv11 = p_nearest_tetra_inverse_metric_cache[cache_offset + 3];
+		const double inv12 = p_nearest_tetra_inverse_metric_cache[cache_offset + 4];
+		const double inv22 = p_nearest_tetra_inverse_metric_cache[cache_offset + 5];
 		bary1 = inv00 * edge1_alignment + inv01 * edge2_alignment + inv02 * edge3_alignment;
 		bary2 = inv01 * edge1_alignment + inv11 * edge2_alignment + inv12 * edge3_alignment;
 		bary3 = inv02 * edge1_alignment + inv12 * edge2_alignment + inv22 * edge3_alignment;
-		bary0 = (real_t)1.0 - (bary1 + bary2 + bary3);
+		const double bary0 = 1.0 - (bary1 + bary2 + bary3);
+		// The point is inside the tetrahedron if all barycentric coordinates are non-negative (allowing for a small epsilon).
+		proj_inside = bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON;
 	}
-	// The point is inside the tetrahedron if all barycentric coordinates are non-negative (allowing for a small epsilon).
-	const bool proj_inside = bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON;
 	// Determine the nearest point and/or the min distance based on if it's inside or outside the tetrahedron.
 	Vector4 nearest_on_tet;
 	real_t min_dist_sq = Math_INF;
 	if (proj_inside) {
 		// In this case, the nearest point on the plane lands inside of the tetrahedron.
-		nearest_on_tet = p_vert0 + edge1 * bary1 + edge2 * bary2 + edge3 * bary3;
+		nearest_on_tet = p_vert0 + edge1 * (real_t)bary1 + edge2 * (real_t)bary2 + edge3 * (real_t)bary3;
 	} else {
 		// In this case, the nearest point on the plane lands outside, so we need to check the triangle borders.
 		const Vector4 nearest_on_tri0 = closest_point_on_triangle(p_vert1, p_vert2, p_vert3, p_point);
@@ -137,23 +143,23 @@ bool Geometry4D::is_point_inside_tetrahedron_barycentric(const Vector4 &p_vert0,
 	const Vector4 edge2 = p_vert2 - p_vert0;
 	const Vector4 edge3 = p_vert3 - p_vert0;
 	// Solve for the barycentric coordinates, which implicitly solves local to the plane of the tetrahedron.
-	real_t bary0, bary1, bary2, bary3;
+	double bary0, bary1, bary2, bary3;
 	{
 		const int64_t cache_offset = p_tetrahedron_index * 6;
+		const double inv00 = p_nearest_tetra_inverse_metric_cache[cache_offset + 0];
 		const Vector4 local = p_point - p_vert0;
-		const real_t edge1_alignment = edge1.dot(local);
-		const real_t edge2_alignment = edge2.dot(local);
-		const real_t edge3_alignment = edge3.dot(local);
-		const real_t inv00 = p_nearest_tetra_inverse_metric_cache[cache_offset + 0];
-		const real_t inv01 = p_nearest_tetra_inverse_metric_cache[cache_offset + 1];
-		const real_t inv02 = p_nearest_tetra_inverse_metric_cache[cache_offset + 2];
-		const real_t inv11 = p_nearest_tetra_inverse_metric_cache[cache_offset + 3];
-		const real_t inv12 = p_nearest_tetra_inverse_metric_cache[cache_offset + 4];
-		const real_t inv22 = p_nearest_tetra_inverse_metric_cache[cache_offset + 5];
+		const double edge1_alignment = edge1.dot(local);
+		const double edge2_alignment = edge2.dot(local);
+		const double edge3_alignment = edge3.dot(local);
+		const double inv01 = p_nearest_tetra_inverse_metric_cache[cache_offset + 1];
+		const double inv02 = p_nearest_tetra_inverse_metric_cache[cache_offset + 2];
+		const double inv11 = p_nearest_tetra_inverse_metric_cache[cache_offset + 3];
+		const double inv12 = p_nearest_tetra_inverse_metric_cache[cache_offset + 4];
+		const double inv22 = p_nearest_tetra_inverse_metric_cache[cache_offset + 5];
 		bary1 = inv00 * edge1_alignment + inv01 * edge2_alignment + inv02 * edge3_alignment;
 		bary2 = inv01 * edge1_alignment + inv11 * edge2_alignment + inv12 * edge3_alignment;
 		bary3 = inv02 * edge1_alignment + inv12 * edge2_alignment + inv22 * edge3_alignment;
-		bary0 = (real_t)1.0 - (bary1 + bary2 + bary3);
+		bary0 = 1.0 - (bary1 + bary2 + bary3);
 	}
 	// The point is inside the tetrahedron if all barycentric coordinates are non-negative (allowing for a small epsilon).
 	return bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON;
