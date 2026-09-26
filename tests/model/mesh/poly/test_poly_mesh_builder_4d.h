@@ -234,4 +234,33 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Subdivide a converted flat mesh and ex
 	}
 }
 
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Extrude linear orients the caps along the extrusion vector") {
+	// Build a 3D tetrahedron surface, convert it to 4D faces, and close it into a single 3D cell.
+	Ref<ArrayMesh> tetra_mesh_3d;
+	tetra_mesh_3d.instantiate();
+	PackedVector3Array tetra_vertices = { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) };
+	PackedInt32Array tetra_indices = { 0, 1, 2, 0, 3, 1, 0, 2, 3, 1, 3, 2 }; // Godot 3D uses clockwise winding order.
+	Array arrays;
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = tetra_vertices;
+	arrays[Mesh::ARRAY_INDEX] = tetra_indices;
+	tetra_mesh_3d->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+	Ref<ArrayPolyMesh4D> slab = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(tetra_mesh_3d);
+	REQUIRE(slab->is_poly_mesh_data_valid());
+	slab->append_poly_cell(3, slab->make_single_cell_from_all_faces());
+	REQUIRE(slab->is_poly_mesh_data_valid());
+	REQUIRE(slab->get_poly_cell_indices().size() == 2);
+	// Tilt the slab slightly out of the XYZ hyperplane and move it far from the origin along X. The two copies
+	// of the cell become the caps of the extrusion, and must face away from each other along the extrusion
+	// vector. Deciding this by "away from the origin" would fail here, since the X offset dominates.
+	slab->transform_mesh(Transform4D(Basis4D::from_xw(0.2), Vector4(10, 0, 0, 0)));
+	const Vector4 extrusion = Vector4(0, 0, 0, 1);
+	Ref<ArrayPolyMesh4D> extruded = PolyMeshBuilder4D::extrude_linear(slab, extrusion);
+	REQUIRE(extruded->is_poly_mesh_data_valid());
+	const PackedVector4Array extruded_normals = extruded->get_poly_cell_boundary_normals();
+	REQUIRE(extruded_normals.size() >= 2);
+	CHECK_MESSAGE(extruded_normals[0].dot(extrusion) < 0.0, "The cap moved by the negative extrusion vector must face that way.");
+	CHECK_MESSAGE(extruded_normals[1].dot(extrusion) > 0.0, "The cap moved by the positive extrusion vector must face that way.");
+}
+
 } // namespace TestPolyMeshBuilder4D

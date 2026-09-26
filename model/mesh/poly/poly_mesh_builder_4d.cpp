@@ -113,10 +113,32 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 	ret->transform_mesh(Transform4D(Basis4D(), -p_extrusion_vector));
 	ret->merge_with(p_input_mesh, Transform4D(Basis4D(), p_extrusion_vector));
 	Vector<Vector<PackedInt32Array>> poly_cell_indices = ret->get_poly_cell_indices();
-	// The two copies aren't connected yet, so it's safe to blindly force their normals outward (if any).
+	// Orient the boundary cells of each copy to face its own extrusion direction. The first copy was moved by
+	// the negative extrusion vector, so its cells face that way, and the second copy faces the positive direction.
+	// These cells become the two "caps" of the extruded shape, so this is their outward direction no matter where
+	// the input mesh sits relative to the origin, and even if its cells are not exactly perpendicular to the
+	// extrusion vector. Forcing the normals outward from the origin instead would only be correct for input
+	// meshes lying flat in a hyperplane through the origin, which is not the case in general.
 	if (poly_cell_indices.size() > 1) {
-		ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION);
-		poly_cell_indices = ret->get_poly_cell_indices();
+		ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+		const PackedVector4Array boundary_normals = ret->get_poly_cell_boundary_normals();
+		Vector<PackedInt32Array> boundary_cells = poly_cell_indices[1];
+		const int64_t input_cell_count = p_input_mesh->get_poly_cell_indices()[1].size();
+		CRASH_COND(boundary_cells.size() != input_cell_count * 2 || boundary_normals.size() != boundary_cells.size());
+		for (int64_t cell_index = 0; cell_index < boundary_cells.size(); cell_index++) {
+			const Vector4 desired_direction = cell_index < input_cell_count ? -p_extrusion_vector : p_extrusion_vector;
+			if (boundary_normals[cell_index].dot(desired_direction) < 0.0) {
+				// This cell faces the wrong way, so swap its first two faces to flip its orientation.
+				PackedInt32Array boundary_cell = boundary_cells[cell_index];
+				const int32_t temp = boundary_cell[0];
+				boundary_cell.set(0, boundary_cell[1]);
+				boundary_cell.set(1, temp);
+				boundary_cells.set(cell_index, boundary_cell);
+			}
+		}
+		poly_cell_indices.set(1, boundary_cells);
+		ret->set_poly_cell_indices(poly_cell_indices);
+		ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 	}
 	// Mark all existing faces as seams since they will become sharp borders (usually 90 degrees).
 	if (poly_cell_indices.size() > 0) {

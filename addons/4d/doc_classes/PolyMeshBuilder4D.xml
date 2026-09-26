@@ -27,7 +27,7 @@
 			<description>
 				Extrudes a 3D mesh into 4D by creating 2 copies of the input mesh's data, translating one copy by the [param extrusion_vector] and the other copy by the negative of the [param extrusion_vector], and then connecting the corresponding 2D faces into new 3D cells.
 				This operation is similar to Blender's "Mesh → Extrude → Extrude Faces" operation (hotkey "E"), but Blender's operation extrudes the 2D faces of a 3D mesh, while this function extrudes the 3D cells of a 4D mesh. Also, unlike Blender's operation, this function extrudes in both directions at once, and extrudes the entire mesh at once instead of allowing selection of which cells to extrude.
-				The input mesh MUST have both 2D faces and 3D cells defined in the [member ArrayPolyMesh4D.poly_cell_indices] array. This means that [member ArrayPolyMesh4D.poly_cell_indices] MUST have a length of at least 2.
+				The input mesh MUST have both 2D faces and 3D cells defined in the [member ArrayPolyMesh4D.poly_cell_indices] array. This means that [member ArrayPolyMesh4D.poly_cell_indices] MUST have a length of at least 2. The two copies of the input mesh's 3D cells become the caps of the extruded shape, and are oriented to face away from each other along the [param extrusion_vector].
 			</description>
 		</method>
 		<method name="extrude_spin_from_faces_xw" qualifiers="static">
