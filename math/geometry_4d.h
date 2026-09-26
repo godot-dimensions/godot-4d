@@ -17,6 +17,8 @@ public:
 	static void get_nearest_point_on_tetrahedron_barycentric(const Vector4 &p_vert0, const Vector4 &p_vert1, const Vector4 &p_vert2, const Vector4 &p_vert3, const Vector4 &p_point, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared, bool &r_proj_inside);
 	static bool is_point_inside_tetrahedron_barycentric(const Vector4 &p_vert0, const Vector4 &p_vert1, const Vector4 &p_vert2, const Vector4 &p_vert3, const Vector4 &p_point, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const int64_t p_tetrahedron_index);
 
+	// Tetrahedron calculations.
+	static bool is_tetrahedron_degenerate(const Vector4 &p_tetra_a, const Vector4 &p_tetra_b, const Vector4 &p_tetra_c, const Vector4 &p_tetra_d);
 	// Point-line calculations.
 	static Vector4 closest_point_on_line(const Vector4 &p_line_position, const Vector4 &p_line_direction, const Vector4 &p_point);
 	static Vector4 closest_point_on_line_segment(const Vector4 &p_line_a, const Vector4 &p_line_b, const Vector4 &p_point);

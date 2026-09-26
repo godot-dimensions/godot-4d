@@ -96,5 +96,17 @@
 				Given two lines in 4D space, return two points, one on each line, that are closest to the other line, and closest to each other. The returned array will always contain two points. The lines are defined by a point on the line and a direction vector. The direction vector does not need to be normalized.
 			</description>
 		</method>
+		<method name="is_tetrahedron_degenerate" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="tetra_a" type="Vector4" />
+			<param index="1" name="tetra_b" type="Vector4" />
+			<param index="2" name="tetra_c" type="Vector4" />
+			<param index="3" name="tetra_d" type="Vector4" />
+			<description>
+				Returns [code]true[/code] if the tetrahedron with the given four vertices is degenerate, meaning its vertices are collinear or coplanar up to floating-point noise, so it has zero measure and nothing to render or collide with.
+				Each edge from [param tetra_a] is compared against the span of the previous edges, with a tolerance relative to that edge's own length. This is deliberately not the magnitude of the perpendicular of the unit edge directions, which multiplies the sines of all the angles together, so a legitimately thin tetrahedron would be mistaken for a degenerate one whenever it is thin in more than one way, such as the tetrahedra of a slab cell that is much thinner than it is wide, and much narrower than it is long.
+				This can also test whether a point is coplanar with a triangle: pass the point as [param tetra_a] and the triangle's vertices as the other three parameters.
+			</description>
+		</method>
 	</methods>
 </class>

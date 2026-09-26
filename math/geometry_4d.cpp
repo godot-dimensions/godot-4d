@@ -43,6 +43,29 @@ bool Geometry4D::compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g
 	return true;
 }
 
+// Tetrahedron calculations.
+
+// This compares each edge against the span of the previous ones, with a relative tolerance,
+// rather than testing the magnitude of the perpendicular of the unit edge directions.
+bool Geometry4D::is_tetrahedron_degenerate(const Vector4 &p_tetra_a, const Vector4 &p_tetra_b, const Vector4 &p_tetra_c, const Vector4 &p_tetra_d) {
+	const Vector4 edge_1 = p_tetra_b - p_tetra_a;
+	const Vector4 edge_2 = p_tetra_c - p_tetra_a;
+	const Vector4 edge_3 = p_tetra_d - p_tetra_a;
+	const real_t length_1 = edge_1.length();
+	if (length_1 == (real_t)0.0) {
+		return true;
+	}
+	const Vector4 direction_1 = edge_1 / length_1;
+	const Vector4 rejection_2 = edge_2 - direction_1 * direction_1.dot(edge_2);
+	const real_t length_2 = rejection_2.length();
+	if (length_2 <= (real_t)CMP_EPSILON * edge_2.length()) {
+		return true; // The first three vertices are collinear.
+	}
+	const Vector4 direction_2 = rejection_2 / length_2;
+	const Vector4 rejection_3 = edge_3 - direction_1 * direction_1.dot(edge_3) - direction_2 * direction_2.dot(edge_3);
+	return rejection_3.length() <= (real_t)CMP_EPSILON * edge_3.length(); // All four vertices are coplanar.
+}
+
 void Geometry4D::get_nearest_point_on_tetrahedron_barycentric(const Vector4 &p_vert0, const Vector4 &p_vert1, const Vector4 &p_vert2, const Vector4 &p_vert3, const Vector4 &p_point, const PackedFloat64Array &p_nearest_tetra_inverse_metric_cache, const int64_t p_tetrahedron_index, Vector4 &r_nearest_on_tet, real_t &r_distance_squared, bool &r_proj_inside) {
 	ERR_FAIL_COND_MSG(p_nearest_tetra_inverse_metric_cache.size() < p_tetrahedron_index * 6 + 6, "Geometry4D::get_nearest_point_on_tetrahedron_barycentric: Inverse metric cache is too small for the given tetrahedron index.");
 	const Vector4 edge1 = p_vert1 - p_vert0;
@@ -309,6 +332,8 @@ PackedVector4Array Geometry4D::closest_points_between_line_and_segment(const Vec
 Geometry4D *Geometry4D::singleton = nullptr;
 
 void Geometry4D::_bind_methods() {
+	// Tetrahedron calculations.
+	ClassDB::bind_static_method("Geometry4D", D_METHOD("is_tetrahedron_degenerate", "tetra_a", "tetra_b", "tetra_c", "tetra_d"), &Geometry4D::is_tetrahedron_degenerate);
 	// Point-line calculations.
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_on_line", "line_position", "line_direction", "point"), &Geometry4D::closest_point_on_line);
 	ClassDB::bind_static_method("Geometry4D", D_METHOD("closest_point_on_line_segment", "line_a", "line_b", "point"), &Geometry4D::closest_point_on_line_segment);
