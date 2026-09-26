@@ -3,6 +3,7 @@
 #include "../../../../model/mesh/poly/box_poly_mesh_4d.h"
 #include "../../../../model/mesh/poly/poly_mesh_builder_4d.h"
 #include "../../../../model/mesh/tetra/array_tetra_mesh_4d.h"
+#include "../../../../model/mesh/tetra/box_tetra_mesh_4d.h"
 
 #include "scene/resources/3d/primitive_meshes.h"
 #include "tests/test_macros.h"
@@ -441,6 +442,28 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Extrude spin gives the swept faces edg
 		}
 		CHECK_MESSAGE(corner_texture_maps[face_index].is_empty(), "Swept faces cannot be texture mapped by spinning, so they must be left unmapped.");
 	}
+}
+
+TEST_CASE("[PolyMeshBuilder4D] Reconstruct a thin box without merging its parallel faces") {
+	// The two large faces of a very thin cell are parallel planes a tiny distance apart. The coplanarity test
+	// that groups triangles into faces must keep them apart, so the thin box reconstructs with exactly the same
+	// structure as a box of regular proportions.
+	Ref<BoxTetraMesh4D> regular_box;
+	regular_box.instantiate();
+	Ref<ArrayPolyMesh4D> regular = PolyMeshBuilder4D::reconstruct_from_tetra_mesh(regular_box);
+	REQUIRE(regular->is_poly_mesh_data_valid());
+	Ref<BoxTetraMesh4D> thin_box;
+	thin_box.instantiate();
+	thin_box->set_size(Vector4(0.5, 0.001, 10.0, 10.0));
+	Ref<ArrayPolyMesh4D> thin = PolyMeshBuilder4D::reconstruct_from_tetra_mesh(thin_box);
+	REQUIRE(thin->is_poly_mesh_data_valid());
+	const Vector<Vector<PackedInt32Array>> regular_indices = regular->get_poly_cell_indices();
+	const Vector<Vector<PackedInt32Array>> thin_indices = thin->get_poly_cell_indices();
+	REQUIRE(regular_indices.size() >= 2);
+	REQUIRE(thin_indices.size() == regular_indices.size());
+	CHECK_MESSAGE(thin->get_edge_indices().size() == regular->get_edge_indices().size(), "The thin box must have the same edges as a regular box.");
+	CHECK_MESSAGE(thin_indices[0].size() == regular_indices[0].size(), "The thin box must have the same faces as a regular box, so its parallel faces were not merged.");
+	CHECK_MESSAGE(thin_indices[1].size() == regular_indices[1].size(), "The thin box must have the same cells as a regular box.");
 }
 
 } // namespace TestPolyMeshBuilder4D

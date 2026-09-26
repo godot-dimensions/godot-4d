@@ -61,4 +61,19 @@ TEST_CASE("[TetraMesh4D] Small box raycast") {
 	CHECK((bool)result["hit"]);
 	CHECK(Math::is_equal_approx((double)result["distance"], 0.975));
 }
+
+TEST_CASE("[TetraMesh4D] A degenerate tetrahedron does not break closest-point queries for the whole mesh") {
+	Ref<ArrayTetraMesh4D> mesh;
+	mesh.instantiate();
+	mesh->append_tetra_cell_points(Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), true);
+	// A flat tetrahedron: all four vertices lie in the XY plane.
+	mesh->append_tetra_cell_points(Vector4(5, 0, 0, 0), Vector4(6, 0, 0, 0), Vector4(5, 1, 0, 0), Vector4(5, 2, 0, 0), true);
+	ERR_PRINT_OFF;
+	mesh->populate_inverse_metric_cache();
+	ERR_PRINT_ON;
+	// The point is 1 unit along W from the valid tetrahedron's corner, and further from the flat one.
+	const real_t distance = mesh->get_signed_distance_to_mesh(Vector4(0, 0, 0, 1), nullptr, nullptr);
+	CHECK_MESSAGE(Math::is_finite(distance), "The closest-point cache must still be usable when one tetrahedron is degenerate.");
+	CHECK_MESSAGE(Math::is_equal_approx(Math::abs(distance), (real_t)1.0), "The distance must come from the valid tetrahedron.");
+}
 } // namespace TestTetraMesh4D

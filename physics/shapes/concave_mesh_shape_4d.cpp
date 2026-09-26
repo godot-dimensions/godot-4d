@@ -25,6 +25,7 @@ PackedFloat64Array ConcaveMeshShape4D::_calculate_inverse_metric_cache(const Pac
 	const int64_t simplex_tet_count = p_simplex_cells.size() / 4;
 	PackedFloat64Array new_inverse_metric_cache;
 	new_inverse_metric_cache.resize(simplex_tet_count * 6);
+	int64_t degenerate_tet_count = 0;
 	for (int64_t simplex_tet_index = 0; simplex_tet_index < simplex_tet_count; simplex_tet_index++) {
 		// These indices are guaranteed to be within bounds due to mesh validation.
 		const Vector4 vert0 = p_simplex_cells[simplex_tet_index * 4 + 0];
@@ -43,13 +44,20 @@ PackedFloat64Array ConcaveMeshShape4D::_calculate_inverse_metric_cache(const Pac
 		double inv_gram[6];
 		const bool valid = Geometry4D::compute_inverse_metric_3x3(gram00, gram01, gram02, gram11, gram12, gram22, inv_gram);
 		if (!valid) {
-			new_inverse_metric_cache.clear();
-			ERR_PRINT("ConcaveMeshShape4D: Closest-point cache build failed because tetrahedron " + itos(simplex_tet_index) + " is degenerate or non-finite.");
-			return new_inverse_metric_cache;
+			// Mark this tetrahedron with non-finite entries so that queries only consider its triangle borders,
+			// rather than failing the whole shape. A degenerate tetrahedron has no interior anyway.
+			degenerate_tet_count++;
+			for (int64_t gram_index = 0; gram_index < 6; gram_index++) {
+				new_inverse_metric_cache.set(simplex_tet_index * 6 + gram_index, NAN);
+			}
+			continue;
 		}
 		for (int64_t gram_index = 0; gram_index < 6; gram_index++) {
 			new_inverse_metric_cache.set(simplex_tet_index * 6 + gram_index, inv_gram[gram_index]);
 		}
+	}
+	if (degenerate_tet_count > 0) {
+		WARN_PRINT("ConcaveMeshShape4D: " + itos(degenerate_tet_count) + " of " + itos(simplex_tet_count) + " tetrahedra are degenerate or non-finite, so closest-point queries will only consider their triangle borders.");
 	}
 	return new_inverse_metric_cache;
 }

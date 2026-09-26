@@ -1,5 +1,6 @@
 #include "poly_mesh_4d.h"
 
+#include "../../../math/geometry_4d.h"
 #include "../../../math/math_4d.h"
 #include "../../../math/vector_4d.h"
 #include "../material_4d.h"
@@ -783,13 +784,13 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 				const Vector4 &tet_vertex_1 = _simplex_cell_vertex_positions_cache[new_tet[1]];
 				const Vector4 &tet_vertex_2 = _simplex_cell_vertex_positions_cache[new_tet[2]];
 				const Vector4 &tet_vertex_3 = _simplex_cell_vertex_positions_cache[new_tet[3]];
-				const Vector4 tet_perp = Vector4D::perpendicular(tet_vertex_0.direction_to(tet_vertex_1), tet_vertex_0.direction_to(tet_vertex_2), tet_vertex_0.direction_to(tet_vertex_3));
-				if (tet_perp.is_zero_approx()) {
+				if (Geometry4D::is_tetrahedron_degenerate(tet_vertex_0, tet_vertex_1, tet_vertex_2, tet_vertex_3)) {
 					// Skip zero-measure tetrahedra, which have no volume to render or collide with.
 					// These arise when a cell has collinear or coplanar chains of vertices, such as
 					// a cell bordering subdivided cells, conformed by referencing their sub-elements.
 					continue;
 				}
+				const Vector4 tet_perp = Vector4D::perpendicular(tet_vertex_1 - tet_vertex_0, tet_vertex_2 - tet_vertex_0, tet_vertex_3 - tet_vertex_0).normalized();
 				bool should_flip = false;
 				if (has_cell_boundary_normal && tet_perp.dot(cell_boundary_normal) < 0.0) {
 					should_flip = true;

@@ -26,6 +26,7 @@ void TetraMesh4D::populate_inverse_metric_cache() {
 	}
 	_nearest_tetra_inverse_metric_cache.resize(simplex_tet_count * 6);
 	const PackedVector4Array &vertices = get_vertex_positions();
+	int64_t degenerate_tet_count = 0;
 	for (int64_t simplex_tet_index = 0; simplex_tet_index < simplex_tet_count; simplex_tet_index++) {
 		// These indices are guaranteed to be within bounds due to mesh validation.
 		const int32_t i0 = simplex_cell_vertex_indices[simplex_tet_index * 4 + 0];
@@ -45,13 +46,20 @@ void TetraMesh4D::populate_inverse_metric_cache() {
 		double inv_gram[6];
 		const bool valid = Geometry4D::compute_inverse_metric_3x3(gram00, gram01, gram02, gram11, gram12, gram22, inv_gram);
 		if (!valid) {
-			_nearest_tetra_inverse_metric_cache.clear();
-			ERR_PRINT("TetraMesh4D: Closest-point cache build failed because tetrahedron " + itos(simplex_tet_index) + " is degenerate or non-finite.");
-			return;
+			// Mark this tetrahedron with non-finite entries so that queries only consider its triangle borders,
+			// rather than failing the whole mesh. A degenerate tetrahedron has no interior anyway.
+			degenerate_tet_count++;
+			for (int64_t gram_index = 0; gram_index < 6; gram_index++) {
+				_nearest_tetra_inverse_metric_cache.set(simplex_tet_index * 6 + gram_index, NAN);
+			}
+			continue;
 		}
 		for (int64_t gram_index = 0; gram_index < 6; gram_index++) {
 			_nearest_tetra_inverse_metric_cache.set(simplex_tet_index * 6 + gram_index, inv_gram[gram_index]);
 		}
+	}
+	if (degenerate_tet_count > 0) {
+		WARN_PRINT("TetraMesh4D: " + itos(degenerate_tet_count) + " of " + itos(simplex_tet_count) + " tetrahedra are degenerate or non-finite, so closest-point queries will only consider their triangle borders.");
 	}
 }
 

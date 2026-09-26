@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../../../math/vector_4d.h"
 #include "../../../../model/mesh/poly/array_poly_mesh_4d.h"
 #include "../../../../model/mesh/poly/box_poly_mesh_4d.h"
 #include "../../../../model/mesh/poly/orthoplex_poly_mesh_4d.h"
@@ -588,6 +589,53 @@ TEST_CASE("[PolyMesh4D] Simplex decomposition of a box") {
 		CHECK(texcoord.x <= (real_t)1.0);
 		CHECK(texcoord.y <= (real_t)1.0);
 		CHECK(texcoord.z <= (real_t)1.0);
+	}
+}
+
+TEST_CASE("[PolyMesh4D] Simplex decomposition keeps the skinny tetrahedra of thin cells") {
+	// A box that is very thin along Y and very long along Z and W has cells that are thin, narrow slabs. Their
+	// tetrahedra are legitimately skinny, and must not be mistaken for degenerate tetrahedra and dropped, which
+	// would leave holes in the cells. The tetrahedra of each cell must add up to the full volume of that cell.
+	Ref<BoxPolyMesh4D> box;
+	box.instantiate();
+	box->set_size(Vector4(0.5, 0.001, 10.0, 10.0));
+	const PackedInt32Array simplex_vertex_indices = box->get_simplex_cell_vertex_indices();
+	const PackedVector4Array vertices = box->get_poly_cell_vertex_positions();
+	REQUIRE(simplex_vertex_indices.size() % 4 == 0);
+	const int64_t simplex_count = simplex_vertex_indices.size() / 4;
+	CHECK_MESSAGE(simplex_count == 48, "Each of the 8 thin cube cells should still decompose into 6 tetrahedra.");
+	const Vector<PackedInt32Array> cell_vertex_indices = box->get_all_poly_cell_vertex_indices(3, false);
+	REQUIRE(cell_vertex_indices.size() == 8);
+	PackedFloat64Array cell_volumes;
+	cell_volumes.resize_initialized(8);
+	for (int64_t simplex_index = 0; simplex_index < simplex_count; simplex_index++) {
+		const Vector4 a = vertices[simplex_vertex_indices[simplex_index * 4]];
+		const Vector4 b = vertices[simplex_vertex_indices[simplex_index * 4 + 1]];
+		const Vector4 c = vertices[simplex_vertex_indices[simplex_index * 4 + 2]];
+		const Vector4 d = vertices[simplex_vertex_indices[simplex_index * 4 + 3]];
+		// The perpendicular of the three edges has the volume of their parallelepiped, which is 6 times the tetrahedron's.
+		const double volume = Vector4D::perpendicular(b - a, c - a, d - a).length() / 6.0;
+		const int32_t source_cell = box->get_source_poly_cell_for_simplex_cell(simplex_index);
+		REQUIRE(source_cell >= 0);
+		REQUIRE(source_cell < 8);
+		cell_volumes.set(source_cell, cell_volumes[source_cell] + volume);
+	}
+	for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+		// Each cell of a box is a box itself, spanning three of the four axes.
+		Vector4 minimum = vertices[cell_vertex_indices[cell_index][0]];
+		Vector4 maximum = minimum;
+		for (const int32_t vertex_index : cell_vertex_indices[cell_index]) {
+			minimum = minimum.min(vertices[vertex_index]);
+			maximum = maximum.max(vertices[vertex_index]);
+		}
+		const Vector4 extents = maximum - minimum;
+		double expected_volume = 1.0;
+		for (int axis = 0; axis < 4; axis++) {
+			if (extents[axis] > (real_t)0.0) {
+				expected_volume *= extents[axis];
+			}
+		}
+		CHECK_MESSAGE(Math::is_equal_approx(cell_volumes[cell_index], expected_volume), "The tetrahedra of each thin cell must add up to the cell's full volume, so no tetrahedra were dropped.");
 	}
 }
 

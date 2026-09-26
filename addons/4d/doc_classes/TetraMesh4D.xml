@@ -84,6 +84,7 @@
 			<description>
 				Populates the cache used for nearest-point and raycast calculations, such as in [method get_signed_distance_to_mesh], [method raycast_intersects], and [method raycast_intersects_fast]. This is used to speed up those calculations, to avoid having to recalculate the same data each time a calculation is done. This needs to be rerun whenever the geometry of the mesh changes, such as when vertices or cells are modified, if future calculations are expected.
 				You are strongly encouraged to call this function in advance of any nearest-point or raycast calculations. The raycast methods require the cache to be populated, and will fail with an error if it is not. [method get_signed_distance_to_mesh] will populate the cache automatically as a fallback, but relying on that is discouraged.
+				Degenerate tetrahedra, whose four vertices are collinear or coplanar, have no interior, so they are marked in the cache and only contribute their triangle borders to the calculations. A warning is printed when this happens.
 			</description>
 		</method>
 		<method name="raycast_intersects">

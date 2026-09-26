@@ -27,7 +27,18 @@ bool Geometry4D::compute_inverse_metric_3x3(const real_t p_g00, const real_t p_g
 	const double c12 = n02 * n01 - n12;
 	const double c22 = 1.0 - n01 * n01;
 	const double det = c00 + n01 * c01 + n02 * c02;
+	// The normalized metric is a correlation matrix, so its determinant is between 0 and 1: it is the squared
+	// product of the sines between the basis vectors, and its reciprocal is roughly the condition number of the
+	// inverse, which is how much floating-point error the barycentric coordinates computed from it amplify.
+	// A legitimately thin tetrahedron easily has a determinant far below CMP_EPSILON while being perfectly valid
+	// geometry: for one from a slab cell 0.001 thick, 1 wide, and 10 long, it is around 1e-10. So the tolerance
+	// is tied to the floating-point precision instead, allowing about 1e-4 relative error in the results. The
+	// input dot products are only as precise as the vector type, so float builds keep a coarser tolerance.
+#ifdef REAL_T_IS_DOUBLE
+	constexpr double DETERMINANT_EPSILON = 1e-12;
+#else
 	constexpr double DETERMINANT_EPSILON = CMP_EPSILON;
+#endif
 	if (unlikely(!Math::is_finite(det) || det <= DETERMINANT_EPSILON)) {
 		return false;
 	}
@@ -82,21 +93,25 @@ void Geometry4D::get_nearest_point_on_tetrahedron_barycentric(const Vector4 &p_v
 	{
 		const int64_t cache_offset = p_tetrahedron_index * 6;
 		const double inv00 = p_nearest_tetra_inverse_metric_cache[cache_offset + 0];
-		const Vector4 local = p_point - p_vert0;
-		const double edge1_alignment = edge1.dot(local);
-		const double edge2_alignment = edge2.dot(local);
-		const double edge3_alignment = edge3.dot(local);
-		const double inv01 = p_nearest_tetra_inverse_metric_cache[cache_offset + 1];
-		const double inv02 = p_nearest_tetra_inverse_metric_cache[cache_offset + 2];
-		const double inv11 = p_nearest_tetra_inverse_metric_cache[cache_offset + 3];
-		const double inv12 = p_nearest_tetra_inverse_metric_cache[cache_offset + 4];
-		const double inv22 = p_nearest_tetra_inverse_metric_cache[cache_offset + 5];
-		bary1 = inv00 * edge1_alignment + inv01 * edge2_alignment + inv02 * edge3_alignment;
-		bary2 = inv01 * edge1_alignment + inv11 * edge2_alignment + inv12 * edge3_alignment;
-		bary3 = inv02 * edge1_alignment + inv12 * edge2_alignment + inv22 * edge3_alignment;
-		const double bary0 = 1.0 - (bary1 + bary2 + bary3);
-		// The point is inside the tetrahedron if all barycentric coordinates are non-negative (allowing for a small epsilon).
-		proj_inside = bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON;
+		// A non-finite cache entry marks a degenerate tetrahedron whose inverse metric could not be computed.
+		// It has no interior for the point to project into, so only its triangle borders are checked below.
+		if (Math::is_finite(inv00)) {
+			const Vector4 local = p_point - p_vert0;
+			const double edge1_alignment = edge1.dot(local);
+			const double edge2_alignment = edge2.dot(local);
+			const double edge3_alignment = edge3.dot(local);
+			const double inv01 = p_nearest_tetra_inverse_metric_cache[cache_offset + 1];
+			const double inv02 = p_nearest_tetra_inverse_metric_cache[cache_offset + 2];
+			const double inv11 = p_nearest_tetra_inverse_metric_cache[cache_offset + 3];
+			const double inv12 = p_nearest_tetra_inverse_metric_cache[cache_offset + 4];
+			const double inv22 = p_nearest_tetra_inverse_metric_cache[cache_offset + 5];
+			bary1 = inv00 * edge1_alignment + inv01 * edge2_alignment + inv02 * edge3_alignment;
+			bary2 = inv01 * edge1_alignment + inv11 * edge2_alignment + inv12 * edge3_alignment;
+			bary3 = inv02 * edge1_alignment + inv12 * edge2_alignment + inv22 * edge3_alignment;
+			const double bary0 = 1.0 - (bary1 + bary2 + bary3);
+			// The point is inside the tetrahedron if all barycentric coordinates are non-negative (allowing for a small epsilon).
+			proj_inside = bary0 >= -CMP_EPSILON && bary1 >= -CMP_EPSILON && bary2 >= -CMP_EPSILON && bary3 >= -CMP_EPSILON;
+		}
 	}
 	// Determine the nearest point and/or the min distance based on if it's inside or outside the tetrahedron.
 	Vector4 nearest_on_tet;
@@ -147,6 +162,9 @@ bool Geometry4D::is_point_inside_tetrahedron_barycentric(const Vector4 &p_vert0,
 	{
 		const int64_t cache_offset = p_tetrahedron_index * 6;
 		const double inv00 = p_nearest_tetra_inverse_metric_cache[cache_offset + 0];
+		if (!Math::is_finite(inv00)) {
+			return false; // A degenerate tetrahedron, marked by a non-finite cache entry, has no interior.
+		}
 		const Vector4 local = p_point - p_vert0;
 		const double edge1_alignment = edge1.dot(local);
 		const double edge2_alignment = edge2.dot(local);

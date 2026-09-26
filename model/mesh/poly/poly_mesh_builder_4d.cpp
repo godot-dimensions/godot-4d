@@ -1,5 +1,6 @@
 #include "poly_mesh_builder_4d.h"
 
+#include "../../../math/geometry_4d.h"
 #include "../../../math/math_4d.h"
 
 Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const Ref<Mesh> &p_mesh_3d, const int p_which_surface, const bool p_deduplicate) {
@@ -1231,9 +1232,11 @@ Vector<PackedInt32Array> PolyMeshBuilder4D::_compose_triangles_into_faces(const 
 				const Vector4 &coplanar_rep_0 = p_vertices[coplanar_representative[0]];
 				const Vector4 &coplanar_rep_1 = p_vertices[coplanar_representative[1]];
 				const Vector4 &coplanar_rep_2 = p_vertices[coplanar_representative[2]];
-				const Vector4 perp = Vector4D::perpendicular(tet_vertex.direction_to(coplanar_rep_0), tet_vertex.direction_to(coplanar_rep_1), tet_vertex.direction_to(coplanar_rep_2));
-				if (!perp.is_zero_approx()) {
-					is_coplanar = false; // If it's non-zero, it's not coplanar. Contrapositive of: if it's coplanar, all perp calculations are zero.
+				// This vertex must lie in the plane of the representative triangle, meaning the tetrahedron they form
+				// together is degenerate. That test tolerates thin geometry, so the two large faces of a very thin
+				// slab are not mistaken for one coplanar face.
+				if (!Geometry4D::is_tetrahedron_degenerate(tet_vertex, coplanar_rep_0, coplanar_rep_1, coplanar_rep_2)) {
+					is_coplanar = false; // If any vertex is off the plane, it's not coplanar.
 					break;
 				}
 			}
@@ -1369,7 +1372,10 @@ Vector4 PolyMeshBuilder4D::_compute_cell_normal(const PackedInt32Array &p_cell_f
 	const Vector4 &common_start_vert = p_vertices[common_vertex_start_index];
 	const Vector4 &common_end_vert = p_vertices[common_vertex_end_index];
 	const Vector4 &second_next_vert = p_vertices[second_next_vertex_index];
-	return Vector4D::perpendicular(origin.direction_to(common_start_vert), origin.direction_to(common_end_vert), origin.direction_to(second_next_vert));
+	// Normalize the result so that callers can compare it against other normals with a fixed tolerance. The
+	// perpendicular of unit directions would instead shrink with every way the cell is thin, and a thin cell's
+	// normal would be mistaken for zero or fail to register as aligned or opposed.
+	return Vector4D::perpendicular(common_start_vert - origin, common_end_vert - origin, second_next_vert - origin).normalized();
 }
 
 PackedInt32Array PolyMeshBuilder4D::_save_triangle_vertex_indices_as_faces_and_cell(const Vector<PackedInt32Array> &p_last_triangle_vertex_indices, const Vector4 &p_last_simplex_normal, const PackedVector4Array &p_vertices, Vector<PackedInt32Array> &r_all_face_edge_indices, PackedInt32Array &r_edge_vertex_indices) {
@@ -1442,10 +1448,11 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::reconstruct_from_tetra_mesh(const Ref<Te
 				// Start a new face list.
 				last_triangle_vertex_indices = Vector<PackedInt32Array>();
 				const Vector4 &simplex_origin = vertices[simplex_vertex_indices[offset]];
-				last_simplex_normal = Vector4D::perpendicular(
-						simplex_origin.direction_to(vertices[simplex_vertex_indices[offset + 1]]),
-						simplex_origin.direction_to(vertices[simplex_vertex_indices[offset + 2]]),
-						simplex_origin.direction_to(vertices[simplex_vertex_indices[offset + 3]]));
+				const Vector4 offset_a = vertices[simplex_vertex_indices[offset + 1]] - simplex_origin;
+				const Vector4 offset_b = vertices[simplex_vertex_indices[offset + 2]] - simplex_origin;
+				const Vector4 offset_c = vertices[simplex_vertex_indices[offset + 3]] - simplex_origin;
+				// Normalized, since it is compared against the normalized candidate cell normals with a fixed tolerance.
+				last_simplex_normal = Vector4D::perpendicular(offset_a, offset_b, offset_c).normalized();
 				last_pivot = pivot;
 			}
 			for (int64_t vertex_in_simplex = 0; vertex_in_simplex < 4; vertex_in_simplex++) {

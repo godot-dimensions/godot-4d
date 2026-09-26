@@ -158,7 +158,8 @@ Vector4 OFFDocument4D::_predict_poly_import_cell_normal(const PackedVector4Array
 	const Vector4 &edge_min_vert = p_vertex_positions[common_edge_min];
 	const Vector4 &edge_max_vert = p_vertex_positions[common_edge_max];
 	const Vector4 &second_next_vert = p_vertex_positions[second_next_vertex_index];
-	return Vector4D::perpendicular(origin.direction_to(edge_min_vert), origin.direction_to(edge_max_vert), origin.direction_to(second_next_vert));
+	// Normalized, so that thin cells still register as non-zero and compare correctly against other normals.
+	return Vector4D::perpendicular(edge_min_vert - origin, edge_max_vert - origin, second_next_vert - origin).normalized();
 }
 
 Vector4 OFFDocument4D::_compute_cell_normal_from_canonical_span(const PackedVector4Array &p_vertex_positions, const PackedInt32Array &p_cell_vertex_indices) {
@@ -169,7 +170,8 @@ Vector4 OFFDocument4D::_compute_cell_normal_from_canonical_span(const PackedVect
 	const Vector4 &vert1 = p_vertex_positions[p_cell_vertex_indices[1]];
 	const Vector4 &vert2 = p_vertex_positions[p_cell_vertex_indices[2]];
 	const Vector4 &vert3 = p_vertex_positions[p_cell_vertex_indices[3]];
-	return Vector4D::perpendicular(vert0.direction_to(vert1), vert0.direction_to(vert2), vert0.direction_to(vert3));
+	// Normalized, so that thin cells still register as non-zero and compare correctly against other normals.
+	return Vector4D::perpendicular(vert1 - vert0, vert2 - vert0, vert3 - vert0).normalized();
 }
 
 Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces) {
