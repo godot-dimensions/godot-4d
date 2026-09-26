@@ -267,6 +267,37 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			// The boundary normals themselves will be recalculated at the end of this function,
 			// but write the result back anyway for internal consistency.
 			ret->set_poly_cell_dense_normals(PolyMesh4D::PER_CELL_KEY, Vector<PackedVector4Array>{ per_cell_normals });
+			// Give the extruded side faces per-face normals too, so that the output's per-face binding is complete.
+			// A side face is an input edge swept along the extrusion vector. Its normal is defined as that edge's
+			// edge normal: the normalized sum of the normals of the input faces containing the edge. This is the
+			// same "outward direction of the flat input shape" that the copied faces carry, extended to the edges
+			// where those faces meet, and it is the exact analog of extruding a polygon into a prism, where the
+			// side faces take the polygon's edge normals. The extrusion direction is projected out first so that
+			// the result is perpendicular to the side face even for oblique extrusions. A boundary edge with only
+			// one face gets that face's normal, and a degenerate sum (such as the two sides of a double-sided
+			// sheet) gives a zero normal, which is treated as missing data.
+			{
+				const Vector<PackedInt32Array> &input_faces = input_poly_cell_indices[0];
+				Vector<PackedInt32Array> input_edge_to_faces;
+				input_edge_to_faces.resize(input_edge_count);
+				for (int32_t face_index = 0; face_index < input_faces.size(); face_index++) {
+					for (const int32_t edge_index : input_faces[face_index]) {
+						input_edge_to_faces.write[edge_index].append(face_index);
+					}
+				}
+				const Vector4 extrusion_direction = p_extrusion_vector.normalized();
+				PackedVector4Array all_face_normals = per_face_normals;
+				all_face_normals.resize(poly_cell_indices[0].size());
+				for (int32_t input_edge_index = 0; input_edge_index < input_edge_count; input_edge_index++) {
+					Vector4 side_normal;
+					for (const int32_t face_index : input_edge_to_faces[input_edge_index]) {
+						side_normal += per_face_normals[face_index];
+					}
+					side_normal -= extrusion_direction * side_normal.dot(extrusion_direction);
+					all_face_normals.set(edge_to_extruded_face[input_edge_index], side_normal.normalized());
+				}
+				ret->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ all_face_normals });
+			}
 		} else {
 			// Otherwise, if there is no data to copy over, calculate new boundary normals for the extruded faces.
 			// 4D-specific code: Ensure boundary cells are correctly oriented with outward facing normals.
@@ -342,10 +373,44 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			const int64_t input_face_count = input_faces.size();
 			face_to_vert_normals.resize(input_face_count); // Just in case the original size was smaller due to missing data. Empty entries are fine.
 			face_to_vert_normals.append_array(face_to_vert_normals); // New size will be 2x the input face count.
+			const Vector<PackedInt32Array> all_face_vert = ret->get_all_poly_cell_vertex_indices(2, false);
+			// Give the extruded side faces vertex normals too, following the same rule as their per-face normals.
+			// Each corner of a side face sits on an input vertex or its extruded copy, and takes the normalized
+			// sum of that vertex's corner normals in the input faces containing the swept edge.
+			{
+				const int32_t input_vertex_count = (int32_t)p_input_mesh->get_poly_cell_vertex_positions().size();
+				Vector<PackedInt32Array> input_edge_to_faces;
+				input_edge_to_faces.resize(input_edge_count);
+				for (int32_t face_index = 0; face_index < input_faces.size(); face_index++) {
+					for (const int32_t edge_index : input_faces[face_index]) {
+						input_edge_to_faces.write[edge_index].append(face_index);
+					}
+				}
+				face_to_vert_normals.resize(all_face_vert.size());
+				for (int32_t input_edge_index = 0; input_edge_index < input_edge_count; input_edge_index++) {
+					const int32_t side_face_index = edge_to_extruded_face[input_edge_index];
+					const PackedInt32Array &side_face_vert = all_face_vert[side_face_index];
+					PackedVector4Array side_vert_normals;
+					side_vert_normals.resize(side_face_vert.size());
+					for (int64_t corner = 0; corner < side_face_vert.size(); corner++) {
+						// The first copy keeps the input vertex indices, and the second copy is offset by the input vertex count.
+						const int32_t input_vertex = side_face_vert[corner] % input_vertex_count;
+						Vector4 corner_normal;
+						for (const int32_t face_index : input_edge_to_faces[input_edge_index]) {
+							const PackedVector4Array &input_face_vert_normals = face_to_vert_normals[face_index];
+							const int64_t vert_in_face = all_face_vert[face_index].find(input_vertex);
+							if (vert_in_face != -1 && vert_in_face < input_face_vert_normals.size()) {
+								corner_normal += input_face_vert_normals[vert_in_face];
+							}
+						}
+						side_vert_normals.set(corner, corner_normal.normalized());
+					}
+					face_to_vert_normals.set(side_face_index, side_vert_normals);
+				}
+			}
 			ret->set_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY, face_to_vert_normals);
 			// Now transfer the face vertex normals to the extruded cell vertex normals.
 			const PackedVector4Array per_cell_normals = ret->get_poly_cell_boundary_normals();
-			const Vector<PackedInt32Array> all_face_vert = ret->get_all_poly_cell_vertex_indices(2, false);
 			const Vector<PackedInt32Array> all_cell_vert = ret->get_all_poly_cell_vertex_indices(3, false);
 			Vector<PackedVector4Array> cell_to_vert_normals = ret->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 			cell_to_vert_normals.resize(all_cell_vert.size());
@@ -382,7 +447,8 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			const Vector<PackedInt32Array> &input_faces = input_poly_cell_indices[0];
 			const int64_t input_face_count = input_faces.size();
 			// Special case for texture maps: The second copy should be offset in the Z direction.
-			face_to_vert_texture_maps.resize(input_face_count * 2);
+			// Texture maps cannot be generated for the extruded side faces, so those are left as empty entries, meaning unmapped.
+			face_to_vert_texture_maps.resize(poly_cell_indices[0].size());
 			for (int64_t face_index = 0; face_index < input_face_count; face_index++) {
 				PackedVector3Array face_vert_texture_map = face_to_vert_texture_maps[face_index];
 				for (int64_t vert_index = 0; vert_index < face_vert_texture_map.size(); vert_index++) {
@@ -728,11 +794,47 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &output_normal_kv : output_all_poly_cell_normal_indices) {
 		output_all_poly_cell_normals.insert(output_normal_kv.key, ret->get_poly_cell_dense_normals(output_normal_kv.key));
 	}
-	output_all_poly_cell_normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ input_face_normals });
+	// Step 16.4: Build the complete per-face normals of the output. The rotated copies of the input faces take the
+	// input face normals rotated by their step, like any other flat binding. The swept faces are input edges swept
+	// between two steps, and take that edge's edge normal (the normalized sum of the normals of the input faces
+	// containing it) rotated by the half step in between. This is the same outward direction of the flat input
+	// shape that the copied faces carry, extended to the edges where those faces meet, and it is the same rule
+	// that `extrude_linear` uses for its side faces.
+	Vector<PackedInt32Array> input_edge_to_faces;
+	input_edge_to_faces.resize(input_edge_count);
+	for (int32_t face_index = 0; face_index < input_face_count; face_index++) {
+		for (const int32_t edge_index : input_face_indices[face_index]) {
+			input_edge_to_faces.write[edge_index].append(face_index);
+		}
+	}
+	{
+		PackedVector4Array output_face_normals;
+		output_face_normals.resize(output_face_indices.size());
+		for (int step = 0; step < p_steps; step++) {
+			const Basis4D step_rotation = Basis4D::from_xw(step * radians_per_step);
+			for (int32_t face_index = 0; face_index < input_face_count; face_index++) {
+				output_face_normals.set(original_to_rotated_faces[face_index * p_steps + step], step_rotation.xform(input_face_normals[face_index]));
+			}
+			const Basis4D half_step_rotation = Basis4D::from_xw((step + 0.5) * radians_per_step);
+			const PackedInt32Array &edge_to_output_face = input_edges_to_output_faces[step];
+			for (int64_t edge_index = 0; edge_index < input_edge_count; edge_index++) {
+				const int32_t swept_face_index = edge_to_output_face[edge_index];
+				if (swept_face_index == -1) {
+					continue; // This edge lies on the spin axis, so it was not swept into a face.
+				}
+				Vector4 edge_normal;
+				for (const int32_t face_index : input_edge_to_faces[edge_index]) {
+					edge_normal += input_face_normals[face_index];
+				}
+				output_face_normals.set(swept_face_index, half_step_rotation.xform(edge_normal.normalized()));
+			}
+		}
+		output_all_poly_cell_normals.insert(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ output_face_normals });
+	}
 	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &normal_kv : input_all_poly_cell_normals) {
 		const Vector2i key = normal_kv.key;
 		if (key == PolyMesh4D::PER_FACE_KEY) {
-			continue; // Used above to orient the output cells, but cannot be represented for all output faces.
+			continue; // Per-face normals are handled separately in step 16.4, which also covers the swept faces.
 		}
 		// Step 16.1: Get and validate the normal data for this key.
 		const Vector<PackedVector4Array> &normals = normal_kv.value;
@@ -784,12 +886,69 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 			output_all_poly_cell_normals.insert(key, output_arrays);
 		}
 	}
+	// Step 16.5: Give the swept faces vertex normals too, following the same rule as their per-face normals.
+	// Each corner of a swept face is a rotated copy of one of the swept edge's two input vertices, and takes the
+	// normalized sum of that vertex's corner normals in the input faces containing the edge, rotated by the
+	// corner's own step. A vertex on the spin axis is shared by both steps, so it uses the half step in between.
+	if (input_all_poly_cell_normals.has(PolyMesh4D::FACE_TO_VERT_KEY) && output_all_poly_cell_normals.has(PolyMesh4D::FACE_TO_VERT_KEY)) {
+		const Vector<PackedVector4Array> &input_face_vert_normals = input_all_poly_cell_normals[PolyMesh4D::FACE_TO_VERT_KEY];
+		Vector<PackedVector4Array> output_face_vert_normals = output_all_poly_cell_normals[PolyMesh4D::FACE_TO_VERT_KEY];
+		output_face_vert_normals.resize(output_face_indices.size());
+		const Vector<PackedInt32Array> input_face_vert = p_input_mesh->get_all_poly_cell_vertex_indices(2, false);
+		const Vector<PackedInt32Array> output_face_vert = ret->get_all_poly_cell_vertex_indices(2, false);
+		for (int this_step = 0; this_step < p_steps; this_step++) {
+			const int next_step = (this_step + 1) % p_steps;
+			const Basis4D rotations[3] = {
+				Basis4D::from_xw(this_step * radians_per_step),
+				Basis4D::from_xw(next_step * radians_per_step),
+				Basis4D::from_xw((this_step + 0.5) * radians_per_step),
+			};
+			const PackedInt32Array &edge_to_output_face = input_edges_to_output_faces[this_step];
+			for (int64_t edge_index = 0; edge_index < input_edge_count; edge_index++) {
+				const int32_t swept_face_index = edge_to_output_face[edge_index];
+				if (swept_face_index == -1) {
+					continue; // This edge lies on the spin axis, so it was not swept into a face.
+				}
+				const PackedInt32Array &swept_face_vert = output_face_vert[swept_face_index];
+				PackedVector4Array swept_vert_normals;
+				swept_vert_normals.resize(swept_face_vert.size());
+				for (int64_t corner = 0; corner < swept_face_vert.size(); corner++) {
+					const int32_t output_vertex = swept_face_vert[corner];
+					int32_t input_vertex = -1;
+					int which_rotation = 2;
+					for (int end = 0; end < 2; end++) {
+						const int32_t candidate = input_edge_indices[edge_index * 2 + end];
+						const bool at_this_step = original_to_rotated_vertices[candidate * p_steps + this_step] == output_vertex;
+						const bool at_next_step = original_to_rotated_vertices[candidate * p_steps + next_step] == output_vertex;
+						if (at_this_step || at_next_step) {
+							input_vertex = candidate;
+							which_rotation = (at_this_step && at_next_step) ? 2 : (at_this_step ? 0 : 1);
+							break;
+						}
+					}
+					Vector4 corner_normal;
+					if (input_vertex != -1) {
+						for (const int32_t face_index : input_edge_to_faces[edge_index]) {
+							const PackedVector4Array &face_vert_normals = input_face_vert_normals[face_index];
+							const int64_t vert_in_face = input_face_vert[face_index].find(input_vertex);
+							if (vert_in_face != -1 && vert_in_face < face_vert_normals.size()) {
+								corner_normal += face_vert_normals[vert_in_face];
+							}
+						}
+					}
+					swept_vert_normals.set(corner, rotations[which_rotation].xform(corner_normal.normalized()));
+				}
+				output_face_vert_normals.set(swept_face_index, swept_vert_normals);
+			}
+		}
+		output_all_poly_cell_normals.insert(PolyMesh4D::FACE_TO_VERT_KEY, output_face_vert_normals);
+	}
 	// Step 17: Extrude the low-dim vertex normals into high-dim vertex normals, such as faces to cells.
 	// Here we only read where the input has the key, but the data comes from the output mesh.
 	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &normal_kv : input_all_poly_cell_normals) {
 		const Vector2i key = normal_kv.key;
 		if (key == PolyMesh4D::PER_FACE_KEY) {
-			continue; // Used above to orient the output cells, but cannot be represented for all output faces.
+			continue; // Per-face normals are handled separately in step 16.4, which also covers the swept faces.
 		}
 		CRASH_COND(!output_all_poly_cell_normals.has(key)); // We should have copied all other input normals to the output in step 14, so this key should exist in the output.
 		const Vector2i dest_key = Vector2i(key.x + 1, key.y);
@@ -911,6 +1070,13 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 				}
 			}
 			output_all_poly_cell_texture_maps.insert(key, output_arrays);
+		}
+	}
+	// Step 18.4: Texture maps cannot be generated for the swept faces, so pad the face texture map bindings with
+	// empty entries, meaning unmapped, so that they cover every output face.
+	for (KeyValue<Vector2i, Vector<PackedVector3Array>> &tex_map_kv : output_all_poly_cell_texture_maps) {
+		if (tex_map_kv.key.x == 2 && tex_map_kv.key.y < 2 && tex_map_kv.value.size() < output_face_indices.size()) {
+			tex_map_kv.value.resize(output_face_indices.size());
 		}
 	}
 	// Step 19: Extrude the low-dim face texture maps into high-dim cell texture maps, such as faces to cells.

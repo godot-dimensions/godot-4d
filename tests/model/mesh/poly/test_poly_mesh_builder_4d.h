@@ -4,6 +4,7 @@
 #include "../../../../model/mesh/poly/poly_mesh_builder_4d.h"
 #include "../../../../model/mesh/tetra/array_tetra_mesh_4d.h"
 
+#include "scene/resources/3d/primitive_meshes.h"
 #include "tests/test_macros.h"
 
 namespace TestPolyMeshBuilder4D {
@@ -261,6 +262,185 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Extrude linear orients the caps along 
 	REQUIRE(extruded_normals.size() >= 2);
 	CHECK_MESSAGE(extruded_normals[0].dot(extrusion) < 0.0, "The cap moved by the negative extrusion vector must face that way.");
 	CHECK_MESSAGE(extruded_normals[1].dot(extrusion) > 0.0, "The cap moved by the positive extrusion vector must face that way.");
+}
+
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Extrude linear gives the side faces edge normals") {
+	// A cube converted to 4D faces carries per-face normals from its winding, corner normals from its 3D normals,
+	// and corner texture maps from its UVs. Extruding it along W sweeps each cube edge into a side face.
+	Ref<BoxMesh> box_mesh;
+	box_mesh.instantiate();
+	box_mesh->set_size(Vector3(2, 2, 2));
+	Ref<ArrayPolyMesh4D> flat = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(box_mesh);
+	REQUIRE(flat->is_poly_mesh_data_valid());
+	const int64_t input_face_count = flat->get_poly_cell_indices()[0].size();
+	const int64_t input_edge_count = flat->get_edge_indices().size() / 2;
+	Ref<ArrayPolyMesh4D> extruded = PolyMeshBuilder4D::extrude_linear(flat, Vector4(0, 0, 0, 1));
+	REQUIRE(extruded->is_poly_mesh_data_valid());
+	const int64_t face_count = extruded->get_poly_cell_indices()[0].size();
+	REQUIRE(face_count == input_face_count * 2 + input_edge_count);
+	const Vector<PackedVector4Array> face_normals = extruded->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	REQUIRE(face_normals.size() == 1);
+	REQUIRE_MESSAGE(face_normals[0].size() == face_count, "Every face of the extruded mesh must have a per-face normal.");
+	const Vector<PackedVector4Array> corner_normals = extruded->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE_MESSAGE(corner_normals.size() == face_count, "Every face of the extruded mesh must have corner normals.");
+	const Vector<PackedVector3Array> corner_texture_maps = extruded->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE_MESSAGE(corner_texture_maps.size() == face_count, "The corner texture map binding must cover every face, with the side faces unmapped.");
+	const PackedVector4Array vertices = extruded->get_poly_cell_vertex_positions();
+	const Vector<PackedInt32Array> face_vertices = extruded->get_all_poly_cell_vertex_indices(2, false);
+	for (int64_t face_index = input_face_count * 2; face_index < face_count; face_index++) {
+		// A side face's midpoint, projected back into XYZ, is the midpoint of the cube edge it was swept from.
+		// For a cube centered at the origin, every edge normal points from the center through that midpoint.
+		// This includes the triangulation diagonals, whose two faces are coplanar, so their sum is the face normal.
+		const PackedInt32Array &side_face_vertices = face_vertices[face_index];
+		Vector4 midpoint;
+		for (const int32_t vertex_index : side_face_vertices) {
+			midpoint += vertices[vertex_index];
+		}
+		midpoint /= side_face_vertices.size();
+		midpoint.w = 0.0;
+		const Vector4 expected = midpoint.normalized();
+		CHECK_MESSAGE(face_normals[0][face_index].is_equal_approx(expected), "Each side face must take the edge normal of the cube edge it was swept from.");
+		// The cube is flat shaded, so every corner normal of a side face equals its per-face normal. The corner
+		// normals come from the 3D mesh's normal array, which Godot stores compressed, so allow for that error.
+		const PackedVector4Array &side_corner_normals = corner_normals[face_index];
+		REQUIRE(side_corner_normals.size() == side_face_vertices.size());
+		for (const Vector4 &corner_normal : side_corner_normals) {
+			CHECK_MESSAGE((corner_normal - expected).length() < 0.001, "Each corner of a side face must sum its vertex's corner normals in the adjacent faces.");
+		}
+		CHECK_MESSAGE(corner_texture_maps[face_index].is_empty(), "Side faces cannot be texture mapped by extrusion, so they must be left unmapped.");
+	}
+}
+
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Extrude spin gives the swept faces edge normals") {
+	// Two non-coplanar triangles sharing an edge, all at X >= 1 so that the spin moves every vertex. The per-face
+	// normals come from the winding, and the corner normals and texture maps come from the supplied arrays.
+	const Vector3 v0 = Vector3(1.5, 0, 0);
+	const Vector3 v1 = Vector3(1.5, 1, 0);
+	const Vector3 v2 = Vector3(1, 0.5, 0);
+	const Vector3 v3 = Vector3(2, 0.5, 1);
+	const Vector3 normal_a = Vector3(0, 0, 1);
+	const Vector3 normal_b = Vector3(1, 0, -0.5).normalized();
+	Ref<ArrayMesh> mesh_3d;
+	mesh_3d.instantiate();
+	PackedVector3Array vertices = { v0, v1, v2, v0, v3, v1 };
+	PackedVector3Array normals = { normal_a, normal_a, normal_a, normal_b, normal_b, normal_b };
+	PackedVector2Array uvs = { Vector2(0, 0), Vector2(0, 1), Vector2(1, 0), Vector2(0, 0), Vector2(1, 1), Vector2(0, 1) };
+	Array arrays;
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = vertices;
+	arrays[Mesh::ARRAY_NORMAL] = normals;
+	arrays[Mesh::ARRAY_TEX_UV] = uvs;
+	mesh_3d->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+	Ref<ArrayPolyMesh4D> flat = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(mesh_3d);
+	REQUIRE(flat->is_poly_mesh_data_valid());
+	const PackedVector4Array input_vertices = flat->get_poly_cell_vertex_positions();
+	REQUIRE(input_vertices.size() == 4);
+	const Vector<PackedInt32Array> input_face_vertices = flat->get_all_poly_cell_vertex_indices(2, false);
+	REQUIRE(input_face_vertices.size() == 2);
+	const Vector<PackedVector4Array> input_face_normals = flat->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	REQUIRE(input_face_normals.size() == 1);
+	const Vector<PackedVector4Array> input_corner_normals = flat->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE(input_corner_normals.size() == 2);
+	const int steps = 4;
+	const double radians_per_step = Math_TAU / steps;
+	Ref<ArrayPolyMesh4D> spun = PolyMeshBuilder4D::extrude_spin_from_faces_xw(flat, steps);
+	REQUIRE(spun->is_poly_mesh_data_valid());
+	const PackedVector4Array spun_vertices = spun->get_poly_cell_vertex_positions();
+	const Vector<PackedInt32Array> spun_face_vertices = spun->get_all_poly_cell_vertex_indices(2, false);
+	const int64_t face_count = spun_face_vertices.size();
+	REQUIRE(face_count == 2 * steps + 5 * steps); // Two faces and five edges, each copied or swept once per step.
+	const Vector<PackedVector4Array> face_normals = spun->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	REQUIRE(face_normals.size() == 1);
+	REQUIRE_MESSAGE(face_normals[0].size() == face_count, "Every face of the spun mesh must have a per-face normal.");
+	const Vector<PackedVector4Array> corner_normals = spun->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE_MESSAGE(corner_normals.size() == face_count, "Every face of the spun mesh must have corner normals.");
+	const Vector<PackedVector3Array> corner_texture_maps = spun->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE_MESSAGE(corner_texture_maps.size() == face_count, "The corner texture map binding must cover every face, with the swept faces unmapped.");
+	// Every output vertex is a rotated copy of an input vertex at some step, which identifies each face's origin.
+	auto identify_vertex = [&](const Vector4 &p_position, int32_t &r_input_vertex, int &r_step) -> bool {
+		for (int step = 0; step < steps; step++) {
+			const Basis4D rotation = Basis4D::from_xw(step * radians_per_step);
+			for (int32_t input_vertex = 0; input_vertex < input_vertices.size(); input_vertex++) {
+				if (rotation.xform(input_vertices[input_vertex]).is_equal_approx(p_position)) {
+					r_input_vertex = input_vertex;
+					r_step = step;
+					return true;
+				}
+			}
+		}
+		return false;
+	};
+	auto input_faces_containing = [&](const int32_t p_vertex_a, const int32_t p_vertex_b) -> PackedInt32Array {
+		PackedInt32Array faces;
+		for (int32_t face_index = 0; face_index < input_face_vertices.size(); face_index++) {
+			if (input_face_vertices[face_index].has(p_vertex_a) && input_face_vertices[face_index].has(p_vertex_b)) {
+				faces.append(face_index);
+			}
+		}
+		return faces;
+	};
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		const PackedInt32Array &face_vertices = spun_face_vertices[face_index];
+		PackedInt32Array corner_input_vertices;
+		PackedInt32Array corner_steps;
+		for (const int32_t vertex_index : face_vertices) {
+			int32_t input_vertex = -1;
+			int step = -1;
+			REQUIRE_MESSAGE(identify_vertex(spun_vertices[vertex_index], input_vertex, step), "Every spun vertex must be a rotated copy of an input vertex.");
+			corner_input_vertices.append(input_vertex);
+			corner_steps.append(step);
+		}
+		if (face_index < 2 * steps) {
+			// A rotated copy of an input face: all corners share one step, and its normal is the input normal rotated by that step.
+			const int step = corner_steps[0];
+			int32_t input_face = -1;
+			for (int32_t candidate = 0; candidate < input_face_vertices.size(); candidate++) {
+				if (input_face_vertices[candidate].size() == corner_input_vertices.size() && input_face_vertices[candidate].has(corner_input_vertices[0]) && input_face_vertices[candidate].has(corner_input_vertices[1]) && input_face_vertices[candidate].has(corner_input_vertices[2])) {
+					input_face = candidate;
+				}
+			}
+			REQUIRE(input_face != -1);
+			const Vector4 expected = Basis4D::from_xw(step * radians_per_step).xform(input_face_normals[0][input_face]);
+			CHECK_MESSAGE(face_normals[0][face_index].is_equal_approx(expected), "Each rotated copy of an input face must take the input face normal rotated by its step.");
+			continue;
+		}
+		// A swept face: two input vertices (the swept edge) at two consecutive steps.
+		const int32_t vertex_a = corner_input_vertices[0];
+		int32_t vertex_b = -1;
+		int base_step = -1;
+		for (int64_t corner = 0; corner < corner_input_vertices.size(); corner++) {
+			if (corner_input_vertices[corner] != vertex_a) {
+				vertex_b = corner_input_vertices[corner];
+			}
+			if (corner_steps.has((corner_steps[corner] + 1) % steps)) {
+				base_step = corner_steps[corner];
+			}
+		}
+		REQUIRE(vertex_b != -1);
+		REQUIRE(base_step != -1);
+		const PackedInt32Array adjacent_faces = input_faces_containing(vertex_a, vertex_b);
+		REQUIRE(!adjacent_faces.is_empty());
+		Vector4 edge_normal;
+		for (const int32_t adjacent_face : adjacent_faces) {
+			edge_normal += input_face_normals[0][adjacent_face];
+		}
+		const Vector4 expected = Basis4D::from_xw((base_step + 0.5) * radians_per_step).xform(edge_normal.normalized());
+		CHECK_MESSAGE(face_normals[0][face_index].is_equal_approx(expected), "Each swept face must take the edge normal of its input edge, rotated by the half step it spans.");
+		// Corner normals follow the same rule at the corner's own step. They come from the 3D mesh's compressed normal array, so allow for that error.
+		const PackedVector4Array &swept_corner_normals = corner_normals[face_index];
+		REQUIRE(swept_corner_normals.size() == face_vertices.size());
+		for (int64_t corner = 0; corner < face_vertices.size(); corner++) {
+			Vector4 corner_normal;
+			for (const int32_t adjacent_face : adjacent_faces) {
+				const int64_t vert_in_face = input_face_vertices[adjacent_face].find(corner_input_vertices[corner]);
+				REQUIRE(vert_in_face != -1);
+				corner_normal += input_corner_normals[adjacent_face][vert_in_face];
+			}
+			const Vector4 expected_corner = Basis4D::from_xw(corner_steps[corner] * radians_per_step).xform(corner_normal.normalized());
+			CHECK_MESSAGE((swept_corner_normals[corner] - expected_corner).length() < 0.001, "Each corner of a swept face must sum its vertex's corner normals in the adjacent faces, rotated by its step.");
+		}
+		CHECK_MESSAGE(corner_texture_maps[face_index].is_empty(), "Swept faces cannot be texture mapped by spinning, so they must be left unmapped.");
+	}
 }
 
 } // namespace TestPolyMeshBuilder4D
