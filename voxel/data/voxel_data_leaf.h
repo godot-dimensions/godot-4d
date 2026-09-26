@@ -4,6 +4,12 @@
 #include "voxel_edge_data.h"
 #include "voxel_material.h"
 
+#if GDEXTENSION
+#include <godot_cpp/templates/local_vector.hpp>
+#elif GODOT_MODULE
+#include "core/templates/local_vector.h"
+#endif
+
 // A dense cubic chunk of voxel data, VOXEL_DATA_CHUNK_SIZE on every axis.
 // Coordinates are local to the chunk, the VoxelDataTree leaf node that owns
 // the chunk determines where that chunk is located in the world.

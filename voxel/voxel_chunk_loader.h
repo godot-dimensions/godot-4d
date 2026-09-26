@@ -4,9 +4,13 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/worker_thread_pool.hpp>
+#include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/local_vector.hpp>
 #include <godot_cpp/templates/safe_refcount.hpp>
 #elif GODOT_MODULE
 #include "core/object/worker_thread_pool.h"
+#include "core/templates/hash_map.h"
+#include "core/templates/local_vector.h"
 #include "core/templates/safe_refcount.h"
 #endif
 

@@ -4,6 +4,14 @@
 #include "../model/mesh/mesh_instance_4d.h"
 #include "voxel_constants.h"
 
+#if GDEXTENSION
+#include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/hash_set.hpp>
+#elif GODOT_MODULE
+#include "core/templates/hash_map.h"
+#include "core/templates/hash_set.h"
+#endif
+
 class VoxelWorld4D;
 
 // Keeps track of the chunk meshes of one VoxelWorld4D: which have been

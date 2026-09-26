@@ -2,6 +2,14 @@
 
 #include "../model/mesh/tetra/array_tetra_mesh_4d.h"
 
+#if GDEXTENSION
+#include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/local_vector.hpp>
+#elif GODOT_MODULE
+#include "core/templates/hash_map.h"
+#include "core/templates/local_vector.h"
+#endif
+
 // The threshold between well-constrained and weakly-constrained directions of
 // a vertex's quadratic error function: eigenvalues above it are inverted
 // exactly, snapping the vertex onto sharp features, while eigenvalues below
