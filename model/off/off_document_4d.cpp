@@ -149,25 +149,27 @@ Vector4 OFFDocument4D::_predict_poly_import_cell_normal(const PackedVector4Array
 	if (common_edge_index_in_a == -1 || common_edge_index_in_b == -1) {
 		return Vector4();
 	}
-	const int32_t first_next_vertex = _get_next_vertex_not_in_common_edge(face_a, common_edge_index_in_a, common_edge_min, common_edge_max);
-	const int32_t second_next_vertex = _get_next_vertex_not_in_common_edge(face_b, common_edge_index_in_b, common_edge_min, common_edge_max);
-	if (first_next_vertex == INT32_MIN || second_next_vertex == INT32_MIN) {
+	const int32_t first_next_vertex_index = _get_next_vertex_not_in_common_edge(face_a, common_edge_index_in_a, common_edge_min, common_edge_max);
+	const int32_t second_next_vertex_index = _get_next_vertex_not_in_common_edge(face_b, common_edge_index_in_b, common_edge_min, common_edge_max);
+	if (first_next_vertex_index == INT32_MIN || second_next_vertex_index == INT32_MIN) {
 		return Vector4();
 	}
-	return Vector4D::perpendicular(
-			p_vertex_positions[first_next_vertex].direction_to(p_vertex_positions[common_edge_min]),
-			p_vertex_positions[first_next_vertex].direction_to(p_vertex_positions[common_edge_max]),
-			p_vertex_positions[first_next_vertex].direction_to(p_vertex_positions[second_next_vertex]));
+	const Vector4 &origin = p_vertex_positions[first_next_vertex_index];
+	const Vector4 &edge_min_vert = p_vertex_positions[common_edge_min];
+	const Vector4 &edge_max_vert = p_vertex_positions[common_edge_max];
+	const Vector4 &second_next_vert = p_vertex_positions[second_next_vertex_index];
+	return Vector4D::perpendicular(origin.direction_to(edge_min_vert), origin.direction_to(edge_max_vert), origin.direction_to(second_next_vert));
 }
 
 Vector4 OFFDocument4D::_compute_cell_normal_from_canonical_span(const PackedVector4Array &p_vertex_positions, const PackedInt32Array &p_cell_vertex_indices) {
 	if (p_cell_vertex_indices.size() < 4) {
 		return Vector4();
 	}
-	return Vector4D::perpendicular(
-			p_vertex_positions[p_cell_vertex_indices[0]].direction_to(p_vertex_positions[p_cell_vertex_indices[1]]),
-			p_vertex_positions[p_cell_vertex_indices[0]].direction_to(p_vertex_positions[p_cell_vertex_indices[2]]),
-			p_vertex_positions[p_cell_vertex_indices[0]].direction_to(p_vertex_positions[p_cell_vertex_indices[3]]));
+	const Vector4 &vert0 = p_vertex_positions[p_cell_vertex_indices[0]];
+	const Vector4 &vert1 = p_vertex_positions[p_cell_vertex_indices[1]];
+	const Vector4 &vert2 = p_vertex_positions[p_cell_vertex_indices[2]];
+	const Vector4 &vert3 = p_vertex_positions[p_cell_vertex_indices[3]];
+	return Vector4D::perpendicular(vert0.direction_to(vert1), vert0.direction_to(vert2), vert0.direction_to(vert3));
 }
 
 Ref<OFFDocument4D> OFFDocument4D::export_convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces) {

@@ -779,10 +779,11 @@ void PolyMesh4D::_decompose_boundary_cells_into_simplexes(const bool p_force_ali
 			}
 			for (int64_t tri_index = 0; tri_index < face_triangulation.size(); tri_index += 3) {
 				int32_t new_tet[4] = { pivot_vertex_index, face_triangulation[tri_index], face_triangulation[tri_index + 1], face_triangulation[tri_index + 2] };
-				const Vector4 tet_perp = Vector4D::perpendicular(
-						_simplex_cell_vertex_positions_cache[new_tet[0]].direction_to(_simplex_cell_vertex_positions_cache[new_tet[1]]),
-						_simplex_cell_vertex_positions_cache[new_tet[0]].direction_to(_simplex_cell_vertex_positions_cache[new_tet[2]]),
-						_simplex_cell_vertex_positions_cache[new_tet[0]].direction_to(_simplex_cell_vertex_positions_cache[new_tet[3]]));
+				const Vector4 &tet_vertex_0 = _simplex_cell_vertex_positions_cache[new_tet[0]];
+				const Vector4 &tet_vertex_1 = _simplex_cell_vertex_positions_cache[new_tet[1]];
+				const Vector4 &tet_vertex_2 = _simplex_cell_vertex_positions_cache[new_tet[2]];
+				const Vector4 &tet_vertex_3 = _simplex_cell_vertex_positions_cache[new_tet[3]];
+				const Vector4 tet_perp = Vector4D::perpendicular(tet_vertex_0.direction_to(tet_vertex_1), tet_vertex_0.direction_to(tet_vertex_2), tet_vertex_0.direction_to(tet_vertex_3));
 				if (tet_perp.is_zero_approx()) {
 					// Skip zero-measure tetrahedra, which have no volume to render or collide with.
 					// These arise when a cell has collinear or coplanar chains of vertices, such as

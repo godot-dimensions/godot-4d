@@ -1227,10 +1227,11 @@ Vector<PackedInt32Array> PolyMeshBuilder4D::_compose_triangles_into_faces(const 
 			const PackedInt32Array &coplanar_representative = coplanar_triangle_vertex_indices[coplanar_index][0];
 			bool is_coplanar = true;
 			for (int64_t vertex_in_triangle = 0; vertex_in_triangle < 3; vertex_in_triangle++) {
-				const Vector4 perp = Vector4D::perpendicular(
-						p_vertices[triangle[vertex_in_triangle]].direction_to(p_vertices[coplanar_representative[0]]),
-						p_vertices[triangle[vertex_in_triangle]].direction_to(p_vertices[coplanar_representative[1]]),
-						p_vertices[triangle[vertex_in_triangle]].direction_to(p_vertices[coplanar_representative[2]]));
+				const Vector4 &tet_vertex = p_vertices[triangle[vertex_in_triangle]];
+				const Vector4 &coplanar_rep_0 = p_vertices[coplanar_representative[0]];
+				const Vector4 &coplanar_rep_1 = p_vertices[coplanar_representative[1]];
+				const Vector4 &coplanar_rep_2 = p_vertices[coplanar_representative[2]];
+				const Vector4 perp = Vector4D::perpendicular(tet_vertex.direction_to(coplanar_rep_0), tet_vertex.direction_to(coplanar_rep_1), tet_vertex.direction_to(coplanar_rep_2));
 				if (!perp.is_zero_approx()) {
 					is_coplanar = false; // If it's non-zero, it's not coplanar. Contrapositive of: if it's coplanar, all perp calculations are zero.
 					break;
@@ -1354,20 +1355,21 @@ Vector4 PolyMeshBuilder4D::_compute_cell_normal(const PackedInt32Array &p_cell_f
 	const int64_t first_next_index = (common_in_first + 1) % p_cell_first_face.size();
 	const int64_t second_next_index = (common_in_second + 1) % p_cell_second_face.size();
 	// Use these 3 edges to get 4 vertex indices in a consistent "winding" order.
-	const int32_t common_vertex_start = p_edge_vertex_indices[common_edge * 2];
-	const int32_t common_vertex_end = p_edge_vertex_indices[common_edge * 2 + 1];
-	int32_t first_next_vertex = p_edge_vertex_indices[p_cell_first_face[first_next_index] * 2];
-	if (first_next_vertex == common_vertex_start || first_next_vertex == common_vertex_end) {
-		first_next_vertex = p_edge_vertex_indices[p_cell_first_face[first_next_index] * 2 + 1];
+	const int32_t common_vertex_start_index = p_edge_vertex_indices[common_edge * 2];
+	const int32_t common_vertex_end_index = p_edge_vertex_indices[common_edge * 2 + 1];
+	int32_t first_next_vertex_index = p_edge_vertex_indices[p_cell_first_face[first_next_index] * 2];
+	if (first_next_vertex_index == common_vertex_start_index || first_next_vertex_index == common_vertex_end_index) {
+		first_next_vertex_index = p_edge_vertex_indices[p_cell_first_face[first_next_index] * 2 + 1];
 	}
-	int32_t second_next_vertex = p_edge_vertex_indices[p_cell_second_face[second_next_index] * 2];
-	if (second_next_vertex == common_vertex_start || second_next_vertex == common_vertex_end) {
-		second_next_vertex = p_edge_vertex_indices[p_cell_second_face[second_next_index] * 2 + 1];
+	int32_t second_next_vertex_index = p_edge_vertex_indices[p_cell_second_face[second_next_index] * 2];
+	if (second_next_vertex_index == common_vertex_start_index || second_next_vertex_index == common_vertex_end_index) {
+		second_next_vertex_index = p_edge_vertex_indices[p_cell_second_face[second_next_index] * 2 + 1];
 	}
-	return Vector4D::perpendicular(
-			p_vertices[first_next_vertex].direction_to(p_vertices[common_vertex_start]),
-			p_vertices[first_next_vertex].direction_to(p_vertices[common_vertex_end]),
-			p_vertices[first_next_vertex].direction_to(p_vertices[second_next_vertex]));
+	const Vector4 &origin = p_vertices[first_next_vertex_index];
+	const Vector4 &common_start_vert = p_vertices[common_vertex_start_index];
+	const Vector4 &common_end_vert = p_vertices[common_vertex_end_index];
+	const Vector4 &second_next_vert = p_vertices[second_next_vertex_index];
+	return Vector4D::perpendicular(origin.direction_to(common_start_vert), origin.direction_to(common_end_vert), origin.direction_to(second_next_vert));
 }
 
 PackedInt32Array PolyMeshBuilder4D::_save_triangle_vertex_indices_as_faces_and_cell(const Vector<PackedInt32Array> &p_last_triangle_vertex_indices, const Vector4 &p_last_simplex_normal, const PackedVector4Array &p_vertices, Vector<PackedInt32Array> &r_all_face_edge_indices, PackedInt32Array &r_edge_vertex_indices) {
@@ -1439,10 +1441,11 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::reconstruct_from_tetra_mesh(const Ref<Te
 				}
 				// Start a new face list.
 				last_triangle_vertex_indices = Vector<PackedInt32Array>();
+				const Vector4 &simplex_origin = vertices[simplex_vertex_indices[offset]];
 				last_simplex_normal = Vector4D::perpendicular(
-						vertices[simplex_vertex_indices[offset]].direction_to(vertices[simplex_vertex_indices[offset + 1]]),
-						vertices[simplex_vertex_indices[offset]].direction_to(vertices[simplex_vertex_indices[offset + 2]]),
-						vertices[simplex_vertex_indices[offset]].direction_to(vertices[simplex_vertex_indices[offset + 3]]));
+						simplex_origin.direction_to(vertices[simplex_vertex_indices[offset + 1]]),
+						simplex_origin.direction_to(vertices[simplex_vertex_indices[offset + 2]]),
+						simplex_origin.direction_to(vertices[simplex_vertex_indices[offset + 3]]));
 				last_pivot = pivot;
 			}
 			for (int64_t vertex_in_simplex = 0; vertex_in_simplex < 4; vertex_in_simplex++) {
