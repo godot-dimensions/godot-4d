@@ -143,8 +143,15 @@ Ref<Mesh4D> MeshInstance4D::get_mesh() const {
 }
 
 void MeshInstance4D::set_mesh(const Ref<Mesh4D> &p_mesh) {
+	// The property list only depends on whether the mesh is a MultiSurfaceMesh4D, see `_validate_property`.
+	// Only notify when that changes. Notifying on every assignment would rebuild the inspector each time, which
+	// interrupts dragging an inspector slider on any node that regenerates its mesh from its other properties.
+	const bool was_multi_surface = Ref<MultiSurfaceMesh4D>(_mesh).is_valid();
 	_mesh = p_mesh;
-	notify_property_list_changed();
+	const bool is_multi_surface = Ref<MultiSurfaceMesh4D>(_mesh).is_valid();
+	if (was_multi_surface != is_multi_surface) {
+		notify_property_list_changed();
+	}
 }
 
 Rect4 MeshInstance4D::get_rect_bounds_local(const Transform4D &p_to_target) const {

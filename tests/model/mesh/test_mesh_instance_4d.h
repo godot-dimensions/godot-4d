@@ -62,6 +62,31 @@ TEST_CASE("[MeshInstance4D] Material overrides apply per surface") {
 	CHECK(mesh_instance.get_active_material(1) == surface_b->get_fallback_material());
 }
 
+TEST_CASE("[MeshInstance4D] Setting a mesh only rebuilds the property list when the multi-surface state changes") {
+	// A node that regenerates its mesh from its other properties assigns a new mesh on every change. Rebuilding
+	// the inspector each time would interrupt dragging its sliders, so only a change that actually affects the
+	// property list, which depends on whether the mesh is a MultiSurfaceMesh4D, may notify.
+	MeshInstance4D mesh_instance;
+	SIGNAL_WATCH(&mesh_instance, "property_list_changed");
+	Array one_emission;
+	one_emission.push_back(Array());
+	Ref<BoxTetraMesh4D> box_a;
+	box_a.instantiate();
+	Ref<BoxTetraMesh4D> box_b;
+	box_b.instantiate();
+	mesh_instance.set_mesh(box_a);
+	mesh_instance.set_mesh(box_b);
+	mesh_instance.set_mesh(Ref<Mesh4D>());
+	SIGNAL_CHECK_FALSE("property_list_changed");
+	Ref<MultiSurfaceMesh4D> multi_surface;
+	multi_surface.instantiate();
+	mesh_instance.set_mesh(multi_surface);
+	SIGNAL_CHECK("property_list_changed", one_emission);
+	mesh_instance.set_mesh(box_a);
+	SIGNAL_CHECK("property_list_changed", one_emission);
+	SIGNAL_UNWATCH(&mesh_instance, "property_list_changed");
+}
+
 TEST_CASE("[MeshInstance4D] Raycast fallback to bounds") {
 	Ref<ArrayWireMesh4D> mesh;
 	mesh.instantiate();
