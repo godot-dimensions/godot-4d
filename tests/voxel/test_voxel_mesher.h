@@ -68,13 +68,36 @@ static bool _whole_world_triangles_paired(const Ref<VoxelData> &p_data) {
 					LocalVector<int32_t> vertex_ids;
 					vertex_ids.resize(chunk_vertices.size());
 					for (int64_t i = 0; i < chunk_vertices.size(); i++) {
-						const Vector4 world = chunk_vertices[i] + Vector4(chunk);
-						const Vector4i quantized = Vector4i(
-								(int32_t)Math::round(world.x * 1024.0),
-								(int32_t)Math::round(world.y * 1024.0),
-								(int32_t)Math::round(world.z * 1024.0),
-								(int32_t)Math::round(world.w * 1024.0));
-						int32_t *existing_id = global_vertex_ids.getptr(quantized);
+						// With single precision, two chunks' copies of a shared
+						// border vertex can differ by an ulp or so after being
+						// offset by different chunk-local lattice positions. A
+						// copy close to a rounding boundary also checks the
+						// neighboring quantized positions across that boundary.
+						Vector4i quantized;
+						Vector4i alternate;
+						int alternate_axes = 0;
+						for (int axis = 0; axis < 4; axis++) {
+							const double scaled = ((double)chunk_vertices[i][axis] + (double)chunk[axis]) * 1024.0;
+							quantized[axis] = (int32_t)Math::round(scaled);
+							const double fraction = scaled - Math::floor(scaled);
+							alternate[axis] = quantized[axis] + (fraction < 0.5 ? 1 : -1);
+							if (Math::abs(fraction - 0.5) < 0.01) {
+								alternate_axes |= 1 << axis;
+							}
+						}
+						int32_t *existing_id = nullptr;
+						for (int mask = 0; mask < 16 && existing_id == nullptr; mask++) {
+							if ((mask & ~alternate_axes) != 0) {
+								continue;
+							}
+							Vector4i candidate = quantized;
+							for (int axis = 0; axis < 4; axis++) {
+								if ((mask & (1 << axis)) != 0) {
+									candidate[axis] = alternate[axis];
+								}
+							}
+							existing_id = global_vertex_ids.getptr(candidate);
+						}
 						if (existing_id != nullptr) {
 							vertex_ids[i] = *existing_id;
 						} else {

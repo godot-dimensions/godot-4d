@@ -42,13 +42,13 @@ void SphereVoxelEdit::_update_bounds() {
 }
 
 VoxelMaterial SphereVoxelEdit::get_material(const Vector4i &p_voxel) const {
-	const Vector4 point = Vector4(p_voxel.x + 0.5f, p_voxel.y + 0.5f, p_voxel.z + 0.5f, p_voxel.w + 0.5f);
+	const Vector4 point = Vector4(p_voxel.x + (real_t)0.5, p_voxel.y + (real_t)0.5, p_voxel.z + (real_t)0.5, p_voxel.w + (real_t)0.5);
 	const real_t signed_distance = _radius - point.distance_to(_center);
 	return signed_distance > 0.0 ? _material : VoxelMaterial::UNDEFINED;
 }
 
 VoxelEdgeData SphereVoxelEdit::get_edge_data(const Vector4i &p_voxel, const int p_axis) const {
-	Vector4 point = Vector4(p_voxel.x + 0.5, p_voxel.y + 0.5, p_voxel.z + 0.5, p_voxel.w + 0.5);
+	Vector4 point = Vector4(p_voxel.x + (real_t)0.5, p_voxel.y + (real_t)0.5, p_voxel.z + (real_t)0.5, p_voxel.w + (real_t)0.5);
 	const Vector4 from_center = point - _center;
 	// Solving |from_center + crossing * axis|² = radius² gives the exact
 	// position where the edge crosses the sphere. An active edge crosses the
