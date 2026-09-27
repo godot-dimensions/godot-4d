@@ -39,14 +39,23 @@ TEST_CASE("[Geometry4D] Inverse metric of a thin tetrahedron") {
 	// A tetrahedron from a slab cell 0.00115 thick, 0.87 wide, and 10 long, with the pivot at the far end,
 	// so that its three edges are nearly parallel. It is perfectly valid geometry, with a normalized metric
 	// determinant around 1e-10, and must not be rejected as degenerate or the slab gets holes in collision.
+#ifdef REAL_T_IS_DOUBLE
+	constexpr real_t THICKNESS = 0.00115;
+	constexpr real_t INSIDE_DEPTH = 0.0002;
+#else
+	// Float dot products cannot resolve a determinant that small, so float builds only accept normalized
+	// determinants above CMP_EPSILON. A slab 0.5 thick is the thinnest round size above that, around 1.9e-5.
+	constexpr real_t THICKNESS = 0.5;
+	constexpr real_t INSIDE_DEPTH = 0.1;
+#endif
 	const Vector4 vert0 = Vector4(0, 0, 0, 0);
 	const Vector4 vert1 = Vector4(10, 0, 0, 0);
 	const Vector4 vert2 = Vector4(10, 0.87, 0, 0);
-	const Vector4 vert3 = Vector4(10, 0, 0.00115, 0);
+	const Vector4 vert3 = Vector4(10, 0, THICKNESS, 0);
 	const PackedFloat64Array cache = compute_tetrahedron_inverse_metric_cache(vert0, vert1, vert2, vert3);
 	REQUIRE(cache.size() == 6);
 	// The inverse must still be accurate: a point inside the tetrahedron lifted along W projects back onto itself.
-	const Vector4 inside = Vector4(5, 0.2, 0.0002, 0);
+	const Vector4 inside = Vector4(5, 0.2, INSIDE_DEPTH, 0);
 	Vector4 nearest;
 	real_t distance_squared = 0.0;
 	bool proj_inside = false;
