@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../../../math/vector_4d.h"
 #include "../../../../model/mesh/poly/box_poly_mesh_4d.h"
 #include "../../../../model/mesh/poly/poly_mesh_builder_4d.h"
 #include "../../../../model/mesh/tetra/array_tetra_mesh_4d.h"
@@ -464,6 +465,48 @@ TEST_CASE("[PolyMeshBuilder4D] Reconstruct a thin box without merging its parall
 	CHECK_MESSAGE(thin->get_edge_indices().size() == regular->get_edge_indices().size(), "The thin box must have the same edges as a regular box.");
 	CHECK_MESSAGE(thin_indices[0].size() == regular_indices[0].size(), "The thin box must have the same faces as a regular box, so its parallel faces were not merged.");
 	CHECK_MESSAGE(thin_indices[1].size() == regular_indices[1].size(), "The thin box must have the same cells as a regular box.");
+}
+
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Convert a 3D mesh keeps corner data on the right vertices") {
+	// Each vertex gets its own normal and UV, so any corner that receives another vertex's data is detectable.
+	// The second triangle starts at vertex 3 and continues to vertex 2, so its first edge is stored as (2, 3)
+	// and the mesh reads that face's corners as 2, 3, 1 rather than in the triangle's listed order.
+	Ref<ArrayMesh> quad_mesh;
+	quad_mesh.instantiate();
+	PackedVector3Array quad_vertices = { Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0), Vector3(2, 2, 0) };
+	PackedVector3Array quad_normals = { Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0) };
+	PackedVector2Array quad_uvs = { Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1) };
+	PackedInt32Array quad_indices = { 0, 2, 1, 3, 1, 2 };
+	Array arrays;
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = quad_vertices;
+	arrays[Mesh::ARRAY_NORMAL] = quad_normals;
+	arrays[Mesh::ARRAY_TEX_UV] = quad_uvs;
+	arrays[Mesh::ARRAY_INDEX] = quad_indices;
+	quad_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+	Ref<ArrayPolyMesh4D> converted = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(quad_mesh);
+	REQUIRE(converted->is_mesh_data_valid());
+	const PackedVector4Array positions = converted->get_poly_cell_vertex_positions();
+	REQUIRE(positions.size() == 4);
+	const Vector<PackedInt32Array> face_corners = converted->get_all_poly_cell_vertex_indices(2, false);
+	const Vector<PackedVector4Array> corner_normals = converted->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+	const Vector<PackedVector3Array> corner_uvs = converted->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE(face_corners.size() == 2);
+	REQUIRE(corner_normals.size() == 2);
+	REQUIRE(corner_uvs.size() == 2);
+	for (int64_t face_index = 0; face_index < 2; face_index++) {
+		REQUIRE(face_corners[face_index].size() == 3);
+		REQUIRE(corner_normals[face_index].size() == 3);
+		REQUIRE(corner_uvs[face_index].size() == 3);
+		for (int64_t corner = 0; corner < 3; corner++) {
+			// The converted vertices keep the 3D mesh's order, so the corner's vertex index is its 3D index.
+			const int32_t vertex_index = face_corners[face_index][corner];
+			REQUIRE(Vector4D::from_3d(quad_vertices[vertex_index]).is_equal_approx(positions[vertex_index]));
+			// The 3D mesh compresses its normals, so allow for that error.
+			CHECK_MESSAGE((corner_normals[face_index][corner] - Vector4D::from_3d(quad_normals[vertex_index])).length() < 0.001, "Each corner must carry its own vertex's normal.");
+			CHECK_MESSAGE(corner_uvs[face_index][corner].is_equal_approx(Vector3(quad_uvs[vertex_index].x, quad_uvs[vertex_index].y, 0)), "Each corner must carry its own vertex's UV.");
+		}
+	}
 }
 
 } // namespace TestPolyMeshBuilder4D

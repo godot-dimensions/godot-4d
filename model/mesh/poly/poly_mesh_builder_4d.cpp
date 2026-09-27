@@ -69,11 +69,16 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const R
 			const Vector3 face_b = surface_vertices[orig_v2] - surface_vertices[orig_v0];
 			const Vector3 face_boundary_normal = face_a.cross(face_b).normalized();
 			output_face_boundary_normals.append(Vector4D::from_3d(face_boundary_normal));
+			// The mesh reads a face's corners edge by edge, and edges store their lower vertex index first, so the
+			// first two corners are the first edge's vertices in ascending order of their inserted indices.
+			const bool first_edge_ascending = surface_verts_to_inserted[orig_v0] <= surface_verts_to_inserted[orig_v1];
+			const int32_t corner_v0 = first_edge_ascending ? orig_v0 : orig_v1;
+			const int32_t corner_v1 = first_edge_ascending ? orig_v1 : orig_v0;
 			// Append face vertex normals for this face if they exist.
 			if (!surface_normals.is_empty()) {
 				PackedVector4Array face_vertex_normals = {
-					Vector4D::from_3d(surface_normals[orig_v0]),
-					Vector4D::from_3d(surface_normals[orig_v1]),
+					Vector4D::from_3d(surface_normals[corner_v0]),
+					Vector4D::from_3d(surface_normals[corner_v1]),
 					Vector4D::from_3d(surface_normals[orig_v2]),
 				};
 				output_face_vertex_normals.append(face_vertex_normals);
@@ -81,8 +86,8 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const R
 			// Append face texture maps if they exist.
 			if (!surface_uvs.is_empty()) {
 				PackedVector3Array face_texture_maps = {
-					Vector3(surface_uvs[orig_v0].x, surface_uvs[orig_v0].y, 0.0f),
-					Vector3(surface_uvs[orig_v1].x, surface_uvs[orig_v1].y, 0.0f),
+					Vector3(surface_uvs[corner_v0].x, surface_uvs[corner_v0].y, 0.0f),
+					Vector3(surface_uvs[corner_v1].x, surface_uvs[corner_v1].y, 0.0f),
 					Vector3(surface_uvs[orig_v2].x, surface_uvs[orig_v2].y, 0.0f),
 				};
 				output_face_texture_maps.append(face_texture_maps);
