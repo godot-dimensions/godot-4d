@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../../../math/math_4d.h"
 #include "../../../../math/vector_4d.h"
 #include "../../../../model/mesh/poly/box_poly_mesh_4d.h"
 #include "../../../../model/mesh/poly/poly_mesh_builder_4d.h"
@@ -764,6 +765,153 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Convert a 3D mesh keeps corner data on
 			CHECK_MESSAGE(corner_uvs[face_index][corner].is_equal_approx(Vector3(quad_uvs[vertex_index].x, quad_uvs[vertex_index].y, 0)), "Each corner must carry its own vertex's UV.");
 		}
 	}
+}
+
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Merge coplanar faces") {
+	// A cube from a 3D mesh arrives as 12 triangles with 18 edges. Merging must give 6 quads and 12 edges, keep the
+	// per-face and corner normals, and a single cell made from those faces must keep its face count and normal.
+	Ref<BoxMesh> box_mesh;
+	box_mesh.instantiate();
+	box_mesh->set_size(Vector3(2, 2, 2));
+	Ref<ArrayPolyMesh4D> cube = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(box_mesh);
+	REQUIRE(cube->is_poly_mesh_data_valid());
+	REQUIRE(cube->get_poly_cell_indices()[0].size() == 12);
+	REQUIRE(cube->get_edge_indices().size() == 18 * 2);
+	// Build the single cell so that its first two faces share an edge but are not coplanar. The canonical span of
+	// two coplanar triangles is degenerate and gives a zero normal, which would make the orientation check vacuous.
+	PackedInt32Array cell = cube->make_single_cell_from_all_faces();
+	{
+		const Vector<PackedInt32Array> face_edges = cube->get_poly_cell_indices()[0];
+		const Vector<PackedVector4Array> per_face_normals = cube->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+		REQUIRE(per_face_normals.size() == 1);
+		for (int64_t i = 1; i < cell.size(); i++) {
+			int64_t index_in_first = 0;
+			int64_t index_in_candidate = 0;
+			const bool shares_edge = Math4D::find_common_int32(face_edges[cell[0]], face_edges[cell[i]], index_in_first, index_in_candidate) != INT32_MIN;
+			if (shares_edge && !per_face_normals[0][cell[i]].is_equal_approx(per_face_normals[0][cell[0]])) {
+				const int32_t temp = cell[1];
+				cell.set(1, cell[i]);
+				cell.set(i, temp);
+				break;
+			}
+		}
+	}
+	cube->append_poly_cell(3, cell);
+	REQUIRE(cube->is_mesh_data_valid());
+	// Also bind a value to each of the cell's faces, using that face's normal, to check that bindings of cells to
+	// their faces follow the merge even though the faces they list are replaced.
+	{
+		const PackedInt32Array cell_faces = cube->get_all_poly_cell_poly_indices(3, 2)[0];
+		const PackedVector4Array per_face_normals = cube->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY)[0];
+		PackedVector4Array cell_face_values;
+		for (const int32_t face_index : cell_faces) {
+			cell_face_values.append(per_face_normals[face_index]);
+		}
+		cube->set_poly_cell_dense_normals(Vector2i(3, 2), Vector<PackedVector4Array>{ cell_face_values });
+		REQUIRE(cube->is_mesh_data_valid());
+	}
+	cube->calculate_boundary_normals();
+	REQUIRE(cube->get_poly_cell_boundary_normals().size() == 1);
+	const Vector4 normal_before = cube->get_poly_cell_boundary_normals()[0];
+	REQUIRE_MESSAGE(!normal_before.is_zero_approx(), "The cell must start with a well-defined orientation for the check to mean anything.");
+	const int64_t merges = PolyMeshBuilder4D::merge_coplanar_faces(cube);
+	CHECK_MESSAGE(merges == 6, "Each pair of triangles on a cube face must merge once.");
+	REQUIRE(cube->is_mesh_data_valid());
+	const Vector<Vector<PackedInt32Array>> indices = cube->get_poly_cell_indices();
+	CHECK_MESSAGE(indices[0].size() == 6, "The cube must end up with 6 faces.");
+	CHECK_MESSAGE(cube->get_edge_indices().size() == 12 * 2, "The 6 diagonals must be deleted, leaving the 12 cube edges.");
+	for (const PackedInt32Array &face : indices[0]) {
+		CHECK_MESSAGE(face.size() == 4, "Each merged face must be a quad.");
+	}
+	CHECK_MESSAGE(indices[1][0].size() == 6, "The cell must reference each merged face once.");
+	REQUIRE(cube->get_poly_cell_boundary_normals().size() == 1);
+	CHECK_MESSAGE(cube->get_poly_cell_boundary_normals()[0].is_equal_approx(normal_before), "The cell's orientation and normal must survive the merge.");
+	// Flat shading: every resampled corner normal must match its face's normal. The corner normals come from the
+	// 3D mesh's compressed normal array, so allow for that error.
+	const Vector<PackedVector4Array> face_normals = cube->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	const Vector<PackedVector4Array> corner_normals = cube->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE(face_normals.size() == 1);
+	REQUIRE(face_normals[0].size() == 6);
+	REQUIRE(corner_normals.size() == 6);
+	for (int64_t face_index = 0; face_index < 6; face_index++) {
+		REQUIRE(corner_normals[face_index].size() == 4);
+		for (const Vector4 &corner_normal : corner_normals[face_index]) {
+			CHECK_MESSAGE(corner_normal.dot(face_normals[0][face_index]) > 0.999, "Each resampled corner normal must match its merged face's normal.");
+		}
+	}
+	// The cell-to-faces binding must now list one value per merged face, each being that merged face's normal.
+	{
+		const Vector<PackedVector4Array> cell_face_values = cube->get_poly_cell_dense_normals(Vector2i(3, 2));
+		REQUIRE(cell_face_values.size() == 1);
+		const PackedInt32Array cell_faces = cube->get_all_poly_cell_poly_indices(3, 2)[0];
+		REQUIRE(cell_face_values[0].size() == cell_faces.size());
+		REQUIRE(cell_faces.size() == 6);
+		for (int64_t i = 0; i < cell_faces.size(); i++) {
+			CHECK_MESSAGE(cell_face_values[0][i].dot(face_normals[0][cell_faces[i]]) > 0.999, "Each merged face's value in the cell-to-faces binding must come from one of the faces it absorbed.");
+		}
+	}
+	// A quad bent along its diagonal is two non-coplanar triangles, which must not merge.
+	Ref<ArrayMesh> bent_mesh;
+	bent_mesh.instantiate();
+	PackedVector3Array bent_vertices = { Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(2, 2, 0), Vector3(0, 2, 1) };
+	PackedInt32Array bent_indices = { 0, 2, 1, 0, 3, 2 };
+	Array arrays;
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = bent_vertices;
+	arrays[Mesh::ARRAY_INDEX] = bent_indices;
+	bent_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+	Ref<ArrayPolyMesh4D> bent = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(bent_mesh);
+	CHECK_MESSAGE(PolyMeshBuilder4D::merge_coplanar_faces(bent) == 0, "Non-coplanar triangles must not merge.");
+	CHECK(bent->get_poly_cell_indices()[0].size() == 2);
+	// A 2 by 1 strip of two unit squares. Vertices 1 and 4 are the midpoints of the long sides, which stay in the
+	// merged face as straight continuations. The merged face must not start its edge list at one of them.
+	const PackedVector4Array strip_positions = { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(2, 0, 0, 0), Vector4(2, 1, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0) };
+	auto make_strip = [&strip_positions](const Vector<PackedInt32Array> &p_face_vertex_loops) -> Ref<ArrayPolyMesh4D> {
+		Ref<ArrayPolyMesh4D> strip;
+		strip.instantiate();
+		strip->append_vertices(strip_positions, false);
+		for (const PackedInt32Array &loop : p_face_vertex_loops) {
+			PackedInt32Array face;
+			for (int64_t i = 0; i < loop.size(); i++) {
+				face.append((int32_t)strip->append_edge_indices(loop[i], loop[(i + 1) % loop.size()]));
+			}
+			strip->append_poly_cell(2, face);
+		}
+		return strip;
+	};
+	Ref<ArrayPolyMesh4D> strip = make_strip({ { 0, 1, 4 }, { 0, 4, 5 }, { 1, 2, 3 }, { 1, 3, 4 } });
+	REQUIRE(strip->is_mesh_data_valid());
+	CHECK_MESSAGE(PolyMeshBuilder4D::merge_coplanar_faces(strip) == 3, "Four coplanar triangles must merge into one face.");
+	REQUIRE(strip->is_mesh_data_valid());
+	REQUIRE(strip->get_poly_cell_indices()[0].size() == 1);
+	const PackedInt32Array strip_face = strip->get_poly_cell_indices()[0][0];
+	CHECK_MESSAGE(strip_face.size() == 6, "The merged face must keep the midpoint vertices and their edges.");
+	CHECK_MESSAGE(strip->get_edge_indices().size() == 6 * 2, "The shared diagonal and middle edges must be deleted.");
+	{
+		const PackedInt32Array edges = strip->get_edge_indices();
+		int64_t index_in_first = 0;
+		int64_t index_in_second = 0;
+		const PackedInt32Array first_edge = { edges[strip_face[0] * 2], edges[strip_face[0] * 2 + 1] };
+		const PackedInt32Array second_edge = { edges[strip_face[1] * 2], edges[strip_face[1] * 2 + 1] };
+		const int32_t span_vertex = Math4D::find_common_int32(first_edge, second_edge, index_in_first, index_in_second);
+		REQUIRE(span_vertex != INT32_MIN);
+		CHECK_MESSAGE(strip->get_poly_cell_vertex_positions()[span_vertex].x != 1.0, "The first two edges of the merged face must meet at a corner, not at a straight continuation.");
+	}
+	// The same strip with the left square as a quad whose edges are stored out of loop order. The mesh is valid,
+	// but merging must refuse it instead of producing a bad merge.
+	Ref<ArrayPolyMesh4D> unordered = make_strip({ { 1, 2, 3 }, { 1, 3, 4 } });
+	{
+		const int32_t e01 = (int32_t)unordered->append_edge_indices(0, 1);
+		const int32_t e14 = (int32_t)unordered->append_edge_indices(1, 4);
+		const int32_t e45 = (int32_t)unordered->append_edge_indices(4, 5);
+		const int32_t e50 = (int32_t)unordered->append_edge_indices(5, 0);
+		unordered->append_poly_cell(2, PackedInt32Array{ e01, e50, e14, e45 });
+	}
+	ERR_PRINT_OFF;
+	REQUIRE(unordered->is_mesh_data_valid());
+	CHECK_MESSAGE(PolyMeshBuilder4D::merge_coplanar_faces(unordered) == 0, "A face whose edges are not stored in loop order must be rejected.");
+	ERR_PRINT_ON;
+	CHECK(unordered->get_poly_cell_indices()[0].size() == 3);
 }
 
 } // namespace TestPolyMeshBuilder4D

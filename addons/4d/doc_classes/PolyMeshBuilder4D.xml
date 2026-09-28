@@ -49,6 +49,15 @@
 				[b]Note:[/b] This function only works correctly if the input mesh has star-shaped polyhedral boundary cells, and if it can locate a point within the star-shaped region of that cell. For non-convex cells, you may need to set [member ArrayPolyMesh4D.poly_cell_boundary_pivot_overrides] to specify where the pivot point is located in the cells.
 			</description>
 		</method>
+		<method name="merge_coplanar_faces" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="mesh_4d" type="ArrayPolyMesh4D" />
+			<param index="1" name="angle_tolerance_radians" type="float" default="0.001" />
+			<description>
+				Merges adjacent faces that lie in the same plane into single faces, in place, and returns how many merges were made. Two faces are merged when they share an edge, every vertex of one lies in the plane of the other within [param angle_tolerance_radians] (measured as the angle of each vertex's offset out of the plane), and the merged polygon is convex, since faces are triangulated as fans. The edges that were interior to the merged faces are deleted.
+				This repairs faces that were needlessly split, such as quads triangulated by a glTF export and brought in through [method convert_mesh_3d_to_4d_faces_only], or faces of a convex hull whose coplanarity was lost to quantization. Cells keep referencing the merged faces and keep their orientation and boundary normals. Every normal and texture map binding is carried over: each merged face takes its values from the faces it absorbed, and the bindings of edges, cells, and 4D cells follow their surviving sub-elements. An element whose values cannot all be found in its sources, such as a face merged from a mapped and an unmapped triangle, ends up with an empty entry, meaning missing data. Faces must have their edges stored in loop order, which every built-in mesh source provides.
+			</description>
+		</method>
 		<method name="reconstruct_from_tetra_mesh" qualifiers="static">
 			<return type="ArrayPolyMesh4D" />
 			<param index="0" name="tetra_mesh" type="TetraMesh4D" />
