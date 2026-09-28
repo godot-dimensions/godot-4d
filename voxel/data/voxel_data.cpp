@@ -1,7 +1,6 @@
 #include "voxel_data.h"
 
 #include "../edit/voxel_edit.h"
-#include "../generators/tiger_test_generator.h"
 #include "../voxel_constants.h"
 
 // Whether the node covers nothing at all: neither data nor a pending load
@@ -70,13 +69,13 @@ VoxelDataNeighbourhood VoxelData::find_region_neighbourhood(const Rect4i &p_regi
 }
 
 VoxelDataTree *VoxelData::generate_chunk_content(const Vector4i &p_voxel) const {
+	ERR_FAIL_COND_V(_generator.is_null(), nullptr);
 	VoxelDataTree *chunk = memnew(VoxelDataTree(Rect4i(get_chunk_position(p_voxel), VOXEL_DATA_CHUNK_SIZE_VECTOR)));
 	chunk->generate(_generator);
 	return chunk;
 }
 
 void VoxelData::set_generator(const Ref<VoxelGenerator> &p_generator) {
-	ERR_FAIL_COND(p_generator.is_null());
 	_generator = p_generator;
 }
 
@@ -310,19 +309,13 @@ void VoxelData::trim_bounds() {
 }
 
 void VoxelData::load_all_chunks() {
+	ERR_FAIL_COND(_generator.is_null());
 	if (_tree != nullptr) {
 		memdelete(_tree);
 	}
 	const int32_t size = 8 * VOXEL_DATA_CHUNK_SIZE;
 	_tree = memnew(VoxelDataTree(Rect4i(-size / 2, -size / 2, -size / 2, -size / 2, size, size, size, size)));
 	_tree->generate(_generator);
-}
-
-VoxelData::VoxelData() {
-	// Temporary: hard-coded test data.
-	Ref<TigerTestGenerator> generator;
-	generator.instantiate();
-	_generator = generator;
 }
 
 VoxelData::~VoxelData() {

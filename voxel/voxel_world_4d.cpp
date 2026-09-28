@@ -6,6 +6,10 @@ void VoxelWorld4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_data"), &VoxelWorld4D::get_voxel_data);
 	ClassDB::bind_method(D_METHOD("apply_edit", "edit"), &VoxelWorld4D::apply_edit);
 
+	ClassDB::bind_method(D_METHOD("get_generator"), &VoxelWorld4D::get_generator);
+	ClassDB::bind_method(D_METHOD("set_generator", "generator"), &VoxelWorld4D::set_generator);
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator"), "set_generator", "get_generator");
+
 	ClassDB::bind_method(D_METHOD("get_material_palette"), &VoxelWorld4D::get_material_palette);
 	ClassDB::bind_method(D_METHOD("set_material_palette", "material_palette"), &VoxelWorld4D::set_material_palette);
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_palette", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMaterialPalette"), "set_material_palette", "get_material_palette");

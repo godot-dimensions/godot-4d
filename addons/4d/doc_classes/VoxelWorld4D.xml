@@ -24,6 +24,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="generator" type="VoxelGenerator" setter="set_generator" getter="get_generator">
+			The [VoxelGenerator] providing the content of newly loaded chunks. While unset, no chunks load.
+		</member>
 		<member name="material_palette" type="VoxelMaterialPalette" setter="set_material_palette" getter="get_material_palette">
 			The [VoxelMaterialPalette] describing the materials used for this world.
 		</member>

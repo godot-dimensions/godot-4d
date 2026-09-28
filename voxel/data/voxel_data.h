@@ -51,8 +51,9 @@ public:
 	VoxelDataNeighbourhood find_region_neighbourhood(const Rect4i &p_region);
 
 	// Sets the generator that provides chunk contents. Chunks already
-	// generated are unaffected.
+	// generated are unaffected. While it is null, no chunks can load.
 	void set_generator(const Ref<VoxelGenerator> &p_generator);
+	Ref<VoxelGenerator> get_generator() const { return _generator; }
 
 	// Generates a detached chunk-sized tree with the content of the chunk
 	// containing the given voxel. This only reads the generator, so it can
@@ -97,6 +98,5 @@ private:
 	void expand_bounds(const Vector4i &p_toward);
 
 public:
-	VoxelData();
 	~VoxelData();
 };

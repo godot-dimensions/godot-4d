@@ -154,6 +154,9 @@ void VoxelChunkLoader::update_loaded_chunks() {
 		return;
 	}
 	const Ref<VoxelData> voxel_data = _world->get_voxel_data();
+	if (voxel_data->get_generator().is_null()) {
+		return;
+	}
 	const Transform4D to_voxel_space = _world->get_global_transform().inverse();
 	LocalVector<TriggerRange> triggers;
 	triggers.reserve(load_triggers.size());

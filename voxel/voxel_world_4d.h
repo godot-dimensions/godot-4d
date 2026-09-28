@@ -37,6 +37,9 @@ public:
 	Ref<VoxelData> get_voxel_data() const { return _voxel_data; }
 	VoxelMeshHandler &get_mesh_handler() { return _mesh_handler; }
 
+	Ref<VoxelGenerator> get_generator() const { return _voxel_data->get_generator(); }
+	void set_generator(const Ref<VoxelGenerator> &p_generator) { _voxel_data->set_generator(p_generator); }
+
 	Ref<VoxelMaterialPalette> get_material_palette() const { return _material_palette; }
 	void set_material_palette(const Ref<VoxelMaterialPalette> &p_material_palette);
 	Ref<TetraMaterial4D> get_mesh_material() const { return _mesh_material; }

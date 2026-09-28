@@ -3,6 +3,7 @@
 #include "../../voxel/data/voxel_data.h"
 #include "../../voxel/data/voxel_data_leaf.h"
 #include "../../voxel/edit/sphere_voxel_edit.h"
+#include "../../voxel/generators/tiger_test_generator.h"
 
 #include "tests/test_macros.h"
 
@@ -12,6 +13,7 @@ constexpr VoxelMaterial SOLID_MATERIAL = (VoxelMaterial)0;
 TEST_CASE("[VoxelData] Hard-coded test data") {
 	Ref<VoxelData> data;
 	data.instantiate();
+	data->set_generator(memnew(TigerTestGenerator));
 	CHECK_MESSAGE(data->get_bounds().size == Vector4i(), "VoxelData should start with no defined region.");
 	CHECK_MESSAGE(!data->is_voxel_defined(Vector4i(0, 0, 0, 0)), "VoxelData voxels should start out undefined before their chunk is loaded.");
 
@@ -44,6 +46,7 @@ TEST_CASE("[VoxelData] Bounds expansion and contraction") {
 	const Rect4i origin_chunk_bounds = Rect4i(Vector4i(), VOXEL_DATA_CHUNK_SIZE_VECTOR);
 	Ref<VoxelData> data;
 	data.instantiate();
+	data->set_generator(memnew(TigerTestGenerator));
 	data->apply_generated_chunk(data->generate_chunk_content(Vector4i(1, 2, 3, 0)));
 	CHECK_MESSAGE(data->is_region_defined(origin_chunk_bounds), "VoxelData apply_generated_chunk should define the whole chunk containing the given voxel.");
 	CHECK_MESSAGE(!data->is_voxel_defined(Vector4i(VOXEL_DATA_CHUNK_SIZE, 0, 0, 0)), "VoxelData apply_generated_chunk should not define neighboring chunks.");
@@ -113,6 +116,7 @@ TEST_CASE("[VoxelData] Edits and constant merging") {
 	const Rect4i cube_bounds = Rect4i(cube_position, VOXEL_DATA_CHUNK_SIZE_VECTOR * 4);
 	Ref<VoxelData> data;
 	data.instantiate();
+	data->set_generator(memnew(TigerTestGenerator));
 	for (int32_t w = 0; w < 4; w++) {
 		for (int32_t z = 0; z < 4; z++) {
 			for (int32_t y = 0; y < 4; y++) {
@@ -254,6 +258,7 @@ TEST_CASE("[VoxelData] Edit surface data invariant and idempotence") {
 	const Vector4i cube_position = VOXEL_DATA_CHUNK_SIZE_VECTOR * 8;
 	Ref<VoxelData> data;
 	data.instantiate();
+	data->set_generator(memnew(TigerTestGenerator));
 	for (int32_t w = 0; w < 2; w++) {
 		for (int32_t z = 0; z < 2; z++) {
 			for (int32_t y = 0; y < 2; y++) {
@@ -298,6 +303,7 @@ TEST_CASE("[VoxelData] Edits reconcile with chunks loaded later") {
 	const Vector4i neighbor_position = chunk_position + Vector4i(VOXEL_DATA_CHUNK_SIZE, 0, 0, 0);
 	Ref<VoxelData> data;
 	data.instantiate();
+	data->set_generator(memnew(TigerTestGenerator));
 	data->apply_generated_chunk(data->generate_chunk_content(chunk_position));
 
 	// A solid ball centered on the border plane between the two chunks; only
