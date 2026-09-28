@@ -402,13 +402,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 						// The first copy keeps the input vertex indices, and the second copy is offset by the input vertex count.
 						const int32_t input_vertex = side_face_vert[corner] % input_vertex_count;
 						Vector4 corner_normal;
-						for (const int32_t face_index : input_edge_to_faces[input_edge_index]) {
-							const PackedVector4Array &input_face_vert_normals = face_to_vert_normals[face_index];
-							const int64_t vert_in_face = all_face_vert[face_index].find(input_vertex);
-							if (vert_in_face != -1 && vert_in_face < input_face_vert_normals.size()) {
-								corner_normal += input_face_vert_normals[vert_in_face];
-							}
-						}
+						_find_corner_value(input_vertex, input_edge_to_faces[input_edge_index], all_face_vert, face_to_vert_normals, CORNER_SAMPLE_AVERAGE, corner_normal);
 						side_vert_normals.set(corner, corner_normal.normalized());
 					}
 					face_to_vert_normals.set(side_face_index, side_vert_normals);
@@ -421,27 +415,12 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			Vector<PackedVector4Array> cell_to_vert_normals = ret->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 			cell_to_vert_normals.resize(all_cell_vert.size());
 			for (int face_index = 0; face_index < input_face_count; face_index++) {
-				const PackedVector4Array &face_vert_normals = face_to_vert_normals[face_index];
-				const PackedInt32Array &first_copy_face_vert = all_face_vert[face_index];
 				// The second copy being offset by input_face_count is guaranteed because we start with `merge_with`.
-				const PackedInt32Array &second_copy_face_vert = all_face_vert[face_index + input_face_count];
+				const PackedInt32Array copy_faces = { (int32_t)face_index, (int32_t)(face_index + input_face_count) };
 				const int64_t cell_index = face_to_extruded_cell[face_index];
-				const PackedInt32Array &this_cell_vert = all_cell_vert[cell_index];
+				// A vertex in neither copy has no vertex normal data in this cell, so it uses the cell's boundary normal.
 				PackedVector4Array cell_vert_normals;
-				cell_vert_normals.resize(this_cell_vert.size());
-				for (int64_t vert_in_cell = 0; vert_in_cell < this_cell_vert.size(); vert_in_cell++) {
-					const int32_t vert_index = this_cell_vert[vert_in_cell];
-					const int64_t vert_in_first_copy = first_copy_face_vert.find(vert_index);
-					const int64_t vert_in_second_copy = second_copy_face_vert.find(vert_index);
-					if (vert_in_first_copy != -1 && vert_in_first_copy < face_vert_normals.size()) {
-						cell_vert_normals.set(vert_in_cell, face_vert_normals[vert_in_first_copy]);
-					} else if (vert_in_second_copy != -1 && vert_in_second_copy < face_vert_normals.size()) {
-						cell_vert_normals.set(vert_in_cell, face_vert_normals[vert_in_second_copy]);
-					} else {
-						// Neither face has vertex normal data for this vertex in this cell, so just use the cell's boundary normal.
-						cell_vert_normals.set(vert_in_cell, per_cell_normals[cell_index]);
-					}
-				}
+				_sample_corner_values(all_cell_vert[cell_index], copy_faces, all_face_vert, face_to_vert_normals, CORNER_SAMPLE_FIRST_FOUND, per_cell_normals[cell_index], cell_vert_normals);
 				cell_to_vert_normals.set(cell_index, cell_vert_normals);
 			}
 			ret->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_normals);
@@ -471,28 +450,12 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 			Vector<PackedVector3Array> cell_to_vert_texture_maps = ret->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 			cell_to_vert_texture_maps.resize(all_cell_vert.size());
 			for (int face_index = 0; face_index < input_face_count; face_index++) {
-				const PackedVector3Array &first_copy_face_vert_texture_maps = face_to_vert_texture_maps[face_index];
-				const PackedInt32Array &first_copy_face_vert_ind = all_face_vert[face_index];
 				// The second copy being offset by input_face_count is guaranteed because we start with `merge_with`.
-				const PackedVector3Array &second_copy_face_vert_texture_maps = face_to_vert_texture_maps[face_index + input_face_count];
-				const PackedInt32Array &second_copy_face_vert_ind = all_face_vert[face_index + input_face_count];
+				const PackedInt32Array copy_faces = { (int32_t)face_index, (int32_t)(face_index + input_face_count) };
 				const int64_t cell_index = face_to_extruded_cell[face_index];
-				const PackedInt32Array &this_cell_vert = all_cell_vert[cell_index];
+				// A vertex in neither copy has no vertex texture map data in this cell, so it uses a default value.
 				PackedVector3Array cell_vert_texture_maps;
-				cell_vert_texture_maps.resize(this_cell_vert.size());
-				for (int64_t vert_in_cell = 0; vert_in_cell < this_cell_vert.size(); vert_in_cell++) {
-					const int32_t vert_index = this_cell_vert[vert_in_cell];
-					const int64_t vert_in_first_copy = first_copy_face_vert_ind.find(vert_index);
-					const int64_t vert_in_second_copy = second_copy_face_vert_ind.find(vert_index);
-					if (vert_in_first_copy != -1 && vert_in_first_copy < first_copy_face_vert_texture_maps.size()) {
-						cell_vert_texture_maps.set(vert_in_cell, first_copy_face_vert_texture_maps[vert_in_first_copy]);
-					} else if (vert_in_second_copy != -1 && vert_in_second_copy < second_copy_face_vert_texture_maps.size()) {
-						cell_vert_texture_maps.set(vert_in_cell, second_copy_face_vert_texture_maps[vert_in_second_copy]);
-					} else {
-						// Neither face has vertex texture map data for this vertex in this cell, so just use a default value.
-						cell_vert_texture_maps.set(vert_in_cell, Vector3(0.0f, 0.0f, 0.0f));
-					}
-				}
+				_sample_corner_values(all_cell_vert[cell_index], copy_faces, all_face_vert, face_to_vert_texture_maps, CORNER_SAMPLE_FIRST_FOUND, Vector3(0.0f, 0.0f, 0.0f), cell_vert_texture_maps);
 				cell_to_vert_texture_maps.set(cell_index, cell_vert_texture_maps);
 			}
 			ret->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_texture_maps);
@@ -934,13 +897,7 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 					}
 					Vector4 corner_normal;
 					if (input_vertex != -1) {
-						for (const int32_t face_index : input_edge_to_faces[edge_index]) {
-							const PackedVector4Array &face_vert_normals = input_face_vert_normals[face_index];
-							const int64_t vert_in_face = input_face_vert[face_index].find(input_vertex);
-							if (vert_in_face != -1 && vert_in_face < face_vert_normals.size()) {
-								corner_normal += face_vert_normals[vert_in_face];
-							}
-						}
+						_find_corner_value(input_vertex, input_edge_to_faces[edge_index], input_face_vert, input_face_vert_normals, CORNER_SAMPLE_AVERAGE, corner_normal);
 					}
 					swept_vert_normals.set(corner, rotations[which_rotation].xform(corner_normal.normalized()));
 				}
@@ -985,29 +942,12 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 				const int32_t first_copy_face = MIN<int32_t, int32_t>(cell_faces[0], cell_faces[1]);
 				// Note: first_copy_face may be >= second_copy_face for the last step, when next_step wraps to 0 and second_copy_face becomes the step-0 face (lower index).
 				CRASH_COND(first_copy_face >= output_face_vert_count || second_copy_face >= output_face_vert_count);
-				const PackedInt32Array &cell_verts = output_cell_vert[cell_index];
-				const PackedInt32Array &first_copy_face_verts = output_face_vert[first_copy_face];
-				const PackedInt32Array &second_copy_face_verts = output_face_vert[second_copy_face];
+				// Each cell vertex takes its normal from whichever copy face it came from. A vertex shared by both
+				// copy faces (it was deduplicated) averages the normals from both faces, renormalized.
+				const PackedInt32Array copy_faces = { first_copy_face, second_copy_face };
 				PackedVector4Array this_cell_vert_normals;
-				this_cell_vert_normals.resize_uninitialized(cell_verts.size());
-				for (int vert_in_cell = 0; vert_in_cell < cell_verts.size(); vert_in_cell++) {
-					const int32_t vert_index = cell_verts[vert_in_cell];
-					const int64_t vert_in_first = first_copy_face_verts.find(vert_index);
-					const int64_t vert_in_second = second_copy_face_verts.find(vert_index);
-					Vector4 normal_from_first = vert_in_first != -1 ? face_vert_normals[first_copy_face][vert_in_first] : Vector4();
-					Vector4 normal_from_second = vert_in_second != -1 ? face_vert_normals[second_copy_face][vert_in_second] : Vector4();
-					// Set the normal for this vertex in the cell based on which face it came from.
-					if (vert_in_first == -1) {
-						CRASH_COND(vert_in_second == -1); // This vertex should be in at least one of the two faces.
-						this_cell_vert_normals.set(vert_in_cell, normal_from_second.normalized());
-					} else if (vert_in_second == -1) {
-						this_cell_vert_normals.set(vert_in_cell, normal_from_first.normalized());
-					} else {
-						// This vertex is shared by both the first and second copy faces (it was deduplicated), so average the normals from both faces for this vertex.
-						// Averaging shortens the normals when they differ, so renormalize the result.
-						this_cell_vert_normals.set(vert_in_cell, (normal_from_first + normal_from_second).normalized());
-					}
-				}
+				const int64_t sampled_count = _sample_corner_values(output_cell_vert[cell_index], copy_faces, output_face_vert, face_vert_normals, CORNER_SAMPLE_AVERAGE, Vector4(), this_cell_vert_normals, true);
+				CRASH_COND(sampled_count != output_cell_vert[cell_index].size()); // Every vertex should be in at least one of the two faces.
 				cell_vert_normals.set(cell_index, this_cell_vert_normals);
 			}
 		}
@@ -1119,33 +1059,22 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 				const int32_t first_copy_face = MIN<int32_t, int32_t>(cell_faces[0], cell_faces[1]);
 				// Note: first_copy_face may be >= second_copy_face for the last step, when next_step wraps to 0 and second_copy_face becomes the step-0 face (lower index).
 				CRASH_COND(first_copy_face >= output_face_vert_count || second_copy_face >= output_face_vert_count);
-				const PackedInt32Array &cell_verts = output_cell_vert[cell_index];
-				const PackedInt32Array &first_copy_face_verts = output_face_vert[first_copy_face];
-				const PackedInt32Array &second_copy_face_verts = output_face_vert[second_copy_face];
-				PackedVector3Array this_cell_vert_tex_maps;
-				this_cell_vert_tex_maps.resize_uninitialized(cell_verts.size());
-				for (int vert_in_cell = 0; vert_in_cell < cell_verts.size(); vert_in_cell++) {
-					const int32_t vert_index = cell_verts[vert_in_cell];
-					const int64_t vert_in_first = first_copy_face_verts.find(vert_index);
-					const int64_t vert_in_second = second_copy_face_verts.find(vert_index);
-					Vector3 tex_coord_from_first = vert_in_first != -1 ? face_vert_normals[first_copy_face][vert_in_first] : Vector3();
-					Vector3 tex_coord_from_second = vert_in_second != -1 ? face_vert_normals[second_copy_face][vert_in_second] : Vector3();
-					// Special case: For the last step, the second copy face is from the first step (due to wrapping),
-					// but we don't want the texture map to roll over, so let's artificially add 1.0 to the texture map's Z.
-					if (step == p_steps - 1) {
-						tex_coord_from_second.z += 1.0f;
+				// Each cell vertex takes its texture map from whichever copy face it came from. A vertex shared by
+				// both copy faces (it was deduplicated) averages the texture maps from both faces.
+				const Vector<PackedInt32Array> copy_face_verts = { output_face_vert[first_copy_face], output_face_vert[second_copy_face] };
+				Vector<PackedVector3Array> copy_face_tex_maps = { face_vert_normals[first_copy_face], face_vert_normals[second_copy_face] };
+				// Special case: For the last step, the second copy face is from the first step (due to wrapping),
+				// but we don't want the texture map to roll over, so let's artificially add 1.0 to the texture map's Z.
+				if (step == p_steps - 1) {
+					PackedVector3Array shifted_tex_maps = copy_face_tex_maps[1];
+					for (int64_t i = 0; i < shifted_tex_maps.size(); i++) {
+						shifted_tex_maps.set(i, shifted_tex_maps[i] + Vector3(0.0f, 0.0f, 1.0f));
 					}
-					// Set the texture map for this vertex in the cell based on which face it came from.
-					if (vert_in_first == -1) {
-						CRASH_COND(vert_in_second == -1); // This vertex should be in at least one of the two faces.
-						this_cell_vert_tex_maps.set(vert_in_cell, tex_coord_from_second);
-					} else if (vert_in_second == -1) {
-						this_cell_vert_tex_maps.set(vert_in_cell, tex_coord_from_first);
-					} else {
-						// This vertex is shared by both the first and second copy faces (it was deduplicated), so average the texture maps from both faces for this vertex.
-						this_cell_vert_tex_maps.set(vert_in_cell, (tex_coord_from_first + tex_coord_from_second) * 0.5);
-					}
+					copy_face_tex_maps.set(1, shifted_tex_maps);
 				}
+				PackedVector3Array this_cell_vert_tex_maps;
+				const int64_t sampled_count = _sample_corner_values(output_cell_vert[cell_index], PackedInt32Array{ 0, 1 }, copy_face_verts, copy_face_tex_maps, CORNER_SAMPLE_AVERAGE, Vector3(), this_cell_vert_tex_maps);
+				CRASH_COND(sampled_count != output_cell_vert[cell_index].size()); // Every vertex should be in at least one of the two faces.
 				cell_vert_tex_maps.set(cell_index, this_cell_vert_tex_maps);
 			}
 		}
@@ -2464,65 +2393,17 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 				}
 				const PackedInt32Array &parent_vertices = ctx.old_level_vertices[boundary_level][parent];
 				const PackedInt32Array &new_cell_vertices = new_cell_vertex_indices[i];
-				// Interpolate the vertex normals within the parent cell.
+				const PackedInt32Array parent_source = { parent };
+				// Interpolate the vertex normals within the parent cell. New vertices average their source vertices.
 				if (old_vertex_normals != nullptr && parent < old_vertex_normals->size() && (*old_vertex_normals)[parent].size() == parent_vertices.size()) {
-					const PackedVector4Array &parent_values = (*old_vertex_normals)[parent];
 					PackedVector4Array cell_values;
-					cell_values.resize(new_cell_vertices.size());
-					for (int64_t vert_num = 0; vert_num < new_cell_vertices.size(); vert_num++) {
-						const int32_t vertex = new_cell_vertices[vert_num];
-						Vector4 value;
-						if (vertex < old_vertex_count) {
-							const int64_t found = parent_vertices.find(vertex);
-							if (found != -1) {
-								value = parent_values[found];
-							}
-						} else {
-							const PackedInt32Array &sources = ctx.new_vertex_sources[vertex - old_vertex_count];
-							for (const int32_t source : sources) {
-								const int64_t found = parent_vertices.find(source);
-								if (found != -1) {
-									value += parent_values[found];
-								}
-							}
-						}
-						// Normalize copied values too, since the input normals are not required to be unit length.
-						if (value.length_squared() > (real_t)CMP_EPSILON) {
-							value = value.normalized();
-						}
-						cell_values.set(vert_num, value);
-					}
+					_sample_corner_values(new_cell_vertices, parent_source, ctx.old_level_vertices[boundary_level], *old_vertex_normals, CORNER_SAMPLE_AVERAGE, Vector4(), cell_values, true, &ctx.new_vertex_sources, old_vertex_count);
 					new_vertex_normals.set(i, cell_values);
 				}
 				// Interpolate the texture map within the parent cell.
 				if (old_texture_maps != nullptr && parent < old_texture_maps->size() && (*old_texture_maps)[parent].size() == parent_vertices.size()) {
-					const PackedVector3Array &parent_values = (*old_texture_maps)[parent];
 					PackedVector3Array cell_values;
-					cell_values.resize(new_cell_vertices.size());
-					for (int64_t vert_num = 0; vert_num < new_cell_vertices.size(); vert_num++) {
-						const int32_t vertex = new_cell_vertices[vert_num];
-						Vector3 value;
-						if (vertex < old_vertex_count) {
-							const int64_t found = parent_vertices.find(vertex);
-							if (found != -1) {
-								value = parent_values[found];
-							}
-						} else {
-							const PackedInt32Array &sources = ctx.new_vertex_sources[vertex - old_vertex_count];
-							int64_t found_count = 0;
-							for (const int32_t source : sources) {
-								const int64_t found = parent_vertices.find(source);
-								if (found != -1) {
-									value += parent_values[found];
-									found_count++;
-								}
-							}
-							if (found_count > 0) {
-								value /= (real_t)found_count;
-							}
-						}
-						cell_values.set(vert_num, value);
-					}
+					_sample_corner_values(new_cell_vertices, parent_source, ctx.old_level_vertices[boundary_level], *old_texture_maps, CORNER_SAMPLE_AVERAGE, Vector3(), cell_values, false, &ctx.new_vertex_sources, old_vertex_count);
 					new_texture_maps.set(i, cell_values);
 				}
 			}
@@ -2571,63 +2452,15 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 				}
 				const PackedInt32Array &parent_vertices = ctx.old_level_vertices[0][parent];
 				const PackedInt32Array &new_cell_vertices = new_face_vertex_indices[i];
+				const PackedInt32Array parent_source = { parent };
 				if (old_face_vertex_normals != nullptr && parent < old_face_vertex_normals->size() && (*old_face_vertex_normals)[parent].size() == parent_vertices.size()) {
-					const PackedVector4Array &parent_values = (*old_face_vertex_normals)[parent];
 					PackedVector4Array cell_values;
-					cell_values.resize(new_cell_vertices.size());
-					for (int64_t vert_num = 0; vert_num < new_cell_vertices.size(); vert_num++) {
-						const int32_t vertex = new_cell_vertices[vert_num];
-						Vector4 value;
-						if (vertex < old_vertex_count) {
-							const int64_t found = parent_vertices.find(vertex);
-							if (found != -1) {
-								value = parent_values[found];
-							}
-						} else {
-							const PackedInt32Array &sources = ctx.new_vertex_sources[vertex - old_vertex_count];
-							for (const int32_t source : sources) {
-								const int64_t found = parent_vertices.find(source);
-								if (found != -1) {
-									value += parent_values[found];
-								}
-							}
-						}
-						// Normalize copied values too, since the input normals are not required to be unit length.
-						if (value.length_squared() > (real_t)CMP_EPSILON) {
-							value = value.normalized();
-						}
-						cell_values.set(vert_num, value);
-					}
+					_sample_corner_values(new_cell_vertices, parent_source, ctx.old_level_vertices[0], *old_face_vertex_normals, CORNER_SAMPLE_AVERAGE, Vector4(), cell_values, true, &ctx.new_vertex_sources, old_vertex_count);
 					new_vertex_normals.set(i, cell_values);
 				}
 				if (old_face_texture_maps != nullptr && parent < old_face_texture_maps->size() && (*old_face_texture_maps)[parent].size() == parent_vertices.size()) {
-					const PackedVector3Array &parent_values = (*old_face_texture_maps)[parent];
 					PackedVector3Array cell_values;
-					cell_values.resize(new_cell_vertices.size());
-					for (int64_t vert_num = 0; vert_num < new_cell_vertices.size(); vert_num++) {
-						const int32_t vertex = new_cell_vertices[vert_num];
-						Vector3 value;
-						if (vertex < old_vertex_count) {
-							const int64_t found = parent_vertices.find(vertex);
-							if (found != -1) {
-								value = parent_values[found];
-							}
-						} else {
-							const PackedInt32Array &sources = ctx.new_vertex_sources[vertex - old_vertex_count];
-							int64_t found_count = 0;
-							for (const int32_t source : sources) {
-								const int64_t found = parent_vertices.find(source);
-								if (found != -1) {
-									value += parent_values[found];
-									found_count++;
-								}
-							}
-							if (found_count > 0) {
-								value /= (real_t)found_count;
-							}
-						}
-						cell_values.set(vert_num, value);
-					}
+					_sample_corner_values(new_cell_vertices, parent_source, ctx.old_level_vertices[0], *old_face_texture_maps, CORNER_SAMPLE_AVERAGE, Vector3(), cell_values, false, &ctx.new_vertex_sources, old_vertex_count);
 					new_texture_maps.set(i, cell_values);
 				}
 			}

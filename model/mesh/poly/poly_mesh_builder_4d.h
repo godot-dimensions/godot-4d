@@ -6,6 +6,88 @@
 class PolyMeshBuilder4D : public Object {
 	GDCLASS(PolyMeshBuilder4D, Object);
 
+	// These helpers carry dense data bindings (normals and texture maps) across topology changes. A dense
+	// element-to-vertex binding stores one array per element, with one value per corner of the element, in the
+	// order that `PolyMesh4D::get_all_poly_cell_vertex_indices(dim, false)` lists the element's vertices.
+	// The array type `TArray` is a template parameter of its own, rather than `Vector<TElement>`, in order to
+	// support compiling with GDExtension, where the packed array types are not `Vector` specializations.
+	// The element type `TElement` is deduced from the fallback or output value argument.
+	enum CornerSampleMode {
+		CORNER_SAMPLE_FIRST_FOUND, // Take the value from the first source element that has the vertex.
+		CORNER_SAMPLE_AVERAGE, // Take the mean of the values from every source element that has the vertex.
+	};
+
+	// Looks up one vertex in the corner lists of the given source elements and reads its bound value.
+	// Sources that are out of range, lack the vertex, or have fewer values than corners are skipped.
+	// Returns the number of sources that had the vertex, and leaves `r_value` untouched when that is zero.
+	template <typename TArray, typename TElement>
+	static int64_t _find_corner_value(const int32_t p_vertex, const PackedInt32Array &p_source_elements, const Vector<PackedInt32Array> &p_source_corners, const Vector<TArray> &p_source_values, const CornerSampleMode p_mode, TElement &r_value) {
+		int64_t hits = 0;
+		TElement sum = TElement();
+		for (const int32_t source : p_source_elements) {
+			if (source < 0 || source >= p_source_corners.size() || source >= p_source_values.size()) {
+				continue;
+			}
+			const int64_t corner = p_source_corners[source].find(p_vertex);
+			if (corner == -1 || corner >= p_source_values[source].size()) {
+				continue;
+			}
+			if (p_mode == CORNER_SAMPLE_FIRST_FOUND) {
+				r_value = p_source_values[source][corner];
+				return 1;
+			}
+			sum += p_source_values[source][corner];
+			hits++;
+		}
+		if (hits > 0) {
+			r_value = sum / (real_t)hits;
+		}
+		return hits;
+	}
+
+	// Samples a value for every corner of a new element from the corners of the given source elements.
+	// Corners whose vertex is found in no source get `p_fallback`. With `p_normalize`, every sampled value is
+	// normalized, which averaged normals need. When `p_derived_vertex_sources` is given, a corner vertex at or
+	// above `p_first_derived_vertex` is a new vertex derived from the listed old vertices (such as an edge
+	// midpoint), and gets the mean of whatever those old vertices sample to.
+	// Returns the number of corners that received a sampled value rather than the fallback.
+	template <typename TArray, typename TElement>
+	static int64_t _sample_corner_values(const PackedInt32Array &p_new_corners, const PackedInt32Array &p_source_elements, const Vector<PackedInt32Array> &p_source_corners, const Vector<TArray> &p_source_values, const CornerSampleMode p_mode, const TElement &p_fallback, TArray &r_values, const bool p_normalize = false, const Vector<PackedInt32Array> *p_derived_vertex_sources = nullptr, const int64_t p_first_derived_vertex = INT64_MAX) {
+		r_values.resize(p_new_corners.size());
+		int64_t sampled_count = 0;
+		for (int64_t i = 0; i < p_new_corners.size(); i++) {
+			const int32_t vertex = p_new_corners[i];
+			TElement value = p_fallback;
+			int64_t hits = 0;
+			if (p_derived_vertex_sources != nullptr && vertex >= p_first_derived_vertex) {
+				const int64_t derived_index = vertex - p_first_derived_vertex;
+				TElement sum = TElement();
+				if (derived_index < p_derived_vertex_sources->size()) {
+					for (const int32_t source_vertex : (*p_derived_vertex_sources)[derived_index]) {
+						TElement source_value;
+						if (_find_corner_value(source_vertex, p_source_elements, p_source_corners, p_source_values, p_mode, source_value) > 0) {
+							sum += source_value;
+							hits++;
+						}
+					}
+				}
+				if (hits > 0) {
+					value = sum / (real_t)hits;
+				}
+			} else {
+				hits = _find_corner_value(vertex, p_source_elements, p_source_corners, p_source_values, p_mode, value);
+			}
+			if (hits > 0) {
+				sampled_count++;
+				if (p_normalize && value.length_squared() > (real_t)CMP_EPSILON) {
+					value = value.normalized();
+				}
+			}
+			r_values.set(i, value);
+		}
+		return sampled_count;
+	}
+
 	// These helper types and functions are for `subdivide_elements`.
 	enum SubdivisionCellClass {
 		SUBDIV_CLASS_UNKNOWN = 0,
