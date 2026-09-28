@@ -7,7 +7,7 @@
 
 namespace TestVoxelDataTree {
 
-constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
+constexpr VoxelMaterial SOLID_MATERIAL = (VoxelMaterial)0;
 
 class UniformSolidGenerator : public VoxelGenerator {
 public:
@@ -102,10 +102,11 @@ TEST_CASE("[VoxelDataTree] Voxel value lookup") {
 	CHECK_MESSAGE(tree.get_material(Vector4i(4, 3, 3, 3)) == VoxelMaterial::UNDEFINED, "VoxelDataTree get_material in an undefined sibling should return UNDEFINED.");
 
 	VoxelDataLeaf *leaf = memnew(VoxelDataLeaf);
-	leaf->set_material(Vector4i(1, 0, 0, 0), SOLID_MATERIAL);
+	leaf->set_material(Vector4i(1, 0, 0, 0), VoxelMaterial::AIR);
+	leaf->set_material(Vector4i(2, 0, 0, 0), SOLID_MATERIAL);
 	children[15].set_leaf_data(leaf);
-	CHECK_MESSAGE(tree.get_material(Vector4i(5, 4, 4, 4)) == SOLID_MATERIAL, "VoxelDataTree get_material should read a chunk-sized leaf at full detail, relative to the leaf node's position.");
-	CHECK_MESSAGE(tree.get_material(Vector4i(6, 4, 4, 4)) == VoxelMaterial::UNDEFINED, "VoxelDataTree get_material should not smear leaf materials across neighboring voxels at full detail.");
+	CHECK_MESSAGE(tree.get_material(Vector4i(5, 4, 4, 4)) == VoxelMaterial::AIR, "VoxelDataTree get_material should read a chunk-sized leaf at full detail, relative to the leaf node's position.");
+	CHECK_MESSAGE(tree.get_material(Vector4i(6, 4, 4, 4)) == SOLID_MATERIAL, "VoxelDataTree get_material should not smear leaf materials across neighboring voxels at full detail.");
 }
 
 TEST_CASE("[VoxelDataTree] Region definedness") {

@@ -28,7 +28,7 @@ void SphereVoxelEdit::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_fill_material"), &SphereVoxelEdit::get_fill_material);
 	ClassDB::bind_method(D_METHOD("set_fill_material", "fill_material"), &SphereVoxelEdit::set_fill_material);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fill_material", PROPERTY_HINT_RANGE, "1,255,1"), "set_fill_material", "get_fill_material");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fill_material", PROPERTY_HINT_RANGE, "0,254,1"), "set_fill_material", "get_fill_material");
 }
 
 void SphereVoxelEdit::_update_bounds() {

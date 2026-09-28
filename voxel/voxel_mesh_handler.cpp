@@ -54,6 +54,7 @@ void VoxelMeshHandler::update_dirty_meshes() {
 		if (neighbourhood.node != nullptr && !neighbourhood.node->is_constant() && neighbourhood.node->is_region_defined(mesh_region)) {
 			updated_count++;
 			mesh = VoxelMesher::generate_chunk_mesh(neighbourhood, chunk_position);
+			mesh->set_material(_world->get_mesh_material());
 		}
 		HashMap<Vector4i, MeshInstance4D *>::Iterator existing = _chunk_meshes.find(chunk_position);
 		if (mesh.is_null() || mesh->get_vertex_positions().is_empty()) {

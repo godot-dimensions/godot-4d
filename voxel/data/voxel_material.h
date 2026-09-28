@@ -2,20 +2,21 @@
 
 #include "../../godot_4d_defines.h"
 
-// The material a voxel is made of. Only the reserved materials are named;
-// every other value is a distinct opaque material, with meanings to be
-// assigned later. UNDEFINED is never stored in generated voxel data; it is
-// the null value returned when the value of an undefined voxel is requested.
+// The material a voxel is made of. Only the reserved materials at the top of
+// the range are named; every value below them is a distinct opaque custom
+// material, with meanings to be assigned by the palette. UNDEFINED is never
+// stored in generated voxel data; it is the null value returned when the
+// value of an undefined voxel is requested.
 enum class VoxelMaterial : uint8_t {
-	UNDEFINED = 0,
-	AIR = 1,
-	// The number of reserved materials above, and so also the first
-	// unreserved material.
-	RESERVED_COUNT = 2,
+	AIR = 254,
+	UNDEFINED = 255,
+	// The exclusive upper limit of the custom materials, whose range starts
+	// at 0, and so also their count.
+	CUSTOM_COUNT = AIR,
 };
 
 inline bool is_material_opaque(const VoxelMaterial p_material) {
-	return p_material >= VoxelMaterial::RESERVED_COUNT;
+	return p_material < VoxelMaterial::CUSTOM_COUNT;
 }
 
 inline VoxelMaterial overlay_material(const VoxelMaterial p_over, const VoxelMaterial p_under) {

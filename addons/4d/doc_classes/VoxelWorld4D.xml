@@ -24,6 +24,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="material_palette" type="VoxelMaterialPalette" setter="set_material_palette" getter="get_material_palette">
+			The [VoxelMaterialPalette] describing the materials used for this world.
+		</member>
 		<member name="world_bounds_enabled" type="bool" setter="set_world_bounds_enabled" getter="is_world_bounds_enabled" default="false">
 			If [code]true[/code], the world is limited to the bounds given by [member world_bounds_position] and [member world_bounds_size]: chunks entirely outside the bounds are never loaded, and are unloaded if already present. If [code]false[/code], the world can grow without limit.
 		</member>

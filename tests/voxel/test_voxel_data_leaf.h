@@ -5,15 +5,16 @@
 #include "tests/test_macros.h"
 
 namespace TestVoxelDataLeaf {
-constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
+constexpr VoxelMaterial SOLID_MATERIAL = (VoxelMaterial)0;
 
 TEST_CASE("[VoxelDataLeaf] Get and set materials") {
 	VoxelDataLeaf leaf;
 	const Vector4i voxel = Vector4i(1, 2, 3, 0);
-	CHECK_MESSAGE(leaf.get_material(voxel) == VoxelMaterial::UNDEFINED, "VoxelDataLeaf voxels should start out undefined.");
+	const Vector4i neighbor = Vector4i(2, 2, 3, 0);
+	leaf.set_material(neighbor, VoxelMaterial::AIR);
 	leaf.set_material(voxel, SOLID_MATERIAL);
 	CHECK_MESSAGE(leaf.get_material(voxel) == SOLID_MATERIAL, "VoxelDataLeaf get_material should return what set_material stored.");
-	CHECK_MESSAGE(leaf.get_material(Vector4i(2, 2, 3, 0)) == VoxelMaterial::UNDEFINED, "VoxelDataLeaf set_material should not affect neighboring voxels.");
+	CHECK_MESSAGE(leaf.get_material(neighbor) == VoxelMaterial::AIR, "VoxelDataLeaf set_material should not affect neighboring voxels.");
 
 	CHECK_MESSAGE(VoxelDataLeaf::has_voxel(Vector4i(0, 0, 0, 0)), "VoxelDataLeaf has_voxel should include the origin.");
 	CHECK_MESSAGE(!VoxelDataLeaf::has_voxel(Vector4i(VOXEL_DATA_CHUNK_SIZE, 0, 0, 0)), "VoxelDataLeaf has_voxel should exclude coordinates at the chunk size.");

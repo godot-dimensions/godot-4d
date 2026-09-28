@@ -1,8 +1,10 @@
 #pragma once
 
+#include "../model/mesh/tetra/tetra_material_4d.h"
 #include "../nodes/node_4d.h"
 #include "data/voxel_data.h"
 #include "voxel_chunk_loader.h"
+#include "voxel_material_palette.h"
 #include "voxel_mesh_handler.h"
 
 class VoxelEdit;
@@ -13,6 +15,10 @@ class VoxelWorld4D : public Node4D {
 	GDCLASS(VoxelWorld4D, Node4D);
 
 	Ref<VoxelData> _voxel_data;
+	Ref<VoxelMaterialPalette> _material_palette;
+	// The material of every chunk mesh, colored by a texture with one texel
+	// per voxel material, baked from the palette.
+	Ref<TetraMaterial4D> _mesh_material;
 	// While enabled, chunks entirely outside these bounds are never loaded,
 	// and are unloaded if present; chunks partially inside may load. Not
 	// necessarily aligned to the chunk grid.
@@ -31,6 +37,10 @@ public:
 	Ref<VoxelData> get_voxel_data() const { return _voxel_data; }
 	VoxelMeshHandler &get_mesh_handler() { return _mesh_handler; }
 
+	Ref<VoxelMaterialPalette> get_material_palette() const { return _material_palette; }
+	void set_material_palette(const Ref<VoxelMaterialPalette> &p_material_palette);
+	Ref<TetraMaterial4D> get_mesh_material() const { return _mesh_material; }
+
 	Rect4i get_world_bounds() const { return _world_bounds; }
 	void set_world_bounds(const Rect4i &p_world_bounds) { _world_bounds = p_world_bounds; }
 	bool is_world_bounds_enabled() const { return _world_bounds_enabled; }
@@ -47,4 +57,7 @@ public:
 
 	VoxelWorld4D();
 	~VoxelWorld4D();
+
+private:
+	void _update_material_texture();
 };

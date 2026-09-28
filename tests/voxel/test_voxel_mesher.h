@@ -7,7 +7,7 @@
 #include "tests/test_macros.h"
 
 namespace TestVoxelMesher {
-constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
+constexpr VoxelMaterial SOLID_MATERIAL = (VoxelMaterial)0;
 
 // Meshes one chunk the way the mesh handler does, through the neighbourhood
 // of the node covering the chunk's region.

@@ -7,7 +7,7 @@
 #include "tests/test_macros.h"
 
 namespace TestVoxelData {
-constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
+constexpr VoxelMaterial SOLID_MATERIAL = (VoxelMaterial)0;
 
 TEST_CASE("[VoxelData] Hard-coded test data") {
 	Ref<VoxelData> data;
