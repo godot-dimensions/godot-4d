@@ -714,6 +714,41 @@ TEST_CASE("[ArrayPolyMesh4D] Seam faces") {
 		CHECK_MESSAGE((mesh->get_seam_face_indices_bind() == PackedInt32Array{ 3, 5, 9 }), "Seam face indices should be returned sorted.");
 		CHECK(mesh->get_seam_face_indices().size() == 3);
 	}
+
+	SUBCASE("Deleting a seam face removes it and shifts the later seams down") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->set_seam_face_indices_bind(PackedInt32Array{ 2, 5, 7 });
+		mesh->delete_poly_element(2, 5);
+		CHECK((mesh->get_seam_face_indices_bind() == PackedInt32Array{ 2, 6 }));
+	}
+
+	SUBCASE("Deleting a vertex removes the seams through it and keeps the others") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->calculate_seam_faces();
+		const int64_t old_face_count = mesh->get_poly_cell_indices()[0].size();
+		REQUIRE_MESSAGE(mesh->get_seam_face_indices_bind().size() == old_face_count, "Every box face is a seam at the default threshold.");
+		mesh->delete_poly_element(0, 0);
+		// The remaining faces were all seams, so they must all still be, numbered contiguously after the deletion.
+		const int64_t new_face_count = mesh->get_poly_cell_indices()[0].size();
+		REQUIRE(new_face_count < old_face_count);
+		const PackedInt32Array seams = mesh->get_seam_face_indices_bind();
+		REQUIRE(seams.size() == new_face_count);
+		for (int32_t i = 0; i < seams.size(); i++) {
+			CHECK(seams[i] == i);
+		}
+	}
+
+	SUBCASE("Deduplicating a mesh merged with its copy maps the copy's seams back onto the original") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		const int32_t face_count = (int32_t)mesh->get_poly_cell_indices()[0].size();
+		mesh->set_seam_face_indices_bind(PackedInt32Array{ 2, 5, 7 });
+		Ref<ArrayPolyMesh4D> copy = mesh->duplicate();
+		mesh->merge_with(copy);
+		REQUIRE((mesh->get_seam_face_indices_bind() == PackedInt32Array{ 2, 5, 7, face_count + 2, face_count + 5, face_count + 7 }));
+		mesh->deduplicate_all_elements();
+		CHECK(mesh->get_poly_cell_indices()[0].size() == face_count);
+		CHECK((mesh->get_seam_face_indices_bind() == PackedInt32Array{ 2, 5, 7 }));
+	}
 }
 
 TEST_CASE("[ArrayPolyMesh4D] Islands") {

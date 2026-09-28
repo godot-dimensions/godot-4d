@@ -46,6 +46,7 @@ private:
 	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map);
 	Vector<PackedInt32Array> _get_face_to_cell_map() const;
 	PackedInt32Array _collect_cells_in_island_internal(const int64_t p_start_cell, const Vector<PackedInt32Array> &p_face_to_cell_map);
+	static PackedInt32Array _deletion_remap_table(const int32_t p_element_count, const int32_t p_deleted_index);
 	void _delete_edge_internal(const int32_t p_index);
 	void _delete_vertex_internal(const int32_t p_index);
 	void _delete_poly_cell_element_internal(const int32_t p_dimension, const int32_t p_index);

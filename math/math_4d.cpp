@@ -462,6 +462,50 @@ bool Math4D::ensure_first_two_indices_share_common_int32(PackedInt32Array &r_ind
 	return false;
 }
 
+PackedInt32Array Math4D::remap_int32_array(const PackedInt32Array &p_indices, const PackedInt32Array &p_old_to_new) {
+	PackedInt32Array ret;
+	ret.resize(p_indices.size());
+	for (int64_t i = 0; i < p_indices.size(); i++) {
+		const int32_t old_index = p_indices[i];
+		if (old_index < 0 || old_index >= p_old_to_new.size()) {
+			ret.set(i, -1);
+		} else {
+			ret.set(i, p_old_to_new[old_index]);
+		}
+	}
+	return ret;
+}
+
+void Math4D::remap_int32_arrays(Vector<PackedInt32Array> &r_arrays, const PackedInt32Array &p_old_to_new, const bool p_remove_duplicates) {
+	for (int64_t array_index = 0; array_index < r_arrays.size(); array_index++) {
+		PackedInt32Array remapped = remap_int32_array(r_arrays[array_index], p_old_to_new);
+		if (p_remove_duplicates) {
+			PackedInt32Array deduplicated;
+			for (const int32_t index : remapped) {
+				if (!deduplicated.has(index)) {
+					deduplicated.append(index);
+				}
+			}
+			remapped = deduplicated;
+		}
+		r_arrays.set(array_index, remapped);
+	}
+}
+
+HashSet<int32_t> Math4D::remap_int32_set(const HashSet<int32_t> &p_indices, const PackedInt32Array &p_old_to_new) {
+	HashSet<int32_t> ret;
+	for (const int32_t old_index : p_indices) {
+		if (old_index < 0 || old_index >= p_old_to_new.size()) {
+			continue;
+		}
+		const int32_t new_index = p_old_to_new[old_index];
+		if (new_index >= 0) {
+			ret.insert(new_index);
+		}
+	}
+	return ret;
+}
+
 Math4D *Math4D::singleton = nullptr;
 
 void Math4D::_bind_methods() {
