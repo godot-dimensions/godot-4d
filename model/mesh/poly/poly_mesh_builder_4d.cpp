@@ -15,7 +15,6 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const R
 	int start_surface = p_which_surface == -1 ? 0 : p_which_surface;
 	int end_surface = p_which_surface == -1 ? surface_count : p_which_surface + 1;
 	PackedVector4Array output_vertices;
-	PackedVector4Array output_face_boundary_normals;
 	Vector<PackedVector4Array> output_face_vertex_normals;
 	Vector<PackedVector3Array> output_face_texture_maps;
 	Vector<PackedInt32Array> output_face_indices;
@@ -64,11 +63,6 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const R
 			const int32_t e1 = ret->append_edge_indices(surface_verts_to_inserted[orig_v1], surface_verts_to_inserted[orig_v2], deduplicate_edges);
 			const int32_t e2 = ret->append_edge_indices(surface_verts_to_inserted[orig_v0], surface_verts_to_inserted[orig_v2], deduplicate_edges);
 			output_face_indices.append(PackedInt32Array{ e0, e1, e2 });
-			// Append face boundary normal for this face.
-			const Vector3 face_a = surface_vertices[orig_v1] - surface_vertices[orig_v0];
-			const Vector3 face_b = surface_vertices[orig_v2] - surface_vertices[orig_v0];
-			const Vector3 face_boundary_normal = face_a.cross(face_b).normalized();
-			output_face_boundary_normals.append(Vector4D::from_3d(face_boundary_normal));
 			// The mesh reads a face's corners edge by edge, and edges store their lower vertex index first, so the
 			// first two corners are the first edge's vertices in ascending order of their inserted indices.
 			const bool first_edge_ascending = surface_verts_to_inserted[orig_v0] <= surface_verts_to_inserted[orig_v1];
@@ -96,8 +90,10 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(const R
 	}
 	ret->set_poly_cell_vertex_positions(output_vertices);
 	ret->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ output_face_indices });
-	if (!output_face_boundary_normals.is_empty()) {
-		ret->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ output_face_boundary_normals });
+	// The faces were read with a counter-clockwise winding seen from their front, and lie in the XYZ hyperplane
+	// of the 3D mesh, so the face normals are the 3D ones.
+	if (!output_face_indices.is_empty()) {
+		ret->calculate_face_normals(Vector4(0, 0, 0, 1));
 	}
 	if (!output_face_vertex_normals.is_empty()) {
 		ret->set_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY, output_face_vertex_normals);
@@ -726,15 +722,9 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	if (input_all_poly_cell_normals.has(PolyMesh4D::PER_FACE_KEY)) {
 		input_face_normals = input_all_poly_cell_normals[PolyMesh4D::PER_FACE_KEY][0];
 	} else {
-		input_face_normals.resize(input_face_count);
-		for (int32_t face_index = 0; face_index < input_face_count; face_index++) {
-			const PackedInt32Array this_input_face_vert = input_face_vertex_indices[face_index];
-			ERR_FAIL_COND_V(this_input_face_vert.size() < 3, ret);
-			const Vector4 face_x = input_vertex_positions[this_input_face_vert[1]] - input_vertex_positions[this_input_face_vert[0]];
-			const Vector4 face_y = input_vertex_positions[this_input_face_vert[2]] - input_vertex_positions[this_input_face_vert[0]];
-			const Vector3 face_cross_3d = Vector4D::to_3d(face_x).cross(Vector4D::to_3d(face_y));
-			input_face_normals.set(face_index, Vector4D::from_3d(face_cross_3d.normalized()));
-		}
+		// The input faces lie in the XYZ hyperplane that the spin sweeps out of, so their normals lie in it too.
+		input_face_normals = p_input_mesh->compute_face_normals(Vector4(0, 0, 0, 1));
+		ERR_FAIL_COND_V(input_face_normals.size() != input_face_count, ret);
 	}
 	// Step 15: Ensure correct winding order of the new cells, make cell boundary normals match the face boundary normals.
 	for (int step = 0; step < p_steps; step++) {

@@ -68,6 +68,14 @@
 				[b]Note:[/b] In 3D, normals are determined by the triangle vertex winding order, but in 4D, there is no direct equivalent. Instead, orientation is determined by the relative positions of a representative set of vertices that form a canonical span of 3 basis vectors, with the 4th being calculated to find the normal vector. The direction can either be purely determined by the cell orientation, or forced to point outward from the origin or from the volume of a volumetric hypercell, depending on the selected [param normals_mode]. See [enum ComputeNormalsMode] for details.
 			</description>
 		</method>
+		<method name="calculate_face_normals">
+			<return type="void" />
+			<param index="0" name="hyperplane_normal" type="Vector4" default="Vector4(0, 0, 0, 1)" />
+			<param index="1" name="keep_existing" type="bool" default="false" />
+			<description>
+				Calculates the normals of the 2D faces of a mesh whose faces lie in a 3D hyperplane, as described in [method PolyMesh4D.compute_face_normals], and stores them as the per-face normals. This is the counterpart of [method calculate_boundary_normals] for faces instead of cells. If [param keep_existing] is [code]true[/code], faces that already have a non-zero normal keep it.
+			</description>
+		</method>
 		<method name="calculate_seam_faces">
 			<return type="void" />
 			<param index="0" name="angle_threshold_radians" type="float" default="0.7853982" />

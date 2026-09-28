@@ -627,6 +627,24 @@ void ArrayPolyMesh4D::calculate_boundary_normals(const ComputeNormalsMode p_mode
 	poly_mesh_clear_cache();
 }
 
+void ArrayPolyMesh4D::calculate_face_normals(const Vector4 &p_hyperplane_normal, const bool p_keep_existing) {
+	ERR_FAIL_COND_MSG(_poly_cell_indices.is_empty(), "ArrayPolyMesh4D: Cannot calculate face normals because there are no faces.");
+	PackedVector4Array face_normals = compute_face_normals(p_hyperplane_normal);
+	ERR_FAIL_COND_MSG(face_normals.size() != _poly_cell_indices[0].size(), "ArrayPolyMesh4D: Cannot calculate face normals for an invalid mesh.");
+	if (p_keep_existing) {
+		const Vector<PackedVector4Array> existing_normals = get_poly_cell_dense_normals(PER_FACE_KEY);
+		if (!existing_normals.is_empty()) {
+			for (int64_t face_index = 0; face_index < existing_normals[0].size() && face_index < face_normals.size(); face_index++) {
+				if (!existing_normals[0][face_index].is_zero_approx()) {
+					face_normals.set(face_index, existing_normals[0][face_index]);
+				}
+			}
+		}
+	}
+	_all_poly_cell_normal_indices.insert(PER_FACE_KEY, Vector<PackedInt32Array>{ _normal_indices_for_values_internal(face_normals) });
+	poly_mesh_clear_cache();
+}
+
 void ArrayPolyMesh4D::orient_cells_to_boundary_normals(const PackedVector4Array &p_desired_boundary_normals) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot orient cells because there are no boundary cells.");
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot orient cells for invalid poly mesh data.");
@@ -2620,6 +2638,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 
 	// Normal calculation functions.
 	ClassDB::bind_method(D_METHOD("calculate_boundary_normals", "normals_mode", "keep_existing"), &ArrayPolyMesh4D::calculate_boundary_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("calculate_face_normals", "hyperplane_normal", "keep_existing"), &ArrayPolyMesh4D::calculate_face_normals, DEFVAL(Vector4(0, 0, 0, 1)), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("orient_cells_to_boundary_normals", "desired_boundary_normals"), &ArrayPolyMesh4D::orient_cells_to_boundary_normals);
 	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_flat_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("set_smooth_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_smooth_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));

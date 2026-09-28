@@ -959,6 +959,31 @@ PolyMesh4D::PolyDataDictionary PolyMesh4D::get_all_poly_cell_texture_map_indices
 	return result;
 }
 
+PackedVector4Array PolyMesh4D::compute_face_normals(const Vector4 &p_hyperplane_normal) {
+	PackedVector4Array ret;
+	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	const Vector<PackedInt32Array> face_vertex_indices = get_all_poly_cell_vertex_indices(2, true);
+	const PackedVector4Array positions = get_poly_cell_vertex_positions();
+	ret.resize(face_vertex_indices.size());
+	for (int64_t face_index = 0; face_index < face_vertex_indices.size(); face_index++) {
+		// The canonical span is the vertex shared by the face's first two edges, between their other vertices, so
+		// it fixes the face's orientation the way a 3D face's winding order does.
+		const PackedInt32Array &span = face_vertex_indices[face_index];
+		if (span.size() < 3) {
+			ret.set(face_index, Vector4());
+			continue;
+		}
+		const Vector4 a = positions[span[1]] - positions[span[0]];
+		const Vector4 b = positions[span[2]] - positions[span[0]];
+		// `Vector4D::perpendicular(a, b, c)` returns the vector that completes (a, b, c, result) as a positively
+		// oriented frame. The face normal should instead complete (a, b, normal, hyperplane_normal), so that a face
+		// in the XYZ hyperplane with a +W hyperplane normal gets the 3D cross product of a and b. Swapping two
+		// vectors of a frame flips its orientation, so passing b before a gives the correct sign.
+		ret.set(face_index, Vector4D::perpendicular(b, a, p_hyperplane_normal).normalized());
+	}
+	return ret;
+}
+
 Vector<PackedInt32Array> PolyMesh4D::get_all_face_vertex_indices() {
 	ERR_FAIL_COND_V(!is_mesh_data_valid(), Vector<PackedInt32Array>());
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
@@ -1640,6 +1665,7 @@ void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_normal_indices"), &PolyMesh4D::get_all_poly_cell_normal_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_texture_map_indices"), &PolyMesh4D::get_all_poly_cell_texture_map_indices_bind);
 
+	ClassDB::bind_method(D_METHOD("compute_face_normals", "hyperplane_normal"), &PolyMesh4D::compute_face_normals, DEFVAL(Vector4(0, 0, 0, 1)));
 	ClassDB::bind_method(D_METHOD("get_all_face_vertex_indices"), &PolyMesh4D::get_all_face_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_vertex_indices", "cell_dimension", "start_with_canonical_span"), &PolyMesh4D::get_all_poly_cell_vertex_indices_bind);

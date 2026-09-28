@@ -2308,4 +2308,58 @@ TEST_CASE("[ArrayPolyMesh4D] Orient cells to boundary normals") {
 		}
 	}
 }
+// A face whose edges are appended in this vertex order, so that its first two edges meet at the second vertex
+// and its canonical span runs from the first vertex through the second to the third.
+inline void append_loop_face(const Ref<ArrayPolyMesh4D> &p_mesh, const PackedInt32Array &p_vertex_loop) {
+	PackedInt32Array face;
+	for (int64_t i = 0; i < p_vertex_loop.size(); i++) {
+		face.append((int32_t)p_mesh->append_edge_indices(p_vertex_loop[i], p_vertex_loop[(i + 1) % p_vertex_loop.size()]));
+	}
+	p_mesh->append_poly_cell(2, face);
+}
+
+TEST_CASE("[ArrayPolyMesh4D] Face normals within a hyperplane") {
+	// A unit square in the XY plane, wound counter-clockwise when seen from +Z, so its 3D normal is +Z.
+	Ref<ArrayPolyMesh4D> square;
+	square.instantiate();
+	square->append_vertices({ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0) }, false);
+	append_loop_face(square, { 0, 1, 2, 3 });
+	REQUIRE(square->is_mesh_data_valid());
+	const PackedVector4Array normals_in_xyz = square->compute_face_normals(Vector4(0, 0, 0, 1));
+	REQUIRE(normals_in_xyz.size() == 1);
+	CHECK_MESSAGE(normals_in_xyz[0].is_equal_approx(Vector4(0, 0, 1, 0)), "With a +W hyperplane normal, the face normal must match the 3D cross product.");
+	CHECK_MESSAGE(square->compute_face_normals(Vector4(0, 0, 0, -1))[0].is_equal_approx(Vector4(0, 0, -1, 0)), "Flipping the hyperplane normal flips the face normal.");
+	// The same square seen as lying in the XZW ground hyperplane, the way a fence footprint does: X then Z, so the
+	// normal within XZW is +W, with no Y component.
+	Ref<ArrayPolyMesh4D> ground_square;
+	ground_square.instantiate();
+	ground_square->append_vertices({ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 0, 1, 0), Vector4(0, 0, 1, 0) }, false);
+	append_loop_face(ground_square, { 0, 1, 2, 3 });
+	REQUIRE(ground_square->is_mesh_data_valid());
+	CHECK_MESSAGE(ground_square->compute_face_normals(Vector4(0, 1, 0, 0))[0].is_equal_approx(Vector4(0, 0, 0, 1)), "With a +Y hyperplane normal, X then Z gives +W, as the right-handed XZW frame does.");
+	// Storing the normals, and keeping existing ones on request.
+	square->calculate_face_normals(Vector4(0, 0, 0, 1));
+	Vector<PackedVector4Array> stored = square->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	REQUIRE(stored.size() == 1);
+	REQUIRE(stored[0].size() == 1);
+	CHECK(stored[0][0].is_equal_approx(Vector4(0, 0, 1, 0)));
+	square->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ { Vector4(1, 0, 0, 0) } });
+	square->calculate_face_normals(Vector4(0, 0, 0, 1), true);
+	CHECK_MESSAGE(square->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY)[0][0].is_equal_approx(Vector4(1, 0, 0, 0)), "Keeping existing normals must leave a custom normal alone.");
+	square->calculate_face_normals(Vector4(0, 0, 0, 1), false);
+	CHECK(square->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY)[0][0].is_equal_approx(Vector4(0, 0, 1, 0)));
+	// Two squares folded at a right angle along their shared edge each get their own normal.
+	Ref<ArrayPolyMesh4D> folded;
+	folded.instantiate();
+	folded->append_vertices({ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0), Vector4(1, 1, 1, 0), Vector4(1, 0, 1, 0) }, false);
+	append_loop_face(folded, { 0, 1, 2, 3 }); // Normal +Z.
+	append_loop_face(folded, { 1, 2, 4, 5 }); // Y then Y + Z, so the normal is +X.
+	REQUIRE(folded->is_mesh_data_valid());
+	folded->calculate_face_normals(Vector4(0, 0, 0, 1));
+	const PackedVector4Array folded_face_normals = folded->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY)[0];
+	REQUIRE(folded_face_normals.size() == 2);
+	CHECK(folded_face_normals[0].is_equal_approx(Vector4(0, 0, 1, 0)));
+	CHECK(folded_face_normals[1].is_equal_approx(Vector4(1, 0, 0, 0)));
+}
+
 } // namespace TestArrayPolyMesh4D

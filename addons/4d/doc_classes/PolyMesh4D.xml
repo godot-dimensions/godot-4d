@@ -60,6 +60,13 @@
 				Callback method that should return the vertices of the polyhedral cells. Do not call this method. This can be overridden by derived classes when creating a custom mesh type in GDScript or another scripting language. See [method get_poly_cell_vertex_positions] for details of the returned data.
 			</description>
 		</method>
+		<method name="compute_face_normals">
+			<return type="PackedVector4Array" />
+			<param index="0" name="hyperplane_normal" type="Vector4" default="Vector4(0, 0, 0, 1)" />
+			<description>
+				Computes the normal of each 2D face, for a mesh whose faces lie in a 3D hyperplane, and returns one normal per face without storing them. A face in 4D has a whole plane of perpendicular directions, so its normal is only defined within a hyperplane: it is the direction perpendicular to the face within the hyperplane perpendicular to [param hyperplane_normal]. The side it points to follows the face's orientation, which is set by the order of its first two edges, the same way a 3D face's normal follows its winding order. With the default [param hyperplane_normal] of +W, a mesh in the XYZ hyperplane gets the same normals as it would in 3D, and a ground mesh in the XZW hyperplane can pass +Y. A degenerate face gets a zero vector.
+			</description>
+		</method>
 		<method name="get_all_cell_vertex_indices">
 			<return type="PackedInt32Array[]" />
 			<param index="0" name="start_with_canonical_span" type="bool" />

@@ -87,6 +87,7 @@ public:
 
 	// Normal calculation functions.
 	void calculate_boundary_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_keep_existing = false);
+	void calculate_face_normals(const Vector4 &p_hyperplane_normal = Vector4(0, 0, 0, 1), const bool p_keep_existing = false);
 	void orient_cells_to_boundary_normals(const PackedVector4Array &p_desired_boundary_normals);
 	void set_flat_shading_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_recalculate_boundary_normals = true);
 	void set_smooth_shading_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_recalculate_boundary_normals = true);
