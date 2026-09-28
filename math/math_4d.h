@@ -45,6 +45,12 @@ public:
 	static void remap_int32_arrays(Vector<PackedInt32Array> &r_arrays, const PackedInt32Array &p_old_to_new, const bool p_remove_duplicates);
 	// Remaps a set of indices, dropping removed elements.
 	static HashSet<int32_t> remap_int32_set(const HashSet<int32_t> &p_indices, const PackedInt32Array &p_old_to_new);
+	// Carries values keyed by one list of items over to another list of the same items in a different order or
+	// selection. For each key in `p_new_keys`, finds the first equal key in `p_old_keys` and returns the value at
+	// that position from `p_old_values`, at the new key's position. A new key that is not found, or whose old
+	// position has no value, gets -1. The values are indices into a value pool, such as normal or texture map
+	// indices, so dense values can be carried over by remapping their positions and then reading the values.
+	static PackedInt32Array remap_int32s_by_matching_keys(const PackedInt32Array &p_old_keys, const PackedInt32Array &p_new_keys, const PackedInt32Array &p_old_values);
 
 	static Math4D *get_singleton() { return singleton; }
 	Math4D() { singleton = this; }

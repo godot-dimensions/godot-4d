@@ -36,4 +36,17 @@ TEST_CASE("[Math4D] Remap int32 indices through a table") {
 	CHECK(positioned[2] == PackedInt32Array{ 1, 1, -1 });
 }
 
+TEST_CASE("[Math4D] Remap values by matching keys") {
+	// The same vertices listed in a different order, with one vertex gone and one new.
+	const PackedInt32Array old_keys = { 4, 7, 2, 9 };
+	const PackedInt32Array new_keys = { 2, 9, 5, 4 };
+	// Value indices, where -1 marks a key with no old value.
+	const PackedInt32Array old_indices = { 10, 11, 12, 13 };
+	CHECK(Math4D::remap_int32s_by_matching_keys(old_keys, new_keys, old_indices) == PackedInt32Array{ 12, 13, -1, 10 });
+	// A short value array yields -1 for the keys past its end.
+	CHECK(Math4D::remap_int32s_by_matching_keys(old_keys, new_keys, PackedInt32Array{ 10, 11, 12 }) == PackedInt32Array{ 12, -1, -1, 10 });
+	// Duplicate old keys, such as a vertex shared by two concatenated source faces, resolve to the first one.
+	CHECK(Math4D::remap_int32s_by_matching_keys(PackedInt32Array{ 3, 3 }, PackedInt32Array{ 3 }, PackedInt32Array{ 20, 21 }) == PackedInt32Array{ 20 });
+}
+
 } // namespace TestMath4D

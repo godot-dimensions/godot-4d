@@ -698,15 +698,7 @@ void ArrayPolyMesh4D::orient_cells_to_boundary_normals(const PackedVector4Array 
 					if (pre_flip_cell.size() != post_flip_cell.size() || old_cell_value_indices.size() != pre_flip_cell.size()) {
 						continue; // Malformed for this cell, leave the data alone and let validation report it.
 					}
-					PackedInt32Array new_cell_value_indices;
-					new_cell_value_indices.resize(old_cell_value_indices.size());
-					for (int64_t element_index = 0; element_index < pre_flip_cell.size(); element_index++) {
-						const int64_t destination_index = post_flip_cell.find(pre_flip_cell[element_index]);
-						if (destination_index >= 0) {
-							new_cell_value_indices.set(destination_index, old_cell_value_indices[element_index]);
-						}
-					}
-					data_bindings.set(cell_index, new_cell_value_indices);
+					data_bindings.set(cell_index, Math4D::remap_int32s_by_matching_keys(pre_flip_cell, post_flip_cell, old_cell_value_indices));
 				}
 				data_binding_map->insert(key, data_bindings);
 			}
@@ -874,29 +866,20 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 			}
 		}
 		// Flipping a cell can permute its derived vertex order. Match attributes by vertex identity.
-		PackedInt32Array vertex_remap;
+		PackedInt32Array flipped_vertices;
 		if (has_vertex_normals || has_texture_map) {
 			Vector<Vector<PackedInt32Array>> flipped_geometry = _poly_cell_indices;
 			flipped_geometry.set(1, Vector<PackedInt32Array>{ flipped_cell_faces });
 			// This traverses a modified copy of the geometry, so it cannot use the cached traversal.
-			const PackedInt32Array flipped_vertices = _get_vertex_indices_of_boundary_cells(flipped_geometry, _edge_vertex_indices, false)[0];
-			vertex_remap.resize(flipped_vertices.size());
-			for (int64_t i = 0; i < flipped_vertices.size(); i++) {
-				const int64_t original_vertex = original_cell_vertices[cell_index].find(flipped_vertices[i]);
-				CRASH_COND(original_vertex < 0);
-				vertex_remap.set(i, original_vertex);
-			}
+			flipped_vertices = _get_vertex_indices_of_boundary_cells(flipped_geometry, _edge_vertex_indices, false)[0];
 		}
-		// Copy texture coordinates without changing their values.
+		// Copy texture coordinates without changing their values. An empty entry means the cell is unmapped.
 		if (has_texture_map) {
 			// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
 			Vector<PackedInt32Array> &poly_cell_texture_maps = _all_poly_cell_texture_map_indices[CELL_TO_VERT_KEY];
 			const PackedInt32Array &source_texture_map = poly_cell_texture_maps[cell_index];
-			PackedInt32Array flipped_cell_texture_map;
-			flipped_cell_texture_map.resize(source_texture_map.size());
-			for (int64_t i = 0; i < source_texture_map.size(); i++) {
-				flipped_cell_texture_map.set(i, source_texture_map[vertex_remap[i]]);
-			}
+			const PackedInt32Array flipped_cell_texture_map = source_texture_map.is_empty() ? PackedInt32Array() : Math4D::remap_int32s_by_matching_keys(original_cell_vertices[cell_index], flipped_vertices, source_texture_map);
+			CRASH_COND(flipped_cell_texture_map.has(-1)); // Every vertex of the flipped cell is a vertex of the original cell.
 			poly_cell_texture_maps.append(flipped_cell_texture_map);
 		}
 		// Copy and flip the vertex normals if they exist for this cell before adding the flipped cell.
@@ -904,10 +887,10 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 			// HashMap's indexing operator allows getting a mutable reference, so we don't need to set it back after.
 			Vector<PackedInt32Array> &poly_cell_vertex_normals = _all_poly_cell_normal_indices[CELL_TO_VERT_KEY];
 			const PackedInt32Array &source_normals = poly_cell_vertex_normals[cell_index];
-			PackedInt32Array flipped_cell_vertex_normals;
-			flipped_cell_vertex_normals.resize(source_normals.size());
-			for (int64_t vertex_in_cell = 0; vertex_in_cell < source_normals.size(); vertex_in_cell++) {
-				const Vector4 flipped_normal = -_poly_cell_normal_values[source_normals[vertex_remap[vertex_in_cell]]];
+			PackedInt32Array flipped_cell_vertex_normals = source_normals.is_empty() ? PackedInt32Array() : Math4D::remap_int32s_by_matching_keys(original_cell_vertices[cell_index], flipped_vertices, source_normals);
+			CRASH_COND(flipped_cell_vertex_normals.has(-1)); // Every vertex of the flipped cell is a vertex of the original cell.
+			for (int64_t vertex_in_cell = 0; vertex_in_cell < flipped_cell_vertex_normals.size(); vertex_in_cell++) {
+				const Vector4 flipped_normal = -_poly_cell_normal_values[flipped_cell_vertex_normals[vertex_in_cell]];
 				flipped_cell_vertex_normals.set(vertex_in_cell, (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, flipped_normal));
 			}
 			poly_cell_vertex_normals.append(flipped_cell_vertex_normals);
@@ -1705,20 +1688,9 @@ void ArrayPolyMesh4D::deduplicate_all_elements(const int64_t p_max_dimension) {
 							if (!cell_value_indices.is_empty()) {
 								ERR_CONTINUE_MSG(key.y >= 2 && (key.y - 2) >= poly_cell_index_remaps.size(), "ArrayPolyMesh4D: Invalid data binding sub-element dimension " + itos(key.y) + ". Skipping remap.");
 								const PackedInt32Array &subelement_remap = (key.y == 0) ? vertex_index_remap : ((key.y == 1) ? edge_index_remap : poly_cell_index_remaps[key.y - 2]);
-								PackedInt32Array remapped_value_indices;
-								remapped_value_indices.resize(new_elems.size());
-								for (int64_t new_pos = 0; new_pos < new_elems.size(); new_pos++) {
-									const int32_t new_elem = new_elems[new_pos];
-									bool found = false;
-									for (int64_t old_pos = 0; old_pos < old_elems.size(); old_pos++) {
-										if (subelement_remap[old_elems[old_pos]] == new_elem) {
-											remapped_value_indices.set(new_pos, cell_value_indices[old_pos]);
-											found = true;
-											break;
-										}
-									}
-									ERR_FAIL_COND_MSG(!found, vformat("ArrayPolyMesh4D::deduplicate_all_elements: Failed to remap data binding for cell %d (new sub-element %d not found in pre-dedup traversal).", input_index, new_elem));
-								}
+								// Translate the old sub-elements to their deduplicated indices, then match the new traversal against them.
+								const PackedInt32Array remapped_value_indices = Math4D::remap_int32s_by_matching_keys(Math4D::remap_int32_array(old_elems, subelement_remap), new_elems, cell_value_indices);
+								ERR_FAIL_COND_MSG(remapped_value_indices.has(-1), vformat("ArrayPolyMesh4D::deduplicate_all_elements: Failed to remap data binding for cell %d (a new sub-element was not found in the pre-dedup traversal).", input_index));
 								cell_value_indices = remapped_value_indices;
 							}
 						}
@@ -1791,15 +1763,7 @@ void ArrayPolyMesh4D::deduplicate_all_elements(const int64_t p_max_dimension) {
 					}
 					CRASH_COND(remapped_cell_poly.size() != recalculated_cell_poly.size());
 					// This cell's poly changed, so we need to resample the data binding.
-					const PackedInt32Array &old_cell_value_indices = data_bindings[cell_index];
-					PackedInt32Array new_cell_value_indices;
-					new_cell_value_indices.resize(old_cell_value_indices.size());
-					for (int64_t elem_index = 0; elem_index < remapped_cell_poly.size(); elem_index++) {
-						const int64_t search_element = remapped_cell_poly[elem_index];
-						const int64_t dest_index = recalculated_cell_poly.find(search_element);
-						new_cell_value_indices.set(dest_index, old_cell_value_indices[elem_index]);
-					}
-					data_bindings.set(cell_index, new_cell_value_indices);
+					data_bindings.set(cell_index, Math4D::remap_int32s_by_matching_keys(remapped_cell_poly, recalculated_cell_poly, data_bindings[cell_index]));
 				}
 				data_binding_map->insert(key, data_bindings);
 			}
