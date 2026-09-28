@@ -25,11 +25,13 @@ public:
 	static const Vector2i FACE_TO_VERT_KEY;
 	static const Vector2i PER_CELL_KEY;
 	static const Vector2i PER_FACE_KEY;
+	static const Vector2i PER_VERTEX_KEY;
 #else
 	static constexpr Vector2i CELL_TO_VERT_KEY = Vector2i(3, 0);
 	static constexpr Vector2i FACE_TO_VERT_KEY = Vector2i(2, 0);
 	static constexpr Vector2i PER_CELL_KEY = Vector2i(3, 3);
 	static constexpr Vector2i PER_FACE_KEY = Vector2i(2, 2);
+	static constexpr Vector2i PER_VERTEX_KEY = Vector2i(0, 0);
 #endif
 
 private:

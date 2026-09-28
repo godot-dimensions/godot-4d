@@ -2236,7 +2236,7 @@ TEST_CASE("[ArrayPolyMesh4D] Orient cells to boundary normals") {
 		for (const Vector4 &vertex : vertices) {
 			vertex_normals.append(vertex.normalized());
 		}
-		mesh->set_poly_cell_dense_normals(Vector2i(0, 0), Vector<PackedVector4Array>{ vertex_normals });
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY, Vector<PackedVector4Array>{ vertex_normals });
 		const PackedInt32Array edge_indices = mesh->get_edge_indices();
 		Vector<PackedVector3Array> edge_vertex_texture;
 		for (int64_t edge = 0; edge < edge_indices.size() / 2; edge++) {
@@ -2255,7 +2255,7 @@ TEST_CASE("[ArrayPolyMesh4D] Orient cells to boundary normals") {
 		const Ref<ArrayPolyMesh4D> copy = mesh->to_array_poly_mesh();
 		REQUIRE(copy.is_valid());
 		CHECK(copy->is_mesh_data_valid());
-		CHECK(copy->get_poly_cell_dense_normals(Vector2i(0, 0)) == mesh->get_poly_cell_dense_normals(Vector2i(0, 0)));
+		CHECK(copy->get_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY) == mesh->get_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY));
 		CHECK(copy->get_poly_cell_dense_texture_map(Vector2i(1, 0)) == mesh->get_poly_cell_dense_texture_map(Vector2i(1, 0)));
 		CHECK(copy->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY) == mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY));
 		CHECK(copy->get_poly_cell_boundary_normals() == mesh->get_poly_cell_boundary_normals());

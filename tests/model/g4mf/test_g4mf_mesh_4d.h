@@ -138,10 +138,10 @@ static Ref<ArrayPolyMesh4D> make_box_with_vertex_normals(const Vector4 &p_offset
 	}
 	mesh->set_poly_cell_vertex_positions(vertices);
 	if (p_with_vertex_normals) {
-		mesh->set_poly_cell_dense_normals(Vector2i(0, 0), Vector<PackedVector4Array>{ vertex_normals });
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY, Vector<PackedVector4Array>{ vertex_normals });
 	} else {
 		// A key with no data, which must not be written as a binding full of placeholders.
-		mesh->set_poly_cell_dense_normals(Vector2i(0, 0), Vector<PackedVector4Array>{ PackedVector4Array() });
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY, Vector<PackedVector4Array>{ PackedVector4Array() });
 	}
 	return mesh;
 }
@@ -164,8 +164,8 @@ TEST_CASE("[G4MFMesh4D] Per-vertex bindings of multi-surface meshes round trip w
 	REQUIRE(surface_a->is_mesh_data_valid());
 	REQUIRE(surface_c->is_mesh_data_valid());
 	const int64_t box_vertex_count = surface_a->get_vertex_positions().size();
-	const Vector<PackedVector4Array> normals_a = surface_a->get_poly_cell_dense_normals(Vector2i(0, 0));
-	const Vector<PackedVector4Array> normals_b = surface_b->get_poly_cell_dense_normals(Vector2i(0, 0));
+	const Vector<PackedVector4Array> normals_a = surface_a->get_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY);
+	const Vector<PackedVector4Array> normals_b = surface_b->get_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY);
 	REQUIRE(normals_a.size() == 1);
 	REQUIRE(normals_a[0].size() == box_vertex_count);
 	Ref<MultiSurfaceMesh4D> source;
@@ -216,15 +216,15 @@ TEST_CASE("[G4MFMesh4D] Per-vertex bindings of multi-surface meshes round trip w
 	REQUIRE(imported_a.is_valid());
 	REQUIRE(imported_b.is_valid());
 	REQUIRE(imported_c.is_valid());
-	CHECK(imported_a->get_poly_cell_dense_normals(Vector2i(0, 0)) == normals_a);
-	const Vector<PackedVector4Array> imported_normals_b = imported_b->get_poly_cell_dense_normals(Vector2i(0, 0));
+	CHECK(imported_a->get_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY) == normals_a);
+	const Vector<PackedVector4Array> imported_normals_b = imported_b->get_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY);
 	REQUIRE(imported_normals_b.size() == 1);
 	REQUIRE(imported_normals_b[0].size() == box_vertex_count * 2);
 	for (int64_t i = 0; i < box_vertex_count; i++) {
 		CHECK(imported_normals_b[0][i] == Vector4());
 		CHECK(imported_normals_b[0][box_vertex_count + i] == normals_b[0][i]);
 	}
-	CHECK(imported_c->get_poly_cell_dense_normals(Vector2i(0, 0)).is_empty());
+	CHECK(imported_c->get_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY).is_empty());
 }
 
 TEST_CASE("[G4MFMesh4D] Coincident vertices retain distinct dense bindings through export and import") {
@@ -243,10 +243,10 @@ TEST_CASE("[G4MFMesh4D] Coincident vertices retain distinct dense bindings throu
 			texture_map.append(i < box_vertex_count ? Vector3(0, 0, 0) : Vector3(1, 1, 1));
 		}
 		if (binding_mode & 1) {
-			source->set_poly_cell_dense_normals(Vector2i(0, 0), { normals });
+			source->set_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY, { normals });
 		}
 		if (binding_mode & 2) {
-			source->set_poly_cell_dense_texture_map(Vector2i(0, 0), { texture_map });
+			source->set_poly_cell_dense_texture_map(PolyMesh4D::PER_VERTEX_KEY, { texture_map });
 		}
 		REQUIRE(source->is_mesh_data_valid());
 		Ref<G4MFState4D> state;
@@ -260,8 +260,8 @@ TEST_CASE("[G4MFMesh4D] Coincident vertices retain distinct dense bindings throu
 		const PackedInt32Array source_edges = source->get_edge_indices();
 		const PackedInt32Array imported_edges = imported->get_edge_indices();
 		REQUIRE(imported_edges.size() == source_edges.size());
-		const Vector<PackedVector4Array> imported_normals = imported->get_poly_cell_dense_normals(Vector2i(0, 0));
-		const Vector<PackedVector3Array> imported_texture_map = imported->get_poly_cell_dense_texture_map(Vector2i(0, 0));
+		const Vector<PackedVector4Array> imported_normals = imported->get_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY);
+		const Vector<PackedVector3Array> imported_texture_map = imported->get_poly_cell_dense_texture_map(PolyMesh4D::PER_VERTEX_KEY);
 		if (binding_mode & 1) {
 			REQUIRE(imported_normals.size() == 1);
 		}

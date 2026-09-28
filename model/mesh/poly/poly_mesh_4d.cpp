@@ -20,6 +20,7 @@ const Vector2i PolyMesh4D::CELL_TO_VERT_KEY = Vector2i(3, 0);
 const Vector2i PolyMesh4D::FACE_TO_VERT_KEY = Vector2i(2, 0);
 const Vector2i PolyMesh4D::PER_CELL_KEY = Vector2i(3, 3);
 const Vector2i PolyMesh4D::PER_FACE_KEY = Vector2i(2, 2);
+const Vector2i PolyMesh4D::PER_VERTEX_KEY = Vector2i(0, 0);
 #endif
 
 bool PolyMesh4D::is_poly_mesh_data_valid() {

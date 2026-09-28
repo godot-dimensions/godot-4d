@@ -444,17 +444,17 @@ Ref<SingleSurfaceMesh4D> G4MFMeshSurface4D::import_generate_mesh_surface(const R
 }
 
 void G4MFMeshSurface4D::_export_reposition_vertex_binding_to_shared(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, const PackedInt32Array &p_vertex_old_to_shared_map) {
-	// Special case: The dense (0, 0) binding is positioned by local vertex index, with each
+	// Special case: The dense per-vertex binding is positioned by local vertex index, with each
 	// value being a value index (not a vertex index), so reposition it by scattering
 	// each entry to its shared vertex index rather than remapping the stored values.
-	if (!r_indices.has(Vector2i(0, 0))) {
+	if (!r_indices.has(PolyMesh4D::PER_VERTEX_KEY)) {
 		return;
 	}
-	const Vector<PackedInt32Array> &old_binding = r_indices[Vector2i(0, 0)];
+	const Vector<PackedInt32Array> &old_binding = r_indices[PolyMesh4D::PER_VERTEX_KEY];
 	if (old_binding.is_empty() || old_binding[0].is_empty()) {
 		// A key with no data means the surface has no per-vertex values. Drop it so that it is
 		// not written as a binding made entirely of placeholders, which would imply it has data.
-		r_indices.erase(Vector2i(0, 0));
+		r_indices.erase(PolyMesh4D::PER_VERTEX_KEY);
 		return;
 	}
 	const PackedInt32Array &old_vertex_bindings = old_binding[0];
@@ -475,14 +475,14 @@ void G4MFMeshSurface4D::_export_reposition_vertex_binding_to_shared(HashMap<Vect
 	for (int64_t local_vertex_index = 0; local_vertex_index < old_vertex_bindings.size(); local_vertex_index++) {
 		shared_vertex_bindings.set(p_vertex_old_to_shared_map[local_vertex_index], old_vertex_bindings[local_vertex_index]);
 	}
-	r_indices[Vector2i(0, 0)] = Vector<PackedInt32Array>{ shared_vertex_bindings };
+	r_indices[PolyMesh4D::PER_VERTEX_KEY] = Vector<PackedInt32Array>{ shared_vertex_bindings };
 }
 
 void G4MFMeshSurface4D::_export_fill_vertex_binding_placeholders(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, PackedVector4Array &r_values) {
-	if (!r_indices.has(Vector2i(0, 0))) {
+	if (!r_indices.has(PolyMesh4D::PER_VERTEX_KEY)) {
 		return;
 	}
-	PackedInt32Array vertex_bindings = r_indices[Vector2i(0, 0)][0];
+	PackedInt32Array vertex_bindings = r_indices[PolyMesh4D::PER_VERTEX_KEY][0];
 	if (!vertex_bindings.has(-1)) {
 		return; // Every shared vertex in range has a value, so no placeholder is needed.
 	}
@@ -493,14 +493,14 @@ void G4MFMeshSurface4D::_export_fill_vertex_binding_placeholders(HashMap<Vector2
 			vertex_bindings.set(i, placeholder_value_index);
 		}
 	}
-	r_indices[Vector2i(0, 0)] = Vector<PackedInt32Array>{ vertex_bindings };
+	r_indices[PolyMesh4D::PER_VERTEX_KEY] = Vector<PackedInt32Array>{ vertex_bindings };
 }
 
 void G4MFMeshSurface4D::_export_fill_vertex_binding_placeholders(HashMap<Vector2i, Vector<PackedInt32Array>> &r_indices, PackedVector3Array &r_values) {
-	if (!r_indices.has(Vector2i(0, 0))) {
+	if (!r_indices.has(PolyMesh4D::PER_VERTEX_KEY)) {
 		return;
 	}
-	PackedInt32Array vertex_bindings = r_indices[Vector2i(0, 0)][0];
+	PackedInt32Array vertex_bindings = r_indices[PolyMesh4D::PER_VERTEX_KEY][0];
 	if (!vertex_bindings.has(-1)) {
 		return; // Every shared vertex in range has a value, so no placeholder is needed.
 	}
@@ -511,7 +511,7 @@ void G4MFMeshSurface4D::_export_fill_vertex_binding_placeholders(HashMap<Vector2
 			vertex_bindings.set(i, placeholder_value_index);
 		}
 	}
-	r_indices[Vector2i(0, 0)] = Vector<PackedInt32Array>{ vertex_bindings };
+	r_indices[PolyMesh4D::PER_VERTEX_KEY] = Vector<PackedInt32Array>{ vertex_bindings };
 }
 
 TypedArray<G4MFMeshSurfaceBindingGeometry4D> G4MFMeshSurface4D::_export_encode_geometry_bindings(const Ref<G4MFState4D> &p_g4mf_state, const HashMap<Vector2i, Vector<PackedInt32Array>> &p_indices, const bool p_deduplicate) {
@@ -677,8 +677,8 @@ Ref<G4MFMeshSurface4D> G4MFMeshSurface4D::export_convert_mesh_surface_for_state(
 		if (poly_mesh.is_valid()) {
 			const HashMap<Vector2i, Vector<PackedInt32Array>> normal_indices = poly_mesh->get_all_poly_cell_normal_indices();
 			const HashMap<Vector2i, Vector<PackedInt32Array>> texture_map_indices = poly_mesh->get_all_poly_cell_texture_map_indices();
-			const Vector<PackedInt32Array> *normal_binding = normal_indices.getptr(Vector2i(0, 0));
-			const Vector<PackedInt32Array> *texture_map_binding = texture_map_indices.getptr(Vector2i(0, 0));
+			const Vector<PackedInt32Array> *normal_binding = normal_indices.getptr(PolyMesh4D::PER_VERTEX_KEY);
+			const Vector<PackedInt32Array> *texture_map_binding = texture_map_indices.getptr(PolyMesh4D::PER_VERTEX_KEY);
 			if (normal_binding != nullptr && !normal_binding->is_empty()) {
 				vertex_normal_indices = (*normal_binding)[0];
 			}
