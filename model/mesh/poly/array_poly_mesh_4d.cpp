@@ -2301,19 +2301,6 @@ HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_n
 	return HashMap<Vector2i, Vector<PackedInt32Array>>(_all_poly_cell_normal_indices);
 }
 
-Vector<PackedVector4Array> ArrayPolyMesh4D::get_poly_cell_dense_normals(const Vector2i &p_key) const {
-	Vector<PackedVector4Array> dense;
-	if (!_all_poly_cell_normal_indices.has(p_key)) {
-		return dense;
-	}
-	const Vector<PackedInt32Array> &index_arrays = _all_poly_cell_normal_indices[p_key];
-	dense.resize(index_arrays.size());
-	for (int64_t i = 0; i < index_arrays.size(); i++) {
-		dense.set(i, _sample_normal_values_internal(index_arrays[i]));
-	}
-	return dense;
-}
-
 void ArrayPolyMesh4D::set_poly_cell_dense_normals(const Vector2i &p_key, const Vector<PackedVector4Array> &p_dense_normals) {
 	if (p_dense_normals.is_empty()) {
 		_all_poly_cell_normal_indices.erase(p_key);
@@ -2326,28 +2313,6 @@ void ArrayPolyMesh4D::set_poly_cell_dense_normals(const Vector2i &p_key, const V
 		_all_poly_cell_normal_indices.insert(p_key, index_arrays);
 	}
 	poly_mesh_clear_cache(true, true);
-}
-
-Vector<PackedVector3Array> ArrayPolyMesh4D::get_poly_cell_dense_texture_map(const Vector2i &p_key) const {
-	Vector<PackedVector3Array> dense;
-	if (!_all_poly_cell_texture_map_indices.has(p_key)) {
-		return dense;
-	}
-	const Vector<PackedInt32Array> &index_arrays = _all_poly_cell_texture_map_indices[p_key];
-	const int64_t value_count = _poly_cell_texture_map_values.size();
-	dense.resize(index_arrays.size());
-	for (int64_t i = 0; i < index_arrays.size(); i++) {
-		const PackedInt32Array &indices = index_arrays[i];
-		PackedVector3Array values;
-		values.resize(indices.size());
-		for (int64_t j = 0; j < indices.size(); j++) {
-			const int32_t value_index = indices[j];
-			ERR_CONTINUE(value_index < 0 || value_index >= value_count);
-			values.set(j, _poly_cell_texture_map_values[value_index]);
-		}
-		dense.set(i, values);
-	}
-	return dense;
 }
 
 void ArrayPolyMesh4D::set_poly_cell_dense_texture_map(const Vector2i &p_key, const Vector<PackedVector3Array> &p_dense_texture_map) {

@@ -959,6 +959,42 @@ PolyMesh4D::PolyDataDictionary PolyMesh4D::get_all_poly_cell_texture_map_indices
 	return result;
 }
 
+Vector<PackedVector4Array> PolyMesh4D::get_poly_cell_dense_normals(const Vector2i &p_key) {
+	Vector<PackedVector4Array> dense;
+	const HashMap<Vector2i, Vector<PackedInt32Array>> all_indices = get_all_poly_cell_normal_indices();
+	if (!all_indices.has(p_key)) {
+		return dense;
+	}
+	const PackedVector4Array values = get_poly_cell_normal_values();
+	for (const PackedInt32Array &indices : all_indices[p_key]) {
+		PackedVector4Array sampled;
+		sampled.resize(indices.size());
+		for (int64_t i = 0; i < indices.size(); i++) {
+			sampled.set(i, indices[i] >= 0 && indices[i] < values.size() ? values[indices[i]] : Vector4());
+		}
+		dense.push_back(sampled);
+	}
+	return dense;
+}
+
+Vector<PackedVector3Array> PolyMesh4D::get_poly_cell_dense_texture_map(const Vector2i &p_key) {
+	Vector<PackedVector3Array> dense;
+	const HashMap<Vector2i, Vector<PackedInt32Array>> all_indices = get_all_poly_cell_texture_map_indices();
+	if (!all_indices.has(p_key)) {
+		return dense;
+	}
+	const PackedVector3Array values = get_poly_cell_texture_map_values();
+	for (const PackedInt32Array &indices : all_indices[p_key]) {
+		PackedVector3Array sampled;
+		sampled.resize(indices.size());
+		for (int64_t i = 0; i < indices.size(); i++) {
+			sampled.set(i, indices[i] >= 0 && indices[i] < values.size() ? values[indices[i]] : Vector3());
+		}
+		dense.push_back(sampled);
+	}
+	return dense;
+}
+
 PackedVector4Array PolyMesh4D::compute_face_normals(const Vector4 &p_hyperplane_normal) {
 	PackedVector4Array ret;
 	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);

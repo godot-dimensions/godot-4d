@@ -116,11 +116,9 @@ public:
 	virtual HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_texture_map_indices() override;
 	void set_all_poly_cell_texture_map_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_texture_map_indices);
 
-	// Dense views of the indexed data bindings, for code that works with expanded values.
-	// The setters deduplicate the values into the value pool and store indices.
-	Vector<PackedVector4Array> get_poly_cell_dense_normals(const Vector2i &p_key) const;
+	// Setters for dense views of the indexed data bindings, the counterparts of the getters on PolyMesh4D.
+	// They deduplicate the values into the value pool and store indices.
 	void set_poly_cell_dense_normals(const Vector2i &p_key, const Vector<PackedVector4Array> &p_dense_normals);
-	Vector<PackedVector3Array> get_poly_cell_dense_texture_map(const Vector2i &p_key) const;
 	void set_poly_cell_dense_texture_map(const Vector2i &p_key, const Vector<PackedVector3Array> &p_dense_texture_map);
 
 	void set_all_poly_cell_normal_indices_bind(const PolyDataDictionary &p_all_poly_cell_normal_indices);

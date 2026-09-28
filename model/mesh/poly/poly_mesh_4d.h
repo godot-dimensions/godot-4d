@@ -91,6 +91,10 @@ public:
 
 	virtual HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_normal_indices();
 	virtual HashMap<Vector2i, Vector<PackedInt32Array>> get_all_poly_cell_texture_map_indices();
+	// Dense views of the indexed data bindings, for code that works with expanded values. These are built from the
+	// indices and value pools above, so any poly mesh provides them. An index outside the pool reads as zero.
+	Vector<PackedVector4Array> get_poly_cell_dense_normals(const Vector2i &p_key);
+	Vector<PackedVector3Array> get_poly_cell_dense_texture_map(const Vector2i &p_key);
 
 #if GODOT_HAS_TYPED_DICTIONARY
 	using PolyDataDictionary = TypedDictionary<Vector2i, Array>;
