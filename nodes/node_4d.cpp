@@ -482,7 +482,7 @@ Vector4 Node4D::get_global_position() const {
 void Node4D::set_global_position(const Vector4 &p_global_position) {
 	Node4D *node_4d_parent = Object::cast_to<Node4D>(get_parent());
 	if (node_4d_parent) {
-		set_position(node_4d_parent->get_transform().xform_inv(p_global_position));
+		set_position(node_4d_parent->get_global_transform().xform_inv(p_global_position));
 	} else {
 		set_position(p_global_position);
 	}
