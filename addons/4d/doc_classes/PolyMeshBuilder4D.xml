@@ -15,9 +15,19 @@
 			<param index="1" name="which_surface" type="int" default="-1" />
 			<param index="2" name="deduplicate" type="bool" default="true" />
 			<description>
-				Converts a 3D [ArrayMesh] into a 4D [ArrayPolyMesh4D] by copying the vertex positions, inferring the edges of faces, and translating the faces to use those edges.
+				Converts a 3D [Mesh] into a 4D [ArrayPolyMesh4D] by copying the vertex positions, inferring the edges of faces, and translating the faces to use those edges.
 				If [param which_surface] is -1, then all surfaces are used, otherwise the specified surface is used. If [param deduplicate] is true, then vertices and edges will be deduplicated so that vertices with the same position will be merged into a single vertex, otherwise separate vertices and edges in the input will be kept separate.
 				The resulting mesh will have no 3D cells or 4D volumes, only the 2D faces brought in with as minimal modifications as possible. After conversion, the mesh can be further modified with other functions in this class to extrude the 2D faces into 3D cells and/or 4D volumes to build a 4D mesh.
+			</description>
+		</method>
+		<method name="delete_interior" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="mesh_4d" type="ArrayPolyMesh4D" />
+			<description>
+				Deletes the interior of a poly mesh, meaning any interior 3D cells shared by two 4D volumes, as well as all 4D volumes and all higher-dimensional elements. This operates on [param mesh_4d], in place, turning a solid poly mesh into its boundary.
+				Any 3D cells shared by two volumes are considered to be structural scaffolding on the interior of the mesh. These cells do not result in any visible geometry and are not rendered.
+				Returns the number of 3D cells deleted. A mesh without volumes is left unchanged. Any bindings associated with the deleted elements are also removed.
+				This is the counterpart of [method extrude_linear] on a mesh with cells, whose output has one volume per input cell and an interior cell between each pair of adjacent input cells.
 			</description>
 		</method>
 		<method name="extrude_linear" qualifiers="static">

@@ -1815,6 +1815,51 @@ int64_t PolyMeshBuilder4D::merge_coplanar_faces(const Ref<ArrayPolyMesh4D> &p_me
 	return merge_count;
 }
 
+int64_t PolyMeshBuilder4D::delete_interior(const Ref<ArrayPolyMesh4D> &p_mesh_4d) {
+	ERR_FAIL_COND_V_MSG(p_mesh_4d.is_null() || !p_mesh_4d->is_mesh_data_valid(), 0, "PolyMeshBuilder4D: Cannot delete the volumes of an invalid mesh.");
+	Vector<Vector<PackedInt32Array>> poly_cell_indices = p_mesh_4d->get_poly_cell_indices();
+	// If the mesh has no volumes, there is nothing to delete. No cells could be interior without volumes.
+	if (poly_cell_indices.size() < 3) {
+		return 0;
+	}
+	// Gather the interior cells first. A cell shared by two volumes lies between them, inside the solid, so it is
+	// not part of its boundary. The list is in descending order, so that deleting them leaves the lower indices valid.
+	PackedInt32Array interior_cells;
+	{
+		PackedInt32Array cell_volume_counts;
+		cell_volume_counts.resize(poly_cell_indices[1].size());
+		cell_volume_counts.fill(0);
+		for (const PackedInt32Array &volume : poly_cell_indices[2]) {
+			for (const int32_t cell_index : volume) {
+				cell_volume_counts.set(cell_index, cell_volume_counts[cell_index] + 1);
+			}
+		}
+		for (int64_t cell_index = cell_volume_counts.size() - 1; cell_index >= 0; cell_index--) {
+			if (cell_volume_counts[cell_index] > 1) {
+				interior_cells.append((int32_t)cell_index);
+			}
+		}
+	}
+	// Drop the volumes and the bindings that refer to them before deleting any cells, so that those deletions have
+	// no volumes to cascade into and adjust.
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : p_mesh_4d->get_all_poly_cell_normal_indices()) {
+		if (kv.key.x >= 4) {
+			p_mesh_4d->set_poly_cell_dense_normals(kv.key, Vector<PackedVector4Array>());
+		}
+	}
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : p_mesh_4d->get_all_poly_cell_texture_map_indices()) {
+		if (kv.key.x >= 4) {
+			p_mesh_4d->set_poly_cell_dense_texture_map(kv.key, Vector<PackedVector3Array>());
+		}
+	}
+	poly_cell_indices.resize(2);
+	p_mesh_4d->set_poly_cell_indices(poly_cell_indices);
+	for (const int32_t cell_index : interior_cells) {
+		p_mesh_4d->delete_poly_element(3, cell_index);
+	}
+	return interior_cells.size();
+}
+
 void PolyMeshBuilder4D::make_boundary_normals_topologically_consistent(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const PackedInt32Array &p_authoritative) {
 	// TODO: This function relies on averages and pivot overrides, which breaks in non-convex edge cases.
 	// Properly solving this in 4D is non-trivial, this can be improved in the future if needed.
@@ -2920,6 +2965,7 @@ void PolyMeshBuilder4D::_bind_methods() {
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("subdivide_elements", "input_mesh", "dimension", "elements"), &PolyMeshBuilder4D::subdivide_elements, DEFVAL(PackedInt32Array()));
 
 	// In-place adjustments to the given mesh.
+	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("delete_interior", "mesh_4d"), &PolyMeshBuilder4D::delete_interior);
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_boundary_normals_topologically_consistent", "mesh_4d", "authoritative_boundary_cells"), &PolyMeshBuilder4D::make_boundary_normals_topologically_consistent);
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("merge_coplanar_faces", "mesh_4d", "angle_tolerance_radians"), &PolyMeshBuilder4D::merge_coplanar_faces, DEFVAL(0.001));
 }

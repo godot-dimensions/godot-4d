@@ -180,6 +180,7 @@ public:
 	static Ref<ArrayPolyMesh4D> reconstruct_from_tetra_mesh(const Ref<TetraMesh4D> &p_tetra_mesh);
 
 	// In-place adjustments to the given mesh.
+	static int64_t delete_interior(const Ref<ArrayPolyMesh4D> &p_mesh_4d);
 	static void make_boundary_normals_topologically_consistent(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const PackedInt32Array &p_authoritative);
 	static int64_t merge_coplanar_faces(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians = 0.001);
 	static PackedInt32Array subdivide_elements(const Ref<ArrayPolyMesh4D> &p_input_mesh, const int p_dimension, const PackedInt32Array &p_elements = PackedInt32Array());

@@ -914,4 +914,37 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Merge coplanar faces") {
 	CHECK(unordered->get_poly_cell_indices()[0].size() == 3);
 }
 
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Delete interior keeps only the boundary cells on the outside") {
+	// Two squares sharing an edge, extruded twice: first into two 3D cuboid cells
+	// sharing a 2D face, then into two 4D box volumes sharing a 3D cuboid cell.
+	// That shared cell is interior to the solid and not part of its outside boundary.
+	Ref<ArrayPolyMesh4D> strip;
+	strip.instantiate();
+	strip->append_vertices({ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(2, 0, 0, 0), Vector4(2, 1, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0) }, false);
+	for (const PackedInt32Array &loop : Vector<PackedInt32Array>{ { 0, 1, 4, 5 }, { 1, 2, 3, 4 } }) {
+		PackedInt32Array face;
+		for (int64_t i = 0; i < loop.size(); i++) {
+			face.append((int32_t)strip->append_edge_indices(loop[i], loop[(i + 1) % loop.size()]));
+		}
+		strip->append_poly_cell(2, face);
+	}
+	Ref<ArrayPolyMesh4D> slab = PolyMeshBuilder4D::extrude_linear(strip, Vector4(0, 1, 0, 0));
+	REQUIRE(slab->is_mesh_data_valid());
+	REQUIRE(slab->get_poly_cell_indices().size() == 2);
+	REQUIRE(slab->get_poly_cell_indices()[1].size() == 2);
+	Ref<ArrayPolyMesh4D> solid = PolyMeshBuilder4D::extrude_linear(slab, Vector4(0, 0, 0, 1));
+	REQUIRE(solid->is_mesh_data_valid());
+	REQUIRE(solid->get_poly_cell_indices().size() == 3);
+	REQUIRE(solid->get_poly_cell_indices()[2].size() == 2);
+	REQUIRE_MESSAGE(solid->get_poly_cell_indices()[1].size() == 15, "Two 4D boxes sharing one cell have 15 cells.");
+	CHECK_MESSAGE(PolyMeshBuilder4D::delete_interior(solid) == 1, "Only the cell shared by both volumes is interior.");
+	CHECK(solid->is_mesh_data_valid());
+	CHECK_MESSAGE(solid->get_poly_cell_indices().size() == 2, "The volumes must be gone.");
+	CHECK_MESSAGE(solid->get_poly_cell_indices()[1].size() == 14, "The 14 boundary cells must remain.");
+	CHECK(solid->get_poly_cell_boundary_normals().size() == 14);
+	// A mesh without volumes is left alone.
+	CHECK(PolyMeshBuilder4D::delete_interior(slab) == 0);
+	CHECK(slab->get_poly_cell_indices()[1].size() == 2);
+}
+
 } // namespace TestPolyMeshBuilder4D
