@@ -999,12 +999,13 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 					// Set the normal for this vertex in the cell based on which face it came from.
 					if (vert_in_first == -1) {
 						CRASH_COND(vert_in_second == -1); // This vertex should be in at least one of the two faces.
-						this_cell_vert_normals.set(vert_in_cell, normal_from_second);
+						this_cell_vert_normals.set(vert_in_cell, normal_from_second.normalized());
 					} else if (vert_in_second == -1) {
-						this_cell_vert_normals.set(vert_in_cell, normal_from_first);
+						this_cell_vert_normals.set(vert_in_cell, normal_from_first.normalized());
 					} else {
 						// This vertex is shared by both the first and second copy faces (it was deduplicated), so average the normals from both faces for this vertex.
-						this_cell_vert_normals.set(vert_in_cell, (normal_from_first + normal_from_second) * 0.5);
+						// Averaging shortens the normals when they differ, so renormalize the result.
+						this_cell_vert_normals.set(vert_in_cell, (normal_from_first + normal_from_second).normalized());
 					}
 				}
 				cell_vert_normals.set(cell_index, this_cell_vert_normals);
@@ -2484,9 +2485,10 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 									value += parent_values[found];
 								}
 							}
-							if (value.length_squared() > (real_t)CMP_EPSILON) {
-								value = value.normalized();
-							}
+						}
+						// Normalize copied values too, since the input normals are not required to be unit length.
+						if (value.length_squared() > (real_t)CMP_EPSILON) {
+							value = value.normalized();
 						}
 						cell_values.set(vert_num, value);
 					}
@@ -2589,9 +2591,10 @@ PackedInt32Array PolyMeshBuilder4D::subdivide_elements(const Ref<ArrayPolyMesh4D
 									value += parent_values[found];
 								}
 							}
-							if (value.length_squared() > (real_t)CMP_EPSILON) {
-								value = value.normalized();
-							}
+						}
+						// Normalize copied values too, since the input normals are not required to be unit length.
+						if (value.length_squared() > (real_t)CMP_EPSILON) {
+							value = value.normalized();
 						}
 						cell_values.set(vert_num, value);
 					}

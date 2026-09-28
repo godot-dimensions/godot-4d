@@ -445,6 +445,263 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Extrude spin gives the swept faces edg
 	}
 }
 
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Extrude linear carries corner data into the extruded cells") {
+	// Each vertex gets its own normal and UV, so any cell corner that receives another vertex's data is detectable.
+	Ref<ArrayMesh> quad_mesh;
+	quad_mesh.instantiate();
+	PackedVector3Array quad_vertices = { Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0), Vector3(2, 2, 0) };
+	PackedVector3Array quad_normals = { Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0) };
+	PackedVector2Array quad_uvs = { Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1) };
+	PackedInt32Array quad_indices = { 0, 2, 1, 3, 1, 2 };
+	Array arrays;
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = quad_vertices;
+	arrays[Mesh::ARRAY_NORMAL] = quad_normals;
+	arrays[Mesh::ARRAY_TEX_UV] = quad_uvs;
+	arrays[Mesh::ARRAY_INDEX] = quad_indices;
+	quad_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+	Ref<ArrayPolyMesh4D> flat = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(quad_mesh);
+	REQUIRE(flat->is_poly_mesh_data_valid());
+	const PackedVector4Array input_vertices = flat->get_poly_cell_vertex_positions();
+	const Vector<PackedInt32Array> input_face_vertices = flat->get_all_poly_cell_vertex_indices(2, false);
+	const Vector<PackedVector4Array> input_corner_normals = flat->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+	const Vector<PackedVector3Array> input_corner_texture_maps = flat->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE(input_face_vertices.size() == 2);
+	REQUIRE(input_corner_normals.size() == 2);
+	REQUIRE(input_corner_texture_maps.size() == 2);
+	Ref<ArrayPolyMesh4D> extruded = PolyMeshBuilder4D::extrude_linear(flat, Vector4(0, 0, 0, 1));
+	REQUIRE(extruded->is_poly_mesh_data_valid());
+	const PackedVector4Array vertices = extruded->get_poly_cell_vertex_positions();
+	const Vector<PackedInt32Array> cell_vertices = extruded->get_all_poly_cell_vertex_indices(3, false);
+	REQUIRE_MESSAGE(cell_vertices.size() == 2, "Each input face must extrude into one cell.");
+	const Vector<PackedVector4Array> cell_corner_normals = extruded->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
+	const Vector<PackedVector3Array> cell_corner_texture_maps = extruded->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+	REQUIRE_MESSAGE(cell_corner_normals.size() == 2, "Every extruded cell must have corner normals.");
+	REQUIRE_MESSAGE(cell_corner_texture_maps.size() == 2, "Every extruded cell must have corner texture maps.");
+	for (int64_t cell_index = 0; cell_index < 2; cell_index++) {
+		const PackedInt32Array &corners = cell_vertices[cell_index];
+		REQUIRE(corners.size() == 6);
+		REQUIRE(cell_corner_normals[cell_index].size() == 6);
+		REQUIRE(cell_corner_texture_maps[cell_index].size() == 6);
+		// Each corner is a copy of an input vertex, on the negative or positive W side of the extrusion.
+		PackedInt32Array corner_input_vertices;
+		for (const int32_t vertex_index : corners) {
+			Vector4 flattened = vertices[vertex_index];
+			flattened.w = 0.0;
+			const int64_t input_vertex = input_vertices.find(flattened);
+			REQUIRE_MESSAGE(input_vertex != -1, "Every extruded vertex must be a copy of an input vertex.");
+			corner_input_vertices.append(input_vertex);
+		}
+		// The cell is a prism over the one input face that has all of its corners' input vertices.
+		int32_t input_face = -1;
+		for (int32_t candidate = 0; candidate < input_face_vertices.size(); candidate++) {
+			bool has_all = true;
+			for (const int32_t input_vertex : corner_input_vertices) {
+				has_all = has_all && input_face_vertices[candidate].has(input_vertex);
+			}
+			if (has_all) {
+				input_face = candidate;
+			}
+		}
+		REQUIRE(input_face != -1);
+		for (int64_t corner = 0; corner < corners.size(); corner++) {
+			const int64_t vert_in_face = input_face_vertices[input_face].find(corner_input_vertices[corner]);
+			// The second copy of the input faces, on the positive W side, has its texture maps offset by 1 in Z.
+			const real_t expected_z_offset = vertices[corners[corner]].w > (real_t)0.0 ? (real_t)1.0 : (real_t)0.0;
+			CHECK_MESSAGE(cell_corner_normals[cell_index][corner].is_equal_approx(input_corner_normals[input_face][vert_in_face]), "Each cell corner must take its vertex's corner normal from the input face.");
+			CHECK_MESSAGE(cell_corner_texture_maps[cell_index][corner].is_equal_approx(input_corner_texture_maps[input_face][vert_in_face] + Vector3(0, 0, expected_z_offset)), "Each cell corner must take its vertex's texture map from the copy of the input face it lies on.");
+		}
+	}
+}
+
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Extrude spin carries corner data into the swept cells") {
+	// One triangle with a vertex on the spin axis (X = 0, W = 0), which every step's copy of the triangle shares.
+	// Each vertex gets its own normal and UV, so any cell corner that receives another vertex's data is detectable.
+	Ref<ArrayMesh> mesh_3d;
+	mesh_3d.instantiate();
+	PackedVector3Array vertices_3d = { Vector3(0, 0.5, 0), Vector3(1.5, 0, 0), Vector3(1.5, 1, 0.5) };
+	PackedVector3Array normals_3d = { Vector3(0.6, 0, 0.8), Vector3(0, 0, 1), Vector3(0.8, 0.6, 0) };
+	PackedVector2Array uvs_3d = { Vector2(0, 0), Vector2(1, 0), Vector2(0, 1) };
+	Array arrays;
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = vertices_3d;
+	arrays[Mesh::ARRAY_NORMAL] = normals_3d;
+	arrays[Mesh::ARRAY_TEX_UV] = uvs_3d;
+	mesh_3d->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+	Ref<ArrayPolyMesh4D> flat = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(mesh_3d);
+	REQUIRE(flat->is_poly_mesh_data_valid());
+	const PackedVector4Array input_vertices = flat->get_poly_cell_vertex_positions();
+	REQUIRE(input_vertices.size() == 3);
+	const PackedInt32Array input_face_vertices = flat->get_all_poly_cell_vertex_indices(2, false)[0];
+	const PackedVector4Array input_corner_normals = flat->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY)[0];
+	const PackedVector3Array input_corner_texture_maps = flat->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY)[0];
+	REQUIRE(input_corner_normals.size() == 3);
+	REQUIRE(input_corner_texture_maps.size() == 3);
+	const int32_t axis_vertex = input_vertices.find(Vector4(0, 0.5, 0, 0));
+	REQUIRE(axis_vertex != -1);
+	const int steps = 4;
+	const double radians_per_step = Math_TAU / steps;
+	Ref<ArrayPolyMesh4D> spun = PolyMeshBuilder4D::extrude_spin_from_faces_xw(flat, steps);
+	REQUIRE(spun->is_poly_mesh_data_valid());
+	const PackedVector4Array spun_vertices = spun->get_poly_cell_vertex_positions();
+	const Vector<PackedInt32Array> cell_vertices = spun->get_all_poly_cell_vertex_indices(3, false);
+	REQUIRE_MESSAGE(cell_vertices.size() == steps, "The triangle must sweep into one cell per step.");
+	const Vector<PackedVector4Array> cell_corner_normals = spun->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
+	const Vector<PackedVector3Array> cell_corner_texture_maps = spun->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+	REQUIRE_MESSAGE(cell_corner_normals.size() == steps, "Every swept cell must have corner normals.");
+	REQUIRE_MESSAGE(cell_corner_texture_maps.size() == steps, "Every swept cell must have corner texture maps.");
+	PackedInt32Array seen_base_steps;
+	for (int64_t cell_index = 0; cell_index < steps; cell_index++) {
+		const PackedInt32Array &corners = cell_vertices[cell_index];
+		REQUIRE(cell_corner_normals[cell_index].size() == corners.size());
+		REQUIRE(cell_corner_texture_maps[cell_index].size() == corners.size());
+		// Every corner off the axis is a rotated copy of an input vertex at one of two consecutive steps.
+		PackedInt32Array corner_input_vertices;
+		PackedInt32Array corner_steps;
+		for (const int32_t vertex_index : corners) {
+			int32_t found_vertex = -1;
+			int found_step = -1;
+			for (int step = 0; step < steps && found_vertex == -1; step++) {
+				const Basis4D rotation = Basis4D::from_xw(step * radians_per_step);
+				for (int32_t input_vertex = 0; input_vertex < input_vertices.size(); input_vertex++) {
+					if (rotation.xform(input_vertices[input_vertex]).is_equal_approx(spun_vertices[vertex_index])) {
+						found_vertex = input_vertex;
+						found_step = step;
+						break;
+					}
+				}
+			}
+			REQUIRE_MESSAGE(found_vertex != -1, "Every spun vertex must be a rotated copy of an input vertex.");
+			corner_input_vertices.append(found_vertex);
+			corner_steps.append(found_vertex == axis_vertex ? -1 : found_step);
+		}
+		int base_step = -1;
+		for (const int32_t step : corner_steps) {
+			if (step != -1 && corner_steps.has((step + 1) % steps)) {
+				base_step = step;
+			}
+		}
+		REQUIRE(base_step != -1);
+		seen_base_steps.append(base_step);
+		for (int64_t corner = 0; corner < corners.size(); corner++) {
+			const int64_t vert_in_face = input_face_vertices.find(corner_input_vertices[corner]);
+			REQUIRE(vert_in_face != -1);
+			const Vector4 input_normal = input_corner_normals[vert_in_face];
+			const Vector3 input_texture_map = input_corner_texture_maps[vert_in_face];
+			Vector4 expected_normal;
+			real_t expected_z;
+			if (corner_steps[corner] == -1) {
+				// The axis vertex is shared by both copies of the triangle, so it averages their values. Averaging the
+				// two rotated normals shortens them, so the result must be renormalized.
+				expected_normal = (Basis4D::from_xw(base_step * radians_per_step).xform(input_normal) + Basis4D::from_xw((base_step + 1) * radians_per_step).xform(input_normal)).normalized();
+				expected_z = (real_t)((base_step + 0.5) / steps);
+			} else {
+				expected_normal = Basis4D::from_xw(corner_steps[corner] * radians_per_step).xform(input_normal).normalized();
+				// The copy of the triangle at the next step is one step further along Z, even when it wraps to step 0.
+				expected_z = (base_step + (corner_steps[corner] == base_step ? 0 : 1)) / (real_t)steps;
+			}
+			CHECK_MESSAGE((cell_corner_normals[cell_index][corner] - expected_normal).length() < 0.0001, "Each cell corner must take its vertex's corner normal, rotated by its step.");
+			CHECK_MESSAGE((cell_corner_texture_maps[cell_index][corner] - (input_texture_map + Vector3(0, 0, expected_z))).length() < 0.0001, "Each cell corner must take its vertex's texture map, offset in Z by its step.");
+		}
+	}
+	for (int step = 0; step < steps; step++) {
+		CHECK_MESSAGE(seen_base_steps.has(step), "Every step, including the last one that wraps around to the first, must sweep a cell.");
+	}
+}
+
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Subdivide interpolates corner normals and texture maps") {
+	// Corner values set from an affine function of the vertex position stay affine under subdivision, since every new
+	// vertex is the centroid of the vertices it averages. The normals are not unit length, so every subdivided corner,
+	// including those on the original vertices, must be normalized.
+	auto normal_at = [](const Vector4 &p_position) -> Vector4 {
+		return Vector4(1.0 + p_position.x, 2.0 + p_position.y, 3.0 + p_position.z, 4.0 + p_position.w);
+	};
+	auto texture_map_at = [](const Vector4 &p_position) -> Vector3 {
+		return Vector3(p_position.x * 0.5 + 0.5, p_position.y * 0.5 + 0.5, (p_position.z + p_position.w) * 0.25 + 0.5);
+	};
+	SUBCASE("Boundary cell corners of a tesseract") {
+		Ref<BoxPolyMesh4D> box;
+		box.instantiate();
+		box->set_size(Vector4(2, 2, 2, 2));
+		Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+		const PackedVector4Array old_vertices = mesh->get_poly_cell_vertex_positions();
+		const Vector<PackedInt32Array> old_cell_vertices = mesh->get_all_poly_cell_vertex_indices(3, false);
+		Vector<PackedVector4Array> old_cell_normals;
+		Vector<PackedVector3Array> old_cell_texture_maps;
+		for (const PackedInt32Array &corners : old_cell_vertices) {
+			PackedVector4Array cell_normals;
+			PackedVector3Array cell_texture_maps;
+			for (const int32_t vertex_index : corners) {
+				cell_normals.append(normal_at(old_vertices[vertex_index]));
+				cell_texture_maps.append(texture_map_at(old_vertices[vertex_index]));
+			}
+			old_cell_normals.append(cell_normals);
+			old_cell_texture_maps.append(cell_texture_maps);
+		}
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, old_cell_normals);
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, old_cell_texture_maps);
+		REQUIRE(mesh->is_poly_mesh_data_valid());
+		PolyMeshBuilder4D::subdivide_elements(mesh, 3, PackedInt32Array());
+		REQUIRE(mesh->is_poly_mesh_data_valid());
+		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
+		const Vector<PackedInt32Array> cell_vertices = mesh->get_all_poly_cell_vertex_indices(3, false);
+		const Vector<PackedVector4Array> cell_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
+		const Vector<PackedVector3Array> cell_texture_maps = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(cell_vertices.size() == 64);
+		REQUIRE(cell_normals.size() == 64);
+		REQUIRE(cell_texture_maps.size() == 64);
+		for (int64_t cell_index = 0; cell_index < 64; cell_index++) {
+			const PackedInt32Array &corners = cell_vertices[cell_index];
+			REQUIRE(cell_normals[cell_index].size() == corners.size());
+			REQUIRE(cell_texture_maps[cell_index].size() == corners.size());
+			for (int64_t corner = 0; corner < corners.size(); corner++) {
+				const Vector4 position = vertices[corners[corner]];
+				CHECK_MESSAGE(cell_normals[cell_index][corner].is_equal_approx(normal_at(position).normalized()), "Each cell corner normal must be the normalized interpolation of its parent cell's corner normals.");
+				CHECK_MESSAGE(cell_texture_maps[cell_index][corner].is_equal_approx(texture_map_at(position)), "Each cell corner texture map must be the interpolation of its parent cell's corner texture maps.");
+			}
+		}
+	}
+	SUBCASE("Face corners of a flat mesh") {
+		Ref<ArrayMesh> quad_mesh;
+		quad_mesh.instantiate();
+		PackedVector3Array quad_vertices = { Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(2, 2, 0), Vector3(0, 2, 0) };
+		PackedInt32Array quad_indices = { 0, 2, 1, 0, 3, 2 };
+		Array arrays;
+		arrays.resize(Mesh::ARRAY_MAX);
+		arrays[Mesh::ARRAY_VERTEX] = quad_vertices;
+		arrays[Mesh::ARRAY_INDEX] = quad_indices;
+		quad_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+		Ref<ArrayPolyMesh4D> mesh = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(quad_mesh);
+		REQUIRE(mesh->is_poly_mesh_data_valid());
+		const PackedVector4Array old_vertices = mesh->get_poly_cell_vertex_positions();
+		const Vector<PackedInt32Array> old_face_vertices = mesh->get_all_poly_cell_vertex_indices(2, false);
+		Vector<PackedVector4Array> old_face_normals;
+		for (const PackedInt32Array &corners : old_face_vertices) {
+			PackedVector4Array face_normals;
+			for (const int32_t vertex_index : corners) {
+				face_normals.append(normal_at(old_vertices[vertex_index]));
+			}
+			old_face_normals.append(face_normals);
+		}
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY, old_face_normals);
+		REQUIRE(mesh->is_poly_mesh_data_valid());
+		PolyMeshBuilder4D::subdivide_elements(mesh, 2, PackedInt32Array());
+		REQUIRE(mesh->is_poly_mesh_data_valid());
+		const PackedVector4Array vertices = mesh->get_poly_cell_vertex_positions();
+		const Vector<PackedInt32Array> face_vertices = mesh->get_all_poly_cell_vertex_indices(2, false);
+		const Vector<PackedVector4Array> face_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+		REQUIRE(face_vertices.size() == 2 * 4);
+		REQUIRE(face_normals.size() == 2 * 4);
+		for (int64_t face_index = 0; face_index < face_vertices.size(); face_index++) {
+			const PackedInt32Array &corners = face_vertices[face_index];
+			REQUIRE(face_normals[face_index].size() == corners.size());
+			for (int64_t corner = 0; corner < corners.size(); corner++) {
+				CHECK_MESSAGE(face_normals[face_index][corner].is_equal_approx(normal_at(vertices[corners[corner]]).normalized()), "Each face corner normal must be the normalized interpolation of its parent face's corner normals.");
+			}
+		}
+	}
+}
+
 TEST_CASE("[PolyMeshBuilder4D] Reconstruct a thin box without merging its parallel faces") {
 	// The two large faces of a very thin cell are parallel planes a tiny distance apart. The coplanarity test
 	// that groups triangles into faces must keep them apart, so the thin box reconstructs with exactly the same
