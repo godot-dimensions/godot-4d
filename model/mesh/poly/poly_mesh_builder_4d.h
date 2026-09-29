@@ -160,6 +160,9 @@ class PolyMeshBuilder4D : public Object {
 	static bool _try_merge_coplanar_face_pair(const PackedInt32Array &p_face_a_edges, const PackedInt32Array &p_face_b_edges, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const real_t p_sin_tolerance, PackedInt32Array &r_merged_edges);
 	static bool _is_binding_affected_by_face_merge(const Vector2i &p_key);
 	static Vector<PackedInt32Array> _remap_binding_after_face_merge(const Vector2i &p_key, const Vector<PackedInt32Array> &p_old_binding, const Vector<PackedInt32Array> &p_element_sources, const Vector<PackedInt32Array> &p_old_sub_elements, const Vector<PackedInt32Array> &p_new_sub_elements, const PackedInt32Array &p_sub_element_old_to_new);
+	// Manifold sheet helpers.
+	static bool _fit_face_in_hyperplane(const PackedInt32Array &p_face_edges, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const Vector4 &p_origin, const real_t p_sin_tolerance, Vector<Vector4> &r_basis);
+	static Vector<PackedInt32Array> _find_manifold_sheets(const Vector<PackedInt32Array> &p_faces, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const real_t p_sin_tolerance, const Vector<bool> &p_face_excluded, Vector<int> *r_sheet_span_sizes);
 
 	// These helper functions are for `reconstruct_from_tetra_mesh`.
 	static int64_t _append_edge_indices_to_array(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate, PackedInt32Array &r_edge_indices);
@@ -182,6 +185,7 @@ public:
 	// In-place adjustments to the given mesh.
 	static int64_t delete_interior(const Ref<ArrayPolyMesh4D> &p_mesh_4d);
 	static void make_boundary_normals_topologically_consistent(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const PackedInt32Array &p_authoritative);
+	static int64_t make_cells_from_manifold_sheets(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians = 0.001);
 	static int64_t merge_coplanar_faces(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians = 0.001);
 	static PackedInt32Array subdivide_elements(const Ref<ArrayPolyMesh4D> &p_input_mesh, const int p_dimension, const PackedInt32Array &p_elements = PackedInt32Array());
 

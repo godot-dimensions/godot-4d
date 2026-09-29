@@ -1805,6 +1805,218 @@ int64_t PolyMeshBuilder4D::merge_coplanar_faces(const Ref<ArrayPolyMesh4D> &p_me
 	return merge_count;
 }
 
+// Manifold sheets.
+
+// Whether every vertex of the face lies, within the tolerance, in the subspace spanned from the origin by the basis
+// directions, extending the basis by Gram-Schmidt with each vertex offset that leaves it while it has fewer than 3
+// directions. The basis is only changed if the whole face fits.
+bool PolyMeshBuilder4D::_fit_face_in_hyperplane(const PackedInt32Array &p_face_edges, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const Vector4 &p_origin, const real_t p_sin_tolerance, Vector<Vector4> &r_basis) {
+	// The tolerance is relative to the face's own size, taken as its farthest vertex from the origin, which must be
+	// a point of the face or of an adjacent face in the same hyperplane. Measuring against each vertex's own distance
+	// instead would call a vertex right next to the origin fully out of the hyperplane for any tiny displacement.
+	real_t face_scale = (real_t)0.0;
+	for (const int32_t edge_index : p_face_edges) {
+		for (int64_t end = 0; end < 2; end++) {
+			face_scale = MAX(face_scale, (p_positions[p_edge_vertex_indices[edge_index * 2 + end]] - p_origin).length());
+		}
+	}
+	const real_t rejection_limit = MAX(p_sin_tolerance, (real_t)CMP_EPSILON) * face_scale;
+	Vector<Vector4> basis = r_basis;
+	while (true) {
+		// Find the vertex farthest out of the current span. Growing the span by the largest rejection keeps the new
+		// direction well conditioned, rather than built from the first vertex barely over the tolerance.
+		Vector4 largest_rejection;
+		real_t largest_rejection_length = rejection_limit;
+		for (const int32_t edge_index : p_face_edges) {
+			for (int64_t end = 0; end < 2; end++) {
+				const Vector4 offset = p_positions[p_edge_vertex_indices[edge_index * 2 + end]] - p_origin;
+				Vector4 rejection = offset;
+				for (const Vector4 &direction : basis) {
+					rejection -= direction * direction.dot(offset);
+				}
+				if (rejection.length() > largest_rejection_length) {
+					largest_rejection_length = rejection.length();
+					largest_rejection = rejection;
+				}
+			}
+		}
+		if (largest_rejection_length == rejection_limit) {
+			break; // Every vertex fits the current span.
+		}
+		if (basis.size() >= 3) {
+			return false; // The face leaves the hyperplane.
+		}
+		basis.append(largest_rejection.normalized());
+	}
+	r_basis = basis;
+	return true;
+}
+
+// Groups faces into manifold sheets: faces connected through edges that exactly two faces use, within one 3D
+// hyperplane. Faces flagged in `p_face_excluded`, which may be empty, are already grouped elsewhere and are never
+// joined. Each sheet lists its faces in discovery order, so its second face shares an edge with its first, and
+// `r_sheet_span_sizes` receives how many directions each sheet's vertices span, when requested.
+Vector<PackedInt32Array> PolyMeshBuilder4D::_find_manifold_sheets(const Vector<PackedInt32Array> &p_faces, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const real_t p_sin_tolerance, const Vector<bool> &p_face_excluded, Vector<int> *r_sheet_span_sizes) {
+	const int64_t face_count = p_faces.size();
+	// The faces using each edge. Only an edge shared by exactly two faces connects them: a border edge has nothing
+	// to connect to, and an edge shared by three or more faces, such as where a partition wall meets an outer wall,
+	// is a junction between separate sheets rather than the inside of one.
+	Vector<PackedInt32Array> edge_faces;
+	edge_faces.resize(p_edge_vertex_indices.size() / 2);
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		for (const int32_t edge_index : p_faces[face_index]) {
+			edge_faces.write[edge_index].append((int32_t)face_index);
+		}
+	}
+	Vector<bool> face_assigned = p_face_excluded;
+	if (face_assigned.size() != face_count) {
+		face_assigned.resize(face_count);
+		face_assigned.fill(false);
+	}
+	Vector<PackedInt32Array> sheets;
+	for (int64_t start_face = 0; start_face < face_count; start_face++) {
+		if (face_assigned[start_face]) {
+			continue;
+		}
+		// Flood fill from this face in discovery order, so that the second face shares an edge with the first. The
+		// sheet's faces must lie in one 3D hyperplane, kept as an orthonormal basis of up to 3 directions that grows
+		// with the faces. Each candidate face is measured from a vertex of the edge connecting it, which lies in the
+		// sheet's hyperplane, so the test is at the candidate's own scale. A face that leaves a full basis is not
+		// connected through that edge and starts or joins another sheet later.
+		PackedInt32Array sheet = { (int32_t)start_face };
+		face_assigned.write[start_face] = true;
+		Vector<Vector4> basis;
+		ERR_CONTINUE_MSG(!_fit_face_in_hyperplane(p_faces[start_face], p_edge_vertex_indices, p_positions, p_positions[p_edge_vertex_indices[p_faces[start_face][0] * 2]], p_sin_tolerance, basis), "PolyMeshBuilder4D: Face " + itos(start_face) + " is not flat, so it cannot be part of a sheet.");
+		// While the faces found so far are coplanar, more than one neighbor may leave their plane, each in its own
+		// hyperplane. Those are deferred, and once the coplanar neighbors are exhausted, the hyperplane that the most
+		// deferred neighbors agree with is the one the sheet takes, so that a single stray face cannot claim it.
+		PackedInt32Array deferred_faces;
+		PackedInt32Array deferred_origins;
+		int64_t search_index = 0;
+		while (true) {
+			for (; search_index < sheet.size(); search_index++) {
+				for (const int32_t edge_index : p_faces[sheet[search_index]]) {
+					if (edge_faces[edge_index].size() != 2) {
+						continue;
+					}
+					const int32_t other_face = edge_faces[edge_index][0] == sheet[search_index] ? edge_faces[edge_index][1] : edge_faces[edge_index][0];
+					if (face_assigned[other_face]) {
+						continue;
+					}
+					const int32_t edge_origin = p_edge_vertex_indices[edge_index * 2];
+					Vector<Vector4> trial_basis = basis;
+					if (!_fit_face_in_hyperplane(p_faces[other_face], p_edge_vertex_indices, p_positions, p_positions[edge_origin], p_sin_tolerance, trial_basis)) {
+						continue; // Leaves the sheet's hyperplane.
+					}
+					if (trial_basis.size() > basis.size()) {
+						if (!deferred_faces.has(other_face)) {
+							deferred_faces.append(other_face);
+							deferred_origins.append(edge_origin);
+						}
+						continue;
+					}
+					face_assigned.write[other_face] = true;
+					sheet.append(other_face);
+				}
+			}
+			if (deferred_faces.is_empty()) {
+				break;
+			}
+			int64_t best_deferred = -1;
+			int64_t best_agreement = -1;
+			Vector<Vector4> best_basis;
+			for (int64_t i = 0; i < deferred_faces.size(); i++) {
+				Vector<Vector4> candidate_basis = basis;
+				if (face_assigned[deferred_faces[i]] || !_fit_face_in_hyperplane(p_faces[deferred_faces[i]], p_edge_vertex_indices, p_positions, p_positions[deferred_origins[i]], p_sin_tolerance, candidate_basis)) {
+					continue;
+				}
+				int64_t agreement = 0;
+				for (int64_t j = 0; j < deferred_faces.size(); j++) {
+					Vector<Vector4> check_basis = candidate_basis;
+					if (j != i && _fit_face_in_hyperplane(p_faces[deferred_faces[j]], p_edge_vertex_indices, p_positions, p_positions[deferred_origins[j]], p_sin_tolerance, check_basis) && check_basis.size() == candidate_basis.size()) {
+						agreement++;
+					}
+				}
+				if (agreement > best_agreement) {
+					best_agreement = agreement;
+					best_deferred = deferred_faces[i];
+					best_basis = candidate_basis;
+				}
+			}
+			deferred_faces.clear();
+			deferred_origins.clear();
+			if (best_deferred == -1) {
+				break;
+			}
+			basis = best_basis;
+			face_assigned.write[best_deferred] = true;
+			sheet.append(best_deferred);
+			search_index = 0; // The other deferred faces are neighbors of earlier faces, so scan them again.
+		}
+		sheets.push_back(sheet);
+		if (r_sheet_span_sizes != nullptr) {
+			r_sheet_span_sizes->push_back((int)basis.size());
+		}
+	}
+	return sheets;
+}
+
+int64_t PolyMeshBuilder4D::make_cells_from_manifold_sheets(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians) {
+	ERR_FAIL_COND_V_MSG(p_mesh_4d.is_null() || !p_mesh_4d->is_mesh_data_valid(), 0, "PolyMeshBuilder4D: Cannot make cells from the manifold sheets of an invalid mesh.");
+	Vector<Vector<PackedInt32Array>> poly_cell_indices = p_mesh_4d->get_poly_cell_indices();
+	ERR_FAIL_COND_V_MSG(poly_cell_indices.size() > 1, 0, "PolyMeshBuilder4D: Cannot make cells from manifold sheets because the mesh already has cells. Delete them first, for example by setting the mesh's poly cell indices to only its faces.");
+	if (poly_cell_indices.is_empty() || poly_cell_indices[0].is_empty()) {
+		return 0; // No faces, so nothing to group.
+	}
+	const Vector<PackedInt32Array> faces = poly_cell_indices[0];
+	const PackedInt32Array edge_vertex_indices = p_mesh_4d->get_edge_indices();
+	const PackedVector4Array positions = p_mesh_4d->get_poly_cell_vertex_positions();
+	const real_t sin_tolerance = (real_t)Math::sin(p_angle_tolerance_radians);
+	Vector<int> sheet_span_sizes;
+	const Vector<PackedInt32Array> sheets = _find_manifold_sheets(faces, edge_vertex_indices, positions, sin_tolerance, Vector<bool>(), &sheet_span_sizes);
+	Vector<PackedInt32Array> cells;
+	int64_t left_out_sheet_count = 0;
+	for (int64_t sheet_index = 0; sheet_index < sheets.size(); sheet_index++) {
+		PackedInt32Array cell = sheets[sheet_index];
+		// A 3D cell needs at least 4 faces to be valid, like a tetrahedron, and faces that are all coplanar enclose
+		// no volume and give a zero normal, so such a sheet cannot become a cell.
+		if (cell.size() < 4 || sheet_span_sizes[sheet_index] < 3) {
+			left_out_sheet_count++;
+			continue;
+		}
+		// The cell's orientation comes from the span of its first two faces, which is degenerate when they are
+		// coplanar, such as the two triangles of a quad. Prefer a second face that leaves the plane of the first.
+		const Vector4 origin = positions[edge_vertex_indices[faces[cell[0]][0] * 2]];
+		Vector<Vector4> first_face_basis;
+		_fit_face_in_hyperplane(faces[cell[0]], edge_vertex_indices, positions, origin, sin_tolerance, first_face_basis);
+		for (int64_t i = 1; i < cell.size(); i++) {
+			Vector<Vector4> trial_basis = first_face_basis;
+			if (Math4D::has_common_int32(faces[cell[0]], faces[cell[i]]) && _fit_face_in_hyperplane(faces[cell[i]], edge_vertex_indices, positions, origin, sin_tolerance, trial_basis) && trial_basis.size() > first_face_basis.size()) {
+				const int32_t second_face = cell[1];
+				cell.set(1, cell[i]);
+				cell.set(i, second_face);
+				break;
+			}
+		}
+		Math4D::ensure_first_two_indices_share_common_int32(cell, faces);
+		cells.push_back(cell);
+	}
+	if (left_out_sheet_count > 0) {
+		WARN_PRINT("PolyMeshBuilder4D: " + itos(left_out_sheet_count) + " sheet(s) of fewer than 4 connected faces, or of faces that are all coplanar, were left out of the cells, since a 3D cell needs at least 4 faces enclosing a volume.");
+	}
+	if (cells.is_empty()) {
+		return 0;
+	}
+	poly_cell_indices.push_back(cells);
+	p_mesh_4d->set_poly_cell_indices(poly_cell_indices);
+	if (!p_mesh_4d->is_mesh_data_valid()) {
+		poly_cell_indices.resize(1);
+		p_mesh_4d->set_poly_cell_indices(poly_cell_indices);
+		ERR_FAIL_V_MSG(0, "PolyMeshBuilder4D: Making cells from manifold sheets left the mesh invalid, so the cells were discarded.");
+	}
+	return cells.size();
+}
+
 int64_t PolyMeshBuilder4D::delete_interior(const Ref<ArrayPolyMesh4D> &p_mesh_4d) {
 	ERR_FAIL_COND_V_MSG(p_mesh_4d.is_null() || !p_mesh_4d->is_mesh_data_valid(), 0, "PolyMeshBuilder4D: Cannot delete the volumes of an invalid mesh.");
 	Vector<Vector<PackedInt32Array>> poly_cell_indices = p_mesh_4d->get_poly_cell_indices();
@@ -2957,5 +3169,6 @@ void PolyMeshBuilder4D::_bind_methods() {
 	// In-place adjustments to the given mesh.
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("delete_interior", "mesh_4d"), &PolyMeshBuilder4D::delete_interior);
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_boundary_normals_topologically_consistent", "mesh_4d", "authoritative_boundary_cells"), &PolyMeshBuilder4D::make_boundary_normals_topologically_consistent);
+	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_cells_from_manifold_sheets", "mesh_4d", "angle_tolerance_radians"), &PolyMeshBuilder4D::make_cells_from_manifold_sheets, DEFVAL(0.001));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("merge_coplanar_faces", "mesh_4d", "angle_tolerance_radians"), &PolyMeshBuilder4D::merge_coplanar_faces, DEFVAL(0.001));
 }

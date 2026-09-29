@@ -947,4 +947,178 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Delete interior keeps only the boundar
 	CHECK(slab->get_poly_cell_indices()[1].size() == 2);
 }
 
+TEST_CASE("[SceneTree][PolyMeshBuilder4D] Make cells from manifold sheets") {
+	// Appends faces given as vertex loops into the positions, sharing vertices, edges, and faces with what the mesh
+	// already has, so that boxes placed next to each other share their walls.
+	auto append_faces = [](const Ref<ArrayPolyMesh4D> &p_mesh, const PackedVector4Array &p_positions, const Vector<PackedInt32Array> &p_vertex_loops) {
+		const PackedInt32Array vertices = p_mesh->append_vertices(p_positions);
+		for (const PackedInt32Array &loop : p_vertex_loops) {
+			PackedInt32Array face;
+			for (int64_t i = 0; i < loop.size(); i++) {
+				face.append((int32_t)p_mesh->append_edge_indices(vertices[loop[i]], vertices[loop[(i + 1) % loop.size()]]));
+			}
+			p_mesh->append_poly_cell(2, face);
+		}
+	};
+	// The corners of a unit box, with bit 0 of the index along X, bit 1 along Y, and bit 2 along Z.
+	auto box_corners = [](const Vector4 &p_corner) -> PackedVector4Array {
+		PackedVector4Array corners;
+		for (int i = 0; i < 8; i++) {
+			corners.append(p_corner + Vector4(i & 1, (i >> 1) & 1, (i >> 2) & 1, 0));
+		}
+		return corners;
+	};
+	const Vector<PackedInt32Array> box_loops = { { 0, 1, 3, 2 }, { 4, 6, 7, 5 }, { 0, 4, 5, 1 }, { 2, 3, 7, 6 }, { 0, 2, 6, 4 }, { 1, 5, 7, 3 } };
+	// A cube from a 3D mesh, merged into 6 quads, is one sheet in the XYZ hyperplane, so it becomes one cell whose
+	// boundary normal is along W.
+	Ref<BoxMesh> box_mesh;
+	box_mesh.instantiate();
+	box_mesh->set_size(Vector3(2, 2, 2));
+	Ref<ArrayPolyMesh4D> cube = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(box_mesh);
+	REQUIRE(PolyMeshBuilder4D::merge_coplanar_faces(cube) == 6);
+	const Vector<PackedVector4Array> cube_face_normals_before = cube->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	const Vector<PackedVector4Array> cube_corner_normals_before = cube->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+	REQUIRE(cube_corner_normals_before.size() == 6);
+	CHECK_MESSAGE(PolyMeshBuilder4D::make_cells_from_manifold_sheets(cube) == 1, "The 6 quads of a cube are one sheet.");
+	REQUIRE(cube->is_mesh_data_valid());
+	CHECK_MESSAGE(cube->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY) == cube_face_normals_before, "The faces' bindings must be left as they are.");
+	CHECK(cube->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY) == cube_corner_normals_before);
+	REQUIRE(cube->get_poly_cell_indices().size() == 2);
+	REQUIRE(cube->get_poly_cell_indices()[1].size() == 1);
+	CHECK(cube->get_poly_cell_indices()[1][0].size() == 6);
+	cube->calculate_boundary_normals();
+	REQUIRE(cube->get_poly_cell_boundary_normals().size() == 1);
+	const Vector4 cube_normal = cube->get_poly_cell_boundary_normals()[0];
+	CHECK_MESSAGE(Math::is_equal_approx(Math::abs(cube_normal.w), (real_t)1.0), "A cell in the XYZ hyperplane has a normal along W.");
+	// A mesh that already has cells is refused and left alone.
+	const PackedInt32Array cell_before = cube->get_poly_cell_indices()[1][0];
+	ERR_PRINT_OFF;
+	CHECK(PolyMeshBuilder4D::make_cells_from_manifold_sheets(cube) == 0);
+	ERR_PRINT_ON;
+	REQUIRE(cube->get_poly_cell_indices().size() == 2);
+	REQUIRE(cube->get_poly_cell_indices()[1].size() == 1);
+	CHECK(cube->get_poly_cell_indices()[1][0] == cell_before);
+	// The unmerged cube of 12 triangles is also one sheet. Its first face's diagonal neighbor is coplanar with it,
+	// so the second face must be picked from the other side of a cube edge to give a well-defined normal.
+	Ref<ArrayPolyMesh4D> triangulated = PolyMeshBuilder4D::convert_mesh_3d_to_4d_faces_only(box_mesh);
+	CHECK(PolyMeshBuilder4D::make_cells_from_manifold_sheets(triangulated) == 1);
+	REQUIRE(triangulated->is_mesh_data_valid());
+	REQUIRE(triangulated->get_poly_cell_indices()[1].size() == 1);
+	CHECK(triangulated->get_poly_cell_indices()[1][0].size() == 12);
+	triangulated->calculate_boundary_normals();
+	REQUIRE(triangulated->get_poly_cell_boundary_normals().size() == 1);
+	CHECK_MESSAGE(Math::is_equal_approx(Math::abs(triangulated->get_poly_cell_boundary_normals()[0].w), (real_t)1.0), "The first two faces must not be coplanar, or the normal degenerates to zero.");
+	// Two rooms sharing a partition wall. Each edge of the partition has 3 faces, so it connects nothing: the rooms
+	// become one cell of 5 faces each, and the partition is an sheet of one face, too small to be a cell.
+	Ref<ArrayPolyMesh4D> rooms;
+	rooms.instantiate();
+	append_faces(rooms, box_corners(Vector4(0, 0, 0, 0)), box_loops);
+	append_faces(rooms, box_corners(Vector4(1, 0, 0, 0)), box_loops);
+	REQUIRE(rooms->get_poly_cell_indices()[0].size() == 11);
+	const int32_t partition = 5; // The X = 1 face of the first box, deduplicated with the X = 1 face of the second.
+	ERR_PRINT_OFF;
+	CHECK_MESSAGE(PolyMeshBuilder4D::make_cells_from_manifold_sheets(rooms) == 2, "The partition wall's edges are non-manifold junctions between two sheets.");
+	ERR_PRINT_ON;
+	REQUIRE(rooms->is_mesh_data_valid());
+	REQUIRE(rooms->get_poly_cell_indices().size() == 2);
+	REQUIRE(rooms->get_poly_cell_indices()[1].size() == 2);
+	const Vector<Vector<PackedInt32Array>> room_indices = rooms->get_poly_cell_indices();
+	for (const PackedInt32Array &room : room_indices[1]) {
+		CHECK(room.size() == 5);
+		CHECK_MESSAGE(!room.has(partition), "The partition belongs to neither room.");
+	}
+	// Two boxes touching at a single vertex share no edge, so they are separate sheets.
+	Ref<ArrayPolyMesh4D> touching;
+	touching.instantiate();
+	append_faces(touching, box_corners(Vector4(0, 0, 0, 0)), box_loops);
+	append_faces(touching, box_corners(Vector4(1, 1, 1, 0)), box_loops);
+	REQUIRE(touching->get_poly_cell_vertex_positions().size() == 15);
+	CHECK(PolyMeshBuilder4D::make_cells_from_manifold_sheets(touching) == 2);
+	REQUIRE(touching->is_mesh_data_valid());
+	REQUIRE(touching->get_poly_cell_indices()[1].size() == 2);
+	CHECK(touching->get_poly_cell_indices()[1][0].size() == 6);
+	CHECK(touching->get_poly_cell_indices()[1][1].size() == 6);
+	// An open box in the XYZ hyperplane with two flaps hanging off its rim, each sharing its edge with exactly one
+	// wall. The flap that stays in XYZ joins the box, and the flap bending into W is split off by the hyperplane.
+	// The other two rim edges are used by one face each and connect nothing, so the open box is still one sheet.
+	Ref<ArrayPolyMesh4D> flaps;
+	flaps.instantiate();
+	append_faces(flaps, box_corners(Vector4(0, 0, 0, 0)), { box_loops[0], box_loops[1], box_loops[2], box_loops[4], box_loops[5] });
+	append_faces(flaps, { Vector4(1, 1, 0, 0), Vector4(1, 1, 1, 0), Vector4(2, 1, 1, 0), Vector4(2, 1, 0, 0) }, { { 0, 1, 2, 3 } });
+	append_faces(flaps, { Vector4(0, 1, 0, 0), Vector4(1, 1, 0, 0), Vector4(1, 1, 0, 1), Vector4(0, 1, 0, 1) }, { { 0, 1, 2, 3 } });
+	REQUIRE(flaps->get_poly_cell_indices()[0].size() == 7);
+	ERR_PRINT_OFF;
+	CHECK_MESSAGE(PolyMeshBuilder4D::make_cells_from_manifold_sheets(flaps) == 1, "The flap bending into W is an sheet of one face.");
+	ERR_PRINT_ON;
+	REQUIRE(flaps->is_mesh_data_valid());
+	REQUIRE(flaps->get_poly_cell_indices()[1].size() == 1);
+	const PackedInt32Array flapped_cell = flaps->get_poly_cell_indices()[1][0];
+	CHECK(flapped_cell.size() == 6);
+	CHECK_MESSAGE(flapped_cell.has(5), "The flap in the XYZ hyperplane joins the box.");
+	CHECK_MESSAGE(!flapped_cell.has(6), "The flap bending into W does not join the box.");
+	// Two coplanar squares sharing an edge with a third square standing on that edge: the edge has 3 faces, so the
+	// squares are three sheets of one face each, none of which can be a cell. The mesh stays faces-only.
+	Ref<ArrayPolyMesh4D> tee;
+	tee.instantiate();
+	append_faces(tee, { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(2, 0, 0, 0), Vector4(2, 1, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0), Vector4(1, 0, 1, 0), Vector4(1, 1, 1, 0) }, { { 0, 1, 4, 5 }, { 1, 2, 3, 4 }, { 1, 6, 7, 4 } });
+	ERR_PRINT_OFF;
+	CHECK(PolyMeshBuilder4D::make_cells_from_manifold_sheets(tee) == 0);
+	ERR_PRINT_ON;
+	CHECK(tee->get_poly_cell_indices().size() == 1);
+	CHECK(tee->is_mesh_data_valid());
+	// The same open box, but its first face's edge loop starts at the rim edge that carries the flap bending into W.
+	// That flap is the first neighbor found to leave the first face's plane, yet the box's other walls all agree on
+	// the XYZ hyperplane, so the sheet must take XYZ rather than let the stray flap claim it and break the box.
+	Ref<ArrayPolyMesh4D> hinge;
+	hinge.instantiate();
+	append_faces(hinge, box_corners(Vector4(0, 0, 0, 0)), { { 3, 2, 0, 1 }, box_loops[1], box_loops[2], box_loops[4], box_loops[5] });
+	append_faces(hinge, { Vector4(0, 1, 0, 0), Vector4(1, 1, 0, 0), Vector4(1, 1, 0, 1), Vector4(0, 1, 0, 1) }, { { 0, 1, 2, 3 } });
+	append_faces(hinge, { Vector4(1, 1, 0, 0), Vector4(1, 1, 1, 0), Vector4(2, 1, 1, 0), Vector4(2, 1, 0, 0) }, { { 0, 1, 2, 3 } });
+	ERR_PRINT_OFF;
+	CHECK(PolyMeshBuilder4D::make_cells_from_manifold_sheets(hinge) == 1);
+	ERR_PRINT_ON;
+	REQUIRE(hinge->is_mesh_data_valid());
+	REQUIRE(hinge->get_poly_cell_indices()[1].size() == 1);
+	const PackedInt32Array hinged_cell = hinge->get_poly_cell_indices()[1][0];
+	CHECK_MESSAGE(hinged_cell.size() == 6, "The box and its XYZ flap must stay one cell.");
+	CHECK_MESSAGE(!hinged_cell.has(5), "The flap bending into W, found first, must not claim the sheet's hyperplane.");
+	CHECK(hinged_cell.has(6));
+	// The tolerance is an angle relative to the size of the face being tested. A flap leaning out of the hyperplane
+	// by 0.0005 over a length of 1 joins at the default tolerance of 0.001 radians and is split off at 0.0001.
+	for (int pass = 0; pass < 2; pass++) {
+		Ref<ArrayPolyMesh4D> leaning;
+		leaning.instantiate();
+		append_faces(leaning, box_corners(Vector4(0, 0, 0, 0)), { box_loops[0], box_loops[1], box_loops[2], box_loops[4], box_loops[5] });
+		append_faces(leaning, { Vector4(0, 1, 0, 0), Vector4(1, 1, 0, 0), Vector4(1, 1, 0, 0.0005), Vector4(0, 1, 0, 0.0005) }, { { 0, 1, 2, 3 } });
+		ERR_PRINT_OFF;
+		const int64_t leaning_cells = pass == 0 ? PolyMeshBuilder4D::make_cells_from_manifold_sheets(leaning) : PolyMeshBuilder4D::make_cells_from_manifold_sheets(leaning, 0.0001);
+		ERR_PRINT_ON;
+		REQUIRE(leaning_cells == 1);
+		REQUIRE(leaning->is_mesh_data_valid());
+		const PackedInt32Array leaning_cell = leaning->get_poly_cell_indices()[1][0];
+		if (pass == 0) {
+			CHECK_MESSAGE(leaning_cell.size() == 6, "A lean within the tolerance joins the sheet.");
+			CHECK(leaning_cell.has(5));
+		} else {
+			CHECK_MESSAGE(leaning_cell.size() == 5, "A lean beyond the tolerance is split off.");
+			CHECK(!leaning_cell.has(5));
+		}
+	}
+	// A flat grid of squares is one sheet of 4 faces, but they are all coplanar and enclose no volume, so it cannot
+	// be a cell. The mesh stays faces-only.
+	Ref<ArrayPolyMesh4D> grid;
+	grid.instantiate();
+	PackedVector4Array grid_positions;
+	for (int i = 0; i < 9; i++) {
+		grid_positions.append(Vector4(i % 3, i / 3, 0, 0));
+	}
+	append_faces(grid, grid_positions, { { 0, 1, 4, 3 }, { 1, 2, 5, 4 }, { 3, 4, 7, 6 }, { 4, 5, 8, 7 } });
+	REQUIRE(grid->get_poly_cell_indices()[0].size() == 4);
+	ERR_PRINT_OFF;
+	CHECK_MESSAGE(PolyMeshBuilder4D::make_cells_from_manifold_sheets(grid) == 0, "Coplanar faces enclose no volume.");
+	ERR_PRINT_ON;
+	CHECK(grid->get_poly_cell_indices().size() == 1);
+	CHECK(grid->is_mesh_data_valid());
+}
+
 } // namespace TestPolyMeshBuilder4D
