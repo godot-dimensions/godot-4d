@@ -1121,4 +1121,161 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Make cells from manifold sheets") {
 	CHECK(grid->is_mesh_data_valid());
 }
 
+TEST_CASE("[PolyMeshBuilder4D] Solidify faces") {
+	// Appends faces given as vertex loops into the positions, sharing vertices and edges with what the mesh has.
+	auto append_loop_faces = [](const Ref<ArrayPolyMesh4D> &p_mesh, const PackedVector4Array &p_positions, const Vector<PackedInt32Array> &p_vertex_loops) {
+		const PackedInt32Array vertices = p_mesh->append_vertices(p_positions);
+		for (const PackedInt32Array &loop : p_vertex_loops) {
+			PackedInt32Array face;
+			for (int64_t i = 0; i < loop.size(); i++) {
+				face.append((int32_t)p_mesh->append_edge_indices(vertices[loop[i]], vertices[loop[(i + 1) % loop.size()]]));
+			}
+			p_mesh->append_poly_cell(2, face);
+		}
+	};
+	auto has_position = [](const Ref<ArrayPolyMesh4D> &p_mesh, const Vector4 &p_position) -> bool {
+		for (const Vector4 &position : p_mesh->get_poly_cell_vertex_positions()) {
+			if (position.is_equal_approx(p_position)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	auto has_face_normal = [](const Ref<ArrayPolyMesh4D> &p_mesh, const Vector4 &p_normal) -> bool {
+		const Vector<PackedVector4Array> face_normals = p_mesh->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+		for (const Vector4 &normal : face_normals[0]) {
+			if (normal.is_equal_approx(p_normal)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	// A unit square in the XY plane with a +Z normal, thickened within the XYZ hyperplane: two copies at Z = ±0.1,
+	// four walls, and one cell, with every normal facing out of the slab and matching the face's stored orientation.
+	const PackedVector4Array square_positions = { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0) };
+	Ref<ArrayPolyMesh4D> square;
+	square.instantiate();
+	append_loop_faces(square, square_positions, { { 0, 1, 2, 3 } });
+	Ref<ArrayPolyMesh4D> slab = PolyMeshBuilder4D::solidify_faces(square, 0.2);
+	REQUIRE(slab->is_mesh_data_valid());
+	CHECK(slab->get_poly_cell_vertex_positions().size() == 8);
+	CHECK(slab->get_edge_indices().size() == 12 * 2);
+	REQUIRE(slab->get_poly_cell_indices().size() == 2);
+	CHECK(slab->get_poly_cell_indices()[0].size() == 6);
+	CHECK(slab->get_poly_cell_indices()[1].size() == 1);
+	for (const Vector4 &position : slab->get_poly_cell_vertex_positions()) {
+		CHECK(Math::is_equal_approx(Math::abs(position.z), (real_t)0.1));
+	}
+	const Vector<PackedVector4Array> slab_normals = slab->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	REQUIRE(slab_normals.size() == 1);
+	REQUIRE(slab_normals[0].size() == 6);
+	const PackedVector4Array slab_oriented_normals = slab->compute_face_normals(Vector4(0, 0, 0, 1));
+	for (int64_t face_index = 0; face_index < 6; face_index++) {
+		CHECK_MESSAGE(slab_normals[0][face_index].is_equal_approx(slab_oriented_normals[face_index]), "Each face's stored orientation must agree with its normal.");
+	}
+	CHECK(has_face_normal(slab, Vector4(0, 0, 1, 0)));
+	CHECK(has_face_normal(slab, Vector4(0, 0, -1, 0)));
+	CHECK_MESSAGE(has_face_normal(slab, Vector4(0, -1, 0, 0)), "The wall over the Y = 0 edge must face away from the square.");
+	CHECK(has_face_normal(slab, Vector4(0, 1, 0, 0)));
+	CHECK(has_face_normal(slab, Vector4(-1, 0, 0, 0)));
+	CHECK(has_face_normal(slab, Vector4(1, 0, 0, 0)));
+	REQUIRE(slab->get_poly_cell_boundary_normals().size() == 1);
+	CHECK_MESSAGE(slab->get_poly_cell_boundary_normals()[0].is_equal_approx(Vector4(0, 0, 0, 1)), "The cell is oriented along the hyperplane normal.");
+	// The offset puts the thickness on one side of the face.
+	for (int side = -1; side <= 1; side += 2) {
+		Ref<ArrayPolyMesh4D> shifted = PolyMeshBuilder4D::solidify_faces(square, 0.2, side);
+		REQUIRE(shifted->is_mesh_data_valid());
+		for (const Vector4 &position : shifted->get_poly_cell_vertex_positions()) {
+			CHECK((Math::is_zero_approx(position.z) || Math::is_equal_approx(position.z, (real_t)(0.2 * side))));
+		}
+	}
+	// Two squares folded at a right angle along their shared edge: A in the XY plane, B standing up at X = 1. The
+	// corners along the fold are mitered so that both planes move by exactly 0.1, and the other corners move along
+	// their own face's normal. The second pass lists B so that its loop runs the shared edge the same way as A's,
+	// which flips B's normal, and the result must not change.
+	const PackedVector4Array folded_positions = { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0), Vector4(1, 1, 1, 0), Vector4(1, 0, 1, 0) };
+	for (int pass = 0; pass < 2; pass++) {
+		Ref<ArrayPolyMesh4D> folded;
+		folded.instantiate();
+		append_loop_faces(folded, folded_positions, { { 0, 1, 2, 3 }, pass == 0 ? PackedInt32Array{ 1, 5, 4, 2 } : PackedInt32Array{ 1, 2, 4, 5 } });
+		Ref<ArrayPolyMesh4D> bent = PolyMeshBuilder4D::solidify_faces(folded, 0.2);
+		REQUIRE(bent->is_mesh_data_valid());
+		CHECK(bent->get_poly_cell_vertex_positions().size() == 12);
+		CHECK_MESSAGE(bent->get_poly_cell_indices()[0].size() == 11, "4 copies plus a wall over each of the 7 edges.");
+		CHECK(bent->get_poly_cell_indices()[1].size() == 2);
+		CHECK_MESSAGE(has_position(bent, Vector4(0.9, 0, 0.1, 0)), "The fold corner moves along both normals at once.");
+		CHECK(has_position(bent, Vector4(1.1, 0, -0.1, 0)));
+		CHECK(has_position(bent, Vector4(0.9, 1, 0.1, 0)));
+		CHECK(has_position(bent, Vector4(1.1, 1, -0.1, 0)));
+		CHECK(has_position(bent, Vector4(0, 0, 0.1, 0)));
+		CHECK(has_position(bent, Vector4(0, 1, -0.1, 0)));
+		CHECK(has_position(bent, Vector4(0.9, 0, 1, 0)));
+		CHECK(has_position(bent, Vector4(1.1, 1, 1, 0)));
+		// The wall between the two cells is interior and shared, so the cells reference 11 distinct faces in total.
+		PackedInt32Array referenced_faces;
+		const Vector<Vector<PackedInt32Array>> bent_indices = bent->get_poly_cell_indices();
+		for (const PackedInt32Array &cell : bent_indices[1]) {
+			for (const int32_t face_index : cell) {
+				if (!referenced_faces.has(face_index)) {
+					referenced_faces.append(face_index);
+				}
+			}
+		}
+		CHECK(referenced_faces.size() == 11);
+		// A miter limit of 1 caps the fold corner at the thickness itself, along the averaged normal.
+		Ref<ArrayPolyMesh4D> capped = PolyMeshBuilder4D::solidify_faces(folded, 0.2, 0.0, 1.0);
+		REQUIRE(capped->is_mesh_data_valid());
+		CHECK(has_position(capped, Vector4(1.0 - 0.1 * Math::SQRT12, 0, 0.1 * Math::SQRT12, 0)));
+	}
+	// A T-junction of three squares on one edge. The shared edge has three faces, so each square is thickened on its
+	// own: the two coplanar squares stay flush at Z = ±0.1, and the standing one keeps its own thickness around
+	// X = 1, ending inside the others instead of distorting them.
+	Ref<ArrayPolyMesh4D> tee;
+	tee.instantiate();
+	append_loop_faces(tee, { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(2, 0, 0, 0), Vector4(2, 1, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0), Vector4(1, 0, 1, 0), Vector4(1, 1, 1, 0) }, { { 0, 1, 4, 5 }, { 1, 2, 3, 4 }, { 1, 6, 7, 4 } });
+	Ref<ArrayPolyMesh4D> junction = PolyMeshBuilder4D::solidify_faces(tee, 0.2);
+	REQUIRE(junction->is_mesh_data_valid());
+	CHECK_MESSAGE(junction->get_poly_cell_vertex_positions().size() == 24, "Three groups share no corners.");
+	CHECK(junction->get_poly_cell_indices()[0].size() == 18);
+	CHECK(junction->get_poly_cell_indices()[1].size() == 3);
+	for (const Vector4 &position : junction->get_poly_cell_vertex_positions()) {
+		CHECK((Math::is_equal_approx(Math::abs(position.z), (real_t)0.1) || Math::is_equal_approx(Math::abs(position.x - (real_t)1.0), (real_t)0.1)));
+	}
+	// Two boxes sharing a face, grouped into cells first: each room's five walls miter together, and the shared
+	// partition, which belongs to no cell, is thickened on its own.
+	const Vector<PackedInt32Array> box_loops = { { 0, 1, 3, 2 }, { 4, 6, 7, 5 }, { 0, 4, 5, 1 }, { 2, 3, 7, 6 }, { 0, 2, 6, 4 }, { 1, 5, 7, 3 } };
+	Ref<ArrayPolyMesh4D> rooms;
+	rooms.instantiate();
+	for (int box = 0; box < 2; box++) {
+		PackedVector4Array corners;
+		for (int i = 0; i < 8; i++) {
+			corners.append(Vector4(box + (i & 1), (i >> 1) & 1, (i >> 2) & 1, 0));
+		}
+		append_loop_faces(rooms, corners, box_loops);
+	}
+	REQUIRE(rooms->get_poly_cell_indices()[0].size() == 11);
+	ERR_PRINT_OFF;
+	REQUIRE(PolyMeshBuilder4D::make_cells_from_manifold_sheets(rooms) == 2);
+	ERR_PRINT_ON;
+	Ref<ArrayPolyMesh4D> house = PolyMeshBuilder4D::solidify_faces(rooms, 0.2);
+	REQUIRE(house->is_mesh_data_valid());
+	CHECK_MESSAGE(house->get_poly_cell_vertex_positions().size() == 40, "16 corners per room and 8 for the partition.");
+	CHECK_MESSAGE(house->get_poly_cell_indices()[0].size() == 50, "22 copies, 12 walls per room, and 4 for the partition.");
+	CHECK(house->get_poly_cell_indices()[1].size() == 11);
+	// A face whose edges are not stored in loop order is refused.
+	Ref<ArrayPolyMesh4D> unordered;
+	unordered.instantiate();
+	unordered->append_vertices(square_positions, false);
+	const int32_t e01 = (int32_t)unordered->append_edge_indices(0, 1);
+	const int32_t e12 = (int32_t)unordered->append_edge_indices(1, 2);
+	const int32_t e23 = (int32_t)unordered->append_edge_indices(2, 3);
+	const int32_t e30 = (int32_t)unordered->append_edge_indices(3, 0);
+	unordered->append_poly_cell(2, PackedInt32Array{ e01, e30, e12, e23 });
+	ERR_PRINT_OFF;
+	REQUIRE(unordered->is_mesh_data_valid());
+	Ref<ArrayPolyMesh4D> refused = PolyMeshBuilder4D::solidify_faces(unordered, 0.2);
+	ERR_PRINT_ON;
+	CHECK(refused->get_poly_cell_vertex_positions().is_empty());
+}
+
 } // namespace TestPolyMeshBuilder4D

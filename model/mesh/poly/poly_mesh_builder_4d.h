@@ -163,6 +163,9 @@ class PolyMeshBuilder4D : public Object {
 	// Manifold sheet helpers.
 	static bool _fit_face_in_hyperplane(const PackedInt32Array &p_face_edges, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const Vector4 &p_origin, const real_t p_sin_tolerance, Vector<Vector4> &r_basis);
 	static Vector<PackedInt32Array> _find_manifold_sheets(const Vector<PackedInt32Array> &p_faces, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const real_t p_sin_tolerance, const Vector<bool> &p_face_excluded, Vector<int> *r_sheet_span_sizes);
+	// Face solidifying helpers.
+	static void _orient_loop_face_to_normal(PackedInt32Array &r_face_edges, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const Vector4 &p_normal, const Vector4 &p_hyperplane_normal);
+	static Vector4 _compute_miter_direction(const PackedVector4Array &p_normals, const Vector4 &p_hyperplane_normal, const double p_miter_limit);
 
 	// These helper functions are for `reconstruct_from_tetra_mesh`.
 	static int64_t _append_edge_indices_to_array(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate, PackedInt32Array &r_edge_indices);
@@ -181,6 +184,7 @@ public:
 	static Ref<ArrayPolyMesh4D> extrude_linear(const Ref<ArrayPolyMesh4D> &p_input_mesh, const Vector4 &p_extrusion_vector = Vector4(0, 0, 0, 1));
 	static Ref<ArrayPolyMesh4D> extrude_spin_from_faces_xw(const Ref<ArrayPolyMesh4D> &p_input_mesh, const int p_steps = 16);
 	static Ref<ArrayPolyMesh4D> reconstruct_from_tetra_mesh(const Ref<TetraMesh4D> &p_tetra_mesh);
+	static Ref<ArrayPolyMesh4D> solidify_faces(const Ref<PolyMesh4D> &p_input_mesh, const double p_thickness, const double p_offset = 0.0, const double p_miter_limit = 2.0, const Vector4 &p_hyperplane_normal = Vector4(0, 0, 0, 1));
 
 	// In-place adjustments to the given mesh.
 	static int64_t delete_interior(const Ref<ArrayPolyMesh4D> &p_mesh_4d);

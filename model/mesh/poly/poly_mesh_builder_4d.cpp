@@ -2017,6 +2017,402 @@ int64_t PolyMeshBuilder4D::make_cells_from_manifold_sheets(const Ref<ArrayPolyMe
 	return cells.size();
 }
 
+// Solidifying faces.
+
+// Flips a loop-ordered face's edges, keeping its first edge, when the orientation implied by its first two edges
+// points against the given normal within the hyperplane, so that the stored orientation and the normal agree.
+void PolyMeshBuilder4D::_orient_loop_face_to_normal(PackedInt32Array &r_face_edges, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const Vector4 &p_normal, const Vector4 &p_hyperplane_normal) {
+	const PackedInt32Array loop = _get_loop_face_vertices(r_face_edges, p_edge_vertex_indices);
+	if (loop.size() < 3) {
+		return;
+	}
+	// The canonical span runs from the first edge's other vertex through the vertex shared by the first two edges,
+	// the same way `PolyMesh4D::compute_face_normals` reads it.
+	const Vector4 origin = p_positions[loop[loop.size() - 1]];
+	const Vector4 a = p_positions[loop[0]] - origin;
+	const Vector4 b = p_positions[loop[1]] - origin;
+	if (Vector4D::perpendicular(b, a, p_hyperplane_normal).dot(p_normal) < (real_t)0.0) {
+		// Reversing the loop flips the orientation and keeps it a loop. The first edge stays first, so the face
+		// still shares it with whatever lists this face after it.
+		PackedInt32Array reversed = { r_face_edges[0] };
+		for (int64_t i = r_face_edges.size() - 1; i >= 1; i--) {
+			reversed.append(r_face_edges[i]);
+		}
+		r_face_edges = reversed;
+	}
+}
+
+// The offset of a corner that moves each of the given face planes by one unit along its normal, within the
+// hyperplane. With three independent normals this is the exact intersection of the moved planes, with more it is
+// their least-squares fit, and with fewer, such as a flat spot or a straight fold, the planes meet along a line or a
+// plane rather than at a point, so the offset goes along their average, scaled so that a symmetric corner still
+// moves each plane by one unit. The length is clamped to the miter limit, since a sharp corner would spike far out.
+Vector4 PolyMeshBuilder4D::_compute_miter_direction(const PackedVector4Array &p_normals, const Vector4 &p_hyperplane_normal, const double p_miter_limit) {
+	if (p_normals.is_empty()) {
+		return Vector4();
+	}
+	// Least squares: minimize the sum over faces of (normal . offset - 1)^2, whose normal equations are
+	// (sum of normal * normal^T) * offset = sum of normals. The hyperplane normal joins as a plane that must move by
+	// zero, which pins the offset into the hyperplane.
+	Basis4D normal_outer_sum = Basis4D(Vector4(), Vector4(), Vector4(), Vector4());
+	normal_outer_sum.x = p_hyperplane_normal * p_hyperplane_normal.x;
+	normal_outer_sum.y = p_hyperplane_normal * p_hyperplane_normal.y;
+	normal_outer_sum.z = p_hyperplane_normal * p_hyperplane_normal.z;
+	normal_outer_sum.w = p_hyperplane_normal * p_hyperplane_normal.w;
+	Vector4 normal_sum;
+	for (const Vector4 &normal : p_normals) {
+		normal_outer_sum.x += normal * normal.x;
+		normal_outer_sum.y += normal * normal.y;
+		normal_outer_sum.z += normal * normal.z;
+		normal_outer_sum.w += normal * normal.w;
+		normal_sum += normal;
+	}
+	Vector4 direction;
+	if (!Math::is_zero_approx(normal_outer_sum.determinant())) {
+		direction = normal_outer_sum.inverse().xform(normal_sum);
+	} else {
+		const Vector4 average_normal = normal_sum.normalized();
+		double mean_cosine = 0.0;
+		for (const Vector4 &normal : p_normals) {
+			mean_cosine += average_normal.dot(normal);
+		}
+		mean_cosine /= p_normals.size();
+		direction = average_normal / (real_t)MAX(mean_cosine, 1.0 / p_miter_limit);
+	}
+	if (direction.length() > p_miter_limit) {
+		direction = direction.normalized() * (real_t)p_miter_limit;
+	}
+	return direction;
+}
+
+Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::solidify_faces(const Ref<PolyMesh4D> &p_input_mesh, const double p_thickness, const double p_offset, const double p_miter_limit, const Vector4 &p_hyperplane_normal) {
+	Ref<ArrayPolyMesh4D> ret;
+	ret.instantiate();
+	ERR_FAIL_COND_V_MSG(p_input_mesh.is_null() || !p_input_mesh->is_mesh_data_valid(), ret, "PolyMeshBuilder4D: Input mesh is not valid, so its faces cannot be solidified.");
+	ERR_FAIL_COND_V_MSG(!(p_thickness > 0.0), ret, "PolyMeshBuilder4D: The thickness to solidify faces to must be positive.");
+	const Vector4 hyperplane_normal = p_hyperplane_normal.normalized();
+	ERR_FAIL_COND_V_MSG(hyperplane_normal.is_zero_approx(), ret, "PolyMeshBuilder4D: The hyperplane normal to solidify faces within must not be zero.");
+	const Vector<Vector<PackedInt32Array>> input_poly_cell_indices = p_input_mesh->get_poly_cell_indices();
+	ERR_FAIL_COND_V_MSG(input_poly_cell_indices.is_empty() || input_poly_cell_indices.size() > 2, ret, "PolyMeshBuilder4D: Input mesh must have 2D faces and optionally 3D cells grouping them, with no higher order elements like 4D volumes.");
+	const Vector<PackedInt32Array> &faces = input_poly_cell_indices[0];
+	const int64_t face_count = faces.size();
+	const PackedInt32Array edge_vertex_indices = p_input_mesh->get_edge_indices();
+	const int64_t edge_count = edge_vertex_indices.size() / 2;
+	const PackedVector4Array positions = p_input_mesh->get_poly_cell_vertex_positions();
+	const int64_t vertex_count = positions.size();
+	// The limit is never below 1, since a flat face needs exactly its own offset, and clamping below that would make
+	// every face thinner than requested.
+	const double miter_limit = MAX(p_miter_limit, 1.0);
+	// The whole mesh must lie in the hyperplane, up to a small angle relative to its size.
+	{
+		real_t mesh_scale = (real_t)0.0;
+		for (int64_t vertex_index = 1; vertex_index < vertex_count; vertex_index++) {
+			mesh_scale = MAX(mesh_scale, (positions[vertex_index] - positions[0]).length());
+		}
+		const real_t out_of_hyperplane_limit = mesh_scale * (real_t)Math::sin(0.001);
+		for (int64_t vertex_index = 1; vertex_index < vertex_count; vertex_index++) {
+			ERR_FAIL_COND_V_MSG(Math::abs((positions[vertex_index] - positions[0]).dot(hyperplane_normal)) > out_of_hyperplane_limit, ret, "PolyMeshBuilder4D: Vertex " + itos(vertex_index) + " does not lie in the hyperplane, so the faces cannot be solidified within it.");
+		}
+	}
+	// Each face's vertex loop tells which way it runs each of its edges, which is how the orientation of neighboring
+	// faces is compared, so the faces must be stored in loop order.
+	Vector<PackedInt32Array> face_loops;
+	face_loops.resize(face_count);
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		const PackedInt32Array loop = _get_loop_face_vertices(faces[face_index], edge_vertex_indices);
+		ERR_FAIL_COND_V_MSG(loop.is_empty(), ret, "PolyMeshBuilder4D: Cannot solidify faces because the edges of face " + itos(face_index) + " are not stored as a single closed loop.");
+		face_loops.set(face_index, loop);
+	}
+	// Face normals within the hyperplane, from the per-face binding when it covers every face, else computed.
+	PackedVector4Array face_normals;
+	{
+		const Vector<PackedVector4Array> bound_normals = p_input_mesh->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+		face_normals = (bound_normals.size() == 1 && bound_normals[0].size() == face_count) ? bound_normals[0] : p_input_mesh->compute_face_normals(hyperplane_normal);
+		ERR_FAIL_COND_V(face_normals.size() != face_count, ret);
+		for (int64_t face_index = 0; face_index < face_count; face_index++) {
+			Vector4 normal = face_normals[face_index];
+			normal = (normal - hyperplane_normal * hyperplane_normal.dot(normal)).normalized();
+			ERR_FAIL_COND_V_MSG(normal.is_zero_approx(), ret, "PolyMeshBuilder4D: Face " + itos(face_index) + " is degenerate, so it has no normal to solidify along.");
+			face_normals.set(face_index, normal);
+		}
+	}
+	// The faces that share mitered corners form groups: the input's cells when it has them, with each face in at
+	// most one, and manifold sheets for the faces in no cell, so that faces meeting at a junction edge of three or
+	// more do not distort each other. A face that ends up in no group, such as one that is not flat, stands alone.
+	PackedInt32Array face_group;
+	face_group.resize(face_count);
+	face_group.fill(-1);
+	Vector<PackedInt32Array> groups;
+	if (input_poly_cell_indices.size() > 1) {
+		for (const PackedInt32Array &cell : input_poly_cell_indices[1]) {
+			PackedInt32Array group;
+			for (const int32_t face_index : cell) {
+				ERR_FAIL_COND_V_MSG(face_group[face_index] != -1, ret, "PolyMeshBuilder4D: Face " + itos(face_index) + " belongs to more than one cell, but each face may only be in one group to solidify.");
+				face_group.set(face_index, (int32_t)groups.size());
+				group.append(face_index);
+			}
+			groups.push_back(group);
+		}
+	}
+	Vector<bool> face_grouped;
+	face_grouped.resize(face_count);
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		face_grouped.write[face_index] = face_group[face_index] != -1;
+	}
+	for (const PackedInt32Array &sheet : _find_manifold_sheets(faces, edge_vertex_indices, positions, (real_t)Math::sin(0.001), face_grouped, nullptr)) {
+		for (const int32_t face_index : sheet) {
+			face_group.set(face_index, (int32_t)groups.size());
+		}
+		groups.push_back(sheet);
+	}
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		if (face_group[face_index] == -1) {
+			face_group.set(face_index, (int32_t)groups.size());
+			groups.push_back(PackedInt32Array{ (int32_t)face_index });
+		}
+	}
+	Vector<PackedInt32Array> edge_faces;
+	edge_faces.resize(edge_count);
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		for (const int32_t edge_index : faces[face_index]) {
+			edge_faces.write[edge_index].append((int32_t)face_index);
+		}
+	}
+	// Mitering needs the normals of a group to agree on which side is which, so orientation is propagated across
+	// the edges that exactly two faces of the group use: a face whose loop runs a shared edge the same way as its
+	// neighbor faces the other way and gets a negative sign. The group's first face sets its positive side.
+	PackedInt32Array face_sign;
+	face_sign.resize(face_count);
+	face_sign.fill(0);
+	for (const PackedInt32Array &group : groups) {
+		for (const int32_t root_face : group) {
+			if (face_sign[root_face] != 0) {
+				continue;
+			}
+			face_sign.set(root_face, 1);
+			PackedInt32Array queue = { root_face };
+			for (int64_t queue_index = 0; queue_index < queue.size(); queue_index++) {
+				const int32_t face_index = queue[queue_index];
+				const int64_t loop_size = faces[face_index].size();
+				for (int64_t k = 0; k < loop_size; k++) {
+					const int32_t edge_index = faces[face_index][k];
+					int32_t other_face = -1;
+					int64_t group_faces_on_edge = 0;
+					for (const int32_t candidate : edge_faces[edge_index]) {
+						if (face_group[candidate] == face_group[face_index]) {
+							group_faces_on_edge++;
+							if (candidate != face_index) {
+								other_face = candidate;
+							}
+						}
+					}
+					if (group_faces_on_edge != 2 || face_sign[other_face] != 0) {
+						continue;
+					}
+					// Vertex k of a loop sits between edges k and k + 1, so edge k runs from vertex k - 1 to vertex k.
+					const int32_t from_vertex = face_loops[face_index][(k + loop_size - 1) % loop_size];
+					const int64_t other_k = faces[other_face].find(edge_index);
+					const int64_t other_loop_size = faces[other_face].size();
+					const int32_t other_from_vertex = face_loops[other_face][(other_k + other_loop_size - 1) % other_loop_size];
+					face_sign.set(other_face, from_vertex == other_from_vertex ? -face_sign[face_index] : face_sign[face_index]);
+					queue.append(other_face);
+				}
+			}
+		}
+	}
+	// Each group's vertices get a pair of corners, one on each side, offset so that every face plane of the group at
+	// that vertex moves by exactly the requested distance, plus the rung edge between them.
+	const double plus_distance = p_thickness * (1.0 + p_offset) * 0.5;
+	const double minus_distance = p_thickness * (p_offset - 1.0) * 0.5;
+	PackedVector4Array out_positions;
+	PackedInt32Array out_to_input_vertex;
+	PackedInt32Array out_edge_vertex_indices;
+	HashMap<int64_t, int32_t> plus_vertex_of; // Keyed by group * vertex_count + vertex.
+	HashMap<int64_t, int32_t> minus_vertex_of;
+	HashMap<int64_t, int32_t> rung_edge_of;
+	for (int64_t group_index = 0; group_index < groups.size(); group_index++) {
+		HashMap<int32_t, PackedVector4Array> normals_at_vertex;
+		for (const int32_t face_index : groups[group_index]) {
+			for (const int32_t vertex_index : face_loops[face_index]) {
+				normals_at_vertex[vertex_index].append(face_normals[face_index] * (real_t)face_sign[face_index]);
+			}
+		}
+		for (const KeyValue<int32_t, PackedVector4Array> &kv : normals_at_vertex) {
+			const Vector4 direction = _compute_miter_direction(kv.value, hyperplane_normal, miter_limit);
+			const int64_t key = group_index * vertex_count + kv.key;
+			plus_vertex_of.insert(key, (int32_t)out_positions.size());
+			out_positions.append(positions[kv.key] + direction * (real_t)plus_distance);
+			out_to_input_vertex.append(kv.key);
+			minus_vertex_of.insert(key, (int32_t)out_positions.size());
+			out_positions.append(positions[kv.key] + direction * (real_t)minus_distance);
+			out_to_input_vertex.append(kv.key);
+			rung_edge_of.insert(key, (int32_t)(out_edge_vertex_indices.size() / 2));
+			out_edge_vertex_indices.append(plus_vertex_of[key]);
+			out_edge_vertex_indices.append(minus_vertex_of[key]);
+		}
+	}
+	// Each group's edges get a copy on each side. An edge used by faces of different groups gets a pair per group,
+	// since the groups do not share corners.
+	HashMap<int64_t, int32_t> plus_edge_of; // Keyed by group * edge_count + edge.
+	HashMap<int64_t, int32_t> minus_edge_of;
+	for (int64_t group_index = 0; group_index < groups.size(); group_index++) {
+		for (const int32_t face_index : groups[group_index]) {
+			for (const int32_t edge_index : faces[face_index]) {
+				const int64_t key = group_index * edge_count + edge_index;
+				if (plus_edge_of.has(key)) {
+					continue;
+				}
+				const int64_t vertex_key_a = group_index * vertex_count + edge_vertex_indices[edge_index * 2];
+				const int64_t vertex_key_b = group_index * vertex_count + edge_vertex_indices[edge_index * 2 + 1];
+				plus_edge_of.insert(key, (int32_t)(out_edge_vertex_indices.size() / 2));
+				out_edge_vertex_indices.append(plus_vertex_of[vertex_key_a]);
+				out_edge_vertex_indices.append(plus_vertex_of[vertex_key_b]);
+				minus_edge_of.insert(key, (int32_t)(out_edge_vertex_indices.size() / 2));
+				out_edge_vertex_indices.append(minus_vertex_of[vertex_key_a]);
+				out_edge_vertex_indices.append(minus_vertex_of[vertex_key_b]);
+			}
+		}
+	}
+	// Each face gets an outer copy on the side its own normal points to and an inner copy on the other side, each
+	// oriented to face out of the solid. A face with a negative sign has its normal pointing to its group's minus
+	// side, so its outer copy uses the minus corners.
+	Vector<PackedInt32Array> out_faces;
+	PackedVector4Array out_face_normals;
+	PackedInt32Array outer_face_of;
+	PackedInt32Array inner_face_of;
+	outer_face_of.resize(face_count);
+	inner_face_of.resize(face_count);
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		const int64_t group_index = face_group[face_index];
+		PackedInt32Array outer_copy;
+		PackedInt32Array inner_copy;
+		for (const int32_t edge_index : faces[face_index]) {
+			const int64_t key = group_index * edge_count + edge_index;
+			outer_copy.append(face_sign[face_index] > 0 ? plus_edge_of[key] : minus_edge_of[key]);
+			inner_copy.append(face_sign[face_index] > 0 ? minus_edge_of[key] : plus_edge_of[key]);
+		}
+		_orient_loop_face_to_normal(outer_copy, out_edge_vertex_indices, out_positions, face_normals[face_index], hyperplane_normal);
+		_orient_loop_face_to_normal(inner_copy, out_edge_vertex_indices, out_positions, -face_normals[face_index], hyperplane_normal);
+		outer_face_of.set(face_index, (int32_t)out_faces.size());
+		out_faces.push_back(outer_copy);
+		out_face_normals.append(face_normals[face_index]);
+		inner_face_of.set(face_index, (int32_t)out_faces.size());
+		out_faces.push_back(inner_copy);
+		out_face_normals.append(-face_normals[face_index]);
+	}
+	// Each group's edges get a wall connecting the two copies. A wall over an edge that two faces of the group use
+	// is interior to the solid and shared by both of their cells, so its normal never shows, while a wall over a
+	// border edge, or over a junction with another group, is a real boundary. Either way it faces away from a face
+	// that uses the edge, which is what the extrusion of a face relies on to orient the cell it makes.
+	HashMap<int64_t, int32_t> wall_face_of; // Keyed by group * edge_count + edge.
+	for (int64_t group_index = 0; group_index < groups.size(); group_index++) {
+		for (const int32_t face_index : groups[group_index]) {
+			Vector4 face_centroid;
+			for (const int32_t vertex_index : face_loops[face_index]) {
+				face_centroid += positions[vertex_index];
+			}
+			face_centroid /= (real_t)face_loops[face_index].size();
+			for (const int32_t edge_index : faces[face_index]) {
+				const int64_t key = group_index * edge_count + edge_index;
+				if (wall_face_of.has(key)) {
+					continue;
+				}
+				const int32_t vertex_a = edge_vertex_indices[edge_index * 2];
+				const int32_t vertex_b = edge_vertex_indices[edge_index * 2 + 1];
+				const int64_t vertex_key_a = group_index * vertex_count + vertex_a;
+				const int64_t vertex_key_b = group_index * vertex_count + vertex_b;
+				// A directed loop: plus edge from A to B, rung down at B, minus edge from B to A, rung back up at A.
+				PackedInt32Array wall = { plus_edge_of[key], rung_edge_of[vertex_key_b], minus_edge_of[key], rung_edge_of[vertex_key_a] };
+				// The wall is spanned by the edge and the thickness, so its normal is perpendicular to both within
+				// the hyperplane, pointed away from the face.
+				const Vector4 along = positions[vertex_b] - positions[vertex_a];
+				const Vector4 thick = out_positions[plus_vertex_of[vertex_key_a]] - out_positions[minus_vertex_of[vertex_key_a]];
+				Vector4 wall_normal = Vector4D::perpendicular(along, thick, hyperplane_normal).normalized();
+				const Vector4 away_from_face = (positions[vertex_a] + positions[vertex_b]) * (real_t)0.5 - face_centroid;
+				if (wall_normal.dot(away_from_face) < (real_t)0.0) {
+					wall_normal = -wall_normal;
+				}
+				_orient_loop_face_to_normal(wall, out_edge_vertex_indices, out_positions, wall_normal, hyperplane_normal);
+				wall_face_of.insert(key, (int32_t)out_faces.size());
+				out_faces.push_back(wall);
+				out_face_normals.append(wall_normal);
+			}
+		}
+	}
+	// Each face becomes a cell: its outer copy, the wall over each of its edges, and its inner copy. The first two
+	// share the copy of the face's first edge, which the cell's canonical span requires.
+	Vector<PackedInt32Array> out_cells;
+	out_cells.resize(face_count);
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		PackedInt32Array cell = { outer_face_of[face_index] };
+		for (const int32_t edge_index : faces[face_index]) {
+			cell.append(wall_face_of[face_group[face_index] * edge_count + edge_index]);
+		}
+		cell.append(inner_face_of[face_index]);
+		out_cells.set(face_index, cell);
+	}
+	ret->set_poly_cell_vertex_positions(out_positions);
+	ret->set_edge_vertex_indices(out_edge_vertex_indices);
+	ret->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ out_faces, out_cells });
+	ERR_FAIL_COND_V_MSG(!ret->is_mesh_data_valid(), ret, "PolyMeshBuilder4D: Solidifying the faces produced an invalid mesh.");
+	ret->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ out_face_normals });
+	// The input's face corner data is carried onto both copies of each face, matched by the vertex each corner came
+	// from, with the inner copy's normals flipped along with the face. Walls take their face normal at every corner
+	// and have no texture mapping.
+	const Vector<PackedVector4Array> input_corner_normals = p_input_mesh->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY);
+	const Vector<PackedVector3Array> input_corner_texture_maps = p_input_mesh->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+	if (!input_corner_normals.is_empty() || !input_corner_texture_maps.is_empty()) {
+		const Vector<PackedInt32Array> input_face_corners = p_input_mesh->get_all_poly_cell_vertex_indices(2, false);
+		const Vector<PackedInt32Array> out_face_corners = ret->get_all_poly_cell_vertex_indices(2, false);
+		Vector<PackedVector4Array> out_corner_normals;
+		Vector<PackedVector3Array> out_corner_texture_maps;
+		out_corner_normals.resize(out_faces.size());
+		out_corner_texture_maps.resize(out_faces.size());
+		for (int64_t face_index = 0; face_index < face_count; face_index++) {
+			for (int copy = 0; copy < 2; copy++) {
+				const int32_t out_face = copy == 0 ? outer_face_of[face_index] : inner_face_of[face_index];
+				PackedInt32Array corner_keys;
+				for (const int32_t out_vertex : out_face_corners[out_face]) {
+					corner_keys.append(out_to_input_vertex[out_vertex]);
+				}
+				if (face_index < input_corner_normals.size() && !input_corner_normals[face_index].is_empty()) {
+					PackedVector4Array values;
+					_sample_corner_values(corner_keys, PackedInt32Array{ (int32_t)face_index }, input_face_corners, input_corner_normals, CORNER_SAMPLE_FIRST_FOUND, Vector4(), values);
+					if (copy == 1) {
+						for (int64_t i = 0; i < values.size(); i++) {
+							values.set(i, -values[i]);
+						}
+					}
+					out_corner_normals.set(out_face, values);
+				}
+				if (face_index < input_corner_texture_maps.size() && !input_corner_texture_maps[face_index].is_empty()) {
+					PackedVector3Array values;
+					_sample_corner_values(corner_keys, PackedInt32Array{ (int32_t)face_index }, input_face_corners, input_corner_texture_maps, CORNER_SAMPLE_FIRST_FOUND, Vector3(), values);
+					out_corner_texture_maps.set(out_face, values);
+				}
+			}
+		}
+		if (!input_corner_normals.is_empty()) {
+			for (const KeyValue<int64_t, int32_t> &kv : wall_face_of) {
+				PackedVector4Array values;
+				values.resize(out_face_corners[kv.value].size());
+				values.fill(out_face_normals[kv.value]);
+				out_corner_normals.set(kv.value, values);
+			}
+			ret->set_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY, out_corner_normals);
+		}
+		if (!input_corner_texture_maps.is_empty()) {
+			ret->set_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY, out_corner_texture_maps);
+		}
+	}
+	// The cells all lie in the hyperplane, so their normals are along its normal. Orient them all the same way.
+	PackedVector4Array desired_boundary_normals;
+	desired_boundary_normals.resize(out_cells.size());
+	desired_boundary_normals.fill(hyperplane_normal);
+	ret->orient_cells_to_boundary_normals(desired_boundary_normals);
+	return ret;
+}
+
 int64_t PolyMeshBuilder4D::delete_interior(const Ref<ArrayPolyMesh4D> &p_mesh_4d) {
 	ERR_FAIL_COND_V_MSG(p_mesh_4d.is_null() || !p_mesh_4d->is_mesh_data_valid(), 0, "PolyMeshBuilder4D: Cannot delete the volumes of an invalid mesh.");
 	Vector<Vector<PackedInt32Array>> poly_cell_indices = p_mesh_4d->get_poly_cell_indices();
@@ -3170,5 +3566,6 @@ void PolyMeshBuilder4D::_bind_methods() {
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("delete_interior", "mesh_4d"), &PolyMeshBuilder4D::delete_interior);
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_boundary_normals_topologically_consistent", "mesh_4d", "authoritative_boundary_cells"), &PolyMeshBuilder4D::make_boundary_normals_topologically_consistent);
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_cells_from_manifold_sheets", "mesh_4d", "angle_tolerance_radians"), &PolyMeshBuilder4D::make_cells_from_manifold_sheets, DEFVAL(0.001));
+	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("solidify_faces", "input_mesh", "thickness", "offset", "miter_limit", "hyperplane_normal"), &PolyMeshBuilder4D::solidify_faces, DEFVAL(0.0), DEFVAL(2.0), DEFVAL(Vector4(0, 0, 0, 1)));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("merge_coplanar_faces", "mesh_4d", "angle_tolerance_radians"), &PolyMeshBuilder4D::merge_coplanar_faces, DEFVAL(0.001));
 }
