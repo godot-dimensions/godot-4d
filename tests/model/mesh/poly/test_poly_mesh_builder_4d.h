@@ -1276,6 +1276,31 @@ TEST_CASE("[PolyMeshBuilder4D] Solidify faces") {
 	Ref<ArrayPolyMesh4D> refused = PolyMeshBuilder4D::solidify_faces(unordered, 0.2);
 	ERR_PRINT_ON;
 	CHECK(refused->get_poly_cell_vertex_positions().is_empty());
+	// Extruding a slab whose faces have corner normals but whose cells have none: the extruded cells take their
+	// normals from the faces, and the two cap copies of each slab cell take their boundary normal, so that every
+	// cell has vertex normals and rendering does not fall back to zero normals for the caps.
+	square->set_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY, Vector<PackedVector4Array>{ { Vector4(0, 0, 1, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 1, 0) } });
+	Ref<ArrayPolyMesh4D> shaded_slab = PolyMeshBuilder4D::solidify_faces(square, 0.2);
+	REQUIRE(shaded_slab->is_mesh_data_valid());
+	REQUIRE(shaded_slab->get_poly_cell_dense_normals(PolyMesh4D::FACE_TO_VERT_KEY).size() == 6);
+	CHECK(shaded_slab->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY).is_empty());
+	Ref<ArrayPolyMesh4D> extruded_slab = PolyMeshBuilder4D::extrude_linear(shaded_slab, Vector4(0, 0, 0, 0.5));
+	REQUIRE(extruded_slab->is_mesh_data_valid());
+	const Vector<PackedVector4Array> extruded_cell_normals = extruded_slab->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
+	const PackedVector4Array extruded_boundary_normals = extruded_slab->get_poly_cell_boundary_normals();
+	const int64_t extruded_cell_count = extruded_slab->get_poly_cell_indices()[1].size();
+	REQUIRE(extruded_cell_count == 8);
+	REQUIRE(extruded_cell_normals.size() == extruded_cell_count);
+	REQUIRE(extruded_boundary_normals.size() == extruded_cell_count);
+	for (int64_t cell_index = 0; cell_index < extruded_cell_count; cell_index++) {
+		CHECK_MESSAGE(!extruded_cell_normals[cell_index].is_empty(), "Every extruded cell, caps included, must have vertex normals.");
+		// The caps are the two copies of the slab cell, whose normals are along the extrusion, and they are flat.
+		if (Math::is_equal_approx(Math::abs(extruded_boundary_normals[cell_index].w), (real_t)1.0)) {
+			for (const Vector4 &normal : extruded_cell_normals[cell_index]) {
+				CHECK(normal.is_equal_approx(extruded_boundary_normals[cell_index]));
+			}
+		}
+	}
 }
 
 } // namespace TestPolyMeshBuilder4D

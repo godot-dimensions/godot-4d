@@ -419,6 +419,16 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_linear(const Ref<ArrayPolyMesh4D
 				_sample_corner_values(all_cell_vert[cell_index], copy_faces, all_face_vert, face_to_vert_normals, CORNER_SAMPLE_FIRST_FOUND, per_cell_normals[cell_index], cell_vert_normals);
 				cell_to_vert_normals.set(cell_index, cell_vert_normals);
 			}
+			// The input's own cells, copied as the two caps, have no vertex normals when the input had none for them,
+			// so they take their boundary normal at every vertex, which keeps the binding complete for rendering.
+			for (int64_t cell_index = 0; cell_index < cell_to_vert_normals.size() && cell_index < per_cell_normals.size(); cell_index++) {
+				if (cell_to_vert_normals[cell_index].is_empty()) {
+					PackedVector4Array flat_normals;
+					flat_normals.resize(all_cell_vert[cell_index].size());
+					flat_normals.fill(per_cell_normals[cell_index]);
+					cell_to_vert_normals.set(cell_index, flat_normals);
+				}
+			}
 			ret->set_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY, cell_to_vert_normals);
 		}
 		// Copy over the vertex texture maps from the original 2D faces, if that data is present.
