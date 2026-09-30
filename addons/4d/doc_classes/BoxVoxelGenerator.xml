@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BoxVoxelGenerator" inherits="VoxelGenerator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A generator filling an axis-aligned box and the rest of space with different materials.
+	</brief_description>
+	<description>
+		BoxVoxelGenerator generates one material filling an axis-aligned box and another filling the rest of space. With the default materials, it can be used with a [LayeredVoxelGenerator] to cut off generation outside the box.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="center" type="Vector4" setter="set_center" getter="get_center" default="Vector4(0, 0, 0, 0)">
+			The center of the box, in voxel coordinates.
+		</member>
+		<member name="size" type="Vector4" setter="set_size" getter="get_size" default="Vector4(1, 1, 1, 1)">
+			The size of the box, in voxels, centered on [member center].
+		</member>
+		<member name="material_inner" type="int" setter="set_material_inner" getter="get_material_inner" default="255">
+			The material filling the box, or [code]255[/code] to leave it undefined.
+		</member>
+		<member name="material_outer" type="int" setter="set_material_outer" getter="get_material_outer" default="254">
+			The material filling the space outside the box, [code]254[/code] for air by default, or [code]255[/code] to leave it undefined.
+		</member>
+	</members>
+</class>

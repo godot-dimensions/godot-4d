@@ -19,6 +19,11 @@ protected:
 	static void _bind_methods();
 
 public:
+	// Voxels are sampled at their centers.
+	static Vector4 get_voxel_center(const Vector4i &p_voxel) {
+		return Vector4(p_voxel) + Vector4(0.5f, 0.5f, 0.5f, 0.5f);
+	}
+
 	virtual VoxelMaterial get_material(const Vector4i &p_voxel) const = 0;
 
 	// The surface data of the edge from the given voxel to its neighbor one

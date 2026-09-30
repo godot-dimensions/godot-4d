@@ -96,6 +96,11 @@
 #include "voxel/data/voxel_data.h"
 #include "voxel/edit/sphere_voxel_edit.h"
 #include "voxel/edit/voxel_edit.h"
+#include "voxel/generators/box_voxel_generator.h"
+#include "voxel/generators/clipped_voxel_generator.h"
+#include "voxel/generators/cylinder_voxel_generator.h"
+#include "voxel/generators/layered_voxel_generator.h"
+#include "voxel/generators/plane_voxel_generator.h"
 #include "voxel/generators/tiger_test_generator.h"
 #include "voxel/generators/voxel_generator.h"
 #include "voxel/voxel_load_trigger_4d.h"
@@ -286,6 +291,11 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_ABSTRACT_CLASS(VoxelGenerator);
 		GDREGISTER_ABSTRACT_CLASS(VoxelEdit);
 		GDREGISTER_CLASS(SphereVoxelEdit);
+		GDREGISTER_CLASS(BoxVoxelGenerator);
+		GDREGISTER_CLASS(ClippedVoxelGenerator);
+		GDREGISTER_CLASS(CylinderVoxelGenerator);
+		GDREGISTER_CLASS(LayeredVoxelGenerator);
+		GDREGISTER_CLASS(PlaneVoxelGenerator);
 		GDREGISTER_CLASS(TigerTestGenerator);
 		GDREGISTER_CLASS(VoxelData);
 		GDREGISTER_CLASS(VoxelLoadTrigger4D);

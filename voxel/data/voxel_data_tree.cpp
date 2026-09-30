@@ -218,7 +218,7 @@ static bool _borders_different_material(const Ref<VoxelGenerator> &p_generator, 
 					outside[other_axes[1]] = p_bounds.position[other_axes[1]] + c1;
 					for (int32_t c2 = 0; c2 < p_bounds.size[other_axes[2]]; c2++) {
 						outside[other_axes[2]] = p_bounds.position[other_axes[2]] + c2;
-						if (p_generator->get_material(outside) != p_material) {
+						if (overlay_material(p_generator->get_material(outside), VoxelMaterial::AIR) != p_material) {
 							return true;
 						}
 					}
@@ -242,14 +242,16 @@ void VoxelDataTree::generate(const Ref<VoxelGenerator> &p_generator) {
 		return;
 	}
 	VoxelDataLeaf *leaf = memnew(VoxelDataLeaf);
-	const VoxelMaterial first_material = p_generator->get_material(_bounds.position);
+	const VoxelMaterial first_material = overlay_material(p_generator->get_material(_bounds.position), VoxelMaterial::AIR);
 	bool uniform = true;
 	for (int32_t w = 0; w < _bounds.size.w; w++) {
 		for (int32_t z = 0; z < _bounds.size.z; z++) {
 			for (int32_t y = 0; y < _bounds.size.y; y++) {
 				for (int32_t x = 0; x < _bounds.size.x; x++) {
 					const Vector4i local_voxel = Vector4i(x, y, z, w);
-					const VoxelMaterial material = p_generator->get_material(_bounds.position + local_voxel);
+					// A generator returning UNDEFINED here is not valid, but as a backup, UNDEFINED is replaced
+					// with air.
+					const VoxelMaterial material = overlay_material(p_generator->get_material(_bounds.position + local_voxel), VoxelMaterial::AIR);
 					leaf->set_material(local_voxel, material);
 					uniform = uniform && material == first_material;
 				}
@@ -275,7 +277,7 @@ void VoxelDataTree::generate(const Ref<VoxelGenerator> &p_generator) {
 					for (int axis = 0; axis < 4; axis++) {
 						Vector4i neighbor_local = local_voxel;
 						neighbor_local[axis] += 1;
-						const VoxelMaterial neighbor_material = neighbor_local[axis] < _bounds.size[axis] ? leaf->get_material(neighbor_local) : p_generator->get_material(_bounds.position + neighbor_local);
+						const VoxelMaterial neighbor_material = neighbor_local[axis] < _bounds.size[axis] ? leaf->get_material(neighbor_local) : overlay_material(p_generator->get_material(_bounds.position + neighbor_local), VoxelMaterial::AIR);
 						if (material != neighbor_material) {
 							leaf->set_edge_data(local_voxel, axis, p_generator->get_edge_data(_bounds.position + local_voxel, axis));
 						}

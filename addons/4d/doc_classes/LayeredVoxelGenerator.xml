@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LayeredVoxelGenerator" inherits="VoxelGenerator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A generator composing a stack of other generators.
+	</brief_description>
+	<description>
+		LayeredVoxelGenerator composes a stack of generators. Lower (lower-indexed) layers show through where the upper layers return UNDEFINED.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="layers" type="VoxelGenerator[]" setter="set_layers" getter="get_layers" default="[]">
+			The composed generators, from the bottom layer to the top layer.
+		</member>
+	</members>
+</class>

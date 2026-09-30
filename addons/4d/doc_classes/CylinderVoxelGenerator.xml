@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CylinderVoxelGenerator" inherits="VoxelGenerator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A generator filling a vertical cylinder and the rest of space with different materials.
+	</brief_description>
+	<description>
+		CylinderVoxelGenerator generates one material filling a vertically aligned cylinder and another filling the rest of space. With the default materials, it can be used with a [LayeredVoxelGenerator] to cut off generation outside the cylinder.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="center" type="Vector4" setter="set_center" getter="get_center" default="Vector4(0, 0, 0, 0)">
+			The center of the cylinder, in voxel coordinates.
+		</member>
+		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">
+			The cylinder's full extent along the vertical (Y) axis, in voxels.
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
+			The radius of the cylinder over the three horizontal axes, in voxels.
+		</member>
+		<member name="material_inner" type="int" setter="set_material_inner" getter="get_material_inner" default="255">
+			The material filling the cylinder, or [code]255[/code] to leave it undefined.
+		</member>
+		<member name="material_outer" type="int" setter="set_material_outer" getter="get_material_outer" default="254">
+			The material filling the space outside the cylinder, [code]254[/code] for air by default, or [code]255[/code] to leave it undefined.
+		</member>
+	</members>
+</class>
