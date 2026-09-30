@@ -1505,6 +1505,45 @@ Vector3i ArrayPolyMesh4D::_tiles_for_island_count(const int32_t p_island_count) 
 	return Vector3i(remaining, square_root, cube_root);
 }
 
+void ArrayPolyMesh4D::project_texture_map(const PackedInt32Array &p_cells, const Basis4D &p_mesh_to_texture) {
+	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot project a texture map for a mesh with no cells.");
+	const int64_t cell_count = _poly_cell_indices[1].size();
+	for (const int32_t cell_index : p_cells) {
+		ERR_FAIL_INDEX_MSG(cell_index, cell_count, "ArrayPolyMesh4D: A cell to project is not in the mesh.");
+	}
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Poly mesh data is invalid, cannot project.");
+	const Vector<PackedInt32Array> &cell_vert = _get_boundary_cell_vertex_indices_cached(false);
+	// Only the listed cells are written. The binding is kept otherwise, padded with empty entries when it was
+	// shorter than the cell count, so the cells that are not listed keep the texture coordinates they had.
+	Vector<PackedInt32Array> texture_map_indices;
+	if (_all_poly_cell_texture_map_indices.has(CELL_TO_VERT_KEY)) {
+		texture_map_indices = _all_poly_cell_texture_map_indices[CELL_TO_VERT_KEY];
+	}
+	const int64_t existing_count = texture_map_indices.size();
+	if (existing_count < cell_count) {
+		texture_map_indices.resize_initialized(cell_count);
+		for (int64_t i = existing_count; i < cell_count; i++) {
+			texture_map_indices.set(i, PackedInt32Array());
+		}
+	}
+	for (const int32_t cell_index : p_cells) {
+		const PackedInt32Array &vertex_indices = cell_vert[cell_index];
+		PackedInt32Array value_indices;
+		value_indices.resize(vertex_indices.size());
+		for (int64_t i = 0; i < vertex_indices.size(); i++) {
+			const Vector4 texcoord = p_mesh_to_texture.xform(_poly_cell_vertex_positions[vertex_indices[i]]);
+			value_indices.set(i, (int32_t)Vector4D::vector3_array_append_deduplicate(_poly_cell_texture_map_values, Vector3(texcoord.x, texcoord.y, texcoord.z)));
+		}
+		texture_map_indices.set(cell_index, value_indices);
+	}
+	_all_poly_cell_texture_map_indices.insert(CELL_TO_VERT_KEY, texture_map_indices);
+	poly_mesh_clear_cache();
+}
+
+void ArrayPolyMesh4D::project_texture_map_bind(const PackedInt32Array &p_cells, const Projection &p_mesh_to_texture) {
+	project_texture_map(p_cells, Basis4D(p_mesh_to_texture));
+}
+
 void ArrayPolyMesh4D::transform_texture_map(const Transform3D &p_transform) {
 	// Transform a dense copy of the texture map, then convert it back to indexed data.
 	// This ensures that values shared with other data bindings are not affected.
@@ -2635,6 +2674,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	// Texture map and seam functions.
 	ClassDB::bind_method(D_METHOD("calculate_seam_faces", "angle_threshold_radians", "discard_seams_within_islands"), &ArrayPolyMesh4D::calculate_seam_faces, DEFVAL(Math_TAU / 8.0), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("collect_cells_in_island", "start_cell"), &ArrayPolyMesh4D::collect_cells_in_island);
+	ClassDB::bind_method(D_METHOD("project_texture_map", "cells", "mesh_to_texture"), &ArrayPolyMesh4D::project_texture_map_bind);
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map_island", "cells_in_island", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_island, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);

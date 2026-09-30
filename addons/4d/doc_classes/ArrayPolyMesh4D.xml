@@ -160,6 +160,15 @@
 				This is useful for importers that know which side of each cell faces outward, such as from the conventions of the source data, but whose cell structure does not reliably encode it. Compare [constant COMPUTE_NORMALS_MODE_FORCE_OUTWARD_FIX_CELL_ORIENTATION], which also fixes the orientation but decides the outward side geometrically.
 			</description>
 		</method>
+		<method name="project_texture_map">
+			<return type="void" />
+			<param index="0" name="cells" type="PackedInt32Array" />
+			<param index="1" name="mesh_to_texture" type="Projection" />
+			<description>
+				Gives each of the listed [param cells] a texture map by projecting its vertex positions with [param mesh_to_texture]: each vertex position is transformed by the basis, the first three components of the result become the vertex's UVW texture coordinates, and the fourth component is discarded. Cells that are not listed keep the texture coordinates they had. The basis maps mesh space to texture space, so for a cell whose texture axes should follow the directions [code]u[/code], [code]v[/code], and [code]w[/code] within the cell, with [code]n[/code] as its normal, pass the transpose of the basis with those four vectors as columns, which sends each direction onto a texture axis and the normal onto the discarded component.
+				This is a planar projection, the counterpart of a "project from view" unwrap: every listed cell receives the same mapping, so cells lying in one hyperplane line up with each other, while cells whose hyperplane contains the discarded direction are flattened. It is also the way to choose the orientation of an island before unwrapping it: project one cell of the island, then call [method unwrap_texture_map_island] with that cell first in the island and [code]keep_existing[/code] set to [code]true[/code], and the rest of the island is unfolded rigidly from it, in the same units as the mesh.
+			</description>
+		</method>
 		<method name="set_flat_shading_normals">
 			<return type="void" />
 			<param index="0" name="normals_mode" type="int" enum="ArrayPolyMesh4D.ComputeNormalsMode" default="0" />

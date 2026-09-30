@@ -100,6 +100,8 @@ public:
 	void calculate_seam_faces(const double p_angle_threshold_radians = Math_TAU / 8.0, const bool p_discard_seams_within_islands = false);
 	PackedInt32Array collect_cells_in_island(const int64_t p_start_cell);
 	Vector<PackedInt32Array> collect_all_islands();
+	void project_texture_map(const PackedInt32Array &p_cells, const Basis4D &p_mesh_to_texture);
+	void project_texture_map_bind(const PackedInt32Array &p_cells, const Projection &p_mesh_to_texture);
 	void unwrap_texture_map_island(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing = false);
 	void unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding = 0.0, const bool p_proportional = true, const bool p_keep_existing = false);
 	void transform_texture_map(const Transform3D &p_transform);

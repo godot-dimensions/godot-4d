@@ -980,6 +980,96 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 	}
 }
 
+TEST_CASE("[ArrayPolyMesh4D] Project texture map") {
+	// The box's +Z cell, index 3 in the box data, spans X, Y, and W. This basis sends those onto U, V, and W and
+	// the cell's normal onto the discarded fourth component.
+	const Basis4D xyw_to_uvw = Basis4D(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 1, 0)).transposed();
+
+	SUBCASE("Projecting listed cells writes only those cells") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
+		// Fetched before projecting: this getter runs the full validation, which warns about a partial texture map.
+		const Vector<PackedInt32Array> cell_vertex_indices = mesh->get_all_poly_cell_vertex_indices(3, false);
+		const PackedVector4Array positions = mesh->get_poly_cell_vertex_positions();
+		mesh->project_texture_map(PackedInt32Array{ 3 }, xyw_to_uvw);
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(texture_map.size() == 8);
+		REQUIRE(texture_map[3].size() == cell_vertex_indices[3].size());
+		for (int64_t i = 0; i < texture_map[3].size(); i++) {
+			const Vector4 position = positions[cell_vertex_indices[3][i]];
+			CHECK(texture_map[3][i].is_equal_approx(Vector3(position.x, position.y, position.w)));
+		}
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			if (cell_index != 3) {
+				CHECK_MESSAGE(texture_map[cell_index].is_empty(), "Cells that were not projected must keep their empty entries.");
+			}
+		}
+	}
+
+	SUBCASE("Projecting over an existing texture map keeps the other cells") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		const Vector<PackedVector3Array> before = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(before.size() == 8);
+		mesh->project_texture_map(PackedInt32Array{ 3 }, xyw_to_uvw);
+		const Vector<PackedVector3Array> after = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(after.size() == 8);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			if (cell_index == 3) {
+				CHECK(after[cell_index] != before[cell_index]);
+			} else {
+				CHECK_MESSAGE(after[cell_index] == before[cell_index], "Cells that were not projected must keep their coordinates.");
+			}
+		}
+	}
+
+	SUBCASE("A projected seed orients the island unwrapped from it") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
+		mesh->project_texture_map(PackedInt32Array{ 3 }, xyw_to_uvw);
+		// The box's cells are 0 -W, 1 -Y, 2 -Z, 3 +Z, 4 +X, 5 -X, 6 +Y, 7 +W. The cells with horizontal normals come
+		// first, each sharing a vertical face with an earlier one, so all of them keep V equal to the height. The two
+		// cells facing along Y come last, so they hang off the others instead of the others hanging off them.
+		const PackedInt32Array island = { 3, 4, 5, 7, 0, 2, 6, 1 };
+		mesh->unwrap_texture_map_island(island, true);
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		const Vector<PackedInt32Array> cell_vertex_indices = mesh->get_all_poly_cell_vertex_indices(3, false);
+		const PackedVector4Array positions = mesh->get_poly_cell_vertex_positions();
+		REQUIRE(texture_map.size() == 8);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			REQUIRE(texture_map[cell_index].size() == 8);
+			AABB texture_aabb = AABB(texture_map[cell_index][0], Vector3());
+			for (int64_t i = 0; i < 8; i++) {
+				texture_aabb.expand_to(texture_map[cell_index][i]);
+			}
+			CHECK_MESSAGE(texture_aabb.size.is_equal_approx(Vector3(1, 1, 1)), "The unfold is rigid, so every cube keeps its size in texture space.");
+		}
+		const PackedInt32Array upright_cells = { 0, 2, 3, 4, 5, 7 };
+		for (const int32_t cell_index : upright_cells) {
+			for (int64_t i = 0; i < 8; i++) {
+				CHECK_MESSAGE(Math::is_equal_approx(texture_map[cell_index][i].y, (real_t)positions[cell_vertex_indices[cell_index][i]].y), "Every cell with a horizontal normal keeps V equal to the height.");
+			}
+		}
+		// The cells facing along Y are attached to the top and bottom of the seed, so their V spans a horizontal extent.
+		real_t top_min_v = texture_map[6][0].y;
+		real_t bottom_max_v = texture_map[1][0].y;
+		for (int64_t i = 0; i < 8; i++) {
+			top_min_v = MIN(top_min_v, texture_map[6][i].y);
+			bottom_max_v = MAX(bottom_max_v, texture_map[1][i].y);
+		}
+		CHECK(Math::is_equal_approx(top_min_v, (real_t)0.5));
+		CHECK(Math::is_equal_approx(bottom_max_v, (real_t)-0.5));
+	}
+
+	SUBCASE("Projecting a cell outside the mesh fails gracefully") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
+		ERR_PRINT_OFF;
+		mesh->project_texture_map(PackedInt32Array{ 3, 99 }, xyw_to_uvw);
+		ERR_PRINT_ON;
+		CHECK_MESSAGE(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY).is_empty(), "Nothing is written when a listed cell is out of range.");
+	}
+}
+
 TEST_CASE("[ArrayPolyMesh4D] Transform texture map and vertices") {
 	SUBCASE("Transforming the texture map offsets all coordinates") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
