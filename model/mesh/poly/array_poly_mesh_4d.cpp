@@ -1458,13 +1458,12 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 }
 
 void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
-	Vector<PackedVector3Array> &poly_cell_texture_map = r_poly_cell_texture_map;
-	const PackedVector3Array first_cell_texture_map = poly_cell_texture_map[p_cells_in_island[0]];
+	const PackedVector3Array first_cell_texture_map = r_poly_cell_texture_map[p_cells_in_island[0]];
 	ERR_FAIL_COND_MSG(first_cell_texture_map.is_empty(), "ArrayPolyMesh4D: Cannot fit island texture map into AABB because at least one cell in the island has an empty texture map.");
 	AABB current_aabb = AABB(first_cell_texture_map[0], Vector3());
 	for (int64_t cell_index_index = 0; cell_index_index < p_cells_in_island.size(); cell_index_index++) {
 		const int32_t cell_index = p_cells_in_island[cell_index_index];
-		const PackedVector3Array &cell_texture_map = poly_cell_texture_map[cell_index];
+		const PackedVector3Array &cell_texture_map = r_poly_cell_texture_map[cell_index];
 		for (int64_t vertex_index = 0; vertex_index < cell_texture_map.size(); vertex_index++) {
 			current_aabb.expand_to(cell_texture_map[vertex_index]);
 		}
@@ -1486,11 +1485,10 @@ void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &
 	const Transform3D to_target = Transform3D(scale_basis, p_target_aabb.position - scale_basis.xform_inv(current_aabb.position));
 	for (int64_t cell_index_index = 0; cell_index_index < p_cells_in_island.size(); cell_index_index++) {
 		const int32_t cell_index = p_cells_in_island[cell_index_index];
-		PackedVector3Array cell_texture_map = poly_cell_texture_map[cell_index];
+		PackedVector3Array &cell_texture_map = r_poly_cell_texture_map.write[cell_index];
 		for (int64_t vertex_index = 0; vertex_index < cell_texture_map.size(); vertex_index++) {
 			cell_texture_map.set(vertex_index, to_target.xform(cell_texture_map[vertex_index]));
 		}
-		poly_cell_texture_map.set(cell_index, cell_texture_map);
 	}
 }
 
@@ -1542,6 +1540,21 @@ void ArrayPolyMesh4D::project_texture_map(const PackedInt32Array &p_cells, const
 
 void ArrayPolyMesh4D::project_texture_map_bind(const PackedInt32Array &p_cells, const Projection &p_mesh_to_texture) {
 	project_texture_map(p_cells, Basis4D(p_mesh_to_texture));
+}
+
+void ArrayPolyMesh4D::fit_texture_map_island(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional) {
+	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot fit a texture map island for a mesh with no cells.");
+	ERR_FAIL_COND_MSG(p_cells_in_island.is_empty(), "ArrayPolyMesh4D: Cannot fit an empty island of cells.");
+	ERR_FAIL_COND_MSG(p_target_aabb.size.x <= (real_t)0.0 || p_target_aabb.size.y <= (real_t)0.0 || p_target_aabb.size.z <= (real_t)0.0, "ArrayPolyMesh4D: The target box to fit a texture map island into must have a positive size on every axis.");
+	const int64_t cell_count = _poly_cell_indices[1].size();
+	Vector<PackedVector3Array> poly_cell_texture_map = _get_poly_cell_texture_map_dense_internal();
+	for (const int32_t cell_index : p_cells_in_island) {
+		ERR_FAIL_INDEX_MSG(cell_index, cell_count, "ArrayPolyMesh4D: A cell in this island is not in the mesh.");
+		ERR_FAIL_COND_MSG(cell_index >= poly_cell_texture_map.size() || poly_cell_texture_map[cell_index].is_empty(), "ArrayPolyMesh4D: Every cell in the island must have texture coordinates before the island can be fitted.");
+	}
+	_fit_island_texture_map_into_aabb(p_cells_in_island, p_target_aabb, p_proportional, poly_cell_texture_map);
+	_set_poly_cell_texture_map_dense_internal(poly_cell_texture_map);
+	poly_mesh_clear_cache();
 }
 
 void ArrayPolyMesh4D::transform_texture_map(const Transform3D &p_transform) {
@@ -2677,6 +2690,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("project_texture_map", "cells", "mesh_to_texture"), &ArrayPolyMesh4D::project_texture_map_bind);
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map_island", "cells_in_island", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_island, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("fit_texture_map_island", "cells_in_island", "target_aabb", "proportional"), &ArrayPolyMesh4D::fit_texture_map_island, DEFVAL(AABB(Vector3(), Vector3(1, 1, 1))), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);
 
 	// Misc functions.

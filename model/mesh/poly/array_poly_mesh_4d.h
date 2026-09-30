@@ -103,6 +103,7 @@ public:
 	void project_texture_map(const PackedInt32Array &p_cells, const Basis4D &p_mesh_to_texture);
 	void project_texture_map_bind(const PackedInt32Array &p_cells, const Projection &p_mesh_to_texture);
 	void unwrap_texture_map_island(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing = false);
+	void fit_texture_map_island(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb = AABB(Vector3(), Vector3(1, 1, 1)), const bool p_proportional = true);
 	void unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding = 0.0, const bool p_proportional = true, const bool p_keep_existing = false);
 	void transform_texture_map(const Transform3D &p_transform);
 

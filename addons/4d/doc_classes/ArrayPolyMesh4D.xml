@@ -125,6 +125,15 @@
 				Associated normal and texture-map entries are removed with the deleted elements, preserving the correspondence of surviving entries. Empty and partial auxiliary bindings are supported.
 			</description>
 		</method>
+		<method name="fit_texture_map_island">
+			<return type="void" />
+			<param index="0" name="cells_in_island" type="PackedInt32Array" />
+			<param index="1" name="target_aabb" type="AABB" default="AABB(0, 0, 0, 1, 1, 1)" />
+			<param index="2" name="proportional" type="bool" default="true" />
+			<description>
+				Rescales and moves the texture coordinates of the cells in [param cells_in_island] together, so that their combined bounding box fits [param target_aabb], which is the unit cube by default. If [param proportional] is [code]true[/code], the island is scaled uniformly so that its largest axis fills the target and its proportions are kept, otherwise every axis is scaled to fill the target exactly. Every cell in the island must already have texture coordinates, such as from [method unwrap_texture_map_island], which leaves an island in unbounded texture space. This is the step that [method unwrap_texture_map] applies to each island in its filling and tiling modes.
+			</description>
+		</method>
 		<method name="make_double_sided">
 			<return type="void" />
 			<param index="0" name="idempotent" type="bool" default="true" />

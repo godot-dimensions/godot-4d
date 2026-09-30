@@ -1070,6 +1070,68 @@ TEST_CASE("[ArrayPolyMesh4D] Project texture map") {
 	}
 }
 
+TEST_CASE("[ArrayPolyMesh4D] Fit texture map island") {
+	const PackedInt32Array all_cells = { 0, 1, 2, 3, 4, 5, 6, 7 };
+	auto texture_map_aabb = [](const Vector<PackedVector3Array> &p_texture_map, const PackedInt32Array &p_cells) {
+		AABB aabb = AABB(p_texture_map[p_cells[0]][0], Vector3());
+		for (const int32_t cell_index : p_cells) {
+			for (const Vector3 &texcoord : p_texture_map[cell_index]) {
+				aabb.expand_to(texcoord);
+			}
+		}
+		return aabb;
+	};
+
+	SUBCASE("A proportional fit fills the longest axis and keeps the proportions") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		// Enlarge the box's texture map and move it away from the origin so that the fit has real work to do.
+		mesh->transform_texture_map(Transform3D(Basis::from_scale(Vector3(2, 3, 4)), Vector3(5, -3, 7)));
+		const AABB before = texture_map_aabb(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY), all_cells);
+		mesh->fit_texture_map_island(all_cells);
+		const AABB after = texture_map_aabb(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY), all_cells);
+		CHECK(after.position.is_equal_approx(Vector3()));
+		CHECK(Math::is_equal_approx(after.get_longest_axis_size(), (real_t)1.0));
+		const real_t scale = after.get_longest_axis_size() / before.get_longest_axis_size();
+		CHECK_MESSAGE(after.size.is_equal_approx(before.size * scale), "Every axis must be scaled by the same factor.");
+	}
+
+	SUBCASE("A non-proportional fit fills the target box exactly") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->transform_texture_map(Transform3D(Basis::from_scale(Vector3(2, 3, 4)), Vector3(5, -3, 7)));
+		const AABB target = AABB(Vector3(0.25, 0.5, 0.0), Vector3(0.5, 0.25, 1.0));
+		mesh->fit_texture_map_island(all_cells, target, false);
+		const AABB after = texture_map_aabb(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY), all_cells);
+		CHECK(after.position.is_equal_approx(target.position));
+		CHECK(after.size.is_equal_approx(target.size));
+	}
+
+	SUBCASE("Fitting some cells leaves the other cells alone") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->transform_texture_map(Transform3D(Basis::from_scale(Vector3(2, 2, 2)), Vector3(5, -3, 7)));
+		const Vector<PackedVector3Array> before = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		mesh->fit_texture_map_island(PackedInt32Array{ 3 });
+		const Vector<PackedVector3Array> after = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(after.size() == 8);
+		const AABB fitted = texture_map_aabb(after, PackedInt32Array{ 3 });
+		CHECK(fitted.position.is_equal_approx(Vector3()));
+		CHECK(fitted.size.is_equal_approx(Vector3(1, 1, 1)));
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			if (cell_index != 3) {
+				CHECK_MESSAGE(after[cell_index] == before[cell_index], "Cells outside the island must keep their coordinates.");
+			}
+		}
+	}
+
+	SUBCASE("Fitting an island with an unmapped cell fails gracefully") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
+		ERR_PRINT_OFF;
+		mesh->fit_texture_map_island(PackedInt32Array{ 0 });
+		ERR_PRINT_ON;
+		CHECK(mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY).is_empty());
+	}
+}
+
 TEST_CASE("[ArrayPolyMesh4D] Transform texture map and vertices") {
 	SUBCASE("Transforming the texture map offsets all coordinates") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
