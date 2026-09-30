@@ -1189,6 +1189,18 @@ PackedInt32Array ArrayPolyMesh4D::_get_cell_4_vertices_starting_from_face(const 
 	ERR_FAIL_V_MSG(PackedInt32Array(), "ArrayPolyMesh4D: Cell face does not share a common edge with any other face, this cell is invalid.");
 }
 
+// The distance from the given vertex to the farthest vertex of the cell. The degeneracy checks of unwrapping work in
+// units of this size, so that a cell is judged by its shape rather than by its size, and so that no product of lengths
+// can underflow or overflow for very small or very large cells.
+real_t ArrayPolyMesh4D::_get_cell_extent(const PackedInt32Array &p_cell_vertices, const int32_t p_origin_vertex) const {
+	const Vector4 origin = _poly_cell_vertex_positions[p_origin_vertex];
+	real_t extent = 0.0;
+	for (const int32_t vertex_index : p_cell_vertices) {
+		extent = MAX(extent, origin.distance_to(_poly_cell_vertex_positions[vertex_index]));
+	}
+	return extent;
+}
+
 void ArrayPolyMesh4D::_get_cell_world_span_seed(const int64_t p_which_cell, Vector4 &r_world_x, Vector4 &r_world_y, Vector4 &r_world_z, int32_t &p_pivot) const {
 	const PackedInt32Array &cell_faces = _poly_cell_indices[1][p_which_cell];
 	const int32_t first_face_index = cell_faces[0];
@@ -1210,18 +1222,19 @@ void ArrayPolyMesh4D::_get_cell_world_span_seed(const int64_t p_which_cell, Vect
 		SWAP(first_next_vertex, first_common_vertex);
 	}
 	p_pivot = first_next_vertex;
-	r_world_x = _poly_cell_vertex_positions[first_next_vertex].direction_to(_poly_cell_vertex_positions[first_common_vertex]);
+	// These are the edge vectors themselves, not their directions, so that the caller can judge the cell's flatness.
+	r_world_x = _poly_cell_vertex_positions[first_common_vertex] - _poly_cell_vertex_positions[first_next_vertex];
 	if (first_common_vertex == common_vertex_start) {
-		r_world_y = _poly_cell_vertex_positions[first_common_vertex].direction_to(_poly_cell_vertex_positions[common_vertex_end]);
+		r_world_y = _poly_cell_vertex_positions[common_vertex_end] - _poly_cell_vertex_positions[first_common_vertex];
 	} else {
-		r_world_y = _poly_cell_vertex_positions[first_common_vertex].direction_to(_poly_cell_vertex_positions[common_vertex_start]);
+		r_world_y = _poly_cell_vertex_positions[common_vertex_start] - _poly_cell_vertex_positions[first_common_vertex];
 	}
 	int32_t second_next_vertex = _edge_vertex_indices[second_face[second_next_edge] * 2];
 	int32_t second_common_vertex = _edge_vertex_indices[second_face[second_next_edge] * 2 + 1];
 	if (second_next_vertex == common_vertex_start || second_next_vertex == common_vertex_end) {
 		SWAP(second_next_vertex, second_common_vertex);
 	}
-	r_world_z = _poly_cell_vertex_positions[second_common_vertex].direction_to(_poly_cell_vertex_positions[second_next_vertex]);
+	r_world_z = _poly_cell_vertex_positions[second_next_vertex] - _poly_cell_vertex_positions[second_common_vertex];
 }
 
 void ArrayPolyMesh4D::_transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
@@ -1248,8 +1261,13 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 		Vector4 world_x, world_y, world_z;
 		int32_t pivot;
 		_get_cell_world_span_seed(cell_index, world_x, world_y, world_z, pivot);
-		const Basis4D world_coord = Basis4D::from_xyz(world_x, world_y, world_z).orthonormalized();
-		ERR_FAIL_COND_V_MSG(Math::is_zero_approx(world_coord.determinant()), false, "ArrayPolyMesh4D: Cell is degenerate.");
+		// Work in units of the cell's size. The determinant is the square of the 3-volume spanned by the scaled edges,
+		// so it only reads as zero when the cell is flat relative to its own size, whatever its absolute size.
+		const real_t cell_extent = _get_cell_extent(p_cell_vert[cell_index], pivot);
+		ERR_FAIL_COND_V_MSG(cell_extent <= (real_t)0.0, false, "ArrayPolyMesh4D: Cell is degenerate.");
+		const Basis4D scaled_seed = Basis4D::from_xyz(world_x / cell_extent, world_y / cell_extent, world_z / cell_extent);
+		ERR_FAIL_COND_V_MSG(Math::abs(scaled_seed.determinant()) <= (real_t)(CMP_EPSILON * CMP_EPSILON), false, "ArrayPolyMesh4D: Cell is degenerate.");
+		const Basis4D world_coord = scaled_seed.orthonormalized();
 		// This needs to be "flattened" into the UVW texture space.
 		Basis4D tex_coord = Basis4D(world_coord);
 		tex_coord.x.w = 0.0;
@@ -1278,28 +1296,27 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 		if (common_face != INT32_MIN) {
 			const PackedInt32Array cell_span = _get_cell_4_vertices_starting_from_face(cell_index, cell_data_index);
 			ERR_FAIL_COND_V_MSG(cell_span.size() != 4, false, "ArrayPolyMesh4D: Failed to get 4 vertex span for cell.");
+			// Work in units of the cell's size, with every span divided by the cell's extent. This judges the cell by its
+			// shape rather than by its size, and keeps the bases below from having determinants that underflow or
+			// overflow, which scale with the eighth power of the size. Dividing both the world and the texture spans by
+			// the same size leaves the transform between them unchanged, so the mapping is the same.
+			const real_t cell_extent = _get_cell_extent(p_cell_vert[cell_index], cell_span[0]);
+			ERR_FAIL_COND_V_MSG(cell_extent <= (real_t)0.0, false, "ArrayPolyMesh4D: Cell is degenerate.");
 			// Don't normalize X and Y because the lengths of these matter.
-			const Vector4 world_x = _poly_cell_vertex_positions[cell_span[1]] - _poly_cell_vertex_positions[cell_span[0]];
-			const Vector4 world_y = _poly_cell_vertex_positions[cell_span[2]] - _poly_cell_vertex_positions[cell_span[0]];
+			const Vector4 world_x = (_poly_cell_vertex_positions[cell_span[1]] - _poly_cell_vertex_positions[cell_span[0]]) / cell_extent;
+			const Vector4 world_y = (_poly_cell_vertex_positions[cell_span[2]] - _poly_cell_vertex_positions[cell_span[0]]) / cell_extent;
 			// Z needs to be perpendicular to X and Y and the length proportion needs to be consistent between world and texcoord space.
-			const Vector4 world_z_offset = _poly_cell_vertex_positions[cell_span[3]] - _poly_cell_vertex_positions[cell_span[0]];
+			const Vector4 world_z_offset = (_poly_cell_vertex_positions[cell_span[3]] - _poly_cell_vertex_positions[cell_span[0]]) / cell_extent;
 			const Vector4 world_z_orthogonal = Vector4D::orthogonal_from_two(world_z_offset, world_x, world_y);
-			// The fourth vertex has to leave the plane of the shared face, else the cell is flat. This is judged relative
-			// to that vertex's own distance, so that a small cell is judged by its shape rather than by its size.
-			ERR_FAIL_COND_V_MSG(world_z_orthogonal.length_squared() <= world_z_offset.length_squared() * (CMP_EPSILON * CMP_EPSILON), false, "ArrayPolyMesh4D: Cell is degenerate.");
+			// The fourth vertex has to leave the plane of the shared face, else the cell is flat relative to its size.
+			ERR_FAIL_COND_V_MSG(world_z_orthogonal.length_squared() <= (real_t)(CMP_EPSILON * CMP_EPSILON), false, "ArrayPolyMesh4D: Cell is degenerate.");
+			// The shared face must not be flat either. On unit vectors, the determinant is the square of the sine of the
+			// angle between X and Y, which is independent of the lengths.
+			const real_t unit_determinant = Basis4D::from_xyz(world_x.normalized(), world_y.normalized(), world_z_orthogonal.normalized()).determinant();
+			ERR_FAIL_COND_V_MSG(Math::abs(unit_determinant) <= (real_t)CMP_EPSILON, false, "ArrayPolyMesh4D: Cell is degenerate.");
 			const real_t world_z_len = world_x.length() * world_y.length();
 			const Vector4 world_z = world_z_orthogonal.normalized() * world_z_len;
 			const Basis4D world_coord = Basis4D::from_xyz(world_x, world_y, world_z);
-			// The determinant is the square of the 3-volume spanned by X, Y, and Z, and Z was scaled to the product of
-			// the X and Y lengths, so a cell that is not flat has a determinant near the fourth power of that product
-			// whatever its size. The tolerance has to scale the same way, or every small cell would read as degenerate.
-			const real_t volume_scale = world_z_len * world_z_len;
-			real_t tolerance = volume_scale * volume_scale * CMP_EPSILON;
-			constexpr real_t MIN_TOLERANCE = 1e-38; // Lower bound based on 32-bit floats.
-			if (tolerance < MIN_TOLERANCE) {
-				tolerance = MIN_TOLERANCE;
-			}
-			ERR_FAIL_COND_V_MSG(Math::abs(world_coord.determinant()) < tolerance, false, "ArrayPolyMesh4D: Cell is degenerate.");
 			const int64_t texcoord_start_index = already_mapped_cell_verts.find(cell_span[0]);
 			const int64_t texcoord_x_index = already_mapped_cell_verts.find(cell_span[1]);
 			const int64_t texcoord_y_index = already_mapped_cell_verts.find(cell_span[2]);
@@ -1307,8 +1324,8 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 				continue;
 			}
 			const Vector3 texcoord_start = already_mapped_texture_map[texcoord_start_index];
-			const Vector3 texcoord_x = already_mapped_texture_map[texcoord_x_index] - texcoord_start;
-			const Vector3 texcoord_y = already_mapped_texture_map[texcoord_y_index] - texcoord_start;
+			const Vector3 texcoord_x = (already_mapped_texture_map[texcoord_x_index] - texcoord_start) / cell_extent;
+			const Vector3 texcoord_y = (already_mapped_texture_map[texcoord_y_index] - texcoord_start) / cell_extent;
 			// This could be `length_squared()`, so long as the world's lengths were also changed, but then it would
 			// fail for vertex separations around 10^-9 or smaller, or vertex separations around 10^9 or bigger,
 			// which I think is... not entirely unreasonable of a use case, so let's just use `length()`.
@@ -1452,10 +1469,12 @@ void ArrayPolyMesh4D::_fit_island_texture_map_into_aabb(const PackedInt32Array &
 			current_aabb.expand_to(cell_texture_map[vertex_index]);
 		}
 	};
+	// An axis along which the island is flat, relative to the island's own size, keeps its scale.
+	const real_t flat_size = current_aabb.get_longest_axis_size() * (real_t)CMP_EPSILON2;
 	Vector3 scale_vec;
-	scale_vec.x = (current_aabb.size.x < CMP_EPSILON2) ? 1.0 : p_target_aabb.size.x / current_aabb.size.x;
-	scale_vec.y = (current_aabb.size.y < CMP_EPSILON2) ? 1.0 : p_target_aabb.size.y / current_aabb.size.y;
-	scale_vec.z = (current_aabb.size.z < CMP_EPSILON2) ? 1.0 : p_target_aabb.size.z / current_aabb.size.z;
+	scale_vec.x = (current_aabb.size.x <= flat_size) ? 1.0 : p_target_aabb.size.x / current_aabb.size.x;
+	scale_vec.y = (current_aabb.size.y <= flat_size) ? 1.0 : p_target_aabb.size.y / current_aabb.size.y;
+	scale_vec.z = (current_aabb.size.z <= flat_size) ? 1.0 : p_target_aabb.size.z / current_aabb.size.z;
 	if (p_proportional) {
 		const real_t min_scale = MIN(MIN(scale_vec.x, scale_vec.y), scale_vec.z);
 		scale_vec = Vector3(min_scale, min_scale, min_scale);

@@ -42,6 +42,7 @@ private:
 	void _delete_data_bindings_internal(const int32_t p_dimension, const int32_t p_index);
 
 	PackedInt32Array _get_cell_4_vertices_starting_from_face(const int64_t p_cell, const int64_t p_start_face) const;
+	real_t _get_cell_extent(const PackedInt32Array &p_cell_vertices, const int32_t p_origin_vertex) const;
 	void _get_cell_world_span_seed(const int64_t p_which_cell, Vector4 &r_world_x, Vector4 &r_world_y, Vector4 &r_world_z, int32_t &p_pivot) const;
 	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map);
 	Vector<PackedInt32Array> _get_face_to_cell_map() const;

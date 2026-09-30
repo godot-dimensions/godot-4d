@@ -886,6 +886,87 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 		}
 	}
 
+	SUBCASE("Cells unwrap the same at any scale") {
+		// The degeneracy checks are judged relative to each cell's own size, so neither tiny nor huge cells may read
+		// as degenerate, and neither may run into float underflow or overflow while being judged.
+		for (const real_t scale : { (real_t)1e-7, (real_t)1.0, (real_t)1e7 }) {
+			CAPTURE(scale);
+			for (const ArrayPolyMesh4D::UnwrapTextureMapMode mode : { ArrayPolyMesh4D::UNWRAP_MODE_TILE_CELLS, ArrayPolyMesh4D::UNWRAP_MODE_TILE_ISLANDS }) {
+				CAPTURE(mode);
+				Ref<BoxPolyMesh4D> box;
+				box.instantiate();
+				box->set_size(Vector4(scale, scale, scale, scale));
+				Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+				mesh->unwrap_texture_map(mode);
+				const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+				REQUIRE(texture_map.size() == 8);
+				for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+					REQUIRE_MESSAGE(texture_map[cell_index].size() == 8, "Every cell of the box must be mapped.");
+					for (const Vector3 &texcoord : texture_map[cell_index]) {
+						CHECK(texcoord.x >= (real_t)-0.001);
+						CHECK(texcoord.y >= (real_t)-0.001);
+						CHECK(texcoord.z >= (real_t)-0.001);
+						CHECK(texcoord.x <= (real_t)1.001);
+						CHECK(texcoord.y <= (real_t)1.001);
+						CHECK(texcoord.z <= (real_t)1.001);
+					}
+				}
+			}
+		}
+	}
+
+	SUBCASE("Degenerate cells are not unwrapped at any scale") {
+		// Three ways to flatten some of the cells of a box. Mapping W onto 2X keeps every vertex distinct, but
+		// flattens the four cells that span both X and W, since those axes now point the same way. Scaling what is
+		// left of W by a tiny amount instead makes those cells flat relative to their own size. Scaling W by a tiny
+		// amount without mapping it makes a thin slab, whose cells along W have one vertex offset straight along the
+		// thin direction, so the flatness must be judged relative to the cell and not to any one vertex.
+		struct Flattening {
+			real_t shear;
+			real_t thickness;
+		};
+		for (const Flattening flattening : { Flattening{ 2.0, 0.0 }, Flattening{ 2.0, 1e-9 }, Flattening{ 0.0, 1e-9 } }) {
+			CAPTURE(flattening.shear);
+			CAPTURE(flattening.thickness);
+			for (const real_t scale : { (real_t)1e-7, (real_t)1.0, (real_t)1e7 }) {
+				CAPTURE(scale);
+				for (const ArrayPolyMesh4D::UnwrapTextureMapMode mode : { ArrayPolyMesh4D::UNWRAP_MODE_TILE_CELLS, ArrayPolyMesh4D::UNWRAP_MODE_TILE_ISLANDS }) {
+					CAPTURE(mode);
+					Ref<BoxPolyMesh4D> box;
+					box.instantiate();
+					box->set_size(Vector4(scale, scale, scale, scale));
+					Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+					// A cell is flattened when its boundary normal is not along W, since it then spans W, and when
+					// sheared, also not along X, since only then does it span both.
+					const PackedVector4Array box_normals = mesh->get_poly_cell_boundary_normals();
+					REQUIRE(box_normals.size() == 8);
+					PackedVector4Array positions = mesh->get_poly_cell_vertex_positions();
+					for (int64_t i = 0; i < positions.size(); i++) {
+						const Vector4 position = positions[i];
+						positions.set(i, Vector4(position.x + flattening.shear * position.w, position.y, position.z, position.w * flattening.thickness));
+					}
+					mesh->set_poly_cell_vertex_positions(positions);
+					ERR_PRINT_OFF;
+					mesh->unwrap_texture_map(mode);
+					ERR_PRINT_ON;
+					const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+					REQUIRE(texture_map.size() == 8);
+					for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+						const bool spans_w = Math::is_zero_approx(box_normals[cell_index].w);
+						const bool spans_x = Math::is_zero_approx(box_normals[cell_index].x);
+						const bool flattened = spans_w && (flattening.shear == (real_t)0.0 || spans_x);
+						if (flattened) {
+							CHECK_MESSAGE(texture_map[cell_index].is_empty(), "A flattened cell must not be unwrapped.");
+						} else if (mode == ArrayPolyMesh4D::UNWRAP_MODE_TILE_CELLS) {
+							// Each cell is its own island here, so the cells that kept their volume are still mapped.
+							CHECK_MESSAGE(texture_map[cell_index].size() == 8, "A cell that kept its volume must still be unwrapped.");
+						}
+					}
+				}
+			}
+		}
+	}
+
 	SUBCASE("Unwrapping a single island only fills that island") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
