@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../voxel/generators/tiger_test_generator.h"
 #include "../../voxel/voxel_chunk_loader.h"
 #include "../../voxel/voxel_mesh_handler.h"
 #include "../../voxel/voxel_world_4d.h"
@@ -27,6 +28,7 @@ static void _queue_all_chunks(VoxelChunkLoader *p_loader, const Rect4i &p_bounds
 // finished chunk loads are delivered through.
 TEST_CASE("[VoxelChunkLoader][SceneTree] Dynamic loading") {
 	VoxelWorld4D *world = memnew(VoxelWorld4D);
+	world->set_generator(memnew(TigerTestGenerator));
 	const Rect4i bounds = Rect4i(VOXEL_DATA_CHUNK_SIZE_VECTOR * -2, VOXEL_DATA_CHUNK_SIZE_VECTOR * 4);
 	{
 		// A loader destroyed while loads are pending must wait for its worker
@@ -41,6 +43,7 @@ TEST_CASE("[VoxelChunkLoader][SceneTree] Dynamic loading") {
 	memdelete(world);
 
 	world = memnew(VoxelWorld4D);
+	world->set_generator(memnew(TigerTestGenerator));
 	VoxelChunkLoader *loader = memnew(VoxelChunkLoader(world));
 	world->get_mesh_handler().mark_region_dirty(world->get_voxel_data()->get_bounds());
 	world->get_mesh_handler().update_dirty_meshes();

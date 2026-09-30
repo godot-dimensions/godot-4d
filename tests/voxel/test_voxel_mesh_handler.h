@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../voxel/generators/tiger_test_generator.h"
 #include "../../voxel/voxel_mesh_handler.h"
 #include "../../voxel/voxel_world_4d.h"
 
@@ -27,6 +28,7 @@ static Ref<Mesh4D> _chunk_mesh_at(const VoxelWorld4D *p_world, const Vector4i &p
 
 TEST_CASE("[VoxelMeshHandler] Mesh generation") {
 	VoxelWorld4D *world = memnew(VoxelWorld4D);
+	world->set_generator(memnew(TigerTestGenerator));
 	world->get_voxel_data()->load_all_chunks();
 	VoxelMeshHandler handler = VoxelMeshHandler(world);
 	handler.mark_region_dirty(world->get_voxel_data()->get_bounds());
@@ -38,6 +40,7 @@ TEST_CASE("[VoxelMeshHandler] Mesh generation") {
 
 TEST_CASE("[VoxelMeshHandler] Dirty region updates") {
 	VoxelWorld4D *world = memnew(VoxelWorld4D);
+	world->set_generator(memnew(TigerTestGenerator));
 	world->get_voxel_data()->load_all_chunks();
 	VoxelMeshHandler handler = VoxelMeshHandler(world);
 	handler.mark_region_dirty(world->get_voxel_data()->get_bounds());

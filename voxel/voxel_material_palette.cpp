@@ -3,11 +3,18 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/image_texture3d.hpp>
+#include <godot_cpp/classes/rendering_server.hpp>
 #elif GODOT_MODULE
 #include "scene/resources/image_texture.h"
+#include "servers/rendering_server.h"
 #endif
 
 Ref<Texture3D> VoxelMaterialPalette::bake_texture(const Ref<VoxelMaterialPalette> &p_palette) {
+	// Without a rendering server, as when running tests, there is nothing to
+	// hold the texture.
+	if (RenderingServer::get_singleton() == nullptr) {
+		return Ref<Texture3D>();
+	}
 	Ref<Image> image = Image::create_empty(TEXTURE_WIDTH, 1, false, Image::FORMAT_RGBA8);
 	for (int i = 0; i < TEXTURE_WIDTH; i++) {
 		// Texels 2m - 1 and 2m flank material m's sample point, with the
