@@ -1282,18 +1282,22 @@ bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_
 			const Vector4 world_x = _poly_cell_vertex_positions[cell_span[1]] - _poly_cell_vertex_positions[cell_span[0]];
 			const Vector4 world_y = _poly_cell_vertex_positions[cell_span[2]] - _poly_cell_vertex_positions[cell_span[0]];
 			// Z needs to be perpendicular to X and Y and the length proportion needs to be consistent between world and texcoord space.
-			Vector4 world_z = _poly_cell_vertex_positions[cell_span[3]] - _poly_cell_vertex_positions[cell_span[0]];
+			const Vector4 world_z_offset = _poly_cell_vertex_positions[cell_span[3]] - _poly_cell_vertex_positions[cell_span[0]];
+			const Vector4 world_z_orthogonal = Vector4D::orthogonal_from_two(world_z_offset, world_x, world_y);
+			// The fourth vertex has to leave the plane of the shared face, else the cell is flat. This is judged relative
+			// to that vertex's own distance, so that a small cell is judged by its shape rather than by its size.
+			ERR_FAIL_COND_V_MSG(world_z_orthogonal.length_squared() <= world_z_offset.length_squared() * (CMP_EPSILON * CMP_EPSILON), false, "ArrayPolyMesh4D: Cell is degenerate.");
 			const real_t world_z_len = world_x.length() * world_y.length();
-			world_z = Vector4D::orthogonal_from_two(world_z, world_x, world_y).normalized() * world_z_len;
-			ERR_FAIL_COND_V_MSG(Math::is_zero_approx(world_z.length()), false, "ArrayPolyMesh4D: Cell is degenerate.");
+			const Vector4 world_z = world_z_orthogonal.normalized() * world_z_len;
 			const Basis4D world_coord = Basis4D::from_xyz(world_x, world_y, world_z);
-			// Don't use Math::is_zero_approx here because this will be very small for small cells.
-			// Instead let's hand-roll our own tolerance epsilon based on the lengths of the axes.
-			// world_z_len already includes X and Y, so this accounts for all axes, and therefore
-			// the tolerance has an effective dimensionality of length^4.
-			real_t tolerance = world_z_len * world_z_len * CMP_EPSILON;
-			if (tolerance < 1e-38) {
-				tolerance = 1e-38; // Lower bound based on 32-bit floats.
+			// The determinant is the square of the 3-volume spanned by X, Y, and Z, and Z was scaled to the product of
+			// the X and Y lengths, so a cell that is not flat has a determinant near the fourth power of that product
+			// whatever its size. The tolerance has to scale the same way, or every small cell would read as degenerate.
+			const real_t volume_scale = world_z_len * world_z_len;
+			real_t tolerance = volume_scale * volume_scale * CMP_EPSILON;
+			constexpr real_t MIN_TOLERANCE = 1e-38; // Lower bound based on 32-bit floats.
+			if (tolerance < MIN_TOLERANCE) {
+				tolerance = MIN_TOLERANCE;
 			}
 			ERR_FAIL_COND_V_MSG(Math::abs(world_coord.determinant()) < tolerance, false, "ArrayPolyMesh4D: Cell is degenerate.");
 			const int64_t texcoord_start_index = already_mapped_cell_verts.find(cell_span[0]);

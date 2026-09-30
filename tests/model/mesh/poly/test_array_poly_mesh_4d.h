@@ -861,6 +861,31 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map") {
 		}
 	}
 
+	SUBCASE("Small cells unwrap like large ones") {
+		// The degeneracy check used to compare a determinant that scales with the eighth power of the cell size against
+		// a tolerance that scaled with the fourth power, so cells a few centimeters across were rejected as degenerate
+		// and the rest of their island was left unmapped.
+		Ref<BoxPolyMesh4D> box;
+		box.instantiate();
+		box->set_size(Vector4(0.01, 0.01, 0.01, 0.01));
+		Ref<ArrayPolyMesh4D> mesh = box->to_array_poly_mesh();
+		mesh->unwrap_texture_map(ArrayPolyMesh4D::UNWRAP_MODE_TILE_ISLANDS);
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(texture_map.size() == 8);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			REQUIRE_MESSAGE(texture_map[cell_index].size() == 8, "Every cell of the small box must be mapped.");
+			for (int64_t vertex_in_cell = 0; vertex_in_cell < 8; vertex_in_cell++) {
+				const Vector3 texcoord = texture_map[cell_index][vertex_in_cell];
+				CHECK(texcoord.x >= (real_t)-0.001);
+				CHECK(texcoord.y >= (real_t)-0.001);
+				CHECK(texcoord.z >= (real_t)-0.001);
+				CHECK(texcoord.x <= (real_t)1.001);
+				CHECK(texcoord.y <= (real_t)1.001);
+				CHECK(texcoord.z <= (real_t)1.001);
+			}
+		}
+	}
+
 	SUBCASE("Unwrapping a single island only fills that island") {
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
