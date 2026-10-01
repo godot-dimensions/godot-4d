@@ -15,14 +15,14 @@
 		<member name="height" type="float" setter="set_height" getter="get_height" default="2.0">
 			The cylinder's full extent along the vertical (Y) axis, in voxels.
 		</member>
-		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
-			The radius of the cylinder over the three horizontal axes, in voxels.
-		</member>
 		<member name="material_inner" type="int" setter="set_material_inner" getter="get_material_inner" default="255">
 			The material filling the cylinder, or [code]255[/code] to leave it undefined.
 		</member>
 		<member name="material_outer" type="int" setter="set_material_outer" getter="get_material_outer" default="254">
 			The material filling the space outside the cylinder, [code]254[/code] for air by default, or [code]255[/code] to leave it undefined.
+		</member>
+		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="0.5">
+			The radius of the cylinder over the three horizontal axes, in voxels.
 		</member>
 	</members>
 </class>

@@ -9,9 +9,6 @@
 	<tutorials>
 	</tutorials>
 	<members>
-		<member name="normal" type="Vector4" setter="set_normal" getter="get_normal" default="Vector4(0, 1, 0, 0)">
-			The normal of the plane, pointing toward the side filled with [member material_over].
-		</member>
 		<member name="distance" type="float" setter="set_distance" getter="get_distance" default="0.0">
 			The plane's distance from the origin along [member normal], in voxels while [member normal] is a unit vector.
 		</member>
@@ -20,6 +17,9 @@
 		</member>
 		<member name="material_under" type="int" setter="set_material_under" getter="get_material_under" default="255">
 			The material filling the half-space away from [member normal], or [code]255[/code] to leave it undefined.
+		</member>
+		<member name="normal" type="Vector4" setter="set_normal" getter="get_normal" default="Vector4(0, 1, 0, 0)">
+			The normal of the plane, pointing toward the side filled with [member material_over].
 		</member>
 	</members>
 </class>

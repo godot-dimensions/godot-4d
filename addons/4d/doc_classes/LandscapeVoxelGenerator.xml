@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LandscapeVoxelGenerator" inherits="VoxelGenerator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A generator producing noise-based landscape terrain.
+	</brief_description>
+	<description>
+		LandscapeVoxelGenerator computes a relative height at each point: its Y coordinate plus several octaves of 4D value noise, so the noise displaces the terrain vertically by up to about [member intensity]. The ascending [member material_cutoffs] are heights splitting space into bands, and each band is filled with the corresponding entry of [member materials], from the deepest band up; the last material fills the band above every cutoff, so there is one more material than cutoffs. Bands beyond the materials list, or everywhere while the list is empty, are undefined.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="horizontal_scale" type="float" setter="set_horizontal_scale" getter="get_horizontal_scale" default="3.5">
+			The scale of the finest octave's noise along the three horizontal axes, in voxels. Coarser octaves double it each step.
+		</member>
+		<member name="intensity" type="float" setter="set_intensity" getter="get_intensity" default="12.0">
+			The amplitude of the coarsest octave, in voxels of height.
+		</member>
+		<member name="material_cutoffs" type="PackedFloat32Array" setter="set_material_cutoffs" getter="get_material_cutoffs" default="PackedFloat32Array()">
+			The heights of the boundaries between consecutive bands of [member materials], in voxels and ascending order. The noise displaces each boundary vertically from its cutoff height.
+		</member>
+		<member name="materials" type="PackedInt32Array" setter="set_materials" getter="get_materials" default="PackedInt32Array()">
+			The materials of the height bands, from the deepest band up. Should hold one more entry than [member material_cutoffs]; bands without an entry are undefined.
+		</member>
+		<member name="octaves" type="int" setter="set_octaves" getter="get_octaves" default="5">
+			The number of noise layers, each at twice the scale of the previous.
+		</member>
+		<member name="persistence" type="float" setter="set_persistence" getter="get_persistence" default="0.65">
+			The factor between the amplitudes of consecutive octaves: each finer octave's amplitude is the previous amplitude times this.
+		</member>
+		<member name="seed" type="int" setter="set_seed" getter="get_seed" default="0">
+			The seed of the noise.
+		</member>
+		<member name="vertical_scale" type="float" setter="set_vertical_scale" getter="get_vertical_scale" default="8.0">
+			The vertical (Y) scale of the finest octave's noise, in voxels. Coarser octaves double it each step.
+		</member>
+	</members>
+</class>
