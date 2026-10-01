@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BoxVoxelEdit" inherits="VoxelEdit" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		An edit that fills an axis-aligned box with one material.
+	</brief_description>
+	<description>
+		BoxVoxelEdit fills an axis-aligned box of the given position and size with one material.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="fill_material" type="int" setter="set_fill_material" getter="get_fill_material" default="254">
+			The material the box is filled with: [code]254[/code] for air, carving matter out, or [code]0[/code] to [code]253[/code] for the opaque materials, adding matter.
+		</member>
+		<member name="position" type="Vector4" setter="set_position" getter="get_position" default="Vector4(0, 0, 0, 0)">
+			The lowest corner of the box, in voxel coordinates.
+		</member>
+		<member name="size" type="Vector4" setter="set_size" getter="get_size" default="Vector4(1, 1, 1, 1)">
+			The size of the box, in voxels, extending from [member position].
+		</member>
+	</members>
+</class>

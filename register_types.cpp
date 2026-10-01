@@ -94,6 +94,8 @@
 
 // Voxel.
 #include "voxel/data/voxel_data.h"
+#include "voxel/edit/box_voxel_edit.h"
+#include "voxel/edit/parallelogram_voxel_edit.h"
 #include "voxel/edit/sphere_voxel_edit.h"
 #include "voxel/edit/voxel_edit.h"
 #include "voxel/generators/box_voxel_generator.h"
@@ -292,6 +294,8 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		// Voxel.
 		GDREGISTER_ABSTRACT_CLASS(VoxelGenerator);
 		GDREGISTER_ABSTRACT_CLASS(VoxelEdit);
+		GDREGISTER_CLASS(BoxVoxelEdit);
+		GDREGISTER_CLASS(ParallelogramVoxelEdit);
 		GDREGISTER_CLASS(SphereVoxelEdit);
 		GDREGISTER_CLASS(BoxVoxelGenerator);
 		GDREGISTER_CLASS(CaveVoxelGenerator);
