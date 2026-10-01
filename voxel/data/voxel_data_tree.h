@@ -22,7 +22,7 @@ class VoxelDataTree {
 	// VoxelData contracts and replaces the root in ways that only make sense
 	// for a whole tree, working with the node internals directly.
 	friend class VoxelData;
-	// Edits set, and the constant-merging pass consumes, _edited_since_merge.
+	// Edits set, and the update pass consumes, _parent_needs_update.
 	friend struct VoxelDataNeighbourhood;
 
 public:
@@ -39,10 +39,16 @@ private:
 	// The region of voxel space this node covers.
 	const Rect4i _bounds;
 	Type _type = TYPE_UNDEFINED;
-	// Whether this subtree, or the 1-voxel border around it, has been edited
-	// since the last constant-merging pass over it (see
-	// VoxelDataNeighbourhood::merge_edited_constants).
-	bool _edited_since_merge = false;
+	// Whether derived state in this subtree needs recomputing because it, or
+	// the 1-voxel border around it, has changed since the last update pass
+	// over it (see VoxelDataNeighbourhood::merge_edited_constants).
+	bool _parent_needs_update = false;
+	// Whether every voxel in this node's bounds is either defined or pending a
+	// load: always true for leaves and constants, true for a parent iff it is
+	// true for all of its children, and set on an undefined node to mark its
+	// region as pending. Mutations keep parents' marks either exact or
+	// conservatively false; the update pass restores exactness.
+	bool _defined_or_pending = false;
 	union {
 		// Array of CHILD_COUNT children allocated with memalloc. Only valid when _type == TYPE_PARENT.
 		VoxelDataTree *_children = nullptr;
@@ -62,6 +68,7 @@ public:
 	bool is_parent() const { return _type == TYPE_PARENT; }
 	bool is_leaf() const { return _type == TYPE_LEAF; }
 	bool is_constant() const { return _type == TYPE_CONSTANT; }
+	bool is_defined_or_pending() const { return _defined_or_pending; }
 
 	const Rect4i &get_bounds() const { return _bounds; }
 	bool has_voxel(const Vector4i &p_voxel) const;
@@ -101,10 +108,20 @@ public:
 	// material, replaces them with a single constant node and returns true.
 	bool merge_constant_children();
 
+	// Subdivides a constant node into constant children, or turns a
+	// chunk-sized one into a leaf, so that parts of it can diverge or store
+	// edge data.
+	void split_constant();
+
 	// Marks every leaf and parent whose bounds, grown by a 1-voxel border,
-	// intersect the given edited region, so that the next constant-merging
-	// pass rechecks them.
+	// intersect the given edited region, so that the next update pass rechecks
+	// them.
 	void mark_edited(const Rect4i &p_edited_region);
+
+	// Records that a region is being loaded: marks every undefined chunk
+	// overlapping it as pending, at chunk granularity. Defined parts are
+	// unaffected.
+	void mark_region_pending(const Rect4i &p_region);
 
 	// Discards any existing contents and fills the node at full detail with
 	// the data the given generator returns for each voxel. Uniform regions
@@ -113,9 +130,11 @@ public:
 	// that they can store the surface data
 	void generate(const Ref<VoxelGenerator> &p_generator);
 
-	// Makes the chunk containing the given voxel undefined again, subdividing
-	// constants that cover more than the chunk, and collapsing parents whose
-	// children become all undefined. Returns whether any data was unloaded.
+	// Makes the chunk containing the given voxel undefined again and cancels
+	// its pending mark, splitting constants and pending marks that cover more
+	// than the chunk, and collapsing parents whose children become all
+	// undefined with matching marks. Returns whether any data was unloaded;
+	// cancelling a pending mark alone does not count.
 	bool clear_chunk(const Vector4i &p_voxel);
 
 	// Descends the tree to the deepest existing node whose bounds contain the
@@ -192,6 +211,8 @@ struct VoxelDataNeighbourhood {
 	// Simplifies nodes that edits have made representable as constants: leaves
 	// whose voxels are uniform, store no edge data, and border no defined
 	// voxel of a different material, and parents whose children all become
-	// constants of one material. Uses _edited_since_merge
+	// constants of one material. Also refreshes the parents' defined-or-pending
+	// marks. Visits only subtrees marked with _parent_needs_update, clearing
+	// the marks.
 	void merge_edited_constants();
 };

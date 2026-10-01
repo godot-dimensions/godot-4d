@@ -20,10 +20,10 @@ TEST_CASE("[PackedVoxelEdgeData] Encoding round trips") {
 		const real_t position = rng->randf();
 		const VoxelEdgeData decoded = PackedVoxelEdgeData::encode(VoxelEdgeData(normal, position)).decode();
 		// Each of the three face coordinates rounds by at most half of its
-		// 1/4 step, giving a direction error within ~0.22 radians. The sign
-		// is not stored, so compare up to it.
-		CHECK_MESSAGE(Math::abs(decoded.normal.dot(normal)) > Math::cos(0.25), "PackedVoxelEdgeData decoded normals should be within the quantization error of the original.");
-		CHECK_MESSAGE(Math::abs(decoded.position - position) < 0.5f / 31.0f + 0.0001f, "PackedVoxelEdgeData decoded positions should be within half of a quantization step.");
+		// 1/64 step, giving a direction error within ~0.014 radians. The
+		// sign is not stored, so compare up to it.
+		CHECK_MESSAGE(Math::abs(decoded.normal.dot(normal)) > Math::cos(0.016), "PackedVoxelEdgeData decoded normals should be within the quantization error of the original.");
+		CHECK_MESSAGE(Math::abs(decoded.position - position) < 0.5f / 511.0f + 0.0001f, "PackedVoxelEdgeData decoded positions should be within half of a quantization step.");
 	}
 
 	// The centers of the hypercube's 2-faces, the diagonals between two axes,

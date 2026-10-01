@@ -1,6 +1,8 @@
 #include "voxel_mesher.h"
 
+#include "../math/vector_4d.h"
 #include "../model/mesh/tetra/array_tetra_mesh_4d.h"
+#include "voxel_material_palette.h"
 
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_map.hpp>
@@ -382,6 +384,10 @@ Ref<TetraMesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &
 	}
 	PackedVector4Array vertices;
 	PackedInt32Array cell_indices;
+	PackedVector4Array normal_values;
+	PackedInt32Array normal_indices;
+	PackedVector3Array texture_map_values;
+	PackedInt32Array texture_map_indices;
 	HashMap<Vector4i, CellSurfaces> cells;
 	Vector4i local = Vector4i();
 	for (local.w = 0; local.w < VOXEL_MESH_CHUNK_SIZE; local.w++) {
@@ -432,11 +438,33 @@ Ref<TetraMesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &
 						const Vector4i world_base = p_chunk_position + edge_upper;
 						const bool base_parity_odd = ((world_base.x + world_base.y + world_base.z + world_base.w) & 1) != 0;
 						const int32_t (*face_cells)[4] = base_parity_odd ? FACE_CELLS_ODD : FACE_CELLS_EVEN;
+						// The whole face shades with one normal: the direction
+						// of its total oriented volume, the sum of its tets'
+						// directed volumes.
+						Vector4 face_volume = Vector4();
 						for (int cell = 0; cell < 5; cell++) {
 							cell_indices.append(corner_indices[face_cells[cell][0]]);
 							cell_indices.append(corner_indices[face_cells[cell][1]]);
 							cell_indices.append(corner_indices[face_cells[cell][2]]);
 							cell_indices.append(corner_indices[face_cells[cell][3]]);
+							const Vector4 &pivot = vertices[corner_indices[face_cells[cell][0]]];
+							face_volume += Vector4D::perpendicular(
+									vertices[corner_indices[face_cells[cell][1]]] - pivot,
+									vertices[corner_indices[face_cells[cell][2]]] - pivot,
+									vertices[corner_indices[face_cells[cell][3]]] - pivot);
+						}
+						const int32_t normal_index = (int32_t)normal_values.size();
+						normal_values.append(face_volume.normalized());
+						for (int i = 0; i < 20; i++) {
+							normal_indices.append(normal_index);
+						}
+						// The whole face samples the palette texture at its
+						// opaque material's sample point.
+						const VoxelMaterial solid_material = face == VoxelFace::TOWARD_SECOND ? material : upper_material;
+						const int32_t map_index = (int32_t)texture_map_values.size();
+						texture_map_values.append(VoxelMaterialPalette::get_material_uvw(solid_material));
+						for (int i = 0; i < 20; i++) {
+							texture_map_indices.append(map_index);
 						}
 					}
 				}
@@ -445,6 +473,9 @@ Ref<TetraMesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &
 	}
 	mesh->set_vertex_positions(vertices);
 	mesh->set_simplex_cell_vertex_indices(cell_indices);
-	mesh->set_flat_shading_normals();
+	mesh->set_normal_values(normal_values);
+	mesh->set_simplex_cell_normal_indices(normal_indices);
+	mesh->set_texture_map_values(texture_map_values);
+	mesh->set_simplex_cell_texture_map_indices(texture_map_indices);
 	return mesh;
 }

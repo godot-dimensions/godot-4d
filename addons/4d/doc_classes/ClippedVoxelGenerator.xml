@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ClippedVoxelGenerator" inherits="VoxelGenerator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A generator clipping a modifier generator to the shape of a base generator.
+	</brief_description>
+	<description>
+		ClippedVoxelGenerator combines two generators: where the [member base] is undefined the result is undefined, and where it's defined, the [member modifier]'s material may replace it. The modifier's content is thus clipped to the defined shape of the base.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="base" type="VoxelGenerator" setter="set_base" getter="get_base">
+			The generator whose defined region bounds the result. While unset, the result is undefined everywhere.
+		</member>
+		<member name="modifier" type="VoxelGenerator" setter="set_modifier" getter="get_modifier">
+			The generator overlaid inside the base's defined region.
+		</member>
+	</members>
+</class>

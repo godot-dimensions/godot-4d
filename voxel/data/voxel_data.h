@@ -28,6 +28,8 @@ public:
 	Rect4i get_bounds() const { return _tree == nullptr ? Rect4i() : _tree->get_bounds(); }
 
 	bool is_voxel_defined(const Vector4i &p_voxel) const;
+	// Whether the voxel is inside a defined chunk or one marked as pending.
+	bool is_voxel_defined_or_pending(const Vector4i &p_voxel) const;
 	// Whether every voxel in the given region is defined. Regions reaching
 	// outside the defined bounds are not fully defined.
 	bool is_region_defined(const Rect4i &p_region) const;
@@ -49,8 +51,9 @@ public:
 	VoxelDataNeighbourhood find_region_neighbourhood(const Rect4i &p_region);
 
 	// Sets the generator that provides chunk contents. Chunks already
-	// generated are unaffected.
+	// generated are unaffected. While it is null, no chunks can load.
 	void set_generator(const Ref<VoxelGenerator> &p_generator);
+	Ref<VoxelGenerator> get_generator() const { return _generator; }
 
 	// Generates a detached chunk-sized tree with the content of the chunk
 	// containing the given voxel. This only reads the generator, so it can
@@ -72,6 +75,10 @@ public:
 	// constants. Main thread only.
 	void merge_edited_constants();
 
+	// Requests loads for the region: marks its undefined chunks as pending,
+	// expanding the bounds to cover it. Main thread only.
+	void mark_region_pending(const Rect4i &p_region);
+
 	// Makes the data chunk containing the given voxel undefined again.
 	// Returns whether any data was unloaded. Main thread only.
 	bool unload_chunk(const Vector4i &p_voxel);
@@ -91,6 +98,5 @@ private:
 	void expand_bounds(const Vector4i &p_toward);
 
 public:
-	VoxelData();
 	~VoxelData();
 };

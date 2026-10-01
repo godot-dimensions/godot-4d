@@ -4,21 +4,26 @@
 #include "../data/voxel_material.h"
 
 #if GDEXTENSION
-#include <godot_cpp/classes/ref_counted.hpp>
+#include <godot_cpp/classes/resource.hpp>
 #elif GODOT_MODULE
-#include "core/object/ref_counted.h"
+#include "core/io/resource.h"
 #endif
 
 // Virtual base class, produces the voxel content that fills a VoxelData volume.
 // Chunks are generated on worker threads, so implementations must be safe to
 // call from several threads at once.
-class VoxelGenerator : public RefCounted {
-	GDCLASS(VoxelGenerator, RefCounted);
+class VoxelGenerator : public Resource {
+	GDCLASS(VoxelGenerator, Resource);
 
 protected:
 	static void _bind_methods();
 
 public:
+	// Voxels are sampled at their centers.
+	static Vector4 get_voxel_center(const Vector4i &p_voxel) {
+		return Vector4(p_voxel) + Vector4(0.5f, 0.5f, 0.5f, 0.5f);
+	}
+
 	virtual VoxelMaterial get_material(const Vector4i &p_voxel) const = 0;
 
 	// The surface data of the edge from the given voxel to its neighbor one

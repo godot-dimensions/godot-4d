@@ -11,7 +11,7 @@ real_t TigerTestGenerator::_signed_distance(const Vector4 &p_point) const {
 
 VoxelMaterial TigerTestGenerator::get_material(const Vector4i &p_voxel) const {
 	const Vector4 point = Vector4(p_voxel.x + (real_t)0.5, p_voxel.y + (real_t)0.5, p_voxel.z + (real_t)0.5, p_voxel.w + (real_t)0.5);
-	return _signed_distance(point) > 0.0 ? VoxelMaterial::RESERVED_COUNT : VoxelMaterial::AIR;
+	return _signed_distance(point) > 0.0 ? (VoxelMaterial)0 : VoxelMaterial::AIR;
 }
 
 VoxelEdgeData TigerTestGenerator::get_edge_data(const Vector4i &p_voxel, const int p_axis) const {

@@ -1,8 +1,13 @@
 #include "voxel_data.h"
 
 #include "../edit/voxel_edit.h"
-#include "../generators/tiger_test_generator.h"
 #include "../voxel_constants.h"
+
+// Whether the node covers nothing at all: neither data nor a pending load
+// mark.
+static bool _is_tree_empty(const VoxelDataTree &p_node) {
+	return p_node.is_undefined() && !p_node.is_defined_or_pending();
+}
 
 void VoxelData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_voxel_defined", "voxel"), &VoxelData::is_voxel_defined);
@@ -14,6 +19,14 @@ bool VoxelData::is_voxel_defined(const Vector4i &p_voxel) const {
 	}
 	const VoxelDataTree *node = _tree->find_deepest_node(p_voxel);
 	return node != nullptr && !node->is_undefined();
+}
+
+bool VoxelData::is_voxel_defined_or_pending(const Vector4i &p_voxel) const {
+	if (_tree == nullptr) {
+		return false;
+	}
+	const VoxelDataTree *node = _tree->find_deepest_node(p_voxel);
+	return node != nullptr && node->is_defined_or_pending();
 }
 
 bool VoxelData::is_region_defined(const Rect4i &p_region) const {
@@ -56,13 +69,13 @@ VoxelDataNeighbourhood VoxelData::find_region_neighbourhood(const Rect4i &p_regi
 }
 
 VoxelDataTree *VoxelData::generate_chunk_content(const Vector4i &p_voxel) const {
+	ERR_FAIL_COND_V(_generator.is_null(), nullptr);
 	VoxelDataTree *chunk = memnew(VoxelDataTree(Rect4i(get_chunk_position(p_voxel), VOXEL_DATA_CHUNK_SIZE_VECTOR)));
 	chunk->generate(_generator);
 	return chunk;
 }
 
 void VoxelData::set_generator(const Ref<VoxelGenerator> &p_generator) {
-	ERR_FAIL_COND(p_generator.is_null());
 	_generator = p_generator;
 }
 
@@ -140,13 +153,16 @@ void VoxelData::expand_bounds(const Vector4i &p_toward) {
 			for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
 				split[i].set_constant_material(constant_material);
 			}
+		} else if (_tree->is_undefined() && _tree->is_defined_or_pending()) {
+			// Likewise split a pending mark; the children inherit it.
+			_tree->subdivide();
 		}
 		// A half-aligned leaf cannot exist under the alignment invariant, so
-		// the old root is now a parent, or undefined with nothing to move.
+		// the old root is now a parent, or empty with nothing to move.
 		if (_tree->is_parent()) {
 			VoxelDataTree *old_children = _tree->_children;
 			for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
-				if (old_children[i].is_undefined()) {
+				if (_is_tree_empty(old_children[i])) {
 					continue;
 				}
 				const Vector4i old_child_position = old_children[i].get_bounds().position;
@@ -170,6 +186,17 @@ void VoxelData::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	VoxelDataNeighbourhood{ _tree }.apply_edit(p_edit);
 }
 
+void VoxelData::mark_region_pending(const Rect4i &p_region) {
+	if (_tree == nullptr) {
+		_tree = memnew(VoxelDataTree(Rect4i(get_chunk_position(p_region.position), VOXEL_DATA_CHUNK_SIZE_VECTOR)));
+	}
+	while (!_tree->get_bounds().encloses_inclusive(p_region)) {
+		expand_bounds(p_region.position);
+	}
+	_tree->mark_region_pending(p_region);
+	trim_bounds();
+}
+
 void VoxelData::merge_edited_constants() {
 	if (_tree == nullptr) {
 		return;
@@ -178,16 +205,19 @@ void VoxelData::merge_edited_constants() {
 }
 
 bool VoxelData::unload_chunk(const Vector4i &p_voxel) {
-	if (_tree == nullptr || !_tree->clear_chunk(p_voxel)) {
+	if (_tree == nullptr) {
 		return false;
 	}
+	const bool unloaded = _tree->clear_chunk(p_voxel);
+	// Cancelling a pending mark can also free up the bounds, so trim
+	// regardless of whether any data was removed.
 	trim_bounds();
-	return true;
+	return unloaded;
 }
 
 void VoxelData::trim_bounds() {
 	while (_tree != nullptr) {
-		if (_tree->is_undefined()) {
+		if (_is_tree_empty(*_tree)) {
 			memdelete(_tree);
 			_tree = nullptr;
 			return;
@@ -195,15 +225,15 @@ void VoxelData::trim_bounds() {
 		if (!_tree->is_parent()) {
 			return;
 		}
-		// The root can contract to half its size if its defined content fits
-		// in a half-sized hypercube: either half of the bounds along each
-		// axis, or the middle half, whose half-aligned position the alignment
-		// invariant permits only for a root.
+		// The root can contract to half its size if its content, including
+		// pending marks, fits in a half-sized hypercube: either half of the
+		// bounds along each axis, or the middle half, whose half-aligned
+		// position the alignment invariant permits only for a root.
 		VoxelDataTree *children = _tree->_children;
-		bool children_all_parent_or_undefined = true;
+		bool children_all_parent_or_empty = true;
 		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
-			if (!children[i].is_undefined() && !children[i].is_parent()) {
-				children_all_parent_or_undefined = false;
+			if (!_is_tree_empty(children[i]) && !children[i].is_parent()) {
+				children_all_parent_or_empty = false;
 				break;
 			}
 		}
@@ -213,23 +243,23 @@ void VoxelData::trim_bounds() {
 		bool any_middle = false;
 		for (int axis = 0; axis < 4; axis++) {
 			const int axis_bit = 1 << axis;
-			bool low_defined = false;
-			bool high_defined = false;
+			bool low_occupied = false;
+			bool high_occupied = false;
 			for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
-				if (!children[i].is_undefined()) {
-					((i & axis_bit) ? high_defined : low_defined) = true;
+				if (!_is_tree_empty(children[i])) {
+					((i & axis_bit) ? high_occupied : low_occupied) = true;
 				}
 			}
-			if (!high_defined) {
+			if (!high_occupied) {
 				offset_quarters[axis] = 0;
-			} else if (!low_defined) {
+			} else if (!low_occupied) {
 				offset_quarters[axis] = 2;
 			} else {
 				// Middle contraction along this axis moves grandchildren, so
-				// every defined child must be a parent, and each child's
+				// every occupied child must be a parent, and each child's
 				// grandchildren on its outer side along this axis must be
-				// undefined.
-				if (!children_all_parent_or_undefined) {
+				// empty.
+				if (!children_all_parent_or_empty) {
 					return;
 				}
 				for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
@@ -237,7 +267,7 @@ void VoxelData::trim_bounds() {
 						continue;
 					}
 					for (int j = 0; j < VoxelDataTree::CHILD_COUNT; j++) {
-						if ((j & axis_bit) == (i & axis_bit) && !children[i]._children[j].is_undefined()) {
+						if ((j & axis_bit) == (i & axis_bit) && !_is_tree_empty(children[i]._children[j])) {
 							return;
 						}
 					}
@@ -254,7 +284,7 @@ void VoxelData::trim_bounds() {
 		}
 		VoxelDataTree *new_root = memnew(VoxelDataTree(Rect4i(new_position, Vector4i(half_size, half_size, half_size, half_size))));
 		if (!any_middle) {
-			// The target coincides with one child; every other child is undefined.
+			// The target coincides with one child; every other child is empty.
 			new_root->_take_contents(children[_tree->get_child_index_containing(new_position)]);
 		} else {
 			// The target straddles children, so each of its children is one of
@@ -267,7 +297,7 @@ void VoxelData::trim_bounds() {
 					continue;
 				}
 				VoxelDataTree *grandchild = child->get_child_containing(new_child_position);
-				if (grandchild->is_undefined()) {
+				if (_is_tree_empty(*grandchild)) {
 					continue;
 				}
 				new_children[i]._take_contents(*grandchild);
@@ -279,19 +309,13 @@ void VoxelData::trim_bounds() {
 }
 
 void VoxelData::load_all_chunks() {
+	ERR_FAIL_COND(_generator.is_null());
 	if (_tree != nullptr) {
 		memdelete(_tree);
 	}
 	const int32_t size = 8 * VOXEL_DATA_CHUNK_SIZE;
 	_tree = memnew(VoxelDataTree(Rect4i(-size / 2, -size / 2, -size / 2, -size / 2, size, size, size, size)));
 	_tree->generate(_generator);
-}
-
-VoxelData::VoxelData() {
-	// Temporary: hard-coded test data.
-	Ref<TigerTestGenerator> generator;
-	generator.instantiate();
-	_generator = generator;
 }
 
 VoxelData::~VoxelData() {

@@ -2,12 +2,13 @@
 
 #include "../../model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../voxel/data/voxel_data.h"
+#include "../../voxel/generators/tiger_test_generator.h"
 #include "../../voxel/voxel_mesher.h"
 
 #include "tests/test_macros.h"
 
 namespace TestVoxelMesher {
-constexpr VoxelMaterial SOLID_MATERIAL = VoxelMaterial::RESERVED_COUNT;
+constexpr VoxelMaterial SOLID_MATERIAL = (VoxelMaterial)0;
 
 // Meshes one chunk the way the mesh handler does, through the neighbourhood
 // of the node covering the chunk's region.
@@ -150,6 +151,7 @@ static bool _whole_world_triangles_paired(const Ref<VoxelData> &p_data) {
 TEST_CASE("[VoxelMesher] Chunk meshes") {
 	Ref<VoxelData> data;
 	data.instantiate();
+	data->set_generator(memnew(TigerTestGenerator));
 	data->load_all_chunks();
 
 	// The chunk-sized region centered on the origin is entirely inside the
