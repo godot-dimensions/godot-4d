@@ -41,6 +41,8 @@ private:
 
 	RID _camera_3d;
 	Ref<World3D> _world_3d;
+	// The World3D each viewport had before setup_for_viewport() replaced it with _world_3d, given back by cleanup_for_viewport().
+	HashMap<Viewport *, Ref<World3D>> _previous_worlds_3d;
 
 	void _create_light_render_instance_3d(const ObjectID p_light_4d_node_object_id);
 	RID _create_mesh_render_instance_3d();

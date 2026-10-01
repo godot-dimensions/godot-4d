@@ -269,6 +269,10 @@ void Godot3DRenderingEngine4D::setup_for_viewport() {
 		_world_3d.instantiate();
 	}
 	Viewport *viewport = get_viewport();
+	// Keep the viewport's own World3D alive while ours replaces it, so cleanup_for_viewport() can give it back.
+	if (!_previous_worlds_3d.has(viewport)) {
+		_previous_worlds_3d[viewport] = viewport->get_world_3d();
+	}
 	// Avoids a weird error from the current scenario on viewport not being initialized. Should ideally be handled by set_world_3d.
 	RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), _world_3d->get_scenario());
 	viewport->set_world_3d(_world_3d);
@@ -313,14 +317,21 @@ void Godot3DRenderingEngine4D::_cleanup_3d_render_resources() {
 }
 
 void Godot3DRenderingEngine4D::cleanup_for_viewport() {
-	// Detach the custom world from the viewport BEFORE freeing RS resources,
-	// so any VisualInstance3D nodes in the viewport re-register in the
-	// default world rather than our soon-to-be-freed scenario.
+	// Give the viewport back its previous world BEFORE freeing RS resources,
+	// so any VisualInstance3D nodes in the viewport re-register in that
+	// world rather than our soon-to-be-freed scenario. This must not leave
+	// the root Window without a World3D, since it has no parent viewport to
+	// inherit one from, and Godot assumes every viewport in the tree has one.
 	Viewport *viewport = get_viewport();
-	if (_world_3d.is_valid() && viewport != nullptr) {
-		viewport->set_world_3d(Ref<World3D>());
-		// Same workaround as in setup_for_viewport (needed for when this is used in the combined renderer).
-		RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), RID());
+	if (viewport != nullptr && _previous_worlds_3d.has(viewport)) {
+		const Ref<World3D> previous_world_3d = _previous_worlds_3d[viewport];
+		_previous_worlds_3d.erase(viewport);
+		viewport->set_world_3d(previous_world_3d);
+		if (previous_world_3d.is_null()) {
+			// The combined renderer's SubViewports have no world of their own, and inherit their parent's world.
+			// Same workaround as in setup_for_viewport (needed for when this is used in the combined renderer).
+			RenderingServer::get_singleton()->viewport_set_scenario(viewport->get_viewport_rid(), RID());
+		}
 	}
 	_cleanup_specific_render_resources();
 	_cleanup_3d_render_resources();
