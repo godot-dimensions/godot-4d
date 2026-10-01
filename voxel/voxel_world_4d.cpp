@@ -14,6 +14,10 @@ void VoxelWorld4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_material_palette", "material_palette"), &VoxelWorld4D::set_material_palette);
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_palette", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMaterialPalette"), "set_material_palette", "get_material_palette");
 
+	ClassDB::bind_method(D_METHOD("get_allow_projection"), &VoxelWorld4D::get_allow_projection);
+	ClassDB::bind_method(D_METHOD("set_allow_projection", "allow_projection"), &VoxelWorld4D::set_allow_projection);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_projection"), "set_allow_projection", "get_allow_projection");
+
 	ClassDB::bind_method(D_METHOD("is_world_bounds_enabled"), &VoxelWorld4D::is_world_bounds_enabled);
 	ClassDB::bind_method(D_METHOD("set_world_bounds_enabled", "enabled"), &VoxelWorld4D::set_world_bounds_enabled);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "world_bounds_enabled"), "set_world_bounds_enabled", "is_world_bounds_enabled");
@@ -46,6 +50,14 @@ void VoxelWorld4D::set_material_palette(const Ref<VoxelMaterialPalette> &p_mater
 		_material_palette->connect("changed", update_callable);
 	}
 	_update_material_texture();
+}
+
+void VoxelWorld4D::set_allow_projection(const bool p_allow_projection) {
+	if (_allow_projection == p_allow_projection) {
+		return;
+	}
+	_allow_projection = p_allow_projection;
+	_mesh_handler.update_chunk_allow_projection();
 }
 
 void VoxelWorld4D::_update_material_texture() {

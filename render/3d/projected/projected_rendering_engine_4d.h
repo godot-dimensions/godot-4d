@@ -32,6 +32,7 @@ protected:
 	// Godot3DRenderingEngine4D interface.
 	virtual Ref<Material> _get_material_3d(const Ref<Material4D> &p_material_4d) const override;
 	virtual bool _update_light_3d_render_base(Light4D *p_light_4d, const Projection &p_relative_basis, const Vector4 &p_relative_position, const RID p_render_base) const override;
+	virtual bool _should_render_mesh_instance(const MeshInstance4D *p_mesh_instance_4d) const override { return p_mesh_instance_4d->get_allow_projection(); }
 	// The shader picks which of the tetrahedron's vertices to emit per output vertex, and the extra
 	// vertex in the four-triangle case is solved for in screen space, so the emitted positions are
 	// not reliably inside the proxy Mesh3D's custom AABB.

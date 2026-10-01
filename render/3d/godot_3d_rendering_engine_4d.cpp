@@ -154,6 +154,9 @@ void Godot3DRenderingEngine4D::_update_3d_mesh_instances() {
 		const ObjectID mesh_instance_4d_object_id = (ObjectID)mesh_instance_4d_object_ids[mesh_index];
 		MeshInstance4D *mesh_instance_4d = Object::cast_to<MeshInstance4D>(ObjectDB::get_instance(mesh_instance_4d_object_id));
 		ERR_CONTINUE(mesh_instance_4d == nullptr);
+		if (!_should_render_mesh_instance(mesh_instance_4d)) {
+			continue;
+		}
 
 		Ref<Mesh4D> mesh_4d = mesh_instance_4d->get_mesh();
 		if (!mesh_4d.is_valid()) {

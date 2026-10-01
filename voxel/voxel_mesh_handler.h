@@ -39,6 +39,10 @@ public:
 	// entirely defined get no mesh. Called every tick by the VoxelWorld4D.
 	void update_dirty_meshes();
 
+	// Applies the world's current allow_projection to the existing chunk meshes.
+	// Chunk meshes created later pick it up as they are created.
+	void update_chunk_allow_projection();
+
 	explicit VoxelMeshHandler(VoxelWorld4D *p_world) :
 			_world(p_world) {}
 };

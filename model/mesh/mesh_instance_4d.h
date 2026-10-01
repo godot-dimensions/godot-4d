@@ -9,6 +9,7 @@ class MeshInstance4D : public Node4D {
 
 	Vector<Ref<Material4D>> _material_overrides;
 	Ref<Mesh4D> _mesh;
+	bool _allow_projection = true;
 
 	static Ref<Material4D> _get_valid_active_material_for_surface(const Ref<SingleSurfaceMesh4D> &p_surface_mesh, Ref<Material4D> p_material);
 
@@ -19,6 +20,10 @@ protected:
 
 public:
 	Ref<Material4D> get_active_material(const int p_surface_index = 0) const;
+
+	// Whether the projected rendering engine should draw this mesh instance at all.
+	bool get_allow_projection() const;
+	void set_allow_projection(const bool p_allow_projection);
 
 	Ref<Material4D> get_material_override() const;
 	void set_material_override(const Ref<Material4D> &p_material_override);

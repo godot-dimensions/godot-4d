@@ -37,6 +37,14 @@ void VoxelMeshHandler::mark_region_dirty(const Rect4i &p_region) {
 	}
 }
 
+void VoxelMeshHandler::update_chunk_allow_projection() {
+	ERR_FAIL_NULL(_world);
+	const bool allow_projection = _world->get_allow_projection();
+	for (const KeyValue<Vector4i, MeshInstance4D *> &chunk_mesh : _chunk_meshes) {
+		chunk_mesh.value->set_allow_projection(allow_projection);
+	}
+}
+
 void VoxelMeshHandler::update_dirty_meshes() {
 	ERR_FAIL_NULL(_world);
 	const Ref<VoxelData> voxel_data = _world->get_voxel_data();
@@ -69,6 +77,7 @@ void VoxelMeshHandler::update_dirty_meshes() {
 		} else {
 			MeshInstance4D *mesh_instance = memnew(MeshInstance4D);
 			mesh_instance->set_mesh(mesh);
+			mesh_instance->set_allow_projection(_world->get_allow_projection());
 			mesh_instance->set_position(Vector4(chunk_position));
 			_world->add_child(mesh_instance);
 			_chunk_meshes.insert(chunk_position, mesh_instance);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../model/mesh/material_4d.h"
+#include "../../model/mesh/mesh_instance_4d.h"
 #include "../../nodes/light/light_4d.h"
 #include "../rendering_engine_4d.h"
 
@@ -66,6 +67,10 @@ protected:
 	// Updates this engine's 3D approximation of the given 4D light, returning whether the light is
 	// visible in this engine's view of the 4D scene at all.
 	virtual bool _update_light_3d_render_base(Light4D *p_light_4d, const Projection &p_relative_basis, const Vector4 &p_relative_position, const RID p_render_base) const = 0;
+
+	// Whether this engine draws the given mesh instance at all. Instances that are skipped have their
+	// render instances freed, like instances that left the scene.
+	virtual bool _should_render_mesh_instance(const MeshInstance4D *p_mesh_instance_4d) const { return true; }
 
 	// Whether the positions this engine's shader produces can escape the proxy Mesh3D's custom AABB,
 	// making Godot's frustum culling unusable.

@@ -24,6 +24,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="allow_projection" type="bool" setter="set_allow_projection" getter="get_allow_projection" default="true">
+			If [code]false[/code], the projections of this world's chunk meshes are hidden (in both the combined and projected rendering modes).
+		</member>
 		<member name="generator" type="VoxelGenerator" setter="set_generator" getter="get_generator">
 			The [VoxelGenerator] providing the content of newly loaded chunks. While unset, no chunks load.
 		</member>

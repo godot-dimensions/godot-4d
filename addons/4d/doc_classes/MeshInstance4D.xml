@@ -22,6 +22,9 @@
 		</method>
 	</methods>
 	<members>
+		<member name="allow_projection" type="bool" setter="set_allow_projection" getter="get_allow_projection" default="true">
+			If [code]false[/code], the projection of this mesh is hidden (in both the combined and projected rendering modes).
+		</member>
 		<member name="material_override" type="Material4D" setter="set_material_override" getter="get_material_override">
 			The [Material4D] override used to render the mesh. This material defines the appearance of the mesh, including its color, texture, and lighting properties. The [TetraMaterial4D] type is intended for tetrahedral meshes, and the [WireMaterial4D] type is intended for wireframe meshes. This property overrides the per-mesh material set on the [Mesh4D] resource in the [member SingleSurfaceMesh4D.material] property.
 		</member>

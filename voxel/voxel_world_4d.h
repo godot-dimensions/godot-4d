@@ -24,6 +24,8 @@ class VoxelWorld4D : public Node4D {
 	// necessarily aligned to the chunk grid.
 	Rect4i _world_bounds;
 	bool _world_bounds_enabled = false;
+	// Applied to the MeshInstance4D of every chunk, see MeshInstance4D::get_allow_projection.
+	bool _allow_projection = true;
 	VoxelMeshHandler _mesh_handler;
 	// Owned; an Object so it can receive messages, so it cannot be a value member.
 	VoxelChunkLoader *_chunk_loader = nullptr;
@@ -43,6 +45,9 @@ public:
 	Ref<VoxelMaterialPalette> get_material_palette() const { return _material_palette; }
 	void set_material_palette(const Ref<VoxelMaterialPalette> &p_material_palette);
 	Ref<TetraMaterial4D> get_mesh_material() const { return _mesh_material; }
+
+	bool get_allow_projection() const { return _allow_projection; }
+	void set_allow_projection(const bool p_allow_projection);
 
 	Rect4i get_world_bounds() const { return _world_bounds; }
 	void set_world_bounds(const Rect4i &p_world_bounds) { _world_bounds = p_world_bounds; }

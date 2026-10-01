@@ -93,6 +93,14 @@ Ref<Material4D> MeshInstance4D::get_active_material(const int p_surface_index) c
 	return material;
 }
 
+bool MeshInstance4D::get_allow_projection() const {
+	return _allow_projection;
+}
+
+void MeshInstance4D::set_allow_projection(const bool p_allow_projection) {
+	_allow_projection = p_allow_projection;
+}
+
 Ref<Material4D> MeshInstance4D::get_material_override() const {
 	if (_material_overrides.is_empty()) {
 		return Ref<Material4D>();
@@ -176,6 +184,10 @@ Dictionary MeshInstance4D::raycast_intersects_local(const Vector4 &p_local_from,
 
 void MeshInstance4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_active_material", "surface_index"), &MeshInstance4D::get_active_material, DEFVAL(0));
+
+	ClassDB::bind_method(D_METHOD("get_allow_projection"), &MeshInstance4D::get_allow_projection);
+	ClassDB::bind_method(D_METHOD("set_allow_projection", "allow_projection"), &MeshInstance4D::set_allow_projection);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_projection"), "set_allow_projection", "get_allow_projection");
 
 	ClassDB::bind_method(D_METHOD("get_material_override"), &MeshInstance4D::get_material_override);
 	ClassDB::bind_method(D_METHOD("set_material_override", "material"), &MeshInstance4D::set_material_override);
