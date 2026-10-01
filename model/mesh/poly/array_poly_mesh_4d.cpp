@@ -272,6 +272,19 @@ void ArrayPolyMesh4D::_delete_data_bindings_internal(const int32_t p_dimension, 
 	}
 }
 
+void ArrayPolyMesh4D::_delete_bindings_below_dimension_internal(HashMap<Vector2i, Vector<PackedInt32Array>> &r_bindings, const int p_dimension) {
+	// The keys are gathered first, since erasing from a map while iterating over it is not allowed.
+	Vector<Vector2i> keys_to_delete;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &binding : r_bindings) {
+		if (binding.key.x < p_dimension) {
+			keys_to_delete.push_back(binding.key);
+		}
+	}
+	for (const Vector2i &key : keys_to_delete) {
+		r_bindings.erase(key);
+	}
+}
+
 // Internal helpers for the normal and texture map value pools.
 
 PackedInt32Array ArrayPolyMesh4D::_normal_indices_for_values_internal(const PackedVector4Array &p_values) {
@@ -950,6 +963,11 @@ void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 	poly_mesh_clear_cache();
 }
 
+void ArrayPolyMesh4D::delete_normals_below_dimension(const int p_dimension) {
+	_delete_bindings_below_dimension_internal(_all_poly_cell_normal_indices, p_dimension);
+	poly_mesh_clear_cache();
+}
+
 PackedInt32Array ArrayPolyMesh4D::make_single_cell_from_all_faces() const {
 	ERR_FAIL_COND_V_MSG(_poly_cell_indices.size() < 1, PackedInt32Array(), "ArrayPolyMesh4D: Cannot make single cell from all faces because there are no faces.");
 	const Vector<PackedInt32Array> &faces = _poly_cell_indices[0];
@@ -1570,6 +1588,11 @@ void ArrayPolyMesh4D::transform_texture_map(const Transform3D &p_transform) {
 		poly_cell_texture_map.set(cell_index, cell_texture_map);
 	}
 	_set_poly_cell_texture_map_dense_internal(poly_cell_texture_map);
+	poly_mesh_clear_cache();
+}
+
+void ArrayPolyMesh4D::delete_texture_maps_below_dimension(const int p_dimension) {
+	_delete_bindings_below_dimension_internal(_all_poly_cell_texture_map_indices, p_dimension);
 	poly_mesh_clear_cache();
 }
 
@@ -2683,6 +2706,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_flat_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_flat_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("set_smooth_shading_normals", "normals_mode", "recalculate_boundary_normals"), &ArrayPolyMesh4D::set_smooth_shading_normals, DEFVAL(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("make_double_sided", "idempotent"), &ArrayPolyMesh4D::make_double_sided, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("delete_normals_below_dimension", "dimension"), &ArrayPolyMesh4D::delete_normals_below_dimension);
 
 	// Texture map and seam functions.
 	ClassDB::bind_method(D_METHOD("calculate_seam_faces", "angle_threshold_radians", "discard_seams_within_islands"), &ArrayPolyMesh4D::calculate_seam_faces, DEFVAL(Math_TAU / 8.0), DEFVAL(false));
@@ -2692,6 +2716,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("fit_texture_map_island", "cells_in_island", "target_aabb", "proportional"), &ArrayPolyMesh4D::fit_texture_map_island, DEFVAL(AABB(Vector3(), Vector3(1, 1, 1))), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);
+	ClassDB::bind_method(D_METHOD("delete_texture_maps_below_dimension", "dimension"), &ArrayPolyMesh4D::delete_texture_maps_below_dimension);
 
 	// Misc functions.
 	ClassDB::bind_method(D_METHOD("deduplicate_all_elements", "max_dimension"), &ArrayPolyMesh4D::deduplicate_all_elements, DEFVAL(1000000000));

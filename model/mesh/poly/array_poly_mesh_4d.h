@@ -40,6 +40,7 @@ private:
 
 	bool _validate_data_binding_shape_internal(const Vector2i p_key, const Vector<PackedInt32Array> &p_binding, const int64_t p_value_count, const String &p_binding_name) const;
 	void _delete_data_bindings_internal(const int32_t p_dimension, const int32_t p_index);
+	static void _delete_bindings_below_dimension_internal(HashMap<Vector2i, Vector<PackedInt32Array>> &r_bindings, const int p_dimension);
 
 	PackedInt32Array _get_cell_4_vertices_starting_from_face(const int64_t p_cell, const int64_t p_start_face) const;
 	real_t _get_cell_extent(const PackedInt32Array &p_cell_vertices, const int32_t p_origin_vertex) const;
@@ -93,6 +94,7 @@ public:
 	void set_flat_shading_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_recalculate_boundary_normals = true);
 	void set_smooth_shading_normals(const ComputeNormalsMode p_mode = COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, const bool p_recalculate_boundary_normals = true);
 	void make_double_sided(const bool p_idempotent = true);
+	void delete_normals_below_dimension(const int p_dimension);
 	PackedInt32Array make_single_cell_from_all_faces() const;
 	PackedInt32Array make_single_volume_from_all_cells() const;
 
@@ -106,6 +108,7 @@ public:
 	void fit_texture_map_island(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb = AABB(Vector3(), Vector3(1, 1, 1)), const bool p_proportional = true);
 	void unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding = 0.0, const bool p_proportional = true, const bool p_keep_existing = false);
 	void transform_texture_map(const Transform3D &p_transform);
+	void delete_texture_maps_below_dimension(const int p_dimension);
 
 	// Misc functions.
 	void deduplicate_all_elements(const int64_t p_max_dimension = 1000000000);

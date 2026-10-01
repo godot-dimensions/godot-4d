@@ -116,6 +116,15 @@
 				Elements with the same structure and members but different ordering are considered duplicates, even if they have different winding. For example, a face with edges [code][0, 1, 2][/code] is considered the same as a face with edges [code][1, 0, 2][/code] and will be deduplicated. 3D boundary cells may have their first two elements swapped in order to preserve the original orientation, and if so, normal and texture map binding decompositions will be resampled to match the new deduplicated elements.
 			</description>
 		</method>
+		<method name="delete_normals_below_dimension">
+			<return type="void" />
+			<param index="0" name="dimension" type="int" />
+			<description>
+				Deletes the normal data bindings on elements whose topological dimension is below [param dimension], keeping the ones on elements of that dimension and above. For example, [code]3[/code] deletes the normals on vertices, edges, and faces, which leaves the ones on cells, and [code]4[/code] deletes every normal binding a mesh normally has, since bindings are rarely stored on hypervolumes.
+				A mesh with 3D cells renders from its cell bindings alone, so normals on its faces, edges, and vertices only matter for further editing. Operations that read them, such as [method PolyMeshBuilder4D.solidify_faces] and [method PolyMeshBuilder4D.extrude_linear], keep them on their output, where they cover only the elements that came from the input, and [method merge_with] warns when it has to fill in such a binding for a mesh that lacks it. This removes them once they are no longer needed. See also [method delete_texture_maps_below_dimension].
+				[b]Note:[/b] The values that the deleted bindings referenced stay in the normal value pool until [method compact_normal_values] is called.
+			</description>
+		</method>
 		<method name="delete_poly_element">
 			<return type="void" />
 			<param index="0" name="dimension" type="int" />
@@ -123,6 +132,15 @@
 			<description>
 				Deletes the specified element from the poly mesh data. The [param dimension] can be 0 for vertices, 1 for edges, 2 for faces, 3 for cells, and 4 for hypervolumes. The [param index] is the index of the element to delete within its dimension. For example, [code]0, 0[/code] deletes vertex 0, [code]1, 5[/code] deletes edge 5, [code]2, 7[/code] deletes face 7, and so on. All higher-dimensional elements that reference the deleted element will also be recursively deleted, and indices will be adjusted to keep the poly mesh data consistent.
 				Associated normal and texture-map entries are removed with the deleted elements, preserving the correspondence of surviving entries. Empty and partial auxiliary bindings are supported.
+			</description>
+		</method>
+		<method name="delete_texture_maps_below_dimension">
+			<return type="void" />
+			<param index="0" name="dimension" type="int" />
+			<description>
+				Deletes the texture map data bindings on elements whose topological dimension is below [param dimension], keeping the ones on elements of that dimension and above. For example, [code]3[/code] deletes the texture maps on vertices, edges, and faces, which leaves the ones on cells, and [code]4[/code] deletes every texture map binding a mesh normally has, since bindings are rarely stored on hypervolumes.
+				A mesh with 3D cells renders from its cell bindings alone, so texture maps on its faces, edges, and vertices only matter for further editing, and they rarely survive it in a useful form: an operation that changes the topology, such as [method PolyMeshBuilder4D.extrude_linear], carries the input's texture map onto the parts of the result that came from the input and nothing else, and the result is usually unwrapped again from scratch. This removes such a texture map before or after the operation. See also [method delete_normals_below_dimension].
+				[b]Note:[/b] The values that the deleted bindings referenced stay in the texture map value pool until [method compact_texture_map_values] is called.
 			</description>
 		</method>
 		<method name="fit_texture_map_island">

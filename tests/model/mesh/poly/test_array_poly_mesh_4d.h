@@ -2247,6 +2247,95 @@ TEST_CASE("[ArrayPolyMesh4D] Explicit compaction removes unreferenced data and r
 	CHECK(mesh->get_poly_cell_boundary_normals()[0] == normal_b);
 }
 
+TEST_CASE("[ArrayPolyMesh4D] Delete normals and texture maps below a dimension") {
+	// A box comes with normals and a texture map on its cells. Give it both kinds of binding on faces and vertices as
+	// well, so that every level has something to delete, then check that only the asked-for bindings go away.
+	auto make_fully_bound_box = []() -> Ref<ArrayPolyMesh4D> {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		const Vector<PackedInt32Array> face_corners = mesh->get_all_poly_cell_vertex_indices(2, false);
+		const int64_t vertex_count = mesh->get_poly_cell_vertex_positions().size();
+		PackedVector4Array face_normals;
+		face_normals.resize(face_corners.size());
+		face_normals.fill(Vector4(0, 0, 0, 1));
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ face_normals });
+		PackedVector4Array vertex_normals;
+		vertex_normals.resize(vertex_count);
+		vertex_normals.fill(Vector4(1, 0, 0, 0));
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_VERTEX_KEY, Vector<PackedVector4Array>{ vertex_normals });
+		Vector<PackedVector3Array> face_texture_map;
+		for (const PackedInt32Array &corners : face_corners) {
+			PackedVector3Array texcoords;
+			texcoords.resize(corners.size());
+			texcoords.fill(Vector3(0.5, 0.5, 0.5));
+			face_texture_map.append(texcoords);
+		}
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY, face_texture_map);
+		PackedVector3Array vertex_texcoords;
+		vertex_texcoords.resize(vertex_count);
+		vertex_texcoords.fill(Vector3(0.25, 0.25, 0.25));
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::PER_VERTEX_KEY, Vector<PackedVector3Array>{ vertex_texcoords });
+		REQUIRE(mesh->is_mesh_data_valid());
+		REQUIRE(mesh->get_all_poly_cell_normal_indices().size() == 4);
+		REQUIRE(mesh->get_all_poly_cell_texture_map_indices().size() == 3);
+		return mesh;
+	};
+
+	SUBCASE("Deleting below the cells keeps only the cell texture map and every normal") {
+		Ref<ArrayPolyMesh4D> mesh = make_fully_bound_box();
+		const int64_t texture_map_value_count = mesh->get_poly_cell_texture_map_values().size();
+		mesh->delete_texture_maps_below_dimension(3);
+		const HashMap<Vector2i, Vector<PackedInt32Array>> texture_maps = mesh->get_all_poly_cell_texture_map_indices();
+		CHECK(texture_maps.size() == 1);
+		CHECK(texture_maps.has(PolyMesh4D::CELL_TO_VERT_KEY));
+		CHECK(mesh->get_all_poly_cell_normal_indices().size() == 4);
+		CHECK(mesh->is_mesh_data_valid());
+		CHECK_MESSAGE(mesh->get_poly_cell_texture_map_values().size() == texture_map_value_count, "The values stay in the pool until compaction.");
+	}
+
+	SUBCASE("Deleting below the edges removes only the per-vertex texture map") {
+		Ref<ArrayPolyMesh4D> mesh = make_fully_bound_box();
+		mesh->delete_texture_maps_below_dimension(1);
+		const HashMap<Vector2i, Vector<PackedInt32Array>> texture_maps = mesh->get_all_poly_cell_texture_map_indices();
+		CHECK(texture_maps.size() == 2);
+		CHECK(!texture_maps.has(PolyMesh4D::PER_VERTEX_KEY));
+		CHECK(texture_maps.has(PolyMesh4D::FACE_TO_VERT_KEY));
+		CHECK(mesh->get_all_poly_cell_normal_indices().size() == 4);
+		CHECK(mesh->is_mesh_data_valid());
+	}
+
+	SUBCASE("Deleting below the hypervolumes removes every texture map") {
+		Ref<ArrayPolyMesh4D> mesh = make_fully_bound_box();
+		mesh->delete_texture_maps_below_dimension(4);
+		CHECK(mesh->get_all_poly_cell_texture_map_indices().is_empty());
+		CHECK(mesh->get_all_poly_cell_normal_indices().size() == 4);
+		CHECK(mesh->is_mesh_data_valid());
+	}
+
+	SUBCASE("Deleting normals below the cells keeps only the cell normals and every texture map") {
+		Ref<ArrayPolyMesh4D> mesh = make_fully_bound_box();
+		const int64_t normal_value_count = mesh->get_poly_cell_normal_values().size();
+		mesh->delete_normals_below_dimension(3);
+		const HashMap<Vector2i, Vector<PackedInt32Array>> normals = mesh->get_all_poly_cell_normal_indices();
+		CHECK(normals.size() == 2);
+		CHECK(normals.has(PolyMesh4D::CELL_TO_VERT_KEY));
+		CHECK(normals.has(PolyMesh4D::PER_CELL_KEY));
+		CHECK(mesh->get_all_poly_cell_texture_map_indices().size() == 3);
+		CHECK(mesh->is_mesh_data_valid());
+		CHECK_MESSAGE(mesh->get_poly_cell_normal_values().size() == normal_value_count, "The values stay in the pool until compaction.");
+	}
+
+	SUBCASE("Deleting normals below the edges removes only the per-vertex normals") {
+		Ref<ArrayPolyMesh4D> mesh = make_fully_bound_box();
+		mesh->delete_normals_below_dimension(1);
+		const HashMap<Vector2i, Vector<PackedInt32Array>> normals = mesh->get_all_poly_cell_normal_indices();
+		CHECK(normals.size() == 3);
+		CHECK(!normals.has(PolyMesh4D::PER_VERTEX_KEY));
+		CHECK(normals.has(PolyMesh4D::PER_FACE_KEY));
+		CHECK(mesh->get_all_poly_cell_texture_map_indices().size() == 3);
+		CHECK(mesh->is_mesh_data_valid());
+	}
+}
+
 TEST_CASE("[ArrayPolyMesh4D] Orient cells to boundary normals") {
 	Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
 	REQUIRE(mesh->is_mesh_data_valid());
