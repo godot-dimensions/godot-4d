@@ -107,7 +107,7 @@ private:
 	void _generate_gizmo_meshes(const PackedColorArray &p_axis_colors);
 
 	// Misc internal functions.
-	bool _gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera, const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_perp_direction);
+	bool _gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera, const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction);
 	void _on_rendering_server_pre_render(Camera4D *p_camera, Viewport *p_viewport, RenderingEngine4D *p_rendering_engine);
 	void _on_editor_inspector_property_edited(const String &p_prop);
 	void _on_undo_redo_version_changed();

@@ -50,7 +50,7 @@ protected:
 
 public:
 	static Ref<OFFDocument4D> export_convert_mesh_3d(const Ref<Mesh> &p_mesh, const bool p_deduplicate_vertices = true);
-	static Ref<OFFDocument4D> export_convert_mesh_4d(const Ref<TetraMesh4D> &p_mesh, const bool p_deduplicate_faces = true);
+	static Ref<OFFDocument4D> export_convert_mesh_4d(const Ref<TetraMesh4D> &p_tetra_mesh, const bool p_deduplicate_faces = true);
 	PackedByteArray export_save_to_byte_array();
 	void export_save_to_file(const String &p_path);
 

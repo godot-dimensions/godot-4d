@@ -272,8 +272,8 @@ real_t Transform4D::get_uniform_scale() const {
 	return basis.get_uniform_scale();
 }
 
-void Transform4D::set_uniform_scale(const real_t p_scale) {
-	basis.set_uniform_scale(p_scale);
+void Transform4D::set_uniform_scale(const real_t p_uniform_scale) {
+	basis.set_uniform_scale(p_uniform_scale);
 }
 
 // Validation methods.

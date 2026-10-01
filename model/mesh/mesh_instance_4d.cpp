@@ -100,11 +100,11 @@ Ref<Material4D> MeshInstance4D::get_material_override() const {
 	return _material_overrides[0];
 }
 
-void MeshInstance4D::set_material_override(const Ref<Material4D> &p_material) {
-	if (p_material.is_valid()) {
+void MeshInstance4D::set_material_override(const Ref<Material4D> &p_material_override) {
+	if (p_material_override.is_valid()) {
 		// Set the material override for all surfaces by using an array with a single element.
 		_material_overrides.resize(1);
-		_material_overrides.set(0, p_material);
+		_material_overrides.set(0, p_material_override);
 	} else {
 		// Set no material override for all surfaces by clearing the array.
 		_material_overrides.clear();

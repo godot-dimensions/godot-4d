@@ -235,7 +235,7 @@ void G4MFMeshSurfaceBindingGeometry4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_decompose_dimension"), &G4MFMeshSurfaceBindingGeometry4D::get_decompose_dimension);
 	ClassDB::bind_method(D_METHOD("set_decompose_dimension", "decompose_dimension"), &G4MFMeshSurfaceBindingGeometry4D::set_decompose_dimension);
 	ClassDB::bind_method(D_METHOD("get_geometry_dimension"), &G4MFMeshSurfaceBindingGeometry4D::get_geometry_dimension);
-	ClassDB::bind_method(D_METHOD("set_geometry_dimension", "source_dimension"), &G4MFMeshSurfaceBindingGeometry4D::set_geometry_dimension);
+	ClassDB::bind_method(D_METHOD("set_geometry_dimension", "geometry_dimension"), &G4MFMeshSurfaceBindingGeometry4D::set_geometry_dimension);
 
 	ClassDB::bind_method(D_METHOD("is_equal_exact", "other"), &G4MFMeshSurfaceBindingGeometry4D::is_equal_exact);
 	ClassDB::bind_method(D_METHOD("load_indices", "g4mf_state"), &G4MFMeshSurfaceBindingGeometry4D::load_indices);

@@ -525,15 +525,15 @@ void ArrayPolyMesh4D::_delete_vertex_internal(const int32_t p_index) {
 	_edge_vertex_indices = Math4D::remap_int32_array(_edge_vertex_indices, vertex_remap);
 }
 
-void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_cell_index, const int32_t p_index) {
-	ERR_FAIL_COND_MSG(p_poly_cell_index < 0 || p_poly_cell_index >= _poly_cell_indices.size(), "ArrayPolyMesh4D: Dimension is out of range.");
-	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= _poly_cell_indices[p_poly_cell_index].size(), "ArrayPolyMesh4D: Index is out of range.");
+void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_dim_index, const int32_t p_index) {
+	ERR_FAIL_COND_MSG(p_poly_dim_index < 0 || p_poly_dim_index >= _poly_cell_indices.size(), "ArrayPolyMesh4D: Dimension is out of range.");
+	ERR_FAIL_COND_MSG(p_index < 0 || p_index >= _poly_cell_indices[p_poly_dim_index].size(), "ArrayPolyMesh4D: Index is out of range.");
 	// Before deleting this poly cell element, we need to delete anything in higher dimensions that reference it.
-	const int32_t next_dim_poly_index = p_poly_cell_index + 1;
-	if (next_dim_poly_index < _poly_cell_indices.size()) {
-		// Collect indices in next_dim_poly_index whose elements reference p_index.
+	const int32_t next_poly_dim_index = p_poly_dim_index + 1;
+	if (next_poly_dim_index < _poly_cell_indices.size()) {
+		// Collect indices in next_poly_dim_index whose elements reference p_index.
 		PackedInt32Array to_delete;
-		const Vector<PackedInt32Array> &next_level = _poly_cell_indices[next_dim_poly_index];
+		const Vector<PackedInt32Array> &next_level = _poly_cell_indices[next_poly_dim_index];
 		for (int32_t j = 0; j < next_level.size(); j++) {
 			const PackedInt32Array &refs = next_level[j];
 			for (int32_t k = 0; k < refs.size(); k++) {
@@ -545,25 +545,25 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_ce
 		}
 		// Delete in reverse order so that earlier indices are not shifted by later removals.
 		for (int32_t i = to_delete.size() - 1; i >= 0; i--) {
-			_delete_poly_cell_element_internal(next_dim_poly_index, to_delete[i]);
+			_delete_poly_cell_element_internal(next_poly_dim_index, to_delete[i]);
 		}
 	}
 	// Delete any corresponding elements in the associated arrays for this poly cell dimension.
-	const int32_t element_count = (int32_t)_poly_cell_indices[p_poly_cell_index].size();
+	const int32_t element_count = (int32_t)_poly_cell_indices[p_poly_dim_index].size();
 	const PackedInt32Array element_remap = _deletion_remap_table(element_count, p_index);
-	if (p_poly_cell_index == 0 && !_seam_face_indices.is_empty()) {
+	if (p_poly_dim_index == 0 && !_seam_face_indices.is_empty()) {
 		// For border faces (poly cell index 0), delete from the seam faces.
 		_seam_face_indices = Math4D::remap_int32_set(_seam_face_indices, element_remap);
 	}
-	_delete_data_bindings_internal(p_poly_cell_index + 2, p_index);
-	if (p_poly_cell_index == 1 && p_index < _poly_cell_boundary_pivot_overrides.size()) {
+	_delete_data_bindings_internal(p_poly_dim_index + 2, p_index);
+	if (p_poly_dim_index == 1 && p_index < _poly_cell_boundary_pivot_overrides.size()) {
 		_poly_cell_boundary_pivot_overrides.remove_at(p_index);
 	}
-	// Remove the element at p_index from _poly_cell_indices[p_dimension].
-	_poly_cell_indices.ptrw()[p_poly_cell_index].remove_at(p_index);
-	// Fix up references in next_dim_poly_index by decrementing any index greater than p_index.
-	if (next_dim_poly_index < _poly_cell_indices.size()) {
-		Math4D::remap_int32_arrays(_poly_cell_indices.write[next_dim_poly_index], element_remap, false);
+	// Remove the element at p_index from _poly_cell_indices[p_poly_dim_index].
+	_poly_cell_indices.ptrw()[p_poly_dim_index].remove_at(p_index);
+	// Fix up references in next_poly_dim_index by decrementing any index greater than p_index.
+	if (next_poly_dim_index < _poly_cell_indices.size()) {
+		Math4D::remap_int32_arrays(_poly_cell_indices.write[next_poly_dim_index], element_remap, false);
 	}
 	// Keep dimensions normalized by trimming from the first empty dimension onward.
 	// In a valid poly mesh, once a dimension is empty, all higher dimensions must also be empty.
@@ -583,11 +583,11 @@ void ArrayPolyMesh4D::delete_poly_element(const int32_t p_dimension, const int32
 	} else if (p_dimension == 1) {
 		_delete_edge_internal(p_index);
 	} else {
-		const int64_t poly_cell_index = p_dimension - 2;
-		if (poly_cell_index >= _poly_cell_indices.size()) {
+		const int64_t poly_dim_index = p_dimension - 2;
+		if (poly_dim_index >= _poly_cell_indices.size()) {
 			ERR_FAIL_MSG("ArrayPolyMesh4D: Cannot delete from dimension higher than the highest poly cell dimension.");
 		}
-		_delete_poly_cell_element_internal(poly_cell_index, p_index);
+		_delete_poly_cell_element_internal(poly_dim_index, p_index);
 	}
 	poly_mesh_clear_cache();
 }
@@ -2437,22 +2437,22 @@ HashMap<Vector2i, Vector<PackedInt32Array>> ArrayPolyMesh4D::get_all_poly_cell_t
 	return HashMap<Vector2i, Vector<PackedInt32Array>>(_all_poly_cell_texture_map_indices);
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_normal_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_normals) {
-	_all_poly_cell_normal_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_normals);
+void ArrayPolyMesh4D::set_all_poly_cell_normal_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_normal_indices) {
+	_all_poly_cell_normal_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_normal_indices);
 	poly_mesh_clear_cache(true, true);
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_texture_maps) {
-	_all_poly_cell_texture_map_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_texture_maps);
+void ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices(const HashMap<Vector2i, Vector<PackedInt32Array>> &p_all_poly_cell_texture_map_indices) {
+	_all_poly_cell_texture_map_indices = HashMap<Vector2i, Vector<PackedInt32Array>>(p_all_poly_cell_texture_map_indices);
 	poly_mesh_clear_cache();
 }
 
-void ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind(const PolyDataDictionary &p_all_poly_cell_normals) {
+void ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind(const PolyDataDictionary &p_all_poly_cell_normal_indices) {
 	HashMap<Vector2i, Vector<PackedInt32Array>> normals_hashmap;
-	const Array normals_keys = p_all_poly_cell_normals.keys();
+	const Array normals_keys = p_all_poly_cell_normal_indices.keys();
 	for (int64_t key_index = 0; key_index < normals_keys.size(); key_index++) {
 		const Vector2i key = normals_keys[key_index];
-		const Array normals_array = p_all_poly_cell_normals[key];
+		const Array normals_array = p_all_poly_cell_normal_indices[key];
 		Vector<PackedInt32Array> normals_data;
 		normals_data.resize(normals_array.size());
 		for (int64_t i = 0; i < normals_array.size(); i++) {
@@ -2571,20 +2571,20 @@ Vector<PackedInt32Array> ArrayPolyMesh4D::get_poly_cell_texture_map_indices() {
 	return Vector<PackedInt32Array>(_all_poly_cell_texture_map_indices[CELL_TO_VERT_KEY]);
 }
 
-void ArrayPolyMesh4D::set_poly_cell_texture_map_indices(const Vector<PackedInt32Array> &p_poly_cell_texture_map) {
-	if (p_poly_cell_texture_map.is_empty()) {
+void ArrayPolyMesh4D::set_poly_cell_texture_map_indices(const Vector<PackedInt32Array> &p_poly_cell_texture_map_indices) {
+	if (p_poly_cell_texture_map_indices.is_empty()) {
 		_all_poly_cell_texture_map_indices.erase(CELL_TO_VERT_KEY);
 	} else {
-		_all_poly_cell_texture_map_indices.insert(CELL_TO_VERT_KEY, p_poly_cell_texture_map);
+		_all_poly_cell_texture_map_indices.insert(CELL_TO_VERT_KEY, p_poly_cell_texture_map_indices);
 	}
 	poly_mesh_clear_cache();
 }
 
-void ArrayPolyMesh4D::set_poly_cell_texture_map_indices_bind(const TypedArray<PackedInt32Array> &p_poly_cell_texture_map) {
+void ArrayPolyMesh4D::set_poly_cell_texture_map_indices_bind(const TypedArray<PackedInt32Array> &p_poly_cell_texture_map_indices) {
 	Vector<PackedInt32Array> tex_map;
-	tex_map.resize(p_poly_cell_texture_map.size());
-	for (int i = 0; i < p_poly_cell_texture_map.size(); i++) {
-		tex_map.set(i, p_poly_cell_texture_map[i]);
+	tex_map.resize(p_poly_cell_texture_map_indices.size());
+	for (int i = 0; i < p_poly_cell_texture_map_indices.size(); i++) {
+		tex_map.set(i, p_poly_cell_texture_map_indices[i]);
 	}
 	set_poly_cell_texture_map_indices(tex_map);
 }

@@ -145,9 +145,9 @@ struct _NO_DISCARD_ Rotor4D {
 	// Actually a multiplication, but has 2 outputs so we can't use the operator* syntax.
 	// It's unclear if making a struct for Vector4+Trivector4D is worth it or what it would be called.
 	void multiply_vector(const Vector4 &p_in_vector, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const;
-	void multiply_vector_trivector(const Vector4 &p_in_vec, const Trivector4D &p_in_trivec, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const;
+	void multiply_vector_trivector(const Vector4 &p_in_vector, const Trivector4D &p_in_trivec, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const;
 	void premultiply_vector(const Vector4 &p_in_vector, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const;
-	void premultiply_vector_trivector(const Vector4 &p_in_vec, const Trivector4D &p_in_trivec, Vector4 &r_out_vector, Trivector4D &r_out_triv) const;
+	void premultiply_vector_trivector(const Vector4 &p_in_vector, const Trivector4D &p_in_trivec, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const;
 
 	// Conversion.
 	static Rotor4D from_array(const PackedRealArray &p_from_array);

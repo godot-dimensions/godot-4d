@@ -27,7 +27,7 @@ public:
 	void set_height_data(const PackedFloat64Array &p_height_data);
 
 	Vector3 get_grid_spacing() const { return _grid_spacing; }
-	void set_grid_spacing(const Vector3 &p_spacing);
+	void set_grid_spacing(const Vector3 &p_grid_spacing);
 
 	Vector3i get_grid_size() const { return _grid_size; }
 	void set_grid_size(const Vector3i &p_grid_size);

@@ -143,7 +143,7 @@ Dictionary G4MFFileReference4D::write_file_reference_entries_to_dictionary() con
 
 void G4MFFileReference4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_buffer_view_index"), &G4MFFileReference4D::get_buffer_view_index);
-	ClassDB::bind_method(D_METHOD("set_buffer_view_index", "name"), &G4MFFileReference4D::set_buffer_view_index);
+	ClassDB::bind_method(D_METHOD("set_buffer_view_index", "buffer_view_index"), &G4MFFileReference4D::set_buffer_view_index);
 
 	ClassDB::bind_method(D_METHOD("get_mime_type"), &G4MFFileReference4D::get_mime_type);
 	ClassDB::bind_method(D_METHOD("set_mime_type", "mime_type"), &G4MFFileReference4D::set_mime_type);

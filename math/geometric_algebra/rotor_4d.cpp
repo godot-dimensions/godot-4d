@@ -633,15 +633,26 @@ Rotor4D Rotor4D::operator/(const real_t p_scalar) const {
 	return Rotor4D(parts.scalar / p_scalar, parts.bivector / p_scalar, parts.pseudoscalar / p_scalar);
 }
 
-void Rotor4D::multiply_vector(const Vector4 &p_in_vec, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const {
-	r_out_vector.x = s * p_in_vec.x + xy * p_in_vec.y + xz * p_in_vec.z + xw * p_in_vec.w; // X
-	r_out_vector.y = s * p_in_vec.y - xy * p_in_vec.x + yz * p_in_vec.z + yw * p_in_vec.w; // Y
-	r_out_vector.z = s * p_in_vec.z - xz * p_in_vec.x - yz * p_in_vec.y + zw * p_in_vec.w; // Z
-	r_out_vector.w = s * p_in_vec.w - xw * p_in_vec.x - yw * p_in_vec.y - zw * p_in_vec.z; // W
-	r_out_trivec.xyz = xy * p_in_vec.z - xz * p_in_vec.y + yz * p_in_vec.x + xyzw * p_in_vec.w; // XYZ
-	r_out_trivec.xyw = xy * p_in_vec.w - xw * p_in_vec.y + yw * p_in_vec.x - xyzw * p_in_vec.z; // XYW
-	r_out_trivec.xzw = xz * p_in_vec.w - xw * p_in_vec.z + zw * p_in_vec.x + xyzw * p_in_vec.y; // XZW
-	r_out_trivec.yzw = yz * p_in_vec.w - yw * p_in_vec.z + zw * p_in_vec.y - xyzw * p_in_vec.x; // YZW
+void Rotor4D::multiply_vector(const Vector4 &p_in_vector, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const {
+	r_out_vector.x = s * p_in_vector.x + xy * p_in_vector.y + xz * p_in_vector.z + xw * p_in_vector.w; // X
+	r_out_vector.y = s * p_in_vector.y - xy * p_in_vector.x + yz * p_in_vector.z + yw * p_in_vector.w; // Y
+	r_out_vector.z = s * p_in_vector.z - xz * p_in_vector.x - yz * p_in_vector.y + zw * p_in_vector.w; // Z
+	r_out_vector.w = s * p_in_vector.w - xw * p_in_vector.x - yw * p_in_vector.y - zw * p_in_vector.z; // W
+	r_out_trivec.xyz = xy * p_in_vector.z - xz * p_in_vector.y + yz * p_in_vector.x + xyzw * p_in_vector.w; // XYZ
+	r_out_trivec.xyw = xy * p_in_vector.w - xw * p_in_vector.y + yw * p_in_vector.x - xyzw * p_in_vector.z; // XYW
+	r_out_trivec.xzw = xz * p_in_vector.w - xw * p_in_vector.z + zw * p_in_vector.x + xyzw * p_in_vector.y; // XZW
+	r_out_trivec.yzw = yz * p_in_vector.w - yw * p_in_vector.z + zw * p_in_vector.y - xyzw * p_in_vector.x; // YZW
+}
+
+void Rotor4D::multiply_vector_trivector(const Vector4 &p_in_vector, const Trivector4D &p_in_trivec, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const {
+	r_out_vector.x = s * p_in_vector.x + xy * p_in_vector.y + xz * p_in_vector.z + xw * p_in_vector.w - yz * p_in_trivec.xyz - yw * p_in_trivec.xyw - zw * p_in_trivec.xzw - xyzw * p_in_trivec.yzw; // X
+	r_out_vector.y = s * p_in_vector.y - xy * p_in_vector.x + xz * p_in_trivec.xyz + xw * p_in_trivec.xyw + yz * p_in_vector.z + yw * p_in_vector.w - zw * p_in_trivec.yzw + xyzw * p_in_trivec.xzw; // Y
+	r_out_vector.z = s * p_in_vector.z - xy * p_in_trivec.xyz - xz * p_in_vector.x + xw * p_in_trivec.xzw - yz * p_in_vector.y + yw * p_in_trivec.yzw + zw * p_in_vector.w - xyzw * p_in_trivec.xyw; // Z
+	r_out_vector.w = s * p_in_vector.w - xy * p_in_trivec.xyw - xz * p_in_trivec.xzw - xw * p_in_vector.x - yz * p_in_trivec.yzw - yw * p_in_vector.y - zw * p_in_vector.z + xyzw * p_in_trivec.xyz; // W
+	r_out_trivec.xyz = s * p_in_trivec.xyz + xy * p_in_vector.z - xz * p_in_vector.y + xw * p_in_trivec.yzw + yz * p_in_vector.x - yw * p_in_trivec.xzw + zw * p_in_trivec.xyw + xyzw * p_in_vector.w; // XYZ
+	r_out_trivec.xyw = s * p_in_trivec.xyw + xy * p_in_vector.w - xz * p_in_trivec.yzw - xw * p_in_vector.y + yz * p_in_trivec.xzw + yw * p_in_vector.x - zw * p_in_trivec.xyz - xyzw * p_in_vector.z; // XYW
+	r_out_trivec.xzw = s * p_in_trivec.xzw + xy * p_in_trivec.yzw + xz * p_in_vector.w - xw * p_in_vector.z - yz * p_in_trivec.xyw + yw * p_in_trivec.xyz + zw * p_in_vector.x + xyzw * p_in_vector.y; // XZW
+	r_out_trivec.yzw = s * p_in_trivec.yzw - xy * p_in_trivec.xzw + xz * p_in_trivec.xyw - xw * p_in_trivec.xyz + yz * p_in_vector.w - yw * p_in_vector.z + zw * p_in_vector.y - xyzw * p_in_vector.x; // YZW
 }
 
 void Rotor4D::premultiply_vector(const Vector4 &p_in_vector, Vector4 &r_out_vector, Trivector4D &r_out_trivec) const {

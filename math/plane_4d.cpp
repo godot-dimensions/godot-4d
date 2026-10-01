@@ -58,12 +58,12 @@ Plane4D Plane4D::normalized() const {
 
 // Plane comparison functions.
 
-bool Plane4D::is_equal_approx_any_side(const Plane4D &p_plane) const {
-	return (normal.is_equal_approx(p_plane.normal) && Math::is_equal_approx(distance, p_plane.distance)) || (normal.is_equal_approx(-p_plane.normal) && Math::is_equal_approx(distance, -p_plane.distance));
+bool Plane4D::is_equal_approx_any_side(const Plane4D &p_other) const {
+	return (normal.is_equal_approx(p_other.normal) && Math::is_equal_approx(distance, p_other.distance)) || (normal.is_equal_approx(-p_other.normal) && Math::is_equal_approx(distance, -p_other.distance));
 }
 
-bool Plane4D::is_equal_approx(const Plane4D &p_plane) const {
-	return normal.is_equal_approx(p_plane.normal) && Math::is_equal_approx(distance, p_plane.distance);
+bool Plane4D::is_equal_approx(const Plane4D &p_other) const {
+	return normal.is_equal_approx(p_other.normal) && Math::is_equal_approx(distance, p_other.distance);
 }
 
 bool Plane4D::is_finite() const {

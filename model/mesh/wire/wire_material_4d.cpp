@@ -32,8 +32,8 @@ Material4D::ColorSourceFlags WireMaterial4D::_wire_source_to_flags(const WireCol
 	return Material4D::COLOR_SOURCE_FLAG_NONE;
 }
 
-void WireMaterial4D::merge_with(const Ref<Material4D> &p_material, const int p_first_item_count, const int p_second_item_count) {
-	Material4D::merge_with(p_material, p_first_item_count, p_second_item_count);
+void WireMaterial4D::merge_with(const Ref<Material4D> &p_material, const int p_first_edge_count, const int p_second_edge_count) {
+	Material4D::merge_with(p_material, p_first_edge_count, p_second_edge_count);
 	// Read _albedo_source_flags and set the wire material's albedo source enum.
 	if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_SINGLE_COLOR) {
 		if (_albedo_source_flags & Material4D::COLOR_SOURCE_FLAG_PER_EDGE) {

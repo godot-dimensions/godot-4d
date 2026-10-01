@@ -131,7 +131,7 @@ public:
 	// Misc methods.
 	static PackedRealArray array_compose(const PackedRealArray &p_parent_array, const PackedRealArray &p_child_array);
 	static PackedRealArray proj_compose_to_array(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Projection &p_child_basis, const Vector4 &p_child_origin);
-	static bool proj_is_equal_approx(const Projection &p_basis_a, const Vector4 &p_origin_a, const Projection &p_basis_b, const Vector4 &p_origin_b);
+	static bool proj_is_equal_approx(const Projection &p_parent_basis, const Vector4 &p_parent_origin, const Projection &p_child_basis, const Vector4 &p_child_origin);
 	static bool array_is_equal_approx(const PackedRealArray &p_array_a, const PackedRealArray &p_array_b);
 	static Vector4 proj_translated_local(const Projection &p_basis, const Vector4 &p_origin, const Vector4 &p_translation);
 	static PackedRealArray array_translated_local(const PackedRealArray &p_array, const Vector4 &p_translation);

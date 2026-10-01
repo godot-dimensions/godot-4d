@@ -66,7 +66,7 @@ public:
 	// Individual component with-style setters.
 	Ref<Rotor4D> with_s(const real_t p_s) const;
 	Ref<Rotor4D> with_xy(const real_t p_xy) const;
-	Ref<Rotor4D> with_xz(const real_t p_zx) const;
+	Ref<Rotor4D> with_xz(const real_t p_xz) const;
 	Ref<Rotor4D> with_xw(const real_t p_xw) const;
 	Ref<Rotor4D> with_yz(const real_t p_yz) const;
 	Ref<Rotor4D> with_yw(const real_t p_yw) const;

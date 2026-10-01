@@ -44,7 +44,7 @@ private:
 	void _export_serialize_asset_header(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	static String _export_pretty_print_inline(const Variant &p_variant);
 	static String _export_pretty_print_json(const Dictionary &p_g4mf_json);
-	PackedByteArray _export_encode_chunk_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_buffer_data);
+	PackedByteArray _export_encode_chunk_data(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_chunk_data);
 	PackedByteArray _export_write_to_byte_array_internal(const Ref<G4MFState4D> &p_g4mf_state);
 
 	// Import process.

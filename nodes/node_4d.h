@@ -116,7 +116,7 @@ public:
 	void set_rotation_degrees_bind(const AABB &p_euler);
 	void set_rotation_degrees_euler_bind(const Ref<godot_4d_bind::Euler4D> &p_euler);
 	void set_scale(const Vector4 &p_scale);
-	void set_uniform_scale(const real_t p_scale);
+	void set_uniform_scale(const real_t p_uniform_scale);
 
 	// Geometric algebra local rotation properties.
 	Bivector4D get_rotation_bivector_magnitude() const;
@@ -183,7 +183,7 @@ public:
 	void set_global_rotation_degrees_bind(const AABB &p_global_euler);
 	void set_global_rotation_degrees_euler_bind(const Ref<godot_4d_bind::Euler4D> &p_global_euler);
 	void set_global_scale(const Vector4 &p_global_scale);
-	void set_global_uniform_scale(const real_t p_global_scale);
+	void set_global_uniform_scale(const real_t p_global_uniform_scale);
 
 	// Geometric algebra global rotation properties.
 	Bivector4D get_global_rotation_bivector_magnitude() const;
@@ -218,9 +218,9 @@ public:
 	virtual Rect4 get_rect_bounds_local(const Transform4D &p_to_target = Transform4D()) const;
 	PackedVector4Array get_rect_bounds_local_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
 	Rect4 get_rect_bounds_global(const Transform4D &p_to_target = Transform4D()) const;
-	PackedVector4Array get_rect_bounds_global_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
+	PackedVector4Array get_rect_bounds_global_bind(const Projection &p_transform_to_target_basis = Projection(), const Vector4 &p_transform_to_target_origin = Vector4()) const;
 	Rect4 get_rect_bounds_global_recursive(const Transform4D &p_to_target = Transform4D()) const;
-	PackedVector4Array get_rect_bounds_global_recursive_bind(const Projection &p_basis = Projection(), const Vector4 &p_offset = Vector4()) const;
+	PackedVector4Array get_rect_bounds_global_recursive_bind(const Projection &p_transform_to_target_basis = Projection(), const Vector4 &p_transform_to_target_origin = Vector4()) const;
 	GDVIRTUAL2RC(PackedVector4Array, _get_rect_bounds_local, const Projection &, const Vector4 &);
 
 	// Raycasting.

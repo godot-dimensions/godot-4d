@@ -67,7 +67,7 @@
 				Computes the normal of each 2D face, for a mesh whose faces lie in a 3D hyperplane, and returns one normal per face without storing them. A face in 4D has a whole plane of perpendicular directions, so its normal is only defined within a hyperplane: it is the direction perpendicular to the face within the hyperplane perpendicular to [param hyperplane_normal]. The side it points to follows the face's orientation, which is set by the order of its first two edges, the same way a 3D face's normal follows its winding order. With the default [param hyperplane_normal] of +W, a mesh in the XYZ hyperplane gets the same normals as it would in 3D, and a ground mesh in the XZW hyperplane can pass +Y. A degenerate face gets a zero vector.
 			</description>
 		</method>
-		<method name="get_all_cell_vertex_indices">
+		<method name="get_all_boundary_cell_vertex_indices">
 			<return type="PackedInt32Array[]" />
 			<param index="0" name="start_with_canonical_span" type="bool" />
 			<description>
@@ -136,7 +136,7 @@
 		<method name="get_poly_cell_normal_indices">
 			<return type="PackedInt32Array[]" />
 			<description>
-				Returns the normal indices for the vertex instances of each polyhedral boundary cell. Each [PackedInt32Array] contains indices into [method get_poly_cell_normal_values], in the vertex order returned by [method get_all_cell_vertex_indices] with [code]start_with_canonical_span = false[/code]. The outer array must have one item per boundary cell, or be empty for no normals. Each inner array must have one index per vertex instance in that cell, or be empty for a cell without data. Every index must be non-negative and less than the size of the value pool.
+				Returns the normal indices for the vertex instances of each polyhedral boundary cell. Each [PackedInt32Array] contains indices into [method get_poly_cell_normal_values], in the vertex order returned by [method get_all_boundary_cell_vertex_indices] with [code]start_with_canonical_span = false[/code]. The outer array must have one item per boundary cell, or be empty for no normals. Each inner array must have one index per vertex instance in that cell, or be empty for a cell without data. Every index must be non-negative and less than the size of the value pool.
 			</description>
 		</method>
 		<method name="get_poly_cell_normal_values">
@@ -148,7 +148,7 @@
 		<method name="get_poly_cell_texture_map_indices">
 			<return type="PackedInt32Array[]" />
 			<description>
-				Returns the texture map indices for the vertex instances of each polyhedral boundary cell. Each [PackedInt32Array] contains indices into [method get_poly_cell_texture_map_values], in the vertex order returned by [method get_all_cell_vertex_indices] with [code]start_with_canonical_span = false[/code]. The outer array must have one item per boundary cell, or be empty for no texture mapping. Each inner array must have one index per vertex instance in that cell, or be empty for a cell without data. Every index must be non-negative and less than the size of the value pool.
+				Returns the texture map indices for the vertex instances of each polyhedral boundary cell. Each [PackedInt32Array] contains indices into [method get_poly_cell_texture_map_values], in the vertex order returned by [method get_all_boundary_cell_vertex_indices] with [code]start_with_canonical_span = false[/code]. The outer array must have one item per boundary cell, or be empty for no texture mapping. Each inner array must have one index per vertex instance in that cell, or be empty for a cell without data. Every index must be non-negative and less than the size of the value pool.
 			</description>
 		</method>
 		<method name="get_poly_cell_texture_map_values">

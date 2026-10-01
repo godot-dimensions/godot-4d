@@ -42,7 +42,7 @@ private:
 	void _delete_data_bindings_internal(const int32_t p_dimension, const int32_t p_index);
 	static void _delete_bindings_below_dimension_internal(HashMap<Vector2i, Vector<PackedInt32Array>> &r_bindings, const int p_dimension);
 
-	PackedInt32Array _get_cell_4_vertices_starting_from_face(const int64_t p_cell, const int64_t p_start_face) const;
+	PackedInt32Array _get_cell_4_vertices_starting_from_face(const int64_t p_which_cell, const int64_t p_start_face_in_cell) const;
 	real_t _get_cell_extent(const PackedInt32Array &p_cell_vertices, const int32_t p_origin_vertex) const;
 	void _get_cell_world_span_seed(const int64_t p_which_cell, Vector4 &r_world_x, Vector4 &r_world_y, Vector4 &r_world_z, int32_t &p_pivot) const;
 	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map);
@@ -51,7 +51,7 @@ private:
 	static PackedInt32Array _deletion_remap_table(const int32_t p_element_count, const int32_t p_deleted_index);
 	void _delete_edge_internal(const int32_t p_index);
 	void _delete_vertex_internal(const int32_t p_index);
-	void _delete_poly_cell_element_internal(const int32_t p_dimension, const int32_t p_index);
+	void _delete_poly_cell_element_internal(const int32_t p_poly_dim_index, const int32_t p_index);
 	bool _unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert, Vector<PackedVector3Array> &r_poly_cell_texture_map);
 	void _unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing, Vector<PackedVector3Array> &r_poly_cell_texture_map);
 	void _fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional, Vector<PackedVector3Array> &r_poly_cell_texture_map);

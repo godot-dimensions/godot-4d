@@ -28,7 +28,7 @@ struct _NO_DISCARD_ Plane4D {
 
 	// Plane comparison functions.
 	bool is_equal_approx(const Plane4D &p_other) const;
-	bool is_equal_approx_any_side(const Plane4D &p_Plane4D) const;
+	bool is_equal_approx_any_side(const Plane4D &p_other) const;
 	bool is_finite() const;
 
 	// Operators.

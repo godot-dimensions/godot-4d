@@ -91,7 +91,7 @@ class FourDODocument4D : public RefCounted {
 
 	FourDOVertexInstance4D _import_parse_vertex_instance(const String &p_vertex_instance_string, FourDOSurface4D &r_for_surface) const;
 	Error _import_parse_material_raw_text(const String &p_material_raw_text);
-	Error _import_parse_4do_raw_text(const String &p_4do_raw_text);
+	Error _import_parse_4do_raw_text(const String &p_raw_text);
 	void _import_gather_cell_color(const int32_t p_color_index, const int64_t p_cell_index, const int64_t p_cell_count, PackedColorArray &r_per_cell_colors) const;
 	void _import_gather_vertex_colors(const FourDOVertexInstance4D *p_first_vert_inst, const int64_t p_vert_count, PackedColorArray &r_per_vertex_colors) const;
 	Ref<Material4D> _import_generate_material(const String &p_material_name, const PackedColorArray &p_per_cell_colors, const PackedColorArray &p_per_vertex_colors, const bool p_for_poly_mesh) const;

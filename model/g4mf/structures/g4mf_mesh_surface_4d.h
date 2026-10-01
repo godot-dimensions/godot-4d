@@ -74,7 +74,7 @@ public:
 	void set_texture_map_binding(const Ref<G4MFMeshSurfaceBinding4D> &p_texture_map_binding) { _texture_map_binding = p_texture_map_binding; }
 
 	bool is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) const;
-	void convert_separated_geometry_into_packed(const Ref<G4MFState4D> &p_g4mf_state, const Vector<Vector<PackedInt32Array>> &_separated_geometry, const bool p_deduplicate);
+	void convert_separated_geometry_into_packed(const Ref<G4MFState4D> &p_g4mf_state, const Vector<Vector<PackedInt32Array>> &p_separated_geometry, const bool p_deduplicate);
 	void convert_separated_geometry_into_packed_bind(const Ref<G4MFState4D> &p_g4mf_state, const TypedArray<Array> &p_separated_geometry, const bool p_deduplicate);
 	Vector<Vector<PackedInt32Array>> load_geometry_separated(const Ref<G4MFState4D> &p_g4mf_state) const;
 	TypedArray<Array> load_geometry_separated_bind(const Ref<G4MFState4D> &p_g4mf_state) const;

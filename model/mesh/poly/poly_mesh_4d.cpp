@@ -298,23 +298,23 @@ PackedInt32Array PolyMesh4D::_get_canonical_span_vertex_index_sequence(const Vec
 // These internal functions can be fast and exclude most ERR_FAIL_* checks because
 // they are only called after `validate_poly_mesh_data_only()` has returned true.
 // If something can crash these functions, it should be caught by that validation first.
-PackedInt32Array PolyMesh4D::_get_cell_face_4_vertex_index_sequence(const PackedInt32Array &p_all_edge_indices, const PackedInt32Array &p_first_face, const PackedInt32Array &p_second_face) {
+PackedInt32Array PolyMesh4D::_get_cell_face_4_vertex_index_sequence(const PackedInt32Array &p_all_edge_indices, const PackedInt32Array &p_face1_edge_indices, const PackedInt32Array &p_face2_edge_indices) {
 	int64_t common_in_first = 0;
 	int64_t common_in_second = 0;
-	int32_t common_edge = Math4D::find_common_int32(p_first_face, p_second_face, common_in_first, common_in_second);
+	int32_t common_edge = Math4D::find_common_int32(p_face1_edge_indices, p_face2_edge_indices, common_in_first, common_in_second);
 	CRASH_COND_MSG(common_edge == INT32_MIN, "PolyMesh4D: Cell faces do not share a common item, this cell's initial 2 faces are invalid.");
-	const int64_t first_next_index = (common_in_first + 1) % p_first_face.size();
-	const int64_t second_next_index = (common_in_second + 1) % p_second_face.size();
+	const int64_t first_next_index = (common_in_first + 1) % p_face1_edge_indices.size();
+	const int64_t second_next_index = (common_in_second + 1) % p_face2_edge_indices.size();
 	// Use these 3 edges to get 4 vertex indices in a consistent "winding" order.
 	const int32_t common_vertex_start = p_all_edge_indices[common_edge * 2];
 	const int32_t common_vertex_end = p_all_edge_indices[common_edge * 2 + 1];
-	int32_t first_next_vertex = p_all_edge_indices[p_first_face[first_next_index] * 2];
+	int32_t first_next_vertex = p_all_edge_indices[p_face1_edge_indices[first_next_index] * 2];
 	if (first_next_vertex == common_vertex_start || first_next_vertex == common_vertex_end) {
-		first_next_vertex = p_all_edge_indices[p_first_face[first_next_index] * 2 + 1];
+		first_next_vertex = p_all_edge_indices[p_face1_edge_indices[first_next_index] * 2 + 1];
 	}
-	int32_t second_next_vertex = p_all_edge_indices[p_second_face[second_next_index] * 2];
+	int32_t second_next_vertex = p_all_edge_indices[p_face2_edge_indices[second_next_index] * 2];
 	if (second_next_vertex == common_vertex_start || second_next_vertex == common_vertex_end) {
-		second_next_vertex = p_all_edge_indices[p_second_face[second_next_index] * 2 + 1];
+		second_next_vertex = p_all_edge_indices[p_face2_edge_indices[second_next_index] * 2 + 1];
 	}
 	return PackedInt32Array{ first_next_vertex, common_vertex_start, common_vertex_end, second_next_vertex };
 }
@@ -1703,7 +1703,7 @@ void PolyMesh4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("compute_face_normals", "hyperplane_normal"), &PolyMesh4D::compute_face_normals, DEFVAL(Vector4(0, 0, 0, 1)));
 	ClassDB::bind_method(D_METHOD("get_all_face_vertex_indices"), &PolyMesh4D::get_all_face_vertex_indices_bind);
-	ClassDB::bind_method(D_METHOD("get_all_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
+	ClassDB::bind_method(D_METHOD("get_all_boundary_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_vertex_indices", "cell_dimension", "start_with_canonical_span"), &PolyMesh4D::get_all_poly_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_poly_indices", "cell_dimension", "decomposition_dimension"), &PolyMesh4D::get_all_poly_cell_poly_indices_bind);
 	ClassDB::bind_method(D_METHOD("poly_mesh_clear_cache", "reset_validation", "normals_only"), &PolyMesh4D::poly_mesh_clear_cache, DEFVAL(true), DEFVAL(false));

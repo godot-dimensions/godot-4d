@@ -26,7 +26,7 @@ public:
 	virtual real_t get_hypervolume() const;
 	virtual real_t get_surface_volume() const;
 	virtual Rect4 get_rect_bounds(const Transform4D &p_to_target = Transform4D()) const;
-	PackedVector4Array get_rect_bounds_bind(const Projection &p_to_target_basis = Projection(), const Vector4 &p_to_target_offset = Vector4()) const;
+	PackedVector4Array get_rect_bounds_bind(const Projection &p_to_target_basis = Projection(), const Vector4 &p_to_target_origin = Vector4()) const;
 
 	virtual Dictionary raycast_intersects(const Vector4 &p_local_from, const Vector4 &p_local_direction, const real_t p_max_distance = Math_INF, const bool p_inside_is_zero = false) const;
 

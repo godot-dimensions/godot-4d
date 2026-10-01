@@ -21,10 +21,10 @@
 		</method>
 		<method name="export_convert_mesh_4d" qualifiers="static">
 			<return type="OFFDocument4D" />
-			<param index="0" name="mesh" type="TetraMesh4D" />
+			<param index="0" name="tetra_mesh" type="TetraMesh4D" />
 			<param index="1" name="deduplicate_faces" type="bool" default="true" />
 			<description>
-				Converts an existing 4D [Mesh4D] resource to an OFFDocument4D. By default, faces will be deduplicated, which results in a smaller file size. The vertices will be the same as the ones in the 4D mesh.
+				Converts an existing 4D [TetraMesh4D] or [PolyMesh4D] resource to an OFFDocument4D. By default, faces will be deduplicated, which results in a smaller file size. The vertices will be the same as the ones in the 4D mesh.
 			</description>
 		</method>
 		<method name="export_save_to_byte_array">

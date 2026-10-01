@@ -49,9 +49,8 @@ private:
 	EditorViewportCameraRotationAxisLock4D _rotation_axis_lock = EditorViewportCameraRotationAxisLock4D::FULLY_LOCKED;
 	bool _camera_uses_free_rotation = false;
 
-	Vector2 _get_warped_mouse_motion(const Ref<InputEvent> &p_ev_mouse_motion) const;
+	Vector2 _get_warped_mouse_motion(const Ref<InputEvent> &p_input_event) const;
 	bool _should_mouse_motion_affect_4d(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const;
-	void _on_button_toggled(const bool p_toggled_on, const int p_option);
 	static void _gather_non_empty_visible_mesh_4d_nodes(Node *p_edited_scene_root, Node *p_from_node, Node *p_target_node, Vector<Node4D *> &r_nodes, Vector<Node *> &r_targets, Vector<Rect4> &r_rect_bounds);
 	static Node *_raycast_from_mouse(const Vector2 &p_mouse_position, const Camera4D *p_camera);
 	void _project_settings_changed();

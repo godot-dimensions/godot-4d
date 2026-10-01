@@ -753,7 +753,7 @@ String OFFDocument4D::_export_save_to_string() {
 
 void OFFDocument4D::_bind_methods() {
 	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("export_convert_mesh_3d", "mesh", "deduplicate_vertices"), &OFFDocument4D::export_convert_mesh_3d, DEFVAL(true));
-	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("export_convert_mesh_4d", "mesh", "deduplicate_faces"), &OFFDocument4D::export_convert_mesh_4d, DEFVAL(true));
+	ClassDB::bind_static_method("OFFDocument4D", D_METHOD("export_convert_mesh_4d", "tetra_mesh", "deduplicate_faces"), &OFFDocument4D::export_convert_mesh_4d, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("export_save_to_byte_array"), &OFFDocument4D::export_save_to_byte_array);
 	ClassDB::bind_method(D_METHOD("export_save_to_file", "path"), &OFFDocument4D::export_save_to_file);
 
