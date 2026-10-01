@@ -2,11 +2,13 @@
 
 #include "../../voxel/generators/tiger_test_generator.h"
 #include "../../voxel/voxel_chunk_loader.h"
+#include "../../voxel/voxel_load_trigger_4d.h"
 #include "../../voxel/voxel_mesh_handler.h"
 #include "../../voxel/voxel_world_4d.h"
 
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
+#include "scene/main/window.h"
 #include "tests/test_macros.h"
 
 namespace TestVoxelChunkLoader {
@@ -66,5 +68,64 @@ TEST_CASE("[VoxelChunkLoader][SceneTree] Dynamic loading") {
 	CHECK_MESSAGE(world->get_child_count() > 0, "VoxelMeshHandler should create the meshes once the chunks around them are loaded.");
 	memdelete(loader);
 	memdelete(world);
+}
+
+TEST_CASE("[VoxelChunkLoader][SceneTree] World bounds") {
+	Window *root = SceneTree::get_singleton()->get_root();
+	VoxelWorld4D *world = memnew(VoxelWorld4D);
+	world->set_generator(memnew(TigerTestGenerator));
+	world->set_world_bounds_enabled(true);
+	// Not aligned to the chunk grid, so some chunks are partially inside.
+	world->set_world_bounds_position(Vector4i(-3, -3, -3, -3));
+	world->set_world_bounds_size(Vector4i(14, 14, 14, 14));
+	root->add_child(world);
+	VoxelLoadTrigger4D *trigger = memnew(VoxelLoadTrigger4D);
+	trigger->set_load_distance(2.0f * VOXEL_DATA_CHUNK_SIZE);
+	root->add_child(trigger);
+	VoxelChunkLoader *loader = memnew(VoxelChunkLoader(world));
+	loader->update_loaded_chunks();
+	const Ref<VoxelData> voxel_data = world->get_voxel_data();
+	int safety = 0;
+	while (!(voxel_data->is_voxel_defined(Vector4i(1, 1, 1, 1)) && voxel_data->is_voxel_defined(Vector4i(-1, -1, -1, -1))) && safety < 10000) {
+		OS::get_singleton()->delay_usec(1000);
+		MessageQueue::get_singleton()->flush();
+		safety++;
+	}
+	CHECK_MESSAGE(voxel_data->is_voxel_defined(Vector4i(1, 1, 1, 1)), "VoxelChunkLoader should load chunks inside the world bounds around the trigger.");
+	CHECK_MESSAGE(voxel_data->is_voxel_defined(Vector4i(-1, -1, -1, -1)), "VoxelChunkLoader should load chunks partially inside the world bounds.");
+	bool outside_loaded = false;
+	for (int32_t w = -4; w <= 4 && !outside_loaded; w++) {
+		for (int32_t z = -4; z <= 4 && !outside_loaded; z++) {
+			for (int32_t y = -4; y <= 4 && !outside_loaded; y++) {
+				for (int32_t x = -4; x <= 4 && !outside_loaded; x++) {
+					const Rect4i chunk = Rect4i(Vector4i(x, y, z, w) * VOXEL_DATA_CHUNK_SIZE, VOXEL_DATA_CHUNK_SIZE_VECTOR);
+					if (!chunk.intersects_exclusive(world->get_world_bounds())) {
+						outside_loaded = outside_loaded || voxel_data->is_voxel_defined(chunk.position);
+					}
+				}
+			}
+		}
+	}
+	CHECK_MESSAGE(!outside_loaded, "VoxelChunkLoader should never load chunks entirely outside the world bounds.");
+
+	// Shrinking the bounds unloads the chunks they no longer reach,
+	// synchronously.
+	CHECK_MESSAGE(voxel_data->is_voxel_defined(Vector4i(9, 0, 0, 0)), "VoxelChunkLoader should have loaded the chunk that the shrunk bounds will exclude.");
+	world->set_world_bounds_size(Vector4i(6, 6, 6, 6));
+	loader->update_loaded_chunks();
+	CHECK_MESSAGE(!voxel_data->is_voxel_defined(Vector4i(9, 0, 0, 0)), "VoxelChunkLoader should unload chunks that leave the world bounds.");
+
+	// Degenerate empty bounds with a distant trigger: everything unloads and,
+	// as a regression check for the probe walk, the update must terminate.
+	world->set_world_bounds_size(Vector4i(0, 0, 0, 0));
+	trigger->set_position(Vector4(100, 0, 0, 0));
+	loader->update_loaded_chunks();
+	CHECK_MESSAGE(!voxel_data->is_voxel_defined(Vector4i(1, 1, 1, 1)), "VoxelChunkLoader should unload everything when the world bounds are empty.");
+
+	memdelete(loader);
+	root->remove_child(world);
+	root->remove_child(trigger);
+	memdelete(world);
+	memdelete(trigger);
 }
 } // namespace TestVoxelChunkLoader

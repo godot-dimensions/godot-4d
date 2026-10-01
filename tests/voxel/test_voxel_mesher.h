@@ -2,6 +2,11 @@
 
 #include "../../model/mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../voxel/data/voxel_data.h"
+#include "../../voxel/generators/box_voxel_generator.h"
+#include "../../voxel/generators/clipped_voxel_generator.h"
+#include "../../voxel/generators/cylinder_voxel_generator.h"
+#include "../../voxel/generators/layered_voxel_generator.h"
+#include "../../voxel/generators/plane_voxel_generator.h"
 #include "../../voxel/generators/tiger_test_generator.h"
 #include "../../voxel/voxel_mesher.h"
 
@@ -272,5 +277,57 @@ TEST_CASE("[VoxelMesher] Random world mesh closedness") {
 		}
 	}
 	CHECK_MESSAGE(_whole_world_triangles_paired(data), "VoxelMesher meshes of a world of random surfaces should still all be closed.");
+}
+
+TEST_CASE("[VoxelMesher] Composed generator world closedness") {
+	// A composition exercising clipping, one-sided layers, and generation of
+	// partially UNDEFINED content (replaced with air): a sloped ground plane
+	// defined only below its surface, a solid box clipped to it, and a
+	// cylinder window above it all whose outside floods everything else with
+	// air. Every surface stays inside the loaded region, so the meshes must
+	// come out closed.
+	Ref<PlaneVoxelGenerator> ground;
+	ground.instantiate();
+	ground->set_normal(Vector4(0.3f, 1.0f, 0.2f, -0.1f));
+	ground->set_distance(0.8f);
+	ground->set_material_over(255);
+	ground->set_material_under(1);
+	Ref<BoxVoxelGenerator> block;
+	block.instantiate();
+	block->set_center(Vector4(-2.3f, 1.4f, 0.6f, -1.2f));
+	block->set_size(Vector4(5.3f, 5.8f, 4.6f, 5.1f));
+	block->set_material_inner(2);
+	block->set_material_outer(255);
+	Ref<ClippedVoxelGenerator> clipped;
+	clipped.instantiate();
+	clipped->set_base(ground);
+	clipped->set_modifier(block);
+	Ref<CylinderVoxelGenerator> window;
+	window.instantiate();
+	window->set_center(Vector4(0.7f, -0.4f, 0.3f, 0.9f));
+	window->set_height(9.3f);
+	window->set_radius(6.2f);
+	window->set_material_inner(255);
+	window->set_material_outer(254);
+	Ref<LayeredVoxelGenerator> composed;
+	composed.instantiate();
+	Vector<Ref<VoxelGenerator>> layers;
+	layers.push_back(clipped);
+	layers.push_back(window);
+	composed->set_layers(layers);
+
+	Ref<VoxelData> data;
+	data.instantiate();
+	data->set_generator(composed);
+	for (int32_t w = -1; w < 1; w++) {
+		for (int32_t z = -1; z < 1; z++) {
+			for (int32_t y = -1; y < 1; y++) {
+				for (int32_t x = -1; x < 1; x++) {
+					data->apply_generated_chunk(data->generate_chunk_content(Vector4i(x, y, z, w) * VOXEL_DATA_CHUNK_SIZE));
+				}
+			}
+		}
+	}
+	CHECK_MESSAGE(_whole_world_triangles_paired(data), "VoxelMesher meshes of a composed generator world should all be closed.");
 }
 } // namespace TestVoxelMesher

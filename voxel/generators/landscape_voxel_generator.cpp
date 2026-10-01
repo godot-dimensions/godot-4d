@@ -8,7 +8,7 @@ real_t LandscapeVoxelGenerator::_relative_height(const Vector4 &p_point, Vector4
 	return height;
 }
 
-VoxelMaterial LandscapeVoxelGenerator::_material_for_height(const real_t p_height, real_t *r_cutoff) const {
+int LandscapeVoxelGenerator::_band_for_height(const real_t p_height) const {
 	const int cutoff_count = _material_cutoffs.size();
 	int band = 0;
 	for (int i = 0; i < cutoff_count; i++) {
@@ -16,6 +16,11 @@ VoxelMaterial LandscapeVoxelGenerator::_material_for_height(const real_t p_heigh
 			band++;
 		}
 	}
+	return band;
+}
+
+VoxelMaterial LandscapeVoxelGenerator::_material_for_height(const real_t p_height, real_t *r_cutoff) const {
+	const int band = _band_for_height(p_height);
 	if (r_cutoff != nullptr && band > 0) {
 		*r_cutoff = _material_cutoffs[band - 1];
 	}
@@ -24,12 +29,11 @@ VoxelMaterial LandscapeVoxelGenerator::_material_for_height(const real_t p_heigh
 
 VoxelMaterial LandscapeVoxelGenerator::get_material(const Vector4i &p_voxel) const {
 	const Vector4 center = get_voxel_center(p_voxel);
-	// Far from every band boundary, no possible noise value can change the
-	// material, so the noise need not be computed.
+	// With no cutoff within the noise's reach of the height, no possible
+	// noise value can change the band, so the noise need not be computed.
 	const real_t max_noise = _noise.max_value();
-	const VoxelMaterial far_material = _material_for_height(center.y - max_noise, nullptr);
-	if (far_material == _material_for_height(center.y + max_noise, nullptr)) {
-		return far_material;
+	if (_band_for_height(center.y - max_noise) == _band_for_height(center.y + max_noise)) {
+		return _material_for_height(center.y - max_noise, nullptr);
 	}
 	return _material_for_height(_relative_height(center, nullptr), nullptr);
 }

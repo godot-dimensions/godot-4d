@@ -18,6 +18,7 @@ class LandscapeVoxelGenerator : public VoxelGenerator {
 	PackedFloat32Array _material_cutoffs;
 
 	real_t _relative_height(const Vector4 &p_point, Vector4 *r_gradient) const;
+	int _band_for_height(const real_t p_height) const;
 	VoxelMaterial _material_for_height(const real_t p_height, real_t *r_cutoff) const;
 
 protected:
