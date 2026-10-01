@@ -6,6 +6,8 @@
 #include "../material_4d.h"
 #include "array_tetra_mesh_4d.h"
 
+#include <cmath>
+
 #if GDEXTENSION
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
@@ -596,15 +598,17 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 	for (int i = 0; i < cell_positions.size(); i += 4) {
 		// Cramming a bunch of data where it fits. Each cell's cross section can be 0-2 triangles. We create two triangles for each cell
 		// with all the info about the cell and figure everything out in the vertex shader after transforms have been applied.
-		// As of 4.4.1, available slots are:
-		// - Vertex position (3)
-		// - Custom 0-3 (4 * 4)
-		// - UV1 and UV2 (2 * 2)
-		// - Normal (3), gets normalized so ~2 slots for arbitrary floats
-		// - Tangent (3), also gets normalized
-		// - Color (4), gets clamped to [0, 1]
+		// In Godot 4.3 through 4.5, the available slots are:
+		// - Vertex position (3 floats)
+		// - Custom 0-3 (4 * 4 floats)
+		// - UV1 and UV2 (2 * 2 floats)
+		// - Normal (3), gets normalized and octahedral-compressed to 2 * 16 bits, so ~2 slots for moderate floats
+		// - Tangent (3), also gets normalized and compressed
+		// - Bone indices (4 * 16-bit integers) and bone weights (4 * 16-bit, clamped to [0, 1]), passed through untouched
+		//   when exactly four are given and no skeleton is bound; 4D skinning could never use them anyway, since it needs
+		//   bone data for all four tetrahedron vertices and 4D transforms, so it has to come from its own buffers.
 		// Slots that don't work:
-		// - Bone weights: get truncated, sorted, and normalized automatically
+		// - Color (4), stored as 8 bits per channel and clamped to [0, 1], too coarse for texture coordinates
 		// - Binormal: available in shader, but computed in SurfaceTool from normal/tangent
 		//
 		// Some alternative strategies:
@@ -624,8 +628,8 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 		surface_tool_3d->set_custom(2, Vector4D::to_color(cell_positions[i + 2]));
 		surface_tool_3d->set_custom(3, Vector4D::to_color(cell_positions[i + 3]));
 
-		// UVW texture coords, need 4*3 float slots.  Using UV, UV2, Normal, Color, vertex.y, and vertex.z.
-		// Normal gets normalized somewhere in the pipeline, so last coord of 1.0 will get set to whatever we need to divide by to get
+		// UVW texture coords, need 4*3 float slots. Using UV, UV2, Normal, bone indices and weights, vertex.y, and vertex.z.
+		// Normal gets normalized somewhere in the pipeline, so last coord of 1.0 will get set to whatever we need to divide by
 		// to get the original coords.
 		const Vector3 &uvw1 = tex_map_values[cell_tex_map_indices[i]];
 		const Vector3 &uvw2 = tex_map_values[cell_tex_map_indices[i + 1]];
@@ -634,8 +638,27 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 		surface_tool_3d->set_uv(Vector2(uvw1.x, uvw1.y));
 		surface_tool_3d->set_uv2(Vector2(uvw2.x, uvw2.y));
 		surface_tool_3d->set_normal(Vector3(uvw3.x, uvw3.y, 1.0));
-		// This one gets clamped to [0,1], which should be fine for texture coords.
-		surface_tool_3d->set_color(Color(uvw4.x, uvw4.y, uvw4.z, uvw1.z));
+		// The second vertex's UVW is stored exactly, and the first vertex's W and the whole fourth vertex are stored as
+		// offsets from it in the four bone weights, as 16-bit codes over a power-of-two range that the first bone index
+		// holds. The range follows each tetrahedron's own size, so the precision does too, and nothing is clamped to a
+		// fixed range. The bone indices stay small, since the rendering server allocates a bounding box per bone index.
+		const Vector3 offset1 = uvw1 - uvw2;
+		const Vector3 offset4 = uvw4 - uvw2;
+		const real_t largest_offset = MAX(Math::abs(offset1.z), MAX(Math::abs(offset4.x), MAX(Math::abs(offset4.y), Math::abs(offset4.z))));
+		int range_exponent = 0;
+		if (largest_offset > (real_t)0.0) {
+			// The largest offset is mantissa * 2^exponent with the mantissa below one, so the range exceeds every offset.
+			std::frexp((float)largest_offset, &range_exponent);
+		}
+		range_exponent = CLAMP(range_exponent, -64, 63);
+		const float range = std::ldexp(1.0f, range_exponent);
+		auto encode_offset = [range](const real_t p_offset) -> float {
+			const int code = CLAMP((int)Math::round((p_offset / range * 0.5 + 0.5) * 65535.0), 0, 65535);
+			// The rendering server truncates weights to 16 bits, so aim at the middle of the code's interval.
+			return ((float)code + 0.5f) / 65535.0f;
+		};
+		surface_tool_3d->set_bones(PackedInt32Array{ range_exponent + 64, 0, 0, 0 });
+		surface_tool_3d->set_weights(PackedFloat32Array{ encode_offset(offset1.z), encode_offset(offset4.x), encode_offset(offset4.y), encode_offset(offset4.z) });
 
 		// Not enough slots left for normals. Also interpolating the 4D normals gives weird results, needs more experimentation.
 		// Currently flat normals are computed in the vertex shader.

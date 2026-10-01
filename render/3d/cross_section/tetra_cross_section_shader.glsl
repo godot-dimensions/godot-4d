@@ -34,7 +34,7 @@ const int TETRAHEDRON_EDGE_TO_VERTEX_MAP[] = {
 // sketching out 3D tetrahedra and hoping it also worked for 4D (it does).
 // 16 cases for number of vertices above and below the cross-section plane, each case leads to at most two triangles for 6 vertices.
 // Each triangle in the cross-section is made up of vertices that are interpolated along the edges of the tetrahedron,
-// falling where the edge intersetcs the cross-section plane. So this table is 16x6, 16 cases, 6 possible verts,
+// falling where the edge intersects the cross-section plane. So this table is 16x6, 16 cases, 6 possible verts,
 // each value maps to an edge in the TETRAHEDRON_EDGE_TO_VERTEX_MAP. -1 indicates the vertex is unused for that case.
 // General pattern: one vertex above and three below is one triangle on the edges between the one vertex above and the rest,
 // one vertex below and three above is same but the winding order is flipped, two above and two below is two triangles in some awful pattern.
@@ -84,7 +84,11 @@ void vertex() {
 	verts_4d[2] = (modelview_basis_4d * verts_4d[2]) + modelview_origin;
 	verts_4d[3] = (modelview_basis_4d * verts_4d[3]) + modelview_origin;
 
-	vec3 uvws[] = { vec3(UV, COLOR.a), vec3(UV2, VERTEX.y), vec3(NORMAL.xy / NORMAL.z, VERTEX.z), COLOR.rgb };
+	// The second vertex's UVW is exact. The first vertex's W and the whole fourth vertex are 16-bit codes in the bone
+	// weights, offsets from the second vertex over a power-of-two range held in the first bone index.
+	vec3 uvw2 = vec3(UV2, VERTEX.y);
+	vec4 uvw_offsets = (BONE_WEIGHTS * 2.0 - 1.0) * exp2(float(BONE_INDICES.x) - 64.0);
+	vec3 uvws[] = { vec3(UV, uvw2.z + uvw_offsets.x), uvw2, vec3(NORMAL.xy / NORMAL.z, VERTEX.z), uvw2 + uvw_offsets.yzw };
 
 	int vertex_id = int(VERTEX.x);
 	int face = get_face_lookup_index(verts_4d[0].w, verts_4d[1].w, verts_4d[2].w, verts_4d[3].w, vertex_id);

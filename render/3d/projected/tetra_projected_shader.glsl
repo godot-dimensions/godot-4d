@@ -13,8 +13,8 @@ instance uniform vec4 modelview_basis_w;
 
 instance uniform float camera_slope = 1.0; // The tan of the angle of the view frustum in the W direction.
 instance uniform float camera_fade = 0.0; // The orthographic-style width of the view frustum in W.
-instance uniform float edge_falloff = 2.0; // How quickly to fade the opacity at the edges of the view frustum (1: not at all, 2: linear, up to infinity).
-instance uniform float plane_softness = 0.7; // How much the region around the slice plane is emphasized: 1 is no extra emphasis, the limit as it approaches 0 is like a cross-section view (but 0 isn't actually a valid value).
+instance uniform float edge_falloff = 2.0; // How quickly the opacity fades at the frustum's W edges (1: not at all, 2: linear, up to infinity).
+instance uniform float plane_softness = 0.7; // Emphasis on the region around the slice plane: 1 is none, approaching 0 approaches a cross-section view (0 itself is invalid).
 instance uniform float skewness = 0.0; // -1 to 1. Offsets the perspective projection's forward direction in W.
 
 uniform vec4 albedo : source_color;
@@ -28,8 +28,9 @@ uniform sampler2D cross_section_depth_texture : hint_default_black, filter_neare
 const float DEPTH_BIAS_CLIPSPACE = 1e-6; // To prevent Z-fighting.
 const float DEPTH_BIAS_VIEWSPACE = 1e-5;
 
-// The built-in perspective correction isn't able to deal with the fact that each fragment corresponds to a whole line on the input tet, with multiple different Z values. It's necessary to do some of the interpolation manually.
-// This re-interpolation is done between the center vertex, the other_center vertex (i.e. the other end of the line in the tet corresponding to the center vertex in the triangle), and some point on the edge of the triangle not containing the center vertex (which is interpolated correctly by the built-in interpolation between the two non-center vertices).
+// The built-in perspective correction can't handle a fragment that corresponds to a whole line of the tet with varying Z, so part of the
+// interpolation is redone manually between the center vertex, the other_center vertex (the other end of that line), and a point on the
+// triangle's edge opposite the center vertex, which the built-in interpolation between the two non-center vertices gets right.
 varying vec3 uvw;
 varying flat vec3 center_uvw;
 varying flat vec3 other_center_uvw;
@@ -40,8 +41,8 @@ varying float position_w; // The other components are stored in VERTEX, but that
 // Read by the shared light() function appended to this shader, which normalizes it itself.
 varying flat vec4 normal_4d;
 
-// Look up, using a bit-mask of whether each face of the tet faces +W or -W, the order the vertices take to form the projection.
-// Format: first number 0 for 3-triangle case (vertex-on), 1 for 4-triangle case (edge-on), 2 for 3-triangle case (face-on), -1 for impossible case.
+// Looks up, from a bit mask of which faces of the tet face +W or -W, the order of the vertices in the projection.
+// First number: 0 = 3 triangles (vertex-on), 1 = 4 triangles (edge-on), 2 = 3 triangles (face-on), -1 = impossible.
 //   3-triangle case: triangles 123, 134, 142.
 //   4-triangle case: edges 13 and 24 cross at extra vertex 5, triangles 512, 523, 534, 541.
 const int PROJECTION_LOOKUP[] = {
@@ -94,7 +95,10 @@ void vertex() {
 		verts_4d[i].z += verts_4d[i].w * skewness;
 	}
 
-	vec3 uvws[] = { vec3(UV, COLOR.a), vec3(UV2, VERTEX.y), vec3(NORMAL.xy / NORMAL.z, VERTEX.z), COLOR.rgb };
+	// Vertex 2's UVW is exact; vertex 1's W and all of vertex 4 are 16-bit offsets from it in the bone weights, scaled by 2^(bone index 0 - 64).
+	vec3 uvw2 = vec3(UV2, VERTEX.y);
+	vec4 uvw_offsets = (BONE_WEIGHTS * 2.0 - 1.0) * exp2(float(BONE_INDICES.x) - 64.0);
+	vec3 uvws[] = { vec3(UV, uvw2.z + uvw_offsets.x), uvw2, vec3(NORMAL.xy / NORMAL.z, VERTEX.z), uvw2 + uvw_offsets.yzw };
 
 	vec3[] verts_proj = {
 		verts_4d[0].xyw / verts_4d[0].z,
@@ -104,7 +108,7 @@ void vertex() {
 	};
 	// Compute flat normals.
 	normal_4d = perpendicular_4d(verts_4d[1] - verts_4d[0], verts_4d[2] - verts_4d[0], verts_4d[3] - verts_4d[0]);
-	// This mustn't be computed from verts_proj alone, as that would give the wrong answer sometimes if a vertex is behind the camera.
+	// Not from verts_proj alone, which can be wrong when a vertex is behind the camera.
 	bool back_face = dot(verts_4d[0], normal_4d) >= 0.0;
 	// The skewed normal is needed for the backface calculation because verts_4d[0] is also skewed,
 	// but lighting needs the original normal. Undo z' = z + skewness * w using the transpose.
@@ -140,7 +144,7 @@ void vertex() {
 				vec2 solution = inverse(mat2(-point1.xy, point2.xy)) * (base1 - base2).xy;
 				float t1 = solution.x;
 				t1 = t1 / verts_4d[vert_indices[2]].z / (t1 / verts_4d[vert_indices[2]].z + (1.0 - t1) / verts_4d[vert_indices[0]].z); // Perspective correction.
-				t1 = clamp(t1, 0.0, 1.0); // The use of clamping here is not ideal. This algorithm is not numerically stable. Hopefully clamping will prevent the worst errors.
+				t1 = clamp(t1, 0.0, 1.0); // Not ideal: this algorithm isn't numerically stable, so clamping limits the worst errors.
 				float t2 = solution.y;
 				t2 = t2 / verts_4d[vert_indices[3]].z / (t2 / verts_4d[vert_indices[3]].z + (1.0 - t2) / verts_4d[vert_indices[1]].z);
 				t2 = clamp(t2, 0.0, 1.0);
@@ -156,7 +160,7 @@ void vertex() {
 
 				// Solve: (base + t1 * point1 + t2 * point2).xy = target.xy
 				vec2 solution = inverse(mat2(point1.xy, point2.xy)) * (target - base).xy;
-				float t1 = solution.x; // Ideally these would be clamped to a triangle not a square, but it isn't really worth the extra complexity given the clamping should usually do nothing anyway.
+				float t1 = solution.x; // Clamping to a triangle rather than a square isn't worth the complexity; it should usually do nothing anyway.
 				float t2 = solution.y;
 				float normalization = t1 / verts_4d[vert_indices[2]].z + t2 / verts_4d[vert_indices[3]].z + (1.0 - t1 - t2) / verts_4d[vert_indices[1]].z;
 				t1 = clamp(t1 / verts_4d[vert_indices[2]].z / normalization, 0.0, 1.0); // Perspective correction.
@@ -188,7 +192,7 @@ void vertex() {
 		POSITION = PROJECTION_MATRIX * vec4(position_4d.xyz, 1.0);
 
 		vec3 normal = normalize(normal_4d.xyz);
-		vec3 tangent = normalize((verts_4d[1] - verts_4d[0]).xyz); // Not necessarily perpendicular to the normal after projecting to 3D. I'm not sure if this matters.
+		vec3 tangent = normalize((verts_4d[1] - verts_4d[0]).xyz); // May not be perpendicular to the normal after projecting to 3D; unclear if that matters.
 		vec3 binormal = normalize(cross(normal, tangent));
 		NORMAL = normal;
 		TANGENT = tangent;
@@ -210,8 +214,9 @@ vec3 from_homogeneous(vec4 vec) {
 	return vec.xyz / vec.w;
 }
 
-// A single fragment of the actual 2D view corresponds to a line of fragments of the conceptual 3D view. The correct result is the weighted integral of the fragment color along this line. This is approximated by computing the length of the line, and the color at its weighted centroid.
-// The line extends from position to other_position, and coordinates along the line are from 0 at position to 1 at other_position.
+// A fragment of the 2D view corresponds to a line of fragments of the conceptual 3D view, so the correct result is the weighted integral
+// of the color along it. It is approximated by the line's length and the color at its weighted centroid. The line runs from position,
+// at coordinate 0, to other_position, at coordinate 1.
 void fragment() {
 	vec4 position_4d = vec4(VERTEX, position_w);
 	NORMAL = normalize(NORMAL);
@@ -229,7 +234,7 @@ void fragment() {
 	// The coordinates, within the line, of each end of the section of the line that may be visible.
 	float line_end_1;
 	if (position_4d.z > z_near_limit) {
-		line_end_1 = (position_4d.z - z_near_limit) / (position_4d.z - other_position_4d.z); // If this division is by 0, thickness will end up as NaN, which renders as 0, which is the correct answer in that case.
+		line_end_1 = (position_4d.z - z_near_limit) / (position_4d.z - other_position_4d.z); // A division by 0 makes thickness NaN, which renders as 0, the correct answer then.
 	} else if (position_4d.z < z_far_limit) {
 		line_end_1 = (position_4d.z - z_far_limit) / (position_4d.z - other_position_4d.z);
 	} else {
