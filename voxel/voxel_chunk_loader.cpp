@@ -25,8 +25,12 @@ LocalVector<VoxelLoadTrigger4D *> VoxelChunkLoader::_get_load_triggers() const {
 		}
 	}
 #elif GODOT_MODULE
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
 	List<Node *> nodes;
 	tree->get_nodes_in_group(VoxelLoadTrigger4D::GROUP_NAME, &nodes);
+#else
+	Vector<Node *> nodes = tree->get_nodes_in_group(VoxelLoadTrigger4D::GROUP_NAME);
+#endif
 	for (Node *node : nodes) {
 		VoxelLoadTrigger4D *trigger = Object::cast_to<VoxelLoadTrigger4D>(node);
 		if (trigger != nullptr && trigger->applies_to(_world)) {

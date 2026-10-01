@@ -719,7 +719,6 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::extrude_spin_from_faces_xw(const Ref<Arr
 	ret->set_poly_cell_indices(output_poly_cell_indices);
 	ret->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
 	const PackedVector4Array wip_boundary_normals = ret->get_poly_cell_boundary_normals();
-	const Vector<PackedInt32Array> input_face_vertex_indices = p_input_mesh->get_all_face_vertex_indices();
 	// Step 14: Get or compute the face boundary normals.
 	// This function works with dense normal and texture map data, sampled from
 	// the indexed data at the start and converted back to indexed at the end.
