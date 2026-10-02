@@ -333,6 +333,9 @@
 		<member name="scale" type="Vector4" setter="set_scale" getter="get_scale" default="Vector4(1, 1, 1, 1)">
 			The local (parent-relative) scale of this [Node4D]. This is the length of each basis vector, with the W component being negative in the case of a flip/reflection (when the basis determinant is negative).
 		</member>
+		<member name="should_notify_local_transform" type="bool" setter="set_should_notify_local_transform" getter="get_should_notify_local_transform" default="false">
+			If [code]true[/code], this node will receive [constant NOTIFICATION_LOCAL_TRANSFORM_CHANGED] whenever its local (parent-relative) transform changes. This is the 4D equivalent of [method Node3D.set_notify_local_transform], but exposed as a property.
+		</member>
 		<member name="transform_array" type="PackedFloat32Array" setter="set_transform_array" getter="get_transform_array">
 			The local (parent-relative) transformation matrix of this [Node4D] as a [PackedFloat32Array] or [PackedFloat64Array]. This is a combination of [member basis] and [member position].
 		</member>
@@ -351,6 +354,9 @@
 		</signal>
 	</signals>
 	<constants>
+		<constant name="NOTIFICATION_LOCAL_TRANSFORM_CHANGED" value="44">
+			Notification received when this node's local (parent-relative) transform changes, if [member should_notify_local_transform] is [code]true[/code]. This is not received when a parent [Node4D]'s transform changes. This is the 4D equivalent of [constant Node3D.NOTIFICATION_LOCAL_TRANSFORM_CHANGED].
+		</constant>
 		<constant name="ROTATION_EDIT_MODE_EULER4D" value="0" enum="RotationEditMode">
 			Edit rotation as 4D Euler angles. This uses 6 numbers to represent the rotation in 4D space, in the order YZ, ZX, XY, XW, WY, ZW, exposed as an AABB. Scale is edited separately as a Vector4. This is the default mode, analogous to [constant Node3D.ROTATION_EDIT_MODE_EULER]. This will display the [member rotation_degrees] and [member scale] properties in the inspector.
 		</constant>

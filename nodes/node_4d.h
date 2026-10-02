@@ -22,6 +22,11 @@ class Node4D : public Node {
 	GDCLASS(Node4D, Node);
 
 public:
+	enum {
+		// Matches Node3D::NOTIFICATION_LOCAL_TRANSFORM_CHANGED.
+		NOTIFICATION_LOCAL_TRANSFORM_CHANGED = 44,
+	};
+
 	enum RotationEditMode {
 		ROTATION_EDIT_MODE_EULER4D,
 		ROTATION_EDIT_MODE_EULER4D_UNIFORM,
@@ -42,6 +47,7 @@ private:
 	bool _euler_cache_dirty = true;
 	bool _scale_cache_dirty = true;
 #endif // CACHE_ROTATION_AND_SCALE
+	bool _should_notify_local_transform = false;
 
 	bool _is_visible = true;
 
@@ -54,6 +60,10 @@ protected:
 public:
 	RotationEditMode get_rotation_edit_mode() const;
 	void set_rotation_edit_mode(const RotationEditMode p_rotation_edit_mode);
+
+	// Local transform notification.
+	bool get_should_notify_local_transform() const { return _should_notify_local_transform; }
+	void set_should_notify_local_transform(const bool p_should_notify_local_transform);
 
 	// Transform altering methods.
 	void apply_scale(const Vector4 &p_amount);

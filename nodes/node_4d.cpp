@@ -18,11 +18,14 @@ void Node4D::set_rotation_edit_mode(const RotationEditMode p_rotation_edit_mode)
 // Transform altering methods.
 
 void Node4D::apply_scale(const Vector4 &p_amount) {
-	_transform.scale_global(p_amount);
+	set_transform(_transform.scaled_global(p_amount));
 }
 
 void Node4D::translate_local(const Vector4 &p_amount) {
 	_transform.translate_local(p_amount);
+	if (_should_notify_local_transform) {
+		notification(NOTIFICATION_LOCAL_TRANSFORM_CHANGED);
+	}
 }
 
 void Node4D::look_at(const Vector4 &p_global_target, const Vector4 &p_up, const bool p_use_model_front) {
@@ -90,6 +93,10 @@ void Node4D::rotate_rotor_local_bind(const Ref<godot_4d_bind::Rotor4D> &p_rotor_
 
 // Local transform and basis.
 
+void Node4D::set_should_notify_local_transform(const bool p_should_notify_local_transform) {
+	_should_notify_local_transform = p_should_notify_local_transform;
+}
+
 Transform4D Node4D::get_transform() const {
 	return _transform;
 }
@@ -100,6 +107,9 @@ void Node4D::set_transform(const Transform4D &p_transform) {
 	_euler_cache_dirty = true;
 	_scale_cache_dirty = true;
 #endif // CACHE_ROTATION_AND_SCALE
+	if (_should_notify_local_transform) {
+		notification(NOTIFICATION_LOCAL_TRANSFORM_CHANGED);
+	}
 }
 
 PackedRealArray Node4D::get_transform_array() const {
@@ -107,11 +117,7 @@ PackedRealArray Node4D::get_transform_array() const {
 }
 
 void Node4D::set_transform_array(const PackedRealArray &p_transform_array) {
-	_transform = Transform4D::from_array(p_transform_array);
-#ifdef CACHE_ROTATION_AND_SCALE
-	_euler_cache_dirty = true;
-	_scale_cache_dirty = true;
-#endif // CACHE_ROTATION_AND_SCALE
+	set_transform(Transform4D::from_array(p_transform_array));
 }
 
 Ref<godot_4d_bind::Transform4D> Node4D::get_transform_bind() const {
@@ -122,7 +128,7 @@ Ref<godot_4d_bind::Transform4D> Node4D::get_transform_bind() const {
 }
 
 void Node4D::set_transform_bind(const Ref<godot_4d_bind::Transform4D> &p_transform) {
-	_transform = p_transform->get_transform();
+	set_transform(p_transform->get_transform());
 }
 
 Basis4D Node4D::get_basis() const {
@@ -135,6 +141,9 @@ void Node4D::set_basis(const Basis4D &p_basis) {
 	_euler_cache_dirty = true;
 	_scale_cache_dirty = true;
 #endif // CACHE_ROTATION_AND_SCALE
+	if (_should_notify_local_transform) {
+		notification(NOTIFICATION_LOCAL_TRANSFORM_CHANGED);
+	}
 }
 
 Projection Node4D::get_basis_bind() const {
@@ -142,11 +151,7 @@ Projection Node4D::get_basis_bind() const {
 }
 
 void Node4D::set_basis_bind(const Projection &p_basis) {
-	_transform.basis = p_basis;
-#ifdef CACHE_ROTATION_AND_SCALE
-	_euler_cache_dirty = true;
-	_scale_cache_dirty = true;
-#endif // CACHE_ROTATION_AND_SCALE
+	set_basis(p_basis);
 }
 
 // Local transform components.
@@ -157,6 +162,9 @@ Vector4 Node4D::get_position() const {
 
 void Node4D::set_position(const Vector4 &p_position) {
 	_transform.set_origin(p_position);
+	if (_should_notify_local_transform) {
+		notification(NOTIFICATION_LOCAL_TRANSFORM_CHANGED);
+	}
 }
 
 #ifdef CACHE_ROTATION_AND_SCALE
@@ -253,6 +261,9 @@ void Node4D::set_rotation(const Euler4D &p_euler) {
 	Vector4 scale = _transform.basis.get_scale();
 	_transform.basis = p_euler.to_basis().scaled_local(scale);
 #endif // CACHE_ROTATION_AND_SCALE
+	if (_should_notify_local_transform) {
+		notification(NOTIFICATION_LOCAL_TRANSFORM_CHANGED);
+	}
 }
 
 void Node4D::set_rotation_bind(const AABB &p_euler) {
@@ -280,6 +291,9 @@ void Node4D::set_scale(const Vector4 &p_scale) {
 	_scale_cache = p_scale;
 #endif // CACHE_ROTATION_AND_SCALE
 	_transform.set_scale(p_scale);
+	if (_should_notify_local_transform) {
+		notification(NOTIFICATION_LOCAL_TRANSFORM_CHANGED);
+	}
 }
 
 void Node4D::set_uniform_scale(const real_t p_uniform_scale) {
@@ -288,6 +302,9 @@ void Node4D::set_uniform_scale(const real_t p_uniform_scale) {
 	_scale_cache = Vector4(scale_abs, scale_abs, scale_abs, p_uniform_scale);
 #endif // CACHE_ROTATION_AND_SCALE
 	_transform.basis.set_uniform_scale(p_uniform_scale);
+	if (_should_notify_local_transform) {
+		notification(NOTIFICATION_LOCAL_TRANSFORM_CHANGED);
+	}
 }
 
 // Geometric algebra local rotation properties.
@@ -604,7 +621,7 @@ void Node4D::set_global_rotation_degrees_euler_bind(const Ref<godot_4d_bind::Eul
 void Node4D::set_global_scale(const Vector4 &p_global_scale) {
 	Basis4D global_basis = get_global_basis();
 	global_basis.set_scale(p_global_scale);
-	set_global_transform(global_basis);
+	set_global_basis(global_basis);
 }
 
 void Node4D::set_global_uniform_scale(const real_t p_global_uniform_scale) {
@@ -818,6 +835,9 @@ void Node4D::_bind_methods() {
 	// Rotation edit mode.
 	ClassDB::bind_method(D_METHOD("get_rotation_edit_mode"), &Node4D::get_rotation_edit_mode);
 	ClassDB::bind_method(D_METHOD("set_rotation_edit_mode", "rotation_edit_mode"), &Node4D::set_rotation_edit_mode);
+	// Local transform notification.
+	ClassDB::bind_method(D_METHOD("get_should_notify_local_transform"), &Node4D::get_should_notify_local_transform);
+	ClassDB::bind_method(D_METHOD("set_should_notify_local_transform", "should_notify_local_transform"), &Node4D::set_should_notify_local_transform);
 	// Transform altering methods.
 	ClassDB::bind_method(D_METHOD("apply_scale", "ratio"), &Node4D::apply_scale);
 	ClassDB::bind_method(D_METHOD("translate_local", "offset"), &Node4D::translate_local);
@@ -936,6 +956,7 @@ void Node4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "uniform_scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_uniform_scale", "get_uniform_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::PROJECTION, "basis", PROPERTY_HINT_NONE, ""), "set_basis", "get_basis");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "rotation_edit_mode", PROPERTY_HINT_ENUM, "Euler4D,Euler4D Uniform,Basis4D,Rotor4D,Rotor4D Uniform,Bivector4D, Bivector4D Uniform"), "set_rotation_edit_mode", "get_rotation_edit_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "should_notify_local_transform"), "set_should_notify_local_transform", "get_should_notify_local_transform");
 	// Global transform properties.
 	ADD_PROPERTY(PropertyInfo(PACKED_REAL_ARRAY, "global_transform_array", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_global_transform_array", "get_global_transform_array");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "global_position", PROPERTY_HINT_NONE, "suffix:m", PROPERTY_USAGE_NONE), "set_global_position", "get_global_position");
@@ -955,6 +976,7 @@ void Node4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "visible"), "set_visible", "is_visible");
 	ADD_SIGNAL(MethodInfo("visibility_changed"));
 #undef PACKED_REAL_ARRAY
+	BIND_CONSTANT(NOTIFICATION_LOCAL_TRANSFORM_CHANGED);
 	BIND_ENUM_CONSTANT(ROTATION_EDIT_MODE_EULER4D);
 	BIND_ENUM_CONSTANT(ROTATION_EDIT_MODE_EULER4D_UNIFORM);
 	BIND_ENUM_CONSTANT(ROTATION_EDIT_MODE_BASIS4D);
