@@ -2119,13 +2119,7 @@ TEST_CASE("[ArrayPolyMesh4D] Double sided attributes follow vertex identity and 
 				const PackedInt32Array before_pivots = mesh->get_poly_cell_boundary_pivot_overrides();
 				mesh->make_double_sided(pass != 2);
 				const auto after_geometry = mesh->get_poly_cell_indices();
-				if (pattern == 3) {
-					ERR_PRINT_OFF; // This getter validates and samples the deliberately partial attributes.
-				}
 				const auto after_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
-				if (pattern == 3) {
-					ERR_PRINT_ON;
-				}
 				const auto after_normals = mesh->get_poly_cell_dense_normals(PolyMesh4D::CELL_TO_VERT_KEY);
 				const auto after_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
 				const auto after_boundary_normals = mesh->get_poly_cell_boundary_normals();
@@ -2185,7 +2179,13 @@ TEST_CASE("[ArrayPolyMesh4D] Double sided attributes follow vertex identity and 
 					}
 				}
 				CHECK(mesh->is_poly_mesh_data_valid());
+				if (pattern == 3) {
+					ERR_PRINT_OFF; // Validation samples the deliberately partial attributes, which the flipped copies preserve.
+				}
 				const bool valid = mesh->is_mesh_data_valid();
+				if (pattern == 3) {
+					ERR_PRINT_ON;
+				}
 				CHECK(valid);
 			}
 		}
