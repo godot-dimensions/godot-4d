@@ -5,7 +5,7 @@ void CaveVoxelGenerator::_update_threshold() {
 	// reaches the threshold, so near a tunnel's axis, the radius along an
 	// axis is the threshold over the fields' combined RMS derivative: sqrt(3)
 	// times 0.676 (the measured RMS derivative of one unit-scale octave) per
-	// octave term, divided by the axis' scale. The octave terms' amplitudes
+	// octave term, divided by the axis's scale. The octave terms' amplitudes
 	// follow the persistence and their scales double, giving the sum below.
 	real_t octave_sum = 0.0f;
 	real_t term = 1.0f;

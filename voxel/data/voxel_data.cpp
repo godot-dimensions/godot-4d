@@ -52,20 +52,20 @@ Vector4i VoxelData::get_chunk_position(const Vector4i &p_voxel) const {
 	return chunk_position;
 }
 
-VoxelDataNeighbourhood VoxelData::find_region_neighbourhood(const Rect4i &p_region) {
-	VoxelDataNeighbourhood neighbourhood;
+VoxelDataNeighborhood VoxelData::find_region_neighborhood(const Rect4i &p_region) {
+	VoxelDataNeighborhood neighborhood;
 	if (_tree == nullptr || !_tree->get_bounds().encloses_inclusive(p_region)) {
-		return neighbourhood;
+		return neighborhood;
 	}
-	neighbourhood.node = _tree;
-	while (neighbourhood.node->is_parent()) {
-		const int child_index = neighbourhood.node->get_child_index_containing(p_region.position);
-		if (!neighbourhood.node->get_child(child_index)->get_bounds().encloses_inclusive(p_region)) {
+	neighborhood.node = _tree;
+	while (neighborhood.node->is_parent()) {
+		const int child_index = neighborhood.node->get_child_index_containing(p_region.position);
+		if (!neighborhood.node->get_child(child_index)->get_bounds().encloses_inclusive(p_region)) {
 			break;
 		}
-		neighbourhood = neighbourhood.get_child(child_index);
+		neighborhood = neighborhood.get_child(child_index);
 	}
-	return neighbourhood;
+	return neighborhood;
 }
 
 VoxelDataTree *VoxelData::generate_chunk_content(const Vector4i &p_voxel) const {
@@ -89,7 +89,7 @@ void VoxelData::apply_generated_chunk(VoxelDataTree *p_chunk) {
 	while (!_tree->get_bounds().encloses_inclusive(chunk_bounds)) {
 		expand_bounds(chunk_bounds.position);
 	}
-	VoxelDataNeighbourhood target{ _tree };
+	VoxelDataNeighborhood target{ _tree };
 	while (target.node->get_bounds() != chunk_bounds) {
 		if (target.node->get_bounds().size.x <= chunk_bounds.size.x) {
 			memdelete(p_chunk);
@@ -183,7 +183,7 @@ void VoxelData::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	if (_tree == nullptr) {
 		return;
 	}
-	VoxelDataNeighbourhood{ _tree }.apply_edit(p_edit);
+	VoxelDataNeighborhood{ _tree }.apply_edit(p_edit);
 }
 
 void VoxelData::mark_region_pending(const Rect4i &p_region) {
@@ -201,7 +201,7 @@ void VoxelData::merge_edited_constants() {
 	if (_tree == nullptr) {
 		return;
 	}
-	VoxelDataNeighbourhood{ _tree }.merge_edited_constants();
+	VoxelDataNeighborhood{ _tree }.merge_edited_constants();
 }
 
 bool VoxelData::unload_chunk(const Vector4i &p_voxel) {
@@ -209,7 +209,7 @@ bool VoxelData::unload_chunk(const Vector4i &p_voxel) {
 		return false;
 	}
 	const bool unloaded = _tree->clear_chunk(p_voxel);
-	// Cancelling a pending mark can also free up the bounds, so trim
+	// Canceling a pending mark can also free up the bounds, so trim
 	// regardless of whether any data was removed.
 	trim_bounds();
 	return unloaded;

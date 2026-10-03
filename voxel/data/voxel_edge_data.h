@@ -25,7 +25,7 @@ struct VoxelEdgeData {
 // of axes below the face axis are stored negated: for axes A < B, the 2-face
 // where their components agree in sign is representable only on face B,
 // where A's reversed coordinate is -1, and the 2-face where they differ only
-// on face A. Edges and vertices may not be exactly representable however, so
+// on face A. Edges and vertices may not be exactly representable, however, so
 // the face whose rounded point lies nearest the normal's direction is
 // stored. The remaining 9 bits store the crossing position, from 0 to 1 in
 // steps of 1/511.

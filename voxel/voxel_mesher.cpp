@@ -85,8 +85,8 @@ static int _edge_slot(const int p_axis, const Vector4i &p_cell_local_lower) {
 // relative to the average crossing point, so that directions the crossings do
 // not constrain keep the vertex there instead of pulling it elsewhere.
 static Vector4 _solve_vertex(const Basis4D &p_ata, const Vector4 &p_atb, const Vector4 &p_point_sum, const int p_crossing_count) {
-	const Vector4 masspoint = p_point_sum / (real_t)p_crossing_count;
-	const Vector4 residual = p_atb - p_ata.xform(masspoint);
+	const Vector4 centroid = p_point_sum / (real_t)p_crossing_count;
+	const Vector4 residual = p_atb - p_ata.xform(centroid);
 	Vector4 values;
 	Basis4D vectors;
 	VoxelMesher::eigen_decompose_symmetric_4(p_ata, values, vectors);
@@ -95,7 +95,7 @@ static Vector4 _solve_vertex(const Basis4D &p_ata, const Vector4 &p_atb, const V
 	for (int i = 0; i < 4; i++) {
 		rotated[i] *= Math::abs(values[i]) > (real_t)SMOOTHNESS ? 1.0f / values[i] : values[i] / (real_t)(SMOOTHNESS * SMOOTHNESS);
 	}
-	return masspoint + vectors.xform(rotated);
+	return centroid + vectors.xform(rotated);
 }
 
 // How far a couple's two crossings are from lying along each other's surfaces.
@@ -190,7 +190,7 @@ struct CellSurfaces {
 // surface: crossings are grouped into surfaces as connected components, where
 // each of the cell's 24 squares connects its crossings as decided by
 // _pair_square_crossings.
-static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r_cells, PackedVector4Array &r_vertices, const VoxelDataNeighbourhood &p_neighbourhood, const Vector4i &p_chunk_position, const Vector4i &p_lattice_local) {
+static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r_cells, PackedVector4Array &r_vertices, const VoxelDataNeighborhood &p_neighborhood, const Vector4i &p_chunk_position, const Vector4i &p_lattice_local) {
 	CellSurfaces *existing = r_cells.getptr(p_lattice_local);
 	if (existing != nullptr) {
 		return *existing;
@@ -209,7 +209,7 @@ static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r
 				voxel[axis] += 1;
 			}
 		}
-		cell_materials[i] = p_neighbourhood.get_material(voxel);
+		cell_materials[i] = p_neighborhood.get_material(voxel);
 	}
 	bool active[32] = {};
 	Vector4 points[32];
@@ -237,7 +237,7 @@ static const CellSurfaces &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces> &r
 				continue;
 			}
 			// Every active edge between defined voxels has stored data.
-			const VoxelEdgeData edge_data = p_neighbourhood.get_edge_data(lower, axis);
+			const VoxelEdgeData edge_data = p_neighborhood.get_edge_data(lower, axis);
 			const int slot = axis * 8 + block;
 			active[slot] = true;
 			normals[slot] = edge_data.normal;
@@ -351,10 +351,10 @@ constexpr int32_t FACE_CELLS_ODD[5][4] = {
 	{ 2, 6, 7, 4 },
 };
 
-Ref<TetraMesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &p_neighbourhood, const Vector4i &p_chunk_position) {
+Ref<TetraMesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighborhood &p_neighborhood, const Vector4i &p_chunk_position) {
 	Ref<ArrayTetraMesh4D> mesh;
 	mesh.instantiate();
-	ERR_FAIL_NULL_V(p_neighbourhood.node, mesh);
+	ERR_FAIL_NULL_V(p_neighborhood.node, mesh);
 	struct FaceDirection {
 		Vector4i tangents[3];
 	};
@@ -395,14 +395,14 @@ Ref<TetraMesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &
 			for (local.y = 0; local.y < VOXEL_MESH_CHUNK_SIZE; local.y++) {
 				for (local.x = 0; local.x < VOXEL_MESH_CHUNK_SIZE; local.x++) {
 					const Vector4i voxel = p_chunk_position + local;
-					const VoxelMaterial material = p_neighbourhood.get_material(voxel);
+					const VoxelMaterial material = p_neighborhood.get_material(voxel);
 					if (material == VoxelMaterial::UNDEFINED) {
 						continue;
 					}
 					for (int axis = 0; axis < 4; axis++) {
 						Vector4i upper_voxel = voxel;
 						upper_voxel[axis]++;
-						const VoxelMaterial upper_material = p_neighbourhood.get_material(upper_voxel);
+						const VoxelMaterial upper_material = p_neighborhood.get_material(upper_voxel);
 						// A face belongs to the chunk containing the lower
 						// voxel of the edge it crosses, like the edge's
 						// surface data.
@@ -427,7 +427,7 @@ Ref<TetraMesh4D> VoxelMesher::generate_chunk_mesh(const VoxelDataNeighbourhood &
 							// The vertex of the surface crossing this face's
 							// primal edge, which is active, so it always has
 							// a surface.
-							const CellSurfaces &cell_surfaces = _get_cell_surfaces(cells, vertices, p_neighbourhood, p_chunk_position, corner);
+							const CellSurfaces &cell_surfaces = _get_cell_surfaces(cells, vertices, p_neighborhood, p_chunk_position, corner);
 							const int slot = _edge_slot(axis, edge_lower - corner + Vector4i(1, 1, 1, 1));
 							corner_indices[i] = cell_surfaces.vertex_indices[cell_surfaces.edge_surfaces[slot]];
 						}

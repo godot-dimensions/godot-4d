@@ -8,7 +8,7 @@
 // a connected set of dimension 1, which thickens into tunnels where the
 // fields' combined magnitude is below a threshold determined by the desired
 // typical diameter. Inside the tunnels is the cave material (air by default)
-// and outside the outer material (UNDEFINED by default, so that lower layers
+// and outside, the outer material (UNDEFINED by default, so that lower layers
 // of a LayeredVoxelGenerator show through there).
 class CaveVoxelGenerator : public VoxelGenerator {
 	GDCLASS(CaveVoxelGenerator, VoxelGenerator);

@@ -18,7 +18,7 @@ void VoxelMeshHandler::mark_region_dirty(const Rect4i &p_region) {
 	// chunks overlapping the changed region grown by 1. The region is not
 	// clamped to the data bounds: those may already have contracted away from
 	// an unloaded chunk whose mesh still needs removing, and out-of-bounds
-	// chunks cost only a definedness check.
+	// chunks cost only a defined-ness check.
 	const Rect4i affected = p_region.grow(1);
 	const Vector4i start = Vector4i(
 			_floor_to_mesh_chunk_grid(affected.position.x),
@@ -57,11 +57,11 @@ void VoxelMeshHandler::update_dirty_meshes() {
 		// constant region needs no mesh either: constants never border a
 		// different material, so a constant region has no faces.
 		const Rect4i mesh_region = Rect4i(chunk_position, VOXEL_MESH_CHUNK_SIZE_VECTOR);
-		const VoxelDataNeighbourhood neighbourhood = voxel_data->find_region_neighbourhood(mesh_region);
+		const VoxelDataNeighborhood neighborhood = voxel_data->find_region_neighborhood(mesh_region);
 		Ref<TetraMesh4D> mesh;
-		if (neighbourhood.node != nullptr && !neighbourhood.node->is_constant() && neighbourhood.node->is_region_defined(mesh_region)) {
+		if (neighborhood.node != nullptr && !neighborhood.node->is_constant() && neighborhood.node->is_region_defined(mesh_region)) {
 			updated_count++;
-			mesh = VoxelMesher::generate_chunk_mesh(neighbourhood, chunk_position);
+			mesh = VoxelMesher::generate_chunk_mesh(neighborhood, chunk_position);
 			mesh->set_material(_world->get_mesh_material());
 		}
 		HashMap<Vector4i, MeshInstance4D *>::Iterator existing = _chunk_meshes.find(chunk_position);

@@ -3,7 +3,7 @@
 #include "voxel_generator.h"
 
 // Clips a modifier generator to the shape of a base generator: where the
-// base is undefined the result is always undefined, and where it's defined
+// base is undefined, the result is always undefined, and where it's defined,
 // the modifier's material may overwrite it.
 class ClippedVoxelGenerator : public VoxelGenerator {
 	GDCLASS(ClippedVoxelGenerator, VoxelGenerator);

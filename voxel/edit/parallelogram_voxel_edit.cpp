@@ -52,7 +52,7 @@ VoxelEdgeData ParallelogramVoxelEdit::get_edge_data(const Vector4i &p_voxel, con
 	const Vector4 local_start = _inverse_transform.xform(center);
 	// The edge's direction in local space, where the shape is the unit
 	// hypercube and the edge crosses its surface where it enters or leaves
-	// every axis' slab.
+	// every axis's slab.
 	const Vector4 local_direction = _inverse_transform.basis[p_axis];
 	real_t enter = -(real_t)Math_INF;
 	real_t exit = (real_t)Math_INF;

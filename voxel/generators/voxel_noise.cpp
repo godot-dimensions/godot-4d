@@ -19,9 +19,9 @@ static real_t _corner_value(const int32_t p_cell[4], const int p_corner_bits, co
 // 4D value noise: pseudo-random lattice corner values interpolated with the
 // C² quintic fade, giving a value in [-1, 1]. The gradient, when requested,
 // is in lattice units.
-// This has poor isotropy (both rotationally, since its spectrum is roughly
-// confined to a hypercube, and translationally, since it's very different
-// at lattice points). Once generation with cacheing instead of one point at
+// This has poor isotropy (both under rotation, since its spectrum is roughly
+// confined to a hypercube, and under translation, since it's very different
+// at lattice points). Once generation with caching instead of one point at
 // a time is implemented, this should be replaced.
 static real_t _value_noise(const Vector4 &p_position, const uint32_t p_seed, Vector4 *r_gradient) {
 	int32_t cell[4];

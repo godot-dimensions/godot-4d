@@ -12,7 +12,7 @@ class VoxelEdit;
 
 // A 4D volume of voxel data that can be expanded indefinitely.
 // Stores the data using a VoxelDataTree, but any logic that must
-// apply to a whole tree at once (not arbitrary sub-trees) goes here.
+// apply to a whole tree at once (not arbitrary subtrees) goes here.
 class VoxelData : public RefCounted {
 	GDCLASS(VoxelData, RefCounted);
 
@@ -24,7 +24,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	// bounds on the currently defined region
+	// The bounds of the currently defined region.
 	Rect4i get_bounds() const { return _tree == nullptr ? Rect4i() : _tree->get_bounds(); }
 
 	bool is_voxel_defined(const Vector4i &p_voxel) const;
@@ -44,11 +44,11 @@ public:
 	// are aligned to the global chunk-sized grid anchored at the origin.
 	Vector4i get_chunk_position(const Vector4i &p_voxel) const;
 
-	// The neighbourhood of the smallest tree node containing the whole given
-	// region, or one with a null centre node if the region is not entirely
+	// The neighborhood of the smallest tree node containing the whole given
+	// region, or one with a null center node if the region is not entirely
 	// inside the tree. When an undefined or constant node covers the region,
 	// the node may be larger than it.
-	VoxelDataNeighbourhood find_region_neighbourhood(const Rect4i &p_region);
+	VoxelDataNeighborhood find_region_neighborhood(const Rect4i &p_region);
 
 	// Sets the generator that provides chunk contents. Chunks already
 	// generated are unaffected. While it is null, no chunks can load.
@@ -93,7 +93,7 @@ private:
 	void trim_bounds();
 
 	// Doubles the tree's bounds, moving the content into the new root. Extends
-	// the tree towards the given location, to the extent permitted by the
+	// the tree toward the given location, to the extent permitted by the
 	// alignment invariant.
 	void expand_bounds(const Vector4i &p_toward);
 

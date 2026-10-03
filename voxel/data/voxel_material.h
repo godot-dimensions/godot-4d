@@ -35,7 +35,7 @@ enum class VoxelFace {
 // their opacity.
 // While this may be extended to other cases later, the relation of having no
 // face should always remain an equivalence relation among materials other than
-// UNDEFINED, in order to ensure mesh closedness.
+// UNDEFINED, in order to ensure meshes are watertight, manifold, and closed.
 inline VoxelFace get_face_between(const VoxelMaterial p_first, const VoxelMaterial p_second) {
 	if (p_first == VoxelMaterial::UNDEFINED || p_second == VoxelMaterial::UNDEFINED) {
 		return VoxelFace::NONE;

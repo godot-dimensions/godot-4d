@@ -82,7 +82,7 @@ VoxelEdgeData LayeredVoxelGenerator::get_edge_data(const Vector4i &p_voxel, cons
 		samples.push_back(sample);
 	}
 	// Replay those layers bottom-up under the rules that
-	// VoxelDataNeighbourhood::apply_edit uses for the surface data of an
+	// VoxelDataNeighborhood::apply_edit uses for the surface data of an
 	// edited edge, so that layered content matches the same content applied
 	// as a series of edits.
 	VoxelEdgeData edge_data;

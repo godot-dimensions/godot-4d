@@ -15,10 +15,10 @@
 namespace TestVoxelMesher {
 constexpr VoxelMaterial SOLID_MATERIAL = (VoxelMaterial)0;
 
-// Meshes one chunk the way the mesh handler does, through the neighbourhood
+// Meshes one chunk the way the mesh handler does, through the neighborhood
 // of the node covering the chunk's region.
 static Ref<TetraMesh4D> _mesh_chunk(const Ref<VoxelData> &p_data, const Vector4i &p_chunk_position) {
-	return VoxelMesher::generate_chunk_mesh(p_data->find_region_neighbourhood(Rect4i(p_chunk_position, VOXEL_MESH_CHUNK_SIZE_VECTOR)), p_chunk_position);
+	return VoxelMesher::generate_chunk_mesh(p_data->find_region_neighborhood(Rect4i(p_chunk_position, VOXEL_MESH_CHUNK_SIZE_VECTOR)), p_chunk_position);
 }
 
 TEST_CASE("[VoxelMesher] Eigendecomposition") {

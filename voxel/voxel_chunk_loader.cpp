@@ -209,7 +209,7 @@ void VoxelChunkLoader::update_loaded_chunks() {
 	if (bounds.size == Vector4i()) {
 		return;
 	}
-	const VoxelDataTree *root = voxel_data->find_region_neighbourhood(bounds).node;
+	const VoxelDataTree *root = voxel_data->find_region_neighborhood(bounds).node;
 	ERR_FAIL_NULL(root);
 	LocalVector<Vector4i> chunks_to_load;
 	LocalVector<Vector4i> chunks_to_unload;
@@ -259,7 +259,7 @@ void VoxelChunkLoader::unload(const Vector4i &p_voxel) {
 	if (entry) {
 		ChunkLoadTask *task = entry->value;
 		task->revoked.set();
-		// If it isn't already started, this makes the thread pool run it immediately,
+		// If it hasn't already started, this makes the thread pool run it immediately,
 		// and thus end it immediately since it's marked revoked.
 		WorkerThreadPool::get_singleton()->wait_for_task_completion(task->task_id);
 		if (task->chunk != nullptr) {

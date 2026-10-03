@@ -10,7 +10,7 @@
 #include "core/object/ref_counted.h"
 #endif
 
-// Virtual base class, produces the voxel content of one edited region to
+// Virtual base class that produces the voxel content of one edited region to
 // write into a VoxelData volume. The interface mirrors VoxelGenerator, but
 // an edit only covers the region inside its bounds, and is applied on the
 // main thread. Subclasses represent particular shapes of edit.

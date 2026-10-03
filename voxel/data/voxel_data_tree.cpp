@@ -249,8 +249,8 @@ void VoxelDataTree::generate(const Ref<VoxelGenerator> &p_generator) {
 			for (int32_t y = 0; y < _bounds.size.y; y++) {
 				for (int32_t x = 0; x < _bounds.size.x; x++) {
 					const Vector4i local_voxel = Vector4i(x, y, z, w);
-					// A generator returning UNDEFINED here is not valid, but as a backup, UNDEFINED is replaced
-					// with air.
+					// A generator returning UNDEFINED here is not valid,
+					// but as a fallback, UNDEFINED is replaced with air.
 					const VoxelMaterial material = overlay_material(p_generator->get_material(_bounds.position + local_voxel), VoxelMaterial::AIR);
 					leaf->set_material(local_voxel, material);
 					uniform = uniform && material == first_material;
@@ -317,7 +317,7 @@ bool VoxelDataTree::clear_chunk(const Vector4i &p_voxel) {
 		return false;
 	}
 	if (_bounds.size.x == VOXEL_DATA_CHUNK_SIZE) {
-		// Cancelling a chunk's pending mark removes no data.
+		// Canceling a chunk's pending mark removes no data.
 		const bool had_data = _type != TYPE_UNDEFINED;
 		clear();
 		return had_data;
@@ -326,14 +326,14 @@ bool VoxelDataTree::clear_chunk(const Vector4i &p_voxel) {
 		split_constant();
 	} else if (_type == TYPE_UNDEFINED) {
 		// A pending mark covering more than the chunk splits, so that the
-		// chunk's part of it can be cancelled alone.
+		// chunk's part of it can be canceled alone.
 		subdivide();
 	}
 	ERR_FAIL_COND_V_MSG(_type != TYPE_PARENT, false, "VoxelDataTree nodes larger than a chunk should be parents, constants, or undefined.");
 	const bool unloaded = get_child_containing(p_voxel)->clear_chunk(p_voxel);
 	// Collapse the children if they are all undefined with matching pending
 	// marks. Either way, keep this node's defined-or-pending mark exact: left
-	// stale it could make the newly missing chunk look still covered.
+	// stale, it could make the newly missing chunk look still covered.
 	bool collapsible = true;
 	bool all_defined_or_pending = true;
 	for (int i = 0; i < CHILD_COUNT; i++) {
@@ -412,23 +412,23 @@ VoxelDataTree::VoxelDataTree(const Rect4i &p_bounds) :
 	ERR_FAIL_COND_MSG(size.x > 1 && ((position.x & half_size_mask) != 0 || (position.y & half_size_mask) != 0 || (position.z & half_size_mask) != 0 || (position.w & half_size_mask) != 0), "VoxelDataTree bounds position must be a multiple of half the size on every axis.");
 }
 
-VoxelDataNeighbourhood VoxelDataNeighbourhood::get_child(const int p_index) const {
-	VoxelDataNeighbourhood child;
+VoxelDataNeighborhood VoxelDataNeighborhood::get_child(const int p_index) const {
+	VoxelDataNeighborhood child;
 	ERR_FAIL_NULL_V(node, child);
 	child.node = node->get_child(p_index);
 	if (child.node == nullptr) {
 		return child;
 	}
 	for (int direction = 0; direction < DIRECTION_COUNT; direction++) {
-		if (direction == CENTRE_DIRECTION) {
+		if (direction == CENTER_DIRECTION) {
 			continue;
 		}
 		int parent_direction = 0;
 		int target_child_index = 0;
 		for (int axis = 0, power = 1; axis < 4; axis++, power *= 3) {
-			// The neighbour's position along this axis in units of the child's
-			// size, relative to the original centre node's lower corner, so
-			// positions 0 and 1 are inside the centre node.
+			// The neighbor's position along this axis in units of the child's
+			// size, relative to the original center node's lower corner, so
+			// positions 0 and 1 are inside the center node.
 			const int position = ((p_index >> axis) & 1) + (direction / power) % 3 - 1;
 			if (position < 0) {
 				target_child_index |= 1 << axis;
@@ -439,16 +439,16 @@ VoxelDataNeighbourhood VoxelDataNeighbourhood::get_child(const int p_index) cons
 				parent_direction += 2 * power;
 			}
 		}
-		VoxelDataTree *target = parent_direction == CENTRE_DIRECTION ? node : neighbours[parent_direction];
+		VoxelDataTree *target = parent_direction == CENTER_DIRECTION ? node : neighbors[parent_direction];
 		if (target != nullptr && target->is_parent()) {
 			target = target->get_child(target_child_index);
 		}
-		child.neighbours[direction] = target;
+		child.neighbors[direction] = target;
 	}
 	return child;
 }
 
-VoxelDataTree *VoxelDataNeighbourhood::get_node_containing(const Vector4i &p_voxel) const {
+VoxelDataTree *VoxelDataNeighborhood::get_node_containing(const Vector4i &p_voxel) const {
 	ERR_FAIL_NULL_V(node, nullptr);
 	if (node->has_voxel(p_voxel)) {
 		return node;
@@ -463,15 +463,15 @@ VoxelDataTree *VoxelDataNeighbourhood::get_node_containing(const Vector4i &p_vox
 			direction += power;
 		}
 	}
-	return neighbours[direction];
+	return neighbors[direction];
 }
 
-VoxelMaterial VoxelDataNeighbourhood::get_material(const Vector4i &p_voxel) const {
+VoxelMaterial VoxelDataNeighborhood::get_material(const Vector4i &p_voxel) const {
 	const VoxelDataTree *containing = get_node_containing(p_voxel);
 	return containing == nullptr ? VoxelMaterial::UNDEFINED : containing->get_material(p_voxel);
 }
 
-VoxelEdgeData VoxelDataNeighbourhood::get_edge_data(const Vector4i &p_voxel, const int p_axis) const {
+VoxelEdgeData VoxelDataNeighborhood::get_edge_data(const Vector4i &p_voxel, const int p_axis) const {
 	const VoxelDataTree *containing = get_node_containing(p_voxel);
 	return containing == nullptr ? VoxelEdgeData() : containing->get_edge_data(p_voxel, p_axis);
 }
@@ -604,15 +604,15 @@ static void _reconcile_border(VoxelDataTree *p_lower, VoxelDataTree *p_upper, co
 	}
 }
 
-void VoxelDataNeighbourhood::reconcile_borders() {
+void VoxelDataNeighborhood::reconcile_borders() {
 	ERR_FAIL_NULL(node);
 	for (int axis = 0, power = 1; axis < 4; axis++, power *= 3) {
-		_reconcile_border(neighbours[CENTRE_DIRECTION - power], node, axis);
-		_reconcile_border(node, neighbours[CENTRE_DIRECTION + power], axis);
+		_reconcile_border(neighbors[CENTER_DIRECTION - power], node, axis);
+		_reconcile_border(node, neighbors[CENTER_DIRECTION + power], axis);
 	}
 }
 
-void VoxelDataNeighbourhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
+void VoxelDataNeighborhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	ERR_FAIL_NULL(node);
 	const Rect4i edit_bounds = p_edit->get_bounds();
 	// Edges owned by the voxels one step below the edit bounds still reach
@@ -634,7 +634,7 @@ void VoxelDataNeighbourhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	}
 	if (node->is_parent()) {
 		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
-			// Checked here to skip building neighbourhoods of irrelevant children.
+			// Checked here to skip building neighborhoods of irrelevant children.
 			if (node->get_child(i)->get_bounds().intersects_exclusive(face_bounds)) {
 				get_child(i).apply_edit(p_edit);
 			}
@@ -715,7 +715,7 @@ void VoxelDataNeighbourhood::apply_edit(const Ref<VoxelEdit> &p_edit) {
 	}
 }
 
-void VoxelDataNeighbourhood::merge_edited_constants() {
+void VoxelDataNeighborhood::merge_edited_constants() {
 	ERR_FAIL_NULL(node);
 	if (!node->_parent_needs_update) {
 		return;
@@ -723,7 +723,7 @@ void VoxelDataNeighbourhood::merge_edited_constants() {
 	node->_parent_needs_update = false;
 	if (node->is_parent()) {
 		for (int i = 0; i < VoxelDataTree::CHILD_COUNT; i++) {
-			// Checked here to skip building neighbourhoods of unmarked children.
+			// Checked here to skip building neighborhoods of unmarked children.
 			if (node->get_child(i)->_parent_needs_update) {
 				get_child(i).merge_edited_constants();
 			}
@@ -742,7 +742,7 @@ void VoxelDataNeighbourhood::merge_edited_constants() {
 	}
 	// A leaf can revert to a constant when its voxels are uniform, it stores
 	// no edge data (constants cannot, and border data kept for undefined
-	// neighbours must survive), and no defined voxel bordering it has a
+	// neighbors must survive), and no defined voxel bordering it has a
 	// different material (constants may not border one).
 	const VoxelDataLeaf *leaf_data = node->get_leaf_data();
 	if (leaf_data->get_edge_data_count() != 0) {

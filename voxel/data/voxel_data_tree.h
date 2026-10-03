@@ -23,7 +23,7 @@ class VoxelDataTree {
 	// for a whole tree, working with the node internals directly.
 	friend class VoxelData;
 	// Edits set, and the update pass consumes, _parent_needs_update.
-	friend struct VoxelDataNeighbourhood;
+	friend struct VoxelDataNeighborhood;
 
 public:
 	enum Type {
@@ -41,7 +41,7 @@ private:
 	Type _type = TYPE_UNDEFINED;
 	// Whether derived state in this subtree needs recomputing because it, or
 	// the 1-voxel border around it, has changed since the last update pass
-	// over it (see VoxelDataNeighbourhood::merge_edited_constants).
+	// over it (see VoxelDataNeighborhood::merge_edited_constants).
 	bool _parent_needs_update = false;
 	// Whether every voxel in this node's bounds is either defined or pending a
 	// load: always true for leaves and constants, true for a parent iff it is
@@ -127,14 +127,14 @@ public:
 	// the data the given generator returns for each voxel. Uniform regions
 	// are stored as constant nodes, merged into larger ones where possible,
 	// except chunks that border a different material, which stay leaves so
-	// that they can store the surface data
+	// that they can store the surface data.
 	void generate(const Ref<VoxelGenerator> &p_generator);
 
 	// Makes the chunk containing the given voxel undefined again and cancels
 	// its pending mark, splitting constants and pending marks that cover more
 	// than the chunk, and collapsing parents whose children become all
 	// undefined with matching marks. Returns whether any data was unloaded;
-	// cancelling a pending mark alone does not count.
+	// canceling a pending mark alone does not count.
 	bool clear_chunk(const Vector4i &p_voxel);
 
 	// Descends the tree to the deepest existing node whose bounds contain the
@@ -168,29 +168,29 @@ public:
 // A temporary view of a tree node together with the nodes bordering it, for
 // operations that read across node boundaries. While it exists, it borrows
 // ownership of the nodes, so they may not be modified except through it.
-// Generally, modifying neighbourhood means modifying its centre node, but
-// sometimes things like the surface data for the neighbours may also change.
-struct VoxelDataNeighbourhood {
-	// Neighbour directions are indexed in base 3: the node one step in
+// Generally, modifying a neighborhood means modifying its center node, but
+// sometimes things like the surface data for the neighbors may also change.
+struct VoxelDataNeighborhood {
+	// Neighbor directions are indexed in base 3: the node one step in
 	// direction d, where each component of d is -1, 0, or +1, is at index
 	// (d.x + 1) + (d.y + 1) * 3 + (d.z + 1) * 9 + (d.w + 1) * 27.
 	static constexpr int DIRECTION_COUNT = 81;
-	// The zero direction; its neighbours entry is unused.
-	static constexpr int CENTRE_DIRECTION = 40;
+	// The zero direction; its neighbors entry is unused.
+	static constexpr int CENTER_DIRECTION = 40;
 
 	VoxelDataTree *node = nullptr;
-	// The nodes bordering the centre node, including diagonally.
-	// Null where the neighbouring region is outside the entire tree.
-	// Each neighbour either is the same size as the centre node, or is larger
+	// The nodes bordering the center node, including diagonally.
+	// Null where the neighboring region is outside the entire tree.
+	// Each neighbor either is the same size as the center node, or is larger
 	// and doesn't have children.
-	VoxelDataTree *neighbours[DIRECTION_COUNT] = {};
+	VoxelDataTree *neighbors[DIRECTION_COUNT] = {};
 
-	// The neighbourhood of the given child of the centre node.
-	VoxelDataNeighbourhood get_child(const int p_index) const;
+	// The neighborhood of the given child of the center node.
+	VoxelDataNeighborhood get_child(const int p_index) const;
 
-	// The centre node or the neighbour whose region contains the given voxel,
-	// or null where the neighbourhood does not cover it. Only meaningful for
-	// voxels inside the centre node or one neighbour step outside it.
+	// The center node or the neighbor whose region contains the given voxel,
+	// or null where the neighborhood does not cover it. Only meaningful for
+	// voxels inside the center node or one neighbor step outside it.
 	VoxelDataTree *get_node_containing(const Vector4i &p_voxel) const;
 
 	// The material of the given voxel, read from the node containing it.
@@ -200,7 +200,7 @@ struct VoxelDataNeighbourhood {
 	// one step along the given axis, read from the node containing the voxel.
 	VoxelEdgeData get_edge_data(const Vector4i &p_voxel, const int p_axis) const;
 
-	// Makes the stored surface data of the edges crossing the centre node's
+	// Makes the stored surface data of the edges crossing the center node's
 	// borders consistent with the materials on their two ends, and splits any
 	// constant that turns out to border a different material.
 	void reconcile_borders();
