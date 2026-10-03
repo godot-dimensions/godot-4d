@@ -374,7 +374,7 @@ Ref<PolyMesh4D> CubinderShape4D::to_poly_mesh(const Dictionary &p_options) const
 	ret->set_poly_cell_vertex_positions(circle_vertices);
 	ret->set_edge_vertex_indices(circle_edge_indices);
 	ret->set_poly_cell_indices(circle_poly_cell_indices);
-	CRASH_COND(!ret->is_mesh_data_valid());
+	CRASH_COND(!ret->is_poly_mesh_data_valid());
 	// Extrude that circle along the height and thickness.
 	// The extrude_linear's extrusion vector is +/- the vector given, so we need to use the half extents.
 	const real_t height_half_extent = _height * (real_t)0.5;

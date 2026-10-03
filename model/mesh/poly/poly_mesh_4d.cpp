@@ -40,11 +40,12 @@ void PolyMesh4D::reset_poly_mesh_data_validation() {
 }
 
 bool PolyMesh4D::validate_mesh_data() {
-	if (_validate_poly_mesh_data_only()) {
-		_is_poly_mesh_data_valid = true;
-	} else {
-		_is_poly_mesh_data_valid = false;
-		return false;
+	// Validate poly mesh data first. Don't call `is_poly_mesh_data_valid` to avoid duplicate error messages.
+	if (unlikely(!_is_poly_mesh_data_valid)) {
+		_is_poly_mesh_data_valid = _validate_poly_mesh_data_only();
+		if (!_is_poly_mesh_data_valid) {
+			return false;
+		}
 	}
 	// Also check that the result of converting the poly data into tetra data is valid.
 	// This function is used to validate if a mesh is good for rendering, so we need to check this.
@@ -997,7 +998,7 @@ Vector<PackedVector3Array> PolyMesh4D::get_poly_cell_dense_texture_map(const Vec
 
 PackedVector4Array PolyMesh4D::compute_face_normals(const Vector4 &p_hyperplane_normal) {
 	PackedVector4Array ret;
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), ret);
 	const Vector<PackedInt32Array> face_vertex_indices = get_all_poly_cell_vertex_indices(2, true);
 	const PackedVector4Array positions = get_poly_cell_vertex_positions();
 	ret.resize(face_vertex_indices.size());
@@ -1021,7 +1022,7 @@ PackedVector4Array PolyMesh4D::compute_face_normals(const Vector4 &p_hyperplane_
 }
 
 Vector<PackedInt32Array> PolyMesh4D::get_all_face_vertex_indices() {
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), Vector<PackedInt32Array>());
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), Vector<PackedInt32Array>());
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 	ERR_FAIL_COND_V(poly_cell_indices.is_empty(), Vector<PackedInt32Array>());
 	const Vector<PackedInt32Array> face_edge_indices = poly_cell_indices[0];
@@ -1036,7 +1037,7 @@ Vector<PackedInt32Array> PolyMesh4D::get_all_face_vertex_indices() {
 }
 
 TypedArray<PackedInt32Array> PolyMesh4D::get_all_face_vertex_indices_bind() {
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), TypedArray<PackedInt32Array>());
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), TypedArray<PackedInt32Array>());
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
 	ERR_FAIL_COND_V(poly_cell_indices.is_empty(), TypedArray<PackedInt32Array>());
 	const Vector<PackedInt32Array> face_edge_indices = poly_cell_indices[0];
@@ -1051,13 +1052,13 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_face_vertex_indices_bind() {
 }
 
 Vector<PackedInt32Array> PolyMesh4D::get_all_boundary_cell_vertex_indices(const bool p_start_with_canonical_span) {
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), Vector<PackedInt32Array>());
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), Vector<PackedInt32Array>());
 	// Returns a copy of the cache (cheap, copy-on-write), so callers may keep it across later edits to the mesh.
 	return _get_boundary_cell_vertex_indices_cached(p_start_with_canonical_span);
 }
 
 TypedArray<PackedInt32Array> PolyMesh4D::get_all_boundary_cell_vertex_indices_bind(const bool p_start_with_canonical_span) {
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), TypedArray<PackedInt32Array>());
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), TypedArray<PackedInt32Array>());
 	const Vector<PackedInt32Array> &vec = _get_boundary_cell_vertex_indices_cached(p_start_with_canonical_span);
 	TypedArray<PackedInt32Array> ret;
 	ret.resize(vec.size());
@@ -1069,7 +1070,7 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_boundary_cell_vertex_indices_bi
 
 Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices(const int p_cell_dimension, const bool p_start_with_canonical_span) {
 	Vector<PackedInt32Array> ret;
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), ret);
 	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
 	ERR_FAIL_COND_V(p_cell_dimension >= poly_cell_indices.size() + 2, ret);
 	if (p_cell_dimension == 0) {
@@ -1105,7 +1106,7 @@ Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices(const int 
 
 TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices_bind(const int p_cell_dimension, const bool p_start_with_canonical_span) {
 	TypedArray<PackedInt32Array> ret;
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), ret);
 	const Vector<PackedInt32Array> all_poly_cell_vertex_indices = get_all_poly_cell_vertex_indices(p_cell_dimension, p_start_with_canonical_span);
 	ret.resize(all_poly_cell_vertex_indices.size());
 	for (int64_t cell_index = 0; cell_index < all_poly_cell_vertex_indices.size(); cell_index++) {
@@ -1116,7 +1117,7 @@ TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_vertex_indices_bind(c
 
 Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_poly_indices(const int p_cell_dimension, const int p_decomposition_dimension) {
 	Vector<PackedInt32Array> ret;
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), ret);
 	ERR_FAIL_COND_V(p_decomposition_dimension > p_cell_dimension || p_decomposition_dimension < 0, ret);
 	const Vector<Vector<PackedInt32Array>> &poly_cell_indices = get_poly_cell_indices();
 	ERR_FAIL_INDEX_V(p_cell_dimension, poly_cell_indices.size() + 2, ret);
@@ -1167,7 +1168,7 @@ Vector<PackedInt32Array> PolyMesh4D::get_all_poly_cell_poly_indices(const int p_
 
 TypedArray<PackedInt32Array> PolyMesh4D::get_all_poly_cell_poly_indices_bind(const int p_cell_dimension, const int p_decomposition_dimension) {
 	TypedArray<PackedInt32Array> ret;
-	ERR_FAIL_COND_V(!is_mesh_data_valid(), ret);
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), ret);
 	Vector<PackedInt32Array> vec = get_all_poly_cell_poly_indices(p_cell_dimension, p_decomposition_dimension);
 	ret.resize(vec.size());
 	for (int64_t cell_index = 0; cell_index < vec.size(); cell_index++) {

@@ -446,13 +446,13 @@ void ArrayPolyMesh4D::_compact_texture_map_values_internal() {
 // to run a sequence of editing operations first and only compact once at the end, if desired.
 
 void ArrayPolyMesh4D::compact_normal_values() {
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot compact normal values of an invalid mesh.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot compact normal values of an invalid mesh.");
 	_compact_normal_values_internal();
 	poly_mesh_clear_cache(true, true);
 }
 
 void ArrayPolyMesh4D::compact_texture_map_values() {
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot compact texture map values of an invalid mesh.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot compact texture map values of an invalid mesh.");
 	_compact_texture_map_values_internal();
 	poly_mesh_clear_cache();
 }
@@ -760,7 +760,7 @@ void ArrayPolyMesh4D::orient_cells_to_boundary_normals(const PackedVector4Array 
 void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
 	_all_poly_cell_normal_indices.erase(CELL_TO_VERT_KEY);
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
 	if (p_recalculate_boundary_normals || !_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(p_mode);
 	}
@@ -789,7 +789,7 @@ void ArrayPolyMesh4D::set_flat_shading_normals(const ComputeNormalsMode p_mode, 
 void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode, const bool p_recalculate_boundary_normals) {
 	_all_poly_cell_normal_indices.erase(CELL_TO_VERT_KEY);
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate boundary normals because there are no boundary cells.");
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate boundary normals for an invalid mesh.");
 	// Step 1: Prepare the data arrays which will be used by this function.
 	if (p_recalculate_boundary_normals || !_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(p_mode);
@@ -846,7 +846,7 @@ void ArrayPolyMesh4D::set_smooth_shading_normals(const ComputeNormalsMode p_mode
 
 void ArrayPolyMesh4D::make_double_sided(const bool p_idempotent) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot make double sided because there are no boundary cells.");
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot make double sided for an invalid mesh.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot make double sided for an invalid mesh.");
 	if (_poly_cell_indices[1].is_empty()) {
 		return;
 	}
@@ -1004,7 +1004,7 @@ PackedInt32Array ArrayPolyMesh4D::make_single_volume_from_all_cells() const {
 
 void ArrayPolyMesh4D::calculate_seam_faces(const double p_angle_threshold_radians, const bool p_discard_seams_within_islands) {
 	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot calculate seam faces because there are no boundary cells.");
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate seam faces for an invalid mesh.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot calculate seam faces for an invalid mesh.");
 	if (!_all_poly_cell_normal_indices.has(PER_CELL_KEY) || _all_poly_cell_normal_indices[PER_CELL_KEY].is_empty() || _all_poly_cell_normal_indices[PER_CELL_KEY][0].size() != _poly_cell_indices[1].size()) {
 		calculate_boundary_normals(COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY, false);
 	}
@@ -1599,7 +1599,7 @@ void ArrayPolyMesh4D::delete_texture_maps_below_dimension(const int p_dimension)
 // Misc functions.
 
 void ArrayPolyMesh4D::deduplicate_all_elements(const int64_t p_max_dimension) {
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot deduplicate elements of an invalid mesh.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot deduplicate elements of an invalid mesh.");
 	ERR_FAIL_COND_MSG(p_max_dimension < 0, "ArrayPolyMesh4D: Maximum dimension to deduplicate must be at least 0.");
 	const bool has_boundary_cells = _poly_cell_indices.size() > 1;
 	// We need to ensure the boundary normals stay the same before and after deduplication,
@@ -1910,8 +1910,8 @@ void ArrayPolyMesh4D::transform_mesh_bind(const Vector4 &p_offset, const Project
 }
 
 void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform4D &p_transform) {
-	ERR_FAIL_COND_MSG(!is_mesh_data_valid(), "ArrayPolyMesh4D: This mesh is invalid, cannot merge another mesh into it.");
-	ERR_FAIL_COND_MSG(p_other.is_null() || !p_other->is_mesh_data_valid(), "ArrayPolyMesh4D: Cannot merge an invalid PolyMesh4D into this mesh.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: This mesh is invalid, cannot merge another mesh into it.");
+	ERR_FAIL_COND_MSG(p_other.is_null() || !p_other->is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Cannot merge an invalid PolyMesh4D into this mesh.");
 	if (p_other.ptr() == this) {
 		// The source bindings must not grow while the destination is being appended to.
 		const Ref<ArrayPolyMesh4D> snapshot = duplicate();

@@ -755,7 +755,7 @@ Ref<MultiSurfaceMesh4D> FourDODocument4D::import_generate_multi_surface_mesh_4d(
 				}
 				poly_mesh_4d->orient_cells_to_boundary_normals(cell_boundary_normals);
 			}
-			ERR_FAIL_COND_V_MSG(!poly_mesh_4d->is_mesh_data_valid(), Ref<MultiSurfaceMesh4D>(), "4DO import: The polytope cells of material '" + surface_name + "' do not form a valid mesh.");
+			ERR_FAIL_COND_V_MSG(!poly_mesh_4d->is_poly_mesh_data_valid(), Ref<MultiSurfaceMesh4D>(), "4DO import: The polytope cells of material '" + surface_name + "' do not form a valid mesh.");
 			// Insert normal and texture map indices based on the computed boundary cell vertex indices.
 			// TODO: Import normal and texture map bindings from the faces of general polyhedra too.
 			// Currently only tetrahedra and cuboids retain these attributes; polyhedra use generated normals and no texture map.
