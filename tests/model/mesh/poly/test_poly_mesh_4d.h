@@ -1314,4 +1314,26 @@ TEST_CASE("[PolyMesh4D] Conformed and interior cells") {
 		}
 	}
 }
+// A face's normal comes from its whole boundary, so it does not matter which of its vertices happen to be collinear.
+TEST_CASE("[PolyMesh4D] Face normals do not depend on three well spread vertices") {
+	// A rectangle in the XY plane with a vertex in the middle of its bottom side, listed first, so that the first three
+	// vertices of the loop are collinear. Counter-clockwise seen from +Z, like a 3D face with a +Z normal.
+	Ref<ArrayPolyMesh4D> mesh;
+	mesh.instantiate();
+	mesh->set_poly_cell_vertex_positions(PackedVector4Array{ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(2, 0, 0, 0), Vector4(2, 1, 0, 0), Vector4(0, 1, 0, 0) });
+	mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 2, 3, 3, 4, 0, 4 });
+	mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2, 3, 4 } } });
+	const PackedVector4Array normals = mesh->compute_face_normals(Vector4(0, 0, 0, 1));
+	REQUIRE(normals.size() == 1);
+	CHECK(normals[0].is_equal_approx(Vector4(0, 0, 1, 0)));
+	// The same face listed the other way around faces the other way.
+	mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ Vector<PackedInt32Array>{ PackedInt32Array{ 4, 3, 2, 1, 0 } } });
+	CHECK(mesh->compute_face_normals(Vector4(0, 0, 0, 1))[0].is_equal_approx(Vector4(0, 0, -1, 0)));
+	// A face whose vertices are all collinear has no normal.
+	mesh->set_poly_cell_vertex_positions(PackedVector4Array{ Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(2, 0, 0, 0) });
+	mesh->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 0, 2 });
+	mesh->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2 } } });
+	CHECK(mesh->compute_face_normals(Vector4(0, 0, 0, 1))[0].is_zero_approx());
+}
+
 } // namespace TestPolyMesh4D

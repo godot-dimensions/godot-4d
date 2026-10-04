@@ -1010,13 +1010,20 @@ PackedVector4Array PolyMesh4D::compute_face_normals(const Vector4 &p_hyperplane_
 			ret.set(face_index, Vector4());
 			continue;
 		}
-		const Vector4 a = positions[span[1]] - positions[span[0]];
-		const Vector4 b = positions[span[2]] - positions[span[0]];
-		// `Vector4D::perpendicular(a, b, c)` returns the vector that completes (a, b, c, result) as a positively
-		// oriented frame. The face normal should instead complete (a, b, normal, hyperplane_normal), so that a face
-		// in the XYZ hyperplane with a +W hyperplane normal gets the 3D cross product of a and b. Swapping two
-		// vectors of a frame flips its orientation, so passing b before a gives the correct sign.
-		ret.set(face_index, Vector4D::perpendicular(b, a, p_hyperplane_normal).normalized());
+		// The normal is summed over the whole boundary, Newell's method carried into the hyperplane: each edge adds
+		// `perpendicular(end, start, hyperplane_normal)`, and the sum is the face's area times its normal, oriented by
+		// the loop order the way a 3D face's normal follows its winding. For a triangle this equals
+		// `perpendicular(b, a, hyperplane_normal)` with `a` and `b` the edges from its first vertex, and for a larger
+		// face it does not depend on any three vertices being well spread, so a face with collinear vertices along one
+		// side still gets its normal. `Vector4D::perpendicular(a, b, c)` completes (a, b, c, result) as a positively
+		// oriented frame, and the face normal should complete (a, b, normal, hyperplane_normal) instead, so that a
+		// face in the XYZ hyperplane with a +W hyperplane normal gets the 3D cross product of a and b. Swapping two
+		// vectors of a frame flips its orientation, which is why each edge's end is passed before its start.
+		Vector4 normal;
+		for (int64_t i = 0; i < span.size(); i++) {
+			normal += Vector4D::perpendicular(positions[span[(i + 1) % span.size()]], positions[span[i]], p_hyperplane_normal);
+		}
+		ret.set(face_index, normal.normalized());
 	}
 	return ret;
 }
