@@ -29,7 +29,7 @@ TEST_CASE("[LayeredVoxelNoise4D] Gradient and value bound") {
 			low[axis] -= step;
 			high[axis] += step;
 			const real_t finite_difference = (noise.sample(high, nullptr) - noise.sample(low, nullptr)) / (2.0f * step);
-			gradients_match = gradients_match && Math::abs(finite_difference - gradient[axis]) < (real_t)0.02f;
+			gradients_match = gradients_match && Math::abs(finite_difference - gradient[axis]) < (real_t)0.02;
 		}
 	}
 	CHECK_MESSAGE(values_bounded, "LayeredVoxelNoise4D samples should stay within max_value.");

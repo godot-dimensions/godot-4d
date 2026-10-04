@@ -50,7 +50,7 @@ static bool _region_contents_close(const Ref<VoxelData4D> &p_a, const Ref<VoxelD
 						}
 						const VoxelEdgeData4D data_a = p_a->get_edge_data(voxel, axis);
 						const VoxelEdgeData4D data_b = p_b->get_edge_data(voxel, axis);
-						if (Math::abs(data_a.normal.dot(data_b.normal)) < (real_t)0.999f || Math::abs(data_a.position - data_b.position) > p_position_tolerance) {
+						if (Math::abs(data_a.normal.dot(data_b.normal)) < (real_t)0.999 || Math::abs(data_a.position - data_b.position) > p_position_tolerance) {
 							return false;
 						}
 					}
@@ -86,7 +86,7 @@ TEST_CASE("[ParallelogramVoxelEdit4D] Equivalence to BoxVoxelEdit4D when axis-al
 		parallelogram_data->apply_edit(memnew(ParallelogramVoxelEdit4D(Transform4D(Basis4D::from_scale(rect.size), rect.position), (VoxelMaterial4D)2)));
 		// The crossings are computed along different routes, so they can land
 		// on either side of a storage quantization step.
-		all_equal = all_equal && _region_contents_close(box_data, parallelogram_data, region, (real_t)0.005f);
+		all_equal = all_equal && _region_contents_close(box_data, parallelogram_data, region, (real_t)0.005);
 	}
 	CHECK_MESSAGE(all_equal, "A ParallelogramVoxelEdit4D with an axis-aligned scaling basis should match the BoxVoxelEdit4D of the same box.");
 }

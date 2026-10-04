@@ -46,7 +46,7 @@ void GradientSkyMaterial4D::set_sun_angle_max(const real_t p_sun_angle_max) {
 
 void GradientSkyMaterial4D::set_sun_curve(const real_t p_sun_curve) {
 	_sun_curve = p_sun_curve;
-	set_shader_parameter("inv_sun_curve", 1.6f / Math::pow(MAX(_sun_curve, (real_t)CMP_EPSILON), (real_t)1.4f));
+	set_shader_parameter("inv_sun_curve", 1.6f / Math::pow(MAX(_sun_curve, (real_t)CMP_EPSILON), (real_t)1.4));
 }
 
 void GradientSkyMaterial4D::_validate_property(PropertyInfo &p_property) const {

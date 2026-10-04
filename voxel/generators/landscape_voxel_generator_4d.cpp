@@ -3,7 +3,7 @@
 real_t LandscapeVoxelGenerator4D::_relative_height(const Vector4 &p_point, Vector4 *r_gradient) const {
 	const real_t height = p_point.y + _noise.sample(p_point, r_gradient);
 	if (r_gradient != nullptr) {
-		r_gradient->y += (real_t)1.0f;
+		r_gradient->y += (real_t)1.0;
 	}
 	return height;
 }

@@ -13,7 +13,7 @@ real_t LayeredVoxelNoise4D::_corner_value(const int32_t p_cell[4], const int p_c
 	hash ^= hash >> 15;
 	hash *= 0x846CA68Bu;
 	hash ^= hash >> 16;
-	return (real_t)hash * (real_t)(2.0 / 4294967295.0) - (real_t)1.0f;
+	return (real_t)hash * (real_t)(2.0 / 4294967295.0) - (real_t)1.0;
 }
 
 // 4D value noise: pseudo-random lattice corner values interpolated with the
@@ -31,9 +31,9 @@ real_t LayeredVoxelNoise4D::_value_noise(const Vector4 &p_position, const uint32
 		const real_t floored = Math::floor(p_position[axis]);
 		cell[axis] = (int32_t)floored;
 		const real_t t = p_position[axis] - floored;
-		fade[axis] = t * t * t * (t * (t * (real_t)6.0f - (real_t)15.0f) + (real_t)10.0f);
-		const real_t t_less_1 = t - (real_t)1.0f;
-		fade_derivative[axis] = (real_t)30.0f * t * t * t_less_1 * t_less_1;
+		fade[axis] = t * t * t * (t * (t * (real_t)6.0 - (real_t)15.0) + (real_t)10.0);
+		const real_t t_less_1 = t - (real_t)1.0;
+		fade_derivative[axis] = (real_t)30.0 * t * t * t_less_1 * t_less_1;
 	}
 	real_t values[16];
 	for (int corner = 0; corner < 16; corner++) {
@@ -63,7 +63,7 @@ real_t LayeredVoxelNoise4D::_value_noise(const Vector4 &p_position, const uint32
 }
 
 real_t LayeredVoxelNoise4D::sample(const Vector4 &p_point, Vector4 *r_gradient) const {
-	real_t total = (real_t)0.0f;
+	real_t total = (real_t)0.0;
 	if (r_gradient != nullptr) {
 		*r_gradient = Vector4();
 	}
@@ -76,7 +76,7 @@ real_t LayeredVoxelNoise4D::sample(const Vector4 &p_point, Vector4 *r_gradient) 
 		if (r_gradient != nullptr) {
 			*r_gradient += amplitude * (octave_gradient / octave_scale);
 		}
-		octave_scale *= (real_t)0.5f;
+		octave_scale *= (real_t)0.5;
 		amplitude *= persistence;
 	}
 	return total;

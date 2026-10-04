@@ -57,7 +57,7 @@ void VoxelChunkLoader4D::_chunk_center_distance_range(const Rect4i &p_region, co
 		const real_t low = p_region.position[axis] + (real_t)VOXEL_4D_DATA_CHUNK_SIZE * 0.5f;
 		const real_t high = p_region.get_end()[axis] - (real_t)VOXEL_4D_DATA_CHUNK_SIZE * 0.5f;
 		const real_t coordinate = p_point[axis];
-		const real_t outside = MAX(MAX(low - coordinate, coordinate - high), (real_t)0.0f);
+		const real_t outside = MAX(MAX(low - coordinate, coordinate - high), (real_t)0.0);
 		r_min_squared += outside * outside;
 		const real_t farthest = MAX(Math::abs(coordinate - low), Math::abs(coordinate - high));
 		r_max_squared += farthest * farthest;

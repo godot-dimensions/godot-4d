@@ -14,8 +14,8 @@ void CaveVoxelGenerator4D::_update_threshold() {
 		octave_sum += term;
 		term *= ratio;
 	}
-	const real_t octave_factor = Math::sqrt(octave_sum) * (real_t)2.0f / (real_t)(1 << _noise.octaves);
-	const real_t threshold = (real_t)0.586f * octave_factor * _diameter / _noise.scale.x;
+	const real_t octave_factor = Math::sqrt(octave_sum) * (real_t)2.0 / (real_t)(1 << _noise.octaves);
+	const real_t threshold = (real_t)0.586 * octave_factor * _diameter / _noise.scale.x;
 	_threshold_squared = threshold * threshold;
 }
 

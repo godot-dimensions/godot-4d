@@ -2,7 +2,7 @@
 
 bool ParallelogramVoxelEdit4D::_contains_local_point(const Vector4 &p_local) const {
 	for (int axis = 0; axis < 4; axis++) {
-		if (p_local[axis] < (real_t)0.0f || p_local[axis] > (real_t)1.0f) {
+		if (p_local[axis] < (real_t)0.0 || p_local[axis] > (real_t)1.0) {
 			return false;
 		}
 	}
@@ -10,7 +10,7 @@ bool ParallelogramVoxelEdit4D::_contains_local_point(const Vector4 &p_local) con
 }
 
 void ParallelogramVoxelEdit4D::_update_cache() {
-	_degenerate = _transform.basis.determinant() == (real_t)0.0f;
+	_degenerate = _transform.basis.determinant() == (real_t)0.0;
 	if (_degenerate) {
 		_bounds = Rect4i();
 		return;
@@ -24,7 +24,7 @@ void ParallelogramVoxelEdit4D::_update_cache() {
 	for (int i = 0; i < 4; i++) {
 		const Vector4 column = _transform.basis[i];
 		for (int axis = 0; axis < 4; axis++) {
-			if (column[axis] < (real_t)0.0f) {
+			if (column[axis] < (real_t)0.0) {
 				min_corner[axis] += column[axis];
 			} else {
 				max_corner[axis] += column[axis];
@@ -59,11 +59,11 @@ VoxelEdgeData4D ParallelogramVoxelEdit4D::get_edge_data(const Vector4i &p_voxel,
 	int enter_axis = 0;
 	int exit_axis = 0;
 	for (int axis = 0; axis < 4; axis++) {
-		if (local_direction[axis] == (real_t)0.0f) {
+		if (local_direction[axis] == (real_t)0.0) {
 			continue;
 		}
 		const real_t to_zero = -local_start[axis] / local_direction[axis];
-		const real_t to_one = ((real_t)1.0f - local_start[axis]) / local_direction[axis];
+		const real_t to_one = ((real_t)1.0 - local_start[axis]) / local_direction[axis];
 		const real_t low = MIN(to_zero, to_one);
 		const real_t high = MAX(to_zero, to_one);
 		if (low > enter) {

@@ -37,9 +37,9 @@ struct PackedVoxelEdgeData4D {
 		PackedVoxelEdgeData4D encoded;
 		int best_face = -1;
 		int32_t best_steps[3] = { 0, 0, 0 };
-		real_t best_alignment = (real_t)-1.0f;
+		real_t best_alignment = (real_t)-1.0;
 		for (int face = 0; face < 4; face++) {
-			if (normal[face] == (real_t)0.0f) {
+			if (normal[face] == (real_t)0.0) {
 				continue;
 			}
 			int32_t steps[3];
@@ -55,9 +55,9 @@ struct PackedVoxelEdgeData4D {
 				if (axis < face) {
 					coordinate = -coordinate;
 				}
-				const int32_t rounded = CLAMP((int32_t)Math::round(coordinate * (real_t)64.0f), -64, 63);
+				const int32_t rounded = CLAMP((int32_t)Math::round(coordinate * (real_t)64.0), -64, 63);
 				steps[slot++] = rounded;
-				const real_t stored = (real_t)rounded / (real_t)64.0f;
+				const real_t stored = (real_t)rounded / (real_t)64.0;
 				point[axis] = axis < face ? -stored : stored;
 			}
 			const real_t alignment = Math::abs(normal.dot(point)) / point.length();
@@ -70,7 +70,7 @@ struct PackedVoxelEdgeData4D {
 			}
 		}
 		ERR_FAIL_COND_V_MSG(best_face < 0, encoded, "PackedVoxelEdgeData4D cannot encode a zero normal.");
-		const uint32_t position_bits = (uint32_t)Math::round(CLAMP(p_edge_data.position, (real_t)0.0f, (real_t)1.0f) * (real_t)511.0f);
+		const uint32_t position_bits = (uint32_t)Math::round(CLAMP(p_edge_data.position, (real_t)0.0, (real_t)1.0) * (real_t)511.0);
 		encoded.data = ((uint32_t)best_face << 30) | ((uint32_t)(best_steps[2] + 64) << 23) | ((uint32_t)(best_steps[1] + 64) << 16) | ((uint32_t)(best_steps[0] + 64) << 9) | position_bits;
 		return encoded;
 	}
@@ -86,14 +86,14 @@ struct PackedVoxelEdgeData4D {
 			if (axis == face) {
 				continue;
 			}
-			real_t coordinate = (real_t)((int32_t)((data >> (9 + 7 * slot)) & 127) - 64) / (real_t)64.0f;
+			real_t coordinate = (real_t)((int32_t)((data >> (9 + 7 * slot)) & 127) - 64) / (real_t)64.0;
 			if (axis < face) {
 				coordinate = -coordinate;
 			}
 			normal[axis] = coordinate;
 			slot++;
 		}
-		return VoxelEdgeData4D(normal.normalized(), (real_t)(data & 511) / (real_t)511.0f);
+		return VoxelEdgeData4D(normal.normalized(), (real_t)(data & 511) / (real_t)511.0);
 	}
 };
 
