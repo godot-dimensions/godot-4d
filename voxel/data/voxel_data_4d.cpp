@@ -9,10 +9,6 @@ bool VoxelData4D::_is_tree_empty(const VoxelDataTree4D &p_node) {
 	return p_node.is_undefined() && !p_node.is_defined_or_pending();
 }
 
-void VoxelData4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("is_voxel_defined", "voxel"), &VoxelData4D::is_voxel_defined);
-}
-
 bool VoxelData4D::is_voxel_defined(const Vector4i &p_voxel) const {
 	if (_tree == nullptr) {
 		return false;
@@ -322,4 +318,8 @@ VoxelData4D::~VoxelData4D() {
 	if (_tree != nullptr) {
 		memdelete(_tree);
 	}
+}
+
+void VoxelData4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("is_voxel_defined", "voxel"), &VoxelData4D::is_voxel_defined);
 }

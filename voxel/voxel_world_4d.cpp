@@ -2,35 +2,6 @@
 
 #include "edit/voxel_edit_4d.h"
 
-void VoxelWorld4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_voxel_data"), &VoxelWorld4D::get_voxel_data);
-	ClassDB::bind_method(D_METHOD("apply_edit", "edit"), &VoxelWorld4D::apply_edit);
-
-	ClassDB::bind_method(D_METHOD("get_generator"), &VoxelWorld4D::get_generator);
-	ClassDB::bind_method(D_METHOD("set_generator", "generator"), &VoxelWorld4D::set_generator);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator4D"), "set_generator", "get_generator");
-
-	ClassDB::bind_method(D_METHOD("get_material_palette"), &VoxelWorld4D::get_material_palette);
-	ClassDB::bind_method(D_METHOD("set_material_palette", "material_palette"), &VoxelWorld4D::set_material_palette);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_palette", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMaterialPalette4D"), "set_material_palette", "get_material_palette");
-
-	ClassDB::bind_method(D_METHOD("get_allow_projection"), &VoxelWorld4D::get_allow_projection);
-	ClassDB::bind_method(D_METHOD("set_allow_projection", "allow_projection"), &VoxelWorld4D::set_allow_projection);
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_projection"), "set_allow_projection", "get_allow_projection");
-
-	ClassDB::bind_method(D_METHOD("is_world_bounds_enabled"), &VoxelWorld4D::is_world_bounds_enabled);
-	ClassDB::bind_method(D_METHOD("set_world_bounds_enabled", "enabled"), &VoxelWorld4D::set_world_bounds_enabled);
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "world_bounds_enabled"), "set_world_bounds_enabled", "is_world_bounds_enabled");
-
-	ClassDB::bind_method(D_METHOD("get_world_bounds_position"), &VoxelWorld4D::get_world_bounds_position);
-	ClassDB::bind_method(D_METHOD("set_world_bounds_position", "position"), &VoxelWorld4D::set_world_bounds_position);
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4I, "world_bounds_position"), "set_world_bounds_position", "get_world_bounds_position");
-
-	ClassDB::bind_method(D_METHOD("get_world_bounds_size"), &VoxelWorld4D::get_world_bounds_size);
-	ClassDB::bind_method(D_METHOD("set_world_bounds_size", "size"), &VoxelWorld4D::set_world_bounds_size);
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4I, "world_bounds_size"), "set_world_bounds_size", "get_world_bounds_size");
-}
-
 void VoxelWorld4D::_validate_property(PropertyInfo &p_property) const {
 	if (!_world_bounds_enabled && (p_property.name == StringName("world_bounds_position") || p_property.name == StringName("world_bounds_size"))) {
 		p_property.usage = PROPERTY_USAGE_NO_EDITOR;
@@ -96,4 +67,33 @@ VoxelWorld4D::VoxelWorld4D() :
 
 VoxelWorld4D::~VoxelWorld4D() {
 	memdelete(_chunk_loader);
+}
+
+void VoxelWorld4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_voxel_data"), &VoxelWorld4D::get_voxel_data);
+	ClassDB::bind_method(D_METHOD("apply_edit", "edit"), &VoxelWorld4D::apply_edit);
+
+	ClassDB::bind_method(D_METHOD("get_generator"), &VoxelWorld4D::get_generator);
+	ClassDB::bind_method(D_METHOD("set_generator", "generator"), &VoxelWorld4D::set_generator);
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator4D"), "set_generator", "get_generator");
+
+	ClassDB::bind_method(D_METHOD("get_material_palette"), &VoxelWorld4D::get_material_palette);
+	ClassDB::bind_method(D_METHOD("set_material_palette", "material_palette"), &VoxelWorld4D::set_material_palette);
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_palette", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMaterialPalette4D"), "set_material_palette", "get_material_palette");
+
+	ClassDB::bind_method(D_METHOD("get_allow_projection"), &VoxelWorld4D::get_allow_projection);
+	ClassDB::bind_method(D_METHOD("set_allow_projection", "allow_projection"), &VoxelWorld4D::set_allow_projection);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_projection"), "set_allow_projection", "get_allow_projection");
+
+	ClassDB::bind_method(D_METHOD("is_world_bounds_enabled"), &VoxelWorld4D::is_world_bounds_enabled);
+	ClassDB::bind_method(D_METHOD("set_world_bounds_enabled", "enabled"), &VoxelWorld4D::set_world_bounds_enabled);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "world_bounds_enabled"), "set_world_bounds_enabled", "is_world_bounds_enabled");
+
+	ClassDB::bind_method(D_METHOD("get_world_bounds_position"), &VoxelWorld4D::get_world_bounds_position);
+	ClassDB::bind_method(D_METHOD("set_world_bounds_position", "position"), &VoxelWorld4D::set_world_bounds_position);
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4I, "world_bounds_position"), "set_world_bounds_position", "get_world_bounds_position");
+
+	ClassDB::bind_method(D_METHOD("get_world_bounds_size"), &VoxelWorld4D::get_world_bounds_size);
+	ClassDB::bind_method(D_METHOD("set_world_bounds_size", "size"), &VoxelWorld4D::set_world_bounds_size);
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4I, "world_bounds_size"), "set_world_bounds_size", "get_world_bounds_size");
 }

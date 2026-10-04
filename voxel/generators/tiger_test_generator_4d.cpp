@@ -1,8 +1,5 @@
 #include "tiger_test_generator_4d.h"
 
-void TigerTestGenerator4D::_bind_methods() {
-}
-
 real_t TigerTestGenerator4D::_signed_distance(const Vector4 &p_point) const {
 	const real_t xy = Math::sqrt(p_point.x * p_point.x + p_point.y * p_point.y) - _major_radius;
 	const real_t zw = Math::sqrt(p_point.z * p_point.z + p_point.w * p_point.w) - _major_radius;
@@ -37,4 +34,7 @@ VoxelEdgeData4D TigerTestGenerator4D::get_edge_data(const Vector4i &p_voxel, con
 		gradient.w = from_circle * point.w / r_zw;
 	}
 	return VoxelEdgeData4D(gradient, crossing);
+}
+
+void TigerTestGenerator4D::_bind_methods() {
 }

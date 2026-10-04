@@ -161,5 +161,5 @@ void LayeredVoxelGenerator4D::set_layers_bind(const TypedArray<VoxelGenerator4D>
 void LayeredVoxelGenerator4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_layers"), &LayeredVoxelGenerator4D::get_layers_bind);
 	ClassDB::bind_method(D_METHOD("set_layers", "layers"), &LayeredVoxelGenerator4D::set_layers_bind);
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "layers", PROPERTY_HINT_ARRAY_TYPE, vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator4D")), "set_layers", "get_layers");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "layers", PROPERTY_HINT_ARRAY_TYPE, "VoxelGenerator4D"), "set_layers", "get_layers");
 }

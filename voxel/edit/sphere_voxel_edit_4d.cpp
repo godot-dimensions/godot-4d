@@ -17,20 +17,6 @@ void SphereVoxelEdit4D::set_fill_material(const int p_fill_material) {
 	_material = material;
 }
 
-void SphereVoxelEdit4D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_center"), &SphereVoxelEdit4D::get_center);
-	ClassDB::bind_method(D_METHOD("set_center", "center"), &SphereVoxelEdit4D::set_center);
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "center"), "set_center", "get_center");
-
-	ClassDB::bind_method(D_METHOD("get_radius"), &SphereVoxelEdit4D::get_radius);
-	ClassDB::bind_method(D_METHOD("set_radius", "radius"), &SphereVoxelEdit4D::set_radius);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_RANGE, "0,100,0.001,or_greater"), "set_radius", "get_radius");
-
-	ClassDB::bind_method(D_METHOD("get_fill_material"), &SphereVoxelEdit4D::get_fill_material);
-	ClassDB::bind_method(D_METHOD("set_fill_material", "fill_material"), &SphereVoxelEdit4D::set_fill_material);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fill_material", PROPERTY_HINT_RANGE, "0,254,1"), "set_fill_material", "get_fill_material");
-}
-
 void SphereVoxelEdit4D::_update_bounds() {
 	ERR_FAIL_COND_MSG(_material == VoxelMaterial4D::UNDEFINED, "SphereVoxelEdit4D cannot apply the UNDEFINED material.");
 	// Covers exactly the voxels whose centers are inside the sphere.
@@ -62,4 +48,18 @@ VoxelEdgeData4D SphereVoxelEdit4D::get_edge_data(const Vector4i &p_voxel, const 
 	}
 	point[p_axis] += crossing;
 	return VoxelEdgeData4D(point - _center, crossing);
+}
+
+void SphereVoxelEdit4D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_center"), &SphereVoxelEdit4D::get_center);
+	ClassDB::bind_method(D_METHOD("set_center", "center"), &SphereVoxelEdit4D::set_center);
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "center"), "set_center", "get_center");
+
+	ClassDB::bind_method(D_METHOD("get_radius"), &SphereVoxelEdit4D::get_radius);
+	ClassDB::bind_method(D_METHOD("set_radius", "radius"), &SphereVoxelEdit4D::set_radius);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_RANGE, "0,100,0.001,or_greater"), "set_radius", "get_radius");
+
+	ClassDB::bind_method(D_METHOD("get_fill_material"), &SphereVoxelEdit4D::get_fill_material);
+	ClassDB::bind_method(D_METHOD("set_fill_material", "fill_material"), &SphereVoxelEdit4D::set_fill_material);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fill_material", PROPERTY_HINT_RANGE, "0,254,1"), "set_fill_material", "get_fill_material");
 }
