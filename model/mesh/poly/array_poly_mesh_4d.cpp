@@ -586,6 +586,327 @@ void ArrayPolyMesh4D::_delete_poly_cell_element_internal(const int32_t p_poly_di
 	}
 }
 
+bool ArrayPolyMesh4D::_faces_share_edge(const PackedInt32Array &p_face_a, const PackedInt32Array &p_face_b) {
+	for (const int32_t edge_index : p_face_a) {
+		if (p_face_b.has(edge_index)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Reorders a cell's faces so that its first two share an edge, which its canonical span and orientation rely on.
+// Returns false when no two of its faces share an edge.
+bool ArrayPolyMesh4D::_start_cell_with_adjacent_faces(const Vector<PackedInt32Array> &p_faces, PackedInt32Array &r_cell_faces) {
+	for (int64_t i = 0; i < r_cell_faces.size(); i++) {
+		for (int64_t j = i + 1; j < r_cell_faces.size(); j++) {
+			if (!_faces_share_edge(p_faces[r_cell_faces[i]], p_faces[r_cell_faces[j]])) {
+				continue;
+			}
+			const int32_t first = r_cell_faces[i];
+			const int32_t second = r_cell_faces[j];
+			r_cell_faces.remove_at(j);
+			r_cell_faces.remove_at(i);
+			r_cell_faces.insert(0, second);
+			r_cell_faces.insert(0, first);
+			return true;
+		}
+	}
+	return false;
+}
+
+// The sign of the orientation a cell induces on one of its faces: that of the frame made of two directions along the
+// face, the direction from the face into the cell, and the cell's normal. The face's directions depend only on the
+// face, so the sign means something compared to another cell's sign for the same face: a cell and a piece cut from
+// it induce the same sign on a face they share, and two cells that share a face and are oriented consistently induce
+// opposite signs on it. Zero means the face or the frame is degenerate.
+int ArrayPolyMesh4D::_induced_face_orientation_sign(const PackedInt32Array &p_face_vertices, const PackedVector4Array &p_positions, const Vector4 &p_cell_centroid, const Vector4 &p_cell_normal) {
+	if (p_face_vertices.size() < 3) {
+		return 0;
+	}
+	const Vector4 origin = p_positions[p_face_vertices[0]];
+	// Along the face towards its farthest vertex, and across it towards the vertex farthest from that line.
+	Vector4 along;
+	for (int64_t i = 1; i < p_face_vertices.size(); i++) {
+		const Vector4 offset = p_positions[p_face_vertices[i]] - origin;
+		if (offset.length_squared() > along.length_squared()) {
+			along = offset;
+		}
+	}
+	along.normalize();
+	Vector4 across;
+	for (int64_t i = 1; i < p_face_vertices.size(); i++) {
+		const Vector4 offset = p_positions[p_face_vertices[i]] - origin;
+		const Vector4 rejection = offset - along * along.dot(offset);
+		if (rejection.length_squared() > across.length_squared()) {
+			across = rejection;
+		}
+	}
+	across.normalize();
+	Vector4 inward = p_cell_centroid - origin;
+	inward -= along * along.dot(inward);
+	inward -= across * across.dot(inward);
+	const real_t determinant = Vector4D::perpendicular(along, across, inward).dot(p_cell_normal);
+	return determinant > (real_t)0.0 ? 1 : (determinant < (real_t)0.0 ? -1 : 0);
+}
+
+PackedInt32Array ArrayPolyMesh4D::split_poly_element(const int32_t p_dimension, const int32_t p_index, const Vector<PackedInt32Array> &p_pieces) {
+	PackedInt32Array ret;
+	ERR_FAIL_COND_V_MSG(p_dimension < 2, ret, "ArrayPolyMesh4D: Only elements of dimension 2 and up can be split into pieces. An edge is split by inserting a vertex instead.");
+	const int64_t poly_dim_index = p_dimension - 2;
+	ERR_FAIL_COND_V_MSG(poly_dim_index >= _poly_cell_indices.size(), ret, "ArrayPolyMesh4D: Cannot split an element of dimension " + itos(p_dimension) + " because the mesh has no elements of that dimension.");
+	ERR_FAIL_INDEX_V_MSG(p_index, _poly_cell_indices[poly_dim_index].size(), ret, "ArrayPolyMesh4D: Cannot split element " + itos(p_index) + " of dimension " + itos(p_dimension) + " because there is no such element.");
+	ERR_FAIL_COND_V_MSG(p_pieces.size() < 2, ret, "ArrayPolyMesh4D: Splitting an element takes at least 2 pieces.");
+	ERR_FAIL_COND_V_MSG(!is_poly_mesh_data_valid(), ret, "ArrayPolyMesh4D: Cannot split an element of a mesh whose poly mesh data is invalid.");
+	const int64_t sub_element_count = poly_dim_index == 0 ? _edge_vertex_indices.size() / 2 : _poly_cell_indices[poly_dim_index - 1].size();
+	Vector<PackedInt32Array> pieces = p_pieces;
+	for (int64_t i = 0; i < pieces.size(); i++) {
+		ERR_FAIL_COND_V_MSG(pieces[i].size() <= p_dimension, ret, "ArrayPolyMesh4D: Every piece of a split element of dimension " + itos(p_dimension) + " needs at least " + itos(p_dimension + 1) + " elements of the dimension below.");
+		for (const int32_t sub_element : pieces[i]) {
+			ERR_FAIL_INDEX_V_MSG(sub_element, sub_element_count, ret, "ArrayPolyMesh4D: A piece of the split element refers to element " + itos(sub_element) + " of dimension " + itos(p_dimension - 1) + ", which does not exist.");
+		}
+		if (poly_dim_index == 1) {
+			ERR_FAIL_COND_V_MSG(!_start_cell_with_adjacent_faces(_poly_cell_indices[0], pieces.write[i]), ret, "ArrayPolyMesh4D: No two faces of a piece of the split cell share an edge, so the piece cannot be oriented.");
+		}
+	}
+	// What the split changes besides the elements themselves: the traversal of every element from this dimension up,
+	// which positions the decomposed bindings, the dense data of every binding from the dimension below up, and the
+	// orientation normals of the 3D cells, which define their outward sides.
+	HashMap<Vector2i, Vector<PackedVector4Array>> dense_normals;
+	HashMap<Vector2i, Vector<PackedVector3Array>> dense_texture_maps;
+	HashMap<Vector2i, Vector<PackedInt32Array>> pre_traversals;
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_normal_indices) {
+		if (kv.key.x >= p_dimension - 1) {
+			dense_normals.insert(kv.key, get_poly_cell_dense_normals(kv.key));
+		}
+	}
+	for (const KeyValue<Vector2i, Vector<PackedInt32Array>> &kv : _all_poly_cell_texture_map_indices) {
+		if (kv.key.x >= p_dimension - 1) {
+			dense_texture_maps.insert(kv.key, get_poly_cell_dense_texture_map(kv.key));
+		}
+	}
+	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : dense_normals) {
+		if (kv.key.x >= p_dimension && kv.key.y < kv.key.x && !pre_traversals.has(kv.key)) {
+			pre_traversals.insert(kv.key, get_all_poly_cell_poly_indices(kv.key.x, kv.key.y));
+		}
+	}
+	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : dense_texture_maps) {
+		if (kv.key.x >= p_dimension && kv.key.y < kv.key.x && !pre_traversals.has(kv.key)) {
+			pre_traversals.insert(kv.key, get_all_poly_cell_poly_indices(kv.key.x, kv.key.y));
+		}
+	}
+	const bool orients_cells = _poly_cell_indices.size() >= 2 && poly_dim_index <= 1;
+	PackedVector4Array pre_cell_normals;
+	if (orients_cells) {
+		pre_cell_normals = _compute_boundary_normals_based_on_cell_orientation(_get_boundary_cell_vertex_indices_cached(true), false);
+	}
+	const PackedInt32Array element_sub_elements = _poly_cell_indices[poly_dim_index][p_index];
+	Vector4 element_centroid;
+	if (poly_dim_index == 1) {
+		const PackedInt32Array element_vertices = get_all_poly_cell_vertex_indices(3, false)[p_index];
+		for (const int32_t vertex_index : element_vertices) {
+			element_centroid += _poly_cell_vertex_positions[vertex_index];
+		}
+		element_centroid /= (real_t)MAX(element_vertices.size(), 1);
+	}
+	// The bindings are taken out while the structure changes, since the pieces would not match the element's entries
+	// in the meantime, which validation would refuse, and they are put back resampled at the end.
+	for (const KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : dense_normals) {
+		_all_poly_cell_normal_indices.erase(kv.key);
+	}
+	for (const KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : dense_texture_maps) {
+		_all_poly_cell_texture_map_indices.erase(kv.key);
+	}
+	// The first piece takes the element's place and the rest are appended.
+	const int64_t old_count = _poly_cell_indices[poly_dim_index].size();
+	ret.append(p_index);
+	_poly_cell_indices.write[poly_dim_index].write[p_index] = pieces[0];
+	for (int64_t i = 1; i < pieces.size(); i++) {
+		ret.append((int32_t)_poly_cell_indices[poly_dim_index].size());
+		_poly_cell_indices.write[poly_dim_index].push_back(pieces[i]);
+	}
+	// Every element of the dimension above that contained the element contains all of the pieces instead. A cell's
+	// first two faces must share an edge, so when the split face is one of them, the piece that takes its place is
+	// one sharing an edge with the other, and the rest of the pieces go to the end.
+	if (poly_dim_index + 1 < _poly_cell_indices.size()) {
+		for (int64_t parent_index = 0; parent_index < _poly_cell_indices[poly_dim_index + 1].size(); parent_index++) {
+			PackedInt32Array parent = _poly_cell_indices[poly_dim_index + 1][parent_index];
+			const int64_t position = parent.find(p_index);
+			if (position < 0) {
+				continue;
+			}
+			int64_t piece_in_place = 0;
+			if (poly_dim_index == 0 && position < 2 && parent.size() >= 2) {
+				const PackedInt32Array &partner = _poly_cell_indices[0][parent[1 - position]];
+				for (int64_t i = 0; i < pieces.size(); i++) {
+					if (_faces_share_edge(pieces[i], partner)) {
+						piece_in_place = i;
+						break;
+					}
+				}
+			}
+			parent.set(position, ret[piece_in_place]);
+			for (int64_t i = 0; i < pieces.size(); i++) {
+				if (i != piece_in_place) {
+					parent.append(ret[i]);
+				}
+			}
+			_poly_cell_indices.write[poly_dim_index + 1].write[parent_index] = parent;
+		}
+	}
+	if (poly_dim_index == 0 && _seam_face_indices.has(p_index)) {
+		for (int64_t i = 1; i < ret.size(); i++) {
+			_seam_face_indices.insert(ret[i]);
+		}
+	}
+	if (poly_dim_index == 1 && _poly_cell_boundary_pivot_overrides.size() == old_count) {
+		for (int64_t i = 1; i < ret.size(); i++) {
+			_poly_cell_boundary_pivot_overrides.append(-1);
+		}
+	}
+	poly_mesh_clear_cache();
+	// Orientation. The cells that contained a split face keep theirs: one whose normal flipped with its new faces gets
+	// its first two faces swapped back. The pieces of a split cell are oriented like the cell: a piece induces the
+	// same orientation as the cell on a face they share, and two pieces sharing a face induce opposite orientations
+	// on it, see `_induced_face_orientation_sign`. The pieces then get boundary normals of their own, which follow
+	// their orientation the way the cell's did.
+	Vector<Vector4> piece_boundary_normals;
+	if (orients_cells) {
+		PackedVector4Array post_cell_normals = _compute_boundary_normals_based_on_cell_orientation(_get_boundary_cell_vertex_indices_cached(true), false);
+		Vector<int64_t> cells_to_flip;
+		if (poly_dim_index == 0) {
+			for (int64_t cell_index = 0; cell_index < post_cell_normals.size() && cell_index < pre_cell_normals.size(); cell_index++) {
+				if (pre_cell_normals[cell_index].dot(post_cell_normals[cell_index]) < (real_t)0.0) {
+					cells_to_flip.push_back(cell_index);
+				}
+			}
+		} else {
+			const Vector<PackedInt32Array> face_vertices = get_all_poly_cell_vertex_indices(2, false);
+			const Vector<PackedInt32Array> cell_vertices = get_all_poly_cell_vertex_indices(3, false);
+			Vector<Vector4> piece_centroids;
+			for (const int32_t piece_index : ret) {
+				Vector4 centroid;
+				for (const int32_t vertex_index : cell_vertices[piece_index]) {
+					centroid += _poly_cell_vertex_positions[vertex_index];
+				}
+				piece_centroids.push_back(centroid / (real_t)MAX(cell_vertices[piece_index].size(), 1));
+			}
+			auto element_sign = [&](const int32_t p_face) {
+				return _induced_face_orientation_sign(face_vertices[p_face], _poly_cell_vertex_positions, element_centroid, pre_cell_normals[p_index]);
+			};
+			auto piece_sign = [&](const int64_t p_piece, const int32_t p_face, const bool p_flipped) {
+				return _induced_face_orientation_sign(face_vertices[p_face], _poly_cell_vertex_positions, piece_centroids[p_piece], p_flipped ? -post_cell_normals[ret[p_piece]] : post_cell_normals[ret[p_piece]]);
+			};
+			// Pieces with the element's first face are decided against the element there, where the element's normal
+			// is exact even when the element is warped. Then pieces sharing a face with a decided piece are decided
+			// against it, and any piece still left is decided against the element on a face they share.
+			Vector<int> piece_flips; // 1 to keep, -1 to flip, 0 while undecided.
+			piece_flips.resize(pieces.size());
+			piece_flips.fill(0);
+			const int32_t first_face = element_sub_elements[0];
+			for (int64_t i = 0; i < pieces.size(); i++) {
+				if (pieces[i].has(first_face)) {
+					const int expected = element_sign(first_face);
+					const int actual = piece_sign(i, first_face, false);
+					piece_flips.write[i] = (expected != 0 && actual != 0 && expected != actual) ? -1 : 1;
+				}
+			}
+			for (bool progressed = true; progressed;) {
+				progressed = false;
+				for (int64_t i = 0; i < pieces.size(); i++) {
+					for (int64_t j = 0; j < pieces.size() && piece_flips[i] == 0; j++) {
+						if (piece_flips[j] == 0) {
+							continue;
+						}
+						for (const int32_t face_index : pieces[i]) {
+							if (!pieces[j].has(face_index)) {
+								continue;
+							}
+							const int sign_j = piece_sign(j, face_index, piece_flips[j] < 0);
+							const int sign_i = piece_sign(i, face_index, false);
+							piece_flips.write[i] = (sign_i != 0 && sign_j != 0 && sign_i == sign_j) ? -1 : 1;
+							progressed = true;
+							break;
+						}
+					}
+				}
+			}
+			for (int64_t i = 0; i < pieces.size(); i++) {
+				if (piece_flips[i] != 0) {
+					continue;
+				}
+				piece_flips.write[i] = 1;
+				for (const int32_t face_index : pieces[i]) {
+					if (element_sub_elements.has(face_index)) {
+						const int expected = element_sign(face_index);
+						const int actual = piece_sign(i, face_index, false);
+						piece_flips.write[i] = (expected != 0 && actual != 0 && expected != actual) ? -1 : 1;
+						break;
+					}
+				}
+			}
+			for (int64_t i = 0; i < pieces.size(); i++) {
+				if (piece_flips[i] < 0) {
+					cells_to_flip.push_back(ret[i]);
+				}
+			}
+		}
+		for (const int64_t cell_index : cells_to_flip) {
+			PackedInt32Array cell = _poly_cell_indices[1][cell_index];
+			const int32_t first = cell[0];
+			cell.set(0, cell[1]);
+			cell.set(1, first);
+			_poly_cell_indices.write[1].write[cell_index] = cell;
+		}
+		if (!cells_to_flip.is_empty()) {
+			poly_mesh_clear_cache();
+			post_cell_normals = _compute_boundary_normals_based_on_cell_orientation(_get_boundary_cell_vertex_indices_cached(true), false);
+		}
+		if (poly_dim_index == 1 && dense_normals.has(PER_CELL_KEY) && !dense_normals[PER_CELL_KEY].is_empty() && p_index < dense_normals[PER_CELL_KEY][0].size()) {
+			const Vector4 stored = dense_normals[PER_CELL_KEY][0][p_index];
+			const real_t sign = stored.is_zero_approx() ? (real_t)0.0 : (stored.dot(pre_cell_normals[p_index]) < (real_t)0.0 ? (real_t)-1.0 : (real_t)1.0);
+			for (const int32_t piece_index : ret) {
+				piece_boundary_normals.push_back(post_cell_normals[piece_index] * sign);
+			}
+		}
+	}
+	// The bindings follow, see `_resample_dense_binding_after_split`.
+	HashMap<Vector2i, Vector<PackedInt32Array>> post_traversals;
+	auto post_traversal_of = [&](const Vector2i &p_key) -> const Vector<PackedInt32Array> & {
+		if (!post_traversals.has(p_key)) {
+			post_traversals.insert(p_key, get_all_poly_cell_poly_indices(p_key.x, p_key.y));
+		}
+		return post_traversals[p_key];
+	};
+	for (KeyValue<Vector2i, Vector<PackedVector4Array>> &kv : dense_normals) {
+		const Vector<PackedInt32Array> *pre = pre_traversals.has(kv.key) ? &pre_traversals[kv.key] : nullptr;
+		_resample_dense_binding_after_split<PackedVector4Array, Vector4>(kv.key, p_dimension, p_index, ret, pre, post_traversal_of(kv.key), kv.value);
+		if (kv.key == PER_CELL_KEY && !piece_boundary_normals.is_empty() && !kv.value.is_empty()) {
+			for (int64_t i = 0; i < ret.size() && i < piece_boundary_normals.size(); i++) {
+				if (ret[i] < kv.value[0].size()) {
+					kv.value.write[0].set(ret[i], piece_boundary_normals[i]);
+				}
+			}
+		}
+		set_poly_cell_dense_normals(kv.key, kv.value);
+	}
+	for (KeyValue<Vector2i, Vector<PackedVector3Array>> &kv : dense_texture_maps) {
+		const Vector<PackedInt32Array> *pre = pre_traversals.has(kv.key) ? &pre_traversals[kv.key] : nullptr;
+		_resample_dense_binding_after_split<PackedVector3Array, Vector3>(kv.key, p_dimension, p_index, ret, pre, post_traversal_of(kv.key), kv.value);
+		set_poly_cell_dense_texture_map(kv.key, kv.value);
+	}
+	poly_mesh_clear_cache();
+	return ret;
+}
+
+PackedInt32Array ArrayPolyMesh4D::split_poly_element_bind(const int32_t p_dimension, const int32_t p_index, const TypedArray<PackedInt32Array> &p_pieces) {
+	Vector<PackedInt32Array> pieces;
+	for (int64_t i = 0; i < p_pieces.size(); i++) {
+		pieces.push_back(p_pieces[i]);
+	}
+	return split_poly_element(p_dimension, p_index, pieces);
+}
+
 void ArrayPolyMesh4D::delete_poly_element(const int32_t p_dimension, const int32_t p_index) {
 	if (p_dimension < 0) {
 		ERR_FAIL_MSG("ArrayPolyMesh4D: Cannot delete from negative dimension.");
@@ -2878,6 +3199,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("append_vertex", "vertex", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertex, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("append_vertices", "vertices", "deduplicate_vertices"), &ArrayPolyMesh4D::append_vertices, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("delete_poly_element", "dimension", "index"), &ArrayPolyMesh4D::delete_poly_element);
+	ClassDB::bind_method(D_METHOD("split_poly_element", "dimension", "index", "pieces"), &ArrayPolyMesh4D::split_poly_element_bind);
 
 	ClassDB::bind_method(D_METHOD("compact_normal_values"), &ArrayPolyMesh4D::compact_normal_values);
 	ClassDB::bind_method(D_METHOD("compact_texture_map_values"), &ArrayPolyMesh4D::compact_texture_map_values);

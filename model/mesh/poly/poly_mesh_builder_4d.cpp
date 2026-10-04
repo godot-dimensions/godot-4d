@@ -1970,6 +1970,326 @@ Vector<PackedInt32Array> PolyMeshBuilder4D::_find_manifold_sheets(const Vector<P
 	return sheets;
 }
 
+// Making elements coplanar.
+
+// The vertices of an element, gathered down through its sub-elements, each once, in the order they are found.
+PackedInt32Array PolyMeshBuilder4D::_gather_element_vertices(const Vector<Vector<PackedInt32Array>> &p_levels, const PackedInt32Array &p_edge_vertex_indices, const int p_dimension, const int32_t p_index) {
+	PackedInt32Array vertices;
+	if (p_dimension <= 0) {
+		vertices.append(p_index);
+		return vertices;
+	}
+	if (p_dimension == 1) {
+		vertices.append(p_edge_vertex_indices[p_index * 2]);
+		vertices.append(p_edge_vertex_indices[p_index * 2 + 1]);
+		return vertices;
+	}
+	for (const int32_t sub_element : p_levels[p_dimension - 2][p_index]) {
+		for (const int32_t vertex_index : _gather_element_vertices(p_levels, p_edge_vertex_indices, p_dimension - 1, sub_element)) {
+			if (!vertices.has(vertex_index)) {
+				vertices.append(vertex_index);
+			}
+		}
+	}
+	return vertices;
+}
+
+// Grows an orthonormal basis of the flat through the given vertices, relative to the origin, by the vertex farthest
+// out of it at each step, which keeps it well conditioned, until it has the given dimension or nothing is left out
+// of it. Returns the distance of the vertex farthest out of the final basis.
+real_t PolyMeshBuilder4D::_grow_flat_basis(const PackedVector4Array &p_positions, const PackedInt32Array &p_vertices, const Vector4 &p_origin, const int p_flat_dimension, Vector<Vector4> &r_basis) {
+	while (true) {
+		Vector4 largest_rejection;
+		real_t largest_rejection_length = (real_t)0.0;
+		for (const int32_t vertex_index : p_vertices) {
+			Vector4 rejection = p_positions[vertex_index] - p_origin;
+			for (const Vector4 &direction : r_basis) {
+				rejection -= direction * direction.dot(rejection);
+			}
+			if (rejection.length() > largest_rejection_length) {
+				largest_rejection_length = rejection.length();
+				largest_rejection = rejection;
+			}
+		}
+		if (r_basis.size() >= p_flat_dimension || largest_rejection_length <= (real_t)0.0) {
+			return largest_rejection_length;
+		}
+		r_basis.push_back(largest_rejection.normalized());
+	}
+}
+
+// How far the vertices stand out of the flat of the given dimension fitted through them, relative to their size, and
+// zero when they fit it. Whatever distance remains once the flat has its dimension is the deviation.
+real_t PolyMeshBuilder4D::_flatness_deviation(const PackedVector4Array &p_positions, const PackedInt32Array &p_vertices, const int p_flat_dimension) {
+	if (p_vertices.size() <= p_flat_dimension + 1) {
+		return (real_t)0.0;
+	}
+	const Vector4 origin = p_positions[p_vertices[0]];
+	real_t scale = (real_t)0.0;
+	for (const int32_t vertex_index : p_vertices) {
+		scale = MAX(scale, (p_positions[vertex_index] - origin).length());
+	}
+	if (scale <= (real_t)0.0) {
+		return (real_t)0.0;
+	}
+	Vector<Vector4> basis;
+	const real_t remaining = _grow_flat_basis(p_positions, p_vertices, origin, p_flat_dimension, basis);
+	if (basis.size() < p_flat_dimension) {
+		return (real_t)0.0; // The vertices span less than the flat's dimension, so they fit it.
+	}
+	return remaining / scale;
+}
+
+// Orders edges that form one closed loop so that each shares a vertex with the next. Returns false when they do not
+// form a single closed loop, such as around a vertex where two cones of faces meet.
+bool PolyMeshBuilder4D::_order_edges_into_loop(const PackedInt32Array &p_edges, const PackedInt32Array &p_edge_vertex_indices, PackedInt32Array &r_loop) {
+	r_loop.clear();
+	if (p_edges.size() < 3) {
+		return false;
+	}
+	Vector<bool> used;
+	used.resize(p_edges.size());
+	used.fill(false);
+	used.write[0] = true;
+	r_loop.append(p_edges[0]);
+	const int32_t start_vertex = p_edge_vertex_indices[p_edges[0] * 2];
+	int32_t current_vertex = p_edge_vertex_indices[p_edges[0] * 2 + 1];
+	while (r_loop.size() < p_edges.size()) {
+		bool found = false;
+		for (int64_t i = 1; i < p_edges.size(); i++) {
+			if (used[i]) {
+				continue;
+			}
+			const int32_t a = p_edge_vertex_indices[p_edges[i] * 2];
+			const int32_t b = p_edge_vertex_indices[p_edges[i] * 2 + 1];
+			if (a == current_vertex) {
+				current_vertex = b;
+			} else if (b == current_vertex) {
+				current_vertex = a;
+			} else {
+				continue;
+			}
+			used.write[i] = true;
+			r_loop.append(p_edges[i]);
+			found = true;
+			break;
+		}
+		if (!found) {
+			return false;
+		}
+	}
+	return current_vertex == start_vertex;
+}
+
+// Makes one element flat by splitting it, see `make_coplanar`, and appends the resulting elements to `r_pieces`.
+int64_t PolyMeshBuilder4D::_make_element_coplanar(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const int p_dimension, const int32_t p_index, const real_t p_sin_tolerance, PackedInt32Array &r_pieces) {
+	if (p_dimension < 2) {
+		r_pieces.append(p_index); // Vertices and edges are always flat.
+		return 0;
+	}
+	int64_t split_count = 0;
+	PackedInt32Array pending = { p_index };
+	while (!pending.is_empty()) {
+		const int32_t element = pending[pending.size() - 1];
+		pending.remove_at(pending.size() - 1);
+		const Vector<Vector<PackedInt32Array>> levels = p_mesh_4d->get_poly_cell_indices();
+		const PackedInt32Array edge_vertex_indices = p_mesh_4d->get_edge_indices();
+		const PackedVector4Array positions = p_mesh_4d->get_poly_cell_vertex_positions();
+		const PackedInt32Array vertices = _gather_element_vertices(levels, edge_vertex_indices, p_dimension, element);
+		if (_flatness_deviation(positions, vertices, p_dimension) <= p_sin_tolerance) {
+			r_pieces.append(element);
+			continue;
+		}
+		const PackedInt32Array sub_elements = levels[p_dimension - 2][element];
+		// The loop order of a face says which edges meet at each vertex and where the cut goes.
+		PackedInt32Array face_loop;
+		if (p_dimension == 2) {
+			face_loop = _get_loop_face_vertices(sub_elements, edge_vertex_indices);
+			if (face_loop.is_empty()) {
+				ERR_PRINT("PolyMeshBuilder4D: Face " + itos(element) + " is not flat, but its edges are not stored as a single closed loop, so it cannot be split.");
+				r_pieces.append(element);
+				continue;
+			}
+		}
+		// The vertices of each sub-element, to tell the star of a vertex, the sub-elements that have it, from the rest.
+		Vector<PackedInt32Array> sub_element_vertices;
+		for (const int32_t sub_element : sub_elements) {
+			sub_element_vertices.push_back(_gather_element_vertices(levels, edge_vertex_indices, p_dimension - 1, sub_element));
+		}
+		// The vertex to cut off is the one whose removal leaves the others closest to flat, the one standing farthest
+		// out of the flat through the others among those, and the one with the smallest cut among those, so that a
+		// quad with one corner raised is cut along its level diagonal. A vertex whose star reaches every other
+		// vertex is skipped, since cutting it off would give the whole element back as one of the pieces.
+		struct Candidate {
+			int32_t vertex = -1;
+			real_t others_deviation = 0.0;
+			real_t own_deviation = 0.0;
+			real_t cut_size = 0.0;
+		};
+		struct CandidateSort {
+			bool operator()(const Candidate &p_a, const Candidate &p_b) const {
+				if (Math::abs(p_a.others_deviation - p_b.others_deviation) > (real_t)1e-6) {
+					return p_a.others_deviation < p_b.others_deviation;
+				}
+				if (Math::abs(p_a.own_deviation - p_b.own_deviation) > (real_t)1e-6) {
+					return p_a.own_deviation > p_b.own_deviation;
+				}
+				return p_a.cut_size < p_b.cut_size;
+			}
+		};
+		real_t scale = (real_t)0.0;
+		for (const int32_t vertex_index : vertices) {
+			scale = MAX(scale, (positions[vertex_index] - positions[vertices[0]]).length());
+		}
+		Vector<Candidate> candidates;
+		for (const int32_t vertex : vertices) {
+			PackedInt32Array link_vertices;
+			for (const PackedInt32Array &star_vertices : sub_element_vertices) {
+				if (!star_vertices.has(vertex)) {
+					continue;
+				}
+				for (const int32_t other : star_vertices) {
+					if (other != vertex && !link_vertices.has(other)) {
+						link_vertices.append(other);
+					}
+				}
+			}
+			if (link_vertices.size() + 1 >= vertices.size()) {
+				continue;
+			}
+			PackedInt32Array others;
+			for (const int32_t other : vertices) {
+				if (other != vertex) {
+					others.append(other);
+				}
+			}
+			// The flat through the other vertices, grown like in `_flatness_deviation`, and this vertex's distance from it.
+			const Vector4 origin = positions[others[0]];
+			Vector<Vector4> basis;
+			_grow_flat_basis(positions, others, origin, p_dimension, basis);
+			Vector4 rejection = positions[vertex] - origin;
+			for (const Vector4 &direction : basis) {
+				rejection -= direction * direction.dot(rejection);
+			}
+			Candidate candidate;
+			candidate.vertex = vertex;
+			candidate.others_deviation = _flatness_deviation(positions, others, p_dimension);
+			candidate.own_deviation = scale > (real_t)0.0 ? rejection.length() / scale : (real_t)0.0;
+			for (int64_t i = 0; i < link_vertices.size(); i++) {
+				for (int64_t j = i + 1; j < link_vertices.size(); j++) {
+					candidate.cut_size = MAX(candidate.cut_size, positions[link_vertices[i]].distance_to(positions[link_vertices[j]]));
+				}
+			}
+			candidates.push_back(candidate);
+		}
+		candidates.sort_custom<CandidateSort>();
+		bool split_done = false;
+		for (const Candidate &candidate : candidates) {
+			const int32_t vertex = candidate.vertex;
+			PackedInt32Array star;
+			PackedInt32Array rest;
+			for (int64_t i = 0; i < sub_elements.size(); i++) {
+				if (sub_element_vertices[i].has(vertex)) {
+					star.append(sub_elements[i]);
+				} else {
+					rest.append(sub_elements[i]);
+				}
+			}
+			if (star.is_empty() || rest.is_empty()) {
+				continue;
+			}
+			// The cut: a new element of the dimension below, bounded by the link, which is made of the sub-elements of
+			// the star's members that do not have the vertex. The pieces are the star and the rest, each closed by it.
+			const int64_t count_before_cut = p_dimension == 2 ? edge_vertex_indices.size() / 2 : levels[p_dimension - 3].size();
+			int64_t cut_index = -1;
+			PackedInt32Array piece_star;
+			PackedInt32Array piece_rest;
+			if (p_dimension == 2) {
+				const int64_t loop_size = face_loop.size();
+				const int64_t loop_position = face_loop.find(vertex);
+				const int32_t previous_vertex = face_loop[(loop_position + loop_size - 1) % loop_size];
+				const int32_t next_vertex = face_loop[(loop_position + 1) % loop_size];
+				cut_index = p_mesh_4d->append_edge_indices(previous_vertex, next_vertex);
+				// Vertex k of the loop sits between edges k and k + 1, so those two edges and the cut make the triangle
+				// cut off, and in the rest the cut takes their place.
+				const int32_t edge_in = sub_elements[loop_position];
+				const int32_t edge_out = sub_elements[(loop_position + 1) % loop_size];
+				piece_star = PackedInt32Array{ edge_in, edge_out, (int32_t)cut_index };
+				for (int64_t k = 0; k < loop_size; k++) {
+					const int32_t edge_index = sub_elements[k];
+					if (edge_index == edge_in) {
+						piece_rest.append((int32_t)cut_index);
+					} else if (edge_index != edge_out) {
+						piece_rest.append(edge_index);
+					}
+				}
+			} else {
+				PackedInt32Array link;
+				for (const int32_t star_member : star) {
+					for (const int32_t facet : levels[p_dimension - 3][star_member]) {
+						if (!link.has(facet) && !_gather_element_vertices(levels, edge_vertex_indices, p_dimension - 2, facet).has(vertex)) {
+							link.append(facet);
+						}
+					}
+				}
+				if (p_dimension == 3) {
+					PackedInt32Array loop;
+					if (!_order_edges_into_loop(link, edge_vertex_indices, loop)) {
+						continue; // The faces around this vertex do not meet in one loop, so try another vertex.
+					}
+					cut_index = p_mesh_4d->append_poly_cell(2, loop);
+				} else {
+					cut_index = p_mesh_4d->append_poly_cell(p_dimension - 1, link);
+				}
+				if (cut_index < 0) {
+					continue;
+				}
+				// The cut has to be coplanar itself, so its pieces rather than the cut bound the element's pieces.
+				PackedInt32Array cut_pieces;
+				split_count += _make_element_coplanar(p_mesh_4d, p_dimension - 1, (int32_t)cut_index, p_sin_tolerance, cut_pieces);
+				piece_star = star;
+				piece_star.append_array(cut_pieces);
+				piece_rest = rest;
+				piece_rest.append_array(cut_pieces);
+			}
+			const PackedInt32Array new_pieces = p_mesh_4d->split_poly_element(p_dimension, element, Vector<PackedInt32Array>{ piece_star, piece_rest });
+			if (new_pieces.size() != 2) {
+				// The split failed and said why. A cut appended for it is removed, unless an existing element was reused.
+				if (cut_index >= count_before_cut) {
+					p_mesh_4d->delete_poly_element(p_dimension - 1, (int32_t)cut_index);
+				}
+				break;
+			}
+			split_count++;
+			pending.append(new_pieces[0]);
+			pending.append(new_pieces[1]);
+			split_done = true;
+			break;
+		}
+		if (!split_done) {
+			ERR_PRINT("PolyMeshBuilder4D: Element " + itos(element) + " of dimension " + itos(p_dimension) + " is not flat, but no vertex of it can be cut off, so it is left as it is.");
+			r_pieces.append(element);
+		}
+	}
+	return split_count;
+}
+
+int64_t PolyMeshBuilder4D::make_coplanar(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians) {
+	ERR_FAIL_COND_V_MSG(p_mesh_4d.is_null() || !p_mesh_4d->is_poly_mesh_data_valid(), 0, "PolyMeshBuilder4D: Cannot make the elements of an invalid mesh coplanar.");
+	const real_t sin_tolerance = (real_t)Math::sin(p_angle_tolerance_radians);
+	int64_t split_count = 0;
+	// Faces first, then cells, and so on. A split only adds elements of its own dimension and of the dimension below,
+	// and the cuts it adds below are made coplanar as they are added, so each dimension is done when the next starts.
+	// The pieces a split appends are visited by the same loop, though they are flat already.
+	for (int dimension = 2; dimension - 2 < p_mesh_4d->get_poly_cell_indices().size(); dimension++) {
+		for (int64_t index = 0; index < p_mesh_4d->get_poly_cell_indices()[dimension - 2].size(); index++) {
+			PackedInt32Array pieces;
+			split_count += _make_element_coplanar(p_mesh_4d, dimension, (int32_t)index, sin_tolerance, pieces);
+		}
+	}
+	return split_count;
+}
+
 int64_t PolyMeshBuilder4D::make_cells_from_manifold_sheets(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians) {
 	ERR_FAIL_COND_V_MSG(p_mesh_4d.is_null() || !p_mesh_4d->is_poly_mesh_data_valid(), 0, "PolyMeshBuilder4D: Cannot make cells from the manifold sheets of an invalid mesh.");
 	Vector<Vector<PackedInt32Array>> poly_cell_indices = p_mesh_4d->get_poly_cell_indices();
@@ -3624,5 +3944,6 @@ void PolyMeshBuilder4D::_bind_methods() {
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_boundary_normals_topologically_consistent", "mesh_4d", "authoritative_boundary_cells"), &PolyMeshBuilder4D::make_boundary_normals_topologically_consistent);
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_cells_from_manifold_sheets", "mesh_4d", "angle_tolerance_radians"), &PolyMeshBuilder4D::make_cells_from_manifold_sheets, DEFVAL(0.001));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("solidify_faces", "input_mesh", "thickness", "offset", "miter_limit", "hyperplane_normal"), &PolyMeshBuilder4D::solidify_faces, DEFVAL(0.0), DEFVAL(2.0), DEFVAL(Vector4(0, 0, 0, 1)));
+	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("make_coplanar", "mesh_4d", "angle_tolerance_radians"), &PolyMeshBuilder4D::make_coplanar, DEFVAL(0.001));
 	ClassDB::bind_static_method("PolyMeshBuilder4D", D_METHOD("merge_coplanar_faces", "mesh_4d", "angle_tolerance_radians"), &PolyMeshBuilder4D::merge_coplanar_faces, DEFVAL(0.001));
 }

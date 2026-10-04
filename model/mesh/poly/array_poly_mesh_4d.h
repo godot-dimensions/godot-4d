@@ -63,6 +63,91 @@ private:
 
 	// Internal helpers for the normal and texture map value pools.
 	PackedInt32Array _normal_indices_for_values_internal(const PackedVector4Array &p_values);
+	// Resamples one dense binding after `split_poly_element` changed the mesh. `p_pre_traversal` is the binding's
+	// per-element traversal of its sub-elements before the split, or null for a per-element binding, and
+	// `p_post_traversal` is the same after the split, which also tells how many elements there are now.
+	template <typename TArray, typename TElement>
+	static void _resample_dense_binding_after_split(const Vector2i &p_key, const int32_t p_dimension, const int32_t p_index, const PackedInt32Array &p_piece_indices, const Vector<PackedInt32Array> *p_pre_traversal, const Vector<PackedInt32Array> &p_post_traversal, Vector<TArray> &r_dense) {
+		const int64_t element_count = p_post_traversal.size();
+		if (p_key.x == p_dimension - 1) {
+			// The dimension below: the pieces may use new elements, such as a cut face, which get zero values so that a
+			// complete binding stays complete.
+			if (p_key.y == p_key.x) {
+				if (!r_dense.is_empty() && r_dense[0].size() < element_count) {
+					r_dense.write[0].resize(element_count);
+				}
+			} else {
+				while (r_dense.size() < element_count) {
+					TArray zeros;
+					zeros.resize(p_post_traversal[r_dense.size()].size());
+					r_dense.push_back(zeros);
+				}
+			}
+			return;
+		}
+		if (p_key.x == p_dimension) {
+			// The split dimension: the pieces take the element's values, the per-element value as it is, and for each of
+			// their sub-elements the value the element had for it, with zero for a sub-element the element did not have.
+			if (p_key.y == p_key.x) {
+				if (r_dense.is_empty() || p_index >= r_dense[0].size()) {
+					return; // The element had no value, so neither do its pieces.
+				}
+				const TElement value = r_dense[0][p_index];
+				if (r_dense[0].size() < element_count) {
+					r_dense.write[0].resize(element_count);
+				}
+				for (const int32_t piece_index : p_piece_indices) {
+					r_dense.write[0].set(piece_index, value);
+				}
+				return;
+			}
+			if (p_pre_traversal == nullptr || p_index >= r_dense.size() || p_index >= p_pre_traversal->size()) {
+				return;
+			}
+			const PackedInt32Array element_sub_elements = (*p_pre_traversal)[p_index];
+			const TArray element_values = r_dense[p_index];
+			if (element_values.size() != element_sub_elements.size()) {
+				return; // Malformed, so leave it for validation to report.
+			}
+			while (r_dense.size() < element_count) {
+				r_dense.push_back(TArray());
+			}
+			for (const int32_t piece_index : p_piece_indices) {
+				const PackedInt32Array &piece_sub_elements = p_post_traversal[piece_index];
+				TArray piece_values;
+				piece_values.resize(piece_sub_elements.size());
+				for (int64_t i = 0; i < piece_sub_elements.size(); i++) {
+					const int64_t found = element_sub_elements.find(piece_sub_elements[i]);
+					piece_values.set(i, found >= 0 ? element_values[found] : TElement());
+				}
+				r_dense.write[piece_index] = piece_values;
+			}
+			return;
+		}
+		// Above the split dimension: an element that contains the pieces traverses its sub-elements in a new order, so
+		// its values move to where their sub-elements are now, and a new sub-element gets zero.
+		if (p_pre_traversal == nullptr) {
+			return;
+		}
+		for (int64_t element_index = 0; element_index < r_dense.size() && element_index < p_pre_traversal->size() && element_index < element_count; element_index++) {
+			const PackedInt32Array &pre = (*p_pre_traversal)[element_index];
+			const PackedInt32Array &post = p_post_traversal[element_index];
+			const TArray &values = r_dense[element_index];
+			if (values.is_empty() || pre == post || values.size() != pre.size()) {
+				continue;
+			}
+			TArray remapped;
+			remapped.resize(post.size());
+			for (int64_t i = 0; i < post.size(); i++) {
+				const int64_t found = pre.find(post[i]);
+				remapped.set(i, found >= 0 ? values[found] : TElement());
+			}
+			r_dense.write[element_index] = remapped;
+		}
+	}
+	static bool _faces_share_edge(const PackedInt32Array &p_face_a, const PackedInt32Array &p_face_b);
+	static bool _start_cell_with_adjacent_faces(const Vector<PackedInt32Array> &p_faces, PackedInt32Array &r_cell_faces);
+	static int _induced_face_orientation_sign(const PackedInt32Array &p_face_vertices, const PackedVector4Array &p_positions, const Vector4 &p_cell_centroid, const Vector4 &p_cell_normal);
 	PackedVector4Array _sample_normal_values_internal(const PackedInt32Array &p_indices) const;
 	Vector<PackedVector3Array> _get_poly_cell_texture_map_dense_internal() const;
 	Vector<PackedVector3Array> _get_poly_cell_texture_map_dense_resized_internal(const bool p_keep_existing) const;
@@ -84,6 +169,8 @@ public:
 	int32_t append_vertex(const Vector4 &p_vertex, const bool p_deduplicate_vertices = true);
 	PackedInt32Array append_vertices(const PackedVector4Array &p_vertices, const bool p_deduplicate_vertices = true);
 	void delete_poly_element(const int32_t p_dimension, const int32_t p_index);
+	PackedInt32Array split_poly_element(const int32_t p_dimension, const int32_t p_index, const Vector<PackedInt32Array> &p_pieces);
+	PackedInt32Array split_poly_element_bind(const int32_t p_dimension, const int32_t p_index, const TypedArray<PackedInt32Array> &p_pieces);
 
 	// Explicit compaction functions for removing unreferenced or duplicate data.
 	void compact_normal_values();

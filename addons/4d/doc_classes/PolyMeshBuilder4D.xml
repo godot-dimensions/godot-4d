@@ -70,6 +70,16 @@
 				This turns a 3D mesh brought in through [method convert_mesh_3d_to_4d_faces_only] into cells, which [method ArrayPolyMesh4D.calculate_boundary_normals] and the decomposition into tetrahedra for rendering need, since a mesh without cells has no volume to show. The mesh must not already have cells; delete them first if it does. The faces themselves are left as they are, including their orientation and any bindings, and no edges are added. Each cell lists its faces in the order they were found, starting with the lowest-index face of the sheet, and prefers a second face out of the plane of the first, since two coplanar first faces, such as the two triangles of a quad, would give the cell a degenerate orientation. Consider running [method merge_coplanar_faces] first. A sheet of fewer than 4 faces, or whose faces are all coplanar, cannot be a valid 3D cell enclosing a volume, so it is left out with a warning and its faces stay as faces only.
 			</description>
 		</method>
+		<method name="make_coplanar" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="mesh_4d" type="ArrayPolyMesh4D" />
+			<param index="1" name="angle_tolerance_radians" type="float" default="0.001" />
+			<description>
+				Splits every element whose vertices do not lie in a flat space of its own dimension, such as a 2D plane for a 2D face, or a 3D hyperplane for a 3D cell. The resulting elements will be flat in the space. This is an in-place operation which modifies the given mesh. Returns how many splits were made.
+				An element is flat when its vertices stay within [param angle_tolerance_radians] of such a flat, relative to its size. A split cuts off one vertex: the element's boundary is divided into the parts that have the vertex and the parts that do not, and a new element of the dimension below closes both sides, a diagonal edge for a face or a face through the surrounding edges for a cell, so a face loses a triangle and a cell loses a pyramid. The vertex cut off is the one whose removal leaves the rest closest to flat, then the one standing farthest out of the flat through the rest, then the one with the smallest cut, so a box face with one corner raised is cut along its level diagonal into a flat triangle and a leaning one, and a polygon with one raised corner loses only that corner's triangle. Faces are split before cells, and a cut that is not flat itself is split in turn, so every dimension is flat once this returns. The pieces, the elements above them, and the bindings follow [method ArrayPolyMesh4D.split_poly_element], which does the bookkeeping.
+				The cross-sections that a 4D mesh renders are only flat when its 3D cells are, and [method solidify_faces] and [method extrude_linear] give flat cells only from flat faces, which is what this is for.
+			</description>
+		</method>
 		<method name="merge_coplanar_faces" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="mesh_4d" type="ArrayPolyMesh4D" />

@@ -339,6 +339,213 @@ TEST_CASE("[ArrayPolyMesh4D] Delete poly elements") {
 	}
 }
 
+TEST_CASE("[ArrayPolyMesh4D] Split poly elements") {
+	// The vertices of a face in loop order, each the vertex that an edge shares with the next.
+	auto face_loop = [](const Ref<ArrayPolyMesh4D> &p_mesh, const int32_t p_face) -> PackedInt32Array {
+		const PackedInt32Array edges = p_mesh->get_edge_indices();
+		const PackedInt32Array face_edges = p_mesh->get_poly_cell_indices()[0][p_face];
+		PackedInt32Array loop;
+		for (int64_t i = 0; i < face_edges.size(); i++) {
+			const int32_t edge_index = face_edges[i];
+			const int32_t next_edge_index = face_edges[(i + 1) % face_edges.size()];
+			const int32_t a = edges[edge_index * 2];
+			loop.append(a == edges[next_edge_index * 2] || a == edges[next_edge_index * 2 + 1] ? a : edges[edge_index * 2 + 1]);
+		}
+		return loop;
+	};
+	// Splits a face along the diagonal from the loop's first vertex to its third, into a triangle on each side, and
+	// returns the two piece indices.
+	auto split_face_at_first_vertex = [&](const Ref<ArrayPolyMesh4D> &p_mesh, const int32_t p_face) -> PackedInt32Array {
+		const PackedInt32Array loop = face_loop(p_mesh, p_face);
+		const PackedInt32Array face_edges = p_mesh->get_poly_cell_indices()[0][p_face];
+		REQUIRE(loop.size() == 4);
+		const int32_t diagonal = (int32_t)p_mesh->append_edge_indices(loop[0], loop[2]);
+		// Edge k runs from vertex k - 1 to vertex k, so edges 1 and 2 meet at vertex 1, and edges 3 and 0 at vertex 3.
+		return p_mesh->split_poly_element(2, p_face, Vector<PackedInt32Array>{ PackedInt32Array{ face_edges[1], face_edges[2], diagonal }, PackedInt32Array{ face_edges[3], face_edges[0], diagonal } });
+	};
+	// The value an element's corner binding has at a vertex, which the pieces must keep.
+	auto corner_value = [](const Vector<PackedInt32Array> &p_element_vertices, const Vector<PackedVector3Array> &p_dense, const int32_t p_element, const int32_t p_vertex) -> Vector3 {
+		const int64_t position = p_element_vertices[p_element].find(p_vertex);
+		REQUIRE(position >= 0);
+		REQUIRE(position < p_dense[p_element].size());
+		return p_dense[p_element][position];
+	};
+
+	SUBCASE("Splitting a face keeps its cells, their orientation, the bindings, and the seams") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		const int64_t face_count = mesh->get_poly_cell_indices()[0].size();
+		REQUIRE(face_count == 24);
+		// Per-face data to follow: a value per face, and a value per face corner that names its vertex.
+		PackedVector4Array per_face;
+		Vector<PackedVector3Array> face_corners;
+		const Vector<PackedInt32Array> face_vertices = mesh->get_all_poly_cell_vertex_indices(2, false);
+		for (int64_t face_index = 0; face_index < face_count; face_index++) {
+			per_face.append(Vector4(face_index + 1, 0, 0, 0));
+			PackedVector3Array corners;
+			for (const int32_t vertex_index : face_vertices[face_index]) {
+				corners.append(Vector3(vertex_index, face_index, 0));
+			}
+			face_corners.push_back(corners);
+		}
+		mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ per_face });
+		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY, face_corners);
+		mesh->set_seam_face_indices(HashSet<int32_t>{ 0 });
+		const PackedVector4Array original_normals = mesh->get_poly_cell_boundary_normals();
+		const Vector<PackedInt32Array> original_cell_vertices = mesh->get_all_poly_cell_vertex_indices(3, false);
+		const Vector<PackedVector3Array> original_cell_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		PackedInt32Array parents;
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			if (mesh->get_poly_cell_indices()[1][cell_index].has(0)) {
+				parents.append((int32_t)cell_index);
+			}
+		}
+		REQUIRE(parents.size() == 2);
+
+		const PackedInt32Array pieces = split_face_at_first_vertex(mesh, 0);
+		REQUIRE((pieces == PackedInt32Array{ 0, 24 }));
+		CHECK(mesh->is_mesh_data_valid());
+		CHECK(mesh->get_poly_cell_indices()[0].size() == 25);
+		CHECK(mesh->get_poly_cell_indices()[1].size() == 8);
+		CHECK(mesh->get_poly_cell_indices()[2].size() == 1);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			const PackedInt32Array &cell = mesh->get_poly_cell_indices()[1][cell_index];
+			CHECK(cell.has(0) == parents.has((int32_t)cell_index));
+			CHECK_MESSAGE(cell.has(24) == parents.has((int32_t)cell_index), "Both cells that used the face use both pieces.");
+			// The first two faces of every cell share an edge.
+			bool share = false;
+			for (const int32_t edge_index : mesh->get_poly_cell_indices()[0][cell[0]]) {
+				if (mesh->get_poly_cell_indices()[0][cell[1]].has(edge_index)) {
+					share = true;
+				}
+			}
+			CHECK(share);
+		}
+		// The cells keep their orientation, which their recomputed normals show.
+		mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(normals.size() == 8);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			CHECK(normals[cell_index].is_equal_approx(original_normals[cell_index]));
+		}
+		// The pieces take the face's value, and their corners the values of their vertices.
+		const Vector<PackedVector4Array> split_per_face = mesh->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+		REQUIRE(split_per_face.size() == 1);
+		REQUIRE(split_per_face[0].size() == 25);
+		CHECK(split_per_face[0][0] == Vector4(1, 0, 0, 0));
+		CHECK(split_per_face[0][24] == Vector4(1, 0, 0, 0));
+		CHECK(split_per_face[0][5] == Vector4(6, 0, 0, 0));
+		const Vector<PackedVector3Array> split_face_corners = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY);
+		const Vector<PackedInt32Array> split_face_vertices = mesh->get_all_poly_cell_vertex_indices(2, false);
+		REQUIRE(split_face_corners.size() == 25);
+		for (const int32_t piece : pieces) {
+			REQUIRE(split_face_vertices[piece].size() == 3);
+			for (const int32_t vertex_index : split_face_vertices[piece]) {
+				CHECK(corner_value(split_face_vertices, split_face_corners, piece, vertex_index) == Vector3(vertex_index, 0, 0));
+			}
+		}
+		// The cells' corner data still belongs to the same vertices, though their traversal order changed.
+		const Vector<PackedInt32Array> cell_vertices = mesh->get_all_poly_cell_vertex_indices(3, false);
+		const Vector<PackedVector3Array> cell_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(cell_texture_map.size() == 8);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			for (const int32_t vertex_index : cell_vertices[cell_index]) {
+				CHECK(corner_value(cell_vertices, cell_texture_map, (int32_t)cell_index, vertex_index) == corner_value(original_cell_vertices, original_cell_texture_map, (int32_t)cell_index, vertex_index));
+			}
+		}
+		CHECK(mesh->get_seam_face_indices().has(0));
+		CHECK_MESSAGE(mesh->get_seam_face_indices().has(24), "A seam face's pieces are seams.");
+		CHECK(mesh->get_seam_face_indices().size() == 2);
+	}
+
+	SUBCASE("Splitting a cell orients the pieces like the cell and gives them normals") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		const PackedVector4Array original_normals = mesh->get_poly_cell_boundary_normals();
+		const Vector<PackedInt32Array> original_cell_vertices = mesh->get_all_poly_cell_vertex_indices(3, false);
+		const Vector<PackedVector3Array> original_cell_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		// Cut off a corner of cell 0: split each of the three faces at its first vertex along the diagonal that avoids
+		// that vertex, then cut the cell along the triangle of the three diagonals.
+		const int32_t corner = original_cell_vertices[0][0];
+		PackedInt32Array corner_faces;
+		for (const int32_t face_index : mesh->get_poly_cell_indices()[1][0]) {
+			if (mesh->get_all_poly_cell_vertex_indices(2, false)[face_index].has(corner)) {
+				corner_faces.append(face_index);
+			}
+		}
+		REQUIRE(corner_faces.size() == 3);
+		PackedInt32Array diagonals;
+		for (const int32_t face_index : corner_faces) {
+			// Rotate the loop so that the corner is its second vertex, then the diagonal from the first to the third
+			// vertex avoids it, and the triangle with the corner is the first piece.
+			PackedInt32Array loop = face_loop(mesh, face_index);
+			PackedInt32Array face_edges = mesh->get_poly_cell_indices()[0][face_index];
+			while (loop[1] != corner) {
+				loop.append(loop[0]);
+				loop.remove_at(0);
+				face_edges.append(face_edges[0]);
+				face_edges.remove_at(0);
+			}
+			const int32_t diagonal = (int32_t)mesh->append_edge_indices(loop[0], loop[2]);
+			diagonals.append(diagonal);
+			const PackedInt32Array pieces = mesh->split_poly_element(2, face_index, Vector<PackedInt32Array>{ PackedInt32Array{ face_edges[1], face_edges[2], diagonal }, PackedInt32Array{ face_edges[3], face_edges[0], diagonal } });
+			REQUIRE(pieces.size() == 2);
+		}
+		const int32_t cut_face = (int32_t)mesh->append_poly_cell(2, diagonals);
+		REQUIRE(cut_face == 27);
+		PackedInt32Array star = { cut_face };
+		PackedInt32Array rest = { cut_face };
+		const Vector<PackedInt32Array> face_vertices = mesh->get_all_poly_cell_vertex_indices(2, false);
+		for (const int32_t face_index : mesh->get_poly_cell_indices()[1][0]) {
+			if (face_vertices[face_index].has(corner)) {
+				star.append(face_index);
+			} else {
+				rest.append(face_index);
+			}
+		}
+		REQUIRE(star.size() == 4);
+		REQUIRE(rest.size() == 7);
+		const PackedInt32Array pieces = mesh->split_poly_element(3, 0, Vector<PackedInt32Array>{ star, rest });
+		REQUIRE((pieces == PackedInt32Array{ 0, 8 }));
+		CHECK(mesh->is_mesh_data_valid());
+		CHECK(mesh->get_poly_cell_indices()[1].size() == 9);
+		CHECK(mesh->get_poly_cell_indices()[2][0].has(0));
+		CHECK_MESSAGE(mesh->get_poly_cell_indices()[2][0].has(8), "The volume that had the cell has both pieces.");
+		CHECK(mesh->get_all_poly_cell_vertex_indices(3, false)[0].size() == 4);
+		// Both pieces lie in the cell's hyperplane and face the way it did, which their stored and recomputed normals show.
+		const PackedVector4Array stored_normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(stored_normals.size() == 9);
+		CHECK(stored_normals[0].is_equal_approx(original_normals[0]));
+		CHECK(stored_normals[8].is_equal_approx(original_normals[0]));
+		mesh->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		for (int64_t cell_index = 1; cell_index < 8; cell_index++) {
+			CHECK(normals[cell_index].is_equal_approx(original_normals[cell_index]));
+		}
+		CHECK(normals[0].is_equal_approx(original_normals[0]));
+		CHECK(normals[8].is_equal_approx(original_normals[0]));
+		// The pieces' corners keep the cell's values at their vertices.
+		const Vector<PackedInt32Array> cell_vertices = mesh->get_all_poly_cell_vertex_indices(3, false);
+		const Vector<PackedVector3Array> cell_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(cell_texture_map.size() == 9);
+		for (const int32_t piece : pieces) {
+			for (const int32_t vertex_index : cell_vertices[piece]) {
+				CHECK(corner_value(cell_vertices, cell_texture_map, piece, vertex_index) == corner_value(original_cell_vertices, original_cell_texture_map, 0, vertex_index));
+			}
+		}
+	}
+
+	SUBCASE("Splitting with invalid arguments fails gracefully") {
+		Ref<ArrayPolyMesh4D> mesh = make_tetrahedron_cell_mesh();
+		ERR_PRINT_OFF;
+		CHECK(mesh->split_poly_element(1, 0, Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1 }, PackedInt32Array{ 1, 2 } }).is_empty());
+		CHECK(mesh->split_poly_element(2, 9, Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2 }, PackedInt32Array{ 1, 2, 3 } }).is_empty());
+		CHECK(mesh->split_poly_element(2, 0, Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 2 } }).is_empty());
+		CHECK(mesh->split_poly_element(2, 0, Vector<PackedInt32Array>{ PackedInt32Array{ 0, 1, 99 }, PackedInt32Array{ 1, 2, 3 } }).is_empty());
+		ERR_PRINT_ON;
+		CHECK(mesh->get_poly_cell_indices()[0].size() == 4);
+		CHECK(mesh->is_poly_mesh_data_valid());
+	}
+}
+
 TEST_CASE("[ArrayPolyMesh4D] Boundary normals for all cell face permutations") {
 	// The orientation of a 3D cell is controlled by the order of its first two faces.
 	// The test tetrahedron is flat in the w=0 hyperplane, so every orientation-derived

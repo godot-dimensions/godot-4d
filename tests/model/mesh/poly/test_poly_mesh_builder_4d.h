@@ -1121,6 +1121,135 @@ TEST_CASE("[SceneTree][PolyMeshBuilder4D] Make cells from manifold sheets") {
 	CHECK(grid->is_mesh_data_valid());
 }
 
+TEST_CASE("[PolyMeshBuilder4D] Make coplanar") {
+	auto append_loop_faces = [](const Ref<ArrayPolyMesh4D> &p_mesh, const PackedVector4Array &p_positions, const Vector<PackedInt32Array> &p_vertex_loops) {
+		const PackedInt32Array vertices = p_mesh->append_vertices(p_positions);
+		for (const PackedInt32Array &loop : p_vertex_loops) {
+			PackedInt32Array face;
+			for (int64_t i = 0; i < loop.size(); i++) {
+				face.append((int32_t)p_mesh->append_edge_indices(vertices[loop[i]], vertices[loop[(i + 1) % loop.size()]]));
+			}
+			p_mesh->append_poly_cell(2, face);
+		}
+	};
+	// Whether every element of the dimension fits in a flat of its own dimension.
+	auto elements_are_flat = [](const Ref<ArrayPolyMesh4D> &p_mesh, const int p_dimension) -> bool {
+		const PackedVector4Array positions = p_mesh->get_poly_cell_vertex_positions();
+		for (const PackedInt32Array &vertices : p_mesh->get_all_poly_cell_vertex_indices(p_dimension, false)) {
+			Vector<Vector4> basis;
+			for (const int32_t vertex_index : vertices) {
+				Vector4 rejection = positions[vertex_index] - positions[vertices[0]];
+				for (const Vector4 &direction : basis) {
+					rejection -= direction * direction.dot(rejection);
+				}
+				if (rejection.length() > (real_t)1e-6) {
+					if (basis.size() == p_dimension) {
+						return false;
+					}
+					basis.push_back(rejection.normalized());
+				}
+			}
+		}
+		return true;
+	};
+	auto has_edge = [](const Ref<ArrayPolyMesh4D> &p_mesh, const int32_t p_a, const int32_t p_b) -> bool {
+		const PackedInt32Array edges = p_mesh->get_edge_indices();
+		for (int64_t i = 0; i < edges.size() / 2; i++) {
+			if ((edges[i * 2] == p_a && edges[i * 2 + 1] == p_b) || (edges[i * 2] == p_b && edges[i * 2 + 1] == p_a)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	// A box face with one corner raised is cut off at that corner, which is the vertex whose removal leaves the others
+	// flat, into a flat triangle and a leaning one along the level diagonal between its neighbors.
+	Ref<ArrayPolyMesh4D> quad;
+	quad.instantiate();
+	append_loop_faces(quad, { Vector4(0, 0, 0, 0), Vector4(10, 0, 0, 0), Vector4(10, 10, 1, 0), Vector4(0, 10, 0, 0) }, { { 0, 1, 2, 3 } });
+	CHECK(PolyMeshBuilder4D::make_coplanar(quad) == 1);
+	REQUIRE(quad->is_mesh_data_valid());
+	CHECK(quad->get_poly_cell_indices()[0].size() == 2);
+	CHECK(quad->get_edge_indices().size() == 5 * 2);
+	CHECK_MESSAGE(has_edge(quad, 1, 3), "The diagonal joins the raised corner's neighbors.");
+	CHECK(elements_are_flat(quad, 2));
+	// A flat mesh is left alone, and so is a warp within the tolerance.
+	Ref<BoxPolyMesh4D> box_primitive;
+	box_primitive.instantiate();
+	Ref<ArrayPolyMesh4D> box = box_primitive->to_array_poly_mesh();
+	CHECK(PolyMeshBuilder4D::make_coplanar(box) == 0);
+	CHECK(box->get_poly_cell_indices()[0].size() == 24);
+	Ref<ArrayPolyMesh4D> nearly_flat;
+	nearly_flat.instantiate();
+	append_loop_faces(nearly_flat, { Vector4(0, 0, 0, 0), Vector4(10, 0, 0, 0), Vector4(10, 10, 0.001, 0), Vector4(0, 10, 0, 0) }, { { 0, 1, 2, 3 } });
+	CHECK(PolyMeshBuilder4D::make_coplanar(nearly_flat) == 0);
+	CHECK(PolyMeshBuilder4D::make_coplanar(nearly_flat, 0.00001) == 1);
+	// An octagon with one raised vertex loses only that vertex's triangle, and the rest stays one flat face.
+	Ref<ArrayPolyMesh4D> octagon;
+	octagon.instantiate();
+	PackedVector4Array ring;
+	for (int i = 0; i < 8; i++) {
+		const double angle = Math::TAU * i / 8.0;
+		ring.append(Vector4(5.0 * Math::cos(angle), 5.0 * Math::sin(angle), i == 0 ? 1.0 : 0.0, 0));
+	}
+	append_loop_faces(octagon, ring, { { 0, 1, 2, 3, 4, 5, 6, 7 } });
+	CHECK(PolyMeshBuilder4D::make_coplanar(octagon) == 1);
+	REQUIRE(octagon->is_mesh_data_valid());
+	REQUIRE(octagon->get_poly_cell_indices()[0].size() == 2);
+	CHECK(octagon->get_poly_cell_indices()[0][0].size() == 3);
+	CHECK(octagon->get_poly_cell_indices()[0][1].size() == 7);
+	CHECK(has_edge(octagon, 1, 7));
+	CHECK(elements_are_flat(octagon, 2));
+	// A cube cell with one corner pushed into W: the three faces at the corner are warped and get split, then the
+	// cell, whose vertices span all four directions, is cut into the corner's tetrahedron and the rest, each flat.
+	// Its bindings stay complete: the pieces take the cell's values, and the cut face gets zero values.
+	const Vector<PackedInt32Array> box_loops = { { 0, 1, 3, 2 }, { 4, 6, 7, 5 }, { 0, 4, 5, 1 }, { 2, 3, 7, 6 }, { 0, 2, 6, 4 }, { 1, 5, 7, 3 } };
+	Ref<ArrayPolyMesh4D> cube;
+	cube.instantiate();
+	PackedVector4Array cube_corners;
+	for (int i = 0; i < 8; i++) {
+		cube_corners.append(Vector4(i & 1, (i >> 1) & 1, (i >> 2) & 1, i == 7 ? 0.5 : 0.0));
+	}
+	append_loop_faces(cube, cube_corners, box_loops);
+	cube->append_poly_cell(3, PackedInt32Array{ 0, 2, 1, 3, 4, 5 });
+	REQUIRE(cube->is_poly_mesh_data_valid());
+	PackedVector4Array cube_face_values;
+	for (int i = 0; i < 6; i++) {
+		cube_face_values.append(Vector4(i + 1, 0, 0, 0));
+	}
+	cube->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ cube_face_values });
+	cube->set_poly_cell_dense_normals(PolyMesh4D::PER_CELL_KEY, Vector<PackedVector4Array>{ PackedVector4Array{ Vector4(0, 0, 0, 1) } });
+	PackedVector3Array cube_corner_values;
+	for (const int32_t vertex_index : cube->get_all_poly_cell_vertex_indices(3, false)[0]) {
+		cube_corner_values.append(Vector3(vertex_index, 0, 0));
+	}
+	cube->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>{ cube_corner_values });
+	CHECK(PolyMeshBuilder4D::make_coplanar(cube) == 4);
+	REQUIRE(cube->is_mesh_data_valid());
+	CHECK(cube->get_edge_indices().size() == 15 * 2);
+	CHECK(cube->get_poly_cell_indices()[0].size() == 10);
+	REQUIRE(cube->get_poly_cell_indices()[1].size() == 2);
+	CHECK(elements_are_flat(cube, 2));
+	CHECK(elements_are_flat(cube, 3));
+	const Vector<PackedInt32Array> cube_cell_vertices = cube->get_all_poly_cell_vertex_indices(3, false);
+	CHECK((cube_cell_vertices[0].size() == 4) != (cube_cell_vertices[1].size() == 4));
+	const Vector<PackedVector4Array> cube_face_normals = cube->get_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY);
+	REQUIRE(cube_face_normals.size() == 1);
+	REQUIRE(cube_face_normals[0].size() == 10);
+	CHECK_MESSAGE(cube_face_normals[0][9].is_zero_approx(), "The cut face has no value of its own.");
+	CHECK(cube_face_normals[0][6].x >= 1.0);
+	const Vector<PackedVector4Array> cube_cell_normals = cube->get_poly_cell_dense_normals(PolyMesh4D::PER_CELL_KEY);
+	REQUIRE(cube_cell_normals.size() == 1);
+	CHECK(cube_cell_normals[0].size() == 2);
+	const Vector<PackedVector3Array> cube_texture_map = cube->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+	REQUIRE(cube_texture_map.size() == 2);
+	for (int64_t cell_index = 0; cell_index < 2; cell_index++) {
+		REQUIRE(cube_texture_map[cell_index].size() == cube_cell_vertices[cell_index].size());
+		for (int64_t i = 0; i < cube_cell_vertices[cell_index].size(); i++) {
+			CHECK(cube_texture_map[cell_index][i] == Vector3(cube_cell_vertices[cell_index][i], 0, 0));
+		}
+	}
+}
+
 TEST_CASE("[PolyMeshBuilder4D] Solidify faces") {
 	// Appends faces given as vertex loops into the positions, sharing vertices and edges with what the mesh has.
 	auto append_loop_faces = [](const Ref<ArrayPolyMesh4D> &p_mesh, const PackedVector4Array &p_positions, const Vector<PackedInt32Array> &p_vertex_loops) {

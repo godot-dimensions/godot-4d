@@ -166,6 +166,12 @@ class PolyMeshBuilder4D : public Object {
 	// Face solidifying helpers.
 	static void _orient_loop_face_to_normal(PackedInt32Array &r_face_edges, const PackedInt32Array &p_edge_vertex_indices, const PackedVector4Array &p_positions, const Vector4 &p_normal, const Vector4 &p_hyperplane_normal);
 	static Vector4 _compute_miter_direction(const PackedVector4Array &p_normals, const Vector4 &p_hyperplane_normal, const double p_miter_limit);
+	// These are for `make_coplanar`.
+	static PackedInt32Array _gather_element_vertices(const Vector<Vector<PackedInt32Array>> &p_levels, const PackedInt32Array &p_edge_vertex_indices, const int p_dimension, const int32_t p_index);
+	static real_t _grow_flat_basis(const PackedVector4Array &p_positions, const PackedInt32Array &p_vertices, const Vector4 &p_origin, const int p_flat_dimension, Vector<Vector4> &r_basis);
+	static real_t _flatness_deviation(const PackedVector4Array &p_positions, const PackedInt32Array &p_vertices, const int p_flat_dimension);
+	static bool _order_edges_into_loop(const PackedInt32Array &p_edges, const PackedInt32Array &p_edge_vertex_indices, PackedInt32Array &r_loop);
+	static int64_t _make_element_coplanar(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const int p_dimension, const int32_t p_index, const real_t p_sin_tolerance, PackedInt32Array &r_pieces);
 
 	// These helper functions are for `reconstruct_from_tetra_mesh`.
 	static int64_t _append_edge_indices_to_array(int32_t p_index_a, int32_t p_index_b, const bool p_deduplicate, PackedInt32Array &r_edge_vertex_indices);
@@ -190,6 +196,7 @@ public:
 	static int64_t delete_interior(const Ref<ArrayPolyMesh4D> &p_mesh_4d);
 	static void make_boundary_normals_topologically_consistent(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const PackedInt32Array &p_authoritative);
 	static int64_t make_cells_from_manifold_sheets(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians = 0.001);
+	static int64_t make_coplanar(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians = 0.001);
 	static int64_t merge_coplanar_faces(const Ref<ArrayPolyMesh4D> &p_mesh_4d, const double p_angle_tolerance_radians = 0.001);
 	static PackedInt32Array subdivide_elements(const Ref<ArrayPolyMesh4D> &p_input_mesh, const int p_dimension, const PackedInt32Array &p_elements = PackedInt32Array());
 
