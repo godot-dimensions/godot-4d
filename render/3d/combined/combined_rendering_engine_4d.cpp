@@ -35,12 +35,11 @@ void CombinedRenderingEngine4D::set_inner_engines(const Ref<CrossSectionRenderin
 
 CombinedRenderingEngine4D::CombinedRenderingEngine4D() {
 	_cross_section_depth_texture.instantiate();
+}
 
+void CombinedRenderingEngine4D::_create_depth_capture_resources() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
-	if (rendering_server == nullptr) {
-		// `--test` initializes scene-level modules without creating a RenderingServer singleton.
-		return;
-	}
+	ERR_FAIL_NULL(rendering_server);
 	RenderingDevice *rd = rendering_server->get_rendering_device();
 	if (rd == nullptr) {
 		// The Compatibility renderer supports neither compositor effects nor the projected
@@ -49,7 +48,7 @@ CombinedRenderingEngine4D::CombinedRenderingEngine4D() {
 	}
 	// Shader that copies just the depth values out of the cross-section pass's real (combined
 	// depth+stencil, non-storage-capable) depth buffer into _depth_capture_output_texture, a
-	// plain format Texture2DRD can wrap. See the constructor/callback of ProjectedRenderingEngine4D
+	// plain format Texture2DRD can wrap. See _create_normalize_resources() in ProjectedRenderingEngine4D
 	// for why this goes through Object::call() rather than calling these methods directly.
 	Ref<RDShaderSource> shader_source;
 	shader_source.instantiate();
@@ -198,6 +197,11 @@ void CombinedRenderingEngine4D::setup_for_viewport() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
 	ERR_FAIL_NULL(get_viewport());
 	ERR_FAIL_COND_MSG(_cross_section_engine.is_null() || _projected_engine.is_null(), "CombinedRenderingEngine4D: set_inner_engines() was never called.");
+	if (!_depth_capture_compositor.is_valid()) {
+		// Not created in the constructor, because in GDExtension builds, the engines are constructed
+		// before Godot registers the RenderingServer singleton that GDExtension looks up by name.
+		_create_depth_capture_resources();
+	}
 	_ensure_helpers_created();
 	_sync_viewport_settings();
 

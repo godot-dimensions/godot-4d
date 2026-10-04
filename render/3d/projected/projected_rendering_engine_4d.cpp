@@ -26,12 +26,9 @@
 #endif
 #endif
 
-ProjectedRenderingEngine4D::ProjectedRenderingEngine4D() {
+void ProjectedRenderingEngine4D::_create_normalize_resources() {
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
-	if (rendering_server == nullptr) {
-		// `--test` initializes scene-level modules without creating a RenderingServer singleton.
-		return;
-	}
+	ERR_FAIL_NULL(rendering_server);
 	RenderingDevice *rd = rendering_server->get_rendering_device();
 	if (rd == nullptr) {
 		// The Compatibility renderer isn't compatible with projected rendering anyway.
@@ -110,6 +107,11 @@ void ProjectedRenderingEngine4D::_update_extra_instance_shader_parameters(const 
 void ProjectedRenderingEngine4D::_setup_specific_render_resources() {
 	const Ref<World3D> &world_3d = get_world_3d();
 	ERR_FAIL_COND(!world_3d.is_valid());
+	if (!_normalize_compositor.is_valid()) {
+		// Not created in the constructor, because in GDExtension builds, the engines are constructed
+		// before Godot registers the RenderingServer singleton that GDExtension looks up by name.
+		_create_normalize_resources();
+	}
 	if (_normalize_compositor.is_valid()) {
 		RenderingServer::get_singleton()->scenario_set_compositor(world_3d->get_scenario(), _normalize_compositor);
 	}
@@ -179,7 +181,7 @@ void ProjectedRenderingEngine4D::_normalize_image_callback(int64_t p_effect_call
 			rd->compute_list_bind_uniform_set(compute_list, uniform_set, 0);
 			// `compute_list_set_push_constant` takes a PackedByteArray in GDExtension, but only a
 			// raw pointer is exposed to engine-module C++ (the PackedByteArray-based overload is
-			// private there, same split as the shader-compile methods in the constructor).
+			// private there, same split as the shader-compile methods in _create_normalize_resources()).
 #if GDEXTENSION
 			rd->compute_list_set_push_constant(compute_list, push_constant, push_constant.size());
 #elif GODOT_MODULE

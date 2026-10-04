@@ -21,6 +21,7 @@ private:
 	Variant _cross_section_depth_texture;
 
 	void _normalize_image_callback(int64_t p_effect_callback_type, RenderData *p_render_data);
+	void _create_normalize_resources();
 	void _free_normalize_resources();
 
 protected:
@@ -54,6 +55,5 @@ public:
 
 	void set_cross_section_depth_texture(const Variant &p_texture);
 
-	ProjectedRenderingEngine4D();
 	~ProjectedRenderingEngine4D();
 };
