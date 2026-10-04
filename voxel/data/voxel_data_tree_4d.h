@@ -154,8 +154,8 @@ public:
 	VoxelMaterial4D get_material(const Vector4i &p_voxel) const;
 
 	// The stored surface data of the edge from the given voxel to its
-	// neighbor one step along the given axis, still encoded, or arbitrary data
-	// if none is stored for that edge.
+	// neighbor one step along the given axis, or arbitrary data if none is
+	// stored for that edge.
 	VoxelEdgeData4D get_edge_data(const Vector4i &p_voxel, const int p_axis) const;
 
 	// Nodes own their children and leaf data, so copying is not allowed.

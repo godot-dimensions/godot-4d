@@ -12,7 +12,7 @@
 	</tutorials>
 	<members>
 		<member name="load_distance" type="float" setter="set_load_distance" getter="get_load_distance" default="16.0">
-			The distance within which voxel chunks are loaded around this trigger.
+			The distance within which voxel chunks are loaded around this trigger. This is measured in voxels, not meters, so it scales along with the [VoxelWorld4D].
 		</member>
 		<member name="unload_distance_ratio" type="float" setter="set_unload_distance_ratio" getter="get_unload_distance_ratio" default="1.5">
 			The ratio of the unload distance to [member load_distance]. Loaded chunks are unloaded once they are farther away than [member load_distance] times this ratio.

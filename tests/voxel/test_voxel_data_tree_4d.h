@@ -147,7 +147,7 @@ TEST_CASE("[VoxelDataTree4D] Generate") {
 	CHECK_MESSAGE(border_leaf->has_edge_data(crossing_voxel, 0), "VoxelDataTree4D generate should store data on an edge crossing the material boundary.");
 	CHECK_MESSAGE(!border_leaf->has_edge_data(crossing_voxel, 1), "VoxelDataTree4D generate should not store data on edges between voxels of the same material.");
 	CHECK_MESSAGE(border_leaf->get_edge_data(crossing_voxel, 0).normal == Vector4(1, 0, 0, 0), "VoxelDataTree4D generate should store the generator's normal for an active edge, up to its sign.");
-	CHECK_MESSAGE(Math::abs(border_leaf->get_edge_data(crossing_voxel, 0).position - 0.5f) < 0.5f / 31.0f + 0.0001f, "VoxelDataTree4D generate should store the generator's crossing position for an active edge.");
+	CHECK_MESSAGE(Math::abs(border_leaf->get_edge_data(crossing_voxel, 0).position - 0.5f) < 0.5f / 511.0f + 0.0001f, "VoxelDataTree4D generate should store the generator's crossing position for an active edge.");
 	CHECK_MESSAGE(border_leaf->get_edge_data_count() == VOXEL_4D_DATA_CHUNK_SIZE * VOXEL_4D_DATA_CHUNK_SIZE * VOXEL_4D_DATA_CHUNK_SIZE, "VoxelDataTree4D generate should store one entry per active edge, including edges crossing into the next chunk.");
 	VoxelDataLeaf4D *solid_leaf = tree.find_deepest_node(Vector4i(0, corner.y, corner.z, corner.w))->get_leaf_data();
 	REQUIRE(solid_leaf != nullptr);
