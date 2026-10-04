@@ -1,6 +1,6 @@
 #include "voxel_world_4d.h"
 
-#include "edit/voxel_edit.h"
+#include "edit/voxel_edit_4d.h"
 
 void VoxelWorld4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_data"), &VoxelWorld4D::get_voxel_data);
@@ -8,11 +8,11 @@ void VoxelWorld4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_generator"), &VoxelWorld4D::get_generator);
 	ClassDB::bind_method(D_METHOD("set_generator", "generator"), &VoxelWorld4D::set_generator);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator"), "set_generator", "get_generator");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator4D"), "set_generator", "get_generator");
 
 	ClassDB::bind_method(D_METHOD("get_material_palette"), &VoxelWorld4D::get_material_palette);
 	ClassDB::bind_method(D_METHOD("set_material_palette", "material_palette"), &VoxelWorld4D::set_material_palette);
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_palette", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMaterialPalette"), "set_material_palette", "get_material_palette");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_palette", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMaterialPalette4D"), "set_material_palette", "get_material_palette");
 
 	ClassDB::bind_method(D_METHOD("get_allow_projection"), &VoxelWorld4D::get_allow_projection);
 	ClassDB::bind_method(D_METHOD("set_allow_projection", "allow_projection"), &VoxelWorld4D::set_allow_projection);
@@ -37,7 +37,7 @@ void VoxelWorld4D::_validate_property(PropertyInfo &p_property) const {
 	}
 }
 
-void VoxelWorld4D::set_material_palette(const Ref<VoxelMaterialPalette> &p_material_palette) {
+void VoxelWorld4D::set_material_palette(const Ref<VoxelMaterialPalette4D> &p_material_palette) {
 	if (_material_palette == p_material_palette) {
 		return;
 	}
@@ -61,10 +61,10 @@ void VoxelWorld4D::set_allow_projection(const bool p_allow_projection) {
 }
 
 void VoxelWorld4D::_update_material_texture() {
-	_mesh_material->set_albedo_texture_3d(VoxelMaterialPalette::bake_texture(_material_palette));
+	_mesh_material->set_albedo_texture_3d(VoxelMaterialPalette4D::bake_texture(_material_palette));
 }
 
-void VoxelWorld4D::apply_edit(const Ref<VoxelEdit> &p_edit) {
+void VoxelWorld4D::apply_edit(const Ref<VoxelEdit4D> &p_edit) {
 	ERR_FAIL_COND(p_edit.is_null());
 	_voxel_data->apply_edit(p_edit);
 	_mesh_handler.mark_region_dirty(p_edit->get_bounds());
@@ -88,7 +88,7 @@ void VoxelWorld4D::_notification(int p_what) {
 VoxelWorld4D::VoxelWorld4D() :
 		_mesh_handler(this) {
 	_voxel_data.instantiate();
-	_chunk_loader = memnew(VoxelChunkLoader(this));
+	_chunk_loader = memnew(VoxelChunkLoader4D(this));
 	_mesh_material.instantiate();
 	_mesh_material->set_albedo_source(TetraMaterial4D::TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY);
 	_update_material_texture();

@@ -12,7 +12,7 @@
 #include "scene/main/window.h"
 #endif
 
-void PhysicsServer4D::_raycast_shapes_fast_rect4(const Ref<RaycastParameters4D> &p_raycast_parameters, CollisionObject4D *p_col_obj_node, Vector<RaycastCandidate> &r_candidates) const {
+void PhysicsServer4D::_raycast_shapes_fast_rect4(const Ref<RaycastParameters4D> &p_raycast_parameters, CollisionObject4D *p_col_obj_node, Vector<RaycastCandidate4D> &r_candidates) const {
 	CRASH_COND_MSG(p_col_obj_node == nullptr, "PhysicsServer4D: CollisionObject4D node is null.");
 	TypedArray<CollisionShape4D> collision_shapes = p_col_obj_node->get_collision_shapes();
 	const Vector<ObjectID> &exclude_nodes = p_raycast_parameters->get_exclude_nodes();
@@ -45,7 +45,7 @@ void PhysicsServer4D::_raycast_shapes_fast_rect4(const Ref<RaycastParameters4D> 
 		}
 		// Force `double` for distance storage to avoid precision loss when using Variant
 		// later inside of a Dictionary, since Variant uses `double` for float types.
-		const RaycastCandidate candidate = { global_transform, collision_shape, (double)distance };
+		const RaycastCandidate4D candidate = { global_transform, collision_shape, (double)distance };
 		r_candidates.append(candidate);
 	}
 }
@@ -68,7 +68,7 @@ Dictionary PhysicsServer4D::raycast_physics_objects(const Ref<RaycastParameters4
 	// First pass: Use Rect4 axis-aligned bounding boxes to perform a quick rough
 	// check to see if it's a candidate for a more expensive raycast check.
 	// The bulk of the logic is split into a separate function to avoid code duplication.
-	Vector<RaycastCandidate> candidates;
+	Vector<RaycastCandidate4D> candidates;
 	const bool collide_with_bodies = p_raycast_parameters->get_collide_with_bodies();
 	if (collide_with_bodies) {
 		for (int body_index = 0; body_index < _physics_body_nodes.size(); body_index++) {
@@ -103,7 +103,7 @@ Dictionary PhysicsServer4D::raycast_physics_objects(const Ref<RaycastParameters4
 	}
 	// Second pass: Sort by distance so that we process the nearest candidates first.
 	struct RaycastCandidateComparator {
-		bool operator()(const RaycastCandidate &a, const RaycastCandidate &b) const {
+		bool operator()(const RaycastCandidate4D &a, const RaycastCandidate4D &b) const {
 			return a.distance < b.distance;
 		}
 	};
@@ -118,7 +118,7 @@ Dictionary PhysicsServer4D::raycast_physics_objects(const Ref<RaycastParameters4
 	const bool inside_is_skip = p_raycast_parameters->get_inside_is_skip();
 	const bool inside_is_zero = p_raycast_parameters->get_inside_is_zero();
 	for (int64_t candidate_index = 0; candidate_index < candidates.size(); candidate_index++) {
-		const RaycastCandidate &candidate = candidates[candidate_index];
+		const RaycastCandidate4D &candidate = candidates[candidate_index];
 		if (candidate.distance >= nearest_global_distance) {
 			// No need to check further candidates, as they are sorted by distance.
 			break;

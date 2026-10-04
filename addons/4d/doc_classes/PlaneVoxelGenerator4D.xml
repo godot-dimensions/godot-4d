@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PlaneVoxelGenerator4D" inherits="VoxelGenerator4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		A generator filling the two sides of a plane with different materials.
+	</brief_description>
+	<description>
+		PlaneVoxelGenerator4D generates one material filling the half-space the [member normal] points into and another filling the other half-space.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="distance" type="float" setter="set_distance" getter="get_distance" default="0.0">
+			The plane's distance from the origin along [member normal], in voxels while [member normal] is a unit vector.
+		</member>
+		<member name="material_over" type="int" setter="set_material_over" getter="get_material_over" default="255">
+			The material filling the half-space [member normal] points into, or [code]255[/code] to leave it undefined.
+		</member>
+		<member name="material_under" type="int" setter="set_material_under" getter="get_material_under" default="255">
+			The material filling the half-space away from [member normal], or [code]255[/code] to leave it undefined.
+		</member>
+		<member name="normal" type="Vector4" setter="set_normal" getter="get_normal" default="Vector4(0, 1, 0, 0)">
+			The normal of the plane, pointing toward the side filled with [member material_over].
+		</member>
+	</members>
+</class>

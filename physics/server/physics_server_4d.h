@@ -34,13 +34,13 @@ class PhysicsServer4D : public Object {
 	bool _is_physics_process_connected = false;
 	void _physics_process();
 
-	struct RaycastCandidate {
+	struct RaycastCandidate4D {
 		Transform4D global_transform;
 		CollisionShape4D *collision_shape = nullptr;
 		double distance = Math_INF;
 	};
 
-	void _raycast_shapes_fast_rect4(const Ref<RaycastParameters4D> &p_raycast_parameters, CollisionObject4D *p_col_obj_node, Vector<RaycastCandidate> &r_candidates) const;
+	void _raycast_shapes_fast_rect4(const Ref<RaycastParameters4D> &p_raycast_parameters, CollisionObject4D *p_col_obj_node, Vector<RaycastCandidate4D> &r_candidates) const;
 
 protected:
 	static CollisionObject4D *_global_static_body_for_bodyless_shapes;

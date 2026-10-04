@@ -4,22 +4,22 @@
 		A volume of 4D voxel data in the scene tree.
 	</brief_description>
 	<description>
-		VoxelWorld4D places a volume of 4D voxel data ([VoxelData]) into the scene tree. It can be used for terrain, but also for smaller voxel-based objects.
+		VoxelWorld4D places a volume of 4D voxel data ([VoxelData4D]) into the scene tree. It can be used for terrain, but also for smaller voxel-based objects.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
 		<method name="apply_edit">
 			<return type="void" />
-			<param index="0" name="edit" type="VoxelEdit" />
+			<param index="0" name="edit" type="VoxelEdit4D" />
 			<description>
 				Applies the edit to this world's voxel data and queues the affected meshes for regeneration. Parts of the edit over chunks that are not loaded are discarded.
 			</description>
 		</method>
 		<method name="get_voxel_data" qualifiers="const">
-			<return type="VoxelData" />
+			<return type="VoxelData4D" />
 			<description>
-				Returns this voxel world's [VoxelData].
+				Returns this voxel world's [VoxelData4D].
 			</description>
 		</method>
 	</methods>
@@ -27,11 +27,11 @@
 		<member name="allow_projection" type="bool" setter="set_allow_projection" getter="get_allow_projection" default="true">
 			If [code]false[/code], the projections of this world's chunk meshes are hidden (in both the combined and projected rendering modes).
 		</member>
-		<member name="generator" type="VoxelGenerator" setter="set_generator" getter="get_generator">
-			The [VoxelGenerator] providing the content of newly loaded chunks. While unset, no chunks load.
+		<member name="generator" type="VoxelGenerator4D" setter="set_generator" getter="get_generator">
+			The [VoxelGenerator4D] providing the content of newly loaded chunks. While unset, no chunks load.
 		</member>
-		<member name="material_palette" type="VoxelMaterialPalette" setter="set_material_palette" getter="get_material_palette">
-			The [VoxelMaterialPalette] describing the materials used for this world.
+		<member name="material_palette" type="VoxelMaterialPalette4D" setter="set_material_palette" getter="get_material_palette">
+			The [VoxelMaterialPalette4D] describing the materials used for this world.
 		</member>
 		<member name="world_bounds_enabled" type="bool" setter="set_world_bounds_enabled" getter="is_world_bounds_enabled" default="false">
 			If [code]true[/code], the world is limited to the bounds given by [member world_bounds_position] and [member world_bounds_size]: chunks entirely outside the bounds are never loaded, and are unloaded if already present. If [code]false[/code], the world can grow without limit.

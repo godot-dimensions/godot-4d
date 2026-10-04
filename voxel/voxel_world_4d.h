@@ -2,20 +2,20 @@
 
 #include "../model/mesh/tetra/tetra_material_4d.h"
 #include "../nodes/node_4d.h"
-#include "data/voxel_data.h"
-#include "voxel_chunk_loader.h"
-#include "voxel_material_palette.h"
-#include "voxel_mesh_handler.h"
+#include "data/voxel_data_4d.h"
+#include "voxel_chunk_loader_4d.h"
+#include "voxel_material_palette_4d.h"
+#include "voxel_mesh_handler_4d.h"
 
-class VoxelEdit;
+class VoxelEdit4D;
 
-// Places a volume of 4D voxel data (VoxelData) into the scene tree.
+// Places a volume of 4D voxel data (VoxelData4D) into the scene tree.
 // May be used to represent smaller voxel-based objects, not just whole worlds.
 class VoxelWorld4D : public Node4D {
 	GDCLASS(VoxelWorld4D, Node4D);
 
-	Ref<VoxelData> _voxel_data;
-	Ref<VoxelMaterialPalette> _material_palette;
+	Ref<VoxelData4D> _voxel_data;
+	Ref<VoxelMaterialPalette4D> _material_palette;
 	// The material of every chunk mesh, colored by a texture with one texel
 	// per voxel material, baked from the palette.
 	Ref<TetraMaterial4D> _mesh_material;
@@ -26,9 +26,9 @@ class VoxelWorld4D : public Node4D {
 	bool _world_bounds_enabled = false;
 	// Applied to the MeshInstance4D of every chunk, see MeshInstance4D::get_allow_projection.
 	bool _allow_projection = true;
-	VoxelMeshHandler _mesh_handler;
+	VoxelMeshHandler4D _mesh_handler;
 	// Owned; an Object so it can receive messages, so it cannot be a value member.
-	VoxelChunkLoader *_chunk_loader = nullptr;
+	VoxelChunkLoader4D *_chunk_loader = nullptr;
 
 protected:
 	static void _bind_methods();
@@ -36,14 +36,14 @@ protected:
 	void _validate_property(PropertyInfo &p_property) const;
 
 public:
-	Ref<VoxelData> get_voxel_data() const { return _voxel_data; }
-	VoxelMeshHandler &get_mesh_handler() { return _mesh_handler; }
+	Ref<VoxelData4D> get_voxel_data() const { return _voxel_data; }
+	VoxelMeshHandler4D &get_mesh_handler() { return _mesh_handler; }
 
-	Ref<VoxelGenerator> get_generator() const { return _voxel_data->get_generator(); }
-	void set_generator(const Ref<VoxelGenerator> &p_generator) { _voxel_data->set_generator(p_generator); }
+	Ref<VoxelGenerator4D> get_generator() const { return _voxel_data->get_generator(); }
+	void set_generator(const Ref<VoxelGenerator4D> &p_generator) { _voxel_data->set_generator(p_generator); }
 
-	Ref<VoxelMaterialPalette> get_material_palette() const { return _material_palette; }
-	void set_material_palette(const Ref<VoxelMaterialPalette> &p_material_palette);
+	Ref<VoxelMaterialPalette4D> get_material_palette() const { return _material_palette; }
+	void set_material_palette(const Ref<VoxelMaterialPalette4D> &p_material_palette);
 	Ref<TetraMaterial4D> get_mesh_material() const { return _mesh_material; }
 
 	bool get_allow_projection() const { return _allow_projection; }
@@ -61,7 +61,7 @@ public:
 	Vector4i get_world_bounds_size() const { return _world_bounds.size; }
 	void set_world_bounds_size(const Vector4i &p_size) { _world_bounds.size = p_size; }
 
-	void apply_edit(const Ref<VoxelEdit> &p_edit);
+	void apply_edit(const Ref<VoxelEdit4D> &p_edit);
 
 	VoxelWorld4D();
 	~VoxelWorld4D();

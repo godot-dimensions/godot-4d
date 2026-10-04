@@ -93,22 +93,22 @@
 #include "render/environment/world_environment_4d.h"
 
 // Voxel.
-#include "voxel/data/voxel_data.h"
-#include "voxel/edit/box_voxel_edit.h"
-#include "voxel/edit/parallelogram_voxel_edit.h"
-#include "voxel/edit/sphere_voxel_edit.h"
-#include "voxel/edit/voxel_edit.h"
-#include "voxel/generators/box_voxel_generator.h"
-#include "voxel/generators/cave_voxel_generator.h"
-#include "voxel/generators/clipped_voxel_generator.h"
-#include "voxel/generators/cylinder_voxel_generator.h"
-#include "voxel/generators/landscape_voxel_generator.h"
-#include "voxel/generators/layered_voxel_generator.h"
-#include "voxel/generators/plane_voxel_generator.h"
-#include "voxel/generators/tiger_test_generator.h"
-#include "voxel/generators/voxel_generator.h"
+#include "voxel/data/voxel_data_4d.h"
+#include "voxel/edit/box_voxel_edit_4d.h"
+#include "voxel/edit/parallelogram_voxel_edit_4d.h"
+#include "voxel/edit/sphere_voxel_edit_4d.h"
+#include "voxel/edit/voxel_edit_4d.h"
+#include "voxel/generators/box_voxel_generator_4d.h"
+#include "voxel/generators/cave_voxel_generator_4d.h"
+#include "voxel/generators/clipped_voxel_generator_4d.h"
+#include "voxel/generators/cylinder_voxel_generator_4d.h"
+#include "voxel/generators/landscape_voxel_generator_4d.h"
+#include "voxel/generators/layered_voxel_generator_4d.h"
+#include "voxel/generators/plane_voxel_generator_4d.h"
+#include "voxel/generators/tiger_test_generator_4d.h"
+#include "voxel/generators/voxel_generator_4d.h"
 #include "voxel/voxel_load_trigger_4d.h"
-#include "voxel/voxel_material_palette.h"
+#include "voxel/voxel_material_palette_4d.h"
 #include "voxel/voxel_world_4d.h"
 
 #if GDEXTENSION
@@ -292,22 +292,22 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(G4MFState4D);
 		GDREGISTER_CLASS(G4MFDocument4D);
 		// Voxel.
-		GDREGISTER_ABSTRACT_CLASS(VoxelGenerator);
-		GDREGISTER_ABSTRACT_CLASS(VoxelEdit);
-		GDREGISTER_CLASS(BoxVoxelEdit);
-		GDREGISTER_CLASS(ParallelogramVoxelEdit);
-		GDREGISTER_CLASS(SphereVoxelEdit);
-		GDREGISTER_CLASS(BoxVoxelGenerator);
-		GDREGISTER_CLASS(CaveVoxelGenerator);
-		GDREGISTER_CLASS(ClippedVoxelGenerator);
-		GDREGISTER_CLASS(CylinderVoxelGenerator);
-		GDREGISTER_CLASS(LandscapeVoxelGenerator);
-		GDREGISTER_CLASS(LayeredVoxelGenerator);
-		GDREGISTER_CLASS(PlaneVoxelGenerator);
-		GDREGISTER_CLASS(TigerTestGenerator);
-		GDREGISTER_CLASS(VoxelData);
+		GDREGISTER_ABSTRACT_CLASS(VoxelGenerator4D);
+		GDREGISTER_ABSTRACT_CLASS(VoxelEdit4D);
+		GDREGISTER_CLASS(BoxVoxelEdit4D);
+		GDREGISTER_CLASS(ParallelogramVoxelEdit4D);
+		GDREGISTER_CLASS(SphereVoxelEdit4D);
+		GDREGISTER_CLASS(BoxVoxelGenerator4D);
+		GDREGISTER_CLASS(CaveVoxelGenerator4D);
+		GDREGISTER_CLASS(ClippedVoxelGenerator4D);
+		GDREGISTER_CLASS(CylinderVoxelGenerator4D);
+		GDREGISTER_CLASS(LandscapeVoxelGenerator4D);
+		GDREGISTER_CLASS(LayeredVoxelGenerator4D);
+		GDREGISTER_CLASS(PlaneVoxelGenerator4D);
+		GDREGISTER_CLASS(TigerTestGenerator4D);
+		GDREGISTER_CLASS(VoxelData4D);
 		GDREGISTER_CLASS(VoxelLoadTrigger4D);
-		GDREGISTER_CLASS(VoxelMaterialPalette);
+		GDREGISTER_CLASS(VoxelMaterialPalette4D);
 		GDREGISTER_CLASS(VoxelWorld4D);
 #if GDEXTENSION
 		GDREGISTER_CLASS(AxisAlignedBoxPhysicsEngine4D);
