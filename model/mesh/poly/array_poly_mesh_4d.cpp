@@ -2933,10 +2933,10 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_all_poly_cell_normal_indices", "all_poly_cell_normal_indices"), &ArrayPolyMesh4D::set_all_poly_cell_normal_indices_bind);
 	ClassDB::bind_method(D_METHOD("set_all_poly_cell_texture_map_indices", "all_poly_cell_texture_map_indices"), &ArrayPolyMesh4D::set_all_poly_cell_texture_map_indices_bind);
 #if GODOT_HAS_TYPED_DICTIONARY
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normal_indices", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_normal_indices", "get_all_poly_cell_normal_indices");
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_map_indices", PROPERTY_HINT_TYPE_STRING, "Vector2i:Array"), "set_all_poly_cell_texture_map_indices", "get_all_poly_cell_texture_map_indices");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normal_indices", PROPERTY_HINT_DICTIONARY_TYPE, "Vector2i;Array"), "set_all_poly_cell_normal_indices", "get_all_poly_cell_normal_indices");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_map_indices", PROPERTY_HINT_DICTIONARY_TYPE, "Vector2i;Array"), "set_all_poly_cell_texture_map_indices", "get_all_poly_cell_texture_map_indices");
 #else
-	// Godot 4.3 and earlier do not support type hints on Dictionary properties.
+	// Before Godot 4.5, the getters return a plain Dictionary, so leave the properties untyped to match.
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_normal_indices"), "set_all_poly_cell_normal_indices", "get_all_poly_cell_normal_indices");
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "all_poly_cell_texture_map_indices"), "set_all_poly_cell_texture_map_indices", "get_all_poly_cell_texture_map_indices");
 #endif // GODOT_HAS_TYPED_DICTIONARY

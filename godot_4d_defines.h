@@ -31,6 +31,13 @@
 #define TTR(m_text) m_text
 #define USE_CONST_NOT_CONSTEXPR_FOR_VECTORS 1
 #define VariantUtilityFunctions UtilityFunctions
+
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 5)
+// godot-cpp's TypedDictionary works when targeting Godot 4.4, but module builds need
+// Godot 4.5 for it, so require Godot 4.5 here too, to keep the two builds' APIs the same.
+#define GODOT_HAS_TYPED_DICTIONARY 1
+#endif
+
 // Including the namespace helps make GDExtension code more similar to module code.
 using namespace godot;
 

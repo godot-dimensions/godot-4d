@@ -2,7 +2,11 @@
 
 # This file is for building as a Godot GDExtension.
 
-env = SConscript("src/godot-cpp/SConstruct")
+# godot-cpp 10 and later can target multiple Godot versions, and require choosing one. Default to
+# the oldest supported version, matching `compatibility_minimum` in `godot_4d.gdextension`.
+# Override it with the `api_version` option, ex: `scons api_version=4.5`. Earlier godot-cpp versions
+# target only the Godot version of their branch, and ignore this.
+env = SConscript("src/godot-cpp/SConstruct", {"api_version": "4.3"})
 
 # Add source files.
 env.Append(

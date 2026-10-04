@@ -6,6 +6,9 @@
 #if GDEXTENSION
 #include <godot_cpp/classes/array_mesh.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
+#if GODOT_HAS_TYPED_DICTIONARY
+#include <godot_cpp/variant/typed_dictionary.hpp>
+#endif
 #elif GODOT_MODULE
 class ArrayMesh;
 #if GODOT_HAS_TYPED_DICTIONARY
@@ -99,7 +102,7 @@ public:
 #if GODOT_HAS_TYPED_DICTIONARY
 	using PolyDataDictionary = TypedDictionary<Vector2i, Array>;
 #else
-	// Godot 4.3 and earlier do not have TypedDictionary, so use a plain Dictionary.
+	// Before Godot 4.5, TypedDictionary is not used (see `godot_4d_defines.h`), so use a plain Dictionary.
 	// The dictionaries must still be bound so they are kept by duplication and serialization.
 	using PolyDataDictionary = Dictionary;
 #endif // GODOT_HAS_TYPED_DICTIONARY
