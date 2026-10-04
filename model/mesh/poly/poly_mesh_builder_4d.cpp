@@ -2112,16 +2112,30 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::solidify_faces(const Ref<PolyMesh4D> &p_
 	// The limit is never below 1, since a flat face needs exactly its own offset, and clamping below that would make
 	// every face thinner than requested.
 	const double miter_limit = MAX(p_miter_limit, 1.0);
-	// The whole mesh must lie in the hyperplane, up to a small angle relative to its size.
-	{
-		real_t mesh_scale = (real_t)0.0;
-		for (int64_t vertex_index = 1; vertex_index < vertex_count; vertex_index++) {
-			mesh_scale = MAX(mesh_scale, (positions[vertex_index] - positions[0]).length());
+	// The mesh need not lie in the hyperplane. Every direction below is found within it, from normals projected into
+	// it and from `Vector4D::perpendicular` with its normal, both of which ignore what the positions have along that
+	// normal, and the corners are offset from the positions as they are. So a mesh that rises and falls along the
+	// normal, like the outline of a fence on uneven ground, gets cells of the requested thickness within the
+	// hyperplane, sheared to follow it. A face that leans out of the hyperplane is thickened on its own, though, as
+	// below, and has to be flat: the cell of a face fits a 3D hyperplane, which every cell must for its cross-sections
+	// to be flat, only when every corner offset lies in the hyperplane spanned by the face and its normal. That holds
+	// for any offset within the hyperplane when the face is level, but only for offsets along its own normal when it
+	// leans, and for none when it leans and is warped.
+	const real_t flat_sine = (real_t)Math::sin(0.001);
+	Vector<bool> face_leans;
+	face_leans.resize(face_count);
+	for (int64_t face_index = 0; face_index < face_count; face_index++) {
+		const Vector4 origin = positions[edge_vertex_indices[faces[face_index][0] * 2]];
+		real_t face_scale = (real_t)0.0;
+		real_t lean = (real_t)0.0;
+		for (const int32_t edge_index : faces[face_index]) {
+			for (int64_t end = 0; end < 2; end++) {
+				const Vector4 offset = positions[edge_vertex_indices[edge_index * 2 + end]] - origin;
+				face_scale = MAX(face_scale, offset.length());
+				lean = MAX(lean, Math::abs(offset.dot(hyperplane_normal)));
+			}
 		}
-		const real_t out_of_hyperplane_limit = mesh_scale * (real_t)Math::sin(0.001);
-		for (int64_t vertex_index = 1; vertex_index < vertex_count; vertex_index++) {
-			ERR_FAIL_COND_V_MSG(Math::abs((positions[vertex_index] - positions[0]).dot(hyperplane_normal)) > out_of_hyperplane_limit, ret, "PolyMeshBuilder4D: Vertex " + itos(vertex_index) + " does not lie in the hyperplane, so the faces cannot be solidified within it.");
-		}
+		face_leans.write[face_index] = lean > face_scale * flat_sine;
 	}
 	// Each face's vertex loop tells which way it runs each of its edges, which is how the orientation of neighboring
 	// faces is compared, so the faces must be stored in loop order.
@@ -2141,13 +2155,14 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::solidify_faces(const Ref<PolyMesh4D> &p_
 		for (int64_t face_index = 0; face_index < face_count; face_index++) {
 			Vector4 normal = face_normals[face_index];
 			normal = (normal - hyperplane_normal * hyperplane_normal.dot(normal)).normalized();
-			ERR_FAIL_COND_V_MSG(normal.is_zero_approx(), ret, "PolyMeshBuilder4D: Face " + itos(face_index) + " is degenerate, so it has no normal to solidify along.");
+			ERR_FAIL_COND_V_MSG(normal.is_zero_approx(), ret, "PolyMeshBuilder4D: Face " + itos(face_index) + " has no normal within the hyperplane to solidify along, so it is degenerate or perpendicular to the hyperplane.");
 			face_normals.set(face_index, normal);
 		}
 	}
 	// The faces that share mitered corners form groups: the input's cells when it has them, with each face in at
 	// most one, and manifold sheets for the faces in no cell, so that faces meeting at a junction edge of three or
-	// more do not distort each other. A face that ends up in no group, such as one that is not flat, stands alone.
+	// more do not distort each other. A face that ends up in no group, such as one that is not flat, stands alone,
+	// and so does a face that leans out of the hyperplane, which never joins a sheet, see above.
 	PackedInt32Array face_group;
 	face_group.resize(face_count);
 	face_group.fill(-1);
@@ -2163,12 +2178,12 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::solidify_faces(const Ref<PolyMesh4D> &p_
 			groups.push_back(group);
 		}
 	}
-	Vector<bool> face_grouped;
-	face_grouped.resize(face_count);
+	Vector<bool> face_excluded_from_sheets;
+	face_excluded_from_sheets.resize(face_count);
 	for (int64_t face_index = 0; face_index < face_count; face_index++) {
-		face_grouped.write[face_index] = face_group[face_index] != -1;
+		face_excluded_from_sheets.write[face_index] = face_group[face_index] != -1 || face_leans[face_index];
 	}
-	for (const PackedInt32Array &sheet : _find_manifold_sheets(faces, edge_vertex_indices, positions, (real_t)Math::sin(0.001), face_grouped, nullptr)) {
+	for (const PackedInt32Array &sheet : _find_manifold_sheets(faces, edge_vertex_indices, positions, flat_sine, face_excluded_from_sheets, nullptr)) {
 		for (const int32_t face_index : sheet) {
 			face_group.set(face_index, (int32_t)groups.size());
 		}
@@ -2364,6 +2379,38 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::solidify_faces(const Ref<PolyMesh4D> &p_
 	ret->set_edge_vertex_indices(out_edge_vertex_indices);
 	ret->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ out_faces, out_cells });
 	ERR_FAIL_COND_V_MSG(!ret->is_poly_mesh_data_valid(), ret, "PolyMeshBuilder4D: Solidifying the faces produced an invalid mesh.");
+	// Every cell must fit one 3D hyperplane, see above, which a face that leans out of the hyperplane breaks when it is
+	// not flat, and a cell of the input breaks when it groups faces that lean away from each other.
+	{
+		const Vector<PackedInt32Array> cell_vertices = ret->get_all_poly_cell_vertex_indices(3, false);
+		for (int64_t cell_index = 0; cell_index < cell_vertices.size(); cell_index++) {
+			const PackedInt32Array &vertices = cell_vertices[cell_index];
+			const Vector4 origin = out_positions[vertices[0]];
+			real_t cell_scale = (real_t)0.0;
+			for (const int32_t vertex_index : vertices) {
+				cell_scale = MAX(cell_scale, (out_positions[vertex_index] - origin).length());
+			}
+			Vector<Vector4> basis;
+			bool flat = true;
+			for (const int32_t vertex_index : vertices) {
+				Vector4 rejection = out_positions[vertex_index] - origin;
+				for (const Vector4 &direction : basis) {
+					rejection -= direction * direction.dot(rejection);
+				}
+				if (rejection.length() > cell_scale * flat_sine) {
+					if (basis.size() == 3) {
+						flat = false;
+						break;
+					}
+					basis.push_back(rejection.normalized());
+				}
+			}
+			if (!flat) {
+				ret.instantiate(); // An empty mesh, like the other failures return.
+				ERR_FAIL_V_MSG(ret, "PolyMeshBuilder4D: Solidifying face " + itos(cell_index) + " gives a cell that fits no 3D hyperplane, since the face leans out of the hyperplane and is either not flat or grouped with faces it leans away from.");
+			}
+		}
+	}
 	ret->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ out_face_normals });
 	// The input's face corner data is carried onto both copies of each face, matched by the vertex each corner came
 	// from, with the inner copy's normals flipped along with the face. Walls take their face normal at every corner
@@ -2414,7 +2461,8 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::solidify_faces(const Ref<PolyMesh4D> &p_
 			ret->set_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY, out_corner_texture_maps);
 		}
 	}
-	// The cells all lie in the hyperplane, so their normals are along its normal. Orient them all the same way.
+	// The cells lie in the hyperplane, or lean out of it where the mesh does, so their normals all point to one side
+	// of it. Orient them all towards its normal.
 	PackedVector4Array desired_boundary_normals;
 	desired_boundary_normals.resize(out_cells.size());
 	desired_boundary_normals.fill(hyperplane_normal);

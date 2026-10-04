@@ -1227,6 +1227,103 @@ TEST_CASE("[PolyMeshBuilder4D] Solidify faces") {
 		REQUIRE(capped->is_mesh_data_valid());
 		CHECK(has_position(capped, Vector4(1.0 - 0.1 * Math::SQRT12, 0, 0.1 * Math::SQRT12, 0)));
 	}
+	// The mesh need not lie in the hyperplane. A square leaning out of XYZ along W is thickened within XYZ all the
+	// same, with every corner keeping the W of the vertex it came from, so the slab follows the lean.
+	Ref<ArrayPolyMesh4D> leaning;
+	leaning.instantiate();
+	append_loop_faces(leaning, { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0, 0.5), Vector4(0, 1, 0, 0.5) }, { { 0, 1, 2, 3 } });
+	Ref<ArrayPolyMesh4D> leaning_slab = PolyMeshBuilder4D::solidify_faces(leaning, 0.2);
+	REQUIRE(leaning_slab->is_mesh_data_valid());
+	CHECK(leaning_slab->get_poly_cell_vertex_positions().size() == 8);
+	CHECK(leaning_slab->get_poly_cell_indices()[1].size() == 1);
+	for (const Vector4 &position : leaning_slab->get_poly_cell_vertex_positions()) {
+		CHECK(Math::is_equal_approx(Math::abs(position.z), (real_t)0.1));
+		CHECK_MESSAGE(Math::is_equal_approx(position.w, position.y * (real_t)0.5), "Each corner keeps the W of its vertex.");
+	}
+	CHECK(has_face_normal(leaning_slab, Vector4(0, 0, 1, 0)));
+	CHECK(has_face_normal(leaning_slab, Vector4(0, 0, -1, 0)));
+	REQUIRE(leaning_slab->get_poly_cell_boundary_normals().size() == 1);
+	CHECK_MESSAGE(leaning_slab->get_poly_cell_boundary_normals()[0].w > (real_t)0.0, "The leaning cell is oriented towards the hyperplane normal.");
+	// Whether every cell's vertices fit in one 3D hyperplane, which they must for the cell's cross-sections to be flat.
+	auto cells_are_flat = [](const Ref<ArrayPolyMesh4D> &p_mesh) -> bool {
+		const PackedVector4Array positions = p_mesh->get_poly_cell_vertex_positions();
+		for (const PackedInt32Array &vertices : p_mesh->get_all_poly_cell_vertex_indices(3, false)) {
+			Vector<Vector4> basis;
+			for (const int32_t vertex_index : vertices) {
+				Vector4 rejection = positions[vertex_index] - positions[vertices[0]];
+				for (const Vector4 &direction : basis) {
+					rejection -= direction * direction.dot(rejection);
+				}
+				if (rejection.length() > (real_t)1e-6) {
+					if (basis.size() == 3) {
+						return false;
+					}
+					basis.push_back(rejection.normalized());
+				}
+			}
+		}
+		return true;
+	};
+	CHECK(cells_are_flat(leaning_slab));
+	// Three squares folded into a zigzag, each leaning along W in its own way. Mitering a leaning face would offset its
+	// corners along directions that warp its cell out of every hyperplane, so leaning faces are thickened on their own,
+	// each corner along its own face's normal, and the groups share no corners.
+	const real_t lean_a = 0.5;
+	const real_t lean_b = 0.25;
+	const real_t lean_c = 0.125;
+	Ref<ArrayPolyMesh4D> zigzag;
+	zigzag.instantiate();
+	append_loop_faces(zigzag, { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0, lean_a), Vector4(0, 1, 0, lean_a), Vector4(1, 0, 1, lean_b), Vector4(1, 1, 1, lean_a + lean_b), Vector4(2, 0, 1, lean_b + lean_c), Vector4(2, 1, 1, lean_a + lean_b + lean_c) }, { { 0, 1, 2, 3 }, { 1, 4, 5, 2 }, { 4, 6, 7, 5 } });
+	Ref<ArrayPolyMesh4D> zigzag_slab = PolyMeshBuilder4D::solidify_faces(zigzag, 0.2);
+	REQUIRE(zigzag_slab->is_mesh_data_valid());
+	CHECK_MESSAGE(zigzag_slab->get_poly_cell_vertex_positions().size() == 24, "Three leaning faces are three groups, sharing no corners.");
+	CHECK(zigzag_slab->get_poly_cell_indices()[1].size() == 3);
+	CHECK(cells_are_flat(zigzag_slab));
+	CHECK_MESSAGE(has_position(zigzag_slab, Vector4(1, 0, 0.1, 0)), "The first square's corner at the fold moves along its own normal only.");
+	CHECK(has_position(zigzag_slab, Vector4(1, 0, -0.1, 0)));
+	CHECK(has_position(zigzag_slab, Vector4(0.9, 0, 0, 0)));
+	CHECK(has_position(zigzag_slab, Vector4(1.1, 0, 0, 0)));
+	CHECK(has_position(zigzag_slab, Vector4(0.9, 1, 0, lean_a)));
+	CHECK(has_position(zigzag_slab, Vector4(1.1, 1, 1, lean_a + lean_b)));
+	CHECK(has_position(zigzag_slab, Vector4(2, 1, 1.1, lean_a + lean_b + lean_c)));
+	// Level faces still miter together, and a leaning face next to them stands alone: the folded squares keep their
+	// mitered fold, and the square leaning off the second one ends flat against it.
+	Ref<ArrayPolyMesh4D> folded_and_leaning;
+	folded_and_leaning.instantiate();
+	append_loop_faces(folded_and_leaning, { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0, 0), Vector4(0, 1, 0, 0), Vector4(1, 1, 1, 0), Vector4(1, 0, 1, 0), Vector4(2, 0, 1, 0.5), Vector4(2, 1, 1, 0.5) }, { { 0, 1, 2, 3 }, { 1, 5, 4, 2 }, { 5, 6, 7, 4 } });
+	Ref<ArrayPolyMesh4D> partly_mitered = PolyMeshBuilder4D::solidify_faces(folded_and_leaning, 0.2);
+	REQUIRE(partly_mitered->is_mesh_data_valid());
+	CHECK_MESSAGE(partly_mitered->get_poly_cell_vertex_positions().size() == 20, "12 corners for the folded pair and 8 for the leaning square.");
+	CHECK(cells_are_flat(partly_mitered));
+	CHECK(has_position(partly_mitered, Vector4(0.9, 0, 0.1, 0)));
+	CHECK(has_position(partly_mitered, Vector4(1.1, 0, -0.1, 0)));
+	CHECK_MESSAGE(has_position(partly_mitered, Vector4(0.9, 0, 1, 0)), "The level square's far corner moves along its own normal, as if the leaning square were not there.");
+	CHECK(has_position(partly_mitered, Vector4(1, 0, 1.1, 0)));
+	CHECK(has_position(partly_mitered, Vector4(1, 0, 0.9, 0)));
+	CHECK(has_position(partly_mitered, Vector4(2, 1, 1.1, 0.5)));
+	// A warped face is fine while it is level, since its cell stays in the hyperplane, but not when it leans.
+	Ref<ArrayPolyMesh4D> level_skew;
+	level_skew.instantiate();
+	append_loop_faces(level_skew, { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0.3, 0), Vector4(0, 1, 0, 0) }, { { 0, 1, 2, 3 } });
+	Ref<ArrayPolyMesh4D> level_skew_slab = PolyMeshBuilder4D::solidify_faces(level_skew, 0.2);
+	REQUIRE(level_skew_slab->is_mesh_data_valid());
+	CHECK(level_skew_slab->get_poly_cell_vertex_positions().size() == 8);
+	CHECK(cells_are_flat(level_skew_slab));
+	Ref<ArrayPolyMesh4D> leaning_skew;
+	leaning_skew.instantiate();
+	append_loop_faces(leaning_skew, { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 1, 0, 0.5), Vector4(0, 1, 0, 0) }, { { 0, 1, 2, 3 } });
+	ERR_PRINT_OFF;
+	Ref<ArrayPolyMesh4D> refused_skew = PolyMeshBuilder4D::solidify_faces(leaning_skew, 0.2);
+	ERR_PRINT_ON;
+	CHECK(refused_skew->get_poly_cell_vertex_positions().is_empty());
+	// A face perpendicular to the hyperplane has no normal within it to thicken along, so it is refused.
+	Ref<ArrayPolyMesh4D> standing;
+	standing.instantiate();
+	append_loop_faces(standing, { Vector4(0, 0, 0, 0), Vector4(1, 0, 0, 0), Vector4(1, 0, 0, 1), Vector4(0, 0, 0, 1) }, { { 0, 1, 2, 3 } });
+	ERR_PRINT_OFF;
+	Ref<ArrayPolyMesh4D> refused_standing = PolyMeshBuilder4D::solidify_faces(standing, 0.2);
+	ERR_PRINT_ON;
+	CHECK(refused_standing->get_poly_cell_vertex_positions().is_empty());
 	// A T-junction of three squares on one edge. The shared edge has three faces, so each square is thickened on its
 	// own: the two coplanar squares stay flush at Z = ±0.1, and the standing one keeps its own thickness around
 	// X = 1, ending inside the others instead of distorting them.
