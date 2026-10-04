@@ -30,6 +30,8 @@ class VoxelWorld4D : public Node4D {
 	// Owned; an Object so it can receive messages, so it cannot be a value member.
 	VoxelChunkLoader4D *_chunk_loader = nullptr;
 
+	void _update_material_texture();
+
 protected:
 	static void _bind_methods();
 	void _notification(int p_what);
@@ -40,7 +42,7 @@ public:
 	VoxelMeshHandler4D &get_mesh_handler() { return _mesh_handler; }
 
 	Ref<VoxelGenerator4D> get_generator() const { return _voxel_data->get_generator(); }
-	void set_generator(const Ref<VoxelGenerator4D> &p_generator) { _voxel_data->set_generator(p_generator); }
+	void set_generator(const Ref<VoxelGenerator4D> &p_generator);
 
 	Ref<VoxelMaterialPalette4D> get_material_palette() const { return _material_palette; }
 	void set_material_palette(const Ref<VoxelMaterialPalette4D> &p_material_palette);
@@ -50,22 +52,16 @@ public:
 	void set_allow_projection(const bool p_allow_projection);
 
 	Rect4i get_world_bounds() const { return _world_bounds; }
-	void set_world_bounds(const Rect4i &p_world_bounds) { _world_bounds = p_world_bounds; }
+	void set_world_bounds(const Rect4i &p_world_bounds);
 	bool is_world_bounds_enabled() const { return _world_bounds_enabled; }
-	void set_world_bounds_enabled(const bool p_enabled) {
-		_world_bounds_enabled = p_enabled;
-		notify_property_list_changed();
-	}
+	void set_world_bounds_enabled(const bool p_enabled);
 	Vector4i get_world_bounds_position() const { return _world_bounds.position; }
-	void set_world_bounds_position(const Vector4i &p_position) { _world_bounds.position = p_position; }
+	void set_world_bounds_position(const Vector4i &p_position);
 	Vector4i get_world_bounds_size() const { return _world_bounds.size; }
-	void set_world_bounds_size(const Vector4i &p_size) { _world_bounds.size = p_size; }
+	void set_world_bounds_size(const Vector4i &p_size);
 
 	void apply_edit(const Ref<VoxelEdit4D> &p_edit);
 
 	VoxelWorld4D();
 	~VoxelWorld4D();
-
-private:
-	void _update_material_texture();
 };

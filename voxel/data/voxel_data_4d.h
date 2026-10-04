@@ -22,6 +22,15 @@ class VoxelData4D : public RefCounted {
 
 	static bool _is_tree_empty(const VoxelDataTree4D &p_node);
 
+	// Shrinks the tree to the minimum size it needs to fit the defined data
+	// (while properly aligned).
+	void _trim_bounds();
+
+	// Doubles the tree's bounds, moving the content into the new root. Extends
+	// the tree toward the given location, to the extent permitted by the
+	// alignment invariant.
+	void _expand_bounds(const Vector4i &p_toward);
+
 protected:
 	static void _bind_methods();
 
@@ -89,16 +98,5 @@ public:
 	// on the origin, for testing purposes.
 	void load_all_chunks();
 
-private:
-	// Shrinks the tree to the minimum size it needs to fit the defined data
-	// (while properly aligned).
-	void trim_bounds();
-
-	// Doubles the tree's bounds, moving the content into the new root. Extends
-	// the tree toward the given location, to the extent permitted by the
-	// alignment invariant.
-	void expand_bounds(const Vector4i &p_toward);
-
-public:
 	~VoxelData4D();
 };

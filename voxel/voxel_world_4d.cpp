@@ -2,10 +2,33 @@
 
 #include "edit/voxel_edit_4d.h"
 
+void VoxelWorld4D::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE: {
+			// Generally the world will be empty at this point, but just in case it isn't:
+			_mesh_handler.mark_region_dirty(_voxel_data->get_bounds());
+			set_process(true);
+		} break;
+		case NOTIFICATION_PROCESS: {
+			_chunk_loader->update_loaded_chunks();
+			_voxel_data->merge_edited_constants();
+			_mesh_handler.update_dirty_meshes();
+		} break;
+	}
+}
+
+void VoxelWorld4D::_update_material_texture() {
+	_mesh_material->set_albedo_texture_3d(VoxelMaterialPalette4D::bake_texture(_material_palette));
+}
+
 void VoxelWorld4D::_validate_property(PropertyInfo &p_property) const {
 	if (!_world_bounds_enabled && (p_property.name == StringName("world_bounds_position") || p_property.name == StringName("world_bounds_size"))) {
 		p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 	}
+}
+
+void VoxelWorld4D::set_generator(const Ref<VoxelGenerator4D> &p_generator) {
+	_voxel_data->set_generator(p_generator);
 }
 
 void VoxelWorld4D::set_material_palette(const Ref<VoxelMaterialPalette4D> &p_material_palette) {
@@ -31,29 +54,27 @@ void VoxelWorld4D::set_allow_projection(const bool p_allow_projection) {
 	_mesh_handler.update_chunk_allow_projection();
 }
 
-void VoxelWorld4D::_update_material_texture() {
-	_mesh_material->set_albedo_texture_3d(VoxelMaterialPalette4D::bake_texture(_material_palette));
+void VoxelWorld4D::set_world_bounds(const Rect4i &p_world_bounds) {
+	_world_bounds = p_world_bounds;
+}
+
+void VoxelWorld4D::set_world_bounds_enabled(const bool p_enabled) {
+	_world_bounds_enabled = p_enabled;
+	notify_property_list_changed();
+}
+
+void VoxelWorld4D::set_world_bounds_position(const Vector4i &p_position) {
+	_world_bounds.position = p_position;
+}
+
+void VoxelWorld4D::set_world_bounds_size(const Vector4i &p_size) {
+	_world_bounds.size = p_size;
 }
 
 void VoxelWorld4D::apply_edit(const Ref<VoxelEdit4D> &p_edit) {
 	ERR_FAIL_COND(p_edit.is_null());
 	_voxel_data->apply_edit(p_edit);
 	_mesh_handler.mark_region_dirty(p_edit->get_bounds());
-}
-
-void VoxelWorld4D::_notification(int p_what) {
-	switch (p_what) {
-		case NOTIFICATION_ENTER_TREE: {
-			// Generally the world will be empty at this point, but just in case it isn't:
-			_mesh_handler.mark_region_dirty(_voxel_data->get_bounds());
-			set_process(true);
-		} break;
-		case NOTIFICATION_PROCESS: {
-			_chunk_loader->update_loaded_chunks();
-			_voxel_data->merge_edited_constants();
-			_mesh_handler.update_dirty_meshes();
-		} break;
-	}
 }
 
 VoxelWorld4D::VoxelWorld4D() :

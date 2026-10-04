@@ -30,6 +30,10 @@ void VoxelLoadTrigger4D::set_unload_distance_ratio(const real_t p_unload_distanc
 	_unload_distance_ratio = p_unload_distance_ratio;
 }
 
+void VoxelLoadTrigger4D::set_voxel_world_path(const NodePath &p_voxel_world_path) {
+	_voxel_world_path = p_voxel_world_path;
+}
+
 void VoxelLoadTrigger4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_load_distance"), &VoxelLoadTrigger4D::get_load_distance);
 	ClassDB::bind_method(D_METHOD("set_load_distance", "load_distance"), &VoxelLoadTrigger4D::set_load_distance);

@@ -1,22 +1,5 @@
 #include "sphere_voxel_edit_4d.h"
 
-void SphereVoxelEdit4D::set_center(const Vector4 &p_center) {
-	_center = p_center;
-	_update_bounds();
-}
-
-void SphereVoxelEdit4D::set_radius(const real_t p_radius) {
-	ERR_FAIL_COND_MSG(p_radius < 0.0, "SphereVoxelEdit4D radius must not be negative. Refusing to set.");
-	_radius = p_radius;
-	_update_bounds();
-}
-
-void SphereVoxelEdit4D::set_fill_material(const int p_fill_material) {
-	const VoxelMaterial4D material = (VoxelMaterial4D)p_fill_material;
-	ERR_FAIL_COND_MSG((int)material != p_fill_material || material == VoxelMaterial4D::UNDEFINED, "SphereVoxelEdit4D fill material must be a defined material. Refusing to set.");
-	_material = material;
-}
-
 void SphereVoxelEdit4D::_update_bounds() {
 	ERR_FAIL_COND_MSG(_material == VoxelMaterial4D::UNDEFINED, "SphereVoxelEdit4D cannot apply the UNDEFINED material.");
 	// Covers exactly the voxels whose centers are inside the sphere.
@@ -48,6 +31,23 @@ VoxelEdgeData4D SphereVoxelEdit4D::get_edge_data(const Vector4i &p_voxel, const 
 	}
 	point[p_axis] += crossing;
 	return VoxelEdgeData4D(point - _center, crossing);
+}
+
+void SphereVoxelEdit4D::set_center(const Vector4 &p_center) {
+	_center = p_center;
+	_update_bounds();
+}
+
+void SphereVoxelEdit4D::set_radius(const real_t p_radius) {
+	ERR_FAIL_COND_MSG(p_radius < 0.0, "SphereVoxelEdit4D radius must not be negative. Refusing to set.");
+	_radius = p_radius;
+	_update_bounds();
+}
+
+void SphereVoxelEdit4D::set_fill_material(const int p_fill_material) {
+	const VoxelMaterial4D material = (VoxelMaterial4D)p_fill_material;
+	ERR_FAIL_COND_MSG((int)material != p_fill_material || material == VoxelMaterial4D::UNDEFINED, "SphereVoxelEdit4D fill material must be a defined material. Refusing to set.");
+	_material = material;
 }
 
 void SphereVoxelEdit4D::_bind_methods() {

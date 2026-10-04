@@ -11,6 +11,8 @@ class SphereVoxelEdit4D : public VoxelEdit4D {
 	real_t _radius = 1.0;
 	VoxelMaterial4D _material = VoxelMaterial4D::AIR;
 
+	void _update_bounds();
+
 protected:
 	static void _bind_methods();
 
@@ -34,7 +36,4 @@ public:
 			_material(p_material) {
 		_update_bounds();
 	}
-
-private:
-	void _update_bounds();
 };

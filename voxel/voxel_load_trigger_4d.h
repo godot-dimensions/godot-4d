@@ -36,7 +36,7 @@ public:
 	real_t get_unload_distance() const { return _load_distance * _unload_distance_ratio; }
 
 	NodePath get_voxel_world_path() const { return _voxel_world_path; }
-	void set_voxel_world_path(const NodePath &p_voxel_world_path) { _voxel_world_path = p_voxel_world_path; }
+	void set_voxel_world_path(const NodePath &p_voxel_world_path);
 
 	// Whether the given world loads chunks around this trigger.
 	bool applies_to(const VoxelWorld4D *p_world) const;
