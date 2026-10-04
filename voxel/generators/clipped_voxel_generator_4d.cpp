@@ -85,12 +85,21 @@ VoxelEdgeData4D ClippedVoxelGenerator4D::get_edge_data(const Vector4i &p_voxel, 
 	return base_first ? second_data : first_data;
 }
 
+bool ClippedVoxelGenerator4D::contains_generator(const VoxelGenerator4D *p_generator) const {
+	if (VoxelGenerator4D::contains_generator(p_generator)) {
+		return true;
+	}
+	return (_base.is_valid() && _base->contains_generator(p_generator)) || (_modifier.is_valid() && _modifier->contains_generator(p_generator));
+}
+
 void ClippedVoxelGenerator4D::set_base(const Ref<VoxelGenerator4D> &p_base) {
+	ERR_FAIL_COND_MSG(p_base.is_valid() && p_base->contains_generator(this), "ClippedVoxelGenerator4D cannot use itself as its base, directly or through other generators. Refusing to set.");
 	_base = p_base;
 	emit_changed();
 }
 
 void ClippedVoxelGenerator4D::set_modifier(const Ref<VoxelGenerator4D> &p_modifier) {
+	ERR_FAIL_COND_MSG(p_modifier.is_valid() && p_modifier->contains_generator(this), "ClippedVoxelGenerator4D cannot use itself as its modifier, directly or through other generators. Refusing to set.");
 	_modifier = p_modifier;
 	emit_changed();
 }

@@ -24,6 +24,7 @@ protected:
 public:
 	virtual VoxelMaterial4D get_material(const Vector4i &p_voxel) const override;
 	virtual VoxelEdgeData4D get_edge_data(const Vector4i &p_voxel, const int p_axis) const override;
+	virtual bool contains_generator(const VoxelGenerator4D *p_generator) const override;
 
 	Vector<Ref<VoxelGenerator4D>> get_layers() const { return _layers; }
 	void set_layers(const Vector<Ref<VoxelGenerator4D>> &p_layers);

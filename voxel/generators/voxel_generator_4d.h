@@ -32,4 +32,10 @@ public:
 	// active edges, whose two voxels have different materials. The encoding
 	// discards the normal's sign, so either orientation may be produced.
 	virtual VoxelEdgeData4D get_edge_data(const Vector4i &p_voxel, const int p_axis) const = 0;
+
+	// Whether the given generator is this one, or one this generator uses,
+	// directly or through other generators. Generators that use others
+	// override this, and refuse any that contain them, so that no generator
+	// can contain itself, which would recurse endlessly while generating.
+	virtual bool contains_generator(const VoxelGenerator4D *p_generator) const { return p_generator == this; }
 };

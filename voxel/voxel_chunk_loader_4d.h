@@ -33,6 +33,10 @@ class VoxelChunkLoader4D : public Object {
 	// worker may read it, so it is atomic.
 	struct ChunkLoadTask4D {
 		Ref<VoxelData4D> data;
+		// The world's generator when the load was queued. The task holds its
+		// own reference, so that replacing the world's generator can't free
+		// it in the middle of the generation.
+		Ref<VoxelGenerator4D> generator;
 		Vector4i position;
 		// The generated chunk, owned by the task until it is grafted.
 		VoxelDataTree4D *chunk = nullptr;

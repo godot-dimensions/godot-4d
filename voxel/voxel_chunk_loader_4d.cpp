@@ -229,7 +229,7 @@ void VoxelChunkLoader4D::_generate_load_task(const uint64_t p_task_pointer) {
 		// already waiting for it, not for a message.
 		return;
 	}
-	task->chunk = task->data->generate_chunk_content(task->position);
+	task->chunk = task->data->generate_chunk_content(task->position, task->generator);
 	// The message carries only the position; the task itself stays owned by
 	// the loader, so nothing is lost if the message outlives the loader.
 	task->finished_callback.call_deferred(task->position);
@@ -238,6 +238,8 @@ void VoxelChunkLoader4D::_generate_load_task(const uint64_t p_task_pointer) {
 void VoxelChunkLoader4D::queue_load(const Vector4i &p_voxel) {
 	ERR_FAIL_NULL(_world);
 	const Ref<VoxelData4D> voxel_data = _world->get_voxel_data();
+	const Ref<VoxelGenerator4D> generator = voxel_data->get_generator();
+	ERR_FAIL_COND_MSG(generator.is_null(), "VoxelChunkLoader4D cannot load chunks without a generator.");
 	const Vector4i chunk_position = voxel_data->get_chunk_position(p_voxel);
 	if (_pending_loads.has(chunk_position)) {
 		return;
@@ -245,6 +247,7 @@ void VoxelChunkLoader4D::queue_load(const Vector4i &p_voxel) {
 	voxel_data->mark_region_pending(Rect4i(chunk_position, VOXEL_4D_DATA_CHUNK_SIZE_VECTOR));
 	ChunkLoadTask4D *task = memnew(ChunkLoadTask4D);
 	task->data = voxel_data;
+	task->generator = generator;
 	task->position = chunk_position;
 	task->finished_callback = callable_mp(this, &VoxelChunkLoader4D::_finish_load);
 	_pending_loads.insert(chunk_position, task);

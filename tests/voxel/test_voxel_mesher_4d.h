@@ -266,12 +266,11 @@ TEST_CASE("[VoxelMesher4D] Random world mesh closedness") {
 	generator->random_bounds = Rect4i(VOXEL_4D_DATA_CHUNK_SIZE_VECTOR, VOXEL_4D_DATA_CHUNK_SIZE_VECTOR * 2);
 	Ref<VoxelData4D> data;
 	data.instantiate();
-	data->set_generator(generator);
 	for (int32_t w = 0; w < 4; w++) {
 		for (int32_t z = 0; z < 4; z++) {
 			for (int32_t y = 0; y < 4; y++) {
 				for (int32_t x = 0; x < 4; x++) {
-					data->apply_generated_chunk(data->generate_chunk_content(Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE));
+					data->apply_generated_chunk(data->generate_chunk_content(Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE, generator));
 				}
 			}
 		}
@@ -318,12 +317,11 @@ TEST_CASE("[VoxelMesher4D] Composed generator world closedness") {
 
 	Ref<VoxelData4D> data;
 	data.instantiate();
-	data->set_generator(composed);
 	for (int32_t w = -1; w < 1; w++) {
 		for (int32_t z = -1; z < 1; z++) {
 			for (int32_t y = -1; y < 1; y++) {
 				for (int32_t x = -1; x < 1; x++) {
-					data->apply_generated_chunk(data->generate_chunk_content(Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE));
+					data->apply_generated_chunk(data->generate_chunk_content(Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE, composed));
 				}
 			}
 		}

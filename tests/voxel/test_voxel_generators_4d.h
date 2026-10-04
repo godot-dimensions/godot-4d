@@ -3,6 +3,8 @@
 #include "../../voxel/data/voxel_data_4d.h"
 #include "../../voxel/edit/box_voxel_edit_4d.h"
 #include "../../voxel/edit/parallelogram_voxel_edit_4d.h"
+#include "../../voxel/generators/clipped_voxel_generator_4d.h"
+#include "../../voxel/generators/layered_voxel_generator_4d.h"
 #include "../../voxel/generators/plane_voxel_generator_4d.h"
 
 #include "tests/test_macros.h"
@@ -12,12 +14,11 @@ namespace TestVoxelGenerators4D {
 static Ref<VoxelData4D> _generate_block(const Ref<VoxelGenerator4D> &p_generator, const Vector4i &p_corner, const int p_chunks) {
 	Ref<VoxelData4D> data;
 	data.instantiate();
-	data->set_generator(p_generator);
 	for (int32_t w = 0; w < p_chunks; w++) {
 		for (int32_t z = 0; z < p_chunks; z++) {
 			for (int32_t y = 0; y < p_chunks; y++) {
 				for (int32_t x = 0; x < p_chunks; x++) {
-					data->apply_generated_chunk(data->generate_chunk_content(p_corner + Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE));
+					data->apply_generated_chunk(data->generate_chunk_content(p_corner + Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE, p_generator));
 				}
 			}
 		}
@@ -89,5 +90,50 @@ TEST_CASE("[ParallelogramVoxelEdit4D] Equivalence to BoxVoxelEdit4D when axis-al
 		all_equal = all_equal && _region_contents_close(box_data, parallelogram_data, region, (real_t)0.005);
 	}
 	CHECK_MESSAGE(all_equal, "A ParallelogramVoxelEdit4D with an axis-aligned scaling basis should match the BoxVoxelEdit4D of the same box.");
+}
+
+TEST_CASE("[VoxelGenerator4D] Composite generators cannot contain themselves") {
+	// Generating with a generator that contains itself would recurse forever.
+	Ref<LayeredVoxelGenerator4D> layered;
+	layered.instantiate();
+	Ref<ClippedVoxelGenerator4D> clipped;
+	clipped.instantiate();
+	Vector<Ref<VoxelGenerator4D>> layers;
+	layers.push_back(layered);
+	ERR_PRINT_OFF;
+	layered->set_layers(layers);
+	clipped->set_base(clipped);
+	clipped->set_modifier(clipped);
+	ERR_PRINT_ON;
+	CHECK_MESSAGE(layered->get_layers().is_empty(), "LayeredVoxelGenerator4D should refuse itself as a layer.");
+	CHECK_MESSAGE(clipped->get_base().is_null(), "ClippedVoxelGenerator4D should refuse itself as its base.");
+	CHECK_MESSAGE(clipped->get_modifier().is_null(), "ClippedVoxelGenerator4D should refuse itself as its modifier.");
+
+	// Indirectly, through each other.
+	layers.clear();
+	layers.push_back(clipped);
+	layered->set_layers(layers);
+	TypedArray<VoxelGenerator4D> bound_layers;
+	bound_layers.push_back(clipped);
+	bound_layers.push_back(layered);
+	ERR_PRINT_OFF;
+	clipped->set_base(layered);
+	clipped->set_modifier(layered);
+	layered->set_layers_bind(bound_layers);
+	ERR_PRINT_ON;
+	CHECK_MESSAGE(clipped->get_base().is_null(), "ClippedVoxelGenerator4D should refuse a base that contains it.");
+	CHECK_MESSAGE(clipped->get_modifier().is_null(), "ClippedVoxelGenerator4D should refuse a modifier that contains it.");
+	CHECK_MESSAGE(layered->get_layers().size() == 1, "LayeredVoxelGenerator4D should refuse layers containing itself when set through the bound setter, keeping its previous layers.");
+
+	// Using one generator in several places is not a cycle.
+	Ref<PlaneVoxelGenerator4D> plane;
+	plane.instantiate();
+	clipped->set_base(plane);
+	clipped->set_modifier(plane);
+	layers.push_back(plane);
+	layered->set_layers(layers);
+	CHECK_MESSAGE(clipped->get_base() == plane, "ClippedVoxelGenerator4D should accept a base also used elsewhere.");
+	CHECK_MESSAGE(clipped->get_modifier() == plane, "ClippedVoxelGenerator4D should accept the same generator as its base and modifier.");
+	CHECK_MESSAGE(layered->get_layers().size() == 2, "LayeredVoxelGenerator4D should accept layers that share generators.");
 }
 } // namespace TestVoxelGenerators4D

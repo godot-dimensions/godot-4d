@@ -218,10 +218,10 @@ void VoxelData4D::set_generator(const Ref<VoxelGenerator4D> &p_generator) {
 	_generator = p_generator;
 }
 
-VoxelDataTree4D *VoxelData4D::generate_chunk_content(const Vector4i &p_voxel) const {
-	ERR_FAIL_COND_V(_generator.is_null(), nullptr);
+VoxelDataTree4D *VoxelData4D::generate_chunk_content(const Vector4i &p_voxel, const Ref<VoxelGenerator4D> &p_generator) const {
+	ERR_FAIL_COND_V(p_generator.is_null(), nullptr);
 	VoxelDataTree4D *chunk = memnew(VoxelDataTree4D(Rect4i(get_chunk_position(p_voxel), VOXEL_4D_DATA_CHUNK_SIZE_VECTOR)));
-	chunk->generate(_generator);
+	chunk->generate(p_generator);
 	return chunk;
 }
 

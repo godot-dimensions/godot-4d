@@ -46,8 +46,8 @@ TEST_CASE("[VoxelData4D] Bounds expansion and contraction") {
 	const Rect4i origin_chunk_bounds = Rect4i(Vector4i(), VOXEL_4D_DATA_CHUNK_SIZE_VECTOR);
 	Ref<VoxelData4D> data;
 	data.instantiate();
-	data->set_generator(memnew(TigerTestGenerator4D));
-	data->apply_generated_chunk(data->generate_chunk_content(Vector4i(1, 2, 3, 0)));
+	const Ref<TigerTestGenerator4D> generator = memnew(TigerTestGenerator4D);
+	data->apply_generated_chunk(data->generate_chunk_content(Vector4i(1, 2, 3, 0), generator));
 	CHECK_MESSAGE(data->is_region_defined(origin_chunk_bounds), "VoxelData4D apply_generated_chunk should define the whole chunk containing the given voxel.");
 	CHECK_MESSAGE(!data->is_voxel_defined(Vector4i(VOXEL_4D_DATA_CHUNK_SIZE, 0, 0, 0)), "VoxelData4D apply_generated_chunk should not define neighboring chunks.");
 	CHECK_MESSAGE(data->get_bounds() == origin_chunk_bounds, "VoxelData4D bounds should stay tight around the defined content.");
@@ -60,7 +60,7 @@ TEST_CASE("[VoxelData4D] Bounds expansion and contraction") {
 	}
 
 	const Vector4i far_voxel = Vector4i(65, 2, -7, 0);
-	data->apply_generated_chunk(data->generate_chunk_content(far_voxel));
+	data->apply_generated_chunk(data->generate_chunk_content(far_voxel, generator));
 	CHECK_MESSAGE(data->is_voxel_defined(far_voxel), "VoxelData4D should expand its bounds to store chunks outside of them.");
 	CHECK_MESSAGE(data->get_bounds().encloses_inclusive(origin_chunk_bounds), "VoxelData4D expanded bounds should still cover the old content.");
 	CHECK_MESSAGE(_bounds_alignment_holds(data->get_bounds()), "VoxelData4D expanded bounds should satisfy the alignment invariant.");
@@ -76,7 +76,7 @@ TEST_CASE("[VoxelData4D] Bounds expansion and contraction") {
 
 	// A chunk on the other side of the origin: the two chunks together only
 	// fit in a root that is half-aligned on the X axis.
-	data->apply_generated_chunk(data->generate_chunk_content(Vector4i(-1, 0, 0, 0)));
+	data->apply_generated_chunk(data->generate_chunk_content(Vector4i(-1, 0, 0, 0), generator));
 	CHECK_MESSAGE(data->get_bounds().size == VOXEL_4D_DATA_CHUNK_SIZE_VECTOR * 2, "VoxelData4D chunks straddling the origin should fit in a half-aligned root instead of one twice the size.");
 	CHECK_MESSAGE(data->get_bounds().position.x == -VOXEL_4D_DATA_CHUNK_SIZE, "VoxelData4D bounds straddling the origin should be half-aligned on that axis.");
 	CHECK_MESSAGE(_bounds_alignment_holds(data->get_bounds()), "VoxelData4D half-aligned bounds should satisfy the alignment invariant.");
@@ -84,7 +84,7 @@ TEST_CASE("[VoxelData4D] Bounds expansion and contraction") {
 	// Expanding from and contracting back to a half-aligned root exercises
 	// the middle cases of both: the old root becomes the middle half of the
 	// new root, and later contractions gather grandchildren back into it.
-	data->apply_generated_chunk(data->generate_chunk_content(far_voxel));
+	data->apply_generated_chunk(data->generate_chunk_content(far_voxel, generator));
 	CHECK_MESSAGE(data->is_voxel_defined(far_voxel), "VoxelData4D should expand half-aligned bounds to store far away chunks.");
 	CHECK_MESSAGE(_bounds_alignment_holds(data->get_bounds()), "VoxelData4D bounds expanded from a half-aligned root should satisfy the alignment invariant.");
 	data->unload_chunk(far_voxel);
@@ -101,7 +101,7 @@ TEST_CASE("[VoxelData4D] Bounds expansion and contraction") {
 	CHECK_MESSAGE(!data->is_voxel_defined(Vector4i(0, 0, 0, 0)), "VoxelData4D voxels should be undefined once everything is unloaded.");
 	CHECK_MESSAGE(data->get_material(Vector4i(0, 0, 0, 0)) == VoxelMaterial4D::UNDEFINED, "VoxelData4D get_material should return UNDEFINED once everything is unloaded.");
 
-	data->apply_generated_chunk(data->generate_chunk_content(Vector4i(0, 0, 0, 0)));
+	data->apply_generated_chunk(data->generate_chunk_content(Vector4i(0, 0, 0, 0), generator));
 	CHECK_MESSAGE(data->get_bounds() == origin_chunk_bounds, "VoxelData4D should accept chunks again after everything was unloaded.");
 	for (int i = 0; i < 3; i++) {
 		CHECK_MESSAGE(data->get_material(samples[i]) == sample_materials[i], "VoxelData4D chunks reloaded after a full unload should regenerate the same values.");
@@ -116,12 +116,12 @@ TEST_CASE("[VoxelData4D] Edits and constant merging") {
 	const Rect4i cube_bounds = Rect4i(cube_position, VOXEL_4D_DATA_CHUNK_SIZE_VECTOR * 4);
 	Ref<VoxelData4D> data;
 	data.instantiate();
-	data->set_generator(memnew(TigerTestGenerator4D));
+	const Ref<TigerTestGenerator4D> generator = memnew(TigerTestGenerator4D);
 	for (int32_t w = 0; w < 4; w++) {
 		for (int32_t z = 0; z < 4; z++) {
 			for (int32_t y = 0; y < 4; y++) {
 				for (int32_t x = 0; x < 4; x++) {
-					data->apply_generated_chunk(data->generate_chunk_content(cube_position + Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE));
+					data->apply_generated_chunk(data->generate_chunk_content(cube_position + Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE, generator));
 				}
 			}
 		}
@@ -258,12 +258,12 @@ TEST_CASE("[VoxelData4D] Edit surface data invariant and idempotence") {
 	const Vector4i cube_position = VOXEL_4D_DATA_CHUNK_SIZE_VECTOR * 8;
 	Ref<VoxelData4D> data;
 	data.instantiate();
-	data->set_generator(memnew(TigerTestGenerator4D));
+	const Ref<TigerTestGenerator4D> generator = memnew(TigerTestGenerator4D);
 	for (int32_t w = 0; w < 2; w++) {
 		for (int32_t z = 0; z < 2; z++) {
 			for (int32_t y = 0; y < 2; y++) {
 				for (int32_t x = 0; x < 2; x++) {
-					data->apply_generated_chunk(data->generate_chunk_content(cube_position + Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE));
+					data->apply_generated_chunk(data->generate_chunk_content(cube_position + Vector4i(x, y, z, w) * VOXEL_4D_DATA_CHUNK_SIZE, generator));
 				}
 			}
 		}
@@ -303,8 +303,8 @@ TEST_CASE("[VoxelData4D] Edits reconcile with chunks loaded later") {
 	const Vector4i neighbor_position = chunk_position + Vector4i(VOXEL_4D_DATA_CHUNK_SIZE, 0, 0, 0);
 	Ref<VoxelData4D> data;
 	data.instantiate();
-	data->set_generator(memnew(TigerTestGenerator4D));
-	data->apply_generated_chunk(data->generate_chunk_content(chunk_position));
+	const Ref<TigerTestGenerator4D> generator = memnew(TigerTestGenerator4D);
+	data->apply_generated_chunk(data->generate_chunk_content(chunk_position, generator));
 
 	// A solid ball centered on the border plane between the two chunks; only
 	// the loaded half applies.
@@ -317,7 +317,7 @@ TEST_CASE("[VoxelData4D] Edits reconcile with chunks loaded later") {
 	CHECK_MESSAGE(data->get_material(inside_probe) == SOLID_MATERIAL, "VoxelData4D the loaded half of the ball should become solid.");
 	CHECK_MESSAGE(_surface_data_invariant_holds(data), "VoxelData4D the surface data invariant should hold before the neighbor loads.");
 
-	data->apply_generated_chunk(data->generate_chunk_content(neighbor_position));
+	data->apply_generated_chunk(data->generate_chunk_content(neighbor_position, generator));
 	CHECK_MESSAGE(data->get_material(ball_center_voxel) == VoxelMaterial4D::AIR, "VoxelData4D the discarded half of the ball should not reappear when its chunk loads.");
 	CHECK_MESSAGE(data->get_material(inside_probe) == SOLID_MATERIAL, "VoxelData4D the applied half of the ball should survive the neighbor loading.");
 	CHECK_MESSAGE(_surface_data_invariant_holds(data), "VoxelData4D loading next to an edit should reconcile the border's surface data.");
@@ -328,7 +328,7 @@ TEST_CASE("[VoxelData4D] Edits reconcile with chunks loaded later") {
 	data->unload_chunk(neighbor_position);
 	Ref<SphereVoxelEdit4D> air_edit = memnew(SphereVoxelEdit4D(ball_center, ball_radius, VoxelMaterial4D::AIR));
 	data->apply_edit(air_edit);
-	data->apply_generated_chunk(data->generate_chunk_content(neighbor_position));
+	data->apply_generated_chunk(data->generate_chunk_content(neighbor_position, generator));
 	CHECK_MESSAGE(data->get_material(inside_probe) == VoxelMaterial4D::AIR, "VoxelData4D carving the ball back out should restore air.");
 	CHECK_MESSAGE(_surface_data_invariant_holds(data), "VoxelData4D loading next to an undone edit should remove the stale border surface data.");
 }

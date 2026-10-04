@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../voxel/generators/plane_voxel_generator_4d.h"
 #include "../../voxel/generators/tiger_test_generator_4d.h"
 #include "../../voxel/voxel_chunk_loader_4d.h"
 #include "../../voxel/voxel_load_trigger_4d.h"
@@ -127,5 +128,36 @@ TEST_CASE("[SceneTree][VoxelChunkLoader4D] World bounds") {
 	root->remove_child(trigger);
 	memdelete(world);
 	memdelete(trigger);
+}
+
+TEST_CASE("[SceneTree][VoxelChunkLoader4D] Generator replaced while loading") {
+	// Uniform generators of two different materials, to tell which one
+	// generated the chunk.
+	Ref<PlaneVoxelGenerator4D> first_generator;
+	first_generator.instantiate();
+	first_generator->set_material_over(2);
+	first_generator->set_material_under(2);
+	Ref<PlaneVoxelGenerator4D> second_generator;
+	second_generator.instantiate();
+	second_generator->set_material_over(3);
+	second_generator->set_material_under(3);
+	VoxelWorld4D *world = memnew(VoxelWorld4D);
+	world->set_generator(first_generator);
+	VoxelChunkLoader4D *loader = memnew(VoxelChunkLoader4D(world));
+	loader->queue_load(Vector4i());
+	// Replace the generator while the load may still be in progress, leaving
+	// the load as the only holder of the first generator.
+	world->set_generator(second_generator);
+	first_generator.unref();
+	const Ref<VoxelData4D> voxel_data = world->get_voxel_data();
+	int safety = 0;
+	while (!voxel_data->is_voxel_defined(Vector4i()) && safety < 10000) {
+		OS::get_singleton()->delay_usec(1000);
+		MessageQueue::get_singleton()->flush();
+		safety++;
+	}
+	CHECK_MESSAGE(voxel_data->get_material(Vector4i()) == (VoxelMaterial4D)2, "VoxelChunkLoader4D loads should use the generator they were queued with, even if it is replaced and freed in the meantime.");
+	memdelete(loader);
+	memdelete(world);
 }
 } // namespace TestVoxelChunkLoader4D

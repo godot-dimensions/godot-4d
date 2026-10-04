@@ -62,14 +62,16 @@ public:
 	VoxelDataNeighborhood4D find_region_neighborhood(const Rect4i &p_region);
 
 	// Sets the generator that provides chunk contents. Chunks already
-	// generated are unaffected. While it is null, no chunks can load.
+	// generated, or already queued to load, are unaffected. While it is null,
+	// no chunks can load.
 	void set_generator(const Ref<VoxelGenerator4D> &p_generator);
 	Ref<VoxelGenerator4D> get_generator() const { return _generator; }
 
-	// Generates a detached chunk-sized tree with the content of the chunk
-	// containing the given voxel. This only reads the generator, so it can
-	// run on a worker thread. The caller owns the returned tree.
-	VoxelDataTree4D *generate_chunk_content(const Vector4i &p_voxel) const;
+	// Generates a detached chunk-sized tree with the content the given
+	// generator produces for the chunk containing the given voxel.
+	// This does not touch the data, so it can run on a worker thread, as long as the
+	// caller holds a reference to the generator. The caller owns the returned tree.
+	VoxelDataTree4D *generate_chunk_content(const Vector4i &p_voxel, const Ref<VoxelGenerator4D> &p_generator) const;
 
 	// Grafts a generated chunk into the data, taking ownership of it. The
 	// chunk is discarded if that chunk of the data is already defined. The

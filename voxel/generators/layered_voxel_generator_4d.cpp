@@ -136,7 +136,22 @@ VoxelEdgeData4D LayeredVoxelGenerator4D::get_edge_data(const Vector4i &p_voxel, 
 	return edge_data;
 }
 
+bool LayeredVoxelGenerator4D::contains_generator(const VoxelGenerator4D *p_generator) const {
+	if (VoxelGenerator4D::contains_generator(p_generator)) {
+		return true;
+	}
+	for (const Ref<VoxelGenerator4D> &layer : _layers) {
+		if (layer.is_valid() && layer->contains_generator(p_generator)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void LayeredVoxelGenerator4D::set_layers(const Vector<Ref<VoxelGenerator4D>> &p_layers) {
+	for (const Ref<VoxelGenerator4D> &layer : p_layers) {
+		ERR_FAIL_COND_MSG(layer.is_valid() && layer->contains_generator(this), "LayeredVoxelGenerator4D cannot use itself as a layer, directly or through other generators. Refusing to set.");
+	}
 	_layers = p_layers;
 	emit_changed();
 }
@@ -151,11 +166,12 @@ TypedArray<VoxelGenerator4D> LayeredVoxelGenerator4D::get_layers_bind() const {
 }
 
 void LayeredVoxelGenerator4D::set_layers_bind(const TypedArray<VoxelGenerator4D> &p_layers) {
-	_layers.resize(p_layers.size());
+	Vector<Ref<VoxelGenerator4D>> layers;
+	layers.resize(p_layers.size());
 	for (int64_t i = 0; i < p_layers.size(); i++) {
-		_layers.set(i, p_layers[i]);
+		layers.set(i, p_layers[i]);
 	}
-	emit_changed();
+	set_layers(layers);
 }
 
 void LayeredVoxelGenerator4D::_bind_methods() {
