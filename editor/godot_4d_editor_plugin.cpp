@@ -23,7 +23,7 @@
 #include "editor/docks/editor_dock.h"
 #endif
 
-#if VERSION_HEX < 0x040400
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
 #define set_button_icon set_icon
 #endif
 #endif

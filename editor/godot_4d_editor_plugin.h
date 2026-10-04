@@ -25,7 +25,7 @@
 #elif GODOT_MODULE
 #include "editor/plugins/editor_plugin.h"
 
-#if VERSION_HEX < 0x040400
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
 #define GDEXTMOD_GET_PLUGIN_ICON get_icon
 #define GDEXTMOD_GET_PLUGIN_NAME get_name
 #else

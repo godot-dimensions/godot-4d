@@ -45,7 +45,7 @@ void EditorImportPluginG4MFScene4D::get_import_options(const String &p_path, Lis
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "preferred_mesh_format", PROPERTY_HINT_ENUM, "Polytope,Tetrahedral,Wireframe"), G4MFMeshSurface4D::MESH_SURFACE_FORMAT_POLYTOPE));
 }
 
-#if VERSION_HEX < 0x040400
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
 Error EditorImportPluginG4MFScene4D::import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
 #else
 Error EditorImportPluginG4MFScene4D::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
