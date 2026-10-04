@@ -74,6 +74,16 @@ RenderingServer4D::~RenderingServer4D() {
 	singleton = nullptr;
 }
 
+RenderingServer *RenderingServer4D::get_godot_rendering_server() {
+#if GDEXTENSION
+	// Calling RenderingServer::get_singleton() before Godot registers it prints errors, so check first.
+	if (!Engine::get_singleton()->has_singleton(StringName("RenderingServer"))) {
+		return nullptr;
+	}
+#endif
+	return RenderingServer::get_singleton();
+}
+
 double RenderingServer4D::get_render_time() const {
 #if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3))
 	Time *time_singleton = Time::get_singleton();

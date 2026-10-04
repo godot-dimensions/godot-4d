@@ -1,6 +1,7 @@
 #include "wire_material_4d.h"
 
 #include "../../../render/3d/shaders/wireframe_shader_3d.glsl.gen.h"
+#include "../../../render/rendering_server_4d.h"
 
 #if GDEXTENSION
 #include <godot_cpp/classes/rendering_server.hpp>
@@ -120,8 +121,9 @@ void WireMaterial4D::init_shaders() {
 	_wireframe_shader_3d.instantiate();
 	_wireframe_shader_3d->set_name(String("Wireframe Shader 4D in 3D"));
 	_wireframe_shader_3d->set_code(wireframe_shader_3d_shader_glsl);
-	if (RenderingServer::get_singleton() != nullptr) {
-		RenderingServer::get_singleton()->shader_set_path_hint(_wireframe_shader_3d->get_rid(), String("Wireframe Shader 4D in 3D"));
+	RenderingServer *rendering_server = RenderingServer4D::get_godot_rendering_server();
+	if (rendering_server != nullptr) {
+		rendering_server->shader_set_path_hint(_wireframe_shader_3d->get_rid(), String("Wireframe Shader 4D in 3D"));
 	}
 }
 

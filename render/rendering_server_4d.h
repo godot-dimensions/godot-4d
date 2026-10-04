@@ -3,11 +3,13 @@
 #include "rendering_engine_4d.h"
 
 #if GDEXTENSION
+#include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
 #include <godot_cpp/templates/vector.hpp>
 #elif GODOT_MODULE
 #include "core/templates/hash_set.h"
+class RenderingServer;
 #endif
 
 class Light4D;
@@ -70,6 +72,9 @@ public:
 	void set_render_time(const double p_render_time);
 
 	static RenderingServer4D *get_singleton() { return singleton; }
+	// Godot's RenderingServer, or null if it is not available. `--test` runs without one, and in GDExtension
+	// builds, it can't be found during the SCENE initialization level, before Godot registers it by name.
+	static RenderingServer *get_godot_rendering_server();
 	RenderingServer4D();
 	~RenderingServer4D();
 };

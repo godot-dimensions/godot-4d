@@ -1,5 +1,6 @@
 #include "physical_sky_material_4d.h"
 
+#include "../../rendering_server_4d.h"
 #include "physical_sky_shader.glsl.gen.h"
 
 #if GDEXTENSION
@@ -102,8 +103,9 @@ void PhysicalSkyMaterial4D::init_shader() {
 	_shader.instantiate();
 	_shader->set_name(String("4D Physical Sky Shader"));
 	_shader->set_code(physical_sky_shader_shader_glsl);
-	if (RenderingServer::get_singleton() != nullptr) {
-		RenderingServer::get_singleton()->shader_set_path_hint(_shader->get_rid(), String("4D Physical Sky Shader"));
+	RenderingServer *rendering_server = RenderingServer4D::get_godot_rendering_server();
+	if (rendering_server != nullptr) {
+		rendering_server->shader_set_path_hint(_shader->get_rid(), String("4D Physical Sky Shader"));
 	}
 }
 

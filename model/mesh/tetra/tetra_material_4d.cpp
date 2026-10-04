@@ -2,6 +2,7 @@
 
 #include "../../../render/3d/cross_section/tetra_cross_section_shader.glsl.gen.h"
 #include "../../../render/3d/shaders/tetra_light_shader.glsl.gen.h"
+#include "../../../render/rendering_server_4d.h"
 #include "tetra_mesh_4d.h"
 
 #ifdef RD_ENABLED
@@ -256,12 +257,13 @@ void TetraMaterial4D::init_shaders() {
 	_cross_section_shader_3d.instantiate();
 	_cross_section_shader_3d->set_name(String("Tetra Cross-Section Shader"));
 	_cross_section_shader_3d->set_code(cross_section_shader_code);
-	// RenderingServer path hint. Note: This will never be null in normal runs as long as
+	// RenderingServer path hint. Note: This will never be null in normal module runs as long as
 	// `TetraMaterial4D::init_shaders` is called at the appropriate time, however...
-	// `--test` initializes scene-level modules without creating a RenderingServer singleton.
+	// `--test` initializes scene-level modules without creating a RenderingServer singleton,
+	// and GDExtension builds can't find it during scene-level initialization.
 	// The above Shader setup is safe always, while the path hint is non-critical,
 	// so we can safely skip setting the path hint when RenderingServer is null.
-	RenderingServer *rendering_server = RenderingServer::get_singleton();
+	RenderingServer *rendering_server = RenderingServer4D::get_godot_rendering_server();
 	if (rendering_server != nullptr) {
 		rendering_server->shader_set_path_hint(_cross_section_shader_3d->get_rid(), String("Tetra Cross-Section Shader"));
 	}

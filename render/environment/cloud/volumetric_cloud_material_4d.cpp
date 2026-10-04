@@ -1,5 +1,6 @@
 #include "volumetric_cloud_material_4d.h"
 
+#include "../../rendering_server_4d.h"
 #include "../sky/gradient_sky_material_4d.h"
 #include "../sky/physical_sky_material_4d.h"
 #include "../sky/plain_sky_material_4d.h"
@@ -51,8 +52,9 @@ void VolumetricCloudMaterial4D::_initialize_cloud_shader(Ref<Shader> &r_shader, 
 	r_shader.instantiate();
 	r_shader->set_name(p_name);
 	r_shader->set_code(p_code);
-	if (RenderingServer::get_singleton() != nullptr) {
-		RenderingServer::get_singleton()->shader_set_path_hint(r_shader->get_rid(), p_name);
+	RenderingServer *rendering_server = RenderingServer4D::get_godot_rendering_server();
+	if (rendering_server != nullptr) {
+		rendering_server->shader_set_path_hint(r_shader->get_rid(), p_name);
 	}
 }
 
