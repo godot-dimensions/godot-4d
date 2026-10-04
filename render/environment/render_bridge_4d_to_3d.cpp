@@ -9,7 +9,7 @@ static constexpr double CLOUD_NOISE_PERIOD = 289.0;
 static constexpr double CLOUD_SHAPE_OCTAVE_2_LACUNARITY = 2.03;
 static constexpr double CLOUD_SHAPE_OCTAVE_3_LACUNARITY = CLOUD_SHAPE_OCTAVE_2_LACUNARITY * 2.01;
 
-static Vector4 calculate_cloud_wind_offset(const Vector4 &p_wind_velocity, double p_time, double p_noise_scale) {
+Vector4 EnvironmentRenderBridge4DTo3D::_calculate_cloud_wind_offset(const Vector4 &p_wind_velocity, const double p_time, const double p_noise_scale) {
 	const double normalized_time = p_time / MAX(p_noise_scale, 0.0001);
 	// Perform each modulo in double precision before constructing the float-backed Vector4.
 	// Multiplying a Vector4 by an epoch-sized time before calling Vector4::posmod() would
@@ -233,10 +233,10 @@ void EnvironmentRenderBridge4DTo3D::update_environment(Camera4D *p_camera) {
 		const Vector4 wind_velocity = cloud_material->get_wind_velocity();
 		const double shape_scale = cloud_material->get_shape_scale();
 		_set_sky_shader_parameter("cloud_evolution_cos_sin", evolution_cos_sin);
-		_set_sky_shader_parameter("cloud_shape_wind_offset_4d", calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale));
-		_set_sky_shader_parameter("cloud_shape_octave_2_wind_offset_4d", calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale / CLOUD_SHAPE_OCTAVE_2_LACUNARITY));
-		_set_sky_shader_parameter("cloud_shape_octave_3_wind_offset_4d", calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale / CLOUD_SHAPE_OCTAVE_3_LACUNARITY));
-		_set_sky_shader_parameter("cloud_detail_wind_offset_4d", calculate_cloud_wind_offset(wind_velocity, cloud_time, cloud_material->get_detail_scale()));
+		_set_sky_shader_parameter("cloud_shape_wind_offset_4d", _calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale));
+		_set_sky_shader_parameter("cloud_shape_octave_2_wind_offset_4d", _calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale / CLOUD_SHAPE_OCTAVE_2_LACUNARITY));
+		_set_sky_shader_parameter("cloud_shape_octave_3_wind_offset_4d", _calculate_cloud_wind_offset(wind_velocity, cloud_time, shape_scale / CLOUD_SHAPE_OCTAVE_3_LACUNARITY));
+		_set_sky_shader_parameter("cloud_detail_wind_offset_4d", _calculate_cloud_wind_offset(wind_velocity, cloud_time, cloud_material->get_detail_scale()));
 	}
 }
 

@@ -37,6 +37,7 @@ private:
 	// The surface data of the active edges, in edge index order.
 	LocalVector<PackedVoxelEdgeData4D> _edge_data;
 
+	static int32_t _count_set_bits(uint64_t p_bits);
 	int32_t _get_edge_data_index(const int32_t p_edge_index) const;
 
 public:

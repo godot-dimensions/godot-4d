@@ -3,7 +3,7 @@
 #include "voxel_mesher_4d.h"
 #include "voxel_world_4d.h"
 
-static int32_t _floor_to_mesh_chunk_grid(const int32_t p_coord) {
+int32_t VoxelMeshHandler4D::_floor_to_mesh_chunk_grid(const int32_t p_coord) {
 	return p_coord - (int32_t)Math::posmod(p_coord, VOXEL_4D_MESH_CHUNK_SIZE);
 }
 

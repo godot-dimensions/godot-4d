@@ -53,6 +53,7 @@ private:
 	bool _should_mouse_motion_affect_4d(const Ref<InputEventMouseMotion> &p_ev_mouse_motion) const;
 	static void _gather_non_empty_visible_mesh_4d_nodes(Node *p_edited_scene_root, Node *p_from_node, Node *p_target_node, Vector<Node4D *> &r_nodes, Vector<Node *> &r_targets, Vector<Rect4> &r_rect_bounds);
 	static Node *_raycast_from_mouse(const Vector2 &p_mouse_position, const Camera4D *p_camera);
+	static String _format_number(const double p_number);
 	void _project_settings_changed();
 	void _update_theme();
 

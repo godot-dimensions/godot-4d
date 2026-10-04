@@ -15,14 +15,6 @@ enum class VoxelMaterial4D : uint8_t {
 	CUSTOM_COUNT = AIR,
 };
 
-inline bool is_material_opaque(const VoxelMaterial4D p_material) {
-	return p_material < VoxelMaterial4D::CUSTOM_COUNT;
-}
-
-inline VoxelMaterial4D overlay_material(const VoxelMaterial4D p_over, const VoxelMaterial4D p_under) {
-	return p_over == VoxelMaterial4D::UNDEFINED ? p_under : p_over;
-}
-
 // Whether a face of the surface mesh separates two adjacent voxels, and which
 // of them its normal points toward.
 enum class VoxelFace4D {
@@ -31,18 +23,30 @@ enum class VoxelFace4D {
 	TOWARD_SECOND,
 };
 
-// The face needed between adjacent voxels of the two materials, depending on
-// their opacity.
-// While this may be extended to other cases later, the relation of having no
-// face should always remain an equivalence relation among materials other than
-// UNDEFINED, in order to ensure meshes are watertight, manifold, and closed.
-inline VoxelFace4D get_face_between(const VoxelMaterial4D p_first, const VoxelMaterial4D p_second) {
-	if (p_first == VoxelMaterial4D::UNDEFINED || p_second == VoxelMaterial4D::UNDEFINED) {
-		return VoxelFace4D::NONE;
+// Utility functions for VoxelMaterial4D values, which as an enum cannot have
+// methods of its own.
+struct VoxelMaterialUtil4D {
+	static bool is_material_opaque(const VoxelMaterial4D p_material) {
+		return p_material < VoxelMaterial4D::CUSTOM_COUNT;
 	}
-	const bool first_opaque = is_material_opaque(p_first);
-	if (first_opaque == is_material_opaque(p_second)) {
-		return VoxelFace4D::NONE;
+
+	static VoxelMaterial4D overlay_material(const VoxelMaterial4D p_over, const VoxelMaterial4D p_under) {
+		return p_over == VoxelMaterial4D::UNDEFINED ? p_under : p_over;
 	}
-	return first_opaque ? VoxelFace4D::TOWARD_SECOND : VoxelFace4D::TOWARD_FIRST;
-}
+
+	// The face needed between adjacent voxels of the two materials, depending on
+	// their opacity.
+	// While this may be extended to other cases later, the relation of having no
+	// face should always remain an equivalence relation among materials other than
+	// UNDEFINED, in order to ensure meshes are watertight, manifold, and closed.
+	static VoxelFace4D get_face_between(const VoxelMaterial4D p_first, const VoxelMaterial4D p_second) {
+		if (p_first == VoxelMaterial4D::UNDEFINED || p_second == VoxelMaterial4D::UNDEFINED) {
+			return VoxelFace4D::NONE;
+		}
+		const bool first_opaque = is_material_opaque(p_first);
+		if (first_opaque == is_material_opaque(p_second)) {
+			return VoxelFace4D::NONE;
+		}
+		return first_opaque ? VoxelFace4D::TOWARD_SECOND : VoxelFace4D::TOWARD_FIRST;
+	}
+};

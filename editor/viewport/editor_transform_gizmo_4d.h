@@ -5,6 +5,7 @@
 #include "editor_transform_snap_settings_4d.h"
 #include "editor_viewport_4d_defines.h"
 
+class ArrayWireMesh4D;
 class Camera4D;
 class RenderingEngine4D;
 class WireMaterial4D;
@@ -103,10 +104,20 @@ private:
 	bool _are_generated_meshes_wireframes = false;
 
 	// Setup functions.
+	static Ref<WireMaterial4D> _make_single_color_wire_material_4d(const Color &p_color);
+	static Ref<WireMaterial4D> _make_plane_material_4d(const Color &p_first_color, const Color &p_second_color);
+	static Ref<WireMaterial4D> _make_rotation_ring_material_4d(const Color &p_first_color, const Color &p_second_color);
+	static Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh_4d();
+	static Ref<ArrayWireMesh4D> _make_rotation_ring_wire_mesh_4d();
+	static Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh_4d();
+	static Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d();
+	static Ref<ArrayWireMesh4D> _make_stretch_triplane_wire_mesh_4d();
 	MeshInstance4D *_make_mesh_instance_4d(const StringName &p_name, const Ref<Mesh4D> &p_mesh, const Ref<WireMaterial4D> &p_material, Node4D *p_parent);
 	void _generate_gizmo_meshes(const PackedColorArray &p_axis_colors);
 
 	// Misc internal functions.
+	static Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp);
+	static Vector4 _origin_axis_aligned_bivector_ring_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp);
 	bool _gizmo_mouse_raycast(const Ref<InputEventMouse> &p_mouse_event, const Camera4D *p_camera, const Vector4 &p_local_ray_origin, const Vector4 &p_local_ray_direction, const Vector4 &p_local_perp_direction);
 	void _on_rendering_server_pre_render(Camera4D *p_camera, Viewport *p_viewport, RenderingEngine4D *p_rendering_engine);
 	void _on_editor_inspector_property_edited(const String &p_prop);

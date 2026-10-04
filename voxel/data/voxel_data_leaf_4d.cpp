@@ -1,6 +1,6 @@
 #include "voxel_data_leaf_4d.h"
 
-static int32_t _count_set_bits(uint64_t p_bits) {
+int32_t VoxelDataLeaf4D::_count_set_bits(uint64_t p_bits) {
 	p_bits = p_bits - ((p_bits >> 1) & 0x5555555555555555ULL);
 	p_bits = (p_bits & 0x3333333333333333ULL) + ((p_bits >> 2) & 0x3333333333333333ULL);
 	p_bits = (p_bits + (p_bits >> 4)) & 0x0F0F0F0F0F0F0F0FULL;

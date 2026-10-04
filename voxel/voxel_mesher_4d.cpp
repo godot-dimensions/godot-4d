@@ -68,7 +68,7 @@ void VoxelMesher4D::eigen_decompose_symmetric_4(const Basis4D &p_matrix, Vector4
 // A cell's 32 primal edges are identified by the edge's axis and the position
 // of its lower voxel among the cell's 16 voxels, packed into the slot's low
 // bits in ascending axis order, skipping the edge's own axis.
-static int _edge_slot(const int p_axis, const Vector4i &p_cell_local_lower) {
+int VoxelMesher4D::_edge_slot(const int p_axis, const Vector4i &p_cell_local_lower) {
 	int block = 0;
 	int bit = 0;
 	for (int i = 0; i < 4; i++) {
@@ -84,7 +84,7 @@ static int _edge_slot(const int p_axis, const Vector4i &p_cell_local_lower) {
 // Minimizes the quadratic error of a group of surface crossings. Solves
 // relative to the average crossing point, so that directions the crossings do
 // not constrain keep the vertex there instead of pulling it elsewhere.
-static Vector4 _solve_vertex(const Basis4D &p_ata, const Vector4 &p_atb, const Vector4 &p_point_sum, const int p_crossing_count) {
+Vector4 VoxelMesher4D::_solve_vertex(const Basis4D &p_ata, const Vector4 &p_atb, const Vector4 &p_point_sum, const int p_crossing_count) {
 	const Vector4 centroid = p_point_sum / (real_t)p_crossing_count;
 	const Vector4 residual = p_atb - p_ata.xform(centroid);
 	Vector4 values;
@@ -99,14 +99,14 @@ static Vector4 _solve_vertex(const Basis4D &p_ata, const Vector4 &p_atb, const V
 }
 
 // How far a couple's two crossings are from lying along each other's surfaces.
-static real_t _couple_mismatch(const Vector4 &p_point_1, const Vector4 &p_normal_1, const Vector4 &p_point_2, const Vector4 &p_normal_2) {
+real_t VoxelMesher4D::_couple_mismatch(const Vector4 &p_point_1, const Vector4 &p_normal_1, const Vector4 &p_point_2, const Vector4 &p_normal_2) {
 	const Vector4 offset = p_point_2 - p_point_1;
 	const real_t offset_1 = p_normal_1.dot(offset);
 	const real_t offset_2 = p_normal_2.dot(offset);
 	return offset_1 * offset_1 + offset_2 * offset_2;
 }
 
-static int _find_surface_root(int *p_parent, int p_slot) {
+int VoxelMesher4D::_find_surface_root(int *p_parent, int p_slot) {
 	while (p_parent[p_slot] != p_slot) {
 		p_parent[p_slot] = p_parent[p_parent[p_slot]];
 		p_slot = p_parent[p_slot];
@@ -115,7 +115,7 @@ static int _find_surface_root(int *p_parent, int p_slot) {
 }
 
 // Connects the surfaces containing the two crossings.
-static void _union_surfaces(int *p_parent, const int p_slot_a, const int p_slot_b) {
+void VoxelMesher4D::_union_surfaces(int *p_parent, const int p_slot_a, const int p_slot_b) {
 	p_parent[_find_surface_root(p_parent, p_slot_a)] = _find_surface_root(p_parent, p_slot_b);
 }
 
@@ -127,7 +127,7 @@ static void _union_surfaces(int *p_parent, const int p_slot_a, const int p_slot_
 // diagonal of corners that pairing leaves connected between its surfaces needs
 // a face between its materials: then the surfaces meet at a junction instead,
 // and all 4 crossings connect.
-static void _pair_square_crossings(int *p_union_set, const bool *p_active, const int p_slots[4], const VoxelMaterial4D p_corner_materials[4], const Vector4 *p_points, const Vector4 *p_normals) {
+void VoxelMesher4D::_pair_square_crossings(int *p_union_set, const bool *p_active, const int p_slots[4], const VoxelMaterial4D p_corner_materials[4], const Vector4 *p_points, const Vector4 *p_normals) {
 	int active_count = 0;
 	for (int k = 0; k < 4; k++) {
 		if (p_active[p_slots[k]]) {
@@ -163,7 +163,7 @@ static void _pair_square_crossings(int *p_union_set, const bool *p_active, const
 	const bool couple_01_23 = total_01_23 <= total_03_12;
 	// The pairing wraps the two corners its couples surround and leaves the
 	// other diagonal's corners in the region between its surfaces.
-	if (get_face_between(p_corner_materials[couple_01_23 ? 0 : 1], p_corner_materials[couple_01_23 ? 2 : 3]) != VoxelFace4D::NONE) {
+	if (VoxelMaterialUtil4D::get_face_between(p_corner_materials[couple_01_23 ? 0 : 1], p_corner_materials[couple_01_23 ? 2 : 3]) != VoxelFace4D::NONE) {
 		_union_surfaces(p_union_set, p_slots[1], p_slots[0]);
 		_union_surfaces(p_union_set, p_slots[2], p_slots[0]);
 		_union_surfaces(p_union_set, p_slots[3], p_slots[0]);
@@ -178,7 +178,7 @@ static void _pair_square_crossings(int *p_union_set, const bool *p_active, const
 	}
 }
 
-struct CellSurfaces4D {
+struct VoxelMesher4D::CellSurfaces4D {
 	// The surface each of the cell's 32 primal edge crossings belongs to, -1
 	// where the edge has no crossing.
 	int8_t edge_surfaces[32];
@@ -190,7 +190,7 @@ struct CellSurfaces4D {
 // surface: crossings are grouped into surfaces as connected components, where
 // each of the cell's 24 squares connects its crossings as decided by
 // _pair_square_crossings.
-static const CellSurfaces4D &_get_cell_surfaces(HashMap<Vector4i, CellSurfaces4D> &r_cells, PackedVector4Array &r_vertices, const VoxelDataNeighborhood4D &p_neighborhood, const Vector4i &p_chunk_position, const Vector4i &p_lattice_local) {
+const VoxelMesher4D::CellSurfaces4D &VoxelMesher4D::_get_cell_surfaces(HashMap<Vector4i, CellSurfaces4D> &r_cells, PackedVector4Array &r_vertices, const VoxelDataNeighborhood4D &p_neighborhood, const Vector4i &p_chunk_position, const Vector4i &p_lattice_local) {
 	CellSurfaces4D *existing = r_cells.getptr(p_lattice_local);
 	if (existing != nullptr) {
 		return *existing;
@@ -406,7 +406,7 @@ Ref<TetraMesh4D> VoxelMesher4D::generate_chunk_mesh(const VoxelDataNeighborhood4
 						// A face belongs to the chunk containing the lower
 						// voxel of the edge it crosses, like the edge's
 						// surface data.
-						const VoxelFace4D face = get_face_between(material, upper_material);
+						const VoxelFace4D face = VoxelMaterialUtil4D::get_face_between(material, upper_material);
 						if (face == VoxelFace4D::NONE) {
 							continue;
 						}

@@ -42,7 +42,7 @@ LocalVector<VoxelLoadTrigger4D *> VoxelChunkLoader4D::_get_load_triggers() const
 }
 
 // One trigger's requirements, in voxel space.
-struct TriggerRange4D {
+struct VoxelChunkLoader4D::TriggerRange4D {
 	Vector4 center;
 	real_t load_radius = 0.0f;
 	real_t unload_radius = 0.0f;
@@ -50,7 +50,7 @@ struct TriggerRange4D {
 
 // The squared distances from the point to the nearest and farthest chunk
 // centers in the region, which must be chunk-aligned.
-static void _chunk_center_distance_range(const Rect4i &p_region, const Vector4 &p_point, real_t &r_min_squared, real_t &r_max_squared) {
+void VoxelChunkLoader4D::_chunk_center_distance_range(const Rect4i &p_region, const Vector4 &p_point, real_t &r_min_squared, real_t &r_max_squared) {
 	r_min_squared = 0.0f;
 	r_max_squared = 0.0f;
 	for (int axis = 0; axis < 4; axis++) {
@@ -66,7 +66,7 @@ static void _chunk_center_distance_range(const Rect4i &p_region, const Vector4 &
 
 // The nearest voxel inside the bounds, or the voxel itself if the bounds are
 // null (unlimited) or it is already inside.
-static Vector4i _clamp_voxel(const Vector4i &p_voxel, const Rect4i *p_bounds) {
+Vector4i VoxelChunkLoader4D::_clamp_voxel(const Vector4i &p_voxel, const Rect4i *p_bounds) {
 	if (p_bounds == nullptr) {
 		return p_voxel;
 	}
@@ -91,7 +91,7 @@ static Vector4i _clamp_voxel(const Vector4i &p_voxel, const Rect4i *p_bounds) {
 // where children would be, without splitting the node. The scan does not
 // modify the tree, so that its shape stays stable while it is being
 // traversed; the collected chunks are queued and unloaded afterwards.
-static void _scan_required_chunks(const VoxelDataTree4D *p_node, const Rect4i &p_bounds, const LocalVector<TriggerRange4D> &p_triggers, const Rect4i *p_world_bounds, LocalVector<Vector4i> &r_loads, LocalVector<Vector4i> &r_unloads) {
+void VoxelChunkLoader4D::_scan_required_chunks(const VoxelDataTree4D *p_node, const Rect4i &p_bounds, const LocalVector<TriggerRange4D> &p_triggers, const Rect4i *p_world_bounds, LocalVector<Vector4i> &r_loads, LocalVector<Vector4i> &r_unloads) {
 	const bool covered = p_node->is_defined_or_pending();
 	const bool inside_world = p_world_bounds == nullptr || p_world_bounds->intersects_exclusive(p_bounds);
 	if (p_bounds.size.x == VOXEL_4D_DATA_CHUNK_SIZE) {

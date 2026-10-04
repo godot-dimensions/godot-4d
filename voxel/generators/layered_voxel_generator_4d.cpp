@@ -91,8 +91,8 @@ VoxelEdgeData4D LayeredVoxelGenerator4D::get_edge_data(const Vector4i &p_voxel, 
 	VoxelMaterial4D upper_material = VoxelMaterial4D::UNDEFINED;
 	for (int64_t i = (int64_t)samples.size() - 1; i >= 0; i--) {
 		const LayerSample4D &sample = samples[i];
-		const VoxelMaterial4D new_lower = overlay_material(sample.lower, lower_material);
-		const VoxelMaterial4D new_upper = overlay_material(sample.upper, upper_material);
+		const VoxelMaterial4D new_lower = VoxelMaterialUtil4D::overlay_material(sample.lower, lower_material);
+		const VoxelMaterial4D new_upper = VoxelMaterialUtil4D::overlay_material(sample.upper, upper_material);
 		if (new_lower != VoxelMaterial4D::UNDEFINED && new_upper != VoxelMaterial4D::UNDEFINED) {
 			if (new_lower == new_upper) {
 				has_edge_data = false;

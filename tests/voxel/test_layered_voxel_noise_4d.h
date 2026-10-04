@@ -45,14 +45,14 @@ TEST_CASE("[LayeredVoxelNoise4D] Seed derivation") {
 		HashSet<uint32_t> seen;
 		seen.insert(seed);
 		for (uint32_t index = 0; index < 1000; index++) {
-			const uint32_t derived = derive_seed(seed, index);
+			const uint32_t derived = LayeredVoxelNoise4D::derive_seed(seed, index);
 			all_distinct = all_distinct && !seen.has(derived);
 			seen.insert(derived);
 		}
 		// Chains of derivations in different orders also stay distinct.
 		for (uint32_t a = 0; a < 8; a++) {
 			for (uint32_t b = 0; b < 8; b++) {
-				const uint32_t derived = derive_seed(derive_seed(seed, a), b);
+				const uint32_t derived = LayeredVoxelNoise4D::derive_seed(LayeredVoxelNoise4D::derive_seed(seed, a), b);
 				all_distinct = all_distinct && !seen.has(derived);
 				seen.insert(derived);
 			}

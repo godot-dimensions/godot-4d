@@ -20,6 +20,8 @@ class VoxelData4D : public RefCounted {
 	VoxelDataTree4D *_tree = nullptr;
 	Ref<VoxelGenerator4D> _generator;
 
+	static bool _is_tree_empty(const VoxelDataTree4D &p_node);
+
 protected:
 	static void _bind_methods();
 

@@ -41,7 +41,7 @@ static_assert(MOVE_ARROW_SUBDIVISIONS_4D > 1);
 static_assert(ROTATION_RING_SEGMENTS_4D % 8 == 0);
 static_assert(SCALE_BOX_SUBDIVISIONS_4D > 1);
 
-Ref<WireMaterial4D> _make_single_color_wire_material_4d(const Color &p_color) {
+Ref<WireMaterial4D> EditorTransformGizmo4D::_make_single_color_wire_material_4d(const Color &p_color) {
 	Ref<WireMaterial4D> mat;
 	mat.instantiate();
 	mat->set_line_thickness(LINE_THICKNESS_4D);
@@ -50,7 +50,7 @@ Ref<WireMaterial4D> _make_single_color_wire_material_4d(const Color &p_color) {
 	return mat;
 }
 
-Ref<WireMaterial4D> _make_plane_material_4d(const Color &p_first_color, const Color &p_second_color) {
+Ref<WireMaterial4D> EditorTransformGizmo4D::_make_plane_material_4d(const Color &p_first_color, const Color &p_second_color) {
 	Ref<WireMaterial4D> mat;
 	mat.instantiate();
 	mat->set_line_thickness(LINE_THICKNESS_4D);
@@ -67,7 +67,7 @@ Ref<WireMaterial4D> _make_plane_material_4d(const Color &p_first_color, const Co
 	return mat;
 }
 
-Ref<WireMaterial4D> _make_rotation_ring_material_4d(const Color &p_first_color, const Color &p_second_color) {
+Ref<WireMaterial4D> EditorTransformGizmo4D::_make_rotation_ring_material_4d(const Color &p_first_color, const Color &p_second_color) {
 	Ref<WireMaterial4D> mat;
 	mat.instantiate();
 	mat->set_line_thickness(LINE_THICKNESS_4D);
@@ -90,7 +90,7 @@ Ref<WireMaterial4D> _make_rotation_ring_material_4d(const Color &p_first_color, 
 	return mat;
 }
 
-Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh_4d() {
+Ref<ArrayWireMesh4D> EditorTransformGizmo4D::_make_move_arrow_wire_mesh_4d() {
 	// First, create a 3D sphere for the base of the 4D arrow.
 	// For symmetry between all axes, make a subdivided octahedron and normalize it.
 	Ref<ArrayWireMesh4D> mesh = WireMeshBuilder4D::create_3d_orthoplex_sphere(MOVE_ARROW_RADIUS_4D, MOVE_ARROW_SUBDIVISIONS_4D, MOVE_ARROW_TIP_POSITION_4D);
@@ -105,7 +105,7 @@ Ref<ArrayWireMesh4D> _make_move_arrow_wire_mesh_4d() {
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> _make_rotation_ring_wire_mesh_4d() {
+Ref<ArrayWireMesh4D> EditorTransformGizmo4D::_make_rotation_ring_wire_mesh_4d() {
 	PackedVector4Array vertex_positions;
 	PackedInt32Array edge_indices;
 	vertex_positions.resize(ROTATION_RING_SEGMENTS_4D);
@@ -128,7 +128,7 @@ Ref<ArrayWireMesh4D> _make_rotation_ring_wire_mesh_4d() {
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh_4d() {
+Ref<ArrayWireMesh4D> EditorTransformGizmo4D::_make_scale_box_wire_mesh_4d() {
 	Ref<BoxWireMesh4D> box_mesh;
 	box_mesh.instantiate();
 	box_mesh->set_size(Vector4(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D));
@@ -138,7 +138,7 @@ Ref<ArrayWireMesh4D> _make_scale_box_wire_mesh_4d() {
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
+Ref<ArrayWireMesh4D> EditorTransformGizmo4D::_make_plane_wire_mesh_4d() {
 	// Must match constexpr int PLANE_EDGES_4D.
 	PackedVector4Array vertex_positions = {
 		Vector4(-PLANE_RADIUS_4D * 0.9, -PLANE_RADIUS_4D, 0.0, 0.0), // First triangle lower left.
@@ -156,7 +156,7 @@ Ref<ArrayWireMesh4D> _make_plane_wire_mesh_4d() {
 	return mesh;
 }
 
-Ref<ArrayWireMesh4D> _make_stretch_triplane_wire_mesh_4d() {
+Ref<ArrayWireMesh4D> EditorTransformGizmo4D::_make_stretch_triplane_wire_mesh_4d() {
 	return WireMeshBuilder4D::create_3d_subdivided_box(Vector3(SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D, SCALE_BOX_RADIUS_4D), Vector3i(SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D, SCALE_BOX_SUBDIVISIONS_4D));
 }
 
@@ -452,7 +452,7 @@ String EditorTransformGizmo4D::_get_transform_part_simple_action_name(const Tran
 	return "Transform";
 }
 
-Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp) {
+Vector4 EditorTransformGizmo4D::_origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp) {
 	const Vector4 axis1_slid = Vector4D::slide(p_axis1, p_perp).normalized();
 	// These use exact equality checks, not approximate. Only exactly zero is a failure case.
 	if (axis1_slid == Vector4()) {
@@ -476,7 +476,7 @@ Vector4 _origin_axis_aligned_biplane_raycast(const Vector4 &p_ray_origin, const 
 	return Vector4();
 }
 
-Vector4 _origin_axis_aligned_bivector_ring_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp) {
+Vector4 EditorTransformGizmo4D::_origin_axis_aligned_bivector_ring_raycast(const Vector4 &p_ray_origin, const Vector4 &p_ray_direction, const Vector4 &p_axis1, const Vector4 &p_axis2, const Vector4 &p_perp) {
 	Vector4 plane_normal = Vector4D::perpendicular(p_axis1, p_axis2, p_perp);
 	if (plane_normal.length_squared() < CMP_EPSILON) {
 		return Vector4();

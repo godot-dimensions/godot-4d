@@ -3,7 +3,7 @@
 // The pseudo-random value in [-1, 1] of one lattice corner: the cell's
 // coordinates offset by the corner's bits, mixed with the seed through an
 // integer avalanche.
-static real_t _corner_value(const int32_t p_cell[4], const int p_corner_bits, const uint32_t p_seed) {
+real_t LayeredVoxelNoise4D::_corner_value(const int32_t p_cell[4], const int p_corner_bits, const uint32_t p_seed) {
 	uint32_t hash = p_seed;
 	for (int axis = 0; axis < 4; axis++) {
 		hash = (hash ^ (uint32_t)(p_cell[axis] + ((p_corner_bits >> axis) & 1))) * 0x9E3779B1u;
@@ -23,7 +23,7 @@ static real_t _corner_value(const int32_t p_cell[4], const int p_corner_bits, co
 // confined to a hypercube, and under translation, since it's very different
 // at lattice points). Once generation with caching instead of one point at
 // a time is implemented, this should be replaced.
-static real_t _value_noise(const Vector4 &p_position, const uint32_t p_seed, Vector4 *r_gradient) {
+real_t LayeredVoxelNoise4D::_value_noise(const Vector4 &p_position, const uint32_t p_seed, Vector4 *r_gradient) {
 	int32_t cell[4];
 	real_t fade[4];
 	real_t fade_derivative[4];

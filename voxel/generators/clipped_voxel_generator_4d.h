@@ -11,6 +11,9 @@ class ClippedVoxelGenerator4D : public VoxelGenerator4D {
 	Ref<VoxelGenerator4D> _base;
 	Ref<VoxelGenerator4D> _modifier;
 
+	static VoxelMaterial4D _clipped_material(const VoxelMaterial4D p_base, const VoxelMaterial4D p_modifier);
+	static int _transition_significance(const VoxelMaterial4D p_before, const VoxelMaterial4D p_after);
+
 protected:
 	static void _bind_methods();
 

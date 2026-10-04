@@ -33,6 +33,7 @@ class EnvironmentRenderBridge4DTo3D : public Object {
 	bool _background_uses_sky = false;
 
 	static bool _is_renderer_sky_shader_parameter(const StringName &p_name);
+	static Vector4 _calculate_cloud_wind_offset(const Vector4 &p_wind_velocity, const double p_time, const double p_noise_scale);
 	void _set_background_uses_sky(const bool p_enabled, const bool p_force_update = false);
 	void _set_sky_shader_parameter(const StringName &p_name, const Variant &p_value);
 	void _copy_material_shader_parameters(const Ref<ShaderMaterial> &p_source_material);

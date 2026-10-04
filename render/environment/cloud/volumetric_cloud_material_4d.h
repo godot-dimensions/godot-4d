@@ -31,6 +31,9 @@ private:
 	static Ref<Shader> _physical_sky_full_res_shader;
 	static Ref<Shader> _plain_sky_full_res_shader;
 
+	static String _compose_cloud_shader(const char *p_shader_prefix, const char *p_sky_function);
+	static void _initialize_cloud_shader(Ref<Shader> &r_shader, const String &p_name, const String &p_code);
+
 	Vector4 _wind_velocity = Vector4(12.0f, 0.0f, 4.0f, 2.0f);
 	Color _albedo_color = Color(1.0f, 1.0f, 1.0f);
 	Color _ambient_color = Color(0.42f, 0.48f, 0.58f);

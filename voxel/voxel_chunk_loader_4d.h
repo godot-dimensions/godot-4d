@@ -44,6 +44,8 @@ class VoxelChunkLoader4D : public Object {
 		SafeFlag revoked;
 	};
 
+	struct TriggerRange4D;
+
 	VoxelWorld4D *const _world;
 	// Every requested load that has not yet been stored, keyed by chunk
 	// position. Only touched from the main thread.
@@ -52,6 +54,9 @@ class VoxelChunkLoader4D : public Object {
 	static void _generate_load_task(const uint64_t p_task_pointer);
 	void _finish_load(const Vector4i &p_position);
 	LocalVector<VoxelLoadTrigger4D *> _get_load_triggers() const;
+	static void _chunk_center_distance_range(const Rect4i &p_region, const Vector4 &p_point, real_t &r_min_squared, real_t &r_max_squared);
+	static Vector4i _clamp_voxel(const Vector4i &p_voxel, const Rect4i *p_bounds);
+	static void _scan_required_chunks(const VoxelDataTree4D *p_node, const Rect4i &p_bounds, const LocalVector<TriggerRange4D> &p_triggers, const Rect4i *p_world_bounds, LocalVector<Vector4i> &r_loads, LocalVector<Vector4i> &r_unloads);
 
 protected:
 	static void _bind_methods() {}

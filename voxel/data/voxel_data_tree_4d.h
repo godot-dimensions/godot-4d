@@ -61,6 +61,7 @@ private:
 	// Moves the donor's contents into this node, which must be undefined and
 	// have identical bounds. The donor is left undefined.
 	void _take_contents(VoxelDataTree4D &p_donor);
+	static bool _borders_different_material(const Ref<VoxelGenerator4D> &p_generator, const Rect4i &p_bounds, const VoxelMaterial4D p_material);
 
 public:
 	Type get_type() const { return _type; }
@@ -178,6 +179,11 @@ struct VoxelDataNeighborhood4D {
 	// The zero direction; its neighbors entry is unused.
 	static constexpr int CENTER_DIRECTION = 40;
 
+private:
+	static bool _region_matches_material(const VoxelDataTree4D *p_node, const Rect4i &p_region, const VoxelMaterial4D p_material);
+	static void _reconcile_border(VoxelDataTree4D *p_lower, VoxelDataTree4D *p_upper, const int p_axis);
+
+public:
 	VoxelDataTree4D *node = nullptr;
 	// The nodes bordering the center node, including diagonally.
 	// Null where the neighboring region is outside the entire tree.

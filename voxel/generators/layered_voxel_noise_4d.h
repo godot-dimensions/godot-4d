@@ -8,20 +8,17 @@
 #include "core/templates/hashfuncs.h"
 #endif
 
-// Derives a stream of independent seeds from one seed. For a fixed seed the
-// derived seeds are all distinct, since the hash round is a bijection in the
-// index; any other collision, such as between seeds derived from different
-// seeds or by different chains of derivations, has probability 2^-32.
-inline uint32_t derive_seed(const uint32_t p_seed, const uint32_t p_index) {
-	return hash_fmix32(hash_murmur3_one_32(p_index, p_seed));
-}
-
 // Layered 4D value noise: octaves of smooth lattice noise summed with a
 // fixed lacunarity of 2, so each octave has twice the scale of the next
 // finer one. Generators may hold these and sample them as fields. This
 // is value noise, not something band-limited like Perlin or simplex,
 // because band-limiting doesn't work well in 4D anyway.
 struct LayeredVoxelNoise4D {
+private:
+	static real_t _corner_value(const int32_t p_cell[4], const int p_corner_bits, const uint32_t p_seed);
+	static real_t _value_noise(const Vector4 &p_position, const uint32_t p_seed, Vector4 *r_gradient);
+
+public:
 	uint32_t seed = 0;
 	// Must be between 1 and 16.
 	int octaves = 4;
@@ -32,6 +29,14 @@ struct LayeredVoxelNoise4D {
 	Vector4 scale = Vector4(1, 1, 1, 1);
 	// The amplitude of the coarsest octave.
 	real_t intensity = 1.0f;
+
+	// Derives a stream of independent seeds from one seed. For a fixed seed the
+	// derived seeds are all distinct, since the hash round is a bijection in the
+	// index; any other collision, such as between seeds derived from different
+	// seeds or by different chains of derivations, has probability 2^-32.
+	static uint32_t derive_seed(const uint32_t p_seed, const uint32_t p_index) {
+		return hash_fmix32(hash_murmur3_one_32(p_index, p_seed));
+	}
 
 	// The summed octaves at the given point. The gradient, when requested,
 	// is exact.

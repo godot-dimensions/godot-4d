@@ -170,7 +170,7 @@ void EditorMainViewport4D::navigation_pan(const Ref<InputEvent> &p_input_event) 
 	_editor_camera_4d->pan_camera(pan / get_size().y);
 }
 
-String _viewport_4d_format_number(const double p_number) {
+String EditorMainViewport4D::_format_number(const double p_number) {
 	const int decimals = MAX(0, 3 - log10(p_number));
 	String number_text = String::num(p_number, decimals);
 	if (number_text.length() < 3 && !number_text.contains(".")) {
@@ -181,12 +181,12 @@ String _viewport_4d_format_number(const double p_number) {
 
 void EditorMainViewport4D::navigation_change_speed(const double p_speed_change) {
 	const double speed_and_zoom = _editor_camera_4d->change_speed_and_zoom(p_speed_change);
-	set_information_text("Speed: " + _viewport_4d_format_number(speed_and_zoom) + "m/s");
+	set_information_text("Speed: " + _format_number(speed_and_zoom) + "m/s");
 }
 
 void EditorMainViewport4D::navigation_change_zoom(const double p_zoom_change) {
 	const double speed_and_zoom = _editor_camera_4d->change_speed_and_zoom(p_zoom_change);
-	set_information_text("Zoom: " + _viewport_4d_format_number(speed_and_zoom) + "m");
+	set_information_text("Zoom: " + _format_number(speed_and_zoom) + "m");
 }
 
 // The "target" refers to which node should actually be selected when a given node is clicked.

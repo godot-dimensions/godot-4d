@@ -199,7 +199,7 @@ void VoxelDataTree4D::mark_region_pending(const Rect4i &p_region) {
 	_defined_or_pending = all_defined_or_pending;
 }
 
-static bool _borders_different_material(const Ref<VoxelGenerator4D> &p_generator, const Rect4i &p_bounds, const VoxelMaterial4D p_material) {
+bool VoxelDataTree4D::_borders_different_material(const Ref<VoxelGenerator4D> &p_generator, const Rect4i &p_bounds, const VoxelMaterial4D p_material) {
 	const Vector4i end = p_bounds.get_end();
 	for (int axis = 0; axis < 4; axis++) {
 		int other_axes[3];
@@ -218,7 +218,7 @@ static bool _borders_different_material(const Ref<VoxelGenerator4D> &p_generator
 					outside[other_axes[1]] = p_bounds.position[other_axes[1]] + c1;
 					for (int32_t c2 = 0; c2 < p_bounds.size[other_axes[2]]; c2++) {
 						outside[other_axes[2]] = p_bounds.position[other_axes[2]] + c2;
-						if (overlay_material(p_generator->get_material(outside), VoxelMaterial4D::AIR) != p_material) {
+						if (VoxelMaterialUtil4D::overlay_material(p_generator->get_material(outside), VoxelMaterial4D::AIR) != p_material) {
 							return true;
 						}
 					}
@@ -242,7 +242,7 @@ void VoxelDataTree4D::generate(const Ref<VoxelGenerator4D> &p_generator) {
 		return;
 	}
 	VoxelDataLeaf4D *leaf = memnew(VoxelDataLeaf4D);
-	const VoxelMaterial4D first_material = overlay_material(p_generator->get_material(_bounds.position), VoxelMaterial4D::AIR);
+	const VoxelMaterial4D first_material = VoxelMaterialUtil4D::overlay_material(p_generator->get_material(_bounds.position), VoxelMaterial4D::AIR);
 	bool uniform = true;
 	for (int32_t w = 0; w < _bounds.size.w; w++) {
 		for (int32_t z = 0; z < _bounds.size.z; z++) {
@@ -251,7 +251,7 @@ void VoxelDataTree4D::generate(const Ref<VoxelGenerator4D> &p_generator) {
 					const Vector4i local_voxel = Vector4i(x, y, z, w);
 					// A generator returning UNDEFINED here is not valid,
 					// but as a fallback, UNDEFINED is replaced with air.
-					const VoxelMaterial4D material = overlay_material(p_generator->get_material(_bounds.position + local_voxel), VoxelMaterial4D::AIR);
+					const VoxelMaterial4D material = VoxelMaterialUtil4D::overlay_material(p_generator->get_material(_bounds.position + local_voxel), VoxelMaterial4D::AIR);
 					leaf->set_material(local_voxel, material);
 					uniform = uniform && material == first_material;
 				}
@@ -277,7 +277,7 @@ void VoxelDataTree4D::generate(const Ref<VoxelGenerator4D> &p_generator) {
 					for (int axis = 0; axis < 4; axis++) {
 						Vector4i neighbor_local = local_voxel;
 						neighbor_local[axis] += 1;
-						const VoxelMaterial4D neighbor_material = neighbor_local[axis] < _bounds.size[axis] ? leaf->get_material(neighbor_local) : overlay_material(p_generator->get_material(_bounds.position + neighbor_local), VoxelMaterial4D::AIR);
+						const VoxelMaterial4D neighbor_material = neighbor_local[axis] < _bounds.size[axis] ? leaf->get_material(neighbor_local) : VoxelMaterialUtil4D::overlay_material(p_generator->get_material(_bounds.position + neighbor_local), VoxelMaterial4D::AIR);
 						if (material != neighbor_material) {
 							leaf->set_edge_data(local_voxel, axis, p_generator->get_edge_data(_bounds.position + local_voxel, axis));
 						}
@@ -503,7 +503,7 @@ void VoxelDataTree4D::split_constant() {
 
 // Whether every defined voxel in the given region of the node has the given
 // material. The node must be a leaf or a constant.
-static bool _region_matches_material(const VoxelDataTree4D *p_node, const Rect4i &p_region, const VoxelMaterial4D p_material) {
+bool VoxelDataNeighborhood4D::_region_matches_material(const VoxelDataTree4D *p_node, const Rect4i &p_region, const VoxelMaterial4D p_material) {
 	if (p_node->is_constant()) {
 		const VoxelMaterial4D constant_material = p_node->get_constant_material();
 		return constant_material == VoxelMaterial4D::UNDEFINED || constant_material == p_material;
@@ -530,7 +530,7 @@ static bool _region_matches_material(const VoxelDataTree4D *p_node, const Rect4i
 // adjacent regions consistent with the materials at their ends, after edits
 // may have changed one side relative to what the other side's generation
 // assumed. If a surface must be added, it's flat on the border.
-static void _reconcile_border(VoxelDataTree4D *p_lower, VoxelDataTree4D *p_upper, const int p_axis) {
+void VoxelDataNeighborhood4D::_reconcile_border(VoxelDataTree4D *p_lower, VoxelDataTree4D *p_upper, const int p_axis) {
 	if (p_lower == nullptr || p_upper == nullptr || p_lower->is_undefined() || p_upper->is_undefined()) {
 		return;
 	}
@@ -668,8 +668,8 @@ void VoxelDataNeighborhood4D::apply_edit(const Ref<VoxelEdit4D> &p_edit) {
 						}
 						const VoxelMaterial4D old_lower = leaf_data->get_material(local_voxel);
 						const VoxelMaterial4D old_upper = get_material(upper_voxel);
-						const VoxelMaterial4D new_lower = overlay_material(edit_lower, old_lower);
-						const VoxelMaterial4D new_upper = overlay_material(edit_upper, old_upper);
+						const VoxelMaterial4D new_lower = VoxelMaterialUtil4D::overlay_material(edit_lower, old_lower);
+						const VoxelMaterial4D new_upper = VoxelMaterialUtil4D::overlay_material(edit_upper, old_upper);
 						if (new_lower == VoxelMaterial4D::UNDEFINED || new_upper == VoxelMaterial4D::UNDEFINED) {
 							// The edge leads into an undefined chunk.
 							continue;
@@ -708,7 +708,7 @@ void VoxelDataNeighborhood4D::apply_edit(const Ref<VoxelEdit4D> &p_edit) {
 				for (int32_t x = affected.position.x; x < end.x; x++) {
 					const Vector4i voxel = Vector4i(x, y, z, w);
 					const Vector4i local_voxel = voxel - bounds.position;
-					leaf_data->set_material(local_voxel, overlay_material(p_edit->get_material(voxel), leaf_data->get_material(local_voxel)));
+					leaf_data->set_material(local_voxel, VoxelMaterialUtil4D::overlay_material(p_edit->get_material(voxel), leaf_data->get_material(local_voxel)));
 				}
 			}
 		}

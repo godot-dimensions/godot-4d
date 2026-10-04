@@ -25,6 +25,8 @@ class VoxelMeshHandler4D {
 	// The positions of mesh chunks whose meshes no longer match the voxel data.
 	HashSet<Vector4i> _dirty_chunks;
 
+	static int32_t _floor_to_mesh_chunk_grid(const int32_t p_coord);
+
 public:
 	// Records that the voxel values inside the given region, and the surface
 	// normals of the edges inside it or on its surface (including edges just

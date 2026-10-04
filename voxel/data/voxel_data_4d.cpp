@@ -5,7 +5,7 @@
 
 // Whether the node covers nothing at all: neither data nor a pending load
 // mark.
-static bool _is_tree_empty(const VoxelDataTree4D &p_node) {
+bool VoxelData4D::_is_tree_empty(const VoxelDataTree4D &p_node) {
 	return p_node.is_undefined() && !p_node.is_defined_or_pending();
 }
 

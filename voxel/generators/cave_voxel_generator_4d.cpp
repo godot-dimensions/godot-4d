@@ -23,7 +23,7 @@ real_t CaveVoxelGenerator4D::_field_squared(const Vector4 &p_point, const bool p
 	LayeredVoxelNoise4D noise = _noise;
 	real_t total = 0.0f;
 	for (int i = 0; i < 3; i++) {
-		noise.seed = derive_seed(_noise.seed, (uint32_t)i);
+		noise.seed = LayeredVoxelNoise4D::derive_seed(_noise.seed, (uint32_t)i);
 		const real_t value = noise.sample(p_point, nullptr);
 		total += value * value;
 		// Once over the threshold, the point is outside the tunnels no
@@ -40,7 +40,7 @@ Vector4 CaveVoxelGenerator4D::_field_gradient(const Vector4 &p_point) const {
 	LayeredVoxelNoise4D noise = _noise;
 	Vector4 total;
 	for (int i = 0; i < 3; i++) {
-		noise.seed = derive_seed(_noise.seed, (uint32_t)i);
+		noise.seed = LayeredVoxelNoise4D::derive_seed(_noise.seed, (uint32_t)i);
 		Vector4 gradient;
 		const real_t value = noise.sample(p_point, &gradient);
 		total += value * gradient;

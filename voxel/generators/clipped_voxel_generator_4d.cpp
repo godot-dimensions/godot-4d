@@ -1,7 +1,7 @@
 #include "clipped_voxel_generator_4d.h"
 
 // The result at a point where the base and modifier have these materials.
-static VoxelMaterial4D _clipped_material(const VoxelMaterial4D p_base, const VoxelMaterial4D p_modifier) {
+VoxelMaterial4D ClippedVoxelGenerator4D::_clipped_material(const VoxelMaterial4D p_base, const VoxelMaterial4D p_modifier) {
 	if (p_base == VoxelMaterial4D::UNDEFINED) {
 		return VoxelMaterial4D::UNDEFINED;
 	}
@@ -22,11 +22,11 @@ VoxelMaterial4D ClippedVoxelGenerator4D::get_material(const Vector4i &p_voxel) c
 // How much of a surface the boundary between two result materials carries:
 // the border of the defined region outranks a face between materials, which
 // outranks a seam between two materials needing no face.
-static int _transition_significance(const VoxelMaterial4D p_before, const VoxelMaterial4D p_after) {
+int ClippedVoxelGenerator4D::_transition_significance(const VoxelMaterial4D p_before, const VoxelMaterial4D p_after) {
 	if (p_before == VoxelMaterial4D::UNDEFINED || p_after == VoxelMaterial4D::UNDEFINED) {
 		return 2;
 	}
-	return get_face_between(p_before, p_after) != VoxelFace4D::NONE ? 1 : 0;
+	return VoxelMaterialUtil4D::get_face_between(p_before, p_after) != VoxelFace4D::NONE ? 1 : 0;
 }
 
 VoxelEdgeData4D ClippedVoxelGenerator4D::get_edge_data(const Vector4i &p_voxel, const int p_axis) const {
