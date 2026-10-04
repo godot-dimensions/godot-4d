@@ -6,10 +6,8 @@
 
 #if GDEXTENSION
 #include <godot_cpp/templates/hash_map.hpp>
-#include <godot_cpp/templates/hash_set.hpp>
 #elif GODOT_MODULE
 #include "core/templates/hash_map.h"
-#include "core/templates/hash_set.h"
 #endif
 
 class VoxelWorld4D;
@@ -23,7 +21,10 @@ class VoxelMeshHandler4D {
 	// VOXEL_4D_MESH_CHUNK_SIZE hypercube of voxel space each mesh covers.
 	HashMap<Vector4i, MeshInstance4D *> _chunk_meshes;
 	// The positions of mesh chunks whose meshes no longer match the voxel data.
-	HashSet<Vector4i> _dirty_chunks;
+	// This is a HashMap with unused values rather than a HashSet, because a
+	// HashMap keeps its insertion order through erasures, while a HashSet
+	// moves its last key into the erased slot.
+	HashMap<Vector4i, bool> _dirty_chunks;
 
 	static int32_t _floor_to_mesh_chunk_grid(const int32_t p_coord);
 

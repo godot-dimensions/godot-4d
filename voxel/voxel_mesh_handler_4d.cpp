@@ -30,7 +30,7 @@ void VoxelMeshHandler4D::mark_region_dirty(const Rect4i &p_region) {
 		for (int32_t z = start.z; z < end.z; z += VOXEL_4D_MESH_CHUNK_SIZE) {
 			for (int32_t y = start.y; y < end.y; y += VOXEL_4D_MESH_CHUNK_SIZE) {
 				for (int32_t x = start.x; x < end.x; x += VOXEL_4D_MESH_CHUNK_SIZE) {
-					_dirty_chunks.insert(Vector4i(x, y, z, w));
+					_dirty_chunks.insert(Vector4i(x, y, z, w), true);
 				}
 			}
 		}
@@ -48,9 +48,9 @@ void VoxelMeshHandler4D::update_chunk_allow_projection() {
 void VoxelMeshHandler4D::update_dirty_meshes() {
 	ERR_FAIL_NULL(_world);
 	const Ref<VoxelData4D> voxel_data = _world->get_voxel_data();
-	// Chunks are updated oldest mark first, since the set is insertion ordered.
+	// Chunks are updated oldest mark first, since the map is insertion ordered.
 	for (int updated_count = 0; !_dirty_chunks.is_empty() && updated_count < MESHES_UPDATED_PER_TICK;) {
-		const Vector4i chunk_position = *_dirty_chunks.begin();
+		const Vector4i chunk_position = _dirty_chunks.begin()->key;
 		_dirty_chunks.erase(chunk_position);
 		// A chunk whose region is only partially defined gets no mesh, so
 		// that chunks aren't repeatedly re-meshed as more parts load. A
