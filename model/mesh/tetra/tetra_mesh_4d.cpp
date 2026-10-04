@@ -17,6 +17,73 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
+Ref<TetraMaterial4D> TetraMesh4D::_fallback_material;
+
+void TetraMesh4D::_tetra_mesh_clear_cache_internal() {
+	_simplex_positions_cache.clear();
+	_edge_positions_cache.clear();
+	_edge_indices_cache.clear();
+	_nearest_tetra_inverse_metric_cache.clear();
+}
+
+Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedInt32Array &p_texture_map_indices) {
+	const PackedVector3Array texture_map_values = get_texture_map_values();
+	Ref<SurfaceTool> surface_tool;
+	surface_tool.instantiate();
+	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
+	surface_tool->set_smooth_group(-1);
+	Ref<StandardMaterial3D> material;
+	material.instantiate();
+	material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+	surface_tool->set_material(material);
+	const int64_t size = p_texture_map_indices.size();
+	float hue = 0.0f;
+	for (int64_t i = 0; i < size - 3; i += 4) {
+		surface_tool->set_color(Color::from_hsv(hue, 1.0f, 1.0f));
+		const Vector3 &tex0 = texture_map_values[p_texture_map_indices[i]];
+		const Vector3 &tex1 = texture_map_values[p_texture_map_indices[i + 1]];
+		const Vector3 &tex2 = texture_map_values[p_texture_map_indices[i + 2]];
+		const Vector3 &tex3 = texture_map_values[p_texture_map_indices[i + 3]];
+		// Fix for meshes having inverted faces.
+		const Vector3 average = (tex0 + tex1 + tex2 + tex3) / 4.0f;
+		const Vector3 first_cross = (tex1 - tex0).cross(tex2 - tex0);
+		const real_t dot = first_cross.dot(average - tex0);
+		if (dot == 0.0f) {
+			continue; // Degenerate tetrahedron.
+		} else if (dot > 0.0f) {
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex2);
+		} else { // dot < 0.0f
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex1);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex0);
+			surface_tool->add_vertex(tex2);
+			surface_tool->add_vertex(tex3);
+			surface_tool->add_vertex(tex1);
+		}
+		// Any irrational number will do here.
+		hue += 0.045f * (float)Math_E;
+	}
+	surface_tool->generate_normals();
+	return surface_tool->commit();
+}
+
 // Nearest point and signed distance.
 
 void TetraMesh4D::populate_inverse_metric_cache() {
@@ -288,13 +355,6 @@ Dictionary TetraMesh4D::raycast_intersects(const Vector4 &p_local_from, const Ve
 	return result;
 }
 
-void TetraMesh4D::_tetra_mesh_clear_cache_internal() {
-	_simplex_positions_cache.clear();
-	_edge_positions_cache.clear();
-	_edge_indices_cache.clear();
-	_nearest_tetra_inverse_metric_cache.clear();
-}
-
 void TetraMesh4D::tetra_mesh_clear_cache(const bool p_reset_validation) {
 	_tetra_mesh_clear_cache_internal();
 	// The proxy mesh and rect bounds are also caches, so they are always marked dirty here.
@@ -303,69 +363,6 @@ void TetraMesh4D::tetra_mesh_clear_cache(const bool p_reset_validation) {
 	} else {
 		mark_mesh_bounds_and_proxy_mesh_3d_dirty();
 	}
-}
-
-Ref<ArrayMesh> TetraMesh4D::convert_texture_map_to_mesh(const PackedInt32Array &p_texture_map_indices) {
-	const PackedVector3Array texture_map_values = get_texture_map_values();
-	Ref<SurfaceTool> surface_tool;
-	surface_tool.instantiate();
-	surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
-	surface_tool->set_smooth_group(-1);
-	Ref<StandardMaterial3D> material;
-	material.instantiate();
-	material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
-	surface_tool->set_material(material);
-	const int64_t size = p_texture_map_indices.size();
-	float hue = 0.0f;
-	for (int64_t i = 0; i < size - 3; i += 4) {
-		surface_tool->set_color(Color::from_hsv(hue, 1.0f, 1.0f));
-		const Vector3 &tex0 = texture_map_values[p_texture_map_indices[i]];
-		const Vector3 &tex1 = texture_map_values[p_texture_map_indices[i + 1]];
-		const Vector3 &tex2 = texture_map_values[p_texture_map_indices[i + 2]];
-		const Vector3 &tex3 = texture_map_values[p_texture_map_indices[i + 3]];
-		// Fix for meshes having inverted faces.
-		const Vector3 average = (tex0 + tex1 + tex2 + tex3) / 4.0f;
-		const Vector3 first_cross = (tex1 - tex0).cross(tex2 - tex0);
-		const real_t dot = first_cross.dot(average - tex0);
-		if (dot == 0.0f) {
-			continue; // Degenerate tetrahedron.
-		} else if (dot > 0.0f) {
-			surface_tool->add_vertex(tex0);
-			surface_tool->add_vertex(tex1);
-			surface_tool->add_vertex(tex2);
-			surface_tool->add_vertex(tex0);
-			surface_tool->add_vertex(tex2);
-			surface_tool->add_vertex(tex3);
-			surface_tool->add_vertex(tex0);
-			surface_tool->add_vertex(tex3);
-			surface_tool->add_vertex(tex1);
-			surface_tool->add_vertex(tex1);
-			surface_tool->add_vertex(tex3);
-			surface_tool->add_vertex(tex2);
-		} else { // dot < 0.0f
-			surface_tool->add_vertex(tex2);
-			surface_tool->add_vertex(tex1);
-			surface_tool->add_vertex(tex0);
-			surface_tool->add_vertex(tex3);
-			surface_tool->add_vertex(tex2);
-			surface_tool->add_vertex(tex0);
-			surface_tool->add_vertex(tex1);
-			surface_tool->add_vertex(tex3);
-			surface_tool->add_vertex(tex0);
-			surface_tool->add_vertex(tex2);
-			surface_tool->add_vertex(tex3);
-			surface_tool->add_vertex(tex1);
-		}
-		// Any irrational number will do here.
-		hue += 0.045f * (float)Math_E;
-	}
-	surface_tool->generate_normals();
-	return surface_tool->commit();
-}
-
-Ref<ArrayMesh> TetraMesh4D::export_texture_map_mesh() {
-	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Ref<ArrayMesh>(), "TetraMesh4D: Cannot export texture map mesh for an invalid mesh.");
-	return convert_texture_map_to_mesh(get_simplex_cell_texture_map_indices());
 }
 
 bool TetraMesh4D::validate_mesh_data() {
@@ -414,20 +411,6 @@ void TetraMesh4D::validate_material_for_mesh(const Ref<Material4D> &p_material) 
 	}
 }
 
-Ref<TetraMaterial4D> TetraMesh4D::_fallback_material;
-
-Ref<Material4D> TetraMesh4D::get_fallback_material() {
-	return _fallback_material;
-}
-
-void TetraMesh4D::init_fallback_material() {
-	_fallback_material.instantiate();
-}
-
-void TetraMesh4D::cleanup_fallback_material() {
-	_fallback_material.unref();
-}
-
 Ref<ArrayTetraMesh4D> TetraMesh4D::to_array_tetra_mesh() {
 	Ref<ArrayTetraMesh4D> array_mesh;
 	array_mesh.instantiate();
@@ -461,6 +444,11 @@ Ref<TetraMesh4D> TetraMesh4D::to_tetra_mesh() {
 	return to_array_tetra_mesh();
 }
 
+Ref<ArrayMesh> TetraMesh4D::export_texture_map_mesh() {
+	ERR_FAIL_COND_V_MSG(!is_mesh_data_valid(), Ref<ArrayMesh>(), "TetraMesh4D: Cannot export texture map mesh for an invalid mesh.");
+	return convert_texture_map_to_mesh(get_simplex_cell_texture_map_indices());
+}
+
 // Getters.
 
 PackedInt32Array TetraMesh4D::get_simplex_cell_vertex_indices() {
@@ -485,6 +473,19 @@ PackedVector4Array TetraMesh4D::get_simplex_cell_boundary_normals() {
 	PackedVector4Array face_normals;
 	GDVIRTUAL_CALL(_get_simplex_cell_boundary_normals, face_normals);
 	return face_normals;
+}
+
+PackedVector4Array TetraMesh4D::get_simplex_cell_positions() {
+	if (_simplex_positions_cache.is_empty()) {
+		const PackedInt32Array simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
+		const PackedVector4Array vertices = get_vertex_positions();
+		const int32_t vertices_count = vertices.size();
+		for (const int simplex_cell_index : simplex_cell_vertex_indices) {
+			ERR_FAIL_INDEX_V(simplex_cell_index, vertices_count, _simplex_positions_cache);
+			_simplex_positions_cache.append(vertices[simplex_cell_index]);
+		}
+	}
+	return _simplex_positions_cache;
 }
 
 PackedInt32Array TetraMesh4D::calculate_edge_indices_from_simplex_cell_vertex_indices(const PackedInt32Array &p_simplex_cell_vertex_indices, const bool p_deduplicate) {
@@ -530,19 +531,6 @@ PackedVector4Array TetraMesh4D::get_edge_positions() {
 		}
 	}
 	return _edge_positions_cache;
-}
-
-PackedVector4Array TetraMesh4D::get_simplex_cell_positions() {
-	if (_simplex_positions_cache.is_empty()) {
-		const PackedInt32Array simplex_cell_vertex_indices = get_simplex_cell_vertex_indices();
-		const PackedVector4Array vertices = get_vertex_positions();
-		const int32_t vertices_count = vertices.size();
-		for (const int simplex_cell_index : simplex_cell_vertex_indices) {
-			ERR_FAIL_INDEX_V(simplex_cell_index, vertices_count, _simplex_positions_cache);
-			_simplex_positions_cache.append(vertices[simplex_cell_index]);
-		}
-	}
-	return _simplex_positions_cache;
 }
 
 void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh_3d) {
@@ -686,6 +674,18 @@ void TetraMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_me
 	// so an empty mesh results in a proxy mesh with zero surfaces rather than one empty surface.
 	// This is why renderers must use `Mesh4D::get_proxy_surface_index_3d` to find 3D surfaces.
 	surface_tool_3d->commit(p_proxy_mesh_3d);
+}
+
+Ref<Material4D> TetraMesh4D::get_fallback_material() {
+	return _fallback_material;
+}
+
+void TetraMesh4D::init_fallback_material() {
+	_fallback_material.instantiate();
+}
+
+void TetraMesh4D::cleanup_fallback_material() {
+	_fallback_material.unref();
 }
 
 void TetraMesh4D::_bind_methods() {

@@ -6,6 +6,8 @@
 class WireMesh4D : public SingleSurfaceMesh4D {
 	GDCLASS(WireMesh4D, SingleSurfaceMesh4D);
 
+	static Ref<WireMaterial4D> _fallback_material;
+
 protected:
 	static void _bind_methods();
 
@@ -33,7 +35,4 @@ public:
 	Ref<Material4D> get_fallback_material() override;
 	static void init_fallback_material();
 	static void cleanup_fallback_material();
-
-private:
-	static Ref<WireMaterial4D> _fallback_material;
 };

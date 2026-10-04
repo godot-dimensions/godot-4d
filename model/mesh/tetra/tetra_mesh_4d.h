@@ -14,6 +14,8 @@ class ArrayTetraMesh4D;
 class TetraMesh4D : public SingleSurfaceMesh4D {
 	GDCLASS(TetraMesh4D, SingleSurfaceMesh4D);
 
+	static Ref<TetraMaterial4D> _fallback_material;
+
 protected:
 	static void _bind_methods();
 	PackedInt32Array _edge_indices_cache;
@@ -85,7 +87,4 @@ public:
 	GDVIRTUAL0R(PackedInt32Array, _get_simplex_cell_normal_indices);
 	GDVIRTUAL0R(PackedInt32Array, _get_simplex_cell_texture_map_indices);
 	GDVIRTUAL0R(PackedVector4Array, _get_simplex_cell_boundary_normals);
-
-private:
-	static Ref<TetraMaterial4D> _fallback_material;
 };

@@ -8,6 +8,8 @@
 #include "scene/resources/surface_tool.h"
 #endif
 
+Ref<WireMaterial4D> WireMesh4D::_fallback_material;
+
 void WireMesh4D::wire_mesh_clear_cache(const bool p_reset_validation) {
 	_edge_positions_cache.clear();
 	// The proxy mesh and rect bounds are also caches, so they are always marked dirty here.
@@ -29,20 +31,6 @@ PackedVector4Array WireMesh4D::get_edge_positions() {
 		}
 	}
 	return _edge_positions_cache;
-}
-
-Ref<WireMaterial4D> WireMesh4D::_fallback_material;
-
-Ref<Material4D> WireMesh4D::get_fallback_material() {
-	return _fallback_material;
-}
-
-void WireMesh4D::init_fallback_material() {
-	_fallback_material.instantiate();
-}
-
-void WireMesh4D::cleanup_fallback_material() {
-	_fallback_material.unref();
 }
 
 void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mesh_3d) {
@@ -75,6 +63,18 @@ void WireMesh4D::append_proxy_mesh_surfaces_3d(const Ref<ArrayMesh> &p_proxy_mes
 	// so an empty mesh results in a proxy mesh with zero surfaces rather than one empty surface.
 	// This is why renderers must use `Mesh4D::get_proxy_surface_index_3d` to find 3D surfaces.
 	surface_tool_3d->commit(p_proxy_mesh_3d);
+}
+
+Ref<Material4D> WireMesh4D::get_fallback_material() {
+	return _fallback_material;
+}
+
+void WireMesh4D::init_fallback_material() {
+	_fallback_material.instantiate();
+}
+
+void WireMesh4D::cleanup_fallback_material() {
+	_fallback_material.unref();
 }
 
 void WireMesh4D::_bind_methods() {
