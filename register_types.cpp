@@ -117,6 +117,7 @@
 // We don't need to register these in principle, and we don't need it for a module, just for GDExtension.
 #include "render/environment/render_bridge_4d_to_3d.h"
 #include "render/wireframe_canvas/wireframe_render_canvas_4d.h"
+#include "voxel/voxel_chunk_loader_4d.h"
 #ifdef TOOLS_ENABLED
 #include "editor/import/4do/editor_import_plugin_4do_multi_4d.h"
 #include "editor/import/hox/editor_import_plugin_hox_multi_4d.h"
@@ -310,6 +311,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(VoxelMaterialPalette4D);
 		GDREGISTER_CLASS(VoxelWorld4D);
 #if GDEXTENSION
+		GDREGISTER_INTERNAL_CLASS(VoxelChunkLoader4D);
 		GDREGISTER_CLASS(AxisAlignedBoxPhysicsEngine4D);
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);
 		GDREGISTER_CLASS(WireframeRenderCanvas4D);

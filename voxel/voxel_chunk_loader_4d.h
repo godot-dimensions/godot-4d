@@ -75,6 +75,10 @@ public:
 	// the VoxelLoadTrigger4Ds in the scene tree.
 	void update_loaded_chunks();
 
+	// Only for GDExtension class registration, which requires a default
+	// constructor. A loader without a world does nothing.
+	VoxelChunkLoader4D() :
+			_world(nullptr) {}
 	explicit VoxelChunkLoader4D(VoxelWorld4D *p_world) :
 			_world(p_world) {}
 	~VoxelChunkLoader4D();
