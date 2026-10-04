@@ -1,7 +1,6 @@
 #include "sphere_voxel_edit_4d.h"
 
 void SphereVoxelEdit4D::_update_bounds() {
-	ERR_FAIL_COND_MSG(_material == VoxelMaterial4D::UNDEFINED, "SphereVoxelEdit4D cannot apply the UNDEFINED material.");
 	// Covers exactly the voxels whose centers are inside the sphere.
 	const Vector4 half = Vector4(0.5f, 0.5f, 0.5f, 0.5f);
 	const Vector4 extents = Vector4(_radius, _radius, _radius, _radius);

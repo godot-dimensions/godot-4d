@@ -40,6 +40,7 @@ public:
 	ParallelogramVoxelEdit4D(const Transform4D &p_transform, const VoxelMaterial4D p_material) :
 			_transform(p_transform),
 			_material(p_material) {
+		ERR_FAIL_COND_MSG(_material == VoxelMaterial4D::UNDEFINED, "ParallelogramVoxelEdit4D cannot apply the UNDEFINED material.");
 		_update_cache();
 	}
 };

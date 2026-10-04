@@ -36,6 +36,7 @@ public:
 	BoxVoxelEdit4D(const Rect4 &p_rect, const VoxelMaterial4D p_material) :
 			_rect(p_rect),
 			_material(p_material) {
+		ERR_FAIL_COND_MSG(_material == VoxelMaterial4D::UNDEFINED, "BoxVoxelEdit4D cannot apply the UNDEFINED material.");
 		_update_bounds();
 	}
 };

@@ -34,6 +34,7 @@ public:
 			_center(p_center),
 			_radius(p_radius),
 			_material(p_material) {
+		ERR_FAIL_COND_MSG(_material == VoxelMaterial4D::UNDEFINED, "SphereVoxelEdit4D cannot apply the UNDEFINED material.");
 		_update_bounds();
 	}
 };
