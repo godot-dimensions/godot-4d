@@ -1070,6 +1070,240 @@ TEST_CASE("[ArrayPolyMesh4D] Project texture map") {
 	}
 }
 
+// The bounding box of a cell's texture coordinates.
+static AABB texture_map_aabb(const PackedVector3Array &p_texture_map) {
+	REQUIRE(!p_texture_map.is_empty());
+	AABB aabb = AABB(p_texture_map[0], Vector3());
+	for (const Vector3 &texcoord : p_texture_map) {
+		aabb.expand_to(texcoord);
+	}
+	return aabb;
+}
+
+// Checks that a cell's V changes with the height along `p_up` at one rate for every pair of its vertices, with U and
+// W unchanged between vertices that differ only in height, and returns that rate, or 0 when no two vertices differ in height.
+static real_t check_cell_texture_map_follows_up(const PackedVector3Array &p_texture_map, const PackedInt32Array &p_cell_vertices, const PackedVector4Array &p_positions, const Vector4 &p_up) {
+	REQUIRE(p_texture_map.size() == p_cell_vertices.size());
+	real_t rate = 0.0;
+	for (int64_t i = 0; i < p_cell_vertices.size(); i++) {
+		for (int64_t j = i + 1; j < p_cell_vertices.size(); j++) {
+			const Vector4 offset = p_positions[p_cell_vertices[j]] - p_positions[p_cell_vertices[i]];
+			const real_t height = offset.dot(p_up);
+			if (Math::is_zero_approx(height)) {
+				continue;
+			}
+			const Vector3 texture_offset = p_texture_map[j] - p_texture_map[i];
+			const real_t pair_rate = texture_offset.y / height;
+			if (rate == 0.0) {
+				rate = pair_rate;
+			} else {
+				CHECK(Math::is_equal_approx(pair_rate, rate));
+			}
+			if ((offset - p_up * height).is_zero_approx()) {
+				CHECK(Math::is_zero_approx(texture_offset.x));
+				CHECK(Math::is_zero_approx(texture_offset.z));
+			}
+		}
+	}
+	return rate;
+}
+
+// Checks that a cell's texture map has the same orientation as the cell: three independent offsets between its vertices,
+// completed by the cell's normal, span a frame of the same handedness in mesh space as their texture offsets do in
+// texture space. A mirrored map would flip one and not the other.
+static void check_cell_texture_map_keeps_orientation(const PackedVector3Array &p_texture_map, const PackedInt32Array &p_cell_vertices, const PackedVector4Array &p_positions, const Vector4 &p_normal) {
+	REQUIRE(p_texture_map.size() == p_cell_vertices.size());
+	const Vector4 normal = p_normal.normalized();
+	const Vector4 origin = p_positions[p_cell_vertices[0]];
+	Vector<Vector4> mesh_offsets;
+	Vector<Vector3> texture_offsets;
+	Vector<Vector4> orthonormal_basis; // Of the offsets taken so far, for judging independence.
+	for (int64_t i = 1; i < p_cell_vertices.size() && mesh_offsets.size() < 3; i++) {
+		const Vector4 offset = p_positions[p_cell_vertices[i]] - origin;
+		Vector4 remainder = offset - normal * offset.dot(normal);
+		for (const Vector4 &basis_vector : orthonormal_basis) {
+			remainder -= basis_vector * remainder.dot(basis_vector);
+		}
+		if (remainder.length_squared() > (real_t)1e-6 * offset.length_squared()) {
+			orthonormal_basis.push_back(remainder.normalized());
+			mesh_offsets.push_back(offset);
+			texture_offsets.push_back(p_texture_map[i] - p_texture_map[0]);
+		}
+	}
+	REQUIRE(mesh_offsets.size() == 3);
+	const real_t mesh_orientation = Basis4D(mesh_offsets[0], mesh_offsets[1], mesh_offsets[2], normal).determinant();
+	const real_t texture_orientation = Basis(texture_offsets[0], texture_offsets[1], texture_offsets[2]).determinant();
+	CHECK(mesh_orientation * texture_orientation > (real_t)0.0);
+}
+
+TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map upright") {
+	const Vector4 up_y = Vector4(0, 1, 0, 0);
+
+	SUBCASE("Upright cells get V along up at one rate per island, with U and W across") {
+		// With up along Y, the box's six cells facing along X, Z, and W are upright. With up diagonal in X and Y,
+		// only the four cells facing along Z and W are, and the others neither face along up nor are upright.
+		const Vector4 ups[2] = { up_y, Vector4(1, 1, 0, 0).normalized() };
+		const int upright_counts[2] = { 6, 4 };
+		for (int up_index = 0; up_index < 2; up_index++) {
+			CAPTURE(up_index);
+			const Vector4 up = ups[up_index];
+			Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+			mesh->unwrap_texture_map_upright(up, ArrayPolyMesh4D::UNWRAP_MODE_EACH_ISLAND_FILLS);
+			const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+			const Vector<PackedInt32Array> cell_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
+			const PackedVector4Array positions = mesh->get_poly_cell_vertex_positions();
+			const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+			REQUIRE(texture_map.size() == 8);
+			REQUIRE(normals.size() == 8);
+			int upright_count = 0;
+			real_t island_rate = 0.0;
+			AABB island_aabb = texture_map_aabb(texture_map[0]);
+			for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+				REQUIRE(texture_map[cell_index].size() == 8);
+				island_aabb.merge_with(texture_map_aabb(texture_map[cell_index]));
+				if (!Math::is_zero_approx(normals[cell_index].dot(up))) {
+					continue;
+				}
+				upright_count++;
+				const real_t rate = check_cell_texture_map_follows_up(texture_map[cell_index], cell_vertices[cell_index], positions, up);
+				CHECK(rate > 0.0);
+				check_cell_texture_map_keeps_orientation(texture_map[cell_index], cell_vertices[cell_index], positions, normals[cell_index]);
+				if (island_rate == 0.0) {
+					island_rate = rate;
+				} else {
+					CHECK(Math::is_equal_approx(rate, island_rate));
+				}
+			}
+			CHECK(upright_count == upright_counts[up_index]);
+			// The whole box is one island, fitted into the unit cube with its proportions kept, so the net of eight
+			// cells is scaled down and no single cell fills the cube.
+			CHECK(island_aabb.position.is_zero_approx());
+			CHECK(Math::is_equal_approx(island_aabb.get_longest_axis_size(), (real_t)1.0));
+			CHECK(island_rate < (real_t)1.0);
+		}
+	}
+
+	SUBCASE("Islands never cross seam faces") {
+		// Cell 3, the +Z cell, is sealed off by marking all of its faces as seams, so it is an island of its own.
+		HashSet<int32_t> seams;
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		for (const int32_t face_index : mesh->get_poly_cell_indices()[1][3]) {
+			seams.insert(face_index);
+		}
+		mesh->set_seam_face_indices(seams);
+		mesh->unwrap_texture_map_upright(up_y, ArrayPolyMesh4D::UNWRAP_MODE_EACH_ISLAND_FILLS);
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		const Vector<PackedInt32Array> cell_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
+		const PackedVector4Array positions = mesh->get_poly_cell_vertex_positions();
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(texture_map.size() == 8);
+		// Alone in its island, the cube cell fills the unit cube exactly, which it could not as part of a larger island.
+		const AABB sealed_aabb = texture_map_aabb(texture_map[3]);
+		CHECK(sealed_aabb.position.is_zero_approx());
+		CHECK(sealed_aabb.size.is_equal_approx(Vector3(1, 1, 1)));
+		CHECK(Math::is_equal_approx(check_cell_texture_map_follows_up(texture_map[3], cell_vertices[3], positions, up_y), (real_t)1.0));
+		// The other seven cells are the second island, also fitted into the unit cube and upright.
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			if (cell_index == 3) {
+				continue;
+			}
+			REQUIRE(texture_map[cell_index].size() == 8);
+			CHECK(texture_map_aabb(texture_map[cell_index]).get_longest_axis_size() < (real_t)1.0);
+			if (Math::is_zero_approx(normals[cell_index].dot(up_y))) {
+				CHECK(check_cell_texture_map_follows_up(texture_map[cell_index], cell_vertices[cell_index], positions, up_y) > 0.0);
+			}
+		}
+		// Tiling puts the two islands in separate tiles.
+		Ref<ArrayPolyMesh4D> tiled = make_box_array_mesh();
+		tiled->set_seam_face_indices(seams);
+		tiled->unwrap_texture_map_upright(up_y, ArrayPolyMesh4D::UNWRAP_MODE_TILE_ISLANDS);
+		const Vector<PackedVector3Array> tiled_map = tiled->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(tiled_map.size() == 8);
+		const AABB sealed_tile = texture_map_aabb(tiled_map[3]);
+		AABB rest_tile = texture_map_aabb(tiled_map[0]);
+		for (int64_t cell_index = 1; cell_index < 8; cell_index++) {
+			if (cell_index != 3) {
+				rest_tile.merge_with(texture_map_aabb(tiled_map[cell_index]));
+			}
+		}
+		CHECK_FALSE(sealed_tile.grow((real_t)-0.001).intersects(rest_tile.grow((real_t)-0.001)));
+	}
+
+	SUBCASE("An upright cell that already has texture coordinates seeds its island when they are kept") {
+		// Cell 3, the +Z cell, is projected with V along X instead of up. Kept, it is the seed of its island, so its
+		// own frame wins over the upright one. Not kept, it is upright like everything else.
+		// The transpose of the basis with the directions as columns sends Y onto U, X onto V, W onto W, and the +Z normal
+		// onto the discarded fourth component.
+		const Basis4D sideways = Basis4D(Vector4(0, 1, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 1, 0)).transposed();
+		for (const bool keep_existing : { true, false }) {
+			CAPTURE(keep_existing);
+			Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+			mesh->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>());
+			mesh->project_texture_map(PackedInt32Array{ 3 }, sideways);
+			mesh->unwrap_texture_map_upright(up_y, ArrayPolyMesh4D::UNWRAP_MODE_EACH_ISLAND_FILLS, 0.0, true, keep_existing);
+			const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+			const Vector<PackedInt32Array> cell_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
+			const PackedVector4Array positions = mesh->get_poly_cell_vertex_positions();
+			REQUIRE(texture_map.size() == 8);
+			for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+				REQUIRE(texture_map[cell_index].size() == 8);
+			}
+			const Vector4 followed = keep_existing ? Vector4(1, 0, 0, 0) : up_y;
+			CHECK(check_cell_texture_map_follows_up(texture_map[3], cell_vertices[3], positions, followed) > 0.0);
+		}
+	}
+
+	SUBCASE("A mesh without upright cells is still unwrapped completely") {
+		const Vector4 up = Vector4(1, 1, 1, 1).normalized();
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->unwrap_texture_map_upright(up, ArrayPolyMesh4D::UNWRAP_MODE_EACH_ISLAND_FILLS);
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(texture_map.size() == 8);
+		AABB island_aabb = texture_map_aabb(texture_map[0]);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			CHECK_FALSE(Math::is_zero_approx(normals[cell_index].dot(up)));
+			REQUIRE(texture_map[cell_index].size() == 8);
+			island_aabb.merge_with(texture_map_aabb(texture_map[cell_index]));
+		}
+		CHECK(island_aabb.position.is_zero_approx());
+		CHECK(Math::is_equal_approx(island_aabb.get_longest_axis_size(), (real_t)1.0));
+	}
+
+	SUBCASE("The per-cell modes give every upright cell its own upright projection") {
+		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
+		mesh->unwrap_texture_map_upright(up_y, ArrayPolyMesh4D::UNWRAP_MODE_EACH_CELL_FILLS);
+		const Vector<PackedVector3Array> texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		const Vector<PackedInt32Array> cell_vertices = mesh->get_all_boundary_cell_vertex_indices(false);
+		const PackedVector4Array positions = mesh->get_poly_cell_vertex_positions();
+		const PackedVector4Array normals = mesh->get_poly_cell_boundary_normals();
+		REQUIRE(texture_map.size() == 8);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			REQUIRE(texture_map[cell_index].size() == 8);
+			const AABB cell_aabb = texture_map_aabb(texture_map[cell_index]);
+			CHECK(cell_aabb.position.is_zero_approx());
+			CHECK(cell_aabb.size.is_equal_approx(Vector3(1, 1, 1)));
+			if (Math::is_zero_approx(normals[cell_index].dot(up_y))) {
+				CHECK(Math::is_equal_approx(check_cell_texture_map_follows_up(texture_map[cell_index], cell_vertices[cell_index], positions, up_y), (real_t)1.0));
+			}
+		}
+	}
+
+	SUBCASE("The automatic mode tiles islands even without seams") {
+		Ref<ArrayPolyMesh4D> automatic = make_box_array_mesh();
+		automatic->unwrap_texture_map_upright(up_y, ArrayPolyMesh4D::UNWRAP_MODE_AUTOMATIC);
+		Ref<ArrayPolyMesh4D> tiled = make_box_array_mesh();
+		tiled->unwrap_texture_map_upright(up_y, ArrayPolyMesh4D::UNWRAP_MODE_TILE_ISLANDS);
+		const Vector<PackedVector3Array> automatic_map = automatic->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		const Vector<PackedVector3Array> tiled_map = tiled->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
+		REQUIRE(automatic_map.size() == 8);
+		REQUIRE(tiled_map.size() == 8);
+		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
+			CHECK(automatic_map[cell_index] == tiled_map[cell_index]);
+		}
+	}
+}
+
 TEST_CASE("[ArrayPolyMesh4D] Fit texture map island") {
 	const PackedInt32Array all_cells = { 0, 1, 2, 3, 4, 5, 6, 7 };
 	auto texture_map_aabb = [](const Vector<PackedVector3Array> &p_texture_map, const PackedInt32Array &p_cells) {

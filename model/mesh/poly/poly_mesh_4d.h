@@ -81,7 +81,7 @@ protected:
 	void _poly_mesh_clear_cache_internal(const bool p_normals_only);
 
 	// Protected helper functions used by both PolyMesh4D and ArrayPolyMesh4D.
-	Vector<PackedInt32Array> _get_vertex_indices_of_boundary_cells(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const bool p_start_with_canonical_span);
+	static Vector<PackedInt32Array> _get_vertex_indices_of_boundary_cells(const Vector<Vector<PackedInt32Array>> &p_poly_cell_indices, const PackedInt32Array &p_all_edge_indices, const bool p_start_with_canonical_span);
 	const Vector<PackedInt32Array> &_get_boundary_cell_vertex_indices_cached(const bool p_start_with_canonical_span);
 	PackedVector4Array _compute_boundary_normals_based_on_cell_orientation(const Vector<PackedInt32Array> &p_boundary_cell_vertex_indices, const bool p_keep_existing);
 

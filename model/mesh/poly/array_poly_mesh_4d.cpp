@@ -330,6 +330,17 @@ Vector<PackedVector3Array> ArrayPolyMesh4D::_get_poly_cell_texture_map_dense_int
 	return dense;
 }
 
+// The dense texture map the unwrap functions start from, with one entry per cell: the existing coordinates when they
+// are kept, and empty entries otherwise and for the cells beyond the stored binding. The caller checks that there are cells.
+Vector<PackedVector3Array> ArrayPolyMesh4D::_get_poly_cell_texture_map_dense_resized_internal(const bool p_keep_existing) const {
+	Vector<PackedVector3Array> poly_cell_texture_map;
+	if (p_keep_existing) {
+		poly_cell_texture_map = _get_poly_cell_texture_map_dense_internal();
+	}
+	poly_cell_texture_map.resize_initialized(_poly_cell_indices[1].size());
+	return poly_cell_texture_map;
+}
+
 void ArrayPolyMesh4D::_set_poly_cell_texture_map_dense_internal(const Vector<PackedVector3Array> &p_poly_cell_texture_map) {
 	Vector<PackedInt32Array> poly_cell_texture_map_indices;
 	poly_cell_texture_map_indices.resize(p_poly_cell_texture_map.size());
@@ -1095,7 +1106,7 @@ Vector<PackedInt32Array> ArrayPolyMesh4D::_get_face_to_cell_map() const {
 	return face_to_cells;
 }
 
-PackedInt32Array ArrayPolyMesh4D::_collect_cells_in_island_internal(const int64_t p_start_cell, const Vector<PackedInt32Array> &p_face_to_cell_map) {
+PackedInt32Array ArrayPolyMesh4D::_collect_cells_in_island_internal(const int64_t p_start_cell, const Vector<PackedInt32Array> &p_face_to_cell_map) const {
 	PackedInt32Array cells_in_island = { int32_t(p_start_cell) };
 	PackedInt32Array faces_to_search = PackedInt32Array(_poly_cell_indices[1][p_start_cell]); // Copy.
 	HashSet<int32_t> cells_in_island_set; // Redundant with cells_in_island, but faster to check existence for large meshes.
@@ -1255,7 +1266,7 @@ void ArrayPolyMesh4D::_get_cell_world_span_seed(const int64_t p_which_cell, Vect
 	r_world_z = _poly_cell_vertex_positions[second_next_vertex] - _poly_cell_vertex_positions[second_common_vertex];
 }
 
-void ArrayPolyMesh4D::_transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
+void ArrayPolyMesh4D::_transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map) const {
 	const PackedInt32Array &cell_vert = p_cell_vert[p_cell_index];
 	PackedVector3Array cell_texture_map;
 	cell_texture_map.resize(cell_vert.size());
@@ -1269,7 +1280,7 @@ void ArrayPolyMesh4D::_transform_cell_to_texture_space(const Transform4D &p_worl
 	r_poly_cell_texture_map.set(p_cell_index, cell_texture_map);
 }
 
-bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
+bool ArrayPolyMesh4D::_unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert, Vector<PackedVector3Array> &r_poly_cell_texture_map) const {
 	const int32_t cell_index = p_cells_in_island[p_current_cell_index_index];
 	const PackedInt32Array &cell_data = _poly_cell_indices[1][cell_index];
 	Vector<PackedVector3Array> &poly_cell_texture_map = r_poly_cell_texture_map;
@@ -1389,15 +1400,9 @@ void ArrayPolyMesh4D::unwrap_texture_map_island(const PackedInt32Array &p_cells_
 		ERR_FAIL_COND_MSG(p_cells_in_island[i] >= cells.size(), "ArrayPolyMesh4D: A cell in this island is not in the mesh.");
 	}
 	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Poly mesh data is invalid, cannot unwrap.");
-	const int64_t cell_count = cells.size();
 	// Unwrapping works with a dense texture map, sampled from the indexed data
 	// at the start and converted back to indexed data at the end.
-	Vector<PackedVector3Array> poly_cell_texture_map = _get_poly_cell_texture_map_dense_internal();
-	const int64_t existing_texture_map_count = poly_cell_texture_map.size();
-	poly_cell_texture_map.resize_initialized(cell_count);
-	for (int64_t i = existing_texture_map_count; i < cell_count; i++) {
-		poly_cell_texture_map.set(i, PackedVector3Array());
-	}
+	Vector<PackedVector3Array> poly_cell_texture_map = _get_poly_cell_texture_map_dense_resized_internal(true);
 	// Use the internal version internally when we know the data is valid.
 	_unwrap_texture_map_island_internal(p_cells_in_island, p_keep_existing, poly_cell_texture_map);
 	_set_poly_cell_texture_map_dense_internal(poly_cell_texture_map);
@@ -1411,21 +1416,11 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 	const int64_t cell_count = _poly_cell_indices[1].size();
 	// Unwrapping works with a dense texture map, sampled from the indexed data
 	// at the start and converted back to indexed data at the end.
-	Vector<PackedVector3Array> poly_cell_texture_map;
-	if (p_keep_existing) {
-		poly_cell_texture_map = _get_poly_cell_texture_map_dense_internal();
-	}
-	const int64_t existing_texture_map_count = poly_cell_texture_map.size();
-	poly_cell_texture_map.resize_initialized(cell_count);
-	for (int64_t i = existing_texture_map_count; i < cell_count; i++) {
-		poly_cell_texture_map.set(i, PackedVector3Array());
-	}
+	Vector<PackedVector3Array> poly_cell_texture_map = _get_poly_cell_texture_map_dense_resized_internal(p_keep_existing);
 	UnwrapTextureMapMode actual_mode = p_mode;
 	if (actual_mode == UNWRAP_MODE_AUTOMATIC) {
 		actual_mode = _seam_face_indices.is_empty() ? UNWRAP_MODE_TILE_CELLS : UNWRAP_MODE_TILE_ISLANDS;
 	}
-	const double pad_offset = p_padding * 0.5 / (1.0 + p_padding);
-	const double pad_size = 1.0 / (1.0 + p_padding);
 	// Step 1: What is the list of islands we need to unwrap? This depends on the mode.
 	Vector<PackedInt32Array> islands;
 	if (actual_mode == UNWRAP_MODE_EACH_CELL_FILLS || actual_mode == UNWRAP_MODE_TILE_CELLS) {
@@ -1443,15 +1438,23 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 		_unwrap_texture_map_island_internal(islands[island_index], p_keep_existing, poly_cell_texture_map);
 	}
 	// Step 3: Fit or tile the islands into the texture space depending on the mode.
-	if (actual_mode == UNWRAP_MODE_EACH_CELL_FILLS || actual_mode == UNWRAP_MODE_EACH_ISLAND_FILLS) {
+	_fit_or_tile_islands_internal(islands, actual_mode, p_padding, p_proportional, poly_cell_texture_map);
+	_set_poly_cell_texture_map_dense_internal(poly_cell_texture_map);
+	poly_mesh_clear_cache();
+}
+
+void ArrayPolyMesh4D::_fit_or_tile_islands_internal(const Vector<PackedInt32Array> &p_islands, const UnwrapTextureMapMode p_mode, const double p_padding, const bool p_proportional, Vector<PackedVector3Array> &r_poly_cell_texture_map) {
+	const double pad_offset = p_padding * 0.5 / (1.0 + p_padding);
+	const double pad_size = 1.0 / (1.0 + p_padding);
+	if (p_mode == UNWRAP_MODE_EACH_CELL_FILLS || p_mode == UNWRAP_MODE_EACH_ISLAND_FILLS) {
 		// Fit each island into the 0-to-1 UVW texture space with padding.
 		const AABB padded_full_aabb = AABB(Vector3(pad_offset, pad_offset, pad_offset), Vector3(pad_size, pad_size, pad_size));
-		for (int32_t island_index = 0; island_index < islands.size(); island_index++) {
-			_fit_island_texture_map_into_aabb(islands[island_index], padded_full_aabb, p_proportional, poly_cell_texture_map);
+		for (int32_t island_index = 0; island_index < p_islands.size(); island_index++) {
+			_fit_island_texture_map_into_aabb(p_islands[island_index], padded_full_aabb, p_proportional, r_poly_cell_texture_map);
 		}
-	} else if (actual_mode == UNWRAP_MODE_TILE_CELLS || actual_mode == UNWRAP_MODE_TILE_ISLANDS) {
+	} else if (p_mode == UNWRAP_MODE_TILE_CELLS || p_mode == UNWRAP_MODE_TILE_ISLANDS) {
 		// Tile the islands in texture space by rescaling and offsetting them.
-		const Vector3i tiles = _tiles_for_island_count(islands.size());
+		const Vector3i tiles = _tiles_for_island_count(p_islands.size());
 		const Vector3 unpadded_tile_size = Vector3(1.0 / real_t(tiles.x), 1.0 / real_t(tiles.y), 1.0 / real_t(tiles.z));
 		const Vector3 padding_offset = unpadded_tile_size * pad_offset;
 		const Vector3 padded_tile_size = unpadded_tile_size * pad_size;
@@ -1459,18 +1462,198 @@ void ArrayPolyMesh4D::unwrap_texture_map(const UnwrapTextureMapMode p_mode, cons
 			for (int32_t y = 0; y < tiles.y; y++) {
 				for (int32_t z = 0; z < tiles.z; z++) {
 					const int32_t tile_index = x + y * tiles.x + z * tiles.x * tiles.y;
-					if (tile_index >= islands.size()) {
+					if (tile_index >= p_islands.size()) {
 						break;
 					}
-					const PackedInt32Array &cells_in_island = islands[tile_index];
+					const PackedInt32Array &cells_in_island = p_islands[tile_index];
 					const AABB island_aabb = AABB(Vector3(x, y, z) * unpadded_tile_size + padding_offset, padded_tile_size);
-					_fit_island_texture_map_into_aabb(cells_in_island, island_aabb, p_proportional, poly_cell_texture_map);
+					_fit_island_texture_map_into_aabb(cells_in_island, island_aabb, p_proportional, r_poly_cell_texture_map);
 				}
 			}
 		}
 	} else {
 		ERR_FAIL_MSG("ArrayPolyMesh4D: Unknown unwrap texture map mode.");
 	}
+}
+
+void ArrayPolyMesh4D::unwrap_texture_map_upright(const Vector4 &p_up, const UnwrapTextureMapMode p_mode, const double p_padding, const bool p_proportional, const bool p_keep_existing) {
+	ERR_FAIL_COND_MSG(p_padding < 0.0, "ArrayPolyMesh4D: Padding must be non-negative.");
+	ERR_FAIL_COND_MSG(_poly_cell_indices.size() < 2, "ArrayPolyMesh4D: Cannot unwrap texture map for a mesh with no cells.");
+	const Vector4 up = p_up.normalized();
+	ERR_FAIL_COND_MSG(up.is_zero_approx(), "ArrayPolyMesh4D: The up direction must not be zero.");
+	ERR_FAIL_COND_MSG(!is_poly_mesh_data_valid(), "ArrayPolyMesh4D: Poly mesh data is invalid, cannot unwrap.");
+	const Vector<PackedInt32Array> &face_edge_indices = _poly_cell_indices[0];
+	const Vector<PackedInt32Array> &cell_face_indices = _poly_cell_indices[1];
+	const int64_t cell_count = cell_face_indices.size();
+	// Which cells are upright is read from the boundary normals, which are calculated when they are missing.
+	PackedVector4Array boundary_normals = get_poly_cell_boundary_normals();
+	if (boundary_normals.size() != cell_count) {
+		calculate_boundary_normals();
+		boundary_normals = get_poly_cell_boundary_normals();
+		ERR_FAIL_COND_MSG(boundary_normals.size() != cell_count, "ArrayPolyMesh4D: Failed to calculate the boundary normals, so the upright cells cannot be found.");
+	}
+	// Unwrapping works with a dense texture map, sampled from the indexed data
+	// at the start and converted back to indexed data at the end.
+	Vector<PackedVector3Array> poly_cell_texture_map = _get_poly_cell_texture_map_dense_resized_internal(p_keep_existing);
+	// A cell is upright when its normal is perpendicular to up, so that its hyperplane contains the up direction. Two
+	// adjacent upright cells share a face whose plane contains up as well, so unfolding one onto the other across that
+	// face keeps V along up on both of them.
+	Vector<bool> is_upright;
+	is_upright.resize(cell_count);
+	for (int64_t cell_index = 0; cell_index < cell_count; cell_index++) {
+		is_upright.set(cell_index, Math::is_zero_approx(boundary_normals[cell_index].dot(up)));
+	}
+	// Cells connect through the faces they share, except seam faces, which no island crosses. This appends every
+	// unmarked cell reachable from the cells already in the order, breadth first, optionally only through upright
+	// cells. Each appended cell shares a face with an earlier one, which the unwrap requires.
+	const Vector<PackedInt32Array> face_to_cell_map = _get_face_to_cell_map();
+	auto traverse = [&](PackedInt32Array &r_order, Vector<bool> &r_marked, const bool p_upright_only) {
+		for (int64_t order_index = 0; order_index < r_order.size(); order_index++) {
+			const int32_t current = r_order[order_index];
+			for (const int32_t face_index : cell_face_indices[current]) {
+				if (_seam_face_indices.has(face_index)) {
+					continue;
+				}
+				for (const int32_t neighbor : face_to_cell_map[face_index]) {
+					if (r_marked[neighbor] || (p_upright_only && !is_upright[neighbor])) {
+						continue;
+					}
+					r_marked.set(neighbor, true);
+					r_order.append(neighbor);
+				}
+			}
+		}
+	};
+	UnwrapTextureMapMode actual_mode = p_mode;
+	if (actual_mode == UNWRAP_MODE_AUTOMATIC) {
+		// Unfolding connected upright cells together is the point of this unwrap, so the automatic mode tiles islands
+		// whether or not there are seams.
+		actual_mode = UNWRAP_MODE_TILE_ISLANDS;
+	}
+	const bool each_cell_alone = actual_mode == UNWRAP_MODE_EACH_CELL_FILLS || actual_mode == UNWRAP_MODE_TILE_CELLS;
+	Vector<bool> marked;
+	marked.resize(cell_count);
+	marked.fill(false);
+	// Every connected group of upright cells needs one mapped cell to unfold from, else the unwrap would start it with
+	// a frame of its own. A group with an upright cell that is already mapped keeps that cell as its seed. Each other
+	// group is seeded at its lowest cell, projected with U along the cell's most horizontal edge, V along up, and W
+	// completing a positively oriented frame with the cell's normal, so that no cell renders mirrored. In the per-cell
+	// modes every upright cell is an island of its own, so every one of them is a seed.
+	for (int64_t cell_index = 0; cell_index < cell_count; cell_index++) {
+		if (!is_upright[cell_index] || marked[cell_index] || poly_cell_texture_map[cell_index].is_empty()) {
+			continue;
+		}
+		marked.set(cell_index, true);
+		if (!each_cell_alone) {
+			PackedInt32Array group = { (int32_t)cell_index };
+			traverse(group, marked, true);
+		}
+	}
+	const Vector<PackedInt32Array> &cell_vert = _get_boundary_cell_vertex_indices_cached(false);
+	for (int64_t cell_index = 0; cell_index < cell_count; cell_index++) {
+		if (!is_upright[cell_index] || marked[cell_index]) {
+			continue;
+		}
+		// The edge with the largest part perpendicular to up, relative to its length. The first such edge wins ties.
+		Vector4 along;
+		real_t along_ratio = (real_t)0.0;
+		for (const int32_t face_index : cell_face_indices[cell_index]) {
+			for (const int32_t edge_index : face_edge_indices[face_index]) {
+				const Vector4 edge = _poly_cell_vertex_positions[_edge_vertex_indices[edge_index * 2 + 1]] - _poly_cell_vertex_positions[_edge_vertex_indices[edge_index * 2]];
+				const real_t edge_length_squared = edge.length_squared();
+				if (edge_length_squared <= (real_t)0.0) {
+					continue;
+				}
+				const Vector4 edge_across = edge - up * edge.dot(up);
+				const real_t ratio = edge_across.length_squared() / edge_length_squared;
+				if (ratio > along_ratio) {
+					along_ratio = ratio;
+					along = edge_across;
+				}
+			}
+		}
+		ERR_FAIL_COND_MSG(along_ratio <= (real_t)CMP_EPSILON, "ArrayPolyMesh4D: Cell " + itos(cell_index) + " is upright but all of its edges run along up, so it is degenerate and cannot be unwrapped.");
+		// The seed's mesh-to-texture basis: U along the edge, V along up, and W completing the frame with the cell's normal.
+		// `Vector4D::perpendicular(a, b, c)` completes a positively oriented frame (a, b, c, result), so passing V before U
+		// makes (U, V, W, normal) positively oriented, the same trick as in `PolyMesh4D::compute_face_normals`, and since
+		// unfolding preserves handedness, no cell renders mirrored. These directions are the columns of a texture-to-mesh
+		// basis, and its transpose maps each of them onto a texture axis and the normal onto the discarded component.
+		const Vector4 u = along.normalized();
+		const Vector4 w = Vector4D::perpendicular(up, u, boundary_normals[cell_index]);
+		const Basis4D mesh_to_texture = Basis4D(u, up, w, boundary_normals[cell_index]).transposed();
+		const PackedInt32Array &vertex_indices = cell_vert[cell_index];
+		PackedVector3Array cell_texture_map;
+		cell_texture_map.resize(vertex_indices.size());
+		for (int64_t i = 0; i < vertex_indices.size(); i++) {
+			const Vector4 texcoord = mesh_to_texture.xform(_poly_cell_vertex_positions[vertex_indices[i]]);
+			cell_texture_map.set(i, Vector3(texcoord.x, texcoord.y, texcoord.z));
+		}
+		poly_cell_texture_map.set(cell_index, cell_texture_map);
+		marked.set(cell_index, true);
+		if (!each_cell_alone) {
+			PackedInt32Array group = { (int32_t)cell_index };
+			traverse(group, marked, true);
+		}
+	}
+	// Step 1: The islands, each in an order the unwrap can follow. In the per-cell modes every cell is its own
+	// island. Otherwise each connected piece of the mesh is one island: its mapped upright cells first, then the other
+	// upright cells, each reached across a face from an earlier upright cell so that V stays along up, then any other
+	// mapped cells, and then the cells facing along or against up, which hang off the rest. A piece with no upright
+	// cells and nothing mapped is unfolded from its lowest cell with the unwrap's own frame.
+	Vector<PackedInt32Array> islands;
+	if (each_cell_alone) {
+		islands.resize(cell_count);
+		for (int32_t cell_index = 0; cell_index < cell_count; cell_index++) {
+			islands.set(cell_index, PackedInt32Array{ cell_index });
+		}
+	} else if (actual_mode == UNWRAP_MODE_EACH_ISLAND_FILLS || actual_mode == UNWRAP_MODE_TILE_ISLANDS) {
+		Vector<bool> in_piece;
+		in_piece.resize(cell_count);
+		in_piece.fill(false);
+		marked.fill(false);
+		for (int64_t cell_index = 0; cell_index < cell_count; cell_index++) {
+			if (in_piece[cell_index]) {
+				continue;
+			}
+			in_piece.set(cell_index, true);
+			PackedInt32Array piece = { (int32_t)cell_index };
+			traverse(piece, in_piece, false);
+			// The piece is in traversal order, but the mapped cells go first in index order, which does not depend on
+			// where the traversal happened to start, so the same mesh always unfolds the same way.
+			PackedInt32Array island;
+			for (const int32_t piece_cell : piece) {
+				if (is_upright[piece_cell] && !poly_cell_texture_map[piece_cell].is_empty()) {
+					island.append(piece_cell);
+					marked.set(piece_cell, true);
+				}
+			}
+			island.sort();
+			traverse(island, marked, true);
+			PackedInt32Array other_mapped;
+			for (const int32_t piece_cell : piece) {
+				if (!marked[piece_cell] && !poly_cell_texture_map[piece_cell].is_empty()) {
+					other_mapped.append(piece_cell);
+					marked.set(piece_cell, true);
+				}
+			}
+			other_mapped.sort();
+			island.append_array(other_mapped);
+			if (island.is_empty()) {
+				island.append(piece[0]);
+				marked.set(piece[0], true);
+			}
+			traverse(island, marked, false);
+			islands.append(island);
+		}
+	} else {
+		ERR_FAIL_MSG("ArrayPolyMesh4D: Unknown unwrap texture map mode.");
+	}
+	// Step 2: Unwrap each island individually into an unbounded space, keeping the mapped cells it unfolds from.
+	for (int64_t island_index = 0; island_index < islands.size(); island_index++) {
+		_unwrap_texture_map_island_internal(islands[island_index], true, poly_cell_texture_map);
+	}
+	// Step 3: Fit or tile the islands into the texture space depending on the mode.
+	_fit_or_tile_islands_internal(islands, actual_mode, p_padding, p_proportional, poly_cell_texture_map);
 	_set_poly_cell_texture_map_dense_internal(poly_cell_texture_map);
 	poly_mesh_clear_cache();
 }
@@ -2714,6 +2897,7 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("project_texture_map", "cells", "mesh_to_texture"), &ArrayPolyMesh4D::project_texture_map_bind);
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map_island", "cells_in_island", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_island, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("unwrap_texture_map_upright", "up", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_upright, DEFVAL(Vector4(0, 1, 0, 0)), DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("fit_texture_map_island", "cells_in_island", "target_aabb", "proportional"), &ArrayPolyMesh4D::fit_texture_map_island, DEFVAL(AABB(Vector3(), Vector3(1, 1, 1))), DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);
 	ClassDB::bind_method(D_METHOD("delete_texture_maps_below_dimension", "dimension"), &ArrayPolyMesh4D::delete_texture_maps_below_dimension);

@@ -45,16 +45,17 @@ private:
 	PackedInt32Array _get_cell_4_vertices_starting_from_face(const int64_t p_which_cell, const int64_t p_start_face_in_cell) const;
 	real_t _get_cell_extent(const PackedInt32Array &p_cell_vertices, const int32_t p_origin_vertex) const;
 	void _get_cell_world_span_seed(const int64_t p_which_cell, Vector4 &r_world_x, Vector4 &r_world_y, Vector4 &r_world_z, int32_t &p_pivot) const;
-	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map);
+	void _transform_cell_to_texture_space(const Transform4D &p_world_to_texcoord, const Vector<PackedInt32Array> &p_cell_vert, const int64_t p_cell_index, const int32_t p_pivot, Vector<PackedVector3Array> &r_poly_cell_texture_map) const;
 	Vector<PackedInt32Array> _get_face_to_cell_map() const;
-	PackedInt32Array _collect_cells_in_island_internal(const int64_t p_start_cell, const Vector<PackedInt32Array> &p_face_to_cell_map);
+	PackedInt32Array _collect_cells_in_island_internal(const int64_t p_start_cell, const Vector<PackedInt32Array> &p_face_to_cell_map) const;
 	static PackedInt32Array _deletion_remap_table(const int32_t p_element_count, const int32_t p_deleted_index);
 	void _delete_edge_internal(const int32_t p_index);
 	void _delete_vertex_internal(const int32_t p_index);
 	void _delete_poly_cell_element_internal(const int32_t p_poly_dim_index, const int32_t p_index);
-	bool _unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert, Vector<PackedVector3Array> &r_poly_cell_texture_map);
+	bool _unwrap_texture_map_island_cell(const PackedInt32Array &p_cells_in_island, const int64_t p_current_cell_index_index, const Vector<PackedInt32Array> &p_cell_vert, Vector<PackedVector3Array> &r_poly_cell_texture_map) const;
 	void _unwrap_texture_map_island_internal(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing, Vector<PackedVector3Array> &r_poly_cell_texture_map);
-	void _fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional, Vector<PackedVector3Array> &r_poly_cell_texture_map);
+	static void _fit_island_texture_map_into_aabb(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb, const bool p_proportional, Vector<PackedVector3Array> &r_poly_cell_texture_map);
+	static void _fit_or_tile_islands_internal(const Vector<PackedInt32Array> &p_islands, const UnwrapTextureMapMode p_mode, const double p_padding, const bool p_proportional, Vector<PackedVector3Array> &r_poly_cell_texture_map);
 	static Vector3i _tiles_for_island_count(const int32_t p_island_count);
 	static inline int32_t _ceil_div(int32_t p_a, int32_t p_b) {
 		return (p_a + p_b - 1) / p_b;
@@ -64,6 +65,7 @@ private:
 	PackedInt32Array _normal_indices_for_values_internal(const PackedVector4Array &p_values);
 	PackedVector4Array _sample_normal_values_internal(const PackedInt32Array &p_indices) const;
 	Vector<PackedVector3Array> _get_poly_cell_texture_map_dense_internal() const;
+	Vector<PackedVector3Array> _get_poly_cell_texture_map_dense_resized_internal(const bool p_keep_existing) const;
 	void _set_poly_cell_texture_map_dense_internal(const Vector<PackedVector3Array> &p_poly_cell_texture_map);
 	void _compact_normal_values_internal();
 	void _compact_texture_map_values_internal();
@@ -107,6 +109,7 @@ public:
 	void unwrap_texture_map_island(const PackedInt32Array &p_cells_in_island, const bool p_keep_existing = false);
 	void fit_texture_map_island(const PackedInt32Array &p_cells_in_island, const AABB &p_target_aabb = AABB(Vector3(), Vector3(1, 1, 1)), const bool p_proportional = true);
 	void unwrap_texture_map(const UnwrapTextureMapMode p_mode, const double p_padding = 0.0, const bool p_proportional = true, const bool p_keep_existing = false);
+	void unwrap_texture_map_upright(const Vector4 &p_up = Vector4(0, 1, 0, 0), const UnwrapTextureMapMode p_mode = UNWRAP_MODE_TILE_ISLANDS, const double p_padding = 0.0, const bool p_proportional = true, const bool p_keep_existing = false);
 	void transform_texture_map(const Transform3D &p_transform);
 	void delete_texture_maps_below_dimension(const int p_dimension);
 

@@ -252,6 +252,19 @@
 				The [param cells_in_island] parameter MUST form a continuous connected island of cells, where each consecutive cell shares a non-seam face with at least one of the earlier cells in the array. If the input cells are not consecutively connected by non-seam faces, the function will fail.
 			</description>
 		</method>
+		<method name="unwrap_texture_map_upright">
+			<return type="void" />
+			<param index="0" name="up" type="Vector4" default="Vector4(0, 1, 0, 0)" />
+			<param index="1" name="mode" type="int" enum="ArrayPolyMesh4D.UnwrapTextureMapMode" default="4" />
+			<param index="2" name="padding" type="float" default="0.0" />
+			<param index="3" name="proportional" type="bool" default="true" />
+			<param index="4" name="keep_existing" type="bool" default="false" />
+			<description>
+				Unwraps a texture map for the polyhedral mesh like [method unwrap_texture_map], but keeps it upright on the cells that stand along [param up]: every cell whose normal is perpendicular to [param up], such as the walls of a building when up is +Y, gets its V texture axis along [param up] and its U and W axes across, and the other cells, such as floors and ceilings, hang off those in the unfold. This is the unwrap for architecture and anything else with a clear vertical, where a texture should stay upright on every wall and continue across walls that meet.
+				Each connected group of upright cells is unfolded from one seed cell: a cell of the group that already has texture coordinates when [param keep_existing] is [code]true[/code], or else the lowest cell of the group, projected with U along its most horizontal edge, V along [param up], and W completing a positively oriented frame with the cell's normal, so that no cell renders mirrored. To choose the orientation of an island, project one of its upright cells with [method project_texture_map] first and pass [code]true[/code] for [param keep_existing]. Islands never cross seam faces, so seams split the mesh into islands as they do in [method unwrap_texture_map]. The boundary normals tell which cells are upright, and are calculated when the mesh has none.
+				The [param mode], [param padding], and [param proportional] parameters place the islands in texture space exactly as in [method unwrap_texture_map], except that [constant UNWRAP_MODE_AUTOMATIC] always tiles islands, since unfolding connected upright cells together is the point of this unwrap. In the per-cell modes, every upright cell is projected upright on its own.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="all_poly_cell_normal_indices" type="Dictionary[Vector2i, Array]" setter="set_all_poly_cell_normal_indices" getter="get_all_poly_cell_normal_indices" default="{}">
