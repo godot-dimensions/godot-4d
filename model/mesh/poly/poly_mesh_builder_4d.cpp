@@ -2700,32 +2700,15 @@ Ref<ArrayPolyMesh4D> PolyMeshBuilder4D::solidify_faces(const Ref<PolyMesh4D> &p_
 	ret->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ out_faces, out_cells });
 	ERR_FAIL_COND_V_MSG(!ret->is_poly_mesh_data_valid(), ret, "PolyMeshBuilder4D: Solidifying the faces produced an invalid mesh.");
 	// Every cell must fit one 3D hyperplane, see above, which a face that leans out of the hyperplane breaks when it is
-	// not flat, and a cell of the input breaks when it groups faces that lean away from each other.
+	// not flat, and a cell of the input breaks when it groups faces that lean away from each other. Flatness is measured
+	// the way `make_coplanar` measures it, so that a face it leaves whole always solidifies. A face within the tolerance
+	// thickened by about as much as it is warped gives a cell whose fitted hyperplane misses corners by up to twice the
+	// warp, since the warp and the thickness compete for the one direction the fit has left over the face, so a cell is
+	// allowed twice the tolerance.
 	{
 		const Vector<PackedInt32Array> cell_vertices = ret->get_all_poly_cell_vertex_indices(3, false);
 		for (int64_t cell_index = 0; cell_index < cell_vertices.size(); cell_index++) {
-			const PackedInt32Array &vertices = cell_vertices[cell_index];
-			const Vector4 origin = out_positions[vertices[0]];
-			real_t cell_scale = (real_t)0.0;
-			for (const int32_t vertex_index : vertices) {
-				cell_scale = MAX(cell_scale, (out_positions[vertex_index] - origin).length());
-			}
-			Vector<Vector4> basis;
-			bool flat = true;
-			for (const int32_t vertex_index : vertices) {
-				Vector4 rejection = out_positions[vertex_index] - origin;
-				for (const Vector4 &direction : basis) {
-					rejection -= direction * direction.dot(rejection);
-				}
-				if (rejection.length() > cell_scale * flat_sine) {
-					if (basis.size() == 3) {
-						flat = false;
-						break;
-					}
-					basis.push_back(rejection.normalized());
-				}
-			}
-			if (!flat) {
+			if (_flatness_deviation(out_positions, cell_vertices[cell_index], 3) > (real_t)2.0 * flat_sine) {
 				ret.instantiate(); // An empty mesh, like the other failures return.
 				ERR_FAIL_V_MSG(ret, "PolyMeshBuilder4D: Solidifying face " + itos(cell_index) + " gives a cell that fits no 3D hyperplane, since the face leans out of the hyperplane and is either not flat or grouped with faces it leans away from.");
 			}

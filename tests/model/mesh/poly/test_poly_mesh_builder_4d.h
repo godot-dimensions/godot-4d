@@ -1132,17 +1132,22 @@ TEST_CASE("[PolyMeshBuilder4D] Make coplanar") {
 			p_mesh->append_poly_cell(2, face);
 		}
 	};
-	// Whether every element of the dimension fits in a flat of its own dimension.
+	// Whether every element of the dimension fits in a flat of its own dimension. The tolerance is relative to the
+	// element's size, so that rounding in single-precision positions does not count as leaving the flat.
 	auto elements_are_flat = [](const Ref<ArrayPolyMesh4D> &p_mesh, const int p_dimension) -> bool {
 		const PackedVector4Array positions = p_mesh->get_poly_cell_vertex_positions();
 		for (const PackedInt32Array &vertices : p_mesh->get_all_poly_cell_vertex_indices(p_dimension, false)) {
+			real_t scale = (real_t)0.0;
+			for (const int32_t vertex_index : vertices) {
+				scale = MAX(scale, (positions[vertex_index] - positions[vertices[0]]).length());
+			}
 			Vector<Vector4> basis;
 			for (const int32_t vertex_index : vertices) {
 				Vector4 rejection = positions[vertex_index] - positions[vertices[0]];
 				for (const Vector4 &direction : basis) {
 					rejection -= direction * direction.dot(rejection);
 				}
-				if (rejection.length() > (real_t)1e-6) {
+				if (rejection.length() > (real_t)CMP_EPSILON * scale) {
 					if (basis.size() == p_dimension) {
 						return false;
 					}
@@ -1166,6 +1171,7 @@ TEST_CASE("[PolyMeshBuilder4D] Make coplanar") {
 	Ref<ArrayPolyMesh4D> quad;
 	quad.instantiate();
 	append_loop_faces(quad, { Vector4(0, 0, 0, 0), Vector4(10, 0, 0, 0), Vector4(10, 10, 1, 0), Vector4(0, 10, 0, 0) }, { { 0, 1, 2, 3 } });
+	CHECK_FALSE(elements_are_flat(quad, 2));
 	CHECK(PolyMeshBuilder4D::make_coplanar(quad) == 1);
 	REQUIRE(quad->is_mesh_data_valid());
 	CHECK(quad->get_poly_cell_indices()[0].size() == 2);
@@ -1192,6 +1198,7 @@ TEST_CASE("[PolyMeshBuilder4D] Make coplanar") {
 		ring.append(Vector4(5.0 * Math::cos(angle), 5.0 * Math::sin(angle), i == 0 ? 1.0 : 0.0, 0));
 	}
 	append_loop_faces(octagon, ring, { { 0, 1, 2, 3, 4, 5, 6, 7 } });
+	CHECK_FALSE(elements_are_flat(octagon, 2));
 	CHECK(PolyMeshBuilder4D::make_coplanar(octagon) == 1);
 	REQUIRE(octagon->is_mesh_data_valid());
 	REQUIRE(octagon->get_poly_cell_indices()[0].size() == 2);
@@ -1223,6 +1230,8 @@ TEST_CASE("[PolyMeshBuilder4D] Make coplanar") {
 		cube_corner_values.append(Vector3(vertex_index, 0, 0));
 	}
 	cube->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>{ cube_corner_values });
+	CHECK_FALSE(elements_are_flat(cube, 2));
+	CHECK_FALSE(elements_are_flat(cube, 3));
 	CHECK(PolyMeshBuilder4D::make_coplanar(cube) == 4);
 	REQUIRE(cube->is_mesh_data_valid());
 	CHECK(cube->get_edge_indices().size() == 15 * 2);
@@ -1373,8 +1382,9 @@ TEST_CASE("[PolyMeshBuilder4D] Solidify faces") {
 	CHECK(has_face_normal(leaning_slab, Vector4(0, 0, -1, 0)));
 	REQUIRE(leaning_slab->get_poly_cell_boundary_normals().size() == 1);
 	CHECK_MESSAGE(leaning_slab->get_poly_cell_boundary_normals()[0].w > (real_t)0.0, "The leaning cell is oriented towards the hyperplane normal.");
-	// Whether every cell's vertices fit in one 3D hyperplane, which they must for the cell's cross-sections to be flat.
-	auto cells_are_flat = [](const Ref<ArrayPolyMesh4D> &p_mesh) -> bool {
+	// Whether every cell's vertices fit in one 3D hyperplane, to within the given distance, which they must for the
+	// cell's cross-sections to be flat.
+	auto cells_are_flat = [](const Ref<ArrayPolyMesh4D> &p_mesh, const real_t p_tolerance = (real_t)1e-6) -> bool {
 		const PackedVector4Array positions = p_mesh->get_poly_cell_vertex_positions();
 		for (const PackedInt32Array &vertices : p_mesh->get_all_poly_cell_vertex_indices(3, false)) {
 			Vector<Vector4> basis;
@@ -1383,7 +1393,7 @@ TEST_CASE("[PolyMeshBuilder4D] Solidify faces") {
 				for (const Vector4 &direction : basis) {
 					rejection -= direction * direction.dot(rejection);
 				}
-				if (rejection.length() > (real_t)1e-6) {
+				if (rejection.length() > p_tolerance) {
 					if (basis.size() == 3) {
 						return false;
 					}
@@ -1445,6 +1455,17 @@ TEST_CASE("[PolyMeshBuilder4D] Solidify faces") {
 	Ref<ArrayPolyMesh4D> refused_skew = PolyMeshBuilder4D::solidify_faces(leaning_skew, 0.2);
 	ERR_PRINT_ON;
 	CHECK(refused_skew->get_poly_cell_vertex_positions().is_empty());
+	// A leaning face warped by less than the tolerance is thickened, since `make_coplanar` leaves such a face whole,
+	// even when the warp is about the thickness, where the cell can only be as flat as twice the warp: a 10 m fence
+	// face with one corner 11 mm up and the next pushed out, thickened to 25 mm within XZW, as a fence beam is.
+	Ref<ArrayPolyMesh4D> slightly_warped;
+	slightly_warped.instantiate();
+	append_loop_faces(slightly_warped, { Vector4(-5, 0, -5, 5), Vector4(5, 0, -5, 5), Vector4(5, 0.01112489516261701, 5, 5), Vector4(-5, 0, 7.73, 5) }, { { 0, 1, 2, 3 } });
+	Ref<ArrayPolyMesh4D> slightly_warped_slab = PolyMeshBuilder4D::solidify_faces(slightly_warped, 0.025, 0.0, 2.0, Vector4(0, 1, 0, 0));
+	REQUIRE(slightly_warped_slab->is_mesh_data_valid());
+	CHECK(slightly_warped_slab->get_poly_cell_vertex_positions().size() == 8);
+	CHECK(slightly_warped_slab->get_poly_cell_indices()[1].size() == 1);
+	CHECK_MESSAGE(cells_are_flat(slightly_warped_slab, (real_t)0.03), "Flat to within the warp, a few millimeters over 14 m.");
 	// A face perpendicular to the hyperplane has no normal within it to thicken along, so it is refused.
 	Ref<ArrayPolyMesh4D> standing;
 	standing.instantiate();
