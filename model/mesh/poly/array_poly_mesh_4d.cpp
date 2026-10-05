@@ -2530,22 +2530,15 @@ void ArrayPolyMesh4D::merge_with(const Ref<PolyMesh4D> &p_other, const Transform
 		other_array_mesh = p_other->to_array_poly_mesh();
 	}
 	// Merge the value pools first, remembering how the other mesh's value indices map into this
-	// mesh's pools. The other mesh's normal values need to be transformed with the inverse-transpose
-	// of the merge basis to support non-uniform scaling.
+	// mesh's pools, see `_append_values_to_pool_deduplicated`. The other mesh's normal values need to be
+	// transformed with the inverse-transpose of the merge basis to support non-uniform scaling.
 	const Basis4D inverse_transpose = p_transform.basis.inverse().transposed();
-	const PackedVector4Array &other_normal_values = other_array_mesh->_poly_cell_normal_values;
-	PackedInt32Array other_normal_value_remap;
-	other_normal_value_remap.resize(other_normal_values.size());
+	PackedVector4Array other_normal_values = other_array_mesh->_poly_cell_normal_values;
 	for (int64_t i = 0; i < other_normal_values.size(); i++) {
-		const Vector4 other_normal = inverse_transpose.xform(other_normal_values[i]);
-		other_normal_value_remap.set(i, (int32_t)Vector4D::vector4_array_append_deduplicate(_poly_cell_normal_values, other_normal));
+		other_normal_values.set(i, inverse_transpose.xform(other_normal_values[i]));
 	}
-	const PackedVector3Array &other_texture_map_values = other_array_mesh->_poly_cell_texture_map_values;
-	PackedInt32Array other_texture_map_value_remap;
-	other_texture_map_value_remap.resize(other_texture_map_values.size());
-	for (int64_t i = 0; i < other_texture_map_values.size(); i++) {
-		other_texture_map_value_remap.set(i, (int32_t)Vector4D::vector3_array_append_deduplicate(_poly_cell_texture_map_values, other_texture_map_values[i]));
-	}
+	const PackedInt32Array other_normal_value_remap = _append_values_to_pool_deduplicated<PackedVector4Array, Vector4>(_poly_cell_normal_values, other_normal_values);
+	const PackedInt32Array other_texture_map_value_remap = _append_values_to_pool_deduplicated<PackedVector3Array, Vector3>(_poly_cell_texture_map_values, other_array_mesh->_poly_cell_texture_map_values);
 	const HashMap<Vector2i, Vector<PackedInt32Array>> &other_poly_cell_normal_indices = other_array_mesh->_all_poly_cell_normal_indices;
 	PackedVector4Array boundary_normals_cache;
 	// Merge all normals.

@@ -63,6 +63,34 @@ private:
 
 	// Internal helpers for the normal and texture map value pools.
 	PackedInt32Array _normal_indices_for_values_internal(const PackedVector4Array &p_values);
+	// Appends values to one of this mesh's value pools, deduplicated against what the pool already holds, and returns
+	// where each value landed. The pool's existing values are indexed through a hash map first, so that merging a large
+	// mesh costs the sizes of the pools rather than their product, which a linear scan of the pool per value would.
+	template <typename TArray, typename TValue>
+	static PackedInt32Array _append_values_to_pool_deduplicated(TArray &r_pool, const TArray &p_values) {
+		HashMap<TValue, int32_t> pool_indices; // The first index of each distinct value in the pool.
+		for (int64_t i = 0; i < r_pool.size(); i++) {
+			const TValue &existing_value = r_pool[i];
+			if (!pool_indices.has(existing_value)) {
+				pool_indices.insert(existing_value, (int32_t)i);
+			}
+		}
+		PackedInt32Array value_remap;
+		value_remap.resize(p_values.size());
+		for (int64_t i = 0; i < p_values.size(); i++) {
+			const TValue &value = p_values[i];
+			const int32_t *existing_index = pool_indices.getptr(value);
+			if (existing_index != nullptr) {
+				value_remap.set(i, *existing_index);
+			} else {
+				const int32_t new_index = (int32_t)r_pool.size();
+				r_pool.append(value);
+				pool_indices.insert(value, new_index);
+				value_remap.set(i, new_index);
+			}
+		}
+		return value_remap;
+	}
 	// Resamples one dense binding after `split_poly_element` changed the mesh. `p_pre_traversal` is the binding's
 	// per-element traversal of its sub-elements before the split, or null for a per-element binding, and
 	// `p_post_traversal` is the same after the split, which also tells how many elements there are now.
