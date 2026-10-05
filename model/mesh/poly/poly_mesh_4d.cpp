@@ -1028,6 +1028,52 @@ PackedVector4Array PolyMesh4D::compute_face_normals(const Vector4 &p_hyperplane_
 	return ret;
 }
 
+// Each face is fanned into triangles from its first vertex, whose signed solid angles add up to the face's own whatever
+// its shape, as signed areas do in 2D. Each triangle's solid angle is Van Oosterom and Strackee's closed form,
+// 2 atan2(a . (b x c), |a||b||c| + (a . b)|c| + (a . c)|b| + (b . c)|a|) with a, b, c the vertices relative to the
+// point, whose triple product within the hyperplane is the determinant of (a, b, c, hyperplane normal); a point on a
+// vertex gives a zero vector and contributes nothing. That determinant equals the determinant of (first edge, second
+// edge, first vertex relative to the point, hyperplane normal), whose sign is that of the relative position's
+// component along the face normal, since (first edge, second edge, face normal, hyperplane normal) is the positively
+// oriented frame the face normal completes, which is why the sign lands on the side the normals point away from.
+real_t PolyMesh4D::compute_face_winding_number(const Vector4 &p_point, const Vector4 &p_hyperplane_normal) {
+	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), (real_t)0.0);
+	const Vector4 hyperplane_normal = p_hyperplane_normal.normalized();
+	ERR_FAIL_COND_V_MSG(hyperplane_normal.is_zero_approx(), (real_t)0.0, "PolyMesh4D: The hyperplane normal must not be zero.");
+	if (get_poly_cell_indices().is_empty()) {
+		return (real_t)0.0; // No faces enclose nothing.
+	}
+	const Vector<PackedInt32Array> face_vertex_indices = get_all_poly_cell_vertex_indices(2, true);
+	const PackedVector4Array positions = get_poly_cell_vertex_positions();
+	// Every vertex relative to the point, with the component along the hyperplane normal dropped, so that the point is
+	// tested within the hyperplane wherever it is along the normal.
+	PackedVector4Array relative_positions;
+	relative_positions.resize(positions.size());
+	for (int64_t vertex_index = 0; vertex_index < positions.size(); vertex_index++) {
+		const Vector4 offset = positions[vertex_index] - p_point;
+		relative_positions.set(vertex_index, offset - hyperplane_normal * hyperplane_normal.dot(offset));
+	}
+	real_t total_solid_angle = (real_t)0.0;
+	for (const PackedInt32Array &span : face_vertex_indices) {
+		if (span.size() < 3) {
+			continue;
+		}
+		const Vector4 a = relative_positions[span[0]];
+		const real_t a_length = a.length();
+		for (int64_t i = 1; i + 1 < span.size(); i++) {
+			const Vector4 b = relative_positions[span[i]];
+			const Vector4 c = relative_positions[span[i + 1]];
+			const real_t b_length = b.length();
+			const real_t c_length = c.length();
+			const real_t triple_product = Vector4D::perpendicular(a, b, c).dot(hyperplane_normal);
+			const real_t denominator = a_length * b_length * c_length + a.dot(b) * c_length + a.dot(c) * b_length + b.dot(c) * a_length;
+			total_solid_angle += (real_t)2.0 * Math::atan2(triple_product, denominator);
+		}
+	}
+	// The whole sphere is 4 pi steradians.
+	return total_solid_angle / (real_t)(2.0 * Math_TAU);
+}
+
 Vector<PackedInt32Array> PolyMesh4D::get_all_face_vertex_indices() {
 	ERR_FAIL_COND_V(!is_poly_mesh_data_valid(), Vector<PackedInt32Array>());
 	const Vector<Vector<PackedInt32Array>> poly_cell_indices = get_poly_cell_indices();
@@ -1710,6 +1756,7 @@ void PolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_texture_map_indices"), &PolyMesh4D::get_all_poly_cell_texture_map_indices_bind);
 
 	ClassDB::bind_method(D_METHOD("compute_face_normals", "hyperplane_normal"), &PolyMesh4D::compute_face_normals, DEFVAL(Vector4(0, 0, 0, 1)));
+	ClassDB::bind_method(D_METHOD("compute_face_winding_number", "point", "hyperplane_normal"), &PolyMesh4D::compute_face_winding_number, DEFVAL(Vector4(0, 0, 0, 1)));
 	ClassDB::bind_method(D_METHOD("get_all_face_vertex_indices"), &PolyMesh4D::get_all_face_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_boundary_cell_vertex_indices", "start_with_canonical_span"), &PolyMesh4D::get_all_boundary_cell_vertex_indices_bind);
 	ClassDB::bind_method(D_METHOD("get_all_poly_cell_vertex_indices", "cell_dimension", "start_with_canonical_span"), &PolyMesh4D::get_all_poly_cell_vertex_indices_bind);

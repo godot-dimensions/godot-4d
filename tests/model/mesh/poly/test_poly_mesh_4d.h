@@ -1336,4 +1336,110 @@ TEST_CASE("[PolyMesh4D] Face normals do not depend on three well spread vertices
 	CHECK(mesh->compute_face_normals(Vector4(0, 0, 0, 1))[0].is_zero_approx());
 }
 
+// A mesh of faces only, from loops of vertex indices. A loop's first two edges meet at its second vertex, so each face
+// is oriented the way its loop is written, which is how `compute_face_normals` reads it.
+static Ref<ArrayPolyMesh4D> make_face_surface(const PackedVector4Array &p_positions, const Vector<PackedInt32Array> &p_face_loops) {
+	Ref<ArrayPolyMesh4D> mesh;
+	mesh.instantiate();
+	for (const Vector4 &position : p_positions) {
+		mesh->append_vertex(position, false);
+	}
+	for (const PackedInt32Array &loop : p_face_loops) {
+		PackedInt32Array face_edges;
+		for (int64_t i = 0; i < loop.size(); i++) {
+			face_edges.push_back((int32_t)mesh->append_edge_indices(loop[i], loop[(i + 1) % loop.size()]));
+		}
+		mesh->append_poly_cell(2, face_edges, false);
+	}
+	return mesh;
+}
+
+// The corners of the cube from -1 to 1 in XYZ, and its six faces, each listed counter-clockwise seen from outside.
+static PackedVector4Array cube_corners_xyz() {
+	return PackedVector4Array{ Vector4(-1, -1, -1, 0), Vector4(1, -1, -1, 0), Vector4(1, 1, -1, 0), Vector4(-1, 1, -1, 0), Vector4(-1, -1, 1, 0), Vector4(1, -1, 1, 0), Vector4(1, 1, 1, 0), Vector4(-1, 1, 1, 0) };
+}
+
+static Vector<PackedInt32Array> cube_face_loops() {
+	return Vector<PackedInt32Array>{
+		PackedInt32Array{ 4, 5, 6, 7 }, // +Z
+		PackedInt32Array{ 0, 3, 2, 1 }, // -Z
+		PackedInt32Array{ 1, 2, 6, 5 }, // +X
+		PackedInt32Array{ 0, 4, 7, 3 }, // -X
+		PackedInt32Array{ 3, 7, 6, 2 }, // +Y
+		PackedInt32Array{ 0, 1, 5, 4 }, // -Y
+	};
+}
+
+TEST_CASE("[PolyMesh4D] Winding number of a point around a surface of faces") {
+	SUBCASE("A closed surface gives one inside and zero outside, wherever the point is along the hyperplane normal") {
+		Ref<ArrayPolyMesh4D> cube = make_face_surface(cube_corners_xyz(), cube_face_loops());
+		REQUIRE(cube->is_poly_mesh_data_valid());
+		CHECK(Math::is_equal_approx(cube->compute_face_winding_number(Vector4()), (real_t)1.0));
+		CHECK(Math::is_equal_approx(cube->compute_face_winding_number(Vector4(0.9, -0.9, 0.9, 0)), (real_t)1.0));
+		CHECK(Math::is_zero_approx(cube->compute_face_winding_number(Vector4(1.1, 0, 0, 0))));
+		CHECK(Math::is_zero_approx(cube->compute_face_winding_number(Vector4(0, 0, -5, 0))));
+		// The default hyperplane normal is +W, so the W coordinate does not matter, and neither does the normal's length.
+		CHECK(Math::is_equal_approx(cube->compute_face_winding_number(Vector4(0, 0, 0, 7)), (real_t)1.0));
+		CHECK(Math::is_zero_approx(cube->compute_face_winding_number(Vector4(1.1, 0, 0, -7))));
+		CHECK(Math::is_equal_approx(cube->compute_face_winding_number(Vector4(0.5, 0.5, 0.5, 3), Vector4(0, 0, 0, 3)), (real_t)1.0));
+		ERR_PRINT_OFF;
+		CHECK(cube->compute_face_winding_number(Vector4(), Vector4()) == (real_t)0.0);
+		ERR_PRINT_ON;
+	}
+
+	SUBCASE("The sign follows the faces' orientation, positive on the side their normals point away from") {
+		Ref<ArrayPolyMesh4D> cube = make_face_surface(cube_corners_xyz(), cube_face_loops());
+		const PackedVector4Array normals = cube->compute_face_normals();
+		REQUIRE(normals.size() == 6);
+		CHECK_MESSAGE(normals[0].is_equal_approx(Vector4(0, 0, 1, 0)), "The loops are written to face outward.");
+		CHECK(Math::is_equal_approx(cube->compute_face_winding_number(Vector4()), (real_t)1.0));
+		Vector<PackedInt32Array> reversed_loops;
+		for (PackedInt32Array loop : cube_face_loops()) {
+			loop.reverse();
+			reversed_loops.push_back(loop);
+		}
+		Ref<ArrayPolyMesh4D> inside_out = make_face_surface(cube_corners_xyz(), reversed_loops);
+		CHECK(inside_out->compute_face_normals()[0].is_equal_approx(Vector4(0, 0, -1, 0)));
+		CHECK(Math::is_equal_approx(inside_out->compute_face_winding_number(Vector4()), (real_t)-1.0));
+	}
+
+	SUBCASE("A ground surface at varying heights is tested within the ground hyperplane") {
+		// The cube's faces carried into XZW with +Y as the hyperplane normal, their corners at different heights.
+		PackedVector4Array ground_corners;
+		for (const Vector4 &corner : cube_corners_xyz()) {
+			ground_corners.push_back(Vector4(corner.x, (real_t)0.3 * corner.x * corner.y, corner.y, corner.z));
+		}
+		Ref<ArrayPolyMesh4D> ground = make_face_surface(ground_corners, cube_face_loops());
+		const Vector4 up = Vector4(0, 1, 0, 0);
+		CHECK_MESSAGE(ground->compute_face_normals(up)[0].is_equal_approx(Vector4(0, 0, 0, 1)), "Still facing outward in the new hyperplane.");
+		CHECK(Math::is_equal_approx(ground->compute_face_winding_number(Vector4(), up), (real_t)1.0));
+		CHECK(Math::is_equal_approx(ground->compute_face_winding_number(Vector4(0.5, 100, 0.5, -0.5), up), (real_t)1.0));
+		CHECK(Math::is_zero_approx(ground->compute_face_winding_number(Vector4(0, 0, 0, 1.5), up)));
+		CHECK(Math::is_zero_approx(ground->compute_face_winding_number(Vector4(0, -100, -1.5, 0), up)));
+	}
+
+	SUBCASE("A surface that is not convex") {
+		// A cube with one corner pulled in toward the center, which dents the three faces around it inward.
+		PackedVector4Array dented_corners = cube_corners_xyz();
+		dented_corners.set(6, Vector4(0.2, 0.2, 0.2, 0));
+		Ref<ArrayPolyMesh4D> dented = make_face_surface(dented_corners, cube_face_loops());
+		CHECK(Math::is_equal_approx(dented->compute_face_winding_number(Vector4(0.1, 0.1, 0.1, 0)), (real_t)1.0));
+		CHECK(Math::is_equal_approx(dented->compute_face_winding_number(Vector4(-0.9, -0.9, -0.9, 0)), (real_t)1.0));
+		CHECK_MESSAGE(Math::is_zero_approx(dented->compute_face_winding_number(Vector4(0.5, 0.5, 0.5, 0))), "In the dent: inside the cube, outside the surface.");
+	}
+
+	SUBCASE("An open surface never reaches one half, and nothing is inside a mesh without faces") {
+		Ref<ArrayPolyMesh4D> sheet = make_face_surface(cube_corners_xyz(), Vector<PackedInt32Array>{ cube_face_loops()[0] });
+		// A square of side 2 seen from 1 away along its center line subtends 4 atan(1 / sqrt(3)), a sixth of the sphere.
+		CHECK(Math::is_equal_approx(sheet->compute_face_winding_number(Vector4()), (real_t)1.0 / (real_t)6.0));
+		CHECK(sheet->compute_face_winding_number(Vector4(0, 0, 0.99, 0)) < (real_t)0.5);
+		CHECK(sheet->compute_face_winding_number(Vector4(0, 0, 1.01, 0)) > (real_t)-0.5);
+		CHECK(Math::abs(sheet->compute_face_winding_number(Vector4(0, 0, -100, 0))) < (real_t)0.001);
+		Ref<ArrayPolyMesh4D> edges_only;
+		edges_only.instantiate();
+		edges_only->append_edge_points(Vector4(-1, 0, 0, 0), Vector4(1, 0, 0, 0));
+		CHECK(edges_only->compute_face_winding_number(Vector4()) == (real_t)0.0);
+	}
+}
+
 } // namespace TestPolyMesh4D

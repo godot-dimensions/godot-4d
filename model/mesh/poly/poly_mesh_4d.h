@@ -110,6 +110,7 @@ public:
 	PolyDataDictionary get_all_poly_cell_texture_map_indices_bind();
 
 	PackedVector4Array compute_face_normals(const Vector4 &p_hyperplane_normal = Vector4(0, 0, 0, 1));
+	real_t compute_face_winding_number(const Vector4 &p_point, const Vector4 &p_hyperplane_normal = Vector4(0, 0, 0, 1));
 	Vector<PackedInt32Array> get_all_face_vertex_indices();
 	TypedArray<PackedInt32Array> get_all_face_vertex_indices_bind();
 	Vector<PackedInt32Array> get_all_boundary_cell_vertex_indices(const bool p_start_with_canonical_span);

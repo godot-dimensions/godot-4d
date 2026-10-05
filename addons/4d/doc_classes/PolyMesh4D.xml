@@ -67,6 +67,15 @@
 				Computes the normal of each 2D face, for a mesh whose faces lie in a 3D hyperplane, and returns one normal per face without storing them. A face in 4D has a whole plane of perpendicular directions, so its normal is only defined within a hyperplane: it is the direction perpendicular to the face within the hyperplane perpendicular to [param hyperplane_normal]. The side it points to follows the face's orientation, which is set by the order of its first two edges, the same way a 3D face's normal follows its winding order. The normal is computed from the face's whole boundary, so a face with collinear vertices along one of its sides gets its normal like any other. With the default [param hyperplane_normal] of +W, a mesh in the XYZ hyperplane gets the same normals as it would in 3D, and a ground mesh in the XZW hyperplane can pass +Y. A degenerate face gets a zero vector.
 			</description>
 		</method>
+		<method name="compute_face_winding_number">
+			<return type="float" />
+			<param index="0" name="point" type="Vector4" />
+			<param index="1" name="hyperplane_normal" type="Vector4" default="Vector4(0, 0, 0, 1)" />
+			<description>
+				Computes the generalized face winding number of [param point] around the mesh's faces, for a mesh whose faces lie in a 3D hyperplane, like [method compute_face_normals]: the solid angle the faces subtend at the point, as a fraction of the whole sphere. For a closed surface of faces this is [code]1.0[/code] or [code]-1.0[/code] inside and [code]0.0[/code] outside, so a point is inside when the absolute value is greater than [code]0.5[/code], which an open surface, such as a single sheet, never reaches. The sign follows the orientation of the faces the same way their normals do: it is positive on the side that the normals from [method compute_face_normals] point away from, so a closed surface whose normals point outward gives [code]1.0[/code] inside. Both the point and the faces are taken within the hyperplane perpendicular to [param hyperplane_normal], so the point's position along that normal does not matter: with the default of +W, a mesh in the XYZ hyperplane is tested like a 3D mesh, and a ground mesh in the XZW hyperplane can pass +Y to test a point at any height. The faces have to be oriented consistently, but they need not be flat, and the surface need not be convex. A point exactly on the surface gets half of either side.
+				[b]Note:[/b] This is not a trivial operation, since the faces' vertex loops are rebuilt on every call, like [method get_all_face_vertex_indices].
+			</description>
+		</method>
 		<method name="get_all_boundary_cell_vertex_indices">
 			<return type="PackedInt32Array[]" />
 			<param index="0" name="start_with_canonical_span" type="bool" />
