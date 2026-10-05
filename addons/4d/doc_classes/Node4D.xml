@@ -113,10 +113,24 @@
 				[b]Note:[/b] This is a [RefCounted]-based object with a copy of the transform values. Changing the members will not transform the Node4D unless set using [method set_transform]. Therefore, this is not exposed as a property to prevent misuse.
 			</description>
 		</method>
+		<method name="global_to_local" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="global" type="Vector4" />
+			<description>
+				Converts a global position relative to the world, to a local position relative to this [Node4D].
+			</description>
+		</method>
 		<method name="is_visible_in_tree" qualifiers="const">
 			<return type="bool" />
 			<description>
 				Returns [code]true[/code] if the [Node4D] is visible in the scene tree (this node and all parent [Node4D]s are visible).
+			</description>
+		</method>
+		<method name="local_to_global" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="local" type="Vector4" />
+			<description>
+				Converts a local position relative to this [Node4D], to a global position relative to the world.
 			</description>
 		</method>
 		<method name="look_at">

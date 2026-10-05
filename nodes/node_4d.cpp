@@ -15,6 +15,16 @@ void Node4D::set_rotation_edit_mode(const RotationEditMode p_rotation_edit_mode)
 	notify_property_list_changed();
 }
 
+// Transform conversion.
+
+Vector4 Node4D::global_to_local(const Vector4 &p_global) const {
+	return get_global_transform().xform_inv(p_global);
+}
+
+Vector4 Node4D::local_to_global(const Vector4 &p_local) const {
+	return get_global_transform().xform(p_local);
+}
+
 // Transform altering methods.
 
 void Node4D::apply_scale(const Vector4 &p_amount) {
@@ -838,6 +848,9 @@ void Node4D::_bind_methods() {
 	// Local transform notification.
 	ClassDB::bind_method(D_METHOD("get_should_notify_local_transform"), &Node4D::get_should_notify_local_transform);
 	ClassDB::bind_method(D_METHOD("set_should_notify_local_transform", "should_notify_local_transform"), &Node4D::set_should_notify_local_transform);
+	// Transform conversion.
+	ClassDB::bind_method(D_METHOD("global_to_local", "global"), &Node4D::global_to_local);
+	ClassDB::bind_method(D_METHOD("local_to_global", "local"), &Node4D::local_to_global);
 	// Transform altering methods.
 	ClassDB::bind_method(D_METHOD("apply_scale", "ratio"), &Node4D::apply_scale);
 	ClassDB::bind_method(D_METHOD("translate_local", "offset"), &Node4D::translate_local);

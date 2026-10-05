@@ -65,6 +65,10 @@ public:
 	bool get_should_notify_local_transform() const { return _should_notify_local_transform; }
 	void set_should_notify_local_transform(const bool p_should_notify_local_transform);
 
+	// Transform conversion.
+	Vector4 global_to_local(const Vector4 &p_global) const;
+	Vector4 local_to_global(const Vector4 &p_local) const;
+
 	// Transform altering methods.
 	void apply_scale(const Vector4 &p_amount);
 	void translate_local(const Vector4 &p_amount);
