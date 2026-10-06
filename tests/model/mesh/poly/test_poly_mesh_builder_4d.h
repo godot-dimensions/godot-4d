@@ -1226,7 +1226,8 @@ TEST_CASE("[PolyMeshBuilder4D] Make coplanar") {
 	cube->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ cube_face_values });
 	cube->set_poly_cell_dense_normals(PolyMesh4D::PER_CELL_KEY, Vector<PackedVector4Array>{ PackedVector4Array{ Vector4(0, 0, 0, 1) } });
 	PackedVector3Array cube_corner_values;
-	for (const int32_t vertex_index : cube->get_all_poly_cell_vertex_indices(3, false)[0]) {
+	const PackedInt32Array cube_vertex_indices = cube->get_all_poly_cell_vertex_indices(3, false)[0];
+	for (const int32_t vertex_index : cube_vertex_indices) {
 		cube_corner_values.append(Vector3(vertex_index, 0, 0));
 	}
 	cube->set_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY, Vector<PackedVector3Array>{ cube_corner_values });

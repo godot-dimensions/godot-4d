@@ -404,17 +404,18 @@ TEST_CASE("[ArrayPolyMesh4D] Split poly elements") {
 		const PackedInt32Array pieces = split_face_at_first_vertex(mesh, 0);
 		REQUIRE((pieces == PackedInt32Array{ 0, 24 }));
 		CHECK(mesh->is_mesh_data_valid());
-		CHECK(mesh->get_poly_cell_indices()[0].size() == 25);
-		CHECK(mesh->get_poly_cell_indices()[1].size() == 8);
-		CHECK(mesh->get_poly_cell_indices()[2].size() == 1);
+		const Vector<Vector<PackedInt32Array>> poly_cell_indices = mesh->get_poly_cell_indices();
+		CHECK(poly_cell_indices[0].size() == 25);
+		CHECK(poly_cell_indices[1].size() == 8);
+		CHECK(poly_cell_indices[2].size() == 1);
 		for (int64_t cell_index = 0; cell_index < 8; cell_index++) {
-			const PackedInt32Array &cell = mesh->get_poly_cell_indices()[1][cell_index];
+			const PackedInt32Array &cell = poly_cell_indices[1][cell_index];
 			CHECK(cell.has(0) == parents.has((int32_t)cell_index));
 			CHECK_MESSAGE(cell.has(24) == parents.has((int32_t)cell_index), "Both cells that used the face use both pieces.");
 			// The first two faces of every cell share an edge.
 			bool share = false;
-			for (const int32_t edge_index : mesh->get_poly_cell_indices()[0][cell[0]]) {
-				if (mesh->get_poly_cell_indices()[0][cell[1]].has(edge_index)) {
+			for (const int32_t edge_index : poly_cell_indices[0][cell[0]]) {
+				if (poly_cell_indices[0][cell[1]].has(edge_index)) {
 					share = true;
 				}
 			}
@@ -466,7 +467,8 @@ TEST_CASE("[ArrayPolyMesh4D] Split poly elements") {
 		// that vertex, then cut the cell along the triangle of the three diagonals.
 		const int32_t corner = original_cell_vertices[0][0];
 		PackedInt32Array corner_faces;
-		for (const int32_t face_index : mesh->get_poly_cell_indices()[1][0]) {
+		const PackedInt32Array original_cell_faces = mesh->get_poly_cell_indices()[1][0];
+		for (const int32_t face_index : original_cell_faces) {
 			if (mesh->get_all_poly_cell_vertex_indices(2, false)[face_index].has(corner)) {
 				corner_faces.append(face_index);
 			}
@@ -494,7 +496,8 @@ TEST_CASE("[ArrayPolyMesh4D] Split poly elements") {
 		PackedInt32Array star = { cut_face };
 		PackedInt32Array rest = { cut_face };
 		const Vector<PackedInt32Array> face_vertices = mesh->get_all_poly_cell_vertex_indices(2, false);
-		for (const int32_t face_index : mesh->get_poly_cell_indices()[1][0]) {
+		const PackedInt32Array cell_faces = mesh->get_poly_cell_indices()[1][0];
+		for (const int32_t face_index : cell_faces) {
 			if (face_vertices[face_index].has(corner)) {
 				star.append(face_index);
 			} else {
@@ -1394,7 +1397,8 @@ TEST_CASE("[ArrayPolyMesh4D] Unwrap texture map upright") {
 		// Cell 3, the +Z cell, is sealed off by marking all of its faces as seams, so it is an island of its own.
 		HashSet<int32_t> seams;
 		Ref<ArrayPolyMesh4D> mesh = make_box_array_mesh();
-		for (const int32_t face_index : mesh->get_poly_cell_indices()[1][3]) {
+		const PackedInt32Array sealed_cell_faces = mesh->get_poly_cell_indices()[1][3];
+		for (const int32_t face_index : sealed_cell_faces) {
 			seams.insert(face_index);
 		}
 		mesh->set_seam_face_indices(seams);

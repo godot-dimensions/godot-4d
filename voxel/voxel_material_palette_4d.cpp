@@ -6,7 +6,11 @@
 #include <godot_cpp/classes/rendering_server.hpp>
 #elif GODOT_MODULE
 #include "scene/resources/image_texture.h"
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
 #include "servers/rendering_server.h"
+#else
+#include "servers/rendering/rendering_server.h"
+#endif
 #endif
 
 Ref<Texture3D> VoxelMaterialPalette4D::bake_texture(const Ref<VoxelMaterialPalette4D> &p_palette) {
