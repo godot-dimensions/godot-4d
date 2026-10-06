@@ -23,8 +23,9 @@ void OFFDocument4D::_count_unique_edges_from_faces() {
 	HashSet<Vector2i> unique_items;
 	for (int face_number = 0; face_number < _face_vertex_indices.size(); face_number++) {
 		PackedInt32Array face_indices = _face_vertex_indices[face_number];
-		for (int face_index = 0; face_index < face_indices.size(); face_index++) {
-			const int second_index = (face_index + 1) % face_indices.size();
+		const int64_t vertex_count = face_indices.size();
+		for (int face_index = 0; face_index < vertex_count; face_index++) {
+			const int second_index = (face_index + 1) % vertex_count;
 			Vector2i edge_indices = Vector2i(face_indices[face_index], face_indices[second_index]);
 			if (edge_indices.x > edge_indices.y) {
 				SWAP(edge_indices.x, edge_indices.y);
@@ -100,9 +101,10 @@ int64_t OFFDocument4D::_find_or_insert_face(const int32_t p_a, const int32_t p_b
 // Export winding order correction helper functions.
 
 int32_t OFFDocument4D::_get_next_vertex_not_in_common_edge(const PackedInt32Array &p_face, const int64_t p_common_edge_index, const int32_t p_common_edge_min, const int32_t p_common_edge_max) {
-	const int64_t next_edge_index = (p_common_edge_index + 1) % p_face.size();
+	const int64_t vertex_count = p_face.size();
+	const int64_t next_edge_index = (p_common_edge_index + 1) % vertex_count;
 	const int32_t next_edge_vertex_a = p_face[next_edge_index];
-	const int32_t next_edge_vertex_b = p_face[(next_edge_index + 1) % p_face.size()];
+	const int32_t next_edge_vertex_b = p_face[(next_edge_index + 1) % vertex_count];
 	int32_t next_vertex = MIN(next_edge_vertex_a, next_edge_vertex_b);
 	if (next_vertex == p_common_edge_min || next_vertex == p_common_edge_max) {
 		next_vertex = MAX(next_edge_vertex_a, next_edge_vertex_b);
@@ -119,21 +121,23 @@ Vector4 OFFDocument4D::_predict_poly_import_cell_normal(const PackedVector4Array
 	}
 	const PackedInt32Array face_a = p_face_vertex_indices[p_cell_face_indices[0]];
 	const PackedInt32Array face_b = p_face_vertex_indices[p_cell_face_indices[1]];
-	if (face_a.size() < 2 || face_b.size() < 2) {
+	const int64_t vertex_count_a = face_a.size();
+	const int64_t vertex_count_b = face_b.size();
+	if (vertex_count_a < 2 || vertex_count_b < 2) {
 		return Vector4();
 	}
 	int64_t common_edge_index_in_a = -1;
 	int64_t common_edge_index_in_b = -1;
 	int32_t common_edge_min = INT32_MIN;
 	int32_t common_edge_max = INT32_MIN;
-	for (int64_t edge_index_a = 0; edge_index_a < face_a.size(); edge_index_a++) {
+	for (int64_t edge_index_a = 0; edge_index_a < vertex_count_a; edge_index_a++) {
 		const int32_t a0 = face_a[edge_index_a];
-		const int32_t a1 = face_a[(edge_index_a + 1) % face_a.size()];
+		const int32_t a1 = face_a[(edge_index_a + 1) % vertex_count_a];
 		const int32_t a_min = MIN(a0, a1);
 		const int32_t a_max = MAX(a0, a1);
-		for (int64_t edge_index_b = 0; edge_index_b < face_b.size(); edge_index_b++) {
+		for (int64_t edge_index_b = 0; edge_index_b < vertex_count_b; edge_index_b++) {
 			const int32_t b0 = face_b[edge_index_b];
-			const int32_t b1 = face_b[(edge_index_b + 1) % face_b.size()];
+			const int32_t b1 = face_b[(edge_index_b + 1) % vertex_count_b];
 			if (a_min == MIN(b0, b1) && a_max == MAX(b0, b1)) {
 				common_edge_index_in_a = edge_index_a;
 				common_edge_index_in_b = edge_index_b;

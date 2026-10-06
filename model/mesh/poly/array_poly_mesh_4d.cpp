@@ -1520,8 +1520,10 @@ PackedInt32Array ArrayPolyMesh4D::_get_cell_4_vertices_starting_from_face(const 
 		const PackedInt32Array &second_face = _poly_cell_indices[0][face_index];
 		common_edge = Math4D::find_common_int32(first_face, second_face, common_in_first, common_in_second);
 		if (common_edge != INT32_MIN) {
-			const int64_t first_next_edge = (common_in_first + 1) % first_face.size();
-			const int64_t second_next_edge = (common_in_second + 1) % second_face.size();
+			const int64_t first_edge_count = first_face.size();
+			const int64_t second_edge_count = second_face.size();
+			const int64_t first_next_edge = (common_in_first + 1) % first_edge_count;
+			const int64_t second_next_edge = (common_in_second + 1) % second_edge_count;
 			// Use these 3 edges to get 4 vertex indices in a consistent "winding" order.
 			const int32_t common_vertex_start = _edge_vertex_indices[common_edge * 2];
 			const int32_t common_vertex_end = _edge_vertex_indices[common_edge * 2 + 1];
@@ -1561,8 +1563,10 @@ void ArrayPolyMesh4D::_get_cell_world_span_seed(const int64_t p_which_cell, Vect
 	int64_t common_in_second = 0;
 	int32_t common_edge = Math4D::find_common_int32(first_face, second_face, common_in_first, common_in_second);
 	ERR_FAIL_COND_MSG(common_edge == INT32_MIN, "ArrayPolyMesh4D: First two faces of cell do not share a common edge, this cell is invalid.");
-	const int64_t first_next_edge = (common_in_first + 1) % first_face.size();
-	const int64_t second_next_edge = (common_in_second + 1) % second_face.size();
+	const int64_t first_edge_count = first_face.size();
+	const int64_t second_edge_count = second_face.size();
+	const int64_t first_next_edge = (common_in_first + 1) % first_edge_count;
+	const int64_t second_next_edge = (common_in_second + 1) % second_edge_count;
 	// Use these 3 edges to get 4 vertex indices in a consistent "winding" order.
 	int32_t common_vertex_start = _edge_vertex_indices[common_edge * 2];
 	int32_t common_vertex_end = _edge_vertex_indices[common_edge * 2 + 1];

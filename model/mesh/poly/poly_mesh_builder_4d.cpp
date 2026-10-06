@@ -1289,8 +1289,10 @@ Vector4 PolyMeshBuilder4D::_compute_cell_normal(const PackedInt32Array &p_cell_f
 	if (common_edge == INT32_MIN) {
 		return Vector4();
 	}
-	const int64_t first_next_index = (common_in_first + 1) % p_cell_first_face.size();
-	const int64_t second_next_index = (common_in_second + 1) % p_cell_second_face.size();
+	const int64_t first_edge_count = p_cell_first_face.size();
+	const int64_t second_edge_count = p_cell_second_face.size();
+	const int64_t first_next_index = (common_in_first + 1) % first_edge_count;
+	const int64_t second_next_index = (common_in_second + 1) % second_edge_count;
 	// Use these 3 edges to get 4 vertex indices in a consistent "winding" order.
 	const int32_t common_vertex_start_index = p_edge_vertex_indices[common_edge * 2];
 	const int32_t common_vertex_end_index = p_edge_vertex_indices[common_edge * 2 + 1];

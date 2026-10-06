@@ -460,8 +460,9 @@ TEST_CASE("[PolyMesh4D] Canonical span of 4D cells") {
 			Vector<PackedInt32Array> faces = poly_cell_indices[0];
 			const PackedInt32Array ridge_face_edges = faces[ridge_face];
 			PackedInt32Array rotated_edges;
-			for (int64_t i = 0; i < ridge_face_edges.size(); i++) {
-				rotated_edges.append(ridge_face_edges[(i + 1) % ridge_face_edges.size()]);
+			const int64_t edge_count = ridge_face_edges.size();
+			for (int64_t i = 0; i < edge_count; i++) {
+				rotated_edges.append(ridge_face_edges[(i + 1) % edge_count]);
 			}
 			faces.set(ridge_face, rotated_edges);
 			poly_cell_indices.set(0, faces);
@@ -1346,8 +1347,9 @@ static Ref<ArrayPolyMesh4D> make_face_surface(const PackedVector4Array &p_positi
 	}
 	for (const PackedInt32Array &loop : p_face_loops) {
 		PackedInt32Array face_edges;
-		for (int64_t i = 0; i < loop.size(); i++) {
-			face_edges.push_back((int32_t)mesh->append_edge_indices(loop[i], loop[(i + 1) % loop.size()]));
+		const int64_t vertex_count = loop.size();
+		for (int64_t i = 0; i < vertex_count; i++) {
+			face_edges.push_back((int32_t)mesh->append_edge_indices(loop[i], loop[(i + 1) % vertex_count]));
 		}
 		mesh->append_poly_cell(2, face_edges, false);
 	}

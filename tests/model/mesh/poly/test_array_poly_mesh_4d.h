@@ -345,9 +345,10 @@ TEST_CASE("[ArrayPolyMesh4D] Split poly elements") {
 		const PackedInt32Array edges = p_mesh->get_edge_indices();
 		const PackedInt32Array face_edges = p_mesh->get_poly_cell_indices()[0][p_face];
 		PackedInt32Array loop;
-		for (int64_t i = 0; i < face_edges.size(); i++) {
+		const int64_t edge_count = face_edges.size();
+		for (int64_t i = 0; i < edge_count; i++) {
 			const int32_t edge_index = face_edges[i];
-			const int32_t next_edge_index = face_edges[(i + 1) % face_edges.size()];
+			const int32_t next_edge_index = face_edges[(i + 1) % edge_count];
 			const int32_t a = edges[edge_index * 2];
 			loop.append(a == edges[next_edge_index * 2] || a == edges[next_edge_index * 2 + 1] ? a : edges[edge_index * 2 + 1]);
 		}
@@ -389,7 +390,9 @@ TEST_CASE("[ArrayPolyMesh4D] Split poly elements") {
 		}
 		mesh->set_poly_cell_dense_normals(PolyMesh4D::PER_FACE_KEY, Vector<PackedVector4Array>{ per_face });
 		mesh->set_poly_cell_dense_texture_map(PolyMesh4D::FACE_TO_VERT_KEY, face_corners);
-		mesh->set_seam_face_indices(HashSet<int32_t>{ 0 });
+		HashSet<int32_t> seams;
+		seams.insert(0);
+		mesh->set_seam_face_indices(seams);
 		const PackedVector4Array original_normals = mesh->get_poly_cell_boundary_normals();
 		const Vector<PackedInt32Array> original_cell_vertices = mesh->get_all_poly_cell_vertex_indices(3, false);
 		const Vector<PackedVector3Array> original_cell_texture_map = mesh->get_poly_cell_dense_texture_map(PolyMesh4D::CELL_TO_VERT_KEY);
@@ -3104,8 +3107,9 @@ TEST_CASE("[ArrayPolyMesh4D] Orient cells to boundary normals") {
 // and its canonical span runs from the first vertex through the second to the third.
 inline void append_loop_face(const Ref<ArrayPolyMesh4D> &p_mesh, const PackedInt32Array &p_vertex_loop) {
 	PackedInt32Array face;
-	for (int64_t i = 0; i < p_vertex_loop.size(); i++) {
-		face.append((int32_t)p_mesh->append_edge_indices(p_vertex_loop[i], p_vertex_loop[(i + 1) % p_vertex_loop.size()]));
+	const int64_t vertex_count = p_vertex_loop.size();
+	for (int64_t i = 0; i < vertex_count; i++) {
+		face.append((int32_t)p_mesh->append_edge_indices(p_vertex_loop[i], p_vertex_loop[(i + 1) % vertex_count]));
 	}
 	p_mesh->append_poly_cell(2, face);
 }

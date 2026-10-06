@@ -304,8 +304,10 @@ PackedInt32Array PolyMesh4D::_get_cell_face_4_vertex_index_sequence(const Packed
 	int64_t common_in_second = 0;
 	int32_t common_edge = Math4D::find_common_int32(p_face1_edge_indices, p_face2_edge_indices, common_in_first, common_in_second);
 	CRASH_COND_MSG(common_edge == INT32_MIN, "PolyMesh4D: Cell faces do not share a common item, this cell's initial 2 faces are invalid.");
-	const int64_t first_next_index = (common_in_first + 1) % p_face1_edge_indices.size();
-	const int64_t second_next_index = (common_in_second + 1) % p_face2_edge_indices.size();
+	const int64_t first_edge_count = p_face1_edge_indices.size();
+	const int64_t second_edge_count = p_face2_edge_indices.size();
+	const int64_t first_next_index = (common_in_first + 1) % first_edge_count;
+	const int64_t second_next_index = (common_in_second + 1) % second_edge_count;
 	// Use these 3 edges to get 4 vertex indices in a consistent "winding" order.
 	const int32_t common_vertex_start = p_all_edge_indices[common_edge * 2];
 	const int32_t common_vertex_end = p_all_edge_indices[common_edge * 2 + 1];
@@ -1020,8 +1022,9 @@ PackedVector4Array PolyMesh4D::compute_face_normals(const Vector4 &p_hyperplane_
 		// face in the XYZ hyperplane with a +W hyperplane normal gets the 3D cross product of a and b. Swapping two
 		// vectors of a frame flips its orientation, which is why each edge's end is passed before its start.
 		Vector4 normal;
-		for (int64_t i = 0; i < span.size(); i++) {
-			normal += Vector4D::perpendicular(positions[span[(i + 1) % span.size()]], positions[span[i]], p_hyperplane_normal);
+		const int64_t vertex_count = span.size();
+		for (int64_t i = 0; i < vertex_count; i++) {
+			normal += Vector4D::perpendicular(positions[span[(i + 1) % vertex_count]], positions[span[i]], p_hyperplane_normal);
 		}
 		ret.set(face_index, normal.normalized());
 	}
