@@ -3217,7 +3217,9 @@ void ArrayPolyMesh4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map_island", "cells_in_island", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_island, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map, DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("unwrap_texture_map_upright", "up", "mode", "padding", "proportional", "keep_existing"), &ArrayPolyMesh4D::unwrap_texture_map_upright, DEFVAL(Vector4(0, 1, 0, 0)), DEFVAL(UNWRAP_MODE_TILE_ISLANDS), DEFVAL(0.0), DEFVAL(true), DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("fit_texture_map_island", "cells_in_island", "target_aabb", "proportional"), &ArrayPolyMesh4D::fit_texture_map_island, DEFVAL(AABB(Vector3(), Vector3(1, 1, 1))), DEFVAL(true));
+	// No default for `target_aabb`, since godot-cpp generates `AABB(0, 0, 0, 1, 1, 1)` for it, which does not compile.
+	// See https://github.com/godotengine/godot-cpp/pull/2063 for more details.
+	ClassDB::bind_method(D_METHOD("fit_texture_map_island", "cells_in_island", "target_aabb", "proportional"), &ArrayPolyMesh4D::fit_texture_map_island, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("transform_texture_map", "transform"), &ArrayPolyMesh4D::transform_texture_map);
 	ClassDB::bind_method(D_METHOD("delete_texture_maps_below_dimension", "dimension"), &ArrayPolyMesh4D::delete_texture_maps_below_dimension);
 
