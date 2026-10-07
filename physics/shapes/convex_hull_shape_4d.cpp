@@ -9,6 +9,41 @@ void ConvexHullShape4D::set_points(const PackedVector4Array &p_points) {
 	_points = p_points;
 }
 
+Rect4 ConvexHullShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
+	const int64_t point_count = _points.size();
+	if (point_count == 0) {
+		return Rect4(p_to_target.origin, Vector4());
+	}
+	// The bounds of the hull are the bounds of its points. Unlike the default implementation, this does not include
+	// the origin, since the points do not need to surround it, and this is cheaper than 8 support point queries.
+	const Vector4 *points_ptr = _points.ptr();
+	Rect4 bounds = Rect4(p_to_target * points_ptr[0], Vector4());
+	for (int64_t i = 1; i < point_count; i++) {
+		bounds.expand_self_to_point(p_to_target * points_ptr[i]);
+	}
+	return bounds;
+}
+
+Vector4 ConvexHullShape4D::get_support_point(const Vector4 &p_local_direction) const {
+	const int64_t point_count = _points.size();
+	if (point_count == 0) {
+		return Vector4();
+	}
+	// The farthest point of a convex hull along any direction is always one of its points, so the hull itself
+	// does not need to be calculated. Any interior points are never farther along the direction than the hull.
+	const Vector4 *points_ptr = _points.ptr();
+	Vector4 support = points_ptr[0];
+	real_t support_distance = support.dot(p_local_direction);
+	for (int64_t i = 1; i < point_count; i++) {
+		const real_t distance = points_ptr[i].dot(p_local_direction);
+		if (distance > support_distance) {
+			support = points_ptr[i];
+			support_distance = distance;
+		}
+	}
+	return support;
+}
+
 bool ConvexHullShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {
 	const Ref<ConvexHullShape4D> other_shape = p_shape;
 	if (other_shape.is_null()) {

@@ -41,9 +41,11 @@
 #include "physics/server/test_physics_server_4d.h"
 #include "physics/shapes/test_box_shape_4d.h"
 #include "physics/shapes/test_capsule_shape_4d.h"
+#include "physics/shapes/test_convex_hull_shape_4d.h"
 #include "physics/shapes/test_cubinder_shape_4d.h"
 #include "physics/shapes/test_cylinder_shape_4d.h"
 #include "physics/shapes/test_duocylinder_shape_4d.h"
+#include "physics/shapes/test_general_shape_4d.h"
 #include "physics/shapes/test_orthoplex_shape_4d.h"
 #include "physics/shapes/test_sphere_shape_4d.h"
 

@@ -5,7 +5,7 @@ void GeneralShapeCurve4D::set_radii(const Vector4 &p_radii) {
 }
 
 void GeneralShapeCurve4D::set_exponent(double p_exponent) {
-	ERR_FAIL_COND_MSG(!(p_exponent > 0.0), "GeneralShapeCurve4D: Exponent must be a finite positive number.");
+	ERR_FAIL_COND_MSG(!(p_exponent > 0.0 && Math::is_finite(p_exponent)), "GeneralShapeCurve4D: Exponent must be a finite positive number.");
 	_exponent = p_exponent;
 }
 

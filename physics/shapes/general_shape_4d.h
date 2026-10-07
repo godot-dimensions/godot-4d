@@ -16,6 +16,8 @@ class GeneralShape4D : public Shape4D {
 	TypedArray<GeneralShapeCurve4D> _curves;
 	static bool _warnings_enabled;
 
+	static Vector4 _get_curve_support_offset(const Vector4 &p_radii, const double p_exponent, const Vector4 &p_local_direction);
+
 protected:
 	static void _bind_methods();
 

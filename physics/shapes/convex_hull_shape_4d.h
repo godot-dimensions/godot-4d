@@ -14,6 +14,9 @@ public:
 	PackedVector4Array get_points() const { return _points; }
 	void set_points(const PackedVector4Array &p_points);
 
+	virtual Rect4 get_rect_bounds(const Transform4D &p_to_target = Transform4D()) const override;
+	virtual Vector4 get_support_point(const Vector4 &p_local_direction) const override;
+
 	virtual bool is_equal_exact(const Ref<Shape4D> &p_shape) const override;
 
 	virtual Ref<TetraMesh4D> to_tetra_mesh(const Dictionary &p_options = Dictionary()) const override;

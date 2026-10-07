@@ -2,15 +2,16 @@
 
 bool GeneralShape4D::_warnings_enabled = true;
 
-#define GENERAL_SHAPE_4D_CURVE_ERR_WARN(m_curve, m_ret)                                                                          \
-	ERR_FAIL_COND_V(m_curve.is_null(), m_ret);                                                                                   \
-	if (_warnings_enabled) {                                                                                                     \
-		if (m_curve->get_exponent() != 2.0) {                                                                                    \
-			WARN_PRINT("GeneralShape4D: Custom curve exponents are not currently supported by this class, and have no effect."); \
-		}                                                                                                                        \
-		if (m_curve->get_taper_count() > 0) {                                                                                    \
-			WARN_PRINT("GeneralShape4D: Curve tapering is not currently supported by this class, and have no effect.");          \
-		}                                                                                                                        \
+#define GENERAL_SHAPE_4D_CURVE_ERR_WARN_TAPER(m_curve, m_ret)                                                      \
+	ERR_FAIL_COND_V(m_curve.is_null(), m_ret);                                                                     \
+	if (_warnings_enabled && m_curve->get_taper_count() > 0) {                                                     \
+		WARN_PRINT("GeneralShape4D: Curve tapering is not currently supported by this class, and has no effect."); \
+	}
+
+#define GENERAL_SHAPE_4D_CURVE_ERR_WARN(m_curve, m_ret)                                                                                   \
+	GENERAL_SHAPE_4D_CURVE_ERR_WARN_TAPER(m_curve, m_ret)                                                                                 \
+	if (_warnings_enabled && m_curve->get_exponent() != 2.0) {                                                                            \
+		WARN_PRINT("GeneralShape4D: Custom curve exponents are not fully supported by this function, and the result may be inaccurate."); \
 	}
 
 #define GENERAL_SHAPE_4D_RADII_WARN(m_radii, m_radii_average, m_msg)                                                                                                                                                                                         \
@@ -323,7 +324,7 @@ Vector4 GeneralShape4D::get_nearest_point(const Vector4 &p_local_point) const {
 		} else {
 			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
 				const int32_t axis = used_axes[used_index];
-				ellipsoid_distance_pow += Math::pow((double)local_offset_abs[axis], exponent) / Math::pow((double)radii[axis], exponent);
+				ellipsoid_distance_pow += Math::pow((double)local_offset_abs[axis] / (double)radii[axis], exponent);
 			}
 		}
 		if (ellipsoid_distance_pow <= 1.0) {
@@ -345,7 +346,19 @@ Vector4 GeneralShape4D::get_nearest_point(const Vector4 &p_local_point) const {
 			const int32_t axis = used_axes[used_index];
 			scaled_offset_abs[axis] = local_offset_abs[axis] / radii[axis];
 		}
-		scaled_offset_abs = scaled_offset_abs.normalized();
+		if (likely(exponent == 2.0)) {
+			scaled_offset_abs = scaled_offset_abs.normalized();
+		} else {
+			// Normalize with the curve's exponent instead of Euclidean length, so that the point lands on the curve's surface.
+			// Dividing by the largest value first avoids overflow with large exponents.
+			const real_t scaled_offset_max = MAX(MAX(scaled_offset_abs.x, scaled_offset_abs.y), MAX(scaled_offset_abs.z, scaled_offset_abs.w));
+			double scaled_offset_length_pow = 0.0;
+			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
+				const int32_t axis = used_axes[used_index];
+				scaled_offset_length_pow += Math::pow(Math::abs((double)scaled_offset_abs[axis] / scaled_offset_max), exponent);
+			}
+			scaled_offset_abs /= scaled_offset_max * Math::pow(scaled_offset_length_pow, 1.0 / exponent);
+		}
 		for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
 			const int32_t axis = used_axes[used_index];
 			const real_t rescaled_offset_value = scaled_offset_abs[axis] * radii[axis];
@@ -368,34 +381,61 @@ Vector4 GeneralShape4D::get_support_point(const Vector4 &p_local_direction) cons
 	const int64_t curve_count = _curves.size();
 	for (int64_t curve_index = 0; curve_index < curve_count; curve_index++) {
 		const Ref<GeneralShapeCurve4D> curve = _curves[curve_index];
-		GENERAL_SHAPE_4D_CURVE_ERR_WARN(curve, Vector4());
-		const Vector4 radii = curve->get_radii();
-		const PackedInt32Array used_axes = curve->get_used_axes();
-		const double exponent = curve->get_exponent();
-		// Based on this: https://math.stackexchange.com/questions/2267688/locating-a-line-perpendicular-to-an-ellipse
-		Vector4 ellipsoid_support = Vector4();
-		if (likely(exponent == 2.0)) {
-			real_t ellipsoid_support_len_squared = 0.0f;
-			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
-				const int axis = used_axes[used_index];
-				const real_t radius_squared = radii[axis] * radii[axis];
-				ellipsoid_support[axis] = radius_squared;
-				ellipsoid_support_len_squared += (p_local_direction[axis] * p_local_direction[axis]) * radius_squared;
-			}
-			ellipsoid_support /= Math::sqrt(ellipsoid_support_len_squared);
-		} else {
-			double ellipsoid_support_len_pow = 0.0f;
-			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
-				const int axis = used_axes[used_index];
-				const double radius_pow = Math::pow((double)radii[axis], exponent);
-				ellipsoid_support[axis] = radius_pow;
-				ellipsoid_support_len_pow += Math::pow((double)p_local_direction[axis], exponent) * radius_pow;
-			}
-			ellipsoid_support /= Math::pow((double)ellipsoid_support_len_pow, 1.0 / exponent);
-		}
-		support += p_local_direction * ellipsoid_support;
+		// The support point is exact for any exponent, so only warn about tapering here.
+		GENERAL_SHAPE_4D_CURVE_ERR_WARN_TAPER(curve, Vector4());
+		support += _get_curve_support_offset(curve->get_radii(), curve->get_exponent(), p_local_direction);
 	}
 	return support;
+}
+
+Vector4 GeneralShape4D::_get_curve_support_offset(const Vector4 &p_radii, const double p_exponent, const Vector4 &p_local_direction) {
+	// A curve is the set of points where the sum of |x_i / r_i|^p is at most 1, using its radii r and exponent p.
+	// Scaling by the radii turns this into the unit ball of the Lp norm, so the support point is x_i = r_i * y_i,
+	// where y is the support point of the unit ball in the scaled direction c_i = r_i * d_i.
+	// Unused axes have zero radii, so their values of c are zero, and they do not contribute to the support point.
+	const Vector4 scaled_direction = p_radii * p_local_direction;
+	const Vector4 scaled_direction_abs = scaled_direction.abs();
+	int max_axis = 0;
+	for (int axis = 1; axis < 4; axis++) {
+		if (scaled_direction_abs[axis] > scaled_direction_abs[max_axis]) {
+			max_axis = axis;
+		}
+	}
+	const real_t scaled_direction_max = scaled_direction_abs[max_axis];
+	if (!(scaled_direction_max > 0.0f)) {
+		// The direction is perpendicular to all of the curve's axes, so every point on the curve is equally far
+		// along it. The curve's center is a valid choice, and avoids dividing by zero below.
+		return Vector4();
+	}
+	const Vector4 scaled_direction_sign = scaled_direction.sign();
+	if (likely(p_exponent == 2.0)) {
+		// Ellipsoid, where y = c / |c|. Dividing by the largest value first avoids overflow and underflow.
+		return p_radii * (scaled_direction / scaled_direction_max).normalized();
+	}
+	if (p_exponent <= 1.0) {
+		// An exponent of 1 is a diamond (cross-polytope), and below 1 the curve is not convex, but has a diamond
+		// as its convex hull. Either way, the support point is the vertex on the axis with the largest value of c.
+		Vector4 vertex = Vector4();
+		vertex[max_axis] = scaled_direction_sign[max_axis] * p_radii[max_axis];
+		return vertex;
+	}
+	// In general, the support point uses the dual exponent q = p / (p - 1): y_i = sign(c_i) * |c_i|^(q - 1) / ||c||_q^(q - 1).
+	// Note that q - 1 = 1 / (p - 1) and (q - 1) / q = 1 / p. When p is close to 1, q is huge, so dividing c
+	// by its largest value first is required to avoid overflow and underflow. This does not change y.
+	const double dual_exponent = p_exponent / (p_exponent - 1.0);
+	const double dual_exponent_minus_one = 1.0 / (p_exponent - 1.0);
+	double dual_length_pow = 0.0;
+	Vector4 support_offset = Vector4();
+	for (int axis = 0; axis < 4; axis++) {
+		const double ratio = (double)scaled_direction_abs[axis] / (double)scaled_direction_max;
+		if (ratio > 0.0) {
+			dual_length_pow += Math::pow(ratio, dual_exponent);
+			support_offset[axis] = Math::pow(ratio, dual_exponent_minus_one);
+		}
+	}
+	// The largest ratio is exactly 1, so dual_length_pow is at least 1, and this never divides by zero.
+	support_offset /= Math::pow(dual_length_pow, 1.0 / p_exponent);
+	return p_radii * scaled_direction_sign * support_offset;
 }
 
 bool GeneralShape4D::has_point(const Vector4 &p_local_point) const {
@@ -412,7 +452,8 @@ bool GeneralShape4D::has_point(const Vector4 &p_local_point) const {
 	// Next, check the curves, if any. Note: This does not handle Steinmetz solids, or any other case of curves sharing axes.
 	for (int64_t curve_index = 0; curve_index < _curves.size(); curve_index++) {
 		const Ref<GeneralShapeCurve4D> curve = _curves[curve_index];
-		GENERAL_SHAPE_4D_CURVE_ERR_WARN(curve, false);
+		// The point check is exact for any exponent, so only warn about tapering here.
+		GENERAL_SHAPE_4D_CURVE_ERR_WARN_TAPER(curve, false);
 		const Vector4 radii = curve->get_radii();
 		const PackedInt32Array used_axes = curve->get_used_axes();
 		const double exponent = curve->get_exponent();
@@ -425,7 +466,7 @@ bool GeneralShape4D::has_point(const Vector4 &p_local_point) const {
 		} else {
 			for (int64_t used_index = 0; used_index < used_axes.size(); used_index++) {
 				const int axis = used_axes[used_index];
-				ellipsoid_distance_pow += Math::pow((double)local_offset_abs[axis], exponent) / Math::pow((double)radii[axis], exponent);
+				ellipsoid_distance_pow += Math::pow((double)local_offset_abs[axis] / (double)radii[axis], exponent);
 			}
 		}
 		if (ellipsoid_distance_pow > 1.0) {
