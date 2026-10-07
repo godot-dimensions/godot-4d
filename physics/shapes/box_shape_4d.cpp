@@ -71,27 +71,33 @@ real_t BoxShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, 
 	const Vector4 half_extents = get_half_extents();
 	const Vector4 abs_point = p_local_point.abs();
 	const Vector4 abs_to_surface = abs_point - half_extents;
-	const Vector4 abs_to_surface_abs = abs_to_surface.abs();
-	real_t nearest_distance_signed = Math_INF;
-	real_t nearest_distance_abs = Math_INF;
+	// The box is the product of a segment on each axis, so each axis has its own signed distance.
 	int8_t nearest_axis = 0;
-	for (int8_t axis = 0; axis < 4; axis++) {
-		if (abs_to_surface_abs[axis] < nearest_distance_abs) {
-			nearest_distance_signed = abs_to_surface[axis];
-			nearest_distance_abs = abs_to_surface_abs[axis];
+	for (int8_t axis = 1; axis < 4; axis++) {
+		if (abs_to_surface[axis] > abs_to_surface[nearest_axis]) {
 			nearest_axis = axis;
 		}
 	}
+	if (abs_to_surface[nearest_axis] > 0.0f) {
+		// Outside, so the nearest surface point is the clamped point, and every axis outside the box contributes to the distance.
+		if (r_nearest_point_on_surface != nullptr) {
+			*r_nearest_point_on_surface = get_nearest_point(p_local_point);
+		}
+		real_t outside_distance_sq = 0.0f;
+		for (int8_t axis = 0; axis < 4; axis++) {
+			if (abs_to_surface[axis] > 0.0f) {
+				outside_distance_sq += abs_to_surface[axis] * abs_to_surface[axis];
+			}
+		}
+		return Math::sqrt(outside_distance_sq);
+	}
+	// Inside or on the surface, so the nearest surface is on the axis with the largest (least negative) signed distance.
 	if (r_nearest_point_on_surface != nullptr) {
-		Vector4 nearest_point = Vector4(
-				CLAMP(p_local_point.x, -half_extents.x, half_extents.x),
-				CLAMP(p_local_point.y, -half_extents.y, half_extents.y),
-				CLAMP(p_local_point.z, -half_extents.z, half_extents.z),
-				CLAMP(p_local_point.w, -half_extents.w, half_extents.w));
-		nearest_point[nearest_axis] = (p_local_point[nearest_axis] > 0.0f) ? half_extents[nearest_axis] : -half_extents[nearest_axis];
+		Vector4 nearest_point = p_local_point;
+		nearest_point[nearest_axis] = (p_local_point[nearest_axis] < 0.0f) ? -half_extents[nearest_axis] : half_extents[nearest_axis];
 		*r_nearest_point_on_surface = nearest_point;
 	}
-	return nearest_distance_signed;
+	return abs_to_surface[nearest_axis];
 }
 
 Vector4 BoxShape4D::get_nearest_point(const Vector4 &p_local_point) const {

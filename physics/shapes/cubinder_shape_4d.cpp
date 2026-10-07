@@ -252,37 +252,37 @@ real_t CubinderShape4D::get_signed_distance_to_surface(const Vector4 &p_local_po
 	const real_t radial_signed_distance = flat_length - _radius;
 	const real_t vertical_signed_distance = Math::abs(p_local_point.y) - half_height;
 	const real_t thickness_signed_distance = Math::abs(p_local_point.w) - half_thickness;
-	const real_t abs_radial_signed_distance = Math::abs(radial_signed_distance);
-	const real_t abs_vertical_signed_distance = Math::abs(vertical_signed_distance);
-	const real_t abs_thickness_signed_distance = Math::abs(thickness_signed_distance);
+	// The cubinder is the product of a circle in XZ, a segment in Y, and a segment in W, so each has its own signed distance.
+	if (radial_signed_distance > 0.0f || vertical_signed_distance > 0.0f || thickness_signed_distance > 0.0f) {
+		// Outside, so the nearest surface point is the nearest point in the shape, and only the positive signed distances contribute.
+		if (r_nearest_point_on_surface != nullptr) {
+			*r_nearest_point_on_surface = get_nearest_point(p_local_point);
+		}
+		const real_t radial_outside_distance = MAX(radial_signed_distance, (real_t)0.0);
+		const real_t vertical_outside_distance = MAX(vertical_signed_distance, (real_t)0.0);
+		const real_t thickness_outside_distance = MAX(thickness_signed_distance, (real_t)0.0);
+		return Math::sqrt(radial_outside_distance * radial_outside_distance + vertical_outside_distance * vertical_outside_distance + thickness_outside_distance * thickness_outside_distance);
+	}
+	// Inside or on the surface, so the nearest surface is the one with the largest (least negative) signed distance.
 	if (r_nearest_point_on_surface != nullptr) {
-		if (radial_signed_distance > 0.0f || abs_radial_signed_distance >= abs_vertical_signed_distance || abs_radial_signed_distance >= abs_thickness_signed_distance) {
+		if (radial_signed_distance >= vertical_signed_distance && radial_signed_distance >= thickness_signed_distance) {
 			if (flat_length == 0.0f) {
-				nearest = Vector4(_radius, 0.0f, 0.0f, 0.0f);
+				nearest = Vector4(_radius, 0.0f, 0.0f, 0.0f); // Arbitrary point on the surface.
 			} else {
 				nearest *= _radius / flat_length;
 			}
-		}
-		if (vertical_signed_distance > 0.0f || abs_vertical_signed_distance > abs_radial_signed_distance) {
-			nearest.y = (p_local_point.y > 0.0f) ? half_height : -half_height;
-		} else {
 			nearest.y = p_local_point.y;
-		}
-		if (thickness_signed_distance > 0.0f || abs_thickness_signed_distance > abs_radial_signed_distance) {
-			nearest.w = (p_local_point.w > 0.0f) ? half_thickness : -half_thickness;
-		} else {
 			nearest.w = p_local_point.w;
+		} else if (vertical_signed_distance >= thickness_signed_distance) {
+			nearest = p_local_point;
+			nearest.y = (p_local_point.y < 0.0f) ? -half_height : half_height;
+		} else {
+			nearest = p_local_point;
+			nearest.w = (p_local_point.w < 0.0f) ? -half_thickness : half_thickness;
 		}
 		*r_nearest_point_on_surface = nearest;
 	}
-	// Return the smallest signed distance, which corresponds to the closest surface.
-	if (abs_thickness_signed_distance < abs_radial_signed_distance && abs_thickness_signed_distance < abs_vertical_signed_distance) {
-		return thickness_signed_distance;
-	}
-	if (abs_vertical_signed_distance < abs_radial_signed_distance) {
-		return vertical_signed_distance;
-	}
-	return radial_signed_distance;
+	return MAX(radial_signed_distance, MAX(vertical_signed_distance, thickness_signed_distance));
 }
 
 Vector4 CubinderShape4D::get_nearest_point(const Vector4 &p_local_point) const {

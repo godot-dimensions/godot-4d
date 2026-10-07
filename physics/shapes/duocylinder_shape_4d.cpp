@@ -111,11 +111,22 @@ Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, c
 real_t DuocylinderShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
 	const Vector4 xy_point = Vector4(p_local_point.x, p_local_point.y, 0.0f, 0.0f);
 	const Vector4 zw_point = Vector4(0.0f, 0.0f, p_local_point.z, p_local_point.w);
-	const real_t xy_len_sq = xy_point.length_squared();
-	const real_t zw_len_sq = zw_point.length_squared();
-	if (xy_len_sq < zw_len_sq) {
-		const real_t xy_len = Math::sqrt(xy_len_sq);
-		const real_t xy_signed_distance = xy_len - _radius_xy;
+	const real_t xy_len = xy_point.length();
+	const real_t zw_len = zw_point.length();
+	// The duocylinder is the product of a circle in XY and a circle in ZW, so each has its own signed distance.
+	const real_t xy_signed_distance = xy_len - _radius_xy;
+	const real_t zw_signed_distance = zw_len - _radius_zw;
+	if (xy_signed_distance > 0.0f || zw_signed_distance > 0.0f) {
+		// Outside, so the nearest surface point is the nearest point in the shape, and only the positive signed distances contribute.
+		if (r_nearest_point_on_surface) {
+			*r_nearest_point_on_surface = get_nearest_point(p_local_point);
+		}
+		const real_t xy_outside_distance = MAX(xy_signed_distance, (real_t)0.0);
+		const real_t zw_outside_distance = MAX(zw_signed_distance, (real_t)0.0);
+		return Math::sqrt(xy_outside_distance * xy_outside_distance + zw_outside_distance * zw_outside_distance);
+	}
+	// Inside or on the surface, so the nearest surface is the one with the largest (least negative) signed distance.
+	if (xy_signed_distance >= zw_signed_distance) {
 		if (r_nearest_point_on_surface) {
 			if (xy_len == 0.0f) {
 				*r_nearest_point_on_surface = Vector4(_radius_xy, 0.0f, p_local_point.z, p_local_point.w);
@@ -126,8 +137,6 @@ real_t DuocylinderShape4D::get_signed_distance_to_surface(const Vector4 &p_local
 		}
 		return xy_signed_distance;
 	}
-	const real_t zw_len = Math::sqrt(zw_len_sq);
-	const real_t zw_signed_distance = zw_len - _radius_zw;
 	if (r_nearest_point_on_surface) {
 		if (zw_len == 0.0f) {
 			*r_nearest_point_on_surface = Vector4(p_local_point.x, p_local_point.y, _radius_zw, 0.0f);
