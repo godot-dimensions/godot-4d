@@ -1,10 +1,10 @@
 #include "orthoplex_shape_4d.h"
 
-#include "../../math/plane_4d.h"
-#include "../../math/vector_4d.h"
 #include "../../model/mesh/poly/orthoplex_poly_mesh_4d.h"
 #include "../../model/mesh/tetra/orthoplex_tetra_mesh_4d.h"
 #include "../../model/mesh/wire/orthoplex_wire_mesh_4d.h"
+
+#include <algorithm>
 
 Vector4 OrthoplexShape4D::get_half_extents() const {
 	return _size * 0.5f;
@@ -60,78 +60,144 @@ Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, con
 		result["point"] = p_local_from;
 		return result;
 	}
-	// Convert the raycast vectors into a space that assumes the orthoplex is of unit size.
-	const Vector4 ray_from = p_local_from / _size;
-	const Vector4 ray_direction = (p_local_direction / _size).normalized();
-	Vector4 best_normal = Vector4();
-	real_t best_distance = Math_INF;
+	// The orthoplex is the intersection of 16 half-spaces, one per facet, where dot(signs / half_extents, point) <= 1.
+	// All facet normals have the same length before normalizing, so all facets are the same distance from the center.
+	// Clip the ray against each half-space: the ray enters the shape at the last facet it crosses going inwards,
+	// and exits at the first facet it crosses going outwards. This avoids needing a tolerance for the hit point.
+	const Vector4 inverse_half_extents = get_half_extents().inverse();
+	const real_t facet_distance = 1.0f / inverse_half_extents.length();
+	real_t enter_distance = -Math_INF;
+	real_t exit_distance = Math_INF;
+	Vector4 enter_normal = Vector4();
+	Vector4 exit_normal = Vector4();
 	// Iterate over the 16 planes of the orthoplex.
-	for (real_t x = -0.5f; x <= 0.5f; x += 1.0f) {
-		for (real_t y = -0.5f; y <= 0.5f; y += 1.0f) {
-			for (real_t z = -0.5f; z <= 0.5f; z += 1.0f) {
-				for (real_t w = -0.5f; w <= 0.5f; w += 1.0f) {
-					const Plane4D plane = Plane4D(Vector4(x, y, z, w), 0.5f);
-					const real_t factor = plane.intersect_ray_factor(ray_from, ray_direction);
-					if (factor >= 0.0f && factor < best_distance) {
-						const Vector4 hit_point_abs = (ray_from + ray_direction * factor).abs();
-						// Similar to has_point but does not scale by the size and has a slightly larger tolerance.
-						if ((hit_point_abs.x + hit_point_abs.y + hit_point_abs.z + hit_point_abs.w) <= 1.000001f) {
-							best_distance = factor;
-							best_normal = plane.normal;
+	for (real_t x = -1.0f; x <= 1.0f; x += 2.0f) {
+		for (real_t y = -1.0f; y <= 1.0f; y += 2.0f) {
+			for (real_t z = -1.0f; z <= 1.0f; z += 2.0f) {
+				for (real_t w = -1.0f; w <= 1.0f; w += 2.0f) {
+					const Vector4 facet_normal = Vector4(x, y, z, w) * inverse_half_extents * facet_distance;
+					// Positive if the ray starts on the inner side of the facet's plane.
+					const real_t from_inside_distance = facet_distance - facet_normal.dot(p_local_from);
+					const real_t direction_dot = facet_normal.dot(p_local_direction);
+					if (direction_dot == 0.0f) {
+						if (from_inside_distance < 0.0f) {
+							// The ray is parallel to this facet and outside of it, so it can't hit the shape.
+							return result;
 						}
+						continue;
+					}
+					const real_t distance = from_inside_distance / direction_dot;
+					if (direction_dot < 0.0f) {
+						if (distance > enter_distance) {
+							enter_distance = distance;
+							enter_normal = facet_normal;
+						}
+					} else if (distance < exit_distance) {
+						exit_distance = distance;
+						exit_normal = facet_normal;
 					}
 				}
 			}
 		}
 	}
-	// The distance above is in the scaled space, so we need to return it to the original space and calculate a new distance.
-	const Vector4 hit_point_accounting_for_size = (ray_from + ray_direction * best_distance) * _size;
-	best_distance = p_local_from.distance_to(hit_point_accounting_for_size);
-	const bool hit = best_distance < p_max_distance;
+	if (enter_distance > exit_distance || exit_distance < 0.0f) {
+		return result;
+	}
+	// If the ray starts inside the shape, it hits the surface where it exits.
+	const bool starts_inside = enter_distance < 0.0f;
+	const real_t hit_distance = starts_inside ? exit_distance : enter_distance;
+	const bool hit = hit_distance < p_max_distance;
 	result["hit"] = hit;
 	if (hit) {
-		result["point"] = hit_point_accounting_for_size;
-		result["distance"] = best_distance;
-		// Divide by the size again, aka multiply by the inverse of the size.
-		// Ex: Larger size on X means the "faces" point more in the YZW directions, so the normal is smaller in X.
-		result["normal"] = (best_normal * _size.inverse()).normalized();
+		result["point"] = p_local_from + p_local_direction * hit_distance;
+		result["distance"] = hit_distance;
+		result["normal"] = starts_inside ? exit_normal : enter_normal;
 	}
 	return result;
 }
 
 real_t OrthoplexShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
-	if (p_local_point == Vector4(0.0f, 0.0f, 0.0f, 0.0f)) {
+	const Vector4 half_extents = get_half_extents();
+	const Vector4 abs_scaled_point = p_local_point.abs() / half_extents;
+	const real_t scaled_taxicab_length = abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w;
+	if (scaled_taxicab_length > 1.0f) {
+		// Outside the shape, the nearest point on the surface is the nearest point in the shape.
+		const Vector4 nearest_point = get_nearest_point(p_local_point);
 		if (r_nearest_point_on_surface != nullptr) {
-			*r_nearest_point_on_surface = Vector4(0.5f * _size.x, 0.0f, 0.0f, 0.0f);
+			*r_nearest_point_on_surface = nearest_point;
 		}
-		return -0.5f * _size.x;
+		return p_local_point.distance_to(nearest_point);
 	}
-	const Vector4 abs_scaled_point = p_local_point.abs() / _size;
-	const real_t scaled_signed_distance = (abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w) - 1.0f;
-	const real_t adjust_per_axis = scaled_signed_distance * -0.25f;
-	Vector4 nearest_point = abs_scaled_point + Vector4(adjust_per_axis, adjust_per_axis, adjust_per_axis, adjust_per_axis);
-	nearest_point *= (p_local_point.sign() * _size);
+	// Inside the shape, the nearest facet is the one in the same orthant as the point. All facets are the same
+	// distance from the center, so the signed distance to it is proportional to the scaled taxicab length.
+	const Vector4 inverse_half_extents = half_extents.inverse();
+	const real_t facet_normal_length = inverse_half_extents.length();
+	const real_t signed_distance = (scaled_taxicab_length - 1.0f) / facet_normal_length;
 	if (r_nearest_point_on_surface != nullptr) {
-		*r_nearest_point_on_surface = nearest_point;
+		// Moving along the facet normal keeps the point in the same orthant, so it lands on that facet.
+		// For axes where the point is zero, the facets on both sides are equally near, so pick the positive one.
+		const Vector4 facet_signs = Vector4(
+				p_local_point.x < 0.0f ? -1.0f : 1.0f,
+				p_local_point.y < 0.0f ? -1.0f : 1.0f,
+				p_local_point.z < 0.0f ? -1.0f : 1.0f,
+				p_local_point.w < 0.0f ? -1.0f : 1.0f);
+		const Vector4 facet_normal = facet_signs * inverse_half_extents / facet_normal_length;
+		*r_nearest_point_on_surface = p_local_point - facet_normal * signed_distance;
 	}
-	const real_t distance = p_local_point.distance_to(nearest_point);
-	return (scaled_signed_distance < 0.0f) ? -distance : distance;
+	return signed_distance;
 }
 
 Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_local_point) const {
-	return Vector4D::limit_length_taxicab(p_local_point / _size, 0.5) * _size;
+	const Vector4 half_extents = get_half_extents();
+	const Vector4 abs_point = p_local_point.abs();
+	const Vector4 abs_scaled_point = abs_point / half_extents;
+	const real_t scaled_taxicab_length = abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w;
+	if (scaled_taxicab_length <= 1.0f) {
+		return p_local_point;
+	}
+	// Scaling into a unit space and limiting the taxicab length there only works for uniform sizes, because non-uniform
+	// scaling does not preserve Euclidean distance. Instead, project onto the facets directly: each axis moves towards
+	// zero by lambda / half_extents[axis] (clamped at zero), with lambda chosen so that the result is on the surface.
+	// An axis reaches zero once lambda >= abs_point[axis] * half_extents[axis], so sort the axes by that value,
+	// and find how many of the axes are still non-zero, which determines lambda.
+	const Vector4 zero_thresholds = abs_point * half_extents;
+	Vector4::Axis axes[4] = { Vector4::Axis::AXIS_X, Vector4::Axis::AXIS_Y, Vector4::Axis::AXIS_Z, Vector4::Axis::AXIS_W };
+	std::sort(axes, axes + 4, [&zero_thresholds](Vector4::Axis a, Vector4::Axis b) {
+		return zero_thresholds[a] > zero_thresholds[b];
+	});
+	real_t lambda = 0.0f;
+	real_t nonzero_scaled_sum = 0.0f;
+	real_t nonzero_inverse_square_sum = 0.0f;
+	for (int i = 0; i < 4; i++) {
+		const Vector4::Axis axis = axes[i];
+		nonzero_scaled_sum += abs_scaled_point[axis];
+		nonzero_inverse_square_sum += 1.0f / (half_extents[axis] * half_extents[axis]);
+		const real_t candidate_lambda = (nonzero_scaled_sum - 1.0f) / nonzero_inverse_square_sum;
+		// The axis with the largest threshold is always non-zero, so always accept the first candidate.
+		if (i > 0 && zero_thresholds[axis] <= candidate_lambda) {
+			break;
+		}
+		lambda = candidate_lambda;
+	}
+	Vector4 nearest_point = Vector4();
+	for (int i = 0; i < 4; i++) {
+		const real_t abs_nearest = MAX(abs_point[i] - lambda / half_extents[i], (real_t)0.0);
+		nearest_point[i] = (p_local_point[i] < 0.0f) ? -abs_nearest : abs_nearest;
+	}
+	return nearest_point;
 }
 
 Vector4 OrthoplexShape4D::get_support_point(const Vector4 &p_local_direction) const {
-	const Vector4 abs_dir = p_local_direction.abs();
-	const Vector4::Axis longest_axis = abs_dir.max_axis_index();
+	const Vector4 half_extents = get_half_extents();
+	// The support point is the vertex that is furthest along the direction, which accounts for each axis's size.
+	const Vector4::Axis support_axis = (p_local_direction.abs() * half_extents).max_axis_index();
 	Vector4 support = Vector4();
-	support[longest_axis] = (p_local_direction[longest_axis] > 0.0f) ? _size[longest_axis] * 0.5f : -_size[longest_axis] * 0.5f;
+	support[support_axis] = (p_local_direction[support_axis] > 0.0f) ? half_extents[support_axis] : -half_extents[support_axis];
 	return support;
 }
 
 bool OrthoplexShape4D::has_point(const Vector4 &p_local_point) const {
-	const Vector4 abs_scaled_point = p_local_point.abs() / _size;
+	const Vector4 abs_scaled_point = p_local_point.abs() / get_half_extents();
 	return (abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w) <= 1.0f;
 }
 
