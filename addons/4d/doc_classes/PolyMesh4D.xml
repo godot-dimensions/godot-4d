@@ -139,7 +139,7 @@
 				- The first item is an array of 2D faces. It is an array of [PackedInt32Array]s, where each [PackedInt32Array] contains the 1D edge indices that make up one 2D face.
 				- The second item is an array of 3D cells. It is an array of [PackedInt32Array]s, where each [PackedInt32Array] contains the 2D face indices that make up one 3D cell.
 				- The optional third item is an array of 4D hypervolumes. It is an array of [PackedInt32Array]s, where each [PackedInt32Array] contains the 3D cell indices that make up one 4D hypervolume.
-				Since edges are always made of exactly 2 vertices, they are not included in this array. Edges use a simpler data structure where all edges are stored in a single [PackedInt32Array], and every 2 items represent one edge. See [method Mesh4D.get_edge_indices].
+				Since edges are always made of exactly 2 vertices, they are not included in this array. Edges use a simpler data structure where all edges are stored in a single [PackedInt32Array], and every 2 items represent one edge. See [method SingleSurfaceMesh4D.get_edge_indices].
 			</description>
 		</method>
 		<method name="get_poly_cell_normal_indices">
@@ -151,7 +151,7 @@
 		<method name="get_poly_cell_normal_values">
 			<return type="PackedVector4Array" />
 			<description>
-				Returns the shared normal value pool for polyhedral data. Each [Vector4] is a normal vector that should be normalized. Values are referenced by [method get_poly_cell_normal_indices] and may also be shared by other polyhedral data bindings. This pool is distinct from [method Mesh4D.get_normal_values], which contains values for the decomposed simplex cells.
+				Returns the shared normal value pool for polyhedral data. Each [Vector4] is a normal vector that should be normalized. Values are referenced by [method get_poly_cell_normal_indices] and may also be shared by other polyhedral data bindings. This pool is distinct from [method SingleSurfaceMesh4D.get_normal_values], which contains values for the decomposed simplex cells.
 			</description>
 		</method>
 		<method name="get_poly_cell_texture_map_indices">
@@ -163,14 +163,14 @@
 		<method name="get_poly_cell_texture_map_values">
 			<return type="PackedVector3Array" />
 			<description>
-				Returns the shared texture map value pool for polyhedral data. Each [Vector3] is a position in texture space, usually between 0.0 and 1.0 on each axis. Values are referenced by [method get_poly_cell_texture_map_indices] and may also be shared by other polyhedral data bindings. This pool is distinct from [method Mesh4D.get_texture_map_values], which contains values for the decomposed simplex cells.
+				Returns the shared texture map value pool for polyhedral data. Each [Vector3] is a position in texture space, usually between 0.0 and 1.0 on each axis. Values are referenced by [method get_poly_cell_texture_map_indices] and may also be shared by other polyhedral data bindings. This pool is distinct from [method SingleSurfaceMesh4D.get_texture_map_values], which contains values for the decomposed simplex cells.
 			</description>
 		</method>
 		<method name="get_poly_cell_vertex_positions">
 			<return type="PackedVector4Array" />
 			<description>
-				Returns the vertex positions of the polyhedral mesh. Each Vector4 in the array is a position in meters in 4D space. The items in this array are referenced by the [method Mesh4D.get_edge_indices] array.
-				[b]Note:[/b] The vertices returned by [method Mesh4D.get_vertex_positions] may be longer than this array. This is because [method Mesh4D.get_vertex_positions] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method Mesh4D.get_vertex_positions] will always match this array, such that it is either a superset of this array, or identical to it.
+				Returns the vertex positions of the polyhedral mesh. Each Vector4 in the array is a position in meters in 4D space. The items in this array are referenced by the [method SingleSurfaceMesh4D.get_edge_indices] array.
+				[b]Note:[/b] The vertices returned by [method SingleSurfaceMesh4D.get_vertex_positions] may be longer than this array. This is because [method SingleSurfaceMesh4D.get_vertex_positions] returns the vertices used for tetrahedralizing the polyhedral mesh, which may include extra virtual vertices added to keep tetrahedral faces aligned with each other. Regardless, the start of the array returned by [method SingleSurfaceMesh4D.get_vertex_positions] will always match this array, such that it is either a superset of this array, or identical to it.
 			</description>
 		</method>
 		<method name="get_source_poly_cell_for_simplex_cell" qualifiers="const">

@@ -93,7 +93,7 @@
 	<members>
 		<member name="encoding_format" type="int" setter="set_encoding_format" getter="get_encoding_format" enum="G4MFDocument4D.EncodingFormat" default="0">
 			The encoding format to use when exporting a binary G4MF file or byte array. This applies to binary buffers, the chunks of a binary G4MF [code]".g4b"[/code] file, or the chunks of a binary G4MF in-memory byte array.
-			See [enum EncodingFormat] for the available formats. The default is [constant ENCODING_FORMAT_NONE], which does not compress or encrypt the G4MF data.
+			See [enum EncodingFormat] for the available formats. The default is [constant ENCODING_FORMAT_PLAIN], which does not compress or encrypt the G4MF data.
 		</member>
 		<member name="max_nested_scene_depth" type="int" setter="set_max_nested_scene_depth" getter="get_max_nested_scene_depth" default="-1">
 			How to deal with nested Godot scenes when exporting to G4MF, and how to deal with nested G4MF models when importing as a Godot scene. See the [G4MFModel4D] class for more information.

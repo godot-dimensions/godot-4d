@@ -5,7 +5,7 @@
 	</brief_description>
 	<description>
 		HeightMapShape4D describes a 4D height map physics shape using an array of height values, also known as a height field. Height maps are commonly used for terrain. To represent holes in the height map, use a very large negative number.
-		The size of the height map is defined in the X, Z, and W directions, which can be accessed as a single [Vector3i] [member size], or individually as [member size_width], [member size_depth], and [member size_thickness]. The [member height_data] is an array of floats for the height values. See [method get_height_index] for how the array index is calculated.
+		The size of the height map is defined in the X, Z, and W directions, which can be accessed as a single [Vector3i] [member grid_size], or individually as [member grid_size_width], [member grid_size_depth], and [member grid_size_thickness]. The [member height_data] is an array of floats for the height values. See [method get_height_index] for how the array index is calculated.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -35,21 +35,21 @@
 			<param index="1" name="z" type="int" />
 			<param index="2" name="w" type="int" />
 			<description>
-				Returns the index in the [member height_data] array for the given X, Z, and W grid index coordinates. The index is calculated as [code]x + (z * size_width) + (w * size_width * size_depth)[/code]. All parameters must be on the range of 0 (inclusive) to the size of the height map in the respective axis (exclusive) or the function will error and return [code]-1[/code].
+				Returns the index in the [member height_data] array for the given X, Z, and W grid index coordinates. The index is calculated as [code]x + (z * grid_size_width) + (w * grid_size_width * grid_size_depth)[/code]. All parameters must be on the range of 0 (inclusive) to the size of the height map in the respective axis (exclusive) or the function will error and return [code]-1[/code].
 			</description>
 		</method>
 		<method name="get_height_index_vec3i" qualifiers="const">
 			<return type="int" />
 			<param index="0" name="vector" type="Vector3i" />
 			<description>
-				Returns the index in the [member height_data] array for the given X, Z, and W grid index coordinates packed into a [Vector3i] (see [member size]). The index is calculated as [code]x + (z * size_width) + (w * size_width * size_depth)[/code]. All components of the vector must be on the range of 0 (inclusive) to the size of the height map in the respective axis in [member size] (exclusive) or the function will error and return [code]-1[/code].
+				Returns the index in the [member height_data] array for the given X, Z, and W grid index coordinates packed into a [Vector3i] (see [member grid_size]). The index is calculated as [code]x + (z * grid_size_width) + (w * grid_size_width * grid_size_depth)[/code]. All components of the vector must be on the range of 0 (inclusive) to the size of the height map in the respective axis in [member grid_size] (exclusive) or the function will error and return [code]-1[/code].
 			</description>
 		</method>
 		<method name="get_height_on_grid_vec3i" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="grid_pos" type="Vector3i" />
 			<description>
-				Given grid index coordinates, returns the height at that position. All components of the vector must be on the range of 0 (inclusive) to the size of the height map in the respective axis in [member size] (exclusive) or the function will error and return [code]0.0[/code].
+				Given grid index coordinates, returns the height at that position. All components of the vector must be on the range of 0 (inclusive) to the size of the height map in the respective axis in [member grid_size] (exclusive) or the function will error and return [code]0.0[/code].
 			</description>
 		</method>
 		<method name="get_height_on_grid_vec4i" qualifiers="const">
@@ -76,19 +76,19 @@
 		<method name="quantize_to_float8">
 			<return type="void" />
 			<description>
-				Quantizes the [member height_data] and [member spacing] to 8-bit float precision. The height data will still be stored in memory as 64-bit floats, but the values will be snapped to the nearest 8-bit float value, which can be useful when serialization is allowed to use lower precision to save space, such as when exporting to a G4MF file.
+				Quantizes the [member height_data] and [member grid_spacing] to 8-bit float precision. The height data will still be stored in memory as 64-bit floats, but the values will be snapped to the nearest 8-bit float value, which can be useful when serialization is allowed to use lower precision to save space, such as when exporting to a G4MF file.
 			</description>
 		</method>
 		<method name="quantize_to_float16">
 			<return type="void" />
 			<description>
-				Quantizes the [member height_data] and [member spacing] to 16-bit float precision. The height data will still be stored in memory as 64-bit floats, but the values will be snapped to the nearest 16-bit float value, which can be useful when serialization is allowed to use lower precision to save space, such as when exporting to a G4MF file.
+				Quantizes the [member height_data] and [member grid_spacing] to 16-bit float precision. The height data will still be stored in memory as 64-bit floats, but the values will be snapped to the nearest 16-bit float value, which can be useful when serialization is allowed to use lower precision to save space, such as when exporting to a G4MF file.
 			</description>
 		</method>
 		<method name="quantize_to_float32">
 			<return type="void" />
 			<description>
-				Quantizes the [member height_data] and [member spacing] to 32-bit float precision. The height data will still be stored in memory as 64-bit floats, but the values will be snapped to the nearest 32-bit float value, which can be useful when serialization is allowed to use lower precision to save space, such as when exporting to a G4MF file.
+				Quantizes the [member height_data] and [member grid_spacing] to 32-bit float precision. The height data will still be stored in memory as 64-bit floats, but the values will be snapped to the nearest 32-bit float value, which can be useful when serialization is allowed to use lower precision to save space, such as when exporting to a G4MF file.
 			</description>
 		</method>
 	</methods>

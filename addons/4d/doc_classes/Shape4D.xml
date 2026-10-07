@@ -37,7 +37,7 @@
 			<param index="0" name="local_point" type="Vector4" />
 			<description>
 				Callback method that should return the signed distance from a given point to the surface of a 4D shape. Do not call this method. Override this method if you are implementing a custom 4D shape. It will be called whenever the user calls [method get_signed_distance_to_surface].
-				If this method is not overridden, a positive-only distance to the nearest point via [code]get_nearest_point()[/code] will be used, which will be sub-optimal for points inside the shape.
+				If this method is not overridden, a positive-only distance to the nearest point via [method get_nearest_point] will be used, which will be sub-optimal for points inside the shape.
 			</description>
 		</method>
 		<method name="_get_support_point" qualifiers="virtual const">

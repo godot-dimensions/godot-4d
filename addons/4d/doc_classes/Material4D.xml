@@ -59,14 +59,14 @@
 		<method name="get_albedo_texture_map_offset" qualifiers="const">
 			<return type="Vector3" />
 			<description>
-				Gets the offset of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when any of the 3D texture flags are set in [member albedo_source_flags], and only when the texture transform mode is set to [constant TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
+				Gets the offset of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when any of the 3D texture flags are set in the albedo source flags (see [method get_albedo_source_flags]), and only when the texture transform mode is set to [constant TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
 				This offset controls the texture map, not the texture itself. An offset of (0.25, 0.25, 0.25) will add this value to all texture coordinates, making a texture coordinate of zero start at a quarter of the way into the texture, which visually shifts the texture in the opposite direction of the offset. This is equivalent to Godot's [member BaseMaterial3D.uv1_offset] property, but is specific to the albedo material channel.
 			</description>
 		</method>
 		<method name="get_albedo_texture_map_scale" qualifiers="const">
 			<return type="Vector3" />
 			<description>
-				Gets the scale of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when any of the 3D texture flags are set in [member albedo_source_flags], and only when the texture transform mode is set to [constant TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
+				Gets the scale of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when any of the 3D texture flags are set in the albedo source flags (see [method get_albedo_source_flags]), and only when the texture transform mode is set to [constant TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
 				This scale controls the texture map, not the texture itself. A scale of (2, 2, 2) will make the texture map cover the texture twice as many times on each axis, which has the effect of tiling the texture in a 2x2x2 pattern, making each visual copy of the texture appear half the size. This is equivalent to Godot's [member BaseMaterial3D.uv1_scale] property, but is specific to the albedo material channel.
 			</description>
 		</method>
@@ -79,13 +79,13 @@
 		<method name="get_effective_albedo_texture_map_offset" qualifiers="const">
 			<return type="Vector3" />
 			<description>
-				Returns the effective offset of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This considers the texture transform mode (see [method get_texture_transform_mode]) and will read the appropriate offset value, or return zero if no offset is used. This value is only used when any of the 3D texture flags are set in [member albedo_source_flags].
+				Returns the effective offset of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This considers the texture transform mode (see [member texture_transform_mode]) and will read the appropriate offset value, or return zero if no offset is used. This value is only used when any of the 3D texture flags are set in the albedo source flags (see [method get_albedo_source_flags]).
 			</description>
 		</method>
 		<method name="get_effective_albedo_texture_map_scale" qualifiers="const">
 			<return type="Vector3" />
 			<description>
-				Returns the effective scale of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This considers the texture transform mode (see [method get_texture_transform_mode]) and will read the appropriate scale value, or return one if no scale is used. This value is only used when any of the 3D texture flags are set in [member albedo_source_flags].
+				Returns the effective scale of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This considers the texture transform mode (see [member texture_transform_mode]) and will read the appropriate scale value, or return one if no scale is used. This value is only used when any of the 3D texture flags are set in the albedo source flags (see [method get_albedo_source_flags]).
 			</description>
 		</method>
 		<method name="get_projected_material_3d">
@@ -145,7 +145,7 @@
 			<return type="void" />
 			<param index="0" name="albedo_texture_map_offset" type="Vector3" />
 			<description>
-				Sets the offset of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when any of the 3D texture flags are set in [member albedo_source_flags], and only when the texture transform mode is set to [constant TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
+				Sets the offset of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when any of the 3D texture flags are set in the albedo source flags (see [method get_albedo_source_flags]), and only when the texture transform mode is set to [constant TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
 				This offset controls the texture map, not the texture itself. An offset of (0.25, 0.25, 0.25) will add this value to all texture coordinates, making a texture coordinate of zero start at a quarter of the way into the texture, which visually shifts the texture in the opposite direction of the offset. This is equivalent to Godot's [member BaseMaterial3D.uv1_offset] property, but is specific to the albedo material channel.
 			</description>
 		</method>
@@ -153,7 +153,7 @@
 			<return type="void" />
 			<param index="0" name="albedo_texture_map_scale" type="Vector3" />
 			<description>
-				Sets the scale of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when any of the 3D texture flags are set in [member albedo_source_flags], and only when the texture transform mode is set to [constant TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
+				Sets the scale of the texture map (UV map or UVW map) applied to the base color or albedo 3D texture used for coloring the mesh. This is only used when any of the 3D texture flags are set in the albedo source flags (see [method get_albedo_source_flags]), and only when the texture transform mode is set to [constant TEXTURE_TRANSFORM_MODE_PER_CHANNEL].
 				This scale controls the texture map, not the texture itself. A scale of (2, 2, 2) will make the texture map cover the texture twice as many times on each axis, which has the effect of tiling the texture in a 2x2x2 pattern, making each visual copy of the texture appear half the size. This is equivalent to Godot's [member BaseMaterial3D.uv1_scale] property, but is specific to the albedo material channel.
 			</description>
 		</method>
