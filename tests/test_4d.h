@@ -46,6 +46,7 @@
 #include "physics/shapes/test_cylinder_shape_4d.h"
 #include "physics/shapes/test_duocylinder_shape_4d.h"
 #include "physics/shapes/test_general_shape_4d.h"
+#include "physics/shapes/test_general_shape_curve_4d.h"
 #include "physics/shapes/test_orthoplex_shape_4d.h"
 #include "physics/shapes/test_sphere_shape_4d.h"
 

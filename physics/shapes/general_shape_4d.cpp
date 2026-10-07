@@ -251,47 +251,30 @@ real_t GeneralShape4D::get_surface_volume() const {
 /* clang-format on */
 
 Rect4 GeneralShape4D::get_rect_bounds(const Transform4D &p_to_target) const {
-	const Vector4 half_extents = get_base_half_extents();
-	const int64_t curve_count = _curves.size();
-	Rect4 rect_bounds = Rect4(p_to_target.origin, Vector4(0, 0, 0, 0));
-	if (curve_count == 0) {
-		for (int x = -1; x < 2; x += 2) {
-			for (int y = -1; y < 2; y += 2) {
-				for (int z = -1; z < 2; z += 2) {
-					for (int w = -1; w < 2; w += 2) {
-						const Vector4 sign = Vector4(x, y, z, w);
-						const Vector4 corner = sign * half_extents;
-						rect_bounds.expand_self_to_point(p_to_target.xform(corner));
-					}
-				}
-			}
-		}
+	// On each target axis, the shape reaches as far as its support point in the direction of that row of the basis.
+	// The shape is symmetric around its center, so the bounds are symmetric around the target origin, and only
+	// the positive direction is needed. The support point is the sum of the base box's and the curves' support
+	// points, so their reaches add up. Like the support point, this is exact for any transform and any exponent.
+	const Vector4 base_half_extents = get_base_half_extents();
+	Vector4 basis_rows[4];
+	Vector4 bounds_half_extents;
+	for (int axis = 0; axis < 4; axis++) {
+		basis_rows[axis] = p_to_target.basis.get_row(axis);
+		// The base box reaches the farthest at the corner with the same signs as the row.
+		bounds_half_extents[axis] = basis_rows[axis].abs().dot(base_half_extents);
 	}
-	// Include the axis-aligned radii of the curves in the bounds.
-	// This is not perfect, but it should be good enough for most cases.
-	Vector4 farthest_extent_radii;
-	for (int curve_index = 0; curve_index < _curves.size(); curve_index++) {
+	// Note: This does not handle Steinmetz solids, or any other case of curves sharing axes.
+	for (int64_t curve_index = 0; curve_index < _curves.size(); curve_index++) {
 		const Ref<GeneralShapeCurve4D> curve = _curves[curve_index];
-		GENERAL_SHAPE_4D_CURVE_ERR_WARN(curve, rect_bounds);
-		farthest_extent_radii = farthest_extent_radii.max(curve->get_radii());
-	}
-	for (int x = -1; x < 2; x += 2) {
-		for (int y = -1; y < 2; y += 2) {
-			for (int z = -1; z < 2; z += 2) {
-				for (int w = -1; w < 2; w += 2) {
-					const Vector4 sign = Vector4(x, y, z, w);
-					const Vector4 corner = sign * half_extents;
-					for (int i = 0; i < 4; i++) {
-						Vector4 curve_extent_radius;
-						curve_extent_radius[i] = sign[i] * farthest_extent_radii[i];
-						const Vector4 local_edge = corner + curve_extent_radius;
-						rect_bounds.expand_self_to_point(p_to_target.xform(local_edge));
-					}
-				}
-			}
+		// The bounds are exact for any exponent, so only warn about tapering here.
+		GENERAL_SHAPE_4D_CURVE_ERR_WARN_TAPER(curve, Rect4(p_to_target.origin - bounds_half_extents, bounds_half_extents * 2.0f));
+		const Vector4 radii = curve->get_radii();
+		const double exponent = curve->get_exponent();
+		for (int axis = 0; axis < 4; axis++) {
+			bounds_half_extents[axis] += basis_rows[axis].dot(_get_curve_support_offset(radii, exponent, basis_rows[axis]));
 		}
 	}
-	return rect_bounds;
+	return Rect4(p_to_target.origin - bounds_half_extents, bounds_half_extents * 2.0f);
 }
 
 Vector4 GeneralShape4D::get_nearest_point(const Vector4 &p_local_point) const {

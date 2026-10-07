@@ -66,6 +66,9 @@ bool GeneralShapeCurve4D::is_equal_exact(const Ref<GeneralShapeCurve4D> &p_other
 	if (_exponent != p_other->_exponent) {
 		return false;
 	}
+	if (_taper.size() != p_other->_taper.size()) {
+		return false;
+	}
 	for (int i = 0; i < _taper.size(); i++) {
 		if (!_taper[i].is_equal_exact(p_other->_taper[i])) {
 			return false;

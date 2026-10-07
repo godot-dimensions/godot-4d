@@ -301,4 +301,59 @@ TEST_CASE("[GeneralShape4D] Get Nearest Point with custom exponents") {
 	CHECK_MESSAGE(shape->get_nearest_point(Vector4(0.02, 0.0, 0.0, 0.0)).is_equal_approx(Vector4(0.01, 0.0, 0.0, 0.0)), "GeneralShape4D get_nearest_point should not underflow with small radii.");
 	GeneralShape4D::set_warnings_enabled(true);
 }
+
+TEST_CASE("[GeneralShape4D] Get Rect Bounds with rotated transforms") {
+	// The bounds are centered on the target origin, and on each axis, the bounds' half extent is how far the shape
+	// reaches along that row of the basis. In these rotations, cos and sin are 1/2 and sqrt(3)/2, or both sqrt(2)/2.
+	const real_t sqrt_3 = Math::sqrt((real_t)3.0);
+	const Basis4D rotate_xy_30 = Basis4D::from_xy(Math_PI / 6.0);
+	const Basis4D rotate_xy_45 = Basis4D::from_xy(Math_PI / 4.0);
+	// A hypersphere is the same in every direction, so rotating it does not change its bounds.
+	Ref<GeneralShapeCurve4D> curve;
+	curve.instantiate();
+	curve->set_radii(Vector4(1.0, 1.0, 1.0, 1.0));
+	TypedArray<GeneralShapeCurve4D> curves;
+	curves.push_back(curve);
+	Ref<GeneralShape4D> shape;
+	shape.instantiate();
+	shape->set_curves(curves);
+	Rect4 bounds = shape->get_rect_bounds(Transform4D(rotate_xy_45, Vector4(1.0, 2.0, 3.0, 4.0)));
+	CHECK_MESSAGE(bounds.is_equal_approx(Rect4(Vector4(0.0, 1.0, 2.0, 3.0), Vector4(2.0, 2.0, 2.0, 2.0))), "GeneralShape4D get_rect_bounds should not change for a rotated hypersphere.");
+	// A rotated ellipsoid reaches sqrt((r_x * row_x)^2 + (r_y * row_y)^2) on the rotated axes.
+	curve->set_radii(Vector4(2.0, 1.0, 1.0, 1.0));
+	Vector4 half_extents = Vector4(Math::sqrt((real_t)3.25), Math::sqrt((real_t)1.75), 1.0, 1.0);
+	bounds = shape->get_rect_bounds(Transform4D(rotate_xy_30));
+	CHECK_MESSAGE(bounds.is_equal_approx(Rect4(-half_extents, half_extents * 2.0)), "GeneralShape4D get_rect_bounds should be exact for a rotated ellipsoid.");
+
+	// A rounded box, which is a base box with a 4D sphere curve on all axes. The base box reaches |row| dot half_extents,
+	// and the curve adds its radius in every direction. This also rotates the ZW plane, which commutes with XY.
+	curve->set_radii(Vector4(0.5, 0.5, 0.5, 0.5));
+	shape->set_base_half_extents(Vector4(1.0, 2.0, 0.5, 0.0));
+	half_extents = Vector4(1.5, 2.5, 1.0, 0.5);
+	CHECK_MESSAGE(shape->get_rect_bounds().is_equal_approx(Rect4(-half_extents, half_extents * 2.0)), "GeneralShape4D get_rect_bounds should be exact for an unrotated rounded box.");
+	half_extents = Vector4(sqrt_3 / 2.0 + 1.5, 1.0 + sqrt_3, 0.75, sqrt_3 / 4.0 + 0.5);
+	bounds = shape->get_rect_bounds(Transform4D(rotate_xy_30 * Basis4D::from_zw(Math_PI / 3.0)));
+	CHECK_MESSAGE(bounds.is_equal_approx(Rect4(-half_extents, half_extents * 2.0)), "GeneralShape4D get_rect_bounds should be exact for a rotated rounded box.");
+
+	// A 4D cylinder, which is a base box along Y with a 3D sphere curve on the XZW axes. Rotating in XY mixes the cap
+	// axis with a curve axis, and rotating in ZW mixes two curve axes, which does not change the sphere's bounds.
+	curve->set_radii(Vector4(0.5, 0.0, 0.5, 0.5));
+	shape->set_base_half_extents(Vector4(0.0, 1.0, 0.0, 0.0));
+	half_extents = Vector4(0.5 + sqrt_3 / 4.0, sqrt_3 / 2.0 + 0.25, 0.5, 0.5);
+	bounds = shape->get_rect_bounds(Transform4D(rotate_xy_30 * Basis4D::from_zw(Math_PI / 4.0)));
+	CHECK_MESSAGE(bounds.is_equal_approx(Rect4(-half_extents, half_extents * 2.0)), "GeneralShape4D get_rect_bounds should be exact for a rotated cylinder.");
+
+	// Custom exponents. A squircle with an exponent of 4 reaches 2^(1/4) along a diagonal, which is farther than a
+	// circle, and a diamond with an exponent of 1 reaches sqrt(2)/2 along a diagonal, which is closer than a circle.
+	curve->set_radii(Vector4(1.0, 1.0, 0.0, 0.0));
+	shape->set_base_half_extents(Vector4());
+	curve->set_exponent(4.0);
+	half_extents = Vector4(Math::pow((real_t)2.0, (real_t)0.25), Math::pow((real_t)2.0, (real_t)0.25), 0.0, 0.0);
+	bounds = shape->get_rect_bounds(Transform4D(rotate_xy_45));
+	CHECK_MESSAGE(bounds.is_equal_approx(Rect4(-half_extents, half_extents * 2.0)), "GeneralShape4D get_rect_bounds should be exact for a rotated curve with an exponent of 4.");
+	curve->set_exponent(1.0);
+	half_extents = Vector4(Math_SQRT12, Math_SQRT12, 0.0, 0.0);
+	bounds = shape->get_rect_bounds(Transform4D(rotate_xy_45));
+	CHECK_MESSAGE(bounds.is_equal_approx(Rect4(-half_extents, half_extents * 2.0)), "GeneralShape4D get_rect_bounds should be exact for a rotated curve with an exponent of 1.");
+}
 } // namespace TestGeneralShape4D
