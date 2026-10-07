@@ -16,6 +16,20 @@
 				Returns the ancestor [CollisionObject4D] node that owns this CollisionShape4D. If this node is not in the scene tree, this will return [code]null[/code]. If this node is in the scene tree, but there is no ancestor CollisionObject4D, this will return the global static body, which is a special object that represents the static world; freeing this node will cause a crash.
 			</description>
 		</method>
+		<method name="get_collision_layer_value" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="layer_number" type="int" />
+			<description>
+				Returns whether or not the specified layer of the [member collision_layer] is enabled, given a [param layer_number] between 1 and 32. In 4D, collision layers are per-shape, unlike [method CollisionObject3D.get_collision_layer_value] which is per-object.
+			</description>
+		</method>
+		<method name="get_collision_mask_value" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="layer_number" type="int" />
+			<description>
+				Returns whether or not the specified layer of the [member collision_mask] is enabled, given a [param layer_number] between 1 and 32. In 4D, collision masks are per-shape, unlike [method CollisionObject3D.get_collision_mask_value] which is per-object.
+			</description>
+		</method>
 		<method name="get_hypervolume" qualifiers="const">
 			<return type="float" />
 			<description>
@@ -55,6 +69,22 @@
 			<param index="0" name="point" type="Vector4" />
 			<description>
 				Returns [code]true[/code] if the shape contains the given point in local space. Points exactly on the surface are considered inside.
+			</description>
+		</method>
+		<method name="set_collision_layer_value">
+			<return type="void" />
+			<param index="0" name="layer_number" type="int" />
+			<param index="1" name="value" type="bool" />
+			<description>
+				Based on [param value], enables or disables the specified layer in the [member collision_layer], given a [param layer_number] between 1 and 32. This simplifies editing this CollisionShape4D's collision layer compared to assigning the [member collision_layer] property directly. In 4D, collision layers are per-shape, unlike [method CollisionObject3D.set_collision_layer_value] which is per-object.
+			</description>
+		</method>
+		<method name="set_collision_mask_value">
+			<return type="void" />
+			<param index="0" name="layer_number" type="int" />
+			<param index="1" name="value" type="bool" />
+			<description>
+				Based on [param value], enables or disables the specified layer in the [member collision_mask], given a [param layer_number] between 1 and 32. This simplifies editing this CollisionShape4D's collision mask compared to assigning the [member collision_mask] property directly. In 4D, collision masks are per-shape, unlike [method CollisionObject3D.set_collision_mask_value] which is per-object.
 			</description>
 		</method>
 	</methods>

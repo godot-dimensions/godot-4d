@@ -47,6 +47,11 @@ TypedArray<KinematicCollision4D> CharacterBody4D::move_and_slide(const double p_
 		Vector4 desired_motion = _linear_velocity * delta_time;
 		for (int iteration = 0; iteration < CHARACTER_BODY_4D_MAX_MOVE_AND_SLIDE_ITERATIONS; iteration++) {
 			Ref<KinematicCollision4D> collision = move_and_collide(desired_motion, false, delta_time);
+			if (collision.is_null()) {
+				// No physics engine is set, or it gave no result. The motion result is unknown, so don't move
+				// the body any further (including snapping), and return the collisions handled so far.
+				return collisions;
+			}
 			const real_t travel_ratio = collision->get_travel_ratio();
 			if (travel_ratio == 1.0f) {
 				// This last move_and_collide call moved us the rest of the way, with no collisions.

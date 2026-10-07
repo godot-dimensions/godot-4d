@@ -54,6 +54,34 @@ Transform4D CollisionShape4D::get_transform_to_collision_object() const {
 	return transform_to_col_obj;
 }
 
+void CollisionShape4D::set_collision_layer_value(int p_layer_number, bool p_value) {
+	ERR_FAIL_COND_MSG(p_layer_number < 1 || p_layer_number > 32, "Collision layer number must be between 1 and 32 inclusive.");
+	if (p_value) {
+		_collision_layer |= 1u << (p_layer_number - 1);
+	} else {
+		_collision_layer &= ~(1u << (p_layer_number - 1));
+	}
+}
+
+bool CollisionShape4D::get_collision_layer_value(int p_layer_number) const {
+	ERR_FAIL_COND_V_MSG(p_layer_number < 1 || p_layer_number > 32, false, "Collision layer number must be between 1 and 32 inclusive.");
+	return _collision_layer & (1u << (p_layer_number - 1));
+}
+
+void CollisionShape4D::set_collision_mask_value(int p_layer_number, bool p_value) {
+	ERR_FAIL_COND_MSG(p_layer_number < 1 || p_layer_number > 32, "Collision layer number must be between 1 and 32 inclusive.");
+	if (p_value) {
+		_collision_mask |= 1u << (p_layer_number - 1);
+	} else {
+		_collision_mask &= ~(1u << (p_layer_number - 1));
+	}
+}
+
+bool CollisionShape4D::get_collision_mask_value(int p_layer_number) const {
+	ERR_FAIL_COND_V_MSG(p_layer_number < 1 || p_layer_number > 32, false, "Collision layer number must be between 1 and 32 inclusive.");
+	return _collision_mask & (1u << (p_layer_number - 1));
+}
+
 Rect4 CollisionShape4D::get_rect_bounds_local(const Transform4D &p_to_target) const {
 	if (_shape.is_null()) {
 		return Rect4(p_to_target.origin, Vector4());
@@ -159,4 +187,9 @@ void CollisionShape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &CollisionShape4D::get_collision_mask);
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &CollisionShape4D::set_collision_mask);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask", "get_collision_mask");
+
+	ClassDB::bind_method(D_METHOD("get_collision_layer_value", "layer_number"), &CollisionShape4D::get_collision_layer_value);
+	ClassDB::bind_method(D_METHOD("set_collision_layer_value", "layer_number", "value"), &CollisionShape4D::set_collision_layer_value);
+	ClassDB::bind_method(D_METHOD("get_collision_mask_value", "layer_number"), &CollisionShape4D::get_collision_mask_value);
+	ClassDB::bind_method(D_METHOD("set_collision_mask_value", "layer_number", "value"), &CollisionShape4D::set_collision_mask_value);
 }
