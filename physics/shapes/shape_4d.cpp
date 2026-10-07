@@ -135,7 +135,7 @@ void Shape4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_surface_volume"), &Shape4D::get_surface_volume);
 	ClassDB::bind_method(D_METHOD("get_rect_bounds", "to_target_basis", "to_target_origin"), &Shape4D::get_rect_bounds_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
 	ClassDB::bind_method(D_METHOD("get_signed_distance_to_surface", "local_point"), &Shape4D::get_signed_distance_to_surface_bind);
-	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction", "max_distance", "inside_is_zero"), &Shape4D::raycast_intersects);
+	ClassDB::bind_method(D_METHOD("raycast_intersects", "local_from", "local_direction", "max_distance", "inside_is_zero"), &Shape4D::raycast_intersects, DEFVAL(BINDING_SAFE_INF), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_nearest_point", "point"), &Shape4D::get_nearest_point);
 	ClassDB::bind_method(D_METHOD("get_support_point", "direction"), &Shape4D::get_support_point);
 	ClassDB::bind_method(D_METHOD("has_point", "point"), &Shape4D::has_point);

@@ -946,7 +946,7 @@ void Node4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_rect_bounds_global_recursive", "to_target_basis", "to_target_origin"), &Node4D::get_rect_bounds_global_recursive_bind, DEFVAL(Projection()), DEFVAL(Vector4()));
 	GDVIRTUAL_BIND(_get_rect_bounds_local, "to_target_basis", "to_target_origin");
 	// Raycasting.
-	ClassDB::bind_method(D_METHOD("raycast_intersects_local", "local_from", "local_direction", "max_distance", "inside_is_zero"), &Node4D::raycast_intersects_local);
+	ClassDB::bind_method(D_METHOD("raycast_intersects_local", "local_from", "local_direction", "max_distance", "inside_is_zero"), &Node4D::raycast_intersects_local, DEFVAL(BINDING_SAFE_INF), DEFVAL(false));
 	GDVIRTUAL_BIND(_raycast_intersects_local, "local_from", "local_direction", "inside_is_zero");
 
 #ifdef REAL_T_IS_DOUBLE

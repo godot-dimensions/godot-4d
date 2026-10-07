@@ -168,15 +168,7 @@ TEST_CASE("[OrthoplexShape4D] Raycast") {
 	Ref<OrthoplexShape4D> orthoplex;
 	orthoplex.instantiate();
 	// Default size is (1, 1, 1, 1), so the vertices are at plus or minus 0.5 on each axis.
-	// This ray hits a vertex, so the normal can be the normal of any facet touching that vertex.
-	Dictionary result = orthoplex->raycast_intersects(Vector4(2, 0, 0, 0), Vector4(-1, 0, 0, 0));
-	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit the vertex when pointing at it.");
-	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.5), "OrthoplexShape4D raycast_intersects should return the distance to the vertex.");
-	CHECK_MESSAGE(Vector4(result["point"]).is_equal_approx(Vector4(0.5, 0, 0, 0)), "OrthoplexShape4D raycast_intersects should return the vertex as the hit point.");
-	Vector4 normal = result["normal"];
-	CHECK_MESSAGE(normal.x == doctest::Approx(0.5), "OrthoplexShape4D raycast_intersects should return the normal of a facet touching the vertex.");
-	CHECK_MESSAGE(normal.abs().is_equal_approx(Vector4(0.5, 0.5, 0.5, 0.5)), "OrthoplexShape4D raycast_intersects should return the normal of a facet touching the vertex.");
-	result = orthoplex->raycast_intersects(Vector4(2, 0.1, 0.05, 0.02), Vector4(-1, 0, 0, 0));
+	Dictionary result = orthoplex->raycast_intersects(Vector4(2, 0.1, 0.05, 0.02), Vector4(-1, 0, 0, 0));
 	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit a facet.");
 	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.67), "OrthoplexShape4D raycast_intersects should return the distance to the facet.");
 	CHECK_MESSAGE(Vector4(result["point"]).is_equal_approx(Vector4(0.33, 0.1, 0.05, 0.02)), "OrthoplexShape4D raycast_intersects should return the hit point on the facet.");
@@ -218,5 +210,111 @@ TEST_CASE("[OrthoplexShape4D] Raycast") {
 	result = orthoplex->raycast_intersects(Vector4(0.75, 0, 0, 0), Vector4(1, 0, 0, 0), Math_INF, true);
 	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit when starting inside and inside_is_zero is true.");
 	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.0), "OrthoplexShape4D raycast_intersects should return zero distance when starting inside and inside_is_zero is true.");
+}
+
+TEST_CASE("[OrthoplexShape4D] Raycast with default arguments through bindings") {
+	Ref<OrthoplexShape4D> orthoplex;
+	orthoplex.instantiate();
+	// Scripts can omit max_distance and inside_is_zero, which default to an unlimited distance and false.
+	const Variant hit_variant = orthoplex->call("raycast_intersects", Vector4(2, 0.1, 0.05, 0.02), Vector4(-1, 0, 0, 0));
+	REQUIRE_MESSAGE(hit_variant.get_type() == Variant::DICTIONARY, "Shape4D raycast_intersects should be callable with only the required arguments.");
+	Dictionary result = hit_variant;
+	CHECK_MESSAGE((bool)result["hit"], "Shape4D raycast_intersects should hit when called with only the required arguments.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.67), "Shape4D raycast_intersects should return the distance when called with only the required arguments.");
+	result = orthoplex->call("raycast_intersects", Vector4(0, 0.1, -0.05, 0.05), Vector4(1, 0, 0, 0));
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.3), "Shape4D raycast_intersects should not treat starting inside as zero distance by default.");
+}
+
+TEST_CASE("[OrthoplexShape4D] Raycast at vertices and edges") {
+	Ref<OrthoplexShape4D> orthoplex;
+	orthoplex.instantiate();
+	// When a ray hits a vertex or edge, it touches multiple facets at once, so the normal should be
+	// a blend of their normals, which for rays along an axis is the axis itself, not a tilted facet normal.
+	Dictionary result = orthoplex->raycast_intersects(Vector4(2, 0, 0, 0), Vector4(-1, 0, 0, 0));
+	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit the vertex when pointing at it.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.5), "OrthoplexShape4D raycast_intersects should return the distance to the vertex.");
+	CHECK_MESSAGE(Vector4(result["point"]).is_equal_approx(Vector4(0.5, 0, 0, 0)), "OrthoplexShape4D raycast_intersects should return the vertex as the hit point.");
+	CHECK_MESSAGE(Vector4(result["normal"]).is_equal_approx(Vector4(1, 0, 0, 0)), "OrthoplexShape4D raycast_intersects should return the axis as the normal when hitting a vertex along that axis.");
+	result = orthoplex->raycast_intersects(Vector4(0, 2, 0, 0), Vector4(0, -1, 0, 0));
+	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit the top vertex when pointing down at it.");
+	CHECK_MESSAGE(Vector4(result["normal"]).is_equal_approx(Vector4(0, 1, 0, 0)), "OrthoplexShape4D raycast_intersects should return an upwards normal when hitting the top vertex from above.");
+	result = orthoplex->raycast_intersects(Vector4(1, 1, 0, 0), Vector4(-1, -1, 0, 0).normalized());
+	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit an edge when pointing at it.");
+	CHECK_MESSAGE(Vector4(result["point"]).is_equal_approx(Vector4(0.25, 0.25, 0, 0)), "OrthoplexShape4D raycast_intersects should return the point on the edge.");
+	CHECK_MESSAGE(Vector4(result["normal"]).is_equal_approx(Vector4(1, 1, 0, 0).normalized()), "OrthoplexShape4D raycast_intersects should blend the normals of the facets touching an edge.");
+	// Rays starting inside the shape exit through a vertex.
+	result = orthoplex->raycast_intersects(Vector4(0, 0, 0, 0), Vector4(0, 0, 1, 0));
+	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit the exit vertex when starting inside.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.5), "OrthoplexShape4D raycast_intersects should return the distance to the exit vertex when starting inside.");
+	CHECK_MESSAGE(Vector4(result["normal"]).is_equal_approx(Vector4(0, 0, 1, 0)), "OrthoplexShape4D raycast_intersects should blend the normals of the facets touching the exit vertex.");
+	// Test when the orthoplex is not at the default size.
+	orthoplex->set_size(Vector4(3, 4, 5, 2));
+	result = orthoplex->raycast_intersects(Vector4(0, 0, 0, -3), Vector4(0, 0, 0, 1));
+	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit the vertex when pointing at it.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0), "OrthoplexShape4D raycast_intersects should return the distance to the vertex.");
+	CHECK_MESSAGE(Vector4(result["normal"]).is_equal_approx(Vector4(0, 0, 0, -1)), "OrthoplexShape4D raycast_intersects should return the axis as the normal when hitting a vertex along that axis.");
+}
+
+TEST_CASE("[OrthoplexShape4D] Zero size") {
+	Ref<OrthoplexShape4D> orthoplex;
+	orthoplex.instantiate();
+	// With a size of zero on W, the orthoplex is a flat octahedron in the XYZ hyperplane.
+	orthoplex->set_size(Vector4(1, 1, 1, 0));
+	CHECK_MESSAGE(orthoplex->has_point(Vector4(0, 0, 0, 0)), "OrthoplexShape4D has_point should return true for the center of a flat orthoplex.");
+	CHECK_MESSAGE(orthoplex->has_point(Vector4(0.1, 0.2, 0, 0)), "OrthoplexShape4D has_point should return true for points on a flat orthoplex.");
+	CHECK_MESSAGE(orthoplex->has_point(Vector4(0.5, 0, 0, 0)), "OrthoplexShape4D has_point should return true for the vertices of a flat orthoplex.");
+	CHECK_MESSAGE(!orthoplex->has_point(Vector4(0.1, 0, 0, 0.01)), "OrthoplexShape4D has_point should return false for points off of a flat orthoplex.");
+	CHECK_MESSAGE(!orthoplex->has_point(Vector4(0.4, 0.2, 0, 0)), "OrthoplexShape4D has_point should return false for points outside of a flat orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_nearest_point(Vector4(0.1, 0.2, 0, 0)) == Vector4(0.1, 0.2, 0, 0), "OrthoplexShape4D get_nearest_point should return the same point for points on a flat orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_nearest_point(Vector4(0.1, 0.2, 0, 0.3)).is_equal_approx(Vector4(0.1, 0.2, 0, 0)), "OrthoplexShape4D get_nearest_point should flatten points onto a flat orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_nearest_point(Vector4(1, 1, 1, 1)).is_equal_approx(Vector4(1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 0)), "OrthoplexShape4D get_nearest_point should return the nearest point on a flat orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_nearest_point(Vector4(0.6, 0.3, 0, -2)).is_equal_approx(Vector4(0.4, 0.1, 0, 0)), "OrthoplexShape4D get_nearest_point should return the nearest point on a flat orthoplex.");
+	Vector4 surface_point;
+	CHECK_MESSAGE(orthoplex->get_signed_distance_to_surface(Vector4(0.1, 0.2, 0, 0), &surface_point) == doctest::Approx(0.0), "OrthoplexShape4D get_signed_distance_to_surface should return zero for points on a flat orthoplex.");
+	CHECK_MESSAGE(surface_point.is_equal_approx(Vector4(0.1, 0.2, 0, 0)), "OrthoplexShape4D get_signed_distance_to_surface should return the same point for points on a flat orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_signed_distance_to_surface(Vector4(0.1, 0.2, 0, 0.3), &surface_point) == doctest::Approx(0.3), "OrthoplexShape4D get_signed_distance_to_surface should return the distance to a flat orthoplex.");
+	CHECK_MESSAGE(surface_point.is_equal_approx(Vector4(0.1, 0.2, 0, 0)), "OrthoplexShape4D get_signed_distance_to_surface should return the nearest point on a flat orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_signed_distance_to_surface(Vector4(1, 1, 1, 1)) == doctest::Approx(Math::sqrt(111.0) / 6.0), "OrthoplexShape4D get_signed_distance_to_surface should return the distance to a flat orthoplex.");
+	Dictionary result = orthoplex->raycast_intersects(Vector4(0.1, 0.2, 0, 2), Vector4(0, 0, 0, -1));
+	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit a flat orthoplex.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0), "OrthoplexShape4D raycast_intersects should return the distance to a flat orthoplex.");
+	CHECK_MESSAGE(Vector4(result["point"]).is_equal_approx(Vector4(0.1, 0.2, 0, 0)), "OrthoplexShape4D raycast_intersects should return the hit point on a flat orthoplex.");
+	CHECK_MESSAGE(Vector4(result["normal"]).is_equal_approx(Vector4(0, 0, 0, 1)), "OrthoplexShape4D raycast_intersects should return the flat direction as the normal of a flat orthoplex.");
+	result = orthoplex->raycast_intersects(Vector4(2, 0.1, 0.05, 0), Vector4(-1, 0, 0, 0));
+	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit a flat orthoplex along its hyperplane.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.65), "OrthoplexShape4D raycast_intersects should return the distance to a flat orthoplex along its hyperplane.");
+	CHECK_MESSAGE(Vector4(result["normal"]).is_equal_approx(Vector4(1, 1, 1, 0).normalized()), "OrthoplexShape4D raycast_intersects should return a normal within the hyperplane of a flat orthoplex.");
+	result = orthoplex->raycast_intersects(Vector4(0.1, 0.2, 0, 2), Vector4(0, 0, 0, 1));
+	CHECK_MESSAGE(!(bool)result["hit"], "OrthoplexShape4D raycast_intersects should not hit a flat orthoplex when pointing away.");
+	result = orthoplex->raycast_intersects(Vector4(2, 2, 0, 1), Vector4(0, 0, 0, -1));
+	CHECK_MESSAGE(!(bool)result["hit"], "OrthoplexShape4D raycast_intersects should not hit a flat orthoplex when passing outside of it.");
+	// With a size of zero on every axis, the orthoplex is a single point.
+	orthoplex->set_size(Vector4(0, 0, 0, 0));
+	CHECK_MESSAGE(orthoplex->has_point(Vector4(0, 0, 0, 0)), "OrthoplexShape4D has_point should return true for the center of a zero-size orthoplex.");
+	CHECK_MESSAGE(!orthoplex->has_point(Vector4(0.1, 0, 0, 0)), "OrthoplexShape4D has_point should return false for any other point of a zero-size orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_nearest_point(Vector4(1, 2, 3, 4)) == Vector4(0, 0, 0, 0), "OrthoplexShape4D get_nearest_point should return the center of a zero-size orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_signed_distance_to_surface(Vector4(1, 2, 3, 4)) == doctest::Approx(Math::sqrt(30.0)), "OrthoplexShape4D get_signed_distance_to_surface should return the distance to the center of a zero-size orthoplex.");
+	CHECK_MESSAGE(orthoplex->get_signed_distance_to_surface(Vector4(0, 0, 0, 0)) == doctest::Approx(0.0), "OrthoplexShape4D get_signed_distance_to_surface should return zero for the center of a zero-size orthoplex.");
+	result = orthoplex->raycast_intersects(Vector4(0, 0, 0, 2), Vector4(0, 0, 0, -1));
+	CHECK_MESSAGE((bool)result["hit"], "OrthoplexShape4D raycast_intersects should hit a zero-size orthoplex when passing through its center.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0), "OrthoplexShape4D raycast_intersects should return the distance to the center of a zero-size orthoplex.");
+	result = orthoplex->raycast_intersects(Vector4(1, 0, 0, 2), Vector4(0, 0, 0, -1));
+	CHECK_MESSAGE(!(bool)result["hit"], "OrthoplexShape4D raycast_intersects should not hit a zero-size orthoplex when missing its center.");
+}
+
+TEST_CASE("[OrthoplexShape4D] Negative size") {
+	Ref<OrthoplexShape4D> orthoplex;
+	orthoplex.instantiate();
+	// Negative sizes are invalid, so they should be rejected, keeping the previous size.
+	ERR_PRINT_OFF;
+	orthoplex->set_size(Vector4(1, -1, 1, 1));
+	ERR_PRINT_ON;
+	CHECK_MESSAGE(orthoplex->get_size() == Vector4(1, 1, 1, 1), "OrthoplexShape4D set_size should reject negative sizes.");
+	CHECK_MESSAGE(!orthoplex->has_point(Vector4(0, 5, 0, 0)), "OrthoplexShape4D has_point should return false for faraway points after trying to set a negative size.");
+	ERR_PRINT_OFF;
+	orthoplex->set_half_extents(Vector4(1, 1, 1, -1));
+	ERR_PRINT_ON;
+	CHECK_MESSAGE(orthoplex->get_size() == Vector4(1, 1, 1, 1), "OrthoplexShape4D set_half_extents should reject negative half extents.");
+	CHECK_MESSAGE(!orthoplex->has_point(Vector4(0, 0, 0, 5)), "OrthoplexShape4D has_point should return false for faraway points after trying to set negative half extents.");
 }
 } // namespace TestOrthoplexShape4D

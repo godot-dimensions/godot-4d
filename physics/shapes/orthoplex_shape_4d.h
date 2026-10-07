@@ -7,6 +7,8 @@ class OrthoplexShape4D : public Shape4D {
 
 	Vector4 _size = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
+	static real_t _get_scaled_taxicab_length(const Vector4 &p_abs_point, const Vector4 &p_half_extents);
+
 protected:
 	static void _bind_methods();
 

@@ -6,12 +6,24 @@
 
 #include <algorithm>
 
+real_t OrthoplexShape4D::_get_scaled_taxicab_length(const Vector4 &p_abs_point, const Vector4 &p_half_extents) {
+	// Skip axes where the point is zero, so that axes with a size of zero (where the shape is flat)
+	// contribute zero instead of NaN, and contribute infinity if the point is not zero on them.
+	real_t scaled_taxicab_length = 0.0f;
+	for (int i = 0; i < 4; i++) {
+		if (p_abs_point[i] != 0.0f) {
+			scaled_taxicab_length += p_abs_point[i] / p_half_extents[i];
+		}
+	}
+	return scaled_taxicab_length;
+}
+
 Vector4 OrthoplexShape4D::get_half_extents() const {
 	return _size * 0.5f;
 }
 
 void OrthoplexShape4D::set_half_extents(const Vector4 &p_half_extents) {
-	_size = p_half_extents * 2.0f;
+	set_size(p_half_extents * 2.0f);
 }
 
 Vector4 OrthoplexShape4D::get_size() const {
@@ -19,6 +31,7 @@ Vector4 OrthoplexShape4D::get_size() const {
 }
 
 void OrthoplexShape4D::set_size(const Vector4 &p_size) {
+	ERR_FAIL_COND_MSG(p_size.x < 0.0f || p_size.y < 0.0f || p_size.z < 0.0f || p_size.w < 0.0f, "OrthoplexShape4D size cannot be negative.");
 	_size = p_size;
 }
 
@@ -64,39 +77,67 @@ Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, con
 	// All facet normals have the same length before normalizing, so all facets are the same distance from the center.
 	// Clip the ray against each half-space: the ray enters the shape at the last facet it crosses going inwards,
 	// and exits at the first facet it crosses going outwards. This avoids needing a tolerance for the hit point.
-	const Vector4 inverse_half_extents = get_half_extents().inverse();
-	const real_t facet_distance = 1.0f / inverse_half_extents.length();
+	const Vector4 half_extents = get_half_extents();
+	// Axes with a size of zero are flat, so they don't affect the facets, and are clipped separately below.
+	const Vector4 inverse_half_extents = Vector4(
+			half_extents.x == 0.0f ? 0.0f : 1.0f / half_extents.x,
+			half_extents.y == 0.0f ? 0.0f : 1.0f / half_extents.y,
+			half_extents.z == 0.0f ? 0.0f : 1.0f / half_extents.z,
+			half_extents.w == 0.0f ? 0.0f : 1.0f / half_extents.w);
+	const real_t facet_normal_length = inverse_half_extents.length();
 	real_t enter_distance = -Math_INF;
 	real_t exit_distance = Math_INF;
 	Vector4 enter_normal = Vector4();
 	Vector4 exit_normal = Vector4();
-	// Iterate over the 16 planes of the orthoplex.
-	for (real_t x = -1.0f; x <= 1.0f; x += 2.0f) {
-		for (real_t y = -1.0f; y <= 1.0f; y += 2.0f) {
-			for (real_t z = -1.0f; z <= 1.0f; z += 2.0f) {
-				for (real_t w = -1.0f; w <= 1.0f; w += 2.0f) {
-					const Vector4 facet_normal = Vector4(x, y, z, w) * inverse_half_extents * facet_distance;
-					// Positive if the ray starts on the inner side of the facet's plane.
-					const real_t from_inside_distance = facet_distance - facet_normal.dot(p_local_from);
-					const real_t direction_dot = facet_normal.dot(p_local_direction);
-					if (direction_dot == 0.0f) {
-						if (from_inside_distance < 0.0f) {
-							// The ray is parallel to this facet and outside of it, so it can't hit the shape.
+	// Clips the ray against the half-space where dot(normal, point) <= distance, returning false if the ray is entirely outside it.
+	// When the ray crosses multiple planes at the same distance, it hits the edge or vertex where they meet, so blend their normals.
+	auto clip_ray_to_half_space = [&](const Vector4 &p_normal, const real_t p_distance) -> bool {
+		// Positive if the ray starts on the inner side of the plane.
+		const real_t from_inside_distance = p_distance - p_normal.dot(p_local_from);
+		const real_t direction_dot = p_normal.dot(p_local_direction);
+		if (direction_dot == 0.0f) {
+			// The ray is parallel to the plane, so it is either entirely inside or entirely outside of the half-space.
+			return from_inside_distance >= 0.0f;
+		}
+		const real_t distance = from_inside_distance / direction_dot;
+		if (direction_dot < 0.0f) {
+			if (distance > enter_distance) {
+				enter_distance = distance;
+				enter_normal = p_normal;
+			} else if (distance == enter_distance) {
+				enter_normal += p_normal;
+			}
+		} else if (distance < exit_distance) {
+			exit_distance = distance;
+			exit_normal = p_normal;
+		} else if (distance == exit_distance) {
+			exit_normal += p_normal;
+		}
+		return true;
+	};
+	// If every axis is flat, the orthoplex is a single point, so there are no facets.
+	if (facet_normal_length > 0.0f) {
+		const real_t facet_distance = 1.0f / facet_normal_length;
+		// Iterate over the 16 planes of the orthoplex.
+		for (real_t x = -1.0f; x <= 1.0f; x += 2.0f) {
+			for (real_t y = -1.0f; y <= 1.0f; y += 2.0f) {
+				for (real_t z = -1.0f; z <= 1.0f; z += 2.0f) {
+					for (real_t w = -1.0f; w <= 1.0f; w += 2.0f) {
+						if (!clip_ray_to_half_space(Vector4(x, y, z, w) * inverse_half_extents * facet_distance, facet_distance)) {
 							return result;
 						}
-						continue;
-					}
-					const real_t distance = from_inside_distance / direction_dot;
-					if (direction_dot < 0.0f) {
-						if (distance > enter_distance) {
-							enter_distance = distance;
-							enter_normal = facet_normal;
-						}
-					} else if (distance < exit_distance) {
-						exit_distance = distance;
-						exit_normal = facet_normal;
 					}
 				}
+			}
+		}
+	}
+	// Along each flat axis, the shape only exists where that axis is zero, which is between two opposite half-spaces.
+	for (int i = 0; i < 4; i++) {
+		if (half_extents[i] == 0.0f) {
+			Vector4 axis_normal = Vector4();
+			axis_normal[i] = 1.0f;
+			if (!clip_ray_to_half_space(axis_normal, 0.0f) || !clip_ray_to_half_space(-axis_normal, 0.0f)) {
+				return result;
 			}
 		}
 	}
@@ -111,15 +152,14 @@ Dictionary OrthoplexShape4D::raycast_intersects(const Vector4 &p_local_from, con
 	if (hit) {
 		result["point"] = p_local_from + p_local_direction * hit_distance;
 		result["distance"] = hit_distance;
-		result["normal"] = starts_inside ? exit_normal : enter_normal;
+		result["normal"] = (starts_inside ? exit_normal : enter_normal).normalized();
 	}
 	return result;
 }
 
 real_t OrthoplexShape4D::get_signed_distance_to_surface(const Vector4 &p_local_point, Vector4 *r_nearest_point_on_surface) const {
 	const Vector4 half_extents = get_half_extents();
-	const Vector4 abs_scaled_point = p_local_point.abs() / half_extents;
-	const real_t scaled_taxicab_length = abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w;
+	const real_t scaled_taxicab_length = _get_scaled_taxicab_length(p_local_point.abs(), half_extents);
 	if (scaled_taxicab_length > 1.0f) {
 		// Outside the shape, the nearest point on the surface is the nearest point in the shape.
 		const Vector4 nearest_point = get_nearest_point(p_local_point);
@@ -127,6 +167,13 @@ real_t OrthoplexShape4D::get_signed_distance_to_surface(const Vector4 &p_local_p
 			*r_nearest_point_on_surface = nearest_point;
 		}
 		return p_local_point.distance_to(nearest_point);
+	}
+	if (half_extents.x == 0.0f || half_extents.y == 0.0f || half_extents.z == 0.0f || half_extents.w == 0.0f) {
+		// A flat orthoplex has no interior, so any point in it is on its surface.
+		if (r_nearest_point_on_surface != nullptr) {
+			*r_nearest_point_on_surface = p_local_point;
+		}
+		return 0.0f;
 	}
 	// Inside the shape, the nearest facet is the one in the same orthant as the point. All facets are the same
 	// distance from the center, so the signed distance to it is proportional to the scaled taxicab length.
@@ -150,9 +197,7 @@ real_t OrthoplexShape4D::get_signed_distance_to_surface(const Vector4 &p_local_p
 Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_local_point) const {
 	const Vector4 half_extents = get_half_extents();
 	const Vector4 abs_point = p_local_point.abs();
-	const Vector4 abs_scaled_point = abs_point / half_extents;
-	const real_t scaled_taxicab_length = abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w;
-	if (scaled_taxicab_length <= 1.0f) {
+	if (_get_scaled_taxicab_length(abs_point, half_extents) <= 1.0f) {
 		return p_local_point;
 	}
 	// Scaling into a unit space and limiting the taxicab length there only works for uniform sizes, because non-uniform
@@ -170,7 +215,12 @@ Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_local_point) const 
 	real_t nonzero_inverse_square_sum = 0.0f;
 	for (int i = 0; i < 4; i++) {
 		const Vector4::Axis axis = axes[i];
-		nonzero_scaled_sum += abs_scaled_point[axis];
+		if (zero_thresholds[axis] <= 0.0f) {
+			// This axis and all later axes are zero in the result, since either the point is zero on them,
+			// or the shape is flat along them (which would also divide by zero below).
+			break;
+		}
+		nonzero_scaled_sum += abs_point[axis] / half_extents[axis];
 		nonzero_inverse_square_sum += 1.0f / (half_extents[axis] * half_extents[axis]);
 		const real_t candidate_lambda = (nonzero_scaled_sum - 1.0f) / nonzero_inverse_square_sum;
 		// The axis with the largest threshold is always non-zero, so always accept the first candidate.
@@ -179,8 +229,15 @@ Vector4 OrthoplexShape4D::get_nearest_point(const Vector4 &p_local_point) const 
 		}
 		lambda = candidate_lambda;
 	}
+	// Lambda is only negative if the point is outside just because it is off of the shape's flat axes
+	// (or due to rounding), in which case the non-flat axes are already within the shape.
+	lambda = MAX(lambda, (real_t)0.0);
 	Vector4 nearest_point = Vector4();
 	for (int i = 0; i < 4; i++) {
+		if (half_extents[i] == 0.0f) {
+			// The shape is flat along this axis, so the nearest point is zero on it.
+			continue;
+		}
 		const real_t abs_nearest = MAX(abs_point[i] - lambda / half_extents[i], (real_t)0.0);
 		nearest_point[i] = (p_local_point[i] < 0.0f) ? -abs_nearest : abs_nearest;
 	}
@@ -197,8 +254,7 @@ Vector4 OrthoplexShape4D::get_support_point(const Vector4 &p_local_direction) co
 }
 
 bool OrthoplexShape4D::has_point(const Vector4 &p_local_point) const {
-	const Vector4 abs_scaled_point = p_local_point.abs() / get_half_extents();
-	return (abs_scaled_point.x + abs_scaled_point.y + abs_scaled_point.z + abs_scaled_point.w) <= 1.0f;
+	return _get_scaled_taxicab_length(p_local_point.abs(), get_half_extents()) <= 1.0f;
 }
 
 bool OrthoplexShape4D::is_equal_exact(const Ref<Shape4D> &p_shape) const {

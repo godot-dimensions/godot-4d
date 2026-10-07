@@ -109,6 +109,15 @@ TEST_CASE("[MeshInstance4D] Raycast fallback to bounds") {
 	result = mesh_instance.raycast_intersects_local(Vector4(), direction, Math_INF, false);
 	CHECK((bool)result["hit"]);
 	CHECK(Math::is_equal_approx((double)result["distance"], 1.0));
+
+	// Scripts can omit max_distance and inside_is_zero, which default to an unlimited distance and false.
+	const Variant default_arguments_result = mesh_instance.call("raycast_intersects_local", outside_origin, direction);
+	REQUIRE(default_arguments_result.get_type() == Variant::DICTIONARY);
+	result = default_arguments_result;
+	CHECK((bool)result["hit"]);
+	CHECK(Math::is_equal_approx((double)result["distance"], 2.0));
+	result = mesh_instance.call("raycast_intersects_local", Vector4(), direction);
+	CHECK(Math::is_equal_approx((double)result["distance"], 1.0));
 }
 
 TEST_CASE("[ArrayWireMesh4D] Bounds cache invalidation on deduplicate") {
