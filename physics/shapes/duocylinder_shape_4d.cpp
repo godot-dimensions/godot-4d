@@ -40,8 +40,8 @@ Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, c
 	const Vector2 xy_dir = Vector2(p_local_direction.x, p_local_direction.y);
 	const real_t xy_dir_len_sq = xy_dir.length_squared();
 	if (xy_dir_len_sq < CMP_EPSILON2) {
-		// Ray is parallel to XY plane, check if the starting point is inside the XY circle.
-		if (xy_point.length_squared() >= _radius_xy * _radius_xy) {
+		// Ray does not move in XY, so check if the starting point is inside the XY circle (including its boundary).
+		if (xy_point.length_squared() > _radius_xy * _radius_xy) {
 			return result; // No intersection, ray is outside the XY circle.
 		}
 	} else {
@@ -73,8 +73,8 @@ Dictionary DuocylinderShape4D::raycast_intersects(const Vector4 &p_local_from, c
 	const Vector2 zw_dir = Vector2(p_local_direction.z, p_local_direction.w);
 	const real_t zw_dir_len_sq = zw_dir.length_squared();
 	if (zw_dir_len_sq < CMP_EPSILON2) {
-		// Ray is parallel to ZW plane, check if the starting point is inside the ZW circle.
-		if (zw_point.length_squared() >= _radius_zw * _radius_zw) {
+		// Ray does not move in ZW, so check if the starting point is inside the ZW circle (including its boundary).
+		if (zw_point.length_squared() > _radius_zw * _radius_zw) {
 			return result; // No intersection, ray is outside the ZW circle.
 		}
 	} else {

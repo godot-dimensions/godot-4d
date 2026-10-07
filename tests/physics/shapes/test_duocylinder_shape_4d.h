@@ -5,6 +5,55 @@
 #include "tests/test_macros.h"
 
 namespace TestDuocylinderShape4D {
+TEST_CASE("[DuocylinderShape4D] Raycast") {
+	Ref<DuocylinderShape4D> duocylinder;
+	duocylinder.instantiate();
+	// Default radii are 0.5. Ray from outside, moving only in ZW, hitting the ZW boundary.
+	Dictionary result = duocylinder->raycast_intersects(Vector4(0.0, 0.0, -2.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "DuocylinderShape4D raycast from outside should hit the ZW boundary.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.5), "DuocylinderShape4D raycast from outside should return the distance to the ZW boundary.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 0.0, -1.0, 0.0)), "DuocylinderShape4D raycast from outside should return the outward normal of the ZW boundary.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.0, 0.0, -0.5, 0.0)), "DuocylinderShape4D raycast from outside should return the point on the ZW boundary.");
+	// Ray from outside, moving in both planes, entering the XY circle before the ZW circle, so it enters through the ZW boundary.
+	result = duocylinder->raycast_intersects(Vector4(-1.0, 0.0, -2.0, 0.0), Vector4(1.0, 0.0, 2.0, 0.0).normalized());
+	CHECK_MESSAGE((bool)result["hit"], "DuocylinderShape4D raycast from outside moving in both planes should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.75 * Math::sqrt(5.0)), "DuocylinderShape4D raycast from outside moving in both planes should return the distance to the boundary it enters through.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 0.0, -1.0, 0.0)), "DuocylinderShape4D raycast from outside moving in both planes should return the outward normal of the boundary it enters through.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(-0.25, 0.0, -0.5, 0.0)), "DuocylinderShape4D raycast from outside moving in both planes should return the point on the boundary it enters through.");
+	// Ray from outside, missing.
+	result = duocylinder->raycast_intersects(Vector4(0.6, 0.0, -2.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0));
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "DuocylinderShape4D raycast passing beside the XY boundary should not hit.");
+	// Ray from inside, exiting through the XY boundary.
+	result = duocylinder->raycast_intersects(Vector4(0.0, 0.0, 0.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "DuocylinderShape4D raycast from inside should hit the XY boundary.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.5), "DuocylinderShape4D raycast from inside should return the distance to the XY boundary.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(1.0, 0.0, 0.0, 0.0)), "DuocylinderShape4D raycast from inside should return the outward normal of the XY boundary.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.5, 0.0, 0.0, 0.0)), "DuocylinderShape4D raycast from inside should return the point on the XY boundary.");
+	result = duocylinder->raycast_intersects(Vector4(0.0, 0.0, 0.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0), 0.4);
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "DuocylinderShape4D raycast from inside should not hit beyond the max distance.");
+	result = duocylinder->raycast_intersects(Vector4(0.0, 0.0, 0.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0), Math_INF, true);
+	CHECK_MESSAGE((bool)result["hit"], "DuocylinderShape4D raycast from inside should hit when inside is zero.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.0), "DuocylinderShape4D raycast from inside should return zero distance when inside is zero.");
+}
+
+TEST_CASE("[DuocylinderShape4D] Raycast along the boundary") {
+	Ref<DuocylinderShape4D> duocylinder;
+	duocylinder.instantiate();
+	// Default radii are 0.5. A ray that only moves in ZW, starting on the XY boundary, stays on the XY boundary,
+	// which is part of the shape, so it hits where it enters the ZW circle.
+	Dictionary result = duocylinder->raycast_intersects(Vector4(0.5, 0.0, -2.0, 0.0), Vector4(0.0, 0.0, 1.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "DuocylinderShape4D raycast moving only in ZW along the XY boundary should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.5), "DuocylinderShape4D raycast moving only in ZW along the XY boundary should return the distance to the ZW boundary.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 0.0, -1.0, 0.0)), "DuocylinderShape4D raycast moving only in ZW along the XY boundary should return the outward normal of the ZW boundary.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.5, 0.0, -0.5, 0.0)), "DuocylinderShape4D raycast moving only in ZW along the XY boundary should return the point on the ZW boundary.");
+	// Same for a ray that only moves in XY, starting on the ZW boundary.
+	result = duocylinder->raycast_intersects(Vector4(-2.0, 0.0, 0.0, 0.5), Vector4(1.0, 0.0, 0.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "DuocylinderShape4D raycast moving only in XY along the ZW boundary should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.5), "DuocylinderShape4D raycast moving only in XY along the ZW boundary should return the distance to the XY boundary.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(-1.0, 0.0, 0.0, 0.0)), "DuocylinderShape4D raycast moving only in XY along the ZW boundary should return the outward normal of the XY boundary.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(-0.5, 0.0, 0.0, 0.5)), "DuocylinderShape4D raycast moving only in XY along the ZW boundary should return the point on the XY boundary.");
+}
+
 TEST_CASE("[DuocylinderShape4D] Signed distance inside") {
 	Ref<DuocylinderShape4D> duocylinder;
 	duocylinder.instantiate();

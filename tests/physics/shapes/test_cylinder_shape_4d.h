@@ -5,6 +5,68 @@
 #include "tests/test_macros.h"
 
 namespace TestCylinderShape4D {
+TEST_CASE("[CylinderShape4D] Raycast") {
+	Ref<CylinderShape4D> cylinder;
+	cylinder.instantiate();
+	cylinder->set_radius(0.5f);
+	cylinder->set_height(2.0f);
+	// Ray from outside, hitting the curved surface.
+	Dictionary result = cylinder->raycast_intersects(Vector4(-2.0, 0.5, 0.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "CylinderShape4D raycast from outside should hit the curved surface.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.5), "CylinderShape4D raycast from outside should return the distance to the curved surface.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(-1.0, 0.0, 0.0, 0.0)), "CylinderShape4D raycast from outside should return the outward normal of the curved surface.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(-0.5, 0.5, 0.0, 0.0)), "CylinderShape4D raycast from outside should return the point on the curved surface.");
+	// Ray from outside, hitting a cap.
+	result = cylinder->raycast_intersects(Vector4(0.0, 3.0, 0.0, 0.0), Vector4(0.1, -1.0, 0.0, 0.0).normalized());
+	CHECK_MESSAGE((bool)result["hit"], "CylinderShape4D raycast from outside should hit the cap.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0 * Math::sqrt(1.01)), "CylinderShape4D raycast from outside should return the distance to the cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 1.0, 0.0, 0.0)), "CylinderShape4D raycast from outside should return the outward normal of the cap.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.2, 1.0, 0.0, 0.0)), "CylinderShape4D raycast from outside should return the point on the cap.");
+	// Ray from outside, missing.
+	result = cylinder->raycast_intersects(Vector4(-2.0, 1.5, 0.0, 0.0), Vector4(1.0, 0.0, 0.0, 0.0));
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "CylinderShape4D raycast passing beyond the cap should not hit.");
+	// Ray from inside, exiting through the curved surface.
+	result = cylinder->raycast_intersects(Vector4(0.0, 0.5, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0));
+	CHECK_MESSAGE((bool)result["hit"], "CylinderShape4D raycast from inside should hit the curved surface.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.5), "CylinderShape4D raycast from inside should return the distance to the curved surface.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 0.0, 0.0, 1.0)), "CylinderShape4D raycast from inside should return the outward normal of the curved surface.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.0, 0.5, 0.0, 0.5)), "CylinderShape4D raycast from inside should return the point on the curved surface.");
+	result = cylinder->raycast_intersects(Vector4(0.0, 0.5, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), 0.4);
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "CylinderShape4D raycast from inside should not hit beyond the max distance.");
+	result = cylinder->raycast_intersects(Vector4(0.0, 0.5, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0), Math_INF, true);
+	CHECK_MESSAGE((bool)result["hit"], "CylinderShape4D raycast from inside should hit when inside is zero.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.0), "CylinderShape4D raycast from inside should return zero distance when inside is zero.");
+}
+
+TEST_CASE("[CylinderShape4D] Raycast parallel to the axis") {
+	Ref<CylinderShape4D> cylinder;
+	cylinder.instantiate();
+	cylinder->set_radius(0.5f);
+	cylinder->set_height(2.0f);
+	// From outside, the ray enters through the cap facing it, not the far cap.
+	Dictionary result = cylinder->raycast_intersects(Vector4(0.0, -3.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "CylinderShape4D raycast parallel to the axis from below should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0), "CylinderShape4D raycast parallel to the axis from below should return the distance to the bottom cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, -1.0, 0.0, 0.0)), "CylinderShape4D raycast parallel to the axis from below should return the outward normal of the bottom cap.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.0, -1.0, 0.0, 0.0)), "CylinderShape4D raycast parallel to the axis from below should return the point on the bottom cap.");
+	result = cylinder->raycast_intersects(Vector4(0.2, 3.0, 0.0, 0.1), Vector4(0.0, -1.0, 0.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "CylinderShape4D raycast parallel to the axis from above should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0), "CylinderShape4D raycast parallel to the axis from above should return the distance to the top cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 1.0, 0.0, 0.0)), "CylinderShape4D raycast parallel to the axis from above should return the outward normal of the top cap.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.2, 1.0, 0.0, 0.1)), "CylinderShape4D raycast parallel to the axis from above should return the point on the top cap.");
+	// From outside, pointing away or passing beside the curved surface, the ray misses.
+	result = cylinder->raycast_intersects(Vector4(0.0, 3.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0));
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "CylinderShape4D raycast parallel to the axis pointing away should not hit.");
+	result = cylinder->raycast_intersects(Vector4(0.6, -3.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0));
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "CylinderShape4D raycast parallel to the axis outside of the radius should not hit.");
+	// From inside, the ray exits through the cap it is moving towards.
+	result = cylinder->raycast_intersects(Vector4(0.0, 0.5, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "CylinderShape4D raycast parallel to the axis from inside should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.5), "CylinderShape4D raycast parallel to the axis from inside should return the distance to the cap it is moving towards.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 1.0, 0.0, 0.0)), "CylinderShape4D raycast parallel to the axis from inside should return the outward normal of the cap it is moving towards.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.0, 1.0, 0.0, 0.0)), "CylinderShape4D raycast parallel to the axis from inside should return the point on the cap it is moving towards.");
+}
+
 TEST_CASE("[CylinderShape4D] Signed distance inside") {
 	Ref<CylinderShape4D> cylinder;
 	cylinder.instantiate();

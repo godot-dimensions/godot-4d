@@ -50,10 +50,12 @@ Dictionary CylinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 		// Ray moves only along Y axis, parallel to the cylinder axis.
 		// Check if we're inside the cylinder radially.
 		if (radial_point_len_sq <= radius_sq && Math::abs(p_local_direction.y) > CMP_EPSILON2) {
-			// We're inside radially, so we'll hit a cap.
-			const real_t distance_to_cap = (p_local_direction.y > 0.0f) ? (half_height - p_local_from.y) / p_local_direction.y : (-half_height - p_local_from.y) / p_local_direction.y;
+			// We're inside radially, so we'll hit a cap. From inside, the ray exits through the cap it is moving towards,
+			// and from outside, the ray enters through the cap facing it (if it is moving towards the cylinder at all).
+			const bool is_top_cap = (p_local_direction.y > 0.0f) == start_inside;
+			const real_t distance_to_cap = ((is_top_cap ? half_height : -half_height) - p_local_from.y) / p_local_direction.y;
 			if (distance_to_cap >= 0.0f && distance_to_cap < best_distance) {
-				const Vector4 normal = (p_local_direction.y > 0.0f) ? Vector4(0, 1, 0, 0) : Vector4(0, -1, 0, 0);
+				const Vector4 normal = is_top_cap ? Vector4(0, 1, 0, 0) : Vector4(0, -1, 0, 0);
 				best_distance = distance_to_cap;
 				result["hit"] = true;
 				result["distance"] = distance_to_cap;

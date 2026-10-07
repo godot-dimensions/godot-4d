@@ -82,26 +82,29 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 		// Ray moves only along Y and/or W axes, parallel to the cubinder axes.
 		// Check if we're inside the cylinder radially.
 		if (radial_point_len_sq <= radius_sq && (Math::abs(p_local_direction.y) > CMP_EPSILON2 || Math::abs(p_local_direction.w) > CMP_EPSILON2)) {
-			// We're inside radially, so we'll hit a Y or W cap.
+			// We're inside radially, so we'll hit a Y or W cap. From inside, the ray exits through the caps it is moving towards,
+			// and from outside, the ray enters through the caps facing it (if it is moving towards the cubinder at all).
 			// Check Y caps.
 			if (Math::abs(p_local_direction.y) > CMP_EPSILON2) {
-				const real_t distance_to_y_cap = (p_local_direction.y > 0.0f) ? (half_height - p_local_from.y) / p_local_direction.y : (-half_height - p_local_from.y) / p_local_direction.y;
+				const bool is_positive_y_cap = (p_local_direction.y > 0.0f) == start_inside;
+				const real_t distance_to_y_cap = ((is_positive_y_cap ? half_height : -half_height) - p_local_from.y) / p_local_direction.y;
 				if (distance_to_y_cap >= 0.0f && distance_to_y_cap < best_distance) {
 					const Vector4 cap_point = p_local_from + p_local_direction * distance_to_y_cap;
 					if (Math::abs(cap_point.w) <= half_thickness) {
 						best_distance = distance_to_y_cap;
-						best_normal = (p_local_direction.y > 0.0f) ? Vector4(0, 1, 0, 0) : Vector4(0, -1, 0, 0);
+						best_normal = is_positive_y_cap ? Vector4(0, 1, 0, 0) : Vector4(0, -1, 0, 0);
 					}
 				}
 			}
 			// Check W caps.
 			if (Math::abs(p_local_direction.w) > CMP_EPSILON2) {
-				const real_t distance_to_w_cap = (p_local_direction.w > 0.0f) ? (half_thickness - p_local_from.w) / p_local_direction.w : (-half_thickness - p_local_from.w) / p_local_direction.w;
+				const bool is_positive_w_cap = (p_local_direction.w > 0.0f) == start_inside;
+				const real_t distance_to_w_cap = ((is_positive_w_cap ? half_thickness : -half_thickness) - p_local_from.w) / p_local_direction.w;
 				if (distance_to_w_cap >= 0.0f && distance_to_w_cap < best_distance) {
 					const Vector4 cap_point = p_local_from + p_local_direction * distance_to_w_cap;
 					if (Math::abs(cap_point.y) <= half_height) {
 						best_distance = distance_to_w_cap;
-						best_normal = (p_local_direction.w > 0.0f) ? Vector4(0, 0, 0, 1) : Vector4(0, 0, 0, -1);
+						best_normal = is_positive_w_cap ? Vector4(0, 0, 0, 1) : Vector4(0, 0, 0, -1);
 					}
 				}
 			}
@@ -123,7 +126,7 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 	if (start_inside) {
 		// Ray starts inside, use exit point.
 		const real_t distance_to_exit = (-radial_point_dot_radial_dir + sqrt_discriminant) / radial_dir_len_sq;
-		if (distance_to_exit >= 0.0f) {
+		if (distance_to_exit >= 0.0f && distance_to_exit < best_distance) {
 			const Vector4 exit_point = p_local_from + p_local_direction * distance_to_exit;
 			if (Math::abs(exit_point.y) <= half_height && Math::abs(exit_point.w) <= half_thickness) {
 				// Exit through curved surface.
@@ -133,6 +136,7 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 				result["hit"] = true;
 				result["distance"] = distance_to_exit;
 				result["normal"] = normal;
+				result["point"] = exit_point;
 				return result;
 			}
 		}
@@ -182,6 +186,7 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 				result["hit"] = true;
 				result["distance"] = distance_to_y_cap_pos;
 				result["normal"] = best_normal;
+				result["point"] = cap_point;
 			}
 		}
 		const real_t distance_to_y_cap_neg = (-half_height - p_local_from.y) / p_local_direction.y;
@@ -194,6 +199,7 @@ Dictionary CubinderShape4D::raycast_intersects(const Vector4 &p_local_from, cons
 				result["hit"] = true;
 				result["distance"] = distance_to_y_cap_neg;
 				result["normal"] = best_normal;
+				result["point"] = cap_point;
 			}
 		}
 	}

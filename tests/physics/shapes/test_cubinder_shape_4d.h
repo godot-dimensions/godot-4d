@@ -5,6 +5,94 @@
 #include "tests/test_macros.h"
 
 namespace TestCubinderShape4D {
+TEST_CASE("[CubinderShape4D] Raycast") {
+	Ref<CubinderShape4D> cubinder;
+	cubinder.instantiate();
+	cubinder->set_radius(0.5f);
+	cubinder->set_height(2.0f);
+	cubinder->set_thickness(2.0f);
+	// Ray from outside, hitting the curved surface.
+	Dictionary result = cubinder->raycast_intersects(Vector4(-2.0, 0.5, 0.0, 0.5), Vector4(1.0, 0.0, 0.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast from outside should hit the curved surface.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.5), "CubinderShape4D raycast from outside should return the distance to the curved surface.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(-1.0, 0.0, 0.0, 0.0)), "CubinderShape4D raycast from outside should return the outward normal of the curved surface.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(-0.5, 0.5, 0.0, 0.5)), "CubinderShape4D raycast from outside should return the point on the curved surface.");
+	// Ray from outside, hitting a Y cap.
+	result = cubinder->raycast_intersects(Vector4(0.0, -3.0, 0.0, 0.0), Vector4(0.1, 1.0, 0.0, 0.0).normalized());
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast from outside should hit the Y cap.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0 * Math::sqrt(1.01)), "CubinderShape4D raycast from outside should return the distance to the Y cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, -1.0, 0.0, 0.0)), "CubinderShape4D raycast from outside should return the outward normal of the Y cap.");
+	CHECK_MESSAGE(result.has("point"), "CubinderShape4D raycast from outside hitting the Y cap should return the point.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.2, -1.0, 0.0, 0.0)), "CubinderShape4D raycast from outside should return the point on the Y cap.");
+	result = cubinder->raycast_intersects(Vector4(0.0, 3.0, 0.0, 0.0), Vector4(0.1, -1.0, 0.0, 0.0).normalized());
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast from outside should hit the Y cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 1.0, 0.0, 0.0)), "CubinderShape4D raycast from outside should return the outward normal of the Y cap.");
+	CHECK_MESSAGE(result.has("point"), "CubinderShape4D raycast from outside hitting the Y cap should return the point.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.2, 1.0, 0.0, 0.0)), "CubinderShape4D raycast from outside should return the point on the Y cap.");
+	// Ray from outside, hitting a W cap.
+	result = cubinder->raycast_intersects(Vector4(0.0, 0.0, 0.0, 3.0), Vector4(0.1, 0.0, 0.0, -1.0).normalized());
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast from outside should hit the W cap.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0 * Math::sqrt(1.01)), "CubinderShape4D raycast from outside should return the distance to the W cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 0.0, 0.0, 1.0)), "CubinderShape4D raycast from outside should return the outward normal of the W cap.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.2, 0.0, 0.0, 1.0)), "CubinderShape4D raycast from outside should return the point on the W cap.");
+	// Ray from inside, exiting through the curved surface.
+	result = cubinder->raycast_intersects(Vector4(0.0, 0.5, 0.0, 0.5), Vector4(0.0, 0.0, 1.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast from inside should hit the curved surface.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.5), "CubinderShape4D raycast from inside should return the distance to the curved surface.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 0.0, 1.0, 0.0)), "CubinderShape4D raycast from inside should return the outward normal of the curved surface.");
+	CHECK_MESSAGE(result.has("point"), "CubinderShape4D raycast from inside hitting the curved surface should return the point.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.0, 0.5, 0.5, 0.5)), "CubinderShape4D raycast from inside should return the point on the curved surface.");
+	result = cubinder->raycast_intersects(Vector4(0.0, 0.5, 0.0, 0.5), Vector4(0.0, 0.0, 1.0, 0.0), 0.4);
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "CubinderShape4D raycast from inside should not hit the curved surface beyond the max distance.");
+	// Ray from inside, exiting through a Y cap.
+	result = cubinder->raycast_intersects(Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0.1, 1.0, 0.0, 0.0).normalized());
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast from inside should hit the Y cap.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(Math::sqrt(1.01)), "CubinderShape4D raycast from inside should return the distance to the Y cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 1.0, 0.0, 0.0)), "CubinderShape4D raycast from inside should return the outward normal of the Y cap.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.1, 1.0, 0.0, 0.0)), "CubinderShape4D raycast from inside should return the point on the Y cap.");
+	result = cubinder->raycast_intersects(Vector4(0.0, 0.5, 0.0, 0.5), Vector4(0.0, 0.0, 1.0, 0.0), Math_INF, true);
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast from inside should hit when inside is zero.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(0.0), "CubinderShape4D raycast from inside should return zero distance when inside is zero.");
+}
+
+TEST_CASE("[CubinderShape4D] Raycast parallel to the YW plane") {
+	Ref<CubinderShape4D> cubinder;
+	cubinder.instantiate();
+	cubinder->set_radius(0.5f);
+	cubinder->set_height(2.0f);
+	cubinder->set_thickness(2.0f);
+	// From outside, the ray enters through the cap facing it, not the far cap.
+	Dictionary result = cubinder->raycast_intersects(Vector4(0.0, -3.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0));
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast along Y from below should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0), "CubinderShape4D raycast along Y from below should return the distance to the bottom Y cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, -1.0, 0.0, 0.0)), "CubinderShape4D raycast along Y from below should return the outward normal of the bottom Y cap.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.0, -1.0, 0.0, 0.0)), "CubinderShape4D raycast along Y from below should return the point on the bottom Y cap.");
+	result = cubinder->raycast_intersects(Vector4(0.1, 0.0, 0.2, 3.0), Vector4(0.0, 0.0, 0.0, -1.0));
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast along W from above should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(2.0), "CubinderShape4D raycast along W from above should return the distance to the top W cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 0.0, 0.0, 1.0)), "CubinderShape4D raycast along W from above should return the outward normal of the top W cap.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.1, 0.0, 0.2, 1.0)), "CubinderShape4D raycast along W from above should return the point on the top W cap.");
+	// Moving diagonally in YW, the ray enters through whichever cap it reaches last, here the bottom Y cap.
+	result = cubinder->raycast_intersects(Vector4(0.0, -2.0, 0.0, -1.5), Vector4(0.0, 1.0, 0.0, 1.0).normalized());
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast diagonally in YW from outside should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(Math::sqrt(2.0)), "CubinderShape4D raycast diagonally in YW from outside should return the distance to the entry cap.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, -1.0, 0.0, 0.0)), "CubinderShape4D raycast diagonally in YW from outside should return the outward normal of the entry cap.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.0, -1.0, 0.0, -0.5)), "CubinderShape4D raycast diagonally in YW from outside should return the point on the entry cap.");
+	// From outside, pointing away, passing beside a cap, or passing beside the curved surface, the ray misses.
+	result = cubinder->raycast_intersects(Vector4(0.0, 3.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0));
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "CubinderShape4D raycast along Y pointing away should not hit.");
+	result = cubinder->raycast_intersects(Vector4(0.0, -2.0, 0.0, 1.5), Vector4(0.0, 1.0, 0.0, 1.0).normalized());
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "CubinderShape4D raycast diagonally in YW passing beside a cap should not hit.");
+	result = cubinder->raycast_intersects(Vector4(0.6, -3.0, 0.0, 0.0), Vector4(0.0, 1.0, 0.0, 0.0));
+	CHECK_FALSE_MESSAGE((bool)result["hit"], "CubinderShape4D raycast along Y outside of the radius should not hit.");
+	// From inside, the ray exits through the cap it is moving towards.
+	result = cubinder->raycast_intersects(Vector4(0.0, 0.5, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0));
+	CHECK_MESSAGE((bool)result["hit"], "CubinderShape4D raycast along W from inside should hit.");
+	CHECK_MESSAGE((real_t)result["distance"] == doctest::Approx(1.0), "CubinderShape4D raycast along W from inside should return the distance to the W cap it is moving towards.");
+	CHECK_MESSAGE(((Vector4)result["normal"]).is_equal_approx(Vector4(0.0, 0.0, 0.0, 1.0)), "CubinderShape4D raycast along W from inside should return the outward normal of the W cap it is moving towards.");
+	CHECK_MESSAGE(((Vector4)result["point"]).is_equal_approx(Vector4(0.0, 0.5, 0.0, 1.0)), "CubinderShape4D raycast along W from inside should return the point on the W cap it is moving towards.");
+}
+
 TEST_CASE("[CubinderShape4D] Signed distance inside") {
 	Ref<CubinderShape4D> cubinder;
 	cubinder.instantiate();
