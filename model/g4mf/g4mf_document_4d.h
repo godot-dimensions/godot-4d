@@ -28,7 +28,7 @@ private:
 
 	static bool _is_encoding_format_supported(const EncodingFormat p_encoding_format);
 	static String _uint32_to_ascii_string(uint32_t p_value, const bool p_allow_and_escape_non_ascii);
-	static uint32_t _ascii_string_to_uint32(const String &p_value);
+	static uint32_t _ascii_string_to_uint32(const String &p_value, const String &p_file_path);
 
 	// Export process.
 	Error _export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index);
@@ -48,6 +48,7 @@ private:
 	PackedByteArray _export_write_to_byte_array_internal(const Ref<G4MFState4D> &p_g4mf_state);
 
 	// Import process.
+	Error _import_read_from_byte_array_internal(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_byte_array);
 	Error _import_read_from_binary_file(Ref<G4MFState4D> p_g4mf_state, const Ref<FileAccess> &p_file);
 	PackedByteArray _import_decode_chunk_data(const PackedByteArray &p_file_or_chunk_data, const int64_t p_chunk_data_offset, const int64_t p_chunk_data_raw_size, const EncodingFormat p_chunk_encoding_format);
 	Error _import_parse_buffers(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json, PackedInt64Array *r_chunk_indices, PackedInt64Array *r_decoded_byte_lengths);

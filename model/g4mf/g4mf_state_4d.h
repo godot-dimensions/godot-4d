@@ -104,6 +104,9 @@ public:
 	void set_declared_dimension(const int p_declared_dimension) { _declared_dimension = p_declared_dimension; }
 
 	// Path data for the file.
+	String get_g4mf_file_path() const { return _g4mf_base_path.path_join(_g4mf_filename); }
+	void set_g4mf_file_path(const String &p_g4mf_file_path);
+
 	String get_g4mf_base_path() const { return _g4mf_base_path; }
 	void set_g4mf_base_path(const String &p_g4mf_base_path) { _g4mf_base_path = p_g4mf_base_path; }
 

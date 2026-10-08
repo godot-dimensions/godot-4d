@@ -70,7 +70,7 @@ Error G4MFModel4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) 
 		if (file_uri_only.is_empty()) {
 			// Embedded models resolve any of their own relative external
 			// references beside the containing G4MF file, unless overridden.
-			_model_g4mf_state->set_g4mf_base_path(main_base_path);
+			_model_g4mf_state->set_g4mf_file_path(p_g4mf_state->get_g4mf_file_path());
 			err = model_g4mf_document->import_read_from_byte_array(_model_g4mf_state, file_data);
 		} else {
 			err = model_g4mf_document->import_read_from_file(_model_g4mf_state, _model_file_uri_path);
