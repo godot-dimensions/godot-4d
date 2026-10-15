@@ -4,7 +4,7 @@ void G4MFItem4D::set_item_name(const String &p_desired_name) {
 	set_name(sanitize_item_name(p_desired_name));
 }
 
-String G4MFItem4D::sanitize_item_name(const String &p_desired_name) {
+String G4MFItem4D::sanitize_item_name(const String &p_desired_name, const bool p_warn) {
 	String sanitized_name = p_desired_name;
 	// Sanitize the name in-place by replacing characters which are invalid in G4MF item names.
 	// Item names may be used for node names and serializing to disk so we need to broadly disallow any of these.
@@ -19,8 +19,10 @@ String G4MFItem4D::sanitize_item_name(const String &p_desired_name) {
 				char_code == '<' || char_code == '>' || char_code == '{' || char_code == '}' ||
 				char_code == '[' || char_code == ']' || char_code == '/' || char_code == '\\' ||
 				char_code == '%' || (char_code >= 127 && char_code <= 159)) {
-			const String char_str = String::chr(char_code);
-			WARN_PRINT(vformat("G4MFItem4D: The name '%s' contains a disallowed character '%s' (char code %d). Replacing with '_'.", p_desired_name, char_str, char_code));
+			if (p_warn) {
+				const String char_str = String::chr(char_code);
+				WARN_PRINT(vformat("G4MFItem4D: The name '%s' contains a disallowed character '%s' (char code %d). Replacing with '_'.", p_desired_name, char_str, char_code));
+			}
 			sanitized_name[char_index] = '_';
 		}
 	}
@@ -223,7 +225,7 @@ void G4MFItem4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("read_item_entries_from_dictionary", "dict"), &G4MFItem4D::read_item_entries_from_dictionary);
 	ClassDB::bind_method(D_METHOD("write_item_entries_to_dictionary"), &G4MFItem4D::write_item_entries_to_dictionary);
 
-	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("sanitize_item_name", "desired_name"), &G4MFItem4D::sanitize_item_name);
+	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("sanitize_item_name", "desired_name", "warn"), &G4MFItem4D::sanitize_item_name, DEFVAL(true));
 	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("int32_array_to_json_array", "int32_array"), &G4MFItem4D::int32_array_to_json_array);
 	ClassDB::bind_static_method("G4MFItem4D", D_METHOD("json_array_to_int32_array", "json_array"), &G4MFItem4D::json_array_to_int32_array);
 

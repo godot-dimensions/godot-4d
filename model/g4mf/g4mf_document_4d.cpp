@@ -246,25 +246,25 @@ Error G4MFDocument4D::_export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, 
 }
 
 Error G4MFDocument4D::_export_serialize_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
-	TypedArray<G4MFFileReference4D> state_g4mf_files = p_g4mf_state->get_g4mf_files();
-	const int model_count = state_g4mf_files.size();
-	if (model_count == 0) {
-		return OK; // No models to serialize.
+	TypedArray<G4MFFileReference4D> state_g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
+	const int file_ref_count = state_g4mf_file_refs.size();
+	if (file_ref_count == 0) {
+		return OK; // No file references to serialize.
 	}
-	Array serialized_files;
-	serialized_files.resize(model_count);
-	for (int i = 0; i < model_count; i++) {
-		Ref<G4MFFileReference4D> g4mf_file = state_g4mf_files[i];
-		ERR_FAIL_COND_V(g4mf_file.is_null(), ERR_INVALID_DATA);
-		const Error err = g4mf_file->export_serialize_file_data(p_g4mf_state);
+	Array serialized_file_refs;
+	serialized_file_refs.resize(file_ref_count);
+	for (int i = 0; i < file_ref_count; i++) {
+		Ref<G4MFFileReference4D> g4mf_file_ref = state_g4mf_file_refs[i];
+		ERR_FAIL_COND_V(g4mf_file_ref.is_null(), ERR_INVALID_DATA);
+		const Error err = g4mf_file_ref->export_serialize_file_data(p_g4mf_state);
 		if (err != OK) {
 			return err;
 		}
-		const Dictionary serialized_file = g4mf_file->write_file_reference_entries_to_dictionary();
-		serialized_files[i] = serialized_file;
+		const Dictionary serialized_file_ref = g4mf_file_ref->write_file_reference_entries_to_dictionary();
+		serialized_file_refs[i] = serialized_file_ref;
 	}
-	if (!serialized_files.is_empty()) {
-		p_g4mf_json["files"] = serialized_files;
+	if (!serialized_file_refs.is_empty()) {
+		p_g4mf_json["files"] = serialized_file_refs;
 		p_g4mf_state->set_g4mf_json(p_g4mf_json);
 	}
 	return OK;
@@ -978,38 +978,38 @@ Error G4MFDocument4D::_import_parse_accessors(Ref<G4MFState4D> p_g4mf_state, Dic
 
 Error G4MFDocument4D::_import_parse_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json) {
 	if (!p_g4mf_json.has("files")) {
-		return OK; // No files to parse.
+		return OK; // No file references to parse.
 	}
-	Array json_files = p_g4mf_json["files"];
-	const int file_count = json_files.size();
-	if (file_count == 0) {
-		return OK; // No files to parse.
+	Array json_file_refs = p_g4mf_json["files"];
+	const int file_ref_count = json_file_refs.size();
+	if (file_ref_count == 0) {
+		return OK; // No file references to parse.
 	}
-	TypedArray<G4MFFileReference4D> g4mf_files = p_g4mf_state->get_g4mf_files();
-	g4mf_files.resize(file_count);
+	TypedArray<G4MFFileReference4D> g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
+	g4mf_file_refs.resize(file_ref_count);
 	Error err;
-	for (int file_index = 0; file_index < file_count; file_index++) {
-		const Dictionary file_model = json_files[file_index];
+	for (int file_ref_index = 0; file_ref_index < file_ref_count; file_ref_index++) {
+		const Dictionary file_ref_json = json_file_refs[file_ref_index];
 		String mime_type = "";
-		if (file_model.has("mimeType")) {
-			mime_type = file_model["mimeType"];
+		if (file_ref_json.has("mimeType")) {
+			mime_type = file_ref_json["mimeType"];
 		}
 		Ref<G4MFFileReference4D> g4mf_file_ref;
 		if (mime_type.begins_with("model/")) {
-			Ref<G4MFModel4D> g4mf_model = G4MFModel4D::from_dictionary(file_model);
+			Ref<G4MFModel4D> g4mf_model = G4MFModel4D::from_dictionary(file_ref_json);
 			ERR_FAIL_COND_V_MSG(g4mf_model.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse model JSON. Aborting file import.");
 			g4mf_model->set_model_g4mf_document(this);
 			g4mf_file_ref = g4mf_model;
 		} else {
-			g4mf_file_ref = G4MFFileReference4D::file_reference_from_dictionary(file_model);
+			g4mf_file_ref = G4MFFileReference4D::file_reference_from_dictionary(file_ref_json);
 		}
 		ERR_FAIL_COND_V_MSG(g4mf_file_ref.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse file reference JSON. Aborting file import.");
 		err = g4mf_file_ref->import_parse_file_data(p_g4mf_state);
 		const String file_path = g4mf_file_ref->get_file_uri().is_empty() ? p_g4mf_state->get_g4mf_file_path() : p_g4mf_state->get_g4mf_base_path().path_join(g4mf_file_ref->get_file_uri());
 		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to preload model data. Aborting file import. File: " + file_path);
-		g4mf_files[file_index] = g4mf_file_ref;
+		g4mf_file_refs[file_ref_index] = g4mf_file_ref;
 	}
-	p_g4mf_state->set_g4mf_files(g4mf_files);
+	p_g4mf_state->set_g4mf_file_references(g4mf_file_refs);
 	return OK;
 }
 
@@ -1137,7 +1137,7 @@ Error G4MFDocument4D::_import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Diction
 Error G4MFDocument4D::_import_infer_buffer_view_alignment(Ref<G4MFState4D> p_g4mf_state) {
 	const TypedArray<G4MFAccessor4D> accessors = p_g4mf_state->get_g4mf_accessors();
 	const TypedArray<G4MFBufferView4D> buffer_views = p_g4mf_state->get_g4mf_buffer_views();
-	const TypedArray<G4MFFileReference4D> files = p_g4mf_state->get_g4mf_files();
+	const TypedArray<G4MFFileReference4D> file_refs = p_g4mf_state->get_g4mf_file_references();
 	for (int accessor_index = 0; accessor_index < accessors.size(); accessor_index++) {
 		const Ref<G4MFAccessor4D> accessor = accessors[accessor_index];
 		const int buffer_view_index = accessor->get_buffer_view_index();
@@ -1148,9 +1148,9 @@ Error G4MFDocument4D::_import_infer_buffer_view_alignment(Ref<G4MFState4D> p_g4m
 		const Ref<G4MFBufferView4D> buffer_view = buffer_views[buffer_view_index];
 		buffer_view->set_alignment(accessor->get_bytes_per_component());
 	}
-	for (int file_index = 0; file_index < files.size(); file_index++) {
-		const Ref<G4MFFileReference4D> file = files[file_index];
-		const int buffer_view_index = file->get_buffer_view_index();
+	for (int file_ref_index = 0; file_ref_index < file_refs.size(); file_ref_index++) {
+		const Ref<G4MFFileReference4D> file_ref = file_refs[file_ref_index];
+		const int buffer_view_index = file_ref->get_buffer_view_index();
 		if (buffer_view_index < 0) {
 			continue;
 		}
@@ -1504,9 +1504,9 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 
 Node *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state) {
 	// Ensure all models have a reference to this document (the working document may have changed).
-	TypedArray<G4MFFileReference4D> state_g4mf_files = p_g4mf_state->get_g4mf_files();
-	for (int i = 0; i < state_g4mf_files.size(); i++) {
-		Ref<G4MFModel4D> g4mf_model = state_g4mf_files[i];
+	TypedArray<G4MFFileReference4D> state_g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
+	for (int i = 0; i < state_g4mf_file_refs.size(); i++) {
+		Ref<G4MFModel4D> g4mf_model = state_g4mf_file_refs[i];
 		if (g4mf_model.is_valid()) {
 			g4mf_model->set_model_g4mf_document(this);
 		}

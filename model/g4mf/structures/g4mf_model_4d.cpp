@@ -161,10 +161,10 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	const String scene_file_path = p_node->get_scene_file_path();
 	const String target_path = _get_relative_path_without_updir_dots(scene_file_path, p_g4mf_state->get_original_path());
 	const String target_uri_without_extension = (target_path.is_empty() ? String(p_node->get_name()) : target_path.get_basename()).to_snake_case();
-	TypedArray<G4MFFileReference4D> g4mf_files = p_g4mf_state->get_g4mf_files();
+	TypedArray<G4MFFileReference4D> g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
 	if (p_deduplicate && !target_uri_without_extension.is_empty()) {
-		for (int i = 0; i < g4mf_files.size(); i++) {
-			Ref<G4MFModel4D> g4mf_model = g4mf_files[i];
+		for (int i = 0; i < g4mf_file_refs.size(); i++) {
+			Ref<G4MFModel4D> g4mf_model = g4mf_file_refs[i];
 			if (g4mf_model.is_valid() && g4mf_model->get_file_uri() == target_uri_without_extension) {
 				return i;
 			}
@@ -207,10 +207,10 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 		g4mf_model->_model_g4mf_state = model_g4mf_state;
 	}
 	// Append the model file reference to the state.
-	const int model_file_index = g4mf_files.size();
-	g4mf_files.append(g4mf_model);
-	p_g4mf_state->set_g4mf_files(g4mf_files);
-	return model_file_index;
+	const int model_file_ref_index = g4mf_file_refs.size();
+	g4mf_file_refs.append(g4mf_model);
+	p_g4mf_state->set_g4mf_file_references(g4mf_file_refs);
+	return model_file_ref_index;
 }
 
 Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
@@ -242,7 +242,7 @@ Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_sta
 	if (target_uri.is_empty()) {
 		target_uri = get_item_name();
 		if (target_uri.is_empty()) {
-			int64_t index_of_self = p_g4mf_state->get_g4mf_files().find(this);
+			int64_t index_of_self = p_g4mf_state->get_g4mf_file_references().find(this);
 			target_uri = "model" + String::num_int64(index_of_self);
 		}
 	}

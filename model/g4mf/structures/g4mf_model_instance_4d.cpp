@@ -20,9 +20,9 @@ Node *G4MFModelInstance4D::_find_node_by_name(Node *p_node, const String &p_node
 Node *G4MFModelInstance4D::import_instantiate_model(const Ref<G4MFState4D> &p_g4mf_state) const {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), nullptr);
 	// Get the model and create an instance of it.
-	const TypedArray<G4MFFileReference4D> &state_g4mf_files = p_g4mf_state->get_g4mf_files();
-	ERR_FAIL_INDEX_V(_model_file_index, state_g4mf_files.size(), nullptr);
-	const Ref<G4MFModel4D> g4mf_model = state_g4mf_files[_model_file_index];
+	const TypedArray<G4MFFileReference4D> &state_g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
+	ERR_FAIL_INDEX_V(_model_file_index, state_g4mf_file_refs.size(), nullptr);
+	const Ref<G4MFModel4D> g4mf_model = state_g4mf_file_refs[_model_file_index];
 	ERR_FAIL_COND_V(g4mf_model.is_null(), nullptr);
 	Node *ret = g4mf_model->import_instantiate_model(p_g4mf_state);
 	ERR_FAIL_NULL_V(ret, nullptr);

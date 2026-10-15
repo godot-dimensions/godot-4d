@@ -95,10 +95,10 @@ Error G4MFFileReference4D::export_serialize_file_data(const Ref<G4MFState4D> &p_
 }
 
 Ref<G4MFFileReference4D> G4MFFileReference4D::file_reference_from_dictionary(const Dictionary &p_dict) {
-	Ref<G4MFFileReference4D> model;
-	model.instantiate();
-	model->read_file_reference_entries_from_dictionary(p_dict);
-	return model;
+	Ref<G4MFFileReference4D> file_ref;
+	file_ref.instantiate();
+	file_ref->read_file_reference_entries_from_dictionary(p_dict);
+	return file_ref;
 }
 
 void G4MFFileReference4D::read_file_reference_entries_from_dictionary(const Dictionary &p_dict) {

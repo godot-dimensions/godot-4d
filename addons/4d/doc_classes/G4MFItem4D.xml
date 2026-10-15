@@ -48,6 +48,7 @@
 		<method name="sanitize_item_name" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="desired_name" type="String" />
+			<param index="1" name="warn" type="bool" default="true" />
 			<description>
 				Sanitizes the given [param desired_name] to be a valid G4MF item name. This is used when exporting a G4MF file to ensure that the item names only use characters considered valid by the G4MF specification.
 			</description>

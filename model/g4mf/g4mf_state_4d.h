@@ -35,7 +35,7 @@ private:
 	TypedArray<G4MFAccessor4D> _g4mf_accessors;
 	TypedArray<G4MFBufferView4D> _g4mf_buffer_views;
 	TypedArray<PackedByteArray> _g4mf_buffers;
-	TypedArray<G4MFFileReference4D> _g4mf_files;
+	TypedArray<G4MFFileReference4D> _g4mf_file_references;
 	TypedArray<G4MFTexture4D> _g4mf_textures;
 	TypedArray<G4MFMaterial4D> _g4mf_materials;
 	TypedArray<G4MFMesh4D> _g4mf_meshes;
@@ -69,8 +69,8 @@ public:
 	TypedArray<PackedByteArray> get_g4mf_buffers() const { return _g4mf_buffers; }
 	void set_g4mf_buffers(const TypedArray<PackedByteArray> &p_buffers) { _g4mf_buffers = p_buffers; }
 
-	TypedArray<G4MFFileReference4D> get_g4mf_files() const { return _g4mf_files; }
-	void set_g4mf_files(const TypedArray<G4MFFileReference4D> &p_g4mf_files) { _g4mf_files = p_g4mf_files; }
+	TypedArray<G4MFFileReference4D> get_g4mf_file_references() const { return _g4mf_file_references; }
+	void set_g4mf_file_references(const TypedArray<G4MFFileReference4D> &p_g4mf_file_references) { _g4mf_file_references = p_g4mf_file_references; }
 
 	Dictionary get_g4mf_json() const { return _g4mf_json; }
 	void set_g4mf_json(const Dictionary &p_g4mf_json) { _g4mf_json = p_g4mf_json; }
