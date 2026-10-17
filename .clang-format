@@ -117,7 +117,7 @@ Cpp11BracedListStyle: false
 #   - BOOST_FOREACH
 # IfMacros:
 #   - KJ_IF_MAYBE
-IncludeBlocks: Regroup
+IncludeBlocks: Preserve
 IncludeCategories:
   - Regex: ^"(core|drivers|editor|main|scene|servers|tests)/.*"$
     Priority: 20

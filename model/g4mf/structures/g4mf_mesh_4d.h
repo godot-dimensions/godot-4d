@@ -2,8 +2,6 @@
 
 #include "g4mf_mesh_surface_4d.h"
 
-class G4MFState4D;
-
 class G4MFMesh4D : public G4MFItem4D {
 	GDCLASS(G4MFMesh4D, G4MFItem4D);
 

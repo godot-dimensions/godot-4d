@@ -2,7 +2,6 @@
 
 #include "g4mf_item_4d.h"
 
-class G4MFState4D;
 class MeshInstance4D;
 
 class G4MFMeshInstance4D : public G4MFItem4D {

@@ -1,15 +1,9 @@
 #pragma once
 
+#include "../../g4mf_defines_4d.h"
+
 #include "../../../../physics/shapes/general_shape_4d.h"
 #include "../g4mf_item_4d.h"
-
-#if GDEXTENSION
-#include <godot_cpp/variant/typed_array.hpp>
-#elif GODOT_MODULE
-#include "core/variant/typed_array.h"
-#endif
-
-class G4MFState4D;
 
 class G4MFShape4D : public G4MFItem4D {
 	GDCLASS(G4MFShape4D, G4MFItem4D);

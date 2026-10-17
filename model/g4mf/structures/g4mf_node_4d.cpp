@@ -1,6 +1,5 @@
 #include "g4mf_node_4d.h"
 
-#include "../../../math/vector_4d.h"
 #include "../../mesh/mesh_instance_4d.h"
 #include "../g4mf_state_4d.h"
 

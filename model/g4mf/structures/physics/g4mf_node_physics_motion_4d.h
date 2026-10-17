@@ -1,10 +1,9 @@
 #pragma once
 
+#include "../../g4mf_defines_4d.h"
+
 #include "../../../../physics/bodies/physics_body_4d.h"
 #include "../g4mf_item_4d.h"
-
-class G4MFNode4D;
-class G4MFState4D;
 
 class G4MFNodePhysicsMotion4D : public G4MFItem4D {
 	GDCLASS(G4MFNodePhysicsMotion4D, G4MFItem4D);
