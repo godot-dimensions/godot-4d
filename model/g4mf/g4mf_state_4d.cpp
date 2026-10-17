@@ -160,6 +160,64 @@ Ref<G4MFItem4D> G4MFState4D::get_item_by_name(const String &p_name) const {
 	return Ref<G4MFItem4D>();
 }
 
+void G4MFState4D::assign_unique_path_uri(const Ref<G4MFFileReference4D> &p_file_reference, const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning) {
+	ERR_FAIL_COND(p_file_reference.is_null());
+	// Validate before releasing ownership: an invalid path must not clear the file reference.
+	// Sanitation warnings are printed by reserve_unique_path_uri() after validation succeeds.
+	String sanitized_ext;
+	const String sanitized_path = G4MFFileReference4D::sanitize_path_uri(p_requested_path_stem, p_extension, false, sanitized_ext);
+	if ((!p_requested_path_stem.is_empty() || !p_extension.is_empty()) && sanitized_path.is_empty()) {
+		return;
+	}
+	// Release this file reference's previous reservations before choosing its new path.
+	for (HashMap<String, Ref<G4MFFileReference4D>>::Iterator iter = _unique_path_uris_to_file_references.begin(); iter;) {
+		const HashMap<String, Ref<G4MFFileReference4D>>::Iterator current = iter;
+		++iter;
+		if (current->value == p_file_reference) {
+			_unique_path_uris_to_file_references.remove(current);
+		}
+	}
+	const String unique_path_uri = reserve_unique_path_uri(p_requested_path_stem, p_extension, p_print_warning);
+	if (!unique_path_uri.is_empty()) {
+		_unique_path_uris_to_file_references[unique_path_uri] = p_file_reference;
+	}
+	p_file_reference->set_file_uri_no_sanitize(unique_path_uri);
+}
+
+String G4MFState4D::reserve_unique_path_uri(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning) {
+	String sanitized_ext;
+	String unique_path_uri = G4MFFileReference4D::sanitize_path_uri(p_requested_path_stem, p_extension, p_print_warning, sanitized_ext);
+	if (unique_path_uri.is_empty()) {
+		return String();
+	}
+	const String sanitized_stem = unique_path_uri.trim_suffix(sanitized_ext);
+	String lower_unique_path_uri = unique_path_uri.to_lower();
+	uint64_t discriminator = 2;
+	bool found_any_conflict = false;
+	// Filesystem path URIs are always treated case-insensitively.
+	while (true) {
+		bool case_insensitive_conflict = false;
+		for (const KeyValue<String, Ref<G4MFFileReference4D>> &existing_pair : _unique_path_uris_to_file_references) {
+			if (existing_pair.key.to_lower() == lower_unique_path_uri) {
+				// Attempt a new unique name by appending a discriminator.
+				unique_path_uri = sanitized_stem + String::num_uint64(discriminator) + sanitized_ext;
+				lower_unique_path_uri = unique_path_uri.to_lower();
+				discriminator++;
+				case_insensitive_conflict = true;
+				found_any_conflict = true;
+			}
+		}
+		if (!case_insensitive_conflict) {
+			break;
+		}
+	}
+	if (p_print_warning && found_any_conflict) {
+		WARN_PRINT("G4MFState4D: The requested path URI " + p_requested_path_stem + " (sanitized to " + sanitized_stem + ") is already in use. The path URI " + unique_path_uri + " will be used instead.");
+	}
+	_unique_path_uris_to_file_references[unique_path_uri] = Ref<G4MFFileReference4D>();
+	return unique_path_uri;
+}
+
 void G4MFState4D::set_g4mf_file_path(const String &p_g4mf_file_path) {
 	_g4mf_base_path = p_g4mf_file_path.get_base_dir();
 	_g4mf_filename = p_g4mf_file_path.get_file();
@@ -243,6 +301,9 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested_name", "print_warning"), &G4MFState4D::reserve_unique_name, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("unreserve_unique_name", "name"), &G4MFState4D::unreserve_unique_name);
 	ClassDB::bind_method(D_METHOD("get_item_by_name", "name"), &G4MFState4D::get_item_by_name);
+
+	ClassDB::bind_method(D_METHOD("assign_unique_path_uri", "file_reference", "requested_path_stem", "extension", "print_warning"), &G4MFState4D::assign_unique_path_uri, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("reserve_unique_path_uri", "requested_path_stem", "extension", "print_warning"), &G4MFState4D::reserve_unique_path_uri, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("get_declared_dimension"), &G4MFState4D::get_declared_dimension);
 

@@ -66,6 +66,13 @@
 				Reads general G4MF file reference properties from the given [Dictionary] and apply it to this file reference object. This function wraps around the [method G4MFItem4D.read_item_entries_from_dictionary] method, so it considers the [code]"name"[/code] and [code]"extras"[/code] keys, and additionally considers the [code]"bufferView"[/code], [code]"mimeType"[/code], and [code]"uri"[/code] keys.
 			</description>
 		</method>
+		<method name="resolve_file_uri" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="base_path" type="String" />
+			<description>
+				Resolves a filesystem [member file_uri] against [param base_path]. Absolute paths, including [code]res://[/code], [code]user://[/code], Windows drives, and network shares, are returned unchanged. Relative paths are joined onto [param base_path]. An empty [member file_uri] returns an empty string.
+			</description>
+		</method>
 		<method name="write_file_data">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />

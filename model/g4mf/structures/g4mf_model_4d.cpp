@@ -55,7 +55,7 @@ Error G4MFModel4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) 
 	const String main_base_path = p_g4mf_state->get_g4mf_base_path();
 	const String file_uri_only = get_file_uri();
 	if (!file_uri_only.is_empty()) {
-		_model_file_uri_path = main_base_path.path_join(file_uri_only);
+		_model_file_uri_path = resolve_file_uri(main_base_path);
 	}
 	// Handle based on MIME type, which is a required property.
 	if (mime_type == "model/g4mf-binary" || mime_type == "model/g4mf+json") {
@@ -249,13 +249,16 @@ Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_sta
 	if (!target_uri.ends_with(file_extension)) {
 		target_uri += file_extension;
 	}
-	const String file_path = p_g4mf_state->get_g4mf_base_path().path_join(target_uri);
+	if (should_separate_model_files) {
+		set_unique_file_path_uri(p_g4mf_state, target_uri.trim_suffix(file_extension), file_extension);
+		target_uri = get_file_uri();
+	}
 	if (!should_separate_model_files || target_uri.contains("/")) {
 		p_g4mf_state->assign_unique_item_name(Ref<G4MFItem4D>(this), target_uri.get_file());
 	}
 	// If we are writing to a separate model file, set the URI and write to that location.
 	if (should_separate_model_files) {
-		set_file_uri(target_uri);
+		const String file_path = resolve_file_uri(p_g4mf_state->get_g4mf_base_path());
 		create_missing_directories_if_needed(p_g4mf_state);
 		if (_model_g4mf_state.is_valid()) {
 			return model_g4mf_document->export_write_to_file(_model_g4mf_state, file_path);
@@ -271,7 +274,7 @@ Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_sta
 		}
 	}
 	// Embed the model data into a buffer view. The URI must be empty in this case.
-	set_file_uri("");
+	set_unique_file_path_uri(p_g4mf_state, "", "");
 	PackedByteArray model_bytes;
 	if (_model_g4mf_state.is_valid()) {
 		model_bytes = model_g4mf_document->export_write_to_byte_array(_model_g4mf_state);

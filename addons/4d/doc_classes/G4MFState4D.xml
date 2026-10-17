@@ -32,6 +32,17 @@
 				If [param print_warning] is [code]true[/code], warnings are printed for sanitation and conflicts. Uniqueness is relative to names reserved or assigned through this state.
 			</description>
 		</method>
+		<method name="assign_unique_path_uri">
+			<return type="void" />
+			<param index="0" name="file_reference" type="G4MFFileReference4D" />
+			<param index="1" name="requested_path_stem" type="String" />
+			<param index="2" name="extension" type="String" />
+			<param index="3" name="print_warning" type="bool" default="true" />
+			<description>
+				Releases the non-null [param file_reference]'s previous path reservation in this state, then reserves and assigns a filesystem path URI using [method reserve_unique_path_uri]. Empty [param requested_path_stem] and [param extension] values clear the URI and release its reservation.
+				Invalid paths leave the file reference's URI and previous reservation unchanged.
+			</description>
+		</method>
 		<method name="get_declared_dimension" qualifiers="const">
 			<return type="int" />
 			<description>
@@ -74,6 +85,17 @@
 				Sanitizes and reserves a unique name without assigning it to an item. If the requested name is already in use, a number starting at [code]2[/code] is appended and incremented until a unique name is found.
 				The returned name is guaranteed to be unique relative to already reserved names, allowing you to create a unique name for a G4MF item without conflicting with other names. Each non-empty result is a new reservation. An empty [param requested_name] returns an empty string without reserving it.
 				If [param print_warning] is [code]true[/code], warnings are printed for sanitation and conflicts. Consider using [method assign_unique_item_name] to manage an item's name and reservation together.
+			</description>
+		</method>
+		<method name="reserve_unique_path_uri">
+			<return type="String" />
+			<param index="0" name="requested_path_stem" type="String" />
+			<param index="1" name="extension" type="String" />
+			<param index="2" name="print_warning" type="bool" default="true" />
+			<description>
+				Sanitizes and reserves a unique filesystem path URI without assigning it to a file reference. The [param extension] may include its leading dot and may contain multiple parts, such as [code]tar.gz[/code]. Collisions are always checked case-insensitively and resolved by inserting a number before the extension. Each non-empty result is a new reservation. An empty resulting URI is returned without reserving it.
+				Paths are normalized by converting backslashes, removing redundant separators and [code].[/code] segments, and resolving [code]..[/code] segments. Filesystem roots, including [code]res://[/code], [code]user://[/code], Windows drives, and network shares, are preserved. Paths naming only a directory, traversing above a root, or using another URI protocol are rejected with an error and an empty result. Relative paths retain unresolved leading [code]..[/code] segments and are not resolved against [member g4mf_base_path].
+				If [param print_warning] is [code]true[/code], warnings are printed for sanitation and conflicts. Use [method assign_unique_path_uri] to manage a file reference's URI and reservation together.
 			</description>
 		</method>
 		<method name="should_separate_resource_files" qualifiers="const">
