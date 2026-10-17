@@ -26,7 +26,7 @@
 		<method name="get_child_items" qualifiers="const">
 			<return type="G4MFItem4D[]" />
 			<description>
-				Returns the direct child G4MF items owned by this item, excluding null entries. This does not recurse into descendants or follow index references to items owned elsewhere. For example, a mesh returns its surfaces, and a state returns its top-level G4MF items. A model returns its loaded nested G4MF state, when available.
+				Returns the direct child G4MF items owned by this item, excluding null entries. This does not recurse into descendants or follow index references to items owned elsewhere. For example, a mesh returns its surfaces, and a state returns its top-level G4MF items. A model's loaded nested state is excluded because it represents a separate G4MF file with its own name namespace.
 			</description>
 		</method>
 		<method name="has_additional_data">

@@ -24,17 +24,6 @@ TypedArray<G4MFItem4D> G4MFState4D::get_child_items() const {
 	return child_items;
 }
 
-int G4MFState4D::append_g4mf_node(Ref<G4MFNode4D> p_node) {
-	const String requested_name = p_node->get_name();
-	if (!requested_name.is_empty()) {
-		// Use set_name here, not set_item_name, because reserve_unique_name sanitizes before reserving.
-		p_node->set_name(reserve_unique_name(requested_name));
-	}
-	const int node_index = _g4mf_nodes.size();
-	_g4mf_nodes.push_back(p_node);
-	return node_index;
-}
-
 int G4MFState4D::get_node_index(const Node4D *p_node) {
 	if (p_node == nullptr) {
 		return -1;
@@ -48,25 +37,127 @@ int G4MFState4D::get_node_index(const Node4D *p_node) {
 	return -1;
 }
 
-String G4MFState4D::reserve_unique_name(const String &p_requested_name, const bool p_show_warning) {
-	const String sanitized_name = G4MFItem4D::sanitize_item_name(p_requested_name);
+int G4MFState4D::append_g4mf_node(Ref<G4MFNode4D> p_node) {
+	const String requested_name = p_node->get_name();
+	if (!requested_name.is_empty()) {
+		assign_unique_item_name(p_node, requested_name);
+	}
+	const int node_index = _g4mf_nodes.size();
+	_g4mf_nodes.push_back(p_node);
+	return node_index;
+}
+
+void G4MFState4D::assign_unique_item_name(const Ref<G4MFItem4D> &p_item, const String &p_requested_name, const bool p_print_warning) {
+	ERR_FAIL_COND(p_item.is_null());
+	// Find the previous reservation even if the item was renamed directly.
+	const uint64_t item_id = p_item->get_instance_id();
+	const String *previous_name = _item_inst_ids_to_unique_names.getptr(item_id);
+	if (previous_name != nullptr) {
+		_unique_names_to_items.erase(*previous_name);
+		_item_inst_ids_to_unique_names.erase(item_id);
+	}
+	const String unique_name = reserve_unique_name(p_requested_name, p_print_warning);
+	if (!unique_name.is_empty()) {
+		_unique_names_to_items[unique_name] = p_item;
+		_item_inst_ids_to_unique_names[item_id] = unique_name;
+	}
+	// The reservation already sanitized the name.
+	p_item->set_name(unique_name);
+}
+
+String G4MFState4D::reserve_unique_name(const String &p_requested_name, const bool p_print_warning) {
+	// Empty names are the only case where duplicates are allowed.
+	if (p_requested_name.is_empty()) {
+		return String();
+	}
+	const String sanitized_name = G4MFItem4D::sanitize_item_name(p_requested_name, p_print_warning);
 	String unique_name = sanitized_name;
-	if (_unique_names.has(unique_name)) {
-		uint64_t discriminator = 2;
-		while (_unique_names.has(unique_name)) {
-			unique_name = sanitized_name + String::num_uint64(discriminator);
-			discriminator++;
+	uint64_t discriminator = 2;
+	bool found_any_conflict = false;
+#if G4MF_USE_CASE_INSENSITIVE_UNIQUE_NAMES
+	String lower_unique_name = unique_name.to_lower();
+	while (true) {
+		bool case_insensitive_conflict = false;
+		for (const KeyValue<String, Ref<G4MFItem4D>> &existing_pair : _unique_names_to_items) {
+			if (existing_pair.key.to_lower() == lower_unique_name) {
+				// Attempt a new unique name by appending a discriminator.
+				unique_name = sanitized_name + String::num_uint64(discriminator);
+				lower_unique_name = unique_name.to_lower();
+				discriminator++;
+				case_insensitive_conflict = true;
+				found_any_conflict = true;
+			}
 		}
-		if (p_show_warning) {
-			WARN_PRINT("G4MFState4D: The requested name " + p_requested_name + " (sanitized to " + sanitized_name + ") is already in use. The name " + unique_name + " will be used instead.");
+		if (!case_insensitive_conflict) {
+			break;
 		}
 	}
-	_unique_names.insert(unique_name);
+#else
+	while (_unique_names_to_items.has(unique_name)) {
+		// Attempt a new unique name by appending a discriminator.
+		unique_name = sanitized_name + String::num_uint64(discriminator);
+		discriminator++;
+		found_any_conflict = true;
+	}
+#endif // G4MF_USE_CASE_INSENSITIVE_UNIQUE_NAMES
+	if (p_print_warning && found_any_conflict) {
+		WARN_PRINT("G4MFState4D: The requested name " + p_requested_name + " (sanitized to " + sanitized_name + ") is already in use. The name " + unique_name + " will be used instead.");
+	}
+	_unique_names_to_items.insert(unique_name, Ref<G4MFItem4D>());
 	return unique_name;
 }
 
 bool G4MFState4D::unreserve_unique_name(const String &p_name) {
-	return _unique_names.erase(p_name);
+#if G4MF_USE_CASE_INSENSITIVE_UNIQUE_NAMES
+	const String lower_name = p_name.to_lower();
+	for (HashMap<String, Ref<G4MFItem4D>>::Iterator iter = _unique_names_to_items.begin(); iter;) {
+		const HashMap<String, Ref<G4MFItem4D>>::Iterator current = iter;
+		++iter;
+		if (current->key.to_lower() == lower_name) {
+			if (current->value.is_valid()) {
+				_item_ids_to_unique_names.erase(current->value->get_instance_id());
+			}
+			_unique_names_to_items.remove(current);
+			return true;
+		}
+	}
+	return false;
+#else
+	const Ref<G4MFItem4D> *item = _unique_names_to_items.getptr(p_name);
+	if (item != nullptr && item->is_valid()) {
+		_item_inst_ids_to_unique_names.erase((*item)->get_instance_id());
+	}
+	return _unique_names_to_items.erase(p_name);
+#endif // G4MF_USE_CASE_INSENSITIVE_UNIQUE_NAMES
+}
+
+bool G4MFState4D::has_unique_name(const String &p_name) const {
+#if G4MF_USE_CASE_INSENSITIVE_UNIQUE_NAMES
+	const String lower_name = p_name.to_lower();
+	for (const KeyValue<String, Ref<G4MFItem4D>> &existing_pair : _unique_names_to_items) {
+		if (existing_pair.key.to_lower() == lower_name) {
+			return true;
+		}
+	}
+	return false;
+#else
+	return _unique_names_to_items.has(p_name);
+#endif // G4MF_USE_CASE_INSENSITIVE_UNIQUE_NAMES
+}
+
+Ref<G4MFItem4D> G4MFState4D::get_item_by_name(const String &p_name) const {
+	if (_unique_names_to_items.has(p_name)) {
+		return _unique_names_to_items[p_name];
+	}
+#if G4MF_USE_CASE_INSENSITIVE_UNIQUE_NAMES
+	const String lower_name = p_name.to_lower();
+	for (const KeyValue<String, Ref<G4MFItem4D>> &existing_pair : _unique_names_to_items) {
+		if (existing_pair.key.to_lower() == lower_name) {
+			return existing_pair.value;
+		}
+	}
+#endif // G4MF_USE_CASE_INSENSITIVE_UNIQUE_NAMES
+	return Ref<G4MFItem4D>();
 }
 
 void G4MFState4D::set_g4mf_file_path(const String &p_g4mf_file_path) {
@@ -144,11 +235,14 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_godot_nodes"), &G4MFState4D::get_godot_nodes);
 	ClassDB::bind_method(D_METHOD("set_godot_nodes", "godot_nodes"), &G4MFState4D::set_godot_nodes);
 
-	ClassDB::bind_method(D_METHOD("append_g4mf_node", "node"), &G4MFState4D::append_g4mf_node);
 	ClassDB::bind_method(D_METHOD("get_node_index", "node"), &G4MFState4D::get_node_index);
+	ClassDB::bind_method(D_METHOD("append_g4mf_node", "node"), &G4MFState4D::append_g4mf_node);
+
 	ClassDB::bind_method(D_METHOD("has_unique_name", "name"), &G4MFState4D::has_unique_name);
-	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested_name", "show_warning"), &G4MFState4D::reserve_unique_name, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("assign_unique_item_name", "item", "requested_name", "print_warning"), &G4MFState4D::assign_unique_item_name, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("reserve_unique_name", "requested_name", "print_warning"), &G4MFState4D::reserve_unique_name, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("unreserve_unique_name", "name"), &G4MFState4D::unreserve_unique_name);
+	ClassDB::bind_method(D_METHOD("get_item_by_name", "name"), &G4MFState4D::get_item_by_name);
 
 	ClassDB::bind_method(D_METHOD("get_declared_dimension"), &G4MFState4D::get_declared_dimension);
 

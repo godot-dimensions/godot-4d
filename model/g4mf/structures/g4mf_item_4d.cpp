@@ -1,8 +1,6 @@
 #include "g4mf_item_4d.h"
 
-void G4MFItem4D::set_item_name(const String &p_desired_name) {
-	set_name(sanitize_item_name(p_desired_name));
-}
+#include "../g4mf_state_4d.h"
 
 String G4MFItem4D::sanitize_item_name(const String &p_desired_name, const bool p_warn) {
 	String sanitized_name = p_desired_name;
@@ -27,6 +25,15 @@ String G4MFItem4D::sanitize_item_name(const String &p_desired_name, const bool p
 		}
 	}
 	return sanitized_name;
+}
+
+void G4MFItem4D::set_item_name(const String &p_desired_name) {
+	set_name(sanitize_item_name(p_desired_name));
+}
+
+void G4MFItem4D::set_unique_item_name(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_name, const bool p_print_warning) {
+	ERR_FAIL_COND(p_g4mf_state.is_null());
+	p_g4mf_state->assign_unique_item_name(Ref<G4MFItem4D>(this), p_desired_name, p_print_warning);
 }
 
 TypedArray<G4MFItem4D> G4MFItem4D::get_child_items() const {

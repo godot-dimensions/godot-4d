@@ -310,6 +310,7 @@ int G4MFShape4D::convert_shape_into_state(Ref<G4MFState4D> p_g4mf_state, const R
 			}
 		}
 	}
+	p_g4mf_state->assign_unique_item_name(g4mf_shape, g4mf_shape->get_item_name());
 	state_shapes.append(g4mf_shape);
 	p_g4mf_state->set_g4mf_shapes(state_shapes);
 	return state_shape_count;

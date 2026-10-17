@@ -151,7 +151,11 @@ int G4MFMesh4D::export_convert_mesh_into_state(Ref<G4MFState4D> p_g4mf_state, co
 			}
 		}
 	}
-	g4mf_mesh->set_item_name(p_mesh->get_name());
+	p_g4mf_state->assign_unique_item_name(g4mf_mesh, p_mesh->get_name());
+	for (int i = 0; i < g4mf_surfaces.size(); i++) {
+		const Ref<G4MFMeshSurface4D> surface = g4mf_surfaces[i];
+		p_g4mf_state->assign_unique_item_name(surface, surface->get_item_name());
+	}
 	state_meshes.append(g4mf_mesh);
 	p_g4mf_state->set_g4mf_meshes(state_meshes);
 	return state_mesh_count;

@@ -251,7 +251,7 @@ Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_sta
 	}
 	const String file_path = p_g4mf_state->get_g4mf_base_path().path_join(target_uri);
 	if (!should_separate_model_files || target_uri.contains("/")) {
-		set_item_name(p_g4mf_state->reserve_unique_name(target_uri.get_file()));
+		p_g4mf_state->assign_unique_item_name(Ref<G4MFItem4D>(this), target_uri.get_file());
 	}
 	// If we are writing to a separate model file, set the URI and write to that location.
 	if (should_separate_model_files) {

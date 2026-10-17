@@ -63,6 +63,7 @@ private:
 	Error _import_parse_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_infer_buffer_view_alignment(Ref<G4MFState4D> p_g4mf_state);
+	static void _import_assign_unique_item_names(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFItem4D> &p_item);
 	Node *_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root);
 	Ref<Mesh4D> _import_generate_combined_mesh(const Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible = false);
 

@@ -22,10 +22,28 @@
 				Appends a [G4MFNode4D] to the G4MF state. This will add the node to the [member g4mf_nodes] array, and ensure its name is unique. Other data in the node is expected to be handled elsewhere. Returns the index of the newly inserted node in the [member g4mf_nodes] array.
 			</description>
 		</method>
+		<method name="assign_unique_item_name">
+			<return type="void" />
+			<param index="0" name="item" type="G4MFItem4D" />
+			<param index="1" name="requested_name" type="String" />
+			<param index="2" name="print_warning" type="bool" default="true" />
+			<description>
+				Releases the non-null [param item]'s previous name reservation in this state, then sanitizes, reserves, and assigns a unique name. Reassigning the same name preserves it if no other reservation conflicts. An empty [param requested_name] clears the item's name and releases its reservation.
+				If [param print_warning] is [code]true[/code], warnings are printed for sanitation and conflicts. Uniqueness is relative to names reserved or assigned through this state.
+			</description>
+		</method>
 		<method name="get_declared_dimension" qualifiers="const">
 			<return type="int" />
 			<description>
 				The declared dimension of the G4MF file, as specified in the asset header. This will be 4 for 4D G4MF files, but may be different when attempting to import non-4D G4MF files into a Godot 4D scene.
+			</description>
+		</method>
+		<method name="get_item_by_name" qualifiers="const">
+			<return type="G4MFItem4D" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Gets the [G4MFItem4D] corresponding to the given unique name, or [code]null[/code] if no such item exists. Unique names are useful for referencing G4MF items in a way that is stable. However, note that array indices are used for internal referencing within the G4MF file itself.
+				Imported items, including nested items within the same file, are registered automatically. Referenced model files keep their own name namespace. Use [method assign_unique_item_name] to register names for manually created items. Names reserved without an item return [code]null[/code].
 			</description>
 		</method>
 		<method name="get_node_index">
@@ -39,7 +57,7 @@
 			<return type="bool" />
 			<param index="0" name="name" type="String" />
 			<description>
-				Returns [code]true[/code] if the given [param name] has already been reserved by a previous call to [method reserve_unique_name]. This can be used to check if a name is already in use before attempting to reserve it.
+				Returns [code]true[/code] if [param name] has already been reserved by [method reserve_unique_name] or [method assign_unique_item_name]. This can be used to check if a name is already in use before attempting to reserve it.
 			</description>
 		</method>
 		<method name="is_text_file" qualifiers="const">
@@ -51,9 +69,11 @@
 		<method name="reserve_unique_name">
 			<return type="String" />
 			<param index="0" name="requested_name" type="String" />
-			<param index="1" name="show_warning" type="bool" default="true" />
+			<param index="1" name="print_warning" type="bool" default="true" />
 			<description>
-				Reserves a unique name based on the requested name. This allows you to create a unique name for a node or resource in the G4MF file without conflicting with other names. If the requested name is already in use, a number will be appended to the name to make it unique. The number will be incremented until a unique name is found. The returned name is guaranteed to be unique relative to already reserved names. If [param show_warning] is [code]true[/code] (default), a warning will be printed when the requested name is already in use and a number needs to be appended to make it unique.
+				Sanitizes and reserves a unique name without assigning it to an item. If the requested name is already in use, a number starting at [code]2[/code] is appended and incremented until a unique name is found.
+				The returned name is guaranteed to be unique relative to already reserved names, allowing you to create a unique name for a G4MF item without conflicting with other names. Each non-empty result is a new reservation. An empty [param requested_name] returns an empty string without reserving it.
+				If [param print_warning] is [code]true[/code], warnings are printed for sanitation and conflicts. Consider using [method assign_unique_item_name] to manage an item's name and reservation together.
 			</description>
 		</method>
 		<method name="should_separate_resource_files" qualifiers="const">

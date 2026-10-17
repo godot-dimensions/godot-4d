@@ -38,7 +38,8 @@ private:
 	TypedArray<G4MFShape4D> _g4mf_shapes;
 	TypedArray<G4MFNode4D> _g4mf_nodes;
 	TypedArray<Node4D> _godot_nodes;
-	HashSet<String> _unique_names;
+	HashMap<uint64_t, String> _item_inst_ids_to_unique_names;
+	HashMap<String, Ref<G4MFItem4D>> _unique_names_to_items;
 	Dictionary _g4mf_json;
 	int _declared_dimension = 4;
 
@@ -91,11 +92,14 @@ public:
 	TypedArray<Node4D> get_godot_nodes() const { return _godot_nodes; }
 	void set_godot_nodes(const TypedArray<Node4D> &p_godot_nodes) { _godot_nodes = p_godot_nodes; }
 
-	int append_g4mf_node(Ref<G4MFNode4D> p_node);
 	int get_node_index(const Node4D *p_node);
-	bool has_unique_name(const String &p_name) const { return _unique_names.has(p_name); }
-	String reserve_unique_name(const String &p_requested_name, const bool p_show_warning = true);
+	int append_g4mf_node(Ref<G4MFNode4D> p_node);
+
+	void assign_unique_item_name(const Ref<G4MFItem4D> &p_item, const String &p_requested_name, const bool p_print_warning = true);
+	String reserve_unique_name(const String &p_requested_name, const bool p_print_warning = true);
 	bool unreserve_unique_name(const String &p_name);
+	bool has_unique_name(const String &p_name) const;
+	Ref<G4MFItem4D> get_item_by_name(const String &p_name) const;
 
 	int get_declared_dimension() const { return _declared_dimension; }
 	// Do not expose this setter! It has exactly one usage in G4MFDocument4D when importing a file.

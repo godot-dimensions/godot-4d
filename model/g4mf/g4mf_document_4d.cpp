@@ -910,6 +910,7 @@ Error G4MFDocument4D::_import_parse_json_data(Ref<G4MFState4D> p_g4mf_state, Dic
 	err = _import_parse_nodes(p_g4mf_state, p_g4mf_json);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse nodes. Aborting file import.");
 	err = _import_infer_buffer_view_alignment(p_g4mf_state);
+	_import_assign_unique_item_names(p_g4mf_state, p_g4mf_state);
 	return err;
 }
 
@@ -1175,6 +1176,27 @@ Error G4MFDocument4D::_import_infer_buffer_view_alignment(Ref<G4MFState4D> p_g4m
 		WARN_PRINT("G4MF import: Warning: Alignment for buffer view " + String::num_int64(buffer_view_index) + " could not be inferred with certainty, and has been guessed to be " + String::num_int64(guessed_alignment) + " bytes. File: " + p_g4mf_state->get_g4mf_file_path());
 	}
 	return OK;
+}
+
+void G4MFDocument4D::_import_assign_unique_item_names(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFItem4D> &p_item) {
+	if (p_item.is_null()) {
+		return;
+	}
+	if (!p_item->get_name().is_empty()) {
+		if (p_g4mf_state == p_item) {
+			// We must not assign the state itself into its own unique name reservation, that
+			// would create a circular reference, which breaks Godot's reference counting system.
+			p_item->set_name(p_g4mf_state->reserve_unique_name(p_item->get_name()));
+		} else {
+			p_g4mf_state->assign_unique_item_name(p_item, p_item->get_name());
+		}
+	}
+	// Recursively gather child items owned by this `G4MFState4D` and assign unique names to them.
+	// Note that this does not include the `G4MFState4D` of a `G4MFModel4D`, which has its own state and namespace.
+	const TypedArray<G4MFItem4D> child_items = p_item->get_child_items();
+	for (int i = 0; i < child_items.size(); i++) {
+		_import_assign_unique_item_names(p_g4mf_state, child_items[i]);
+	}
 }
 
 Node *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root) {

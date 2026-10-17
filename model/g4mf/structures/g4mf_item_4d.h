@@ -11,9 +11,10 @@ protected:
 	static void _bind_methods();
 
 public:
+	static String sanitize_item_name(const String &p_desired_name, const bool p_warn = true);
 	inline String get_item_name() const { return get_name(); }
 	void set_item_name(const String &p_desired_name);
-	static String sanitize_item_name(const String &p_desired_name, const bool p_warn = true);
+	void set_unique_item_name(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_name, const bool p_print_warning = true);
 
 	virtual TypedArray<G4MFItem4D> get_child_items() const;
 	GDVIRTUAL0RC(TypedArray<G4MFItem4D>, _get_child_items);

@@ -338,6 +338,7 @@ int G4MFMaterial4D::export_convert_material_into_state(Ref<G4MFState4D> p_g4mf_s
 			}
 		}
 	}
+	p_g4mf_state->assign_unique_item_name(g4mf_material, g4mf_material->get_item_name());
 	state_materials.append(g4mf_material);
 	p_g4mf_state->set_g4mf_materials(state_materials);
 	return state_material_count;
