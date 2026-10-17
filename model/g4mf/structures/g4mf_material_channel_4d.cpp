@@ -29,6 +29,17 @@ bool G4MFMaterialChannel4D::is_equal_exact(const Ref<G4MFMaterialChannel4D> &p_o
 	return true;
 }
 
+TypedArray<G4MFItem4D> G4MFMaterialChannel4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
+	if (_element_map_binding.is_valid()) {
+		child_items.append(_element_map_binding);
+	}
+	if (_texture_map_binding.is_valid()) {
+		child_items.append(_texture_map_binding);
+	}
+	return child_items;
+}
+
 Ref<G4MFMaterialChannel4D> G4MFMaterialChannel4D::from_dictionary(const Dictionary &p_dict) {
 	Ref<G4MFMaterialChannel4D> material;
 	material.instantiate();

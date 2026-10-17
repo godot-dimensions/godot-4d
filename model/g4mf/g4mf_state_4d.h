@@ -27,6 +27,7 @@ public:
 
 private:
 	// Data for the contents of the file.
+	// Be sure to keep these in sync with `get_child_items()`.
 	TypedArray<G4MFAccessor4D> _g4mf_accessors;
 	TypedArray<G4MFBufferView4D> _g4mf_buffer_views;
 	TypedArray<PackedByteArray> _g4mf_buffers;
@@ -55,6 +56,8 @@ protected:
 
 public:
 	// Data for the contents of the file.
+	virtual TypedArray<G4MFItem4D> get_child_items() const override;
+
 	TypedArray<G4MFAccessor4D> get_g4mf_accessors() const { return _g4mf_accessors; }
 	void set_g4mf_accessors(const TypedArray<G4MFAccessor4D> &p_accessors) { _g4mf_accessors = p_accessors; }
 

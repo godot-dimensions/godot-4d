@@ -28,6 +28,23 @@ bool G4MFMaterial4D::is_equal_exact(const Ref<G4MFMaterial4D> &p_other) const {
 	return true;
 }
 
+TypedArray<G4MFItem4D> G4MFMaterial4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
+	if (_base_color_channel.is_valid()) {
+		child_items.append(_base_color_channel);
+	}
+	if (_emissive_channel.is_valid()) {
+		child_items.append(_emissive_channel);
+	}
+	if (_normal_channel.is_valid()) {
+		child_items.append(_normal_channel);
+	}
+	if (_orm_channel.is_valid()) {
+		child_items.append(_orm_channel);
+	}
+	return child_items;
+}
+
 Ref<PolyMaterial4D> G4MFMaterial4D::import_get_or_generate_poly_material(const Ref<G4MFState4D> &p_g4mf_state) {
 	if (_godot_poly_material_4d.is_valid()) {
 		return _godot_poly_material_4d;

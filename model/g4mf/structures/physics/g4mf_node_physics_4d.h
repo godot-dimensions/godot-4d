@@ -35,6 +35,8 @@ public:
 	PackedInt32Array get_trigger_node_indices() const { return _trigger_node_indices; }
 	void set_trigger_node_indices(const PackedInt32Array &p_indices) { _trigger_node_indices = p_indices; }
 
+	virtual TypedArray<G4MFItem4D> get_child_items() const override;
+
 	Node4D *generate_physics_node(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFNode4D> &p_g4mf_node, const Node *p_scene_parent) const;
 	bool is_empty_of_motion_and_shapes() const; // Used to determine if this node is a compound trigger that should hold trigger node indices.
 	static Ref<G4MFNodePhysics4D> from_collision_object_4d(const CollisionObject4D *p_collision_object);

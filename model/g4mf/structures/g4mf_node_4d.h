@@ -74,6 +74,8 @@ public:
 	Ref<G4MFModelInstance4D> get_model_instance() const { return _model_instance; }
 	void set_model_instance(const Ref<G4MFModelInstance4D> &p_model_instance) { _model_instance = p_model_instance; }
 
+	virtual TypedArray<G4MFItem4D> get_child_items() const override;
+
 	NodePath get_scene_node_path(const Ref<G4MFState4D> &p_g4mf_state) const;
 	Transform4D get_scene_global_transform(const Ref<G4MFState4D> &p_g4mf_state) const;
 

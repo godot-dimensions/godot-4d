@@ -21,6 +21,8 @@ public:
 
 	bool is_equal_exact(const Ref<G4MFMesh4D> &p_other) const;
 
+	virtual TypedArray<G4MFItem4D> get_child_items() const override;
+
 	PackedVector4Array load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	Ref<Mesh4D> import_generate_new_mesh(const Ref<G4MFState4D> &p_g4mf_state) const;

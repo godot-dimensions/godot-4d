@@ -40,6 +40,17 @@ bool G4MFMeshSurfaceBinding4D::is_equal_exact(const Ref<G4MFMeshSurfaceBinding4D
 			_values_accessor_index == p_other->get_values_accessor_index());
 }
 
+TypedArray<G4MFItem4D> G4MFMeshSurfaceBinding4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
+	for (int i = 0; i < _geometry_bindings.size(); i++) {
+		const Ref<G4MFMeshSurfaceBindingGeometry4D> geometry_binding = _geometry_bindings[i];
+		if (geometry_binding.is_valid()) {
+			child_items.append(geometry_binding);
+		}
+	}
+	return child_items;
+}
+
 PackedInt32Array G4MFMeshSurfaceBinding4D::load_geometry_binding_indices(const Ref<G4MFState4D> &p_g4mf_state, const int p_geometry_dimension, const int p_decompose_dimension) const {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedInt32Array());
 	int accessor_index = -1;

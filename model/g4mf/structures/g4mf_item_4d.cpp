@@ -29,6 +29,12 @@ String G4MFItem4D::sanitize_item_name(const String &p_desired_name, const bool p
 	return sanitized_name;
 }
 
+TypedArray<G4MFItem4D> G4MFItem4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items;
+	GDVIRTUAL_CALL(_get_child_items, child_items);
+	return child_items;
+}
+
 Variant G4MFItem4D::get_additional_data(const StringName &p_extension_name) {
 	return _additional_data[p_extension_name];
 }
@@ -217,6 +223,9 @@ Rotor4D G4MFItem4D::json_array_to_rotor_4d(const Array &p_json_array) {
 void G4MFItem4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_item_name"), &G4MFItem4D::get_item_name);
 	ClassDB::bind_method(D_METHOD("set_item_name", "name"), &G4MFItem4D::set_item_name);
+
+	ClassDB::bind_method(D_METHOD("get_child_items"), &G4MFItem4D::get_child_items);
+	GDVIRTUAL_BIND(_get_child_items);
 
 	ClassDB::bind_method(D_METHOD("get_additional_data", "extension_name"), &G4MFItem4D::get_additional_data);
 	ClassDB::bind_method(D_METHOD("has_additional_data", "extension_name"), &G4MFItem4D::has_additional_data);

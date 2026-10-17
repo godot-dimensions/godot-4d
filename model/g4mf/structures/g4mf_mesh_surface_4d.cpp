@@ -47,6 +47,17 @@ bool G4MFMeshSurface4D::is_equal_exact(const Ref<G4MFMeshSurface4D> &p_other) co
 	return true;
 }
 
+TypedArray<G4MFItem4D> G4MFMeshSurface4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
+	if (_normals_binding.is_valid()) {
+		child_items.append(_normals_binding);
+	}
+	if (_texture_map_binding.is_valid()) {
+		child_items.append(_texture_map_binding);
+	}
+	return child_items;
+}
+
 void G4MFMeshSurface4D::convert_separated_geometry_into_packed(const Ref<G4MFState4D> &p_g4mf_state, const Vector<Vector<PackedInt32Array>> &p_separated_geometry, const bool p_deduplicate) {
 	const int64_t separated_geometry_size = p_separated_geometry.size();
 	_geometry_accessor_indices.clear();

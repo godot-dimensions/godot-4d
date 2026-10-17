@@ -28,6 +28,17 @@ bool G4MFMesh4D::is_equal_exact(const Ref<G4MFMesh4D> &p_other) const {
 	return true;
 }
 
+TypedArray<G4MFItem4D> G4MFMesh4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
+	for (int i = 0; i < _surfaces.size(); i++) {
+		const Ref<G4MFMeshSurface4D> surface = _surfaces[i];
+		if (surface.is_valid()) {
+			child_items.append(surface);
+		}
+	}
+	return child_items;
+}
+
 PackedVector4Array G4MFMesh4D::load_vertices(const Ref<G4MFState4D> &p_g4mf_state) const {
 	TypedArray<G4MFAccessor4D> state_accessors = p_g4mf_state->get_g4mf_accessors();
 	ERR_FAIL_INDEX_V(_vertices_accessor_index, state_accessors.size(), PackedVector4Array());

@@ -16,6 +16,26 @@ NodePath G4MFNode4D::_make_node_path(const Vector<StringName> &p_path) const {
 #endif
 }
 
+TypedArray<G4MFItem4D> G4MFNode4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
+	if (_camera.is_valid()) {
+		child_items.append(_camera);
+	}
+	if (_light.is_valid()) {
+		child_items.append(_light);
+	}
+	if (_mesh_instance.is_valid()) {
+		child_items.append(_mesh_instance);
+	}
+	if (_model_instance.is_valid()) {
+		child_items.append(_model_instance);
+	}
+	if (_physics.is_valid()) {
+		child_items.append(_physics);
+	}
+	return child_items;
+}
+
 NodePath G4MFNode4D::get_scene_node_path(const Ref<G4MFState4D> &p_g4mf_state) const {
 	Vector<StringName> path;
 	if (unlikely(_parent_index < 0)) {

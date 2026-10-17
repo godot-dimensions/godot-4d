@@ -15,6 +15,9 @@ public:
 	void set_item_name(const String &p_desired_name);
 	static String sanitize_item_name(const String &p_desired_name, const bool p_warn = true);
 
+	virtual TypedArray<G4MFItem4D> get_child_items() const;
+	GDVIRTUAL0RC(TypedArray<G4MFItem4D>, _get_child_items);
+
 	Variant get_additional_data(const StringName &p_extension_name);
 	bool has_additional_data(const StringName &p_extension_name);
 	void set_additional_data(const StringName &p_extension_name, Variant p_additional_data);

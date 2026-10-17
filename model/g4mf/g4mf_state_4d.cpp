@@ -1,5 +1,29 @@
 #include "g4mf_state_4d.h"
 
+TypedArray<G4MFItem4D> G4MFState4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
+	// The order here is used to determine name assignment precedence, so start with "high-level" items first.
+	const Array item_arrays[] = {
+		_g4mf_nodes,
+		_g4mf_meshes,
+		_g4mf_materials,
+		_g4mf_textures,
+		_g4mf_shapes,
+		_g4mf_file_references,
+		_g4mf_accessors,
+		_g4mf_buffer_views,
+	};
+	for (const Array &items : item_arrays) {
+		for (int i = 0; i < items.size(); i++) {
+			const Ref<G4MFItem4D> item = items[i];
+			if (item.is_valid()) {
+				child_items.append(item);
+			}
+		}
+	}
+	return child_items;
+}
+
 int G4MFState4D::append_g4mf_node(Ref<G4MFNode4D> p_node) {
 	const String requested_name = p_node->get_name();
 	if (!requested_name.is_empty()) {

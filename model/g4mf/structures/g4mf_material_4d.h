@@ -41,6 +41,8 @@ public:
 
 	bool is_equal_exact(const Ref<G4MFMaterial4D> &p_other) const;
 
+	virtual TypedArray<G4MFItem4D> get_child_items() const override;
+
 	Ref<PolyMaterial4D> import_get_or_generate_poly_material(const Ref<G4MFState4D> &p_g4mf_state);
 	Ref<TetraMaterial4D> import_get_or_generate_tetra_material(const Ref<G4MFState4D> &p_g4mf_state);
 	Ref<WireMaterial4D> import_get_or_generate_wire_material(const Ref<G4MFState4D> &p_g4mf_state);

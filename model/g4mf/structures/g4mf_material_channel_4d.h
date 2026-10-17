@@ -34,6 +34,8 @@ public:
 
 	bool is_equal_exact(const Ref<G4MFMaterialChannel4D> &p_other) const;
 
+	virtual TypedArray<G4MFItem4D> get_child_items() const override;
+
 	static Ref<G4MFMaterialChannel4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;
 };

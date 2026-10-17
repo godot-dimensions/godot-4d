@@ -65,6 +65,14 @@ CollisionShape4D *G4MFNodePhysics4D::_generate_shape_node(const Ref<G4MFState4D>
 	return col_shape;
 }
 
+TypedArray<G4MFItem4D> G4MFNodePhysics4D::get_child_items() const {
+	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
+	if (_motion.is_valid()) {
+		child_items.append(_motion);
+	}
+	return child_items;
+}
+
 Node4D *G4MFNodePhysics4D::generate_physics_node(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFNode4D> &p_g4mf_node, const Node *p_scene_parent) const {
 	const CollisionObject4D *col_obj = nullptr;
 	Node4D *ret = nullptr;

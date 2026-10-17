@@ -76,6 +76,8 @@ public:
 	PackedVector4Array load_values_as_vector4s(const Ref<G4MFState4D> &p_g4mf_state) const;
 
 	bool is_equal_exact(const Ref<G4MFMeshSurfaceBinding4D> &p_other) const;
+	virtual TypedArray<G4MFItem4D> get_child_items() const override;
+
 	static Ref<G4MFMeshSurfaceBinding4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;
 };
