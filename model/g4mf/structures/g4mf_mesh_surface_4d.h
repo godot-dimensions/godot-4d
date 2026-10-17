@@ -1,18 +1,11 @@
 #pragma once
 
+#include "../g4mf_defines_4d.h"
+
 #include "../../mesh/poly/array_poly_mesh_4d.h"
 #include "../../mesh/tetra/array_tetra_mesh_4d.h"
 #include "../../mesh/wire/array_wire_mesh_4d.h"
 #include "g4mf_mesh_surface_binding_4d.h"
-
-#if GDEXTENSION
-#include <godot_cpp/templates/hash_set.hpp>
-#include <godot_cpp/variant/typed_array.hpp>
-#elif GODOT_MODULE
-#include "core/variant/typed_array.h"
-#endif
-
-class G4MFState4D;
 
 class G4MFMeshSurface4D : public G4MFItem4D {
 	GDCLASS(G4MFMeshSurface4D, G4MFItem4D);

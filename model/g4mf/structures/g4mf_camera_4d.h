@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../g4mf_defines_4d.h"
+
 #include "../../../nodes/camera_4d.h"
 #include "g4mf_item_4d.h"
 

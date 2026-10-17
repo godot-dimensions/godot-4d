@@ -2,12 +2,6 @@
 
 #include "g4mf_item_4d.h"
 
-#if GDEXTENSION
-#include <godot_cpp/variant/typed_array.hpp>
-#elif GODOT_MODULE
-#include "core/variant/typed_array.h"
-#endif
-
 class G4MFTexture4D : public G4MFItem4D {
 	GDCLASS(G4MFTexture4D, G4MFItem4D);
 

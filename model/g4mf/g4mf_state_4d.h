@@ -1,5 +1,7 @@
 #pragma once
 
+#include "g4mf_defines_4d.h"
+
 #include "../../nodes/node_4d.h"
 #include "structures/g4mf_accessor_4d.h"
 #include "structures/g4mf_buffer_view_4d.h"
@@ -9,13 +11,6 @@
 #include "structures/g4mf_node_4d.h"
 #include "structures/g4mf_texture_4d.h"
 #include "structures/physics/g4mf_shape_4d.h"
-
-#if GDEXTENSION
-#include <godot_cpp/templates/hash_set.hpp>
-#include <godot_cpp/variant/typed_array.hpp>
-#elif GODOT_MODULE
-#include "core/variant/typed_array.h"
-#endif
 
 class G4MFState4D : public G4MFItem4D {
 	GDCLASS(G4MFState4D, G4MFItem4D);

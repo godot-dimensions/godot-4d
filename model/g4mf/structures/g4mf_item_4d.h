@@ -1,15 +1,6 @@
 #pragma once
 
-#include "../../../math/geometric_algebra/rotor_4d.h"
-#include "../../../math/transform_4d.h"
-
-#if GDEXTENSION
-#include <godot_cpp/classes/resource.hpp>
-
-#include <godot_cpp/core/gdvirtual.gen.inc>
-#elif GODOT_MODULE
-#include "core/io/resource.h"
-#endif
+#include "../g4mf_defines_4d.h"
 
 class G4MFItem4D : public Resource {
 	GDCLASS(G4MFItem4D, Resource);

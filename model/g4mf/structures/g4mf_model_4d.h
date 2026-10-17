@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../g4mf_defines_4d.h"
+
 #include "../../off/off_document_4d.h"
 #include "g4mf_file_reference_4d.h"
 
