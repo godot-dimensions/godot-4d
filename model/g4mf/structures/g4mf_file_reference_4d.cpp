@@ -209,19 +209,24 @@ String G4MFFileReference4D::resolve_file_uri(const String &p_base_path) const {
 	return p_base_path.path_join(_file_uri);
 }
 
-PackedByteArray G4MFFileReference4D::read_file_data(const Ref<G4MFState4D> &p_g4mf_state) const {
-	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), PackedByteArray());
+PackedByteArray G4MFFileReference4D::import_read_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_read_from_cache) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedByteArray());
+	if (p_read_from_cache && !_file_data_cache.is_empty()) {
+		return _file_data_cache;
+	}
 	if (!_file_uri.is_empty()) {
 		if (_file_uri.begins_with("data:")) {
 			const int base64_marker = _file_uri.find(";base64,");
 			ERR_FAIL_COND_V_MSG(base64_marker == -1, PackedByteArray(), "G4MF import: Only base64-encoded data URIs are currently supported.");
 			const String payload = _file_uri.substr(base64_marker + 8);
-			return CoreBind::Marshalls::get_singleton()->base64_to_raw(payload);
+			_file_data_cache = CoreBind::Marshalls::get_singleton()->base64_to_raw(payload);
+			return _file_data_cache;
 		}
 		const String path = resolve_file_uri(p_g4mf_state->get_g4mf_base_path());
 		Ref<DirAccess> dir = DirAccess::open(path.get_base_dir());
 		if (dir.is_valid() && dir->file_exists(path.get_file())) {
-			return FileAccess::get_file_as_bytes(path);
+			_file_data_cache = FileAccess::get_file_as_bytes(path);
+			return _file_data_cache;
 		} else {
 			ERR_FAIL_V_MSG(PackedByteArray(), "G4MF import: Failed to load file data from URI '" + _file_uri + "' resolved to '" + path + "'. File does not exist.");
 		}
@@ -230,13 +235,28 @@ PackedByteArray G4MFFileReference4D::read_file_data(const Ref<G4MFState4D> &p_g4
 		TypedArray<G4MFBufferView4D> buffer_views = p_g4mf_state->get_g4mf_buffer_views();
 		ERR_FAIL_INDEX_V(_buffer_view_index, buffer_views.size(), PackedByteArray());
 		Ref<G4MFBufferView4D> buffer_view = buffer_views[_buffer_view_index];
-		ERR_FAIL_COND_V(!buffer_view.is_valid(), PackedByteArray());
-		return buffer_view->read_buffer_view_data(p_g4mf_state);
+		ERR_FAIL_COND_V(buffer_view.is_null(), PackedByteArray());
+		_file_data_cache = buffer_view->read_buffer_view_data(p_g4mf_state);
+		return _file_data_cache;
 	}
 	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF import: Failed to load file data, file reference does not have a valid URI or buffer view.");
 }
 
-Error G4MFFileReference4D::create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const {
+Error G4MFFileReference4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) {
+	// This should be overridden by derived classes if they wish to add more complex logic during import.
+	Error result = OK;
+	GDVIRTUAL_CALL(_import_parse_file_data, p_g4mf_state, result);
+	return result;
+}
+
+Error G4MFFileReference4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
+	// This should be overridden by derived classes if they wish to add more complex logic during export.
+	Error result = OK;
+	GDVIRTUAL_CALL(_export_serialize_file_data, p_g4mf_state, p_deduplicate, p_buffer_index, result);
+	return result;
+}
+
+Error G4MFFileReference4D::export_create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const {
 	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), ERR_INVALID_PARAMETER);
 	if (_file_uri.is_empty()) {
 		return OK; // Nothing to do.
@@ -263,36 +283,30 @@ Error G4MFFileReference4D::create_missing_directories_if_needed(const Ref<G4MFSt
 	return OK;
 }
 
-Error G4MFFileReference4D::write_file_data(const Ref<G4MFState4D> &p_g4mf_state, const PackedByteArray &p_data, const int64_t p_alignment, const bool p_deduplicate, const int p_buffer_index) {
-	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), ERR_INVALID_PARAMETER);
-	if (!_file_uri.is_empty()) {
-		Error err = create_missing_directories_if_needed(p_g4mf_state);
-		ERR_FAIL_COND_V(err != OK, err);
-		const String base_path = p_g4mf_state->get_g4mf_base_path();
-		Ref<FileAccess> file = FileAccess::open(resolve_file_uri(base_path), FileAccess::WRITE);
-		ERR_FAIL_COND_V(file.is_null(), ERR_FILE_CANT_WRITE);
-		file->store_buffer(p_data.ptr(), p_data.size());
-		return OK;
-	}
-	// If there is no URI, write to a new buffer view.
-	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, p_data, p_alignment, p_deduplicate, p_buffer_index);
+void G4MFFileReference4D::export_store_file_bytes(const PackedByteArray &p_data) {
+	_file_data_cache = p_data;
+}
+
+Error G4MFFileReference4D::export_write_to_buffer(const Ref<G4MFState4D> &p_g4mf_state, const int64_t p_alignment, const bool p_deduplicate, const int p_buffer_index) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
+	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, _file_data_cache, p_alignment, p_deduplicate, p_buffer_index);
 	ERR_FAIL_COND_V_MSG(buffer_view_index < 0, ERR_CANT_CREATE, "G4MF export: Failed to write file data into new buffer view.");
 	_buffer_view_index = buffer_view_index;
+	set_unique_file_path_uri(p_g4mf_state, "", "");
 	return OK;
 }
 
-Error G4MFFileReference4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) {
-	// This should be overridden by derived classes if they wish to add more complex logic during import.
-	Error result = OK;
-	GDVIRTUAL_CALL(_import_parse_file_data, p_g4mf_state, result);
-	return result;
-}
-
-Error G4MFFileReference4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
-	// This should be overridden by derived classes if they wish to add more complex logic during export.
-	Error result = OK;
-	GDVIRTUAL_CALL(_export_serialize_file_data, p_g4mf_state, p_deduplicate, p_buffer_index, result);
-	return result;
+Error G4MFFileReference4D::export_write_to_file(const Ref<G4MFState4D> &p_g4mf_state) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(_file_uri.is_empty(), ERR_INVALID_DATA);
+	Error err = export_create_missing_directories_if_needed(p_g4mf_state);
+	ERR_FAIL_COND_V(err != OK, err);
+	const String base_path = p_g4mf_state->get_g4mf_base_path();
+	Ref<FileAccess> file = FileAccess::open(resolve_file_uri(base_path), FileAccess::WRITE);
+	ERR_FAIL_COND_V(file.is_null(), ERR_FILE_CANT_WRITE);
+	file->store_buffer(_file_data_cache.ptr(), _file_data_cache.size());
+	_buffer_view_index = -1;
+	return OK;
 }
 
 Ref<G4MFFileReference4D> G4MFFileReference4D::file_reference_from_dictionary(const Dictionary &p_dict) {
@@ -353,14 +367,16 @@ void G4MFFileReference4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_file_uri", "file_uri"), &G4MFFileReference4D::set_file_uri);
 	ClassDB::bind_method(D_METHOD("resolve_file_uri", "base_path"), &G4MFFileReference4D::resolve_file_uri);
 
-	ClassDB::bind_method(D_METHOD("read_file_data", "g4mf_state"), &G4MFFileReference4D::read_file_data);
-	ClassDB::bind_method(D_METHOD("create_missing_directories_if_needed", "g4mf_state"), &G4MFFileReference4D::create_missing_directories_if_needed);
-	ClassDB::bind_method(D_METHOD("write_file_data", "g4mf_state", "data", "alignment", "deduplicate", "buffer_index"), &G4MFFileReference4D::write_file_data, DEFVAL(4), DEFVAL(true), DEFVAL(0));
-
+	ClassDB::bind_method(D_METHOD("import_read_file_data", "g4mf_state", "read_from_cache"), &G4MFFileReference4D::import_read_file_data, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("import_parse_file_data", "g4mf_state"), &G4MFFileReference4D::import_parse_file_data);
 	ClassDB::bind_method(D_METHOD("export_serialize_file_data", "g4mf_state", "deduplicate", "buffer_index"), &G4MFFileReference4D::export_serialize_file_data, DEFVAL(true), DEFVAL(0));
 	GDVIRTUAL_BIND(_import_parse_file_data, "g4mf_state");
 	GDVIRTUAL_BIND(_export_serialize_file_data, "g4mf_state", "deduplicate", "buffer_index");
+
+	ClassDB::bind_method(D_METHOD("export_create_missing_directories_if_needed", "g4mf_state"), &G4MFFileReference4D::export_create_missing_directories_if_needed);
+	ClassDB::bind_method(D_METHOD("export_store_file_bytes", "data"), &G4MFFileReference4D::export_store_file_bytes);
+	ClassDB::bind_method(D_METHOD("export_write_to_buffer", "g4mf_state", "alignment", "deduplicate", "buffer_index"), &G4MFFileReference4D::export_write_to_buffer, DEFVAL(4), DEFVAL(true), DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("export_write_to_file", "g4mf_state"), &G4MFFileReference4D::export_write_to_file);
 
 	ClassDB::bind_method(D_METHOD("read_file_reference_entries_from_dictionary", "dict"), &G4MFFileReference4D::read_file_reference_entries_from_dictionary);
 	ClassDB::bind_method(D_METHOD("write_file_reference_entries_to_dictionary"), &G4MFFileReference4D::write_file_reference_entries_to_dictionary);

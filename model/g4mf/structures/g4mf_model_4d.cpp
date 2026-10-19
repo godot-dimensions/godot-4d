@@ -50,7 +50,7 @@ Error G4MFModel4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) 
 	const String mime_type = get_mime_type();
 	ERR_FAIL_COND_V(mime_type.is_empty(), ERR_INVALID_DATA);
 	// Try to read the file data bytes first, even if ultimately unused.
-	const PackedByteArray file_data = read_file_data(p_g4mf_state);
+	const PackedByteArray file_data = import_read_file_data(p_g4mf_state);
 	ERR_FAIL_COND_V(file_data.is_empty(), ERR_CANT_OPEN);
 	const String main_base_path = p_g4mf_state->get_g4mf_base_path();
 	const String file_uri_only = get_file_uri();
@@ -259,7 +259,7 @@ Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_sta
 	// If we are writing to a separate model file, set the URI and write to that location.
 	if (should_separate_model_files) {
 		const String file_path = resolve_file_uri(p_g4mf_state->get_g4mf_base_path());
-		create_missing_directories_if_needed(p_g4mf_state);
+		export_create_missing_directories_if_needed(p_g4mf_state);
 		if (_model_g4mf_state.is_valid()) {
 			return model_g4mf_document->export_write_to_file(_model_g4mf_state, file_path);
 		} else if (_model_off_document.is_valid()) {
