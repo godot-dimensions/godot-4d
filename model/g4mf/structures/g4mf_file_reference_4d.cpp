@@ -14,7 +14,7 @@
 #include "core/io/file_access.h"
 #endif
 
-String G4MFFileReference4D::sanitize_file_extension(const String &p_extension, const bool p_warn) {
+String G4MFFileReference4D::sanitize_file_extension(const String &p_extension, const bool p_print_warning) {
 	String sanitized_ext = p_extension.to_lower();
 	// Sanitize the extension by stripping all non-dot and non-lower-alphanumeric characters.
 	// Valid examples which will not be modified: "txt", ".txt", "mesh.tres", "g4tf".
@@ -22,7 +22,7 @@ String G4MFFileReference4D::sanitize_file_extension(const String &p_extension, c
 		uint32_t char_code = sanitized_ext[char_index];
 		const bool valid = (char_code >= 'a' && char_code <= 'z') || (char_code >= '0' && char_code <= '9') || char_code == '.';
 		if (!valid) {
-			if (p_warn) {
+			if (p_print_warning) {
 				const String char_str = String::chr(char_code);
 				WARN_PRINT(vformat("G4MFItem4D: The file extension '%s' contains a disallowed character '%s' (char code %d). Stripping it.", p_extension, char_str, char_code));
 			}
@@ -35,7 +35,7 @@ String G4MFFileReference4D::sanitize_file_extension(const String &p_extension, c
 	const int length = sanitized_ext.length();
 	if (length > 0) {
 		if (sanitized_ext[length - 1] == '.') {
-			if (p_warn) {
+			if (p_print_warning) {
 				WARN_PRINT(vformat("G4MFItem4D: The file extension '%s' ends with a disallowed character '.' (char code %d). Replacing with '_'.", p_extension, '.'));
 			}
 			sanitized_ext[length - 1] = '_';
@@ -46,7 +46,7 @@ String G4MFFileReference4D::sanitize_file_extension(const String &p_extension, c
 
 // NOTE: This is only intended for filesystem paths, including res:// and user://.
 // Other protocols and data URIs must be preserved through set_file_uri().
-String G4MFFileReference4D::sanitize_file_path_uri(const String &p_desired_file_path, const bool p_warn) {
+String G4MFFileReference4D::sanitize_file_path_uri(const String &p_desired_file_path, const bool p_print_warning) {
 	if (p_desired_file_path.is_empty()) {
 		return String();
 	}
@@ -101,7 +101,7 @@ String G4MFFileReference4D::sanitize_file_path_uri(const String &p_desired_file_
 				char_code == '<' || char_code == '>' || char_code == '{' || char_code == '}' ||
 				char_code == '[' || char_code == ']' || char_code == '%' ||
 				(char_code >= 127 && char_code <= 159)) {
-			if (p_warn) {
+			if (p_print_warning) {
 				const String char_str = String::chr(char_code);
 				WARN_PRINT(vformat("G4MFItem4D: The path '%s' contains a disallowed character '%s' (char code %d). Replacing with '_'.", p_desired_file_path, char_str, char_code));
 			}
@@ -111,6 +111,18 @@ String G4MFFileReference4D::sanitize_file_path_uri(const String &p_desired_file_
 	// The body cannot contain another protocol prefix now. Resolve dot segments before filename restrictions.
 	sanitized_path = sanitized_path.simplify_path();
 	ERR_FAIL_COND_V_MSG(!path_prefix.is_empty() && sanitized_path.begins_with("../"), String(), "G4MFFileReference4D: A file path cannot traverse above its root.");
+	// Convert between digits so snake_case never inserts separators beside them.
+	String snake_case_path;
+	int start_index = 0;
+	for (int char_index = 0; char_index < sanitized_path.length(); char_index++) {
+		const uint32_t char_code = sanitized_path[char_index];
+		if (char_code >= '0' && char_code <= '9') {
+			snake_case_path += sanitized_path.substr(start_index, char_index - start_index).to_snake_case();
+			snake_case_path += String::chr(char_code);
+			start_index = char_index + 1;
+		}
+	}
+	sanitized_path = snake_case_path + sanitized_path.substr(start_index).to_snake_case();
 	// Special cases: Windows cannot contain certain reserved names. Ban names starting with these.
 	// This check is a bit more aggressive than technically necessary, but that's fine.
 	const PackedStringArray windows_reserved = PackedStringArray({ "CON", "PRN", "AUX", "NUL", "COM", "LPT" });
@@ -119,7 +131,7 @@ String G4MFFileReference4D::sanitize_file_path_uri(const String &p_desired_file_
 	for (int64_t i = 0; i < windows_reserved.size(); i++) {
 		if (sanitized_upper.begins_with(windows_reserved[i])) {
 			if (sanitized_upper.length() <= 3 || !(sanitized_upper[3] >= 'A' && sanitized_upper[3] <= 'Z')) {
-				if (p_warn) {
+				if (p_print_warning) {
 					WARN_PRINT(vformat("G4MFItem4D: The path '%s' contains a reserved name on Windows. Replacing the first character with '_'.", p_desired_file_path));
 				}
 				sanitized_path[0] = '_';
@@ -130,7 +142,7 @@ String G4MFFileReference4D::sanitize_file_path_uri(const String &p_desired_file_
 		while (found_index != -1) {
 			const int trailing_index = found_index + 4;
 			if (sanitized_upper.length() <= trailing_index || !(sanitized_upper[trailing_index] >= 'A' && sanitized_upper[trailing_index] <= 'Z')) {
-				if (p_warn) {
+				if (p_print_warning) {
 					WARN_PRINT(vformat("G4MFItem4D: The path '%s' contains a reserved name on Windows. Replacing a character with '_'.", p_desired_file_path));
 				}
 				sanitized_path[found_index + 1] = '_';
@@ -142,7 +154,7 @@ String G4MFFileReference4D::sanitize_file_path_uri(const String &p_desired_file_
 	const int length = sanitized_path.length();
 	if (length > 0) {
 		if (sanitized_path[length - 1] == '.') {
-			if (p_warn) {
+			if (p_print_warning) {
 				WARN_PRINT(vformat("G4MFItem4D: The path '%s' ends with a disallowed character '.' (char code %d). Replacing with '_'.", p_desired_file_path, '.'));
 			}
 			sanitized_path[length - 1] = '_';
@@ -194,7 +206,7 @@ void G4MFFileReference4D::set_unique_file_path_combined_uri(const Ref<G4MFState4
 	const String file_name = sanitized_path.get_file();
 	// Split the file name on the first dot to avoid breaking multi-part extensions with uniqueness.
 	// For example, multiple "archive.tar.gz" should become "archive2.tar.gz" not "archive.tar2.gz".
-	// This does mean that "Mr. Bob.txt" becomes "Mr.bob.txt", but that's an acceptable compromise.
+	// This does mean that "Mr. Bob.txt" becomes "mr.bob.txt", but that's an acceptable compromise.
 	const int first_dot = file_name.find(".");
 	const String name_without_ext = first_dot == -1 ? file_name : file_name.substr(0, first_dot);
 	const String file_ext = first_dot == -1 ? String() : file_name.substr(first_dot);
@@ -281,6 +293,24 @@ Error G4MFFileReference4D::export_create_missing_directories_if_needed(const Ref
 		ERR_FAIL_COND_V(err != OK && err != ERR_ALREADY_EXISTS, err);
 	}
 	return OK;
+}
+
+void G4MFFileReference4D::export_assign_name_if_empty(const Ref<G4MFState4D> &p_g4mf_state) {
+	ERR_FAIL_COND(p_g4mf_state.is_null());
+	if (!get_item_name().is_empty()) {
+		return;
+	}
+	String file_name;
+	if (!_file_uri.begins_with("data:")) {
+		file_name = _file_uri.get_basename().get_file();
+	}
+	if (file_name.is_empty()) {
+		const int64_t index_of_self = p_g4mf_state->get_g4mf_file_references().find(this);
+		file_name = "file" + String::num_int64(index_of_self);
+	}
+	// Generated filenames can contain characters which are disallowed in item names.
+	file_name = sanitize_item_name(file_name, false);
+	p_g4mf_state->assign_unique_item_name(Ref<G4MFFileReference4D>(this), file_name, false);
 }
 
 void G4MFFileReference4D::export_store_file_bytes(const PackedByteArray &p_data) {

@@ -17,8 +17,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	static String sanitize_file_extension(const String &p_extension, const bool p_warn);
-	static String sanitize_file_path_uri(const String &p_desired_file_path, const bool p_warn);
+	static String sanitize_file_extension(const String &p_extension, const bool p_print_warning);
+	static String sanitize_file_path_uri(const String &p_desired_file_path, const bool p_print_warning);
 	static String sanitize_path_uri(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning, String &r_sanitized_ext);
 
 	// Contents of the JSON file reference object.
@@ -47,6 +47,7 @@ public:
 #endif
 
 	Error export_create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const;
+	void export_assign_name_if_empty(const Ref<G4MFState4D> &p_g4mf_state);
 	void export_store_file_bytes(const PackedByteArray &p_data);
 	Error export_write_to_buffer(const Ref<G4MFState4D> &p_g4mf_state, const int64_t p_alignment = 4, const bool p_deduplicate = true, const int p_buffer_index = 0);
 	Error export_write_to_file(const Ref<G4MFState4D> &p_g4mf_state);

@@ -343,7 +343,7 @@ Error G4MFDocument4D::_export_serialize_buffer_data_to_uri(Ref<G4MFState4D> p_g4
 		Dictionary json_buffer_dict = json_buffers[buffer_index];
 		PackedByteArray compressed_buffer = _export_encode_chunk_data(p_g4mf_state, state_buffers[buffer_index]);
 		if (p_should_separate_buffers_into_files) {
-			const String buffer_rel_path = file_prefix + String("_buffer") + String::num_int64(buffer_index) + String(".bin");
+			const String buffer_rel_path = G4MFFileReference4D::sanitize_file_path_uri(file_prefix + String("_buffer") + String::num_int64(buffer_index) + String(".bin"), false);
 			const String buffer_path = p_g4mf_state->get_g4mf_base_path().path_join(buffer_rel_path);
 			Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::WRITE);
 			if (file.is_valid()) {
@@ -988,7 +988,6 @@ Error G4MFDocument4D::_import_parse_files(Ref<G4MFState4D> p_g4mf_state, Diction
 	}
 	TypedArray<G4MFFileReference4D> g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
 	g4mf_file_refs.resize(file_ref_count);
-	Error err;
 	for (int file_ref_index = 0; file_ref_index < file_ref_count; file_ref_index++) {
 		const Dictionary file_ref_json = json_file_refs[file_ref_index];
 		String mime_type = "";
@@ -1005,8 +1004,8 @@ Error G4MFDocument4D::_import_parse_files(Ref<G4MFState4D> p_g4mf_state, Diction
 			g4mf_file_ref = G4MFFileReference4D::file_reference_from_dictionary(file_ref_json);
 		}
 		ERR_FAIL_COND_V_MSG(g4mf_file_ref.is_null(), ERR_INVALID_DATA, "G4MF import: Failed to parse file reference JSON. Aborting file import.");
-		err = g4mf_file_ref->import_parse_file_data(p_g4mf_state);
-		const String file_path = g4mf_file_ref->get_file_uri().is_empty() ? p_g4mf_state->get_g4mf_file_path() : p_g4mf_state->get_g4mf_base_path().path_join(g4mf_file_ref->get_file_uri());
+		const Error err = g4mf_file_ref->import_parse_file_data(p_g4mf_state);
+		const String file_path = g4mf_file_ref->get_file_uri().is_empty() ? p_g4mf_state->get_g4mf_file_path() : g4mf_file_ref->resolve_file_uri(p_g4mf_state->get_g4mf_base_path());
 		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to preload model data. Aborting file import. File: " + file_path);
 		g4mf_file_refs[file_ref_index] = g4mf_file_ref;
 	}
@@ -1301,9 +1300,9 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 
 Error G4MFDocument4D::export_append_from_godot_scene(Ref<G4MFState4D> p_g4mf_state, Node *p_scene_root) {
 	ERR_FAIL_COND_V_MSG(p_scene_root == nullptr, ERR_INVALID_PARAMETER, "G4MF export: Cannot export a scene without a root node. File: " + p_g4mf_state->get_g4mf_file_path());
-	p_g4mf_state->set_original_path(p_scene_root->get_scene_file_path());
+	p_g4mf_state->set_source_path(p_scene_root->get_scene_file_path());
 	const Error err = _export_convert_scene_node(p_g4mf_state, p_scene_root, -1);
-	ERR_FAIL_COND_V_MSG(err != OK && err != ERR_SKIP, err, "G4MF export: Failed to convert scene. File: " + p_g4mf_state->get_original_path());
+	ERR_FAIL_COND_V_MSG(err != OK && err != ERR_SKIP, err, "G4MF export: Failed to convert scene. File: " + p_g4mf_state->get_source_path());
 	return err;
 }
 
@@ -1370,7 +1369,9 @@ Error G4MFDocument4D::export_repack_buffer_data(Ref<G4MFState4D> p_g4mf_state, c
 }
 
 PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4mf_state) {
-	Error err = _export_serialize_json_data(p_g4mf_state);
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedByteArray());
+	Error err;
+	err = _export_serialize_json_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, PackedByteArray(), "G4MF export: Failed to serialize G4MF data. File: " + p_g4mf_state->get_g4mf_file_path());
 	// "Automatic" is always embedded in this case anyway, so pass `-1` for `p_blob_size` which returns false.
 	const bool should_separate_buffers_into_files = p_g4mf_state->should_separate_binary_blobs(-1);
@@ -1386,15 +1387,17 @@ PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4
 Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
 	const String base_dir = ProjectSettings::get_singleton()->globalize_path(p_path.get_base_dir());
+	Error err;
 	if (!base_dir.is_empty()) {
-		Error err = DirAccess::make_dir_recursive_absolute(base_dir);
+		err = DirAccess::make_dir_recursive_absolute(base_dir);
 		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to create base directory for export file: " + base_dir);
 	}
+	// NOTE: This will break the URIs if the destination path already exists with some capital letters.
+	// Prefer using only lowercase in existing destination paths to avoid case mismatches.
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF export: Failed to open file for writing: " + p_path);
 	p_g4mf_state->set_g4mf_file_path(base_dir.path_join(p_path.get_file()));
-	p_g4mf_state->set_original_path(p_path);
-	Error err = _export_serialize_json_data(p_g4mf_state);
+	err = _export_serialize_json_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF data. File: " + p_g4mf_state->get_g4mf_file_path());
 	const int64_t buffer0_size = p_g4mf_state->get_g4mf_buffers().size() > 0 ? PackedByteArray(p_g4mf_state->get_g4mf_buffers()[0]).size() : 0;
 	const bool is_text_file = p_g4mf_state->is_text_file();
@@ -1520,7 +1523,7 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF import: Failed to open file for reading: " + p_path);
 	p_g4mf_state->set_g4mf_file_path(p_path);
-	p_g4mf_state->set_original_path(p_path);
+	p_g4mf_state->set_source_path(p_path);
 	ERR_FAIL_COND_V_MSG(file->get_length() < 25, ERR_INVALID_DATA, "G4MF import: File is too small to be a valid G4MF file: " + p_path);
 	// Check for the magic number to allow reading text vs binary G4MF files regardless of file extension.
 	const uint32_t magic_number_maybe = file->get_32();

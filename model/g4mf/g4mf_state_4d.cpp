@@ -314,8 +314,8 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_g4mf_base_path", "g4mf_base_path"), &G4MFState4D::set_g4mf_base_path);
 	ClassDB::bind_method(D_METHOD("get_g4mf_filename"), &G4MFState4D::get_g4mf_filename);
 	ClassDB::bind_method(D_METHOD("set_g4mf_filename", "g4mf_filename"), &G4MFState4D::set_g4mf_filename);
-	ClassDB::bind_method(D_METHOD("get_original_path"), &G4MFState4D::get_original_path);
-	ClassDB::bind_method(D_METHOD("set_original_path", "original_path"), &G4MFState4D::set_original_path);
+	ClassDB::bind_method(D_METHOD("get_source_path"), &G4MFState4D::get_source_path);
+	ClassDB::bind_method(D_METHOD("set_source_path", "source_path"), &G4MFState4D::set_source_path);
 
 	// Settings for handling the file.
 	ClassDB::bind_method(D_METHOD("is_text_file"), &G4MFState4D::is_text_file);
@@ -343,7 +343,7 @@ void G4MFState4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "g4mf_file_path"), "set_g4mf_file_path", "get_g4mf_file_path");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "g4mf_base_path"), "set_g4mf_base_path", "get_g4mf_base_path");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "g4mf_filename"), "set_g4mf_filename", "get_g4mf_filename");
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "original_path"), "set_original_path", "get_original_path");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "source_path"), "set_source_path", "get_source_path");
 
 	// Settings for handling the file.
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "external_data_mode", PROPERTY_HINT_ENUM, "Automatic,Embed Everything,Separate All Files,Separate Binary Blobs,Separate Resource Files"), "set_external_data_mode", "get_external_data_mode");

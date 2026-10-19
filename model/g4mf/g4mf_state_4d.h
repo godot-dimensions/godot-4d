@@ -47,7 +47,7 @@ private:
 	// Path data for the file.
 	String _g4mf_base_path = "";
 	String _g4mf_filename = "";
-	String _original_path = "";
+	String _source_path = "";
 
 	// Settings for handling the file.
 	ExternalDataMode _external_data_mode = ExternalDataMode::EXTERNAL_DATA_MODE_AUTOMATIC;
@@ -119,8 +119,8 @@ public:
 	String get_g4mf_filename() const { return _g4mf_filename; }
 	void set_g4mf_filename(const String &p_g4mf_filename) { _g4mf_filename = p_g4mf_filename; }
 
-	String get_original_path() const { return _original_path; }
-	void set_original_path(const String &p_original_path) { _original_path = p_original_path; }
+	String get_source_path() const { return _source_path; }
+	void set_source_path(const String &p_source_path) { _source_path = p_source_path; }
 
 	// Settings for handling the file.
 	ExternalDataMode get_external_data_mode() const { return _external_data_mode; }

@@ -93,7 +93,7 @@
 			<param index="1" name="extension" type="String" />
 			<param index="2" name="print_warning" type="bool" default="true" />
 			<description>
-				Sanitizes and reserves a unique filesystem path URI without assigning it to a file reference. The [param extension] may include its leading dot and may contain multiple parts, such as [code]tar.gz[/code]. Collisions are always checked case-insensitively and resolved by inserting a number before the extension. Each non-empty result is a new reservation. An empty resulting URI is returned without reserving it.
+				Sanitizes and reserves a unique filesystem path URI without assigning it to a file reference. Generated directory and file names use lowercase snake_case without inserting separators next to digits. The [param extension] may include its leading dot and may contain multiple parts, such as [code]tar.gz[/code]. Collisions are always checked case-insensitively and resolved by inserting a number before the extension. Each non-empty result is a new reservation. An empty resulting URI is returned without reserving it.
 				Paths are normalized by converting backslashes, removing redundant separators and [code].[/code] segments, and resolving [code]..[/code] segments. Filesystem roots, including [code]res://[/code], [code]user://[/code], Windows drives, and network shares, are preserved. Paths naming only a directory, traversing above a root, or using another URI protocol are rejected with an error and an empty result. Relative paths retain unresolved leading [code]..[/code] segments and are not resolved against [member g4mf_base_path].
 				If [param print_warning] is [code]true[/code], warnings are printed for sanitation and conflicts. Use [method assign_unique_path_uri] to manage a file reference's URI and reservation together.
 			</description>
@@ -164,11 +164,11 @@
 			This is used when importing a G4MF file and generating Godot nodes, after the nodes are generated, this array will have the same length as [member g4mf_nodes]. This is also used when exporting a Godot scene to a G4MF file, after the nodes are converted, this array will have the same length as [member g4mf_nodes].
 			These are almost always [Node4D]-derived nodes, but the array is typed as [Node] to support edge cases. Non-4D nodes will break the 4D transform hierarchy, therefore 4D nodes are highly recommended. Consider using a [Node4D] with a non-4D child if you need to simultaneously avoid breaking the 4D transform hierarchy and also insert a non-4D node into the scene.
 		</member>
-		<member name="original_path" type="String" setter="set_original_path" getter="get_original_path" default="&quot;&quot;">
-			The original path of the file whose data led to populating this G4MFState4D. When importing a G4MF file, this is set to the path of the G4MF file, and is the same as the combination of [member g4mf_base_path] and [member g4mf_filename]. When exporting from a Godot scene, this is set to the path of the Godot scene file, if the root node is an instance of a Godot scene file.
-		</member>
 		<member name="preferred_mesh_surface_format" type="int" setter="set_preferred_mesh_surface_format" getter="get_preferred_mesh_surface_format" enum="G4MFMeshSurface4D.MeshSurfaceFormat" default="0">
 			The preferred choice of mesh surface format which will try to be used when generating meshes from [G4MFMeshSurface4D]s. If the selected format cannot be used for a given mesh, it will fall back to another format. The default value is [constant G4MFMeshSurface4D.MESH_SURFACE_FORMAT_POLYTOPE], which means that polytope meshes will be preferred when possible. If a mesh does not have polytope geometry, it will try to fall back to a tetrahedral mesh. If a mesh has no cells and therefore cannot be represented as a tetrahedral mesh, it will fall back to a wireframe mesh.
+		</member>
+		<member name="source_path" type="String" setter="set_source_path" getter="get_source_path" default="&quot;&quot;">
+			The path of the source file whose data led to populating this G4MFState4D. When importing a G4MF file, this is set to the path of the G4MF file, and initially matches the combination of [member g4mf_base_path] and [member g4mf_filename]. When exporting from a Godot scene, this is set to the path of the Godot scene file, if the root node is an instance of a Godot scene file. This may be empty for in-memory data or unsaved scenes. Writing the state preserves this source path; use [method get_g4mf_file_path] for the current destination path.
 		</member>
 	</members>
 	<constants>

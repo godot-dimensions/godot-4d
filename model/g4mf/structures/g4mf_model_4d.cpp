@@ -159,8 +159,8 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	}
 	ERR_FAIL_NULL_V(p_node, -1);
 	const String scene_file_path = p_node->get_scene_file_path();
-	const String target_path = _get_relative_path_without_updir_dots(scene_file_path, p_g4mf_state->get_original_path());
-	const String target_uri_without_extension = (target_path.is_empty() ? String(p_node->get_name()) : target_path.get_basename()).to_snake_case();
+	const String target_path = _get_relative_path_without_updir_dots(scene_file_path, p_g4mf_state->get_source_path());
+	const String target_uri_without_extension = sanitize_file_path_uri(target_path.is_empty() ? String(p_node->get_name()) : target_path.get_basename(), true);
 	TypedArray<G4MFFileReference4D> g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
 	if (p_deduplicate && !target_uri_without_extension.is_empty()) {
 		for (int i = 0; i < g4mf_file_refs.size(); i++) {
@@ -253,9 +253,10 @@ Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_sta
 		set_unique_file_path_uri(p_g4mf_state, target_uri.trim_suffix(file_extension), file_extension);
 		target_uri = get_file_uri();
 	}
-	if (!should_separate_model_files || target_uri.contains("/")) {
+	if (get_item_name().is_empty() && (!should_separate_model_files || target_uri.contains("/"))) {
 		p_g4mf_state->assign_unique_item_name(Ref<G4MFItem4D>(this), target_uri.get_file());
 	}
+	export_assign_name_if_empty(p_g4mf_state);
 	// If we are writing to a separate model file, set the URI and write to that location.
 	if (should_separate_model_files) {
 		const String file_path = resolve_file_uri(p_g4mf_state->get_g4mf_base_path());
