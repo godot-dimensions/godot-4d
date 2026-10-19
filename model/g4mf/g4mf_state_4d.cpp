@@ -24,12 +24,12 @@ TypedArray<G4MFItem4D> G4MFState4D::get_child_items() const {
 	return child_items;
 }
 
-int G4MFState4D::get_node_index(const Node4D *p_node) {
+int G4MFState4D::get_node_index(const Node *p_node) {
 	if (p_node == nullptr) {
 		return -1;
 	}
 	for (int i = 0; i < _godot_nodes.size(); i++) {
-		Node4D *node = Object::cast_to<Node4D>(_godot_nodes[i]);
+		Node *node = Object::cast_to<Node>(_godot_nodes[i]);
 		if (node == p_node) {
 			return i;
 		}
@@ -337,7 +337,7 @@ void G4MFState4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_meshes", PROPERTY_HINT_ARRAY_TYPE, "G4MFMesh4D"), "set_g4mf_meshes", "get_g4mf_meshes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_shapes", PROPERTY_HINT_ARRAY_TYPE, "G4MFShape4D"), "set_g4mf_shapes", "get_g4mf_shapes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_nodes", PROPERTY_HINT_ARRAY_TYPE, "G4MFNode4D"), "set_g4mf_nodes", "get_g4mf_nodes");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "godot_nodes", PROPERTY_HINT_ARRAY_TYPE, "Node4D"), "set_godot_nodes", "get_godot_nodes");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "godot_nodes", PROPERTY_HINT_ARRAY_TYPE, "Node"), "set_godot_nodes", "get_godot_nodes");
 
 	// Path data for the file.
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "g4mf_file_path"), "set_g4mf_file_path", "get_g4mf_file_path");

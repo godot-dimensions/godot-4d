@@ -57,7 +57,7 @@ Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, 
 	ERR_FAIL_NULL_V(p_current_node, ERR_INVALID_PARAMETER);
 	Ref<G4MFNode4D> g4mf_node = G4MFNode4D::from_godot_node_basic(p_g4mf_state, p_current_node);
 	g4mf_node->set_parent_index(p_parent_index);
-	TypedArray<Node4D> state_godot_nodes = p_g4mf_state->get_godot_nodes();
+	TypedArray<Node> state_godot_nodes = p_g4mf_state->get_godot_nodes();
 	const int new_node_index = state_godot_nodes.size();
 	ERR_FAIL_COND_V_MSG(p_g4mf_state->get_g4mf_nodes().size() != new_node_index, ERR_BUG, "G4MFState4D's g4mf_nodes and godot_nodes arrays MUST always be the same size.");
 	// First check if this node should be packed into a model.
@@ -1200,9 +1200,11 @@ void G4MFDocument4D::_import_assign_unique_item_names(const Ref<G4MFState4D> &p_
 }
 
 Node *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), nullptr);
 	TypedArray<G4MFNode4D> state_g4mf_nodes = p_g4mf_state->get_g4mf_nodes();
 	ERR_FAIL_INDEX_V_MSG(p_node_index, state_g4mf_nodes.size(), nullptr, "G4MF import: Node index is out of range. File: " + p_g4mf_state->get_g4mf_file_path());
 	Ref<G4MFNode4D> g4mf_node = state_g4mf_nodes[p_node_index];
+	ERR_FAIL_COND_V(g4mf_node.is_null(), nullptr);
 	Node *godot_node = nullptr;
 	// First, check if any extension wants to generate a node.
 	// If no extension generated a node, check the built-in types.
@@ -1214,15 +1216,21 @@ Node *G4MFDocument4D::_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state,
 	}
 	// Set up the generated Godot node.
 	g4mf_node->apply_to_godot_node(godot_node);
-	TypedArray<Node4D> state_godot_nodes = p_g4mf_state->get_godot_nodes();
+	TypedArray<Node> state_godot_nodes = p_g4mf_state->get_godot_nodes();
+	if (state_godot_nodes.size() != state_g4mf_nodes.size()) {
+		state_godot_nodes.resize(state_g4mf_nodes.size());
+		p_g4mf_state->set_godot_nodes(state_godot_nodes);
+	}
 	state_godot_nodes[p_node_index] = godot_node;
 	// Add the Godot node to the tree and set the owner.
 	if (p_scene_parent) {
 		p_scene_parent->add_child(godot_node);
-		godot_node->set_owner(p_scene_root);
+		if (p_scene_root != nullptr) {
+			godot_node->set_owner(p_scene_root);
+		}
 	} else {
 		Node4D *godot_node_4d = Object::cast_to<Node4D>(godot_node);
-		if (godot_node_4d != nullptr) {
+		if (godot_node_4d != nullptr && p_node_index == 0) {
 			// The root node MUST NOT have a transform as required by the G4MF specification.
 			godot_node_4d->set_transform(Transform4D());
 		}
@@ -1376,6 +1384,7 @@ PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4
 }
 
 Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
 	const String base_dir = ProjectSettings::get_singleton()->globalize_path(p_path.get_base_dir());
 	if (!base_dir.is_empty()) {
 		Error err = DirAccess::make_dir_recursive_absolute(base_dir);
@@ -1412,9 +1421,21 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 }
 
 Error G4MFDocument4D::import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_byte_array) {
-	const Error err = _import_read_from_byte_array_internal(p_g4mf_state, p_byte_array);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to read G4MF byte array. File: " + p_g4mf_state->get_g4mf_file_path());
-	return OK;
+	// Check for the "G4MF" binary magic number to allow reading text vs binary G4MF byte arrays.
+	const bool is_binary = p_byte_array.size() >= 4 && p_byte_array[0] == 'G' && p_byte_array[1] == '4' && p_byte_array[2] == 'M' && p_byte_array[3] == 'F';
+	if (is_binary) {
+		const Error err = _import_read_from_byte_array_internal(p_g4mf_state, p_byte_array);
+		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to read G4MF byte array. File: " + p_g4mf_state->get_g4mf_file_path());
+		return OK;
+	}
+	// If there is no binary magic number, try reading the file as JSON.
+	const String json_string = String::utf8(reinterpret_cast<const char *>(p_byte_array.ptr()), p_byte_array.size());
+	Dictionary g4mf_json = JSON::parse_string(json_string);
+	ERR_FAIL_COND_V_MSG(g4mf_json.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to parse G4MF JSON byte array. File: " + p_g4mf_state->get_g4mf_file_path());
+	p_g4mf_state->set_g4mf_json(g4mf_json);
+	const Error buffers_err = _import_parse_buffers(p_g4mf_state, g4mf_json, nullptr, nullptr);
+	ERR_FAIL_COND_V_MSG(buffers_err != OK, buffers_err, "G4MF import: Failed to parse G4MF buffers in JSON byte array. File: " + p_g4mf_state->get_g4mf_file_path());
+	return _import_parse_json_data(p_g4mf_state, g4mf_json);
 }
 
 Error G4MFDocument4D::_import_read_from_byte_array_internal(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_byte_array) {
@@ -1555,7 +1576,7 @@ Node *G4MFDocument4D::import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state)
 		return mesh_instance;
 	}
 	// Prepare the Godot nodes array to be filled during scene node generation.
-	TypedArray<Node4D> state_godot_nodes;
+	TypedArray<Node> state_godot_nodes;
 	state_godot_nodes.resize(state_g4mf_nodes.size());
 	p_g4mf_state->set_godot_nodes(state_godot_nodes);
 	// Start from the root node (index 0) which has no parent. This will recursively call itself for child nodes.

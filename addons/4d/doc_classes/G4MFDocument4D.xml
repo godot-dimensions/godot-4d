@@ -78,7 +78,7 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="byte_array" type="PackedByteArray" />
 			<description>
-				Part of the import process. Reads a G4MF file from a [PackedByteArray] in memory and populates a [G4MFState4D]. To import G4MF data in memory, first call this function, then call [method import_generate_godot_scene]. If the G4MF data is in a file, use [method import_read_from_file] instead.
+				Part of the import process. Reads a binary or JSON G4MF file from a [PackedByteArray] in memory and populates a [G4MFState4D]. To import G4MF data in memory, first call this function, then call [method import_generate_godot_scene]. If the G4MF data is in a file, use [method import_read_from_file] instead.
 			</description>
 		</method>
 		<method name="import_read_from_file">

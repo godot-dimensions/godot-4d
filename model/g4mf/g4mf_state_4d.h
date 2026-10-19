@@ -37,7 +37,7 @@ private:
 	TypedArray<G4MFMesh4D> _g4mf_meshes;
 	TypedArray<G4MFShape4D> _g4mf_shapes;
 	TypedArray<G4MFNode4D> _g4mf_nodes;
-	TypedArray<Node4D> _godot_nodes;
+	TypedArray<Node> _godot_nodes;
 	HashMap<uint64_t, String> _item_inst_ids_to_unique_names;
 	HashMap<String, Ref<G4MFItem4D>> _unique_names_to_items;
 	HashMap<String, Ref<G4MFFileReference4D>> _unique_path_uris_to_file_references;
@@ -90,10 +90,10 @@ public:
 	TypedArray<G4MFNode4D> get_g4mf_nodes() const { return _g4mf_nodes; }
 	void set_g4mf_nodes(const TypedArray<G4MFNode4D> &p_g4mf_nodes) { _g4mf_nodes = p_g4mf_nodes; }
 
-	TypedArray<Node4D> get_godot_nodes() const { return _godot_nodes; }
-	void set_godot_nodes(const TypedArray<Node4D> &p_godot_nodes) { _godot_nodes = p_godot_nodes; }
+	TypedArray<Node> get_godot_nodes() const { return _godot_nodes; }
+	void set_godot_nodes(const TypedArray<Node> &p_godot_nodes) { _godot_nodes = p_godot_nodes; }
 
-	int get_node_index(const Node4D *p_node);
+	int get_node_index(const Node *p_node);
 	int append_g4mf_node(Ref<G4MFNode4D> p_node);
 
 	void assign_unique_item_name(const Ref<G4MFItem4D> &p_item, const String &p_requested_name, const bool p_print_warning = true);

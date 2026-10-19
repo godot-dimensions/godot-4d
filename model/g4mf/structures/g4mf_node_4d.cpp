@@ -68,7 +68,7 @@ Transform4D G4MFNode4D::get_scene_global_transform(const Ref<G4MFState4D> &p_g4m
 	int current_ancestor = _parent_index;
 	// Avoid cycles. This is pedantic because G4MF forbids cycles, but we want to be robust against malformed G4MF files.
 	PackedInt32Array visited_ancestors;
-	// This is not >= 0 because we are calculating the global transform relative to the root node, which is at index 0.
+	// This is not `>= 0` because we are calculating the global transform relative to the root node, which is at index 0.
 	while (current_ancestor > 0) {
 		ERR_FAIL_INDEX_V(current_ancestor, g4mf_node_count, global_transform);
 		ERR_FAIL_COND_V(visited_ancestors.has(current_ancestor), global_transform);

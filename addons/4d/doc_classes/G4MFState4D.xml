@@ -59,7 +59,7 @@
 		</method>
 		<method name="get_node_index">
 			<return type="int" />
-			<param index="0" name="node" type="Node4D" />
+			<param index="0" name="node" type="Node" />
 			<description>
 				Gets the index of the G4MF node in the state's [member g4mf_nodes] array corresponding to the given Godot node. This will return [code]-1[/code] if the node is not found. Since it is possible for a G4MF node to generate multiple Godot nodes, if this returns [code]-1[/code], you may wish to call this function again with the parent node to give it another try.
 			</description>
@@ -159,8 +159,10 @@
 		<member name="g4mf_textures" type="G4MFTexture4D[]" setter="set_g4mf_textures" getter="get_g4mf_textures" default="[]">
 			The array of [G4MFTexture4D]s in this G4MF file. If empty, the G4MF file does not have any textures. Textures are referenced by index in [G4MFMaterialChannel4D]s which are used in [G4MFMaterial4D]s.
 		</member>
-		<member name="godot_nodes" type="Node4D[]" setter="set_godot_nodes" getter="get_godot_nodes" default="[]">
-			The array of Godot nodes corresponding to the G4MF nodes. This is used when importing a G4MF file and generating Godot nodes, after the nodes are generated, this array will have the same length as [member g4mf_nodes]. This is also used when converting a Godot scene to a G4MF file, after the nodes are converted, this array will have the same length as [member g4mf_nodes]. The node at each index corresponds to the G4MF node with the same index in the [member g4mf_nodes] array.
+		<member name="godot_nodes" type="Node[]" setter="set_godot_nodes" getter="get_godot_nodes" default="[]">
+			The array of Godot nodes corresponding to the G4MF nodes. The node at each index corresponds to the G4MF node with the same index in the [member g4mf_nodes] array.
+			This is used when importing a G4MF file and generating Godot nodes, after the nodes are generated, this array will have the same length as [member g4mf_nodes]. This is also used when exporting a Godot scene to a G4MF file, after the nodes are converted, this array will have the same length as [member g4mf_nodes].
+			These are almost always [Node4D]-derived nodes, but the array is typed as [Node] to support edge cases. Non-4D nodes will break the 4D transform hierarchy, therefore 4D nodes are highly recommended. Consider using a [Node4D] with a non-4D child if you need to simultaneously avoid breaking the 4D transform hierarchy and also insert a non-4D node into the scene.
 		</member>
 		<member name="original_path" type="String" setter="set_original_path" getter="get_original_path" default="&quot;&quot;">
 			The original path of the file whose data led to populating this G4MFState4D. When importing a G4MF file, this is set to the path of the G4MF file, and is the same as the combination of [member g4mf_base_path] and [member g4mf_filename]. When exporting from a Godot scene, this is set to the path of the Godot scene file, if the root node is an instance of a Godot scene file.
