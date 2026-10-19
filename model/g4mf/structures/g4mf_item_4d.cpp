@@ -54,6 +54,42 @@ void G4MFItem4D::set_additional_data(const StringName &p_extension_name, Variant
 	_additional_data[p_extension_name] = p_additional_data;
 }
 
+Error G4MFItem4D::export_prepare_for_serialization(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V_MSG(_export_preparing, ERR_CYCLIC_LINK, "G4MF export: Cyclic references are strictly disallowed.");
+	// Guard script, native, and child preparation, including signals that can reenter
+	// this item. Use a single return after enabling the guard so shared items can be
+	// prepared again in another branch or a later export.
+	_export_preparing = true;
+	Error err = OK;
+	// Allow user scripts to perform custom preparation for serialization first.
+	GDVIRTUAL_CALL(_export_prepare_for_serialization, p_g4mf_state, p_deduplicate, err);
+	// Internal C++ class preparation for serialization follows user script preparation.
+	if (err == OK) {
+		err = _export_prepare_for_serialization_internal(p_g4mf_state, p_deduplicate);
+	}
+	// Prepare child items for serialization. `get_child_items()` should only return
+	// "owned" children, with `_export_preparing` guarding against cyclic references.
+	if (err == OK) {
+		TypedArray<G4MFItem4D> state_g4mf_items = get_child_items();
+		for (int i = 0; i < state_g4mf_items.size(); i++) {
+			Ref<G4MFItem4D> g4mf_item = state_g4mf_items[i];
+			if (g4mf_item.is_valid()) {
+				err = g4mf_item->export_prepare_for_serialization(p_g4mf_state, p_deduplicate);
+				if (err != OK) {
+					break;
+				}
+			}
+		}
+	}
+	_export_preparing = false;
+	return err;
+}
+
+Error G4MFItem4D::_export_prepare_for_serialization_internal(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate) {
+	return OK;
+}
+
 void G4MFItem4D::read_item_entries_from_dictionary(const Dictionary &p_dict) {
 	if (p_dict.has("name")) {
 		set_item_name(p_dict["name"]);
@@ -237,6 +273,9 @@ void G4MFItem4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_additional_data", "extension_name"), &G4MFItem4D::get_additional_data);
 	ClassDB::bind_method(D_METHOD("has_additional_data", "extension_name"), &G4MFItem4D::has_additional_data);
 	ClassDB::bind_method(D_METHOD("set_additional_data", "extension_name", "additional_data"), &G4MFItem4D::set_additional_data);
+
+	ClassDB::bind_method(D_METHOD("export_prepare_for_serialization", "g4mf_state", "deduplicate"), &G4MFItem4D::export_prepare_for_serialization, DEFVAL(true));
+	GDVIRTUAL_BIND(_export_prepare_for_serialization, "g4mf_state", "deduplicate");
 
 	ClassDB::bind_method(D_METHOD("read_item_entries_from_dictionary", "dict"), &G4MFItem4D::read_item_entries_from_dictionary);
 	ClassDB::bind_method(D_METHOD("write_item_entries_to_dictionary"), &G4MFItem4D::write_item_entries_to_dictionary);

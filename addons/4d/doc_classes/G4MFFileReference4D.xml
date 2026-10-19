@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		G4MFFileReference4D is used whenever G4MF files need to reference data that could be found in an external file, such as an image file, model file, audio file, or any other file. All file references are required to define the file's MIME type, and may refer to stored data either in a buffer view or an external file URI.
+		Export preparation assigns a unique [member Resource.resource_name] when the file reference has no item name. The name is derived from its URI filename without the extension, or its index in the containing state's file references. Characters disallowed in item names are sanitized. Existing names are preserved. This name identifies the file reference independently of its URI and remains available when the data is embedded.
 	</description>
 	<tutorials>
 		<link title="G4MF File Reference Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/core.md#file-references</link>
@@ -12,15 +13,6 @@
 		<link title="IANA Media Types">https://www.iana.org/assignments/media-types/media-types.xhtml</link>
 	</tutorials>
 	<methods>
-		<method name="_export_serialize_file_data" qualifiers="virtual">
-			<return type="int" enum="Error" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="deduplicate" type="bool" />
-			<param index="2" name="buffer_index" type="int" />
-			<description>
-				Callback method that should be used to serialize the file data. Do not call this method. This can be overridden by derived classes when creating a custom file reference type in GDScript or another scripting language. See [method export_serialize_file_data] for details.
-			</description>
-		</method>
 		<method name="_import_parse_file_data" qualifiers="virtual">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -33,16 +25,6 @@
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
 				Creates any missing directories in the filesystem needed for writing to the external file URI specified by this file reference's [member file_uri]. If [member file_uri] is an empty string, this does nothing and returns [constant @GlobalScope.OK]. If the directories already exist, this does nothing and returns [constant @GlobalScope.OK]. If the directories do not exist, it attempts to create them and returns [constant @GlobalScope.OK] on success, or an error code on failure.
-			</description>
-		</method>
-		<method name="export_serialize_file_data">
-			<return type="int" enum="Error" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="deduplicate" type="bool" default="true" />
-			<param index="2" name="buffer_index" type="int" default="0" />
-			<description>
-				Allows descendant classes to write the file data to the file if [member file_uri] is set to a non-empty value, or to a buffer view if [member file_uri] is empty. The [param g4mf_state] parameter is the state of the parent G4MF file, which is not to be confused with the [G4MFState4D] of the nested model data in the case of [G4MFModel4D], which uses an internal variable.
-				The [param deduplicate] and [param buffer_index] parameters are only used when writing to a new buffer view, and are directly passed to the [method G4MFBufferView4D.write_new_buffer_view_into_state] function. They do nothing when writing to an external file URI.
 			</description>
 		</method>
 		<method name="export_store_file_bytes">

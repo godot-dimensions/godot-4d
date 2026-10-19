@@ -106,6 +106,13 @@ Error G4MFDocument4D::_export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, 
 	return OK;
 }
 
+Error G4MFDocument4D::_export_prepare_for_serialization(Ref<G4MFState4D> p_g4mf_state) {
+	// TODO: Consider an extension hook here: Pre-serialize.
+	Error err = p_g4mf_state->export_prepare_for_serialization(p_g4mf_state);
+	// TODO: Consider an extension hook here: Prepare for serialization.
+	return err;
+}
+
 Error G4MFDocument4D::_export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state) {
 	Dictionary g4mf_json;
 	p_g4mf_state->set_g4mf_json(g4mf_json);
@@ -256,10 +263,6 @@ Error G4MFDocument4D::_export_serialize_files(Ref<G4MFState4D> p_g4mf_state, Dic
 	for (int i = 0; i < file_ref_count; i++) {
 		Ref<G4MFFileReference4D> g4mf_file_ref = state_g4mf_file_refs[i];
 		ERR_FAIL_COND_V(g4mf_file_ref.is_null(), ERR_INVALID_DATA);
-		const Error err = g4mf_file_ref->export_serialize_file_data(p_g4mf_state);
-		if (err != OK) {
-			return err;
-		}
 		const Dictionary serialized_file_ref = g4mf_file_ref->write_file_reference_entries_to_dictionary();
 		serialized_file_refs[i] = serialized_file_ref;
 	}
@@ -1370,7 +1373,8 @@ Error G4MFDocument4D::export_repack_buffer_data(Ref<G4MFState4D> p_g4mf_state, c
 
 PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4mf_state) {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), PackedByteArray());
-	Error err;
+	Error err = _export_prepare_for_serialization(p_g4mf_state);
+	ERR_FAIL_COND_V_MSG(err != OK, PackedByteArray(), "G4MF export: Failed to prepare for serialization. File: " + p_g4mf_state->get_g4mf_file_path());
 	err = _export_serialize_json_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, PackedByteArray(), "G4MF export: Failed to serialize G4MF data. File: " + p_g4mf_state->get_g4mf_file_path());
 	// "Automatic" is always embedded in this case anyway, so pass `-1` for `p_blob_size` which returns false.
@@ -1397,6 +1401,8 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
 	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF export: Failed to open file for writing: " + p_path);
 	p_g4mf_state->set_g4mf_file_path(base_dir.path_join(p_path.get_file()));
+	err = _export_prepare_for_serialization(p_g4mf_state);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to prepare for serialization. File: " + p_g4mf_state->get_g4mf_file_path());
 	err = _export_serialize_json_data(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to serialize G4MF data. File: " + p_g4mf_state->get_g4mf_file_path());
 	const int64_t buffer0_size = p_g4mf_state->get_g4mf_buffers().size() > 0 ? PackedByteArray(p_g4mf_state->get_g4mf_buffers()[0]).size() : 0;

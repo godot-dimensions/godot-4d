@@ -10,10 +10,27 @@
 		<link title="G4MF Item Schema">https://github.com/godot-dimensions/g4mf/blob/main/specification/schema/g4mf_item.schema.json</link>
 	</tutorials>
 	<methods>
+		<method name="_export_prepare_for_serialization" qualifiers="virtual">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="Resource" />
+			<param index="1" name="deduplicate" type="bool" />
+			<description>
+				Override to prepare this item's data before JSON serialization. [param g4mf_state] is the parent [G4MFState4D], exposed as [Resource] to avoid circular C++ type dependencies. Return an error to stop preparation.
+			</description>
+		</method>
 		<method name="_get_child_items" qualifiers="virtual const">
 			<return type="G4MFItem4D[]" />
 			<description>
 				Override to return additional direct child G4MF items owned by this item. These are included in [method get_child_items] along with the built-in children.
+			</description>
+		</method>
+		<method name="export_prepare_for_serialization">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="deduplicate" type="bool" default="true" />
+			<description>
+				Runs this item's preparation callback and recursively prepares the items returned by [method get_child_items]. Preparation stops at the first error. [G4MFDocument4D] calls this before serializing the state.
+				Returns [constant @GlobalScope.ERR_CYCLIC_LINK] if an item is reached again while its preparation is still active. Shared items in separate branches are allowed, and preparation can be retried after an error.
 			</description>
 		</method>
 		<method name="get_additional_data">

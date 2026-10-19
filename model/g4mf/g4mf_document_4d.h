@@ -32,6 +32,7 @@ private:
 
 	// Export process.
 	Error _export_convert_scene_node(Ref<G4MFState4D> p_g4mf_state, Node *p_current_node, const int p_parent_index);
+	Error _export_prepare_for_serialization(Ref<G4MFState4D> p_g4mf_state);
 	Error _export_serialize_json_data(Ref<G4MFState4D> p_g4mf_state);
 	Error _export_serialize_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_shapes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);

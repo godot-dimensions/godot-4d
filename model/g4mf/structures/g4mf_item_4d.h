@@ -6,9 +6,11 @@ class G4MFItem4D : public Resource {
 	GDCLASS(G4MFItem4D, Resource);
 
 	Dictionary _additional_data;
+	bool _export_preparing = false;
 
 protected:
 	static void _bind_methods();
+	virtual Error _export_prepare_for_serialization_internal(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate);
 
 public:
 	static String sanitize_item_name(const String &p_desired_name, const bool p_warn = true);
@@ -22,6 +24,9 @@ public:
 	Variant get_additional_data(const StringName &p_extension_name);
 	bool has_additional_data(const StringName &p_extension_name);
 	void set_additional_data(const StringName &p_extension_name, Variant p_additional_data);
+
+	Error export_prepare_for_serialization(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate = true);
+	GDVIRTUAL2R(Error, _export_prepare_for_serialization, Ref<Resource>, bool);
 
 	void read_item_entries_from_dictionary(const Dictionary &p_dict);
 	Dictionary write_item_entries_to_dictionary() const;

@@ -37,6 +37,7 @@ class G4MFModel4D : public G4MFFileReference4D {
 
 protected:
 	static void _bind_methods();
+	virtual Error _export_prepare_for_serialization_internal(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate) override;
 
 public:
 	Variant get_model_g4mf_document() const;
@@ -45,7 +46,6 @@ public:
 	virtual Error import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) override;
 	Node *import_instantiate_model(const Ref<G4MFState4D> &p_g4mf_state) const;
 	static int export_pack_nodes_into_model(const Variant p_g4mf_document, const Ref<G4MFState4D> &p_g4mf_state, Node *p_node, const bool p_deduplicate = true);
-	virtual Error export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate = true, const int p_buffer_index = 0) override;
 
 	static Ref<G4MFModel4D> from_dictionary(const Dictionary &p_dict);
 	Dictionary to_dictionary() const;

@@ -261,13 +261,6 @@ Error G4MFFileReference4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf
 	return result;
 }
 
-Error G4MFFileReference4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
-	// This should be overridden by derived classes if they wish to add more complex logic during export.
-	Error result = OK;
-	GDVIRTUAL_CALL(_export_serialize_file_data, p_g4mf_state, p_deduplicate, p_buffer_index, result);
-	return result;
-}
-
 Error G4MFFileReference4D::export_create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const {
 	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), ERR_INVALID_PARAMETER);
 	if (_file_uri.is_empty()) {
@@ -311,6 +304,11 @@ void G4MFFileReference4D::export_assign_name_if_empty(const Ref<G4MFState4D> &p_
 	// Generated filenames can contain characters which are disallowed in item names.
 	file_name = sanitize_item_name(file_name, false);
 	p_g4mf_state->assign_unique_item_name(Ref<G4MFFileReference4D>(this), file_name, false);
+}
+
+Error G4MFFileReference4D::_export_prepare_for_serialization_internal(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate) {
+	export_assign_name_if_empty(p_g4mf_state);
+	return OK;
 }
 
 void G4MFFileReference4D::export_store_file_bytes(const PackedByteArray &p_data) {
@@ -399,9 +397,7 @@ void G4MFFileReference4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("import_read_file_data", "g4mf_state", "read_from_cache"), &G4MFFileReference4D::import_read_file_data, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("import_parse_file_data", "g4mf_state"), &G4MFFileReference4D::import_parse_file_data);
-	ClassDB::bind_method(D_METHOD("export_serialize_file_data", "g4mf_state", "deduplicate", "buffer_index"), &G4MFFileReference4D::export_serialize_file_data, DEFVAL(true), DEFVAL(0));
 	GDVIRTUAL_BIND(_import_parse_file_data, "g4mf_state");
-	GDVIRTUAL_BIND(_export_serialize_file_data, "g4mf_state", "deduplicate", "buffer_index");
 
 	ClassDB::bind_method(D_METHOD("export_create_missing_directories_if_needed", "g4mf_state"), &G4MFFileReference4D::export_create_missing_directories_if_needed);
 	ClassDB::bind_method(D_METHOD("export_store_file_bytes", "data"), &G4MFFileReference4D::export_store_file_bytes);

@@ -15,6 +15,7 @@ class G4MFFileReference4D : public G4MFItem4D {
 
 protected:
 	static void _bind_methods();
+	virtual Error _export_prepare_for_serialization_internal(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate) override;
 
 public:
 	static String sanitize_file_extension(const String &p_extension, const bool p_print_warning);
@@ -37,13 +38,10 @@ public:
 	String resolve_file_uri(const String &p_base_path) const;
 	PackedByteArray import_read_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_read_from_cache = true);
 	virtual Error import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state);
-	virtual Error export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate = true, const int p_buffer_index = 0);
 #ifdef GDEXTENSION
 	GDVIRTUAL1R(Error, _import_parse_file_data, Ref<Resource>);
-	GDVIRTUAL3R(Error, _export_serialize_file_data, Ref<Resource>, bool, int);
 #else // GODOT_MODULE
 	GDVIRTUAL1R(Error, _import_parse_file_data, Ref<G4MFState4D>);
-	GDVIRTUAL3R(Error, _export_serialize_file_data, Ref<G4MFState4D>, bool, int);
 #endif
 
 	Error export_create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const;

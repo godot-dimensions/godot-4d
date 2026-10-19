@@ -213,8 +213,7 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	return model_file_ref_index;
 }
 
-Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate, const int p_buffer_index) {
-	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
+Error G4MFModel4D::_export_prepare_for_serialization_internal(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate) {
 	const Ref<G4MFDocument4D> model_g4mf_document = _model_g4mf_document;
 	ERR_FAIL_COND_V(model_g4mf_document.is_null(), ERR_INVALID_DATA);
 	const bool is_text_file = p_g4mf_state->is_text_file();
@@ -291,7 +290,7 @@ Error G4MFModel4D::export_serialize_file_data(const Ref<G4MFState4D> &p_g4mf_sta
 	// Now that we have the bytes, write them into a new buffer view in the state.
 	ERR_FAIL_COND_V_MSG(model_bytes.is_empty(), ERR_CANT_CREATE, "G4MF export: G4MFModel4D: The exported model data is an empty byte array, export failed.");
 	// Always use 16-byte alignment for models to allow 16-byte headers to be aligned.
-	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, model_bytes, 16, p_deduplicate, p_buffer_index);
+	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, model_bytes, 16, p_deduplicate, 0);
 	ERR_FAIL_COND_V(buffer_view_index < 0, ERR_CANT_CREATE);
 	set_buffer_view_index(buffer_view_index);
 	return OK;

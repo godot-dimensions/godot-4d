@@ -2,7 +2,8 @@
 
 TypedArray<G4MFItem4D> G4MFState4D::get_child_items() const {
 	TypedArray<G4MFItem4D> child_items = G4MFItem4D::get_child_items();
-	// The order here is used to determine name assignment precedence, so start with "high-level" items first.
+	// The order here is used to determine serialization prep order and
+	// name assignment precedence, so start with "high-level" items first.
 	const Array item_arrays[] = {
 		_g4mf_nodes,
 		_g4mf_meshes,
