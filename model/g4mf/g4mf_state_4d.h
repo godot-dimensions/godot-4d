@@ -8,6 +8,7 @@
 #include "structures/g4mf_file_reference_4d.h"
 #include "structures/g4mf_material_4d.h"
 #include "structures/g4mf_mesh_4d.h"
+#include "structures/g4mf_model_4d.h"
 #include "structures/g4mf_node_4d.h"
 #include "structures/g4mf_texture_4d.h"
 #include "structures/internal/g4mf_path_context_4d.h"
@@ -36,6 +37,7 @@ private:
 	TypedArray<G4MFTexture4D> _g4mf_textures;
 	TypedArray<G4MFMaterial4D> _g4mf_materials;
 	TypedArray<G4MFMesh4D> _g4mf_meshes;
+	TypedArray<G4MFModel4D> _g4mf_models;
 	TypedArray<G4MFShape4D> _g4mf_shapes;
 	TypedArray<G4MFNode4D> _g4mf_nodes;
 	TypedArray<Node> _godot_nodes;
@@ -59,7 +61,6 @@ protected:
 
 public:
 	// Data for the contents of the file.
-	virtual TypedArray<G4MFItem4D> get_child_items() const override;
 
 	TypedArray<G4MFAccessor4D> get_g4mf_accessors() const { return _g4mf_accessors; }
 	void set_g4mf_accessors(const TypedArray<G4MFAccessor4D> &p_accessors) { _g4mf_accessors = p_accessors; }
@@ -84,6 +85,9 @@ public:
 
 	TypedArray<G4MFMesh4D> get_g4mf_meshes() const { return _g4mf_meshes; }
 	void set_g4mf_meshes(const TypedArray<G4MFMesh4D> &p_g4mf_meshes) { _g4mf_meshes = p_g4mf_meshes; }
+
+	TypedArray<G4MFModel4D> get_g4mf_models() const { return _g4mf_models; }
+	void set_g4mf_models(const TypedArray<G4MFModel4D> &p_g4mf_models) { _g4mf_models = p_g4mf_models; }
 
 	TypedArray<G4MFShape4D> get_g4mf_shapes() const { return _g4mf_shapes; }
 	void set_g4mf_shapes(const TypedArray<G4MFShape4D> &p_g4mf_shapes) { _g4mf_shapes = p_g4mf_shapes; }
@@ -111,6 +115,8 @@ public:
 	void mark_path_as_reserved(const String &p_path);
 	void reset_path_context();
 	void use_path_context_of(const Ref<G4MFState4D> &p_other_state);
+
+	virtual TypedArray<G4MFItem4D> get_child_items() const override;
 
 	int get_declared_dimension() const { return _declared_dimension; }
 	// Do not expose this setter! It has exactly one usage in G4MFDocument4D when importing a file.

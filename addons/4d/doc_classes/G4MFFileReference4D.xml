@@ -13,13 +13,6 @@
 		<link title="IANA Media Types">https://www.iana.org/assignments/media-types/media-types.xhtml</link>
 	</tutorials>
 	<methods>
-		<method name="_import_parse_file_data" qualifiers="virtual">
-			<return type="int" enum="Error" />
-			<param index="0" name="g4mf_state" type="Resource" />
-			<description>
-				Callback method that should be used to parse the file data. Do not call this method. This can be overridden by derived classes when creating a custom file reference type in GDScript or another scripting language. See [method import_parse_file_data] for details.
-			</description>
-		</method>
 		<method name="export_create_missing_directories_if_needed" qualifiers="const">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
@@ -31,7 +24,7 @@
 			<return type="void" />
 			<param index="0" name="data" type="PackedByteArray" />
 			<description>
-				Stores bytes in the internal cache without writing them or changing [member file_uri] or [member buffer_view_index]. Call [method export_write_to_buffer] or [method export_write_to_file] to write the cached bytes.
+				Stores bytes in the internal cache without writing them. Call [method export_write_to_buffer] or [method export_write_to_file] to write the cached bytes.
 			</description>
 		</method>
 		<method name="export_write_to_buffer">
@@ -41,7 +34,7 @@
 			<param index="2" name="deduplicate" type="bool" default="true" />
 			<param index="3" name="buffer_index" type="int" default="0" />
 			<description>
-				Writes the cached bytes into a buffer view in [param g4mf_state], then updates [member buffer_view_index]. On success, [member file_uri] is cleared and its path reservation is released. The alignment, deduplication, and destination buffer arguments are passed to [method G4MFBufferView4D.write_new_buffer_view_into_state].
+				Writes the cached bytes into a buffer view in [param g4mf_state], then updates [member buffer_view_index]. The alignment, deduplication, and destination buffer arguments are passed to [method G4MFBufferView4D.write_new_buffer_view_into_state].
 			</description>
 		</method>
 		<method name="export_write_to_file">
@@ -51,20 +44,12 @@
 				Writes the cached bytes to the nonempty [member file_uri], resolved against the parent state's base path. A relative URI requires an absolute base path, including [code]res://[/code] or [code]user://[/code]. Missing directories are created as needed. On success, [member buffer_view_index] is reset to [code]-1[/code].
 			</description>
 		</method>
-		<method name="import_parse_file_data">
-			<return type="int" enum="Error" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<description>
-				Allows descendant classes to parse the file data from the file or buffer view into memory, and prepare it for instantiation. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. Returns [constant @GlobalScope.OK] on success, or an error code on failure.
-			</description>
-		</method>
 		<method name="import_read_file_data">
 			<return type="PackedByteArray" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<param index="1" name="read_from_cache" type="bool" default="true" />
 			<description>
 				Reads the file bytes from [member file_uri] or [member buffer_view_index]. With [param read_from_cache] enabled, previously cached bytes are reused. Otherwise the source is read again and the cache is refreshed.
-				A nonempty cache takes precedence over the current URI or buffer view. Changing those properties does not invalidate the cache; pass [code]false[/code] for [param read_from_cache] to read from the new source.
 			</description>
 		</method>
 		<method name="read_file_reference_entries_from_dictionary">

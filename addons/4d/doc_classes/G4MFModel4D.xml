@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="G4MFModel4D" inherits="G4MFFileReference4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="G4MFModel4D" inherits="G4MFItem4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Models are references to other self-contained files that can be used in the scene graph.
 	</brief_description>
 	<description>
-		G4MFModel4D represents a reference to another self-contained model file that can be used in the scene graph, such as other G4MF files, OFF files, glTF™ files, OCIF files, or any other format. These models are then used by nodes via [G4MFModelInstance4D], where each node using the model becomes a new instance of the model's tree of nodes, and the host G4MF's node properties override the properties of the instantiated model's root node. This allows for modularity and reusability of models across different scenes and applications.
+		G4MFModel4D represents a reference to another self-contained model file that can be used in the scene graph, such as other G4MF files, OFF files, glTF™ files, OCIF files, or any other format. Models reference their bytes through [member file_index] and are used by nodes via [member G4MFNode4D.model_index], where each node using the model becomes a new instance of the model's tree of nodes, and the host G4MF's node properties override the properties of the instantiated model's root node. This allows for modularity and reusability of models across different scenes and applications.
+		When exporting, models sharing a [G4MFFileReference4D] retain one preferred output path stem on that file reference, separately from its generated file URI. The preparation pass selects the extension for each write and resolves naming collisions without changing this preference. Switching formats or embedding a model therefore preserves its preferred filename and relative folders. Converted models derive the preference from their source path; imported or manually assembled models capture it from their initial file URI during [method import_parse_file_data], before any model sharing that file reference can change the URI. Files without a URI derive the preference from the first model's item name or model index on their first preparation pass. A [code]data:[/code] URI is not used as a filename. Later changes to the generated file URI do not change the stored preference.
+		Converted models preserve source folders beneath the containing scene's source directory. For example, a scene at [code]res://path/to/file.scn[/code] using [code]res://path/to/some/subfolder/model.scn[/code], exported to [code]res://export/file.g4tf[/code], writes the model to [code]res://export/some/subfolder/model.g4tf[/code]. Sources outside that directory retain their path below the common source directory, omitting [code]..[/code] segments. Sources on a different root, or sources whose containing scene has no source path, use only their filename beside the containing output file. A model without a source path uses its node name. The selected path stem still follows the existing filename normalization and sanitation rules. Each nested model applies this rule relative to its own source and output file.
+		Distinct models can reference the same base file while retaining separate [member overrides] and [member node_additional_children]. File references receive their own names independently of the models using them. Each model prepares its referenced file for serialization, so a shared external destination may be written repeatedly. Identical embedded payloads share a buffer view when deduplication is enabled; explicitly disabling deduplication allows duplicate embedded payloads.
+		Eligible converted G4MF models also share external output destinations across nested states and subsequent writes using the same path context, when their source path, nesting depth, and export settings match. For example, if A uses B and C, and both B and C use D, both references use one external D file. The first allocation selects its location using the path rules above; later references use a relative URI from their own containing file. Each state keeps its own file reference and conversion data, and may convert and write the same destination again. Embedded models keep their data local to each containing file. Allocations remain in the shared path context across writes, including failures. Use [method G4MFState4D.reset_path_context] to start an independent export with new allocations.
 	</description>
 	<tutorials>
 		<link title="G4MF Model Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/model.md</link>
@@ -19,8 +23,10 @@
 			<param index="2" name="node" type="Node" />
 			<param index="3" name="deduplicate" type="bool" default="true" />
 			<description>
-				Pack the given tree of nodes into a new G4MF model, and add it to the given [G4MFState4D]'s list of models. This function MUST be run before calling [method G4MFItem4D.export_prepare_for_serialization] on the new model, or else the export will fail.
-				The root node of the given tree will become the root node of the new model, and all child nodes will be included in the model as well. If [param deduplicate] is [code]true[/code], the model will be compared against existing models in the [G4MFState4D] and reused if a model with the same non-empty source path and export settings already exists. Returns the index of the new or existing model in the [G4MFState4D]'s list of models, or [code]-1[/code] on failure.
+				Pack the given tree of nodes into a new G4MF model, and add it to the given [G4MFState4D]'s list of models. The document's preparation pass writes the model bytes through a separate [G4MFFileReference4D].
+				The root node of the given tree will become the root node of the new model, and all child nodes will be included in the model as well. If [param deduplicate] is [code]true[/code], eligible existing models in the [G4MFState4D] are reused based on the full source [member Node.scene_file_path], including its directory and extension. Source paths are normalized without filename sanitation and compared case-sensitively, independently of the generated output URI. Nonempty source paths must be absolute, including [code]res://[/code] or [code]user://[/code]. Project URIs and absolute filesystem paths to the same source are equivalent when a project is loaded. Returns the index of the new or existing model in the [G4MFState4D]'s list of models, or [code]-1[/code] on failure.
+				This method creates a model with empty [member overrides] and [member node_additional_children]. If a matching existing model has either kind of customization, its base conversion data and file reference can be shared, while a separate plain model is created. The existing customizations are preserved on their original model and are not copied onto the new model.
+				Instances with editable children, or with nested instances that have editable children, always produce independent models and cannot be reused by later instances. Detached roots also produce independent models because their editable flag cannot be queried without an ancestor. Instances without a source path and models created with [param deduplicate] set to [code]false[/code] cannot be reused by later instances. Uneditable instances from the same source are assumed to be equivalent for deduplication, including at runtime; their properties are not compared for changes.
 				The given [G4MFDocument4D] will be set as [member model_g4mf_document] on the new model, and will be used for processing the file. The [param g4mf_document] parameter is a [Variant] for technical reasons, to avoid circular dependency issues in C++. This parameter only supports being given a [G4MFDocument4D] or [code]null[/code].
 			</description>
 		</method>
@@ -28,14 +34,33 @@
 			<return type="G4MFModel4D" />
 			<param index="0" name="dict" type="Dictionary" />
 			<description>
-				Converts the given [Dictionary] representing the JSON of a G4MF model to a [G4MFModel4D]. This will set the fields of the [G4MFModel4D], [G4MFFileReference4D], and [G4MFItem4D] classes based on the data in the [Dictionary].
+				Converts the given [Dictionary] representing the JSON of a G4MF model to a [G4MFModel4D]. This will set the fields of the [G4MFModel4D] and [G4MFItem4D] classes based on the data in the [Dictionary].
 			</description>
 		</method>
-		<method name="import_instantiate_model" qualifiers="const">
+		<method name="import_finalize_instance">
+			<return type="void" />
+			<param index="0" name="model_root" type="Node" />
+			<param index="1" name="scene_root" type="Node" default="null" />
+			<description>
+				Applies the pending ownership and editable instance setup for an instance created by [method import_instantiate_model]. The complete hierarchy already exists, so the caller may rename the model root or free parts of the hierarchy before this call. Recorded nodes which were freed or moved outside the model instance are skipped.
+				If [param scene_root] is provided, [param model_root] must already be that root or one of its descendants. Recorded nodes receive ownership in that scene, and customized instances are marked editable on that scene root, including at runtime. Original ownership within nested scene instances is preserved. The model root's parenting and ownership remain the caller's responsibility.
+				The instance's pending record is consumed by this call. Calling it twice, or passing a root that has no pending record, produces an error. Nested models generated as additional children are finalized as part of the enclosing instance.
+				If [param scene_root] is [code]null[/code], the pending record is discarded without assigning ownership or marking instances editable. Runtime callers and callers that manage ownership themselves can use this to release pending bookkeeping. Records otherwise remain until the model resource is freed.
+			</description>
+		</method>
+		<method name="import_instantiate_model">
 			<return type="Node" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Creates a new instance of the model's node tree, using the model data preloaded into memory. This function MUST be called after running [method G4MFFileReference4D.import_parse_file_data], or else it will fail. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. Returns the root node of the instantiated model on success, or [code]null[/code] on failure.
+				Creates a complete detached instance of the model's node tree, including [member node_additional_children], using the model data preloaded into memory. This function MUST be called after running [method import_parse_file_data], or else it will fail. The [param g4mf_state] parameter is the state of the parent G4MF file, not of the nested model data, which uses an internal variable. Returns the root node of the instantiated model on success, or [code]null[/code] on failure.
+				Additional children are generated as complete subtrees through [method G4MFDocument4D.import_generate_godot_node], with ownership in the containing scene deferred until [method import_finalize_instance]. Each instance has its own pending finalization record, so multiple instances can be generated before finalizing them in any order.
+			</description>
+		</method>
+		<method name="import_parse_file_data">
+			<return type="int" enum="Error" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<description>
+				Preloads the model from the [G4MFFileReference4D] at [member file_index] in the parent [G4MFState4D]. Call this before [method import_instantiate_model].
 			</description>
 		</method>
 		<method name="to_dictionary" qualifiers="const">
@@ -46,9 +71,19 @@
 		</method>
 	</methods>
 	<members>
+		<member name="file_index" type="int" setter="set_file_index" getter="get_file_index" default="-1">
+			The index of the model file in [member G4MFState4D.g4mf_file_references].
+		</member>
 		<member name="model_g4mf_document" type="Variant" setter="set_model_g4mf_document" getter="get_model_g4mf_document" default="null">
 			The [G4MFDocument4D] used for processing nested 4D G4MF models. This should be set to the same document used to process the parent G4MF file, to preserve settings. If this is not set to a valid value, a new [G4MFDocument4D] will be created with default settings when importing a 4D G4MF file.
 			[b]Note:[/b] This is a [Variant] for technical reasons, to avoid circular dependency issues in C++. This property only supports being set to a [G4MFDocument4D] or [code]null[/code].
+		</member>
+		<member name="node_additional_children" type="Dictionary" setter="set_node_additional_children" getter="get_node_additional_children" default="{}">
+			Maps node names in the instantiated model to [PackedInt32Array]s of additional child indices in the parent file's [member G4MFState4D.g4mf_nodes] array. [method import_instantiate_model] generates their complete subtrees, and [method import_finalize_instance] optionally assigns ownership in the containing scene.
+			When adding children inside nested scene instances, those instances and the containing model are marked editable during finalization, preserving the added subtrees on later exports.
+		</member>
+		<member name="overrides" type="Dictionary" setter="set_overrides" getter="get_overrides" default="{}">
+			Maps unique item names in the nested model to override dictionaries. Applying these dictionaries is not implemented yet.
 		</member>
 	</members>
 </class>

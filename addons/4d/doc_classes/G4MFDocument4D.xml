@@ -67,6 +67,18 @@
 				If [param which_mesh_index] is set to a valid mesh index, only that mesh will be generated exactly as-is, and any other meshes will be ignored. Otherwise, if the G4MF data does not contain nodes, the mesh at index 0 will be generated.
 			</description>
 		</method>
+		<method name="import_generate_godot_node">
+			<return type="Node" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="node_index" type="int" />
+			<param index="2" name="scene_parent" type="Node" default="null" />
+			<param index="3" name="scene_root" type="Node" default="null" />
+			<description>
+				Generates the node at [param node_index] and its complete subtree, including model finalization, and registers generated nodes in [member G4MFState4D.godot_nodes]. Returns the generated node on success, or [code]null[/code] on failure. Unlike [method G4MFNode4D.import_generate_godot_node], this handles descendants and scene integration.
+				If [param scene_parent] is provided, the generated node is attached below it. A provided [param scene_root] must be that parent or one of its ancestors, and is used for ownership and editor instance setup. If [param scene_root] is [code]null[/code], ownership is left to the caller.
+				If [param scene_parent] is [code]null[/code], the returned node is detached and becomes the scene root used for ownership of its descendants.
+			</description>
+		</method>
 		<method name="import_generate_godot_scene">
 			<return type="Node" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />

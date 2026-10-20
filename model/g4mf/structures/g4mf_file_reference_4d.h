@@ -43,8 +43,6 @@ public:
 
 	String resolve_file_uri(const String &p_base_abs_path) const;
 	PackedByteArray import_read_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_read_from_cache = true);
-	virtual Error import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state);
-	GDVIRTUAL1R(Error, _import_parse_file_data, Ref<Resource>);
 
 	Error export_create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const;
 	void export_assign_name_if_empty(const Ref<G4MFState4D> &p_g4mf_state);

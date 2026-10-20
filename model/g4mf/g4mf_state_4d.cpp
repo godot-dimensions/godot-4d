@@ -6,6 +6,7 @@ TypedArray<G4MFItem4D> G4MFState4D::get_child_items() const {
 	// name assignment precedence, so start with "high-level" items first.
 	const Array item_arrays[] = {
 		_g4mf_nodes,
+		_g4mf_models,
 		_g4mf_meshes,
 		_g4mf_materials,
 		_g4mf_textures,
@@ -312,6 +313,8 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_g4mf_materials", "g4mf_materials"), &G4MFState4D::set_g4mf_materials);
 	ClassDB::bind_method(D_METHOD("get_g4mf_meshes"), &G4MFState4D::get_g4mf_meshes);
 	ClassDB::bind_method(D_METHOD("set_g4mf_meshes", "g4mf_meshes"), &G4MFState4D::set_g4mf_meshes);
+	ClassDB::bind_method(D_METHOD("get_g4mf_models"), &G4MFState4D::get_g4mf_models);
+	ClassDB::bind_method(D_METHOD("set_g4mf_models", "g4mf_models"), &G4MFState4D::set_g4mf_models);
 	ClassDB::bind_method(D_METHOD("get_g4mf_shapes"), &G4MFState4D::get_g4mf_shapes);
 	ClassDB::bind_method(D_METHOD("set_g4mf_shapes", "g4mf_shapes"), &G4MFState4D::set_g4mf_shapes);
 	ClassDB::bind_method(D_METHOD("get_g4mf_nodes"), &G4MFState4D::get_g4mf_nodes);
@@ -366,6 +369,7 @@ void G4MFState4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_textures", PROPERTY_HINT_ARRAY_TYPE, "G4MFTexture4D"), "set_g4mf_textures", "get_g4mf_textures");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_materials", PROPERTY_HINT_ARRAY_TYPE, "G4MFMaterial4D"), "set_g4mf_materials", "get_g4mf_materials");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_meshes", PROPERTY_HINT_ARRAY_TYPE, "G4MFMesh4D"), "set_g4mf_meshes", "get_g4mf_meshes");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_models", PROPERTY_HINT_ARRAY_TYPE, "G4MFModel4D"), "set_g4mf_models", "get_g4mf_models");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_shapes", PROPERTY_HINT_ARRAY_TYPE, "G4MFShape4D"), "set_g4mf_shapes", "get_g4mf_shapes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "g4mf_nodes", PROPERTY_HINT_ARRAY_TYPE, "G4MFNode4D"), "set_g4mf_nodes", "get_g4mf_nodes");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "godot_nodes", PROPERTY_HINT_ARRAY_TYPE, "Node"), "set_godot_nodes", "get_godot_nodes");

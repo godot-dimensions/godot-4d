@@ -39,6 +39,7 @@ private:
 	Error _export_serialize_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _export_serialize_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_buffers_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _export_serialize_buffer_data_to_uri(Ref<G4MFState4D> p_g4mf_state, const bool p_should_separate_buffers_into_files);
@@ -58,6 +59,7 @@ private:
 	Error _import_parse_buffer_views(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_accessors(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_files(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
+	Error _import_parse_models(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_textures(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_materials(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_parse_meshes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
@@ -65,7 +67,8 @@ private:
 	Error _import_parse_nodes(Ref<G4MFState4D> p_g4mf_state, Dictionary &p_g4mf_json);
 	Error _import_infer_buffer_view_alignment(Ref<G4MFState4D> p_g4mf_state);
 	static void _import_assign_unique_item_names(const Ref<G4MFState4D> &p_g4mf_state, const Ref<G4MFItem4D> &p_item);
-	Node *_import_generate_scene_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root);
+	static void _import_handle_node_ownership(Node *p_node, Node *p_scene_root, Vector<uint64_t> *r_nodes_to_own);
+	Node *_import_generate_godot_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Node *p_scene_root, Vector<uint64_t> *r_nodes_to_own, Vector<uint64_t> *r_editable_instances);
 	Ref<Mesh4D> _import_generate_combined_mesh(const Ref<G4MFState4D> p_g4mf_state, const bool p_include_invisible = false);
 
 protected:
@@ -82,6 +85,9 @@ public:
 	Error import_read_from_byte_array(Ref<G4MFState4D> p_g4mf_state, const PackedByteArray &p_byte_array);
 	Error import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const String &p_abs_path);
 	Node *import_generate_godot_scene(Ref<G4MFState4D> p_g4mf_state);
+	Node *import_generate_godot_node(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent = nullptr, Node *p_scene_root = nullptr);
+	// Native helper for generating additional children before their scene owner is known.
+	Node *import_generate_godot_node_deferred(Ref<G4MFState4D> p_g4mf_state, const int p_node_index, Node *p_scene_parent, Vector<uint64_t> &r_nodes_to_own, Vector<uint64_t> &r_editable_instances);
 	Ref<Mesh4D> import_generate_godot_mesh(Ref<G4MFState4D> p_g4mf_state, const int p_which_mesh_index = -1, const bool p_include_invisible = false);
 
 	// Settings for both import and export.

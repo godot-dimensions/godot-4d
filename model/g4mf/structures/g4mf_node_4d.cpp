@@ -27,9 +27,6 @@ TypedArray<G4MFItem4D> G4MFNode4D::get_child_items() const {
 	if (_mesh_instance.is_valid()) {
 		child_items.append(_mesh_instance);
 	}
-	if (_model_instance.is_valid()) {
-		child_items.append(_model_instance);
-	}
 	if (_physics.is_valid()) {
 		child_items.append(_physics);
 	}
@@ -132,8 +129,12 @@ Ref<G4MFNode4D> G4MFNode4D::from_godot_node(Ref<G4MFState4D> p_g4mf_state, const
 
 Node *G4MFNode4D::import_generate_godot_node(const Ref<G4MFState4D> &p_g4mf_state, const Node *p_scene_parent) const {
 	Node *ret_node = nullptr;
-	if (_model_instance.is_valid()) {
-		ret_node = _model_instance->import_instantiate_model(p_g4mf_state);
+	if (_model_index != -1) {
+		TypedArray<G4MFModel4D> state_models = p_g4mf_state->get_g4mf_models();
+		ERR_FAIL_INDEX_V(_model_index, state_models.size(), nullptr);
+		Ref<G4MFModel4D> model = state_models[_model_index];
+		ERR_FAIL_COND_V(model.is_null(), nullptr);
+		ret_node = model->import_instantiate_model(p_g4mf_state);
 	}
 	if (_physics.is_valid()) {
 		ERR_FAIL_COND_V_MSG(ret_node != nullptr, ret_node, "G4MF import: Cannot have both physics and model on the same node.");
@@ -221,8 +222,8 @@ Ref<G4MFNode4D> G4MFNode4D::from_dictionary(const Dictionary &p_dict) {
 	if (p_dict.has("meshInstance")) {
 		node->_mesh_instance = G4MFMeshInstance4D::from_dictionary(p_dict["meshInstance"]);
 	}
-	if (p_dict.has("modelInstance")) {
-		node->_model_instance = G4MFModelInstance4D::from_dictionary(p_dict["modelInstance"]);
+	if (p_dict.has("model")) {
+		node->_model_index = (int)p_dict["model"];
 	}
 	if (p_dict.has("physics")) {
 		node->_physics = G4MFNodePhysics4D::from_dictionary(p_dict["physics"]);
@@ -276,8 +277,8 @@ Dictionary G4MFNode4D::to_dictionary(const bool p_prefer_basis) const {
 	if (_mesh_instance.is_valid()) {
 		dict["meshInstance"] = _mesh_instance->to_dictionary();
 	}
-	if (_model_instance.is_valid()) {
-		dict["modelInstance"] = _model_instance->to_dictionary();
+	if (_model_index >= 0) {
+		dict["model"] = _model_index;
 	}
 	if (_physics.is_valid()) {
 		dict["physics"] = _physics->to_dictionary();
@@ -377,8 +378,8 @@ void G4MFNode4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_physics", "physics"), &G4MFNode4D::set_physics);
 	ClassDB::bind_method(D_METHOD("get_mesh_instance"), &G4MFNode4D::get_mesh_instance);
 	ClassDB::bind_method(D_METHOD("set_mesh_instance", "mesh_instance"), &G4MFNode4D::set_mesh_instance);
-	ClassDB::bind_method(D_METHOD("get_model_instance"), &G4MFNode4D::get_model_instance);
-	ClassDB::bind_method(D_METHOD("set_model_instance", "model_instance"), &G4MFNode4D::set_model_instance);
+	ClassDB::bind_method(D_METHOD("get_model_index"), &G4MFNode4D::get_model_index);
+	ClassDB::bind_method(D_METHOD("set_model_index", "model_index"), &G4MFNode4D::set_model_index);
 
 	ClassDB::bind_method(D_METHOD("get_scene_node_path", "g4mf_state"), &G4MFNode4D::get_scene_node_path);
 
@@ -402,5 +403,5 @@ void G4MFNode4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "light", PROPERTY_HINT_RESOURCE_TYPE, "G4MFLight4D"), "set_light", "get_light");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "physics", PROPERTY_HINT_RESOURCE_TYPE, "G4MFNodePhysics4D"), "set_physics", "get_physics");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_instance", PROPERTY_HINT_RESOURCE_TYPE, "G4MFMeshInstance4D"), "set_mesh_instance", "get_mesh_instance");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "model_instance", PROPERTY_HINT_RESOURCE_TYPE, "G4MFModelInstance4D"), "set_model_instance", "get_model_instance");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "model_index"), "set_model_index", "get_model_index");
 }

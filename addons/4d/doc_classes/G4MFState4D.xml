@@ -197,6 +197,9 @@
 		<member name="g4mf_meshes" type="G4MFMesh4D[]" setter="set_g4mf_meshes" getter="get_g4mf_meshes" default="[]">
 			The array of [G4MFMesh4D]s in this G4MF file. If empty, the G4MF file does not have any meshes. Meshes are referenced by index in [G4MFNode4D]s.
 		</member>
+		<member name="g4mf_models" type="G4MFModel4D[]" setter="set_g4mf_models" getter="get_g4mf_models" default="[]">
+			The models in this G4MF file. Each model references a file and may define overrides or additional children. Nodes reference this array through [member G4MFNode4D.model_index].
+		</member>
 		<member name="g4mf_nodes" type="G4MFNode4D[]" setter="set_g4mf_nodes" getter="get_g4mf_nodes" default="[]">
 			The array of [G4MFNode4D]s in this G4MF file. If empty, the G4MF file does not have any nodes. If non-empty, the node at index 0 is the root node.
 		</member>

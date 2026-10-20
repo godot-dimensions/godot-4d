@@ -253,13 +253,6 @@ PackedByteArray G4MFFileReference4D::import_read_file_data(const Ref<G4MFState4D
 	ERR_FAIL_V_MSG(PackedByteArray(), "G4MF import: Failed to load file data, file reference does not have a valid URI or buffer view.");
 }
 
-Error G4MFFileReference4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) {
-	// This should be overridden by derived classes if they wish to add more complex logic during import.
-	Error result = OK;
-	GDVIRTUAL_CALL(_import_parse_file_data, p_g4mf_state, result);
-	return result;
-}
-
 Error G4MFFileReference4D::export_create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const {
 	ERR_FAIL_COND_V(!p_g4mf_state.is_valid(), ERR_INVALID_PARAMETER);
 	if (_file_uri.is_empty()) {
@@ -400,8 +393,6 @@ void G4MFFileReference4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("resolve_file_uri", "base_abs_path"), &G4MFFileReference4D::resolve_file_uri);
 
 	ClassDB::bind_method(D_METHOD("import_read_file_data", "g4mf_state", "read_from_cache"), &G4MFFileReference4D::import_read_file_data, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("import_parse_file_data", "g4mf_state"), &G4MFFileReference4D::import_parse_file_data);
-	GDVIRTUAL_BIND(_import_parse_file_data, "g4mf_state");
 
 	ClassDB::bind_method(D_METHOD("export_create_missing_directories_if_needed", "g4mf_state"), &G4MFFileReference4D::export_create_missing_directories_if_needed);
 	ClassDB::bind_method(D_METHOD("export_store_file_bytes", "data"), &G4MFFileReference4D::export_store_file_bytes);

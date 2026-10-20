@@ -21,6 +21,7 @@
 #include "model/g4mf/test_g4mf_material_4d.h"
 #include "model/g4mf/test_g4mf_mesh_4d.h"
 #include "model/g4mf/test_g4mf_mesh_surface_4d.h"
+#include "model/g4mf/test_g4mf_model_4d.h"
 #include "model/g4mf/test_g4mf_path_context_4d.h"
 #include "model/g4mf/test_g4mf_state_4d.h"
 #include "model/hox/test_hox_document_4d.h"

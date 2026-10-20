@@ -73,8 +73,8 @@
 		<member name="mesh_instance" type="G4MFMeshInstance4D" setter="set_mesh_instance" getter="get_mesh_instance">
 			The mesh instance of this [G4MFNode4D]. If this node is not a mesh instance, this is [code]null[/code]. If this node is a mesh instance, this will be a valid [G4MFMeshInstance4D] which references a valid [G4MFMesh4D] in the [G4MFState4D] and may reference a [G4MFMaterial4D] as well.
 		</member>
-		<member name="model_instance" type="G4MFModelInstance4D" setter="set_model_instance" getter="get_model_instance">
-			The model instance of this [G4MFNode4D]. If this node is not a model instance, this is [code]null[/code]. If this node is a model instance, this will be a valid [G4MFModelInstance4D] which references a valid [G4MFModel4D] in the [G4MFState4D]. Model instances are used to create entire hierarchies of nodes, such as from an embedded G4MF file.
+		<member name="model_index" type="int" setter="set_model_index" getter="get_model_index" default="-1">
+			The index of the model in [member G4MFState4D.g4mf_models], or [code]-1[/code] when this node does not instance a model. Each referencing node creates its own instance of the model hierarchy.
 		</member>
 		<member name="parent_index" type="int" setter="set_parent_index" getter="get_parent_index" default="-1">
 			The index of the parent node of this [G4MFNode4D]. This is the index of a [G4MFNode4D] in the [member G4MFState4D.g4mf_nodes] array. If this is the root node, this is [code]-1[/code].

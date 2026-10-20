@@ -6,7 +6,6 @@
 #include "g4mf_camera_4d.h"
 #include "g4mf_light_4d.h"
 #include "g4mf_mesh_instance_4d.h"
-#include "g4mf_model_instance_4d.h"
 #include "physics/g4mf_node_physics_4d.h"
 
 class G4MFNode4D : public G4MFItem4D {
@@ -19,8 +18,8 @@ class G4MFNode4D : public G4MFItem4D {
 	Ref<G4MFCamera4D> _camera;
 	Ref<G4MFLight4D> _light;
 	Ref<G4MFMeshInstance4D> _mesh_instance;
-	Ref<G4MFModelInstance4D> _model_instance;
 	Ref<G4MFNodePhysics4D> _physics;
+	int _model_index = -1;
 	bool _visible = true;
 
 	NodePath _make_node_path(const Vector<StringName> &p_path) const;
@@ -71,8 +70,8 @@ public:
 	Ref<G4MFMeshInstance4D> get_mesh_instance() const { return _mesh_instance; }
 	void set_mesh_instance(const Ref<G4MFMeshInstance4D> &p_mesh_instance) { _mesh_instance = p_mesh_instance; }
 
-	Ref<G4MFModelInstance4D> get_model_instance() const { return _model_instance; }
-	void set_model_instance(const Ref<G4MFModelInstance4D> &p_model_instance) { _model_instance = p_model_instance; }
+	int get_model_index() const { return _model_index; }
+	void set_model_index(const int p_model_index) { _model_index = p_model_index; }
 
 	virtual TypedArray<G4MFItem4D> get_child_items() const override;
 
