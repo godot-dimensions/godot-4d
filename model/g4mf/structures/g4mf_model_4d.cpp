@@ -4,12 +4,7 @@
 #include "../g4mf_document_4d.h"
 
 #if GDEXTENSION
-#include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/node3d.hpp>
-#include <godot_cpp/classes/project_settings.hpp>
-#elif GODOT_MODULE
-#include "core/config/project_settings.h"
-#include "core/io/dir_access.h"
 #endif
 
 Variant G4MFModel4D::get_model_g4mf_document() const {
@@ -22,26 +17,13 @@ void G4MFModel4D::set_model_g4mf_document(const Variant p_model_g4mf_document) {
 	_model_g4mf_document = g4mf_document;
 }
 
-// Godot actually has `String::path_to()` built-in, but unfortunately, it's not exposed,
-// so we can't use it here. Instead, just re-implement a bespoke function only for our needs.
-String G4MFModel4D::_get_relative_path_without_updir_dots(const String &p_original_path, const String &p_relative_to) {
-	// Ensure the paths use a consistent style.
-	const bool res_xor = p_original_path.begins_with("res://") != p_relative_to.begins_with("res://");
-	const ProjectSettings *ps = ProjectSettings::get_singleton();
-	const String original_path = (res_xor ? ps->globalize_path(p_original_path) : p_original_path).replace("\\", "/");
-	const String relative_to = (res_xor ? ps->globalize_path(p_relative_to) : p_relative_to).replace("\\", "/");
-	// Check for overlap.
-	int last_separator_index = -1;
-	for (int overlap = 0; overlap < original_path.length() && overlap < relative_to.length(); overlap++) {
-		if (original_path[overlap] != relative_to[overlap]) {
-			break;
-		}
-		if (original_path[overlap] == '/') {
-			last_separator_index = overlap;
-		}
+String G4MFModel4D::_get_model_path_stem(const String &p_path) {
+	String path = p_path;
+	// Treat a trailing .json as a wrapper suffix before removing the model's extension.
+	if (path.get_extension().to_lower() == "json") {
+		path = path.get_basename();
 	}
-	last_separator_index++;
-	return original_path.substr(last_separator_index, original_path.length() - last_separator_index);
+	return path.get_basename();
 }
 
 Error G4MFModel4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) {
@@ -93,6 +75,8 @@ Error G4MFModel4D::import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state) 
 	} else {
 		ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "G4MF import: G4MFModel4D: Unsupported model MIME type: " + mime_type);
 	}
+	_export_preferred_path_stem = _get_model_path_stem(file_uri_only);
+	_export_last_file_uri = file_uri_only;
 	return err;
 }
 
@@ -159,27 +143,49 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	}
 	ERR_FAIL_NULL_V(p_node, -1);
 	const String scene_file_path = p_node->get_scene_file_path();
-	const String target_path = _get_relative_path_without_updir_dots(scene_file_path, p_g4mf_state->get_source_path());
-	const String target_uri_without_extension = sanitize_file_path_uri(target_path.is_empty() ? String(p_node->get_name()) : target_path.get_basename(), true);
-	TypedArray<G4MFFileReference4D> g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
-	if (p_deduplicate && !target_uri_without_extension.is_empty()) {
-		for (int i = 0; i < g4mf_file_refs.size(); i++) {
-			Ref<G4MFModel4D> g4mf_model = g4mf_file_refs[i];
-			if (g4mf_model.is_valid() && g4mf_model->get_file_uri() == target_uri_without_extension) {
-				return i;
-			}
-		}
-	}
+	const String target_path = G4MFPathContext4D::get_source_placement_path(scene_file_path, p_g4mf_state->get_source_path());
+	const String target_stem = _get_model_path_stem(target_path);
+	const String target_uri_without_extension = sanitize_file_path_uri(target_path.is_empty() ? String(p_node->get_name()) : target_stem, true);
 	const int max_nested_scene_depth = model_g4mf_document->get_max_nested_scene_depth();
 	if (max_nested_scene_depth > 0) {
 		model_g4mf_document = model_g4mf_document->duplicate();
 		model_g4mf_document->set_max_nested_scene_depth(max_nested_scene_depth - 1);
+	}
+	TypedArray<G4MFFileReference4D> g4mf_file_refs = p_g4mf_state->get_g4mf_file_references();
+	if (p_deduplicate && !scene_file_path.is_empty()) {
+		for (int i = 0; i < g4mf_file_refs.size(); i++) {
+			Ref<G4MFModel4D> g4mf_model = g4mf_file_refs[i];
+			if (g4mf_model.is_null()) {
+				continue;
+			}
+			if (!g4mf_model->_export_allow_file_reuse || g4mf_model->_model_file_uri_path != scene_file_path) {
+				continue;
+			}
+			const Ref<G4MFDocument4D> existing_document = g4mf_model->_model_g4mf_document;
+			if (existing_document.is_null()) {
+				continue;
+			}
+			if (existing_document->get_max_nested_scene_depth() != model_g4mf_document->get_max_nested_scene_depth()) {
+				continue;
+			}
+			if (existing_document->get_encoding_format() != model_g4mf_document->get_encoding_format()) {
+				continue;
+			}
+			if (g4mf_model->_model_g4mf_state.is_valid() && g4mf_model->_model_g4mf_state->get_external_data_mode() != p_g4mf_state->get_external_data_mode()) {
+				continue;
+			}
+			return i;
+		}
 	}
 	// Create a new G4MFModel4D to hold a reference to the model data.
 	Ref<G4MFModel4D> g4mf_model;
 	g4mf_model.instantiate();
 	g4mf_model->set_model_g4mf_document(model_g4mf_document);
 	g4mf_model->set_file_uri(target_uri_without_extension);
+	g4mf_model->_export_preferred_path_stem = target_uri_without_extension;
+	g4mf_model->_export_last_file_uri = g4mf_model->get_file_uri();
+	g4mf_model->_model_file_uri_path = scene_file_path;
+	g4mf_model->_export_allow_file_reuse = p_deduplicate;
 	// Fill the G4MFModel4D with the model data.
 #ifdef MODULE_GLTF_ENABLED
 	if (Object::cast_to<Node3D>(p_node) != nullptr) {
@@ -192,6 +198,7 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 	{
 		Ref<G4MFState4D> model_g4mf_state;
 		model_g4mf_state.instantiate();
+		model_g4mf_state->use_path_context_of(p_g4mf_state);
 		model_g4mf_state->set_external_data_mode(p_g4mf_state->get_external_data_mode());
 		Error err = model_g4mf_document->export_append_from_godot_scene(model_g4mf_state, p_node);
 		ERR_FAIL_COND_V(err != OK, -1);
@@ -216,12 +223,15 @@ int G4MFModel4D::export_pack_nodes_into_model(const Variant p_g4mf_document, con
 Error G4MFModel4D::_export_prepare_for_serialization_internal(const Ref<G4MFState4D> &p_g4mf_state, const bool p_deduplicate) {
 	const Ref<G4MFDocument4D> model_g4mf_document = _model_g4mf_document;
 	ERR_FAIL_COND_V(model_g4mf_document.is_null(), ERR_INVALID_DATA);
-	const bool is_text_file = p_g4mf_state->is_text_file();
 	const bool should_separate_model_files = p_g4mf_state->should_separate_model_files();
+	// Embedded model writers always produce binary G4MF or GLB data.
+	const bool is_text_file = should_separate_model_files && p_g4mf_state->is_text_file();
 	// Determine the file extension and MIME type to use based on what data is available.
 	String file_extension;
 	String mime_type;
 	if (_model_g4mf_state.is_valid()) {
+		_model_g4mf_state->use_path_context_of(p_g4mf_state);
+		_model_g4mf_state->set_external_data_mode(p_g4mf_state->get_external_data_mode());
 		file_extension = is_text_file ? ".g4tf" : ".g4b";
 		mime_type = is_text_file ? "model/g4mf+json" : "model/g4mf-binary";
 	} else if (_model_off_document.is_valid()) {
@@ -237,20 +247,42 @@ Error G4MFModel4D::_export_prepare_for_serialization_internal(const Ref<G4MFStat
 	}
 	// Use the MIME type determined above as-is, and use the file extension to determine the path and name.
 	set_mime_type(mime_type);
-	String target_uri = get_file_uri();
-	if (target_uri.is_empty()) {
-		target_uri = get_item_name();
-		if (target_uri.is_empty()) {
+	const String file_uri = get_file_uri();
+	if (file_uri != _export_last_file_uri) {
+		// A caller supplied a new filename. Derive its stem independently of the selected output format.
+		_export_preferred_path_stem = _get_model_path_stem(file_uri);
+	}
+	if (_export_preferred_path_stem.is_empty()) {
+		_export_preferred_path_stem = get_item_name();
+		if (_export_preferred_path_stem.is_empty()) {
 			int64_t index_of_self = p_g4mf_state->get_g4mf_file_references().find(this);
-			target_uri = "model" + String::num_int64(index_of_self);
+			_export_preferred_path_stem = "model" + String::num_int64(index_of_self);
 		}
 	}
-	if (!target_uri.ends_with(file_extension)) {
-		target_uri += file_extension;
-	}
+	String target_uri = _export_preferred_path_stem + file_extension;
 	if (should_separate_model_files) {
-		set_unique_file_path_uri(p_g4mf_state, target_uri.trim_suffix(file_extension), file_extension);
-		target_uri = get_file_uri();
+		String source_path;
+		String usage_context;
+		if (_model_g4mf_state.is_valid()) {
+			if (p_deduplicate && _export_allow_file_reuse) {
+				source_path = _model_g4mf_state->get_source_path();
+			}
+			if (!source_path.is_empty()) {
+				// The source path is a separate part of the key; usage describes only the exported representation.
+				usage_context = String::num_int64(model_g4mf_document->get_max_nested_scene_depth()) + ":" +
+						String::num_int64(model_g4mf_document->get_encoding_format()) + ":" +
+						String::num_int64(_model_g4mf_state->get_external_data_mode()) + ":" + file_extension;
+			}
+		}
+		if (!usage_context.is_empty()) {
+			target_uri = p_g4mf_state->reserve_destination_path_for_source(source_path, usage_context, target_uri);
+			ERR_FAIL_COND_V(target_uri.is_empty(), ERR_CANT_CREATE);
+			set_file_uri_no_sanitize(target_uri);
+		} else {
+			set_unique_file_path_uri_from_stem(p_g4mf_state, target_uri.trim_suffix(file_extension), file_extension);
+			target_uri = get_file_uri();
+		}
+		_export_last_file_uri = get_file_uri();
 	}
 	if (get_item_name().is_empty() && (!should_separate_model_files || target_uri.contains("/"))) {
 		p_g4mf_state->assign_unique_item_name(Ref<G4MFItem4D>(this), target_uri.get_file());
@@ -274,7 +306,8 @@ Error G4MFModel4D::_export_prepare_for_serialization_internal(const Ref<G4MFStat
 		}
 	}
 	// Embed the model data into a buffer view. The URI must be empty in this case.
-	set_unique_file_path_uri(p_g4mf_state, "", "");
+	set_unique_file_path_uri_from_stem(p_g4mf_state, "", "");
+	_export_last_file_uri = get_file_uri();
 	PackedByteArray model_bytes;
 	if (_model_g4mf_state.is_valid()) {
 		model_bytes = model_g4mf_document->export_write_to_byte_array(_model_g4mf_state);

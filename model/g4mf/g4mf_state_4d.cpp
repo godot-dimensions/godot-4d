@@ -116,7 +116,7 @@ bool G4MFState4D::unreserve_unique_name(const String &p_name) {
 		++iter;
 		if (current->key.to_lower() == lower_name) {
 			if (current->value.is_valid()) {
-				_item_ids_to_unique_names.erase(current->value->get_instance_id());
+				_item_inst_ids_to_unique_names.erase(current->value->get_instance_id());
 			}
 			_unique_names_to_items.remove(current);
 			return true;
@@ -161,67 +161,92 @@ Ref<G4MFItem4D> G4MFState4D::get_item_by_name(const String &p_name) const {
 	return Ref<G4MFItem4D>();
 }
 
-void G4MFState4D::assign_unique_path_uri(const Ref<G4MFFileReference4D> &p_file_reference, const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning) {
+void G4MFState4D::assign_unique_path_uri_from_stem(const Ref<G4MFFileReference4D> &p_file_reference, const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning) {
 	ERR_FAIL_COND(p_file_reference.is_null());
-	// Validate before releasing ownership: an invalid path must not clear the file reference.
-	// Sanitation warnings are printed by reserve_unique_path_uri() after validation succeeds.
-	String sanitized_ext;
-	const String sanitized_path = G4MFFileReference4D::sanitize_path_uri(p_requested_path_stem, p_extension, false, sanitized_ext);
-	if ((!p_requested_path_stem.is_empty() || !p_extension.is_empty()) && sanitized_path.is_empty()) {
-		return;
+	if (_path_context.is_null()) {
+		_path_context.instantiate();
 	}
-	// Release this file reference's previous reservations before choosing its new path.
-	for (HashMap<String, Ref<G4MFFileReference4D>>::Iterator iter = _unique_path_uris_to_file_references.begin(); iter;) {
-		const HashMap<String, Ref<G4MFFileReference4D>>::Iterator current = iter;
-		++iter;
-		if (current->value == p_file_reference) {
-			_unique_path_uris_to_file_references.remove(current);
-		}
-	}
-	const String unique_path_uri = reserve_unique_path_uri(p_requested_path_stem, p_extension, p_print_warning);
-	if (!unique_path_uri.is_empty()) {
-		_unique_path_uris_to_file_references[unique_path_uri] = p_file_reference;
-	}
-	p_file_reference->set_file_uri_no_sanitize(unique_path_uri);
+	_path_context->assign_unique_path_uri_from_stem(p_file_reference, p_requested_path_stem, p_extension, _g4mf_base_path, p_print_warning);
 }
 
-String G4MFState4D::reserve_unique_path_uri(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning) {
-	String sanitized_ext;
-	String unique_path_uri = G4MFFileReference4D::sanitize_path_uri(p_requested_path_stem, p_extension, p_print_warning, sanitized_ext);
-	if (unique_path_uri.is_empty()) {
-		return String();
+void G4MFState4D::assign_unique_path_uri(const Ref<G4MFFileReference4D> &p_file_reference, const String &p_requested_path_uri, const bool p_print_warning) {
+	ERR_FAIL_COND(p_file_reference.is_null());
+	if (_path_context.is_null()) {
+		_path_context.instantiate();
 	}
-	const String sanitized_stem = unique_path_uri.trim_suffix(sanitized_ext);
-	String lower_unique_path_uri = unique_path_uri.to_lower();
-	uint64_t discriminator = 2;
-	bool found_any_conflict = false;
-	// Filesystem path URIs are always treated case-insensitively.
-	while (true) {
-		bool case_insensitive_conflict = false;
-		for (const KeyValue<String, Ref<G4MFFileReference4D>> &existing_pair : _unique_path_uris_to_file_references) {
-			if (existing_pair.key.to_lower() == lower_unique_path_uri) {
-				// Attempt a new unique name by appending a discriminator.
-				unique_path_uri = sanitized_stem + String::num_uint64(discriminator) + sanitized_ext;
-				lower_unique_path_uri = unique_path_uri.to_lower();
-				discriminator++;
-				case_insensitive_conflict = true;
-				found_any_conflict = true;
-			}
-		}
-		if (!case_insensitive_conflict) {
-			break;
-		}
-	}
-	if (p_print_warning && found_any_conflict) {
-		WARN_PRINT("G4MFState4D: The requested path URI " + p_requested_path_stem + " (sanitized to " + sanitized_stem + ") is already in use. The path URI " + unique_path_uri + " will be used instead.");
-	}
-	_unique_path_uris_to_file_references[unique_path_uri] = Ref<G4MFFileReference4D>();
-	return unique_path_uri;
+	_path_context->assign_unique_path_uri(p_file_reference, p_requested_path_uri, _g4mf_base_path, p_print_warning);
 }
 
-void G4MFState4D::set_g4mf_file_path(const String &p_g4mf_file_path) {
-	_g4mf_base_path = p_g4mf_file_path.get_base_dir();
-	_g4mf_filename = p_g4mf_file_path.get_file();
+String G4MFState4D::reserve_unique_path_uri_from_stem(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning) {
+	if (_path_context.is_null()) {
+		_path_context.instantiate();
+	}
+	return _path_context->reserve_unique_path_uri_from_stem(p_requested_path_stem, p_extension, _g4mf_base_path, p_print_warning);
+}
+
+String G4MFState4D::reserve_destination_path_for_source(const String &p_source_abs_path, const String &p_usage_context, const String &p_requested_path, const bool p_print_warning) {
+	if (_path_context.is_null()) {
+		_path_context.instantiate();
+	}
+	// An absolute path may be reserved at any time, though all paths should usually be reserved later in the process.
+	if (p_requested_path.is_absolute_path()) {
+		return _path_context->reserve_destination_abs_path_for_source(p_source_abs_path, p_usage_context, p_requested_path, p_print_warning);
+	}
+	// A relative path may only be reserved after the destination path is known.
+	ERR_FAIL_COND_V(_g4mf_filename.is_empty(), String());
+	const String referencing_destination_abs_path = get_g4mf_file_path();
+	return _path_context->reserve_destination_path_for_source(p_source_abs_path, _source_path, p_usage_context, referencing_destination_abs_path, p_requested_path, p_print_warning);
+}
+
+String G4MFState4D::reserve_destination_usage_path(const String &p_usage_context, const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning) {
+	ERR_FAIL_COND_V(_g4mf_filename.is_empty(), String());
+	if (_path_context.is_null()) {
+		_path_context.instantiate();
+	}
+	return _path_context->reserve_destination_usage_path(get_g4mf_file_path(), p_usage_context, p_requested_path_stem, p_extension, p_print_warning);
+}
+
+void G4MFState4D::mark_path_as_reserved(const String &p_path) {
+	// Mark the caller's chosen location without sanitizing it or selecting a unique replacement.
+	if (_path_context.is_null()) {
+		_path_context.instantiate();
+	}
+	if (p_path.is_absolute_path()) {
+		_path_context->mark_path_as_reserved(p_path);
+	} else {
+		_path_context->mark_path_as_reserved(_g4mf_base_path.path_join(p_path));
+	}
+}
+
+void G4MFState4D::reset_path_context() {
+	// Detach this state without clearing reservations still used by other states sharing the context.
+	_path_context.unref();
+}
+
+void G4MFState4D::use_path_context_of(const Ref<G4MFState4D> &p_other_state) {
+	// Direction is intentional: this state adopts the other state's shared context and external data mode.
+	ERR_FAIL_COND(p_other_state.is_null());
+	if (p_other_state->_path_context.is_null()) {
+		p_other_state->_path_context.instantiate();
+	}
+	_path_context = p_other_state->_path_context;
+	_external_data_mode = p_other_state->_external_data_mode;
+}
+
+void G4MFState4D::set_g4mf_file_path(const String &p_g4mf_file_abs_path) {
+	ERR_FAIL_COND_MSG(!p_g4mf_file_abs_path.is_empty() && !p_g4mf_file_abs_path.is_absolute_path(), "G4MF: The file path must be absolute, including res:// or user://.");
+	_g4mf_base_path = p_g4mf_file_abs_path.get_base_dir();
+	_g4mf_filename = p_g4mf_file_abs_path.get_file();
+}
+
+void G4MFState4D::set_g4mf_base_path(const String &p_g4mf_base_abs_path) {
+	ERR_FAIL_COND_MSG(!p_g4mf_base_abs_path.is_empty() && !p_g4mf_base_abs_path.is_absolute_path(), "G4MF: The base path must be absolute, including res:// or user://.");
+	_g4mf_base_path = p_g4mf_base_abs_path;
+}
+
+void G4MFState4D::set_source_path(const String &p_source_abs_path) {
+	ERR_FAIL_COND_MSG(!p_source_abs_path.is_empty() && !p_source_abs_path.is_absolute_path(), "G4MF: The source path must be absolute, including res:// or user://.");
+	_source_path = p_source_abs_path;
 }
 
 bool G4MFState4D::is_text_file() const {
@@ -303,20 +328,25 @@ void G4MFState4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("unreserve_unique_name", "name"), &G4MFState4D::unreserve_unique_name);
 	ClassDB::bind_method(D_METHOD("get_item_by_name", "name"), &G4MFState4D::get_item_by_name);
 
-	ClassDB::bind_method(D_METHOD("assign_unique_path_uri", "file_reference", "requested_path_stem", "extension", "print_warning"), &G4MFState4D::assign_unique_path_uri, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("reserve_unique_path_uri", "requested_path_stem", "extension", "print_warning"), &G4MFState4D::reserve_unique_path_uri, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("assign_unique_path_uri_from_stem", "file_reference", "requested_path_stem", "extension", "print_warning"), &G4MFState4D::assign_unique_path_uri_from_stem, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("reserve_unique_path_uri_from_stem", "requested_path_stem", "extension", "print_warning"), &G4MFState4D::reserve_unique_path_uri_from_stem, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("reserve_destination_path_for_source", "source_abs_path", "usage_context", "requested_path", "print_warning"), &G4MFState4D::reserve_destination_path_for_source, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("reserve_destination_usage_path", "usage_context", "requested_path_stem", "extension", "print_warning"), &G4MFState4D::reserve_destination_usage_path, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("mark_path_as_reserved", "path"), &G4MFState4D::mark_path_as_reserved);
+	ClassDB::bind_method(D_METHOD("reset_path_context"), &G4MFState4D::reset_path_context);
+	ClassDB::bind_method(D_METHOD("use_path_context_of", "other_state"), &G4MFState4D::use_path_context_of);
 
 	ClassDB::bind_method(D_METHOD("get_declared_dimension"), &G4MFState4D::get_declared_dimension);
 
 	// Path data for the file.
 	ClassDB::bind_method(D_METHOD("get_g4mf_file_path"), &G4MFState4D::get_g4mf_file_path);
-	ClassDB::bind_method(D_METHOD("set_g4mf_file_path", "g4mf_file_path"), &G4MFState4D::set_g4mf_file_path);
+	ClassDB::bind_method(D_METHOD("set_g4mf_file_path", "g4mf_file_abs_path"), &G4MFState4D::set_g4mf_file_path);
 	ClassDB::bind_method(D_METHOD("get_g4mf_base_path"), &G4MFState4D::get_g4mf_base_path);
-	ClassDB::bind_method(D_METHOD("set_g4mf_base_path", "g4mf_base_path"), &G4MFState4D::set_g4mf_base_path);
+	ClassDB::bind_method(D_METHOD("set_g4mf_base_path", "g4mf_base_abs_path"), &G4MFState4D::set_g4mf_base_path);
 	ClassDB::bind_method(D_METHOD("get_g4mf_filename"), &G4MFState4D::get_g4mf_filename);
 	ClassDB::bind_method(D_METHOD("set_g4mf_filename", "g4mf_filename"), &G4MFState4D::set_g4mf_filename);
 	ClassDB::bind_method(D_METHOD("get_source_path"), &G4MFState4D::get_source_path);
-	ClassDB::bind_method(D_METHOD("set_source_path", "source_path"), &G4MFState4D::set_source_path);
+	ClassDB::bind_method(D_METHOD("set_source_path", "source_abs_path"), &G4MFState4D::set_source_path);
 
 	// Settings for handling the file.
 	ClassDB::bind_method(D_METHOD("is_text_file"), &G4MFState4D::is_text_file);

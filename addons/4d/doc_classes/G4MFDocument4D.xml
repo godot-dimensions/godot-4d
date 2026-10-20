@@ -49,9 +49,10 @@
 		<method name="export_write_to_file">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="path" type="String" />
+			<param index="1" name="abs_path" type="String" />
 			<description>
-				Part of the export process. Writes a [G4MFState4D] to a G4MF file on disk at the given [param path]. The file may have a [code]".g4tf"[/code] file extension to export it as a Good 4D model Text File, or a [code]".g4b"[/code] file extension to export it as a Good 4D model Binary file.
+				The [param abs_path] must be absolute, including [code]res://[/code] or [code]user://[/code]. Relative paths are rejected with [constant @GlobalScope.ERR_INVALID_PARAMETER].
+				Part of the export process. Writes a [G4MFState4D] to a G4MF file on disk at the given [param abs_path]. The file may have a [code]".g4tf"[/code] file extension to export it as a Good 4D model Text File, or a [code]".g4b"[/code] file extension to export it as a Good 4D model Binary file.
 				To export a scene to a G4MF, first call [method export_append_from_godot_scene], then call either this function, or [method export_write_to_byte_array] if you want the data in memory instead of on disk.
 			</description>
 		</method>
@@ -84,9 +85,10 @@
 		<method name="import_read_from_file">
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
-			<param index="1" name="path" type="String" />
+			<param index="1" name="abs_path" type="String" />
 			<description>
-				Part of the import process. Reads a G4MF file at the given [param path] and populates a [G4MFState4D]. To import a G4MF file, first call this function, then call [method import_generate_godot_scene]. This can be used with either a [code]".g4tf"[/code] Good 4D model Text File or a [code]".g4b"[/code] Good 4D model Binary file. This checks the magic number, meaning f the file extension is not correct, the file will be read correctly anyway.
+				The [param abs_path] must be absolute, including [code]res://[/code] or [code]user://[/code]. Relative paths are rejected with [constant @GlobalScope.ERR_INVALID_PARAMETER].
+				Part of the import process. Reads a G4MF file at the given [param abs_path] and populates a [G4MFState4D]. To import a G4MF file, first call this function, then call [method import_generate_godot_scene]. This can be used with either a [code]".g4tf"[/code] Good 4D model Text File or a [code]".g4b"[/code] Good 4D model Binary file. This checks the magic number, meaning f the file extension is not correct, the file will be read correctly anyway.
 			</description>
 		</method>
 	</methods>

@@ -10,6 +10,7 @@
 #include "structures/g4mf_mesh_4d.h"
 #include "structures/g4mf_node_4d.h"
 #include "structures/g4mf_texture_4d.h"
+#include "structures/internal/g4mf_path_context_4d.h"
 #include "structures/physics/g4mf_shape_4d.h"
 
 class G4MFState4D : public G4MFItem4D {
@@ -40,7 +41,7 @@ private:
 	TypedArray<Node> _godot_nodes;
 	HashMap<uint64_t, String> _item_inst_ids_to_unique_names;
 	HashMap<String, Ref<G4MFItem4D>> _unique_names_to_items;
-	HashMap<String, Ref<G4MFFileReference4D>> _unique_path_uris_to_file_references;
+	Ref<G4MFPathContext4D> _path_context;
 	Dictionary _g4mf_json;
 	int _declared_dimension = 4;
 
@@ -102,8 +103,14 @@ public:
 	bool has_unique_name(const String &p_name) const;
 	Ref<G4MFItem4D> get_item_by_name(const String &p_name) const;
 
-	void assign_unique_path_uri(const Ref<G4MFFileReference4D> &p_file_reference, const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning = true);
-	String reserve_unique_path_uri(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning = true);
+	void assign_unique_path_uri_from_stem(const Ref<G4MFFileReference4D> &p_file_reference, const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning = true);
+	void assign_unique_path_uri(const Ref<G4MFFileReference4D> &p_file_reference, const String &p_requested_path_uri, const bool p_print_warning = true);
+	String reserve_unique_path_uri_from_stem(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning = true);
+	String reserve_destination_path_for_source(const String &p_source_abs_path, const String &p_usage_context, const String &p_requested_path, const bool p_print_warning = true);
+	String reserve_destination_usage_path(const String &p_usage_context, const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning = true);
+	void mark_path_as_reserved(const String &p_path);
+	void reset_path_context();
+	void use_path_context_of(const Ref<G4MFState4D> &p_other_state);
 
 	int get_declared_dimension() const { return _declared_dimension; }
 	// Do not expose this setter! It has exactly one usage in G4MFDocument4D when importing a file.
@@ -111,16 +118,16 @@ public:
 
 	// Path data for the file.
 	String get_g4mf_file_path() const { return _g4mf_base_path.path_join(_g4mf_filename); }
-	void set_g4mf_file_path(const String &p_g4mf_file_path);
+	void set_g4mf_file_path(const String &p_g4mf_file_abs_path);
 
 	String get_g4mf_base_path() const { return _g4mf_base_path; }
-	void set_g4mf_base_path(const String &p_g4mf_base_path) { _g4mf_base_path = p_g4mf_base_path; }
+	void set_g4mf_base_path(const String &p_g4mf_base_abs_path);
 
 	String get_g4mf_filename() const { return _g4mf_filename; }
 	void set_g4mf_filename(const String &p_g4mf_filename) { _g4mf_filename = p_g4mf_filename; }
 
 	String get_source_path() const { return _source_path; }
-	void set_source_path(const String &p_source_path) { _source_path = p_source_path; }
+	void set_source_path(const String &p_source_abs_path);
 
 	// Settings for handling the file.
 	ExternalDataMode get_external_data_mode() const { return _external_data_mode; }

@@ -7,6 +7,8 @@ class G4MFFileReference4D : public G4MFItem4D {
 
 	// Internal cache for file data.
 	PackedByteArray _file_data_cache;
+	// Preferred output path stem, independent of generated extensions and collision suffixes.
+	String _export_preferred_path_stem;
 
 	// Contents of the JSON file reference object.
 	int _buffer_view_index = -1;
@@ -20,7 +22,11 @@ protected:
 public:
 	static String sanitize_file_extension(const String &p_extension, const bool p_print_warning);
 	static String sanitize_file_path_uri(const String &p_desired_file_path, const bool p_print_warning);
-	static String sanitize_path_uri(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning, String &r_sanitized_ext);
+	static String sanitize_file_path_uri_from_stem(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning, String &r_sanitized_ext);
+
+	// Native export bookkeeping, not serialized properties.
+	String get_export_preferred_path_stem() const { return _export_preferred_path_stem; }
+	void set_export_preferred_path_stem(const String &p_stem) { _export_preferred_path_stem = p_stem; }
 
 	// Contents of the JSON file reference object.
 	int get_buffer_view_index() const { return _buffer_view_index; }
@@ -32,17 +38,13 @@ public:
 	String get_file_uri() const { return _file_uri; }
 	void set_file_uri(const String &p_file_uri);
 	void set_file_uri_no_sanitize(const String &p_file_uri);
-	void set_unique_file_path_uri(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_path_stem, const String &p_file_ext, const bool p_print_warning = true);
-	void set_unique_file_path_combined_uri(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_file_uri, const bool p_print_warning = true);
+	void set_unique_file_path_uri_from_stem(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_path_stem, const String &p_file_ext, const bool p_print_warning = true);
+	void set_unique_file_path_uri(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_file_uri, const bool p_print_warning = true);
 
-	String resolve_file_uri(const String &p_base_path) const;
+	String resolve_file_uri(const String &p_base_abs_path) const;
 	PackedByteArray import_read_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_read_from_cache = true);
 	virtual Error import_parse_file_data(const Ref<G4MFState4D> &p_g4mf_state);
-#ifdef GDEXTENSION
 	GDVIRTUAL1R(Error, _import_parse_file_data, Ref<Resource>);
-#else // GODOT_MODULE
-	GDVIRTUAL1R(Error, _import_parse_file_data, Ref<G4MFState4D>);
-#endif
 
 	Error export_create_missing_directories_if_needed(const Ref<G4MFState4D> &p_g4mf_state) const;
 	void export_assign_name_if_empty(const Ref<G4MFState4D> &p_g4mf_state);

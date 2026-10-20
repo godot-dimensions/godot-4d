@@ -32,8 +32,14 @@ class G4MFModel4D : public G4MFFileReference4D {
 	Ref<GLTFState> _model_gltf_state;
 #endif
 	String _model_file_uri_path = "";
+	// Keep the preferred stem independent of generated extensions and collision suffixes.
+	String _export_preferred_path_stem;
+	// Distinguish a caller's URI edit from the result of the previous preparation, including embedding.
+	String _export_last_file_uri;
+	// Preserve the conversion caller's deduplication opt-out when preparing external files.
+	bool _export_allow_file_reuse = true;
 
-	static String _get_relative_path_without_updir_dots(const String &p_original_path, const String &p_relative_to);
+	static String _get_model_path_stem(const String &p_path);
 
 protected:
 	static void _bind_methods();

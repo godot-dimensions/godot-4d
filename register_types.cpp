@@ -115,6 +115,7 @@
 #include <godot_cpp/classes/engine.hpp>
 // GDExtension has a nervous breakdown whenever singleton or casted classes are not registered.
 // We don't need to register these in principle, and we don't need it for a module, just for GDExtension.
+#include "model/g4mf/structures/internal/g4mf_path_context_4d.h"
 #include "render/environment/render_bridge_4d_to_3d.h"
 #include "render/wireframe_canvas/wireframe_render_canvas_4d.h"
 #include "voxel/voxel_chunk_loader_4d.h"
@@ -311,6 +312,7 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(VoxelMaterialPalette4D);
 		GDREGISTER_CLASS(VoxelWorld4D);
 #if GDEXTENSION
+		GDREGISTER_INTERNAL_CLASS(G4MFPathContext4D);
 		GDREGISTER_INTERNAL_CLASS(VoxelChunkLoader4D);
 		GDREGISTER_CLASS(AxisAlignedBoxPhysicsEngine4D);
 		GDREGISTER_CLASS(GhostPhysicsEngine4D);

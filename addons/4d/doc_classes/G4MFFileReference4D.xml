@@ -5,7 +5,7 @@
 	</brief_description>
 	<description>
 		G4MFFileReference4D is used whenever G4MF files need to reference data that could be found in an external file, such as an image file, model file, audio file, or any other file. All file references are required to define the file's MIME type, and may refer to stored data either in a buffer view or an external file URI.
-		Export preparation assigns a unique [member Resource.resource_name] when the file reference has no item name. The name is derived from its URI filename without the extension, or its index in the containing state's file references. Characters disallowed in item names are sanitized. Existing names are preserved. This name identifies the file reference independently of its URI and remains available when the data is embedded.
+		Export preparation assigns a unique [member Resource.resource_name] when the file reference has no item name. The name is derived from its preferred output path stem, its URI filename without the extension, or its index in the containing state's file references. Characters disallowed in item names are sanitized. Existing names are preserved. This name identifies the file reference independently of its URI and remains available when the data is embedded.
 	</description>
 	<tutorials>
 		<link title="G4MF File Reference Specification">https://github.com/godot-dimensions/g4mf/blob/main/specification/parts/core.md#file-references</link>
@@ -15,7 +15,7 @@
 	<methods>
 		<method name="_import_parse_file_data" qualifiers="virtual">
 			<return type="int" enum="Error" />
-			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="0" name="g4mf_state" type="Resource" />
 			<description>
 				Callback method that should be used to parse the file data. Do not call this method. This can be overridden by derived classes when creating a custom file reference type in GDScript or another scripting language. See [method import_parse_file_data] for details.
 			</description>
@@ -48,7 +48,7 @@
 			<return type="int" enum="Error" />
 			<param index="0" name="g4mf_state" type="G4MFState4D" />
 			<description>
-				Writes the cached bytes to the nonempty [member file_uri], resolved against the parent state's base path. Missing directories are created as needed. On success, [member buffer_view_index] is reset to [code]-1[/code].
+				Writes the cached bytes to the nonempty [member file_uri], resolved against the parent state's base path. A relative URI requires an absolute base path, including [code]res://[/code] or [code]user://[/code]. Missing directories are created as needed. On success, [member buffer_view_index] is reset to [code]-1[/code].
 			</description>
 		</method>
 		<method name="import_parse_file_data">
@@ -76,9 +76,36 @@
 		</method>
 		<method name="resolve_file_uri" qualifiers="const">
 			<return type="String" />
-			<param index="0" name="base_path" type="String" />
+			<param index="0" name="base_abs_path" type="String" />
 			<description>
-				Resolves a filesystem [member file_uri] against [param base_path]. Absolute paths, including [code]res://[/code], [code]user://[/code], Windows drives, and network shares, are returned unchanged. Relative paths are joined onto [param base_path]. An empty [member file_uri] returns an empty string.
+				Resolves a filesystem [member file_uri] against [param base_abs_path]. Absolute paths, including [code]res://[/code], [code]user://[/code], Windows drives, and network shares, are returned unchanged. Relative paths require an absolute [param base_abs_path] and are joined onto it. A missing or relative base for a relative URI returns an empty string with an error. An empty [member file_uri] returns an empty string.
+			</description>
+		</method>
+		<method name="sanitize_file_extension" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="extension" type="String" />
+			<param index="1" name="print_warning" type="bool" default="true" />
+			<description>
+				Returns a lowercase extension containing only ASCII letters, digits, and dots. Disallowed characters are removed, and a trailing dot is replaced with an underscore. Preserves whether the input includes a leading dot and supports multipart extensions such as [code]tar.gz[/code]. If [param print_warning] is [code]true[/code], changes to disallowed characters print warnings.
+			</description>
+		</method>
+		<method name="sanitize_file_path_uri" qualifiers="static">
+			<return type="String" />
+			<param index="0" name="desired_file_path" type="String" />
+			<param index="1" name="print_warning" type="bool" default="true" />
+			<description>
+				Returns a sanitized filesystem path URI with lowercase snake_case directory and file names, preserving digit attachment. Converts backslashes and resolves redundant separators and dot segments. Filesystem roots, including [code]res://[/code], [code]user://[/code], drive letters, and network server/share names, retain their spelling. Unresolved leading [code]..[/code] segments are preserved for relative paths.
+				Replaces characters disallowed in filesystem path URIs and avoids Windows reserved names. Rejects paths naming only a directory, traversing above a root, or using a non-filesystem URI protocol, returning an empty string with an error. Empty input returns an empty string. If [param print_warning] is [code]true[/code], sanitation warnings are printed. This does not reserve the path or check uniqueness.
+			</description>
+		</method>
+		<method name="set_unique_file_path_uri">
+			<return type="void" />
+			<param index="0" name="g4mf_state" type="G4MFState4D" />
+			<param index="1" name="desired_file_uri" type="String" />
+			<param index="2" name="print_warning" type="bool" default="true" />
+			<description>
+				Sanitizes, reserves, and assigns a unique filesystem [member file_uri] using the non-null [param g4mf_state]'s shared path context. Splits the filename at its first dot so multipart extensions remain together when resolving collisions: [code]archive.tar.gz[/code] becomes [code]archive2.tar.gz[/code] if needed.
+				Releases this reference's previous owned path reservation, while preserving independent reservations. Empty input clears the URI and releases ownership. Invalid input leaves both unchanged. See [method G4MFState4D.assign_unique_path_uri_from_stem] to supply a filename stem and extension separately.
 			</description>
 		</method>
 		<method name="write_file_reference_entries_to_dictionary" qualifiers="const">

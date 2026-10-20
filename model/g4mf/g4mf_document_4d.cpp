@@ -346,7 +346,10 @@ Error G4MFDocument4D::_export_serialize_buffer_data_to_uri(Ref<G4MFState4D> p_g4
 		Dictionary json_buffer_dict = json_buffers[buffer_index];
 		PackedByteArray compressed_buffer = _export_encode_chunk_data(p_g4mf_state, state_buffers[buffer_index]);
 		if (p_should_separate_buffers_into_files) {
-			const String buffer_rel_path = G4MFFileReference4D::sanitize_file_path_uri(file_prefix + String("_buffer") + String::num_int64(buffer_index) + String(".bin"), false);
+			// Rewriting this containing file reuses its sidecar; another destination gets its own allocation.
+			const String buffer_usage = "buffer:" + String::num_int64(buffer_index);
+			const String buffer_rel_path = p_g4mf_state->reserve_destination_usage_path(buffer_usage, file_prefix + String("_buffer") + String::num_int64(buffer_index), ".bin", false);
+			ERR_FAIL_COND_V(buffer_rel_path.is_empty(), ERR_CANT_CREATE);
 			const String buffer_path = p_g4mf_state->get_g4mf_base_path().path_join(buffer_rel_path);
 			Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::WRITE);
 			if (file.is_valid()) {
@@ -828,7 +831,10 @@ Error G4MFDocument4D::_import_parse_buffers(Ref<G4MFState4D> p_g4mf_state, Dicti
 	for (int64_t buffer_index = 0; buffer_index < buffer_count; buffer_index++) {
 		const Dictionary json_buffer = json_buffers[buffer_index];
 		const String uri = json_buffer.get("uri", String());
-		const String buffer_path = uri.is_empty() || uri.begins_with("data:") ? p_g4mf_state->get_g4mf_file_path() : p_g4mf_state->get_g4mf_base_path().path_join(uri);
+		String buffer_path = p_g4mf_state->get_g4mf_file_path();
+		if (!uri.is_empty() && !uri.begins_with("data:")) {
+			buffer_path = uri.is_absolute_path() ? uri : p_g4mf_state->get_g4mf_base_path().path_join(uri);
+		}
 		ERR_FAIL_COND_V_MSG(!json_buffer.has("byteLength"), ERR_INVALID_DATA, "G4MF import: Buffer is missing required field 'byteLength'. Aborting file import. File: " + buffer_path);
 		// If the buffer is encoded, this refers to the byte length after decoding.
 		const int64_t declared_decoded_byte_length = json_buffer["byteLength"];
@@ -850,8 +856,10 @@ Error G4MFDocument4D::_import_parse_buffers(Ref<G4MFState4D> p_g4mf_state, Dicti
 				const PackedByteArray raw_data = CoreBind::Marshalls::get_singleton()->base64_to_raw(split[1]);
 				buffer = _import_decode_chunk_data(raw_data, (int64_t)0, raw_data.size(), (EncodingFormat)encoding_indicator);
 			} else {
+				ERR_FAIL_COND_V_MSG(!buffer_path.is_absolute_path(), ERR_INVALID_PARAMETER, "G4MF import: A relative buffer URI requires an absolute G4MF base path.");
 				// Infer the external data mode on import in case the user wishes to round-trip the G4MF file back out of Godot later.
 				p_g4mf_state->set_external_data_mode(G4MFState4D::EXTERNAL_DATA_MODE_SEPARATE_BINARY_BLOBS);
+				p_g4mf_state->mark_path_as_reserved(buffer_path);
 				Ref<FileAccess> file = FileAccess::open(buffer_path, FileAccess::READ);
 				if (file.is_valid()) {
 					const PackedByteArray raw_data = file->get_buffer(file->get_length());
@@ -1302,6 +1310,7 @@ Ref<Mesh4D> G4MFDocument4D::_import_generate_combined_mesh(const Ref<G4MFState4D
 // Public functions.
 
 Error G4MFDocument4D::export_append_from_godot_scene(Ref<G4MFState4D> p_g4mf_state, Node *p_scene_root) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
 	ERR_FAIL_COND_V_MSG(p_scene_root == nullptr, ERR_INVALID_PARAMETER, "G4MF export: Cannot export a scene without a root node. File: " + p_g4mf_state->get_g4mf_file_path());
 	p_g4mf_state->set_source_path(p_scene_root->get_scene_file_path());
 	const Error err = _export_convert_scene_node(p_g4mf_state, p_scene_root, -1);
@@ -1388,9 +1397,10 @@ PackedByteArray G4MFDocument4D::export_write_to_byte_array(Ref<G4MFState4D> p_g4
 	return bytes;
 }
 
-Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
+Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const String &p_abs_path) {
 	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
-	const String base_dir = ProjectSettings::get_singleton()->globalize_path(p_path.get_base_dir());
+	ERR_FAIL_COND_V_MSG(!p_abs_path.is_absolute_path(), ERR_INVALID_PARAMETER, "G4MF export: The destination path must be absolute, including res:// or user://.");
+	const String base_dir = ProjectSettings::get_singleton()->globalize_path(p_abs_path.get_base_dir());
 	Error err;
 	if (!base_dir.is_empty()) {
 		err = DirAccess::make_dir_recursive_absolute(base_dir);
@@ -1398,9 +1408,11 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 	}
 	// NOTE: This will break the URIs if the destination path already exists with some capital letters.
 	// Prefer using only lowercase in existing destination paths to avoid case mismatches.
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
-	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF export: Failed to open file for writing: " + p_path);
-	p_g4mf_state->set_g4mf_file_path(base_dir.path_join(p_path.get_file()));
+	Ref<FileAccess> file = FileAccess::open(p_abs_path, FileAccess::WRITE);
+	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF export: Failed to open file for writing: " + p_abs_path);
+	p_g4mf_state->set_g4mf_file_path(base_dir.path_join(p_abs_path.get_file()));
+	// Reserve the requested main filename before nested models and sidecars choose their destinations.
+	p_g4mf_state->mark_path_as_reserved(p_abs_path.get_file());
 	err = _export_prepare_for_serialization(p_g4mf_state);
 	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF export: Failed to prepare for serialization. File: " + p_g4mf_state->get_g4mf_file_path());
 	err = _export_serialize_json_data(p_g4mf_state);
@@ -1423,7 +1435,7 @@ Error G4MFDocument4D::export_write_to_file(Ref<G4MFState4D> p_g4mf_state, const 
 			// Else, don't call `_export_serialize_buffer_data_to_uri` because the buffers will be serialized as binary blob chunks.
 		}
 		const PackedByteArray json_bytes = _export_write_to_byte_array_internal(p_g4mf_state);
-		ERR_FAIL_COND_V_MSG(json_bytes.is_empty(), ERR_INVALID_DATA, "G4MF export: Failed to encode G4MF data. File: " + p_path);
+		ERR_FAIL_COND_V_MSG(json_bytes.is_empty(), ERR_INVALID_DATA, "G4MF export: Failed to encode G4MF data. File: " + p_abs_path);
 		file->store_buffer(json_bytes);
 	}
 	return OK;
@@ -1525,18 +1537,20 @@ Error G4MFDocument4D::_import_read_from_byte_array_internal(Ref<G4MFState4D> p_g
 	return _import_parse_json_data(p_g4mf_state, g4mf_json);
 }
 
-Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const String &p_path) {
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
-	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF import: Failed to open file for reading: " + p_path);
-	p_g4mf_state->set_g4mf_file_path(p_path);
-	p_g4mf_state->set_source_path(p_path);
-	ERR_FAIL_COND_V_MSG(file->get_length() < 25, ERR_INVALID_DATA, "G4MF import: File is too small to be a valid G4MF file: " + p_path);
+Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const String &p_abs_path) {
+	ERR_FAIL_COND_V(p_g4mf_state.is_null(), ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V_MSG(!p_abs_path.is_absolute_path(), ERR_INVALID_PARAMETER, "G4MF import: The source path must be absolute, including res:// or user://.");
+	Ref<FileAccess> file = FileAccess::open(p_abs_path, FileAccess::READ);
+	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, "G4MF import: Failed to open file for reading: " + p_abs_path);
+	p_g4mf_state->set_g4mf_file_path(p_abs_path);
+	p_g4mf_state->set_source_path(p_abs_path);
+	ERR_FAIL_COND_V_MSG(file->get_length() < 25, ERR_INVALID_DATA, "G4MF import: File is too small to be a valid G4MF file: " + p_abs_path);
 	// Check for the magic number to allow reading text vs binary G4MF files regardless of file extension.
 	const uint32_t magic_number_maybe = file->get_32();
 	file->seek(0);
 	if (magic_number_maybe == (uint32_t)0x464D3447) {
 		const Error err = _import_read_from_binary_file(p_g4mf_state, file);
-		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to read binary G4MF file at: " + p_path);
+		ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to read binary G4MF file at: " + p_abs_path);
 		return OK;
 	}
 	// If there is no magic number, try reading the file as JSON.
@@ -1545,12 +1559,12 @@ Error G4MFDocument4D::import_read_from_file(Ref<G4MFState4D> p_g4mf_state, const
 #else
 	Dictionary g4mf_json = JSON::parse_string(file->get_as_text());
 #endif
-	ERR_FAIL_COND_V_MSG(g4mf_json.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to parse G4MF JSON file at: " + p_path);
+	ERR_FAIL_COND_V_MSG(g4mf_json.is_empty(), ERR_INVALID_DATA, "G4MF import: Failed to parse G4MF JSON file at: " + p_abs_path);
 	p_g4mf_state->set_g4mf_json(g4mf_json);
 	Error err = _import_parse_buffers(p_g4mf_state, g4mf_json, nullptr, nullptr);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse G4MF buffers when reading from text-based G4MF file at: " + p_path);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse G4MF buffers when reading from text-based G4MF file at: " + p_abs_path);
 	err = _import_parse_json_data(p_g4mf_state, g4mf_json);
-	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse G4MF data in file: " + p_path);
+	ERR_FAIL_COND_V_MSG(err != OK, err, "G4MF import: Failed to parse G4MF data in file: " + p_abs_path);
 	return err;
 }
 
@@ -1633,9 +1647,9 @@ void G4MFDocument4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("export_append_from_godot_mesh", "g4mf_state", "mesh"), &G4MFDocument4D::export_append_from_godot_mesh);
 	ClassDB::bind_method(D_METHOD("export_repack_buffer_data", "g4mf_state", "allow_reordering"), &G4MFDocument4D::export_repack_buffer_data, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("export_write_to_byte_array", "g4mf_state"), &G4MFDocument4D::export_write_to_byte_array);
-	ClassDB::bind_method(D_METHOD("export_write_to_file", "g4mf_state", "path"), &G4MFDocument4D::export_write_to_file);
+	ClassDB::bind_method(D_METHOD("export_write_to_file", "g4mf_state", "abs_path"), &G4MFDocument4D::export_write_to_file);
 	ClassDB::bind_method(D_METHOD("import_read_from_byte_array", "g4mf_state", "byte_array"), &G4MFDocument4D::import_read_from_byte_array);
-	ClassDB::bind_method(D_METHOD("import_read_from_file", "g4mf_state", "path"), &G4MFDocument4D::import_read_from_file);
+	ClassDB::bind_method(D_METHOD("import_read_from_file", "g4mf_state", "abs_path"), &G4MFDocument4D::import_read_from_file);
 	ClassDB::bind_method(D_METHOD("import_generate_godot_scene", "g4mf_state"), &G4MFDocument4D::import_generate_godot_scene);
 	ClassDB::bind_method(D_METHOD("import_generate_godot_mesh", "g4mf_state", "which_mesh_index", "include_invisible"), &G4MFDocument4D::import_generate_godot_mesh, DEFVAL(-1), DEFVAL(false));
 

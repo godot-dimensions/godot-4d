@@ -163,7 +163,7 @@ String G4MFFileReference4D::sanitize_file_path_uri(const String &p_desired_file_
 	return path_prefix + sanitized_path;
 }
 
-String G4MFFileReference4D::sanitize_path_uri(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning, String &r_sanitized_ext) {
+String G4MFFileReference4D::sanitize_file_path_uri_from_stem(const String &p_requested_path_stem, const String &p_extension, const bool p_print_warning, String &r_sanitized_ext) {
 	r_sanitized_ext = sanitize_file_extension(p_extension, p_print_warning);
 	if (!r_sanitized_ext.is_empty() && r_sanitized_ext[0] != '.') {
 		r_sanitized_ext = String(".") + r_sanitized_ext;
@@ -173,6 +173,7 @@ String G4MFFileReference4D::sanitize_path_uri(const String &p_requested_path_ste
 }
 
 void G4MFFileReference4D::set_file_uri(const String &p_file_uri) {
+	const String previous_uri = _file_uri;
 	// General URIs use protocol-specific rules rather than filesystem sanitation.
 	const bool sanitize = p_file_uri.begins_with("res://") || p_file_uri.begins_with("user://") ||
 			(!p_file_uri.begins_with("data:") && !p_file_uri.contains("://"));
@@ -185,40 +186,36 @@ void G4MFFileReference4D::set_file_uri(const String &p_file_uri) {
 	} else {
 		_file_uri = p_file_uri;
 	}
+	// An explicit URI edit starts a new preferred name; generated assignments preserve the existing stem.
+	if (_file_uri != previous_uri) {
+		_export_preferred_path_stem = String();
+	}
 }
 
 void G4MFFileReference4D::set_file_uri_no_sanitize(const String &p_file_uri) {
 	_file_uri = p_file_uri;
 }
 
-void G4MFFileReference4D::set_unique_file_path_uri(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_path_stem, const String &p_file_ext, const bool p_print_warning) {
+void G4MFFileReference4D::set_unique_file_path_uri_from_stem(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_path_stem, const String &p_file_ext, const bool p_print_warning) {
 	ERR_FAIL_COND(p_g4mf_state.is_null());
-	p_g4mf_state->assign_unique_path_uri(Ref<G4MFFileReference4D>(this), p_desired_path_stem, p_file_ext, p_print_warning);
+	p_g4mf_state->assign_unique_path_uri_from_stem(Ref<G4MFFileReference4D>(this), p_desired_path_stem, p_file_ext, p_print_warning);
 }
 
-void G4MFFileReference4D::set_unique_file_path_combined_uri(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_file_uri, const bool p_print_warning) {
+void G4MFFileReference4D::set_unique_file_path_uri(const Ref<G4MFState4D> &p_g4mf_state, const String &p_desired_file_uri, const bool p_print_warning) {
 	ERR_FAIL_COND(p_g4mf_state.is_null());
-	const String sanitized_path = sanitize_file_path_uri(p_desired_file_uri, p_print_warning);
-	if (!p_desired_file_uri.is_empty() && sanitized_path.is_empty()) {
-		return;
+	const String previous_uri = _file_uri;
+	p_g4mf_state->assign_unique_path_uri(Ref<G4MFFileReference4D>(this), p_desired_file_uri, p_print_warning);
+	if (_file_uri != previous_uri) {
+		_export_preferred_path_stem = String();
 	}
-	const String base_dir = sanitized_path.get_base_dir();
-	const String file_name = sanitized_path.get_file();
-	// Split the file name on the first dot to avoid breaking multi-part extensions with uniqueness.
-	// For example, multiple "archive.tar.gz" should become "archive2.tar.gz" not "archive.tar2.gz".
-	// This does mean that "Mr. Bob.txt" becomes "mr.bob.txt", but that's an acceptable compromise.
-	const int first_dot = file_name.find(".");
-	const String name_without_ext = first_dot == -1 ? file_name : file_name.substr(0, first_dot);
-	const String file_ext = first_dot == -1 ? String() : file_name.substr(first_dot);
-	const String path_without_ext = base_dir.path_join(name_without_ext);
-	p_g4mf_state->assign_unique_path_uri(Ref<G4MFFileReference4D>(this), path_without_ext, file_ext, p_print_warning);
 }
 
-String G4MFFileReference4D::resolve_file_uri(const String &p_base_path) const {
+String G4MFFileReference4D::resolve_file_uri(const String &p_base_abs_path) const {
 	if (_file_uri.is_empty() || _file_uri.is_absolute_path()) {
 		return _file_uri;
 	}
-	return p_base_path.path_join(_file_uri);
+	ERR_FAIL_COND_V_MSG(!p_base_abs_path.is_absolute_path(), String(), "G4MF: A relative file URI requires an absolute base path.");
+	return p_base_abs_path.path_join(_file_uri);
 }
 
 PackedByteArray G4MFFileReference4D::import_read_file_data(const Ref<G4MFState4D> &p_g4mf_state, const bool p_read_from_cache) {
@@ -235,6 +232,8 @@ PackedByteArray G4MFFileReference4D::import_read_file_data(const Ref<G4MFState4D
 			return _file_data_cache;
 		}
 		const String path = resolve_file_uri(p_g4mf_state->get_g4mf_base_path());
+		ERR_FAIL_COND_V(path.is_empty(), PackedByteArray());
+		p_g4mf_state->mark_path_as_reserved(path);
 		Ref<DirAccess> dir = DirAccess::open(path.get_base_dir());
 		if (dir.is_valid() && dir->file_exists(path.get_file())) {
 			_file_data_cache = FileAccess::get_file_as_bytes(path);
@@ -272,6 +271,7 @@ Error G4MFFileReference4D::export_create_missing_directories_if_needed(const Ref
 		ERR_FAIL_COND_V(err != OK && err != ERR_ALREADY_EXISTS, err);
 		return OK;
 	}
+	ERR_FAIL_COND_V_MSG(!p_g4mf_state->get_g4mf_base_path().is_absolute_path(), ERR_INVALID_PARAMETER, "G4MF: A relative file URI requires an absolute base path.");
 	const String relative_folder = _file_uri.get_base_dir();
 	if (!relative_folder.is_empty()) {
 		String base_path = p_g4mf_state->get_g4mf_base_path();
@@ -293,8 +293,8 @@ void G4MFFileReference4D::export_assign_name_if_empty(const Ref<G4MFState4D> &p_
 	if (!get_item_name().is_empty()) {
 		return;
 	}
-	String file_name;
-	if (!_file_uri.begins_with("data:")) {
+	String file_name = _export_preferred_path_stem.get_file();
+	if (file_name.is_empty() && !_file_uri.begins_with("data:")) {
 		file_name = _file_uri.get_basename().get_file();
 	}
 	if (file_name.is_empty()) {
@@ -320,7 +320,7 @@ Error G4MFFileReference4D::export_write_to_buffer(const Ref<G4MFState4D> &p_g4mf
 	const int buffer_view_index = G4MFBufferView4D::write_new_buffer_view_into_state(p_g4mf_state, _file_data_cache, p_alignment, p_deduplicate, p_buffer_index);
 	ERR_FAIL_COND_V_MSG(buffer_view_index < 0, ERR_CANT_CREATE, "G4MF export: Failed to write file data into new buffer view.");
 	_buffer_view_index = buffer_view_index;
-	set_unique_file_path_uri(p_g4mf_state, "", "");
+	set_unique_file_path_uri_from_stem(p_g4mf_state, "", "");
 	return OK;
 }
 
@@ -385,6 +385,9 @@ Dictionary G4MFFileReference4D::write_file_reference_entries_to_dictionary() con
 }
 
 void G4MFFileReference4D::_bind_methods() {
+	ClassDB::bind_static_method("G4MFFileReference4D", D_METHOD("sanitize_file_extension", "extension", "print_warning"), &G4MFFileReference4D::sanitize_file_extension, DEFVAL(true));
+	ClassDB::bind_static_method("G4MFFileReference4D", D_METHOD("sanitize_file_path_uri", "desired_file_path", "print_warning"), &G4MFFileReference4D::sanitize_file_path_uri, DEFVAL(true));
+
 	ClassDB::bind_method(D_METHOD("get_buffer_view_index"), &G4MFFileReference4D::get_buffer_view_index);
 	ClassDB::bind_method(D_METHOD("set_buffer_view_index", "buffer_view_index"), &G4MFFileReference4D::set_buffer_view_index);
 
@@ -393,7 +396,8 @@ void G4MFFileReference4D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_file_uri"), &G4MFFileReference4D::get_file_uri);
 	ClassDB::bind_method(D_METHOD("set_file_uri", "file_uri"), &G4MFFileReference4D::set_file_uri);
-	ClassDB::bind_method(D_METHOD("resolve_file_uri", "base_path"), &G4MFFileReference4D::resolve_file_uri);
+	ClassDB::bind_method(D_METHOD("set_unique_file_path_uri", "g4mf_state", "desired_file_uri", "print_warning"), &G4MFFileReference4D::set_unique_file_path_uri, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("resolve_file_uri", "base_abs_path"), &G4MFFileReference4D::resolve_file_uri);
 
 	ClassDB::bind_method(D_METHOD("import_read_file_data", "g4mf_state", "read_from_cache"), &G4MFFileReference4D::import_read_file_data, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("import_parse_file_data", "g4mf_state"), &G4MFFileReference4D::import_parse_file_data);
