@@ -38,7 +38,7 @@ struct VoxelMaterialUtil4D {
 	// their opacity.
 	// While this may be extended to other cases later, the relation of having no
 	// face should always remain an equivalence relation among materials other than
-	// UNDEFINED, in order to ensure meshes are watertight, manifold, and closed.
+	// UNDEFINED, in order to ensure meshes are watertight/closed.
 	static VoxelFace4D get_face_between(const VoxelMaterial4D p_first, const VoxelMaterial4D p_second) {
 		if (p_first == VoxelMaterial4D::UNDEFINED || p_second == VoxelMaterial4D::UNDEFINED) {
 			return VoxelFace4D::NONE;
