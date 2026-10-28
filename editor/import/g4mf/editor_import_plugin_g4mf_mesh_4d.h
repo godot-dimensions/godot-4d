@@ -27,10 +27,6 @@ public:
 		p_extensions->push_back("g4tf");
 		p_extensions->push_back("g4b");
 	}
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
-	virtual Error import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;
-#else
 	virtual Error import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;
-#endif
 #endif
 };

@@ -6,7 +6,7 @@
 # the oldest supported version, matching `compatibility_minimum` in `godot_4d.gdextension`.
 # Override it with the `api_version` option, ex: `scons api_version=4.5`. Earlier godot-cpp versions
 # target only the Godot version of their branch, and ignore this.
-env = SConscript("src/godot-cpp/SConstruct", {"api_version": "4.3"})
+env = SConscript("src/godot-cpp/SConstruct", {"api_version": "4.4"})
 
 # Add source files.
 env.Append(
@@ -129,13 +129,10 @@ if not "arch_suffix" in env:
     env["arch_suffix"] = env["arch"]
 
 if env["target"] in ["editor", "template_debug"]:
-    try:
-        doc_data = env.GodotCPPDocData(
-            "src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml")
-        )
-        sources.append(doc_data)
-    except AttributeError:
-        print("Not including class reference as we're targeting a pre-4.3 baseline.")
+    doc_data = env.GodotCPPDocData(
+        "src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml")
+    )
+    sources.append(doc_data)
 
 # Create the library target (e.g. libgodot_4d.linux.debug.x86_64.so).
 if env["platform"] == "macos":

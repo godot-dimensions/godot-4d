@@ -442,9 +442,7 @@ Dictionary G4MFShape4D::to_dictionary() const {
 	if (_shape_type != "general") {
 		ret["type"] = _shape_type;
 	}
-#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 	ret.sort();
-#endif
 	return ret;
 }
 

@@ -22,10 +22,6 @@
 // In Godot 4.8 and later, main screens are docks, so we need to interact with the dock system.
 #include "editor/docks/editor_dock.h"
 #endif
-
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
-#define set_button_icon set_icon
-#endif
 #endif
 
 Button *Godot4DEditorPlugin::_find_button_by_text(Node *p_start, const String &p_text) {
@@ -86,14 +82,14 @@ void Godot4DEditorPlugin::_move_4d_main_screen_tab_button() const {
 	Node *button_asset_lib_store_tab = editor->find_child("Asset Store", true, false);
 	// The name changed from "AssetLib" to "Asset Store" in Godot 4.7.
 	// However, a version check is not appropriate here, because a GDExtension may be
-	// compiled for Godot 4.3-4.6 and used in 4.7, so we need to check for both names.
+	// compiled for Godot <= 4.6 and used in 4.7, so we need to check for both names.
 	if (button_asset_lib_store_tab == nullptr) {
 		button_asset_lib_store_tab = editor->find_child("AssetLib", true, false);
 	}
 	ERR_FAIL_NULL(button_asset_lib_store_tab);
 	Node *main_editor_button_hbox = button_asset_lib_store_tab->get_parent();
 	// Check that the buttons exist before getting them, and bail out without printing
-	// any errors if they don't. A GDExtension compiled for Godot 4.3-4.7 may be used in
+	// any errors if they don't. A GDExtension compiled for Godot <= 4.7 may be used in
 	// Godot 4.8 or later, where main screens are docks instead of buttons in an HBoxContainer.
 	if (!main_editor_button_hbox->has_node(NodePath("4D")) || !main_editor_button_hbox->has_node(NodePath("Script"))) {
 		return;

@@ -175,11 +175,7 @@ Error FourDODocument4D::_import_parse_4do_raw_text(const String &p_raw_text) {
 				vertex_color = Color::html(line_tokens[1].trim_prefix("0x"));
 			} else {
 				const int64_t alpha = line_token_count < 5 ? 255 : line_tokens[4].to_int();
-#if GDEXTENSION || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4)
-				vertex_color = Color(line_tokens[1].to_int() / 255.0f, line_tokens[2].to_int() / 255.0f, line_tokens[3].to_int() / 255.0f, alpha / 255.0f);
-#elif GODOT_MODULE
 				vertex_color = Color::from_rgba8(line_tokens[1].to_int(), line_tokens[2].to_int(), line_tokens[3].to_int(), alpha);
-#endif
 			}
 			_vertex_colors.append(vertex_color);
 		} else if (command_token == "c") {

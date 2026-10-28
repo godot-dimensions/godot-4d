@@ -83,9 +83,7 @@ Dictionary G4MFTexture4D::to_dictionary() const {
 		}
 	}
 	dict["size"] = _texture_size; // Required property, always write.
-#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 	dict.sort();
-#endif
 	return dict;
 }
 

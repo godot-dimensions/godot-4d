@@ -11,4 +11,4 @@ config_version=5
 [application]
 
 config/name="Godot 4D Test Project"
-config/features=PackedStringArray("4.3")
+config/features=PackedStringArray("4.4")

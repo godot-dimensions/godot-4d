@@ -127,7 +127,7 @@ Yes, you. Box your 3D stuff. Out the front door.
 Do YOU think this engine is just a toy? A proof of concept?! Well you'd be wrong!
 There's been 2 (that we know of) published projects with this, both by Tessimal.
 
-The first is an outdoor musuem simulator, where you can hang out with your friends in 4D: https://tessimal.itch.io/lobby-4d
+The first is an outdoor museum simulator, where you can hang out with your friends in 4D: https://tessimal.itch.io/lobby-4d
 
 The second is an actual game, it's an arcade game about fighting four dimensional robots: https://tessimal.itch.io/arena4d
 
@@ -138,9 +138,11 @@ Most editor features only work as a module, so the module is highly recommended.
 The GDExtension version is provided on a best-effort basis, and supports
 all runtime features but limited editor functionality.
 
-This repo only supports Godot 4.3 and later. There are no plans to support
-Godot 3.x, as it is missing critical Variant data types (Vector4 and
-Projection). Supporting Godot 4.0 to 4.2 would be possible but difficult.
+This repo only supports Godot 4.4 and later. Godot 4D formerly supported
+[Godot 4.3](https://github.com/godot-dimensions/godot-4d/releases/tag/last-4.3-commit),
+but this was discontinued due to critical features in Godot 4.4 and later.
+Supporting Godot 3.x would be nearly impossible, as it is missing critical
+Variant data types (Vector4 and Projection).
 
 ## License
 

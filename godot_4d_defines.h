@@ -156,18 +156,11 @@ using namespace godot;
 #define _NO_DISCARD_ [[nodiscard]]
 #endif // _NO_DISCARD_
 
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
-// In Godot 4.3 and earlier, String::num prints whole number floats without a decimal
-// point, so the C# bindings generator emits them as C# ulong integer literals.
-// See https://github.com/godotengine/godot/pull/47502
-#define BINDING_SAFE_INF 1.8e19
-#else
 // TODO: This should ideally be `Math_INF` but Godot's bindings do not like infinity,
 // and also values above max float32 will overflow to infinity in the bindings.
 // See https://github.com/godotengine/godot-cpp/pull/2030
 #define BINDING_SAFE_INF 3.4e38
-#endif
 
-#if GODOT_VERSION_MAJOR < 4
-#error "Godot 4D requires Godot 4 or later."
+#if GODOT_VERSION_MAJOR < 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4)
+#error "Godot 4D requires Godot 4.4 or later."
 #endif

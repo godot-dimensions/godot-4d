@@ -245,7 +245,6 @@ void EditorMainScreen4D::_notification(int p_what) {
 		case NOTIFICATION_THEME_CHANGED: {
 			_update_theme();
 		} break;
-#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 		case NOTIFICATION_EXIT_TREE: {
 			// Stop the inspectors from pointing at objects that are about to be freed.
 			if (_snap_settings_inspector != nullptr) {
@@ -255,7 +254,6 @@ void EditorMainScreen4D::_notification(int p_what) {
 				_camera_settings_inspector->edit(nullptr);
 			}
 		} break;
-#endif
 		case NOTIFICATION_PREDELETE: {
 			_free_camera_settings();
 		} break;
@@ -435,8 +433,7 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	transform_settings_menu_popup->add_item(TTR("Configure Snap..."), TRANSFORM_SETTING_CONFIGURE_SNAP);
 	transform_settings_menu_popup->connect(StringName("id_pressed"), callable_mp(this, &EditorMainScreen4D::_on_transform_settings_menu_id_pressed));
 
-#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
-	// Set up the snap settings dialog as long as this is Godot >= 4.4.
+	// Set up the snap settings dialog.
 	EditorTransformSnapSettings4D *snap_settings = _transform_gizmo_4d->get_snap_settings();
 	snap_settings->setup(_4d_editor_config_file, _4d_editor_config_file_path);
 	_snap_settings_dialog = memnew(ConfirmationDialog);
@@ -449,10 +446,6 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_snap_settings_inspector->edit(snap_settings);
 	_snap_settings_dialog->add_child(_snap_settings_inspector);
 	add_child(_snap_settings_dialog);
-#else
-	transform_settings_menu_popup->set_item_disabled(TRANSFORM_SETTING_CONFIGURE_SNAP, true);
-	transform_settings_menu_popup->set_item_tooltip(TRANSFORM_SETTING_CONFIGURE_SNAP, TTR("Snap settings requires compiling with a minimum Godot version of 4.4, but this was compiled for Godot " + itos(GODOT_VERSION_MAJOR) + "." + itos(GODOT_VERSION_MINOR) + "."));
-#endif
 
 	// Set up the Layout menu in the toolbar.
 	_layout_menu = memnew(MenuButton);
@@ -495,11 +488,10 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	view_menu_popup->connect(StringName("id_pressed"), callable_mp(this, &EditorMainScreen4D::_on_view_menu_id_pressed));
 	_toolbar_hbox->add_child(memnew(VSeparator));
 
-	// Always create the camera settings object, even without the dialog, as it's needed for RenderingEngine4D selection.
+	// Create the camera settings object, also used for RenderingEngine4D selection.
 	_camera_settings = memnew(EditorCameraSettings4D);
 	_camera_settings->setup(this, _4d_editor_config_file, _4d_editor_config_file_path);
-#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
-	// Set up the camera settings dialog as long as this is Godot >= 4.4.
+	// Set up the camera settings dialog.
 	_camera_settings_dialog = memnew(ConfirmationDialog);
 	_camera_settings_dialog->set_name(StringName("CameraSettingsDialog"));
 	_camera_settings_dialog->set_title(TTR("Editor Camera Settings"));
@@ -510,10 +502,6 @@ void EditorMainScreen4D::setup(EditorUndoRedoManager *p_undo_redo_manager) {
 	_camera_settings_inspector->edit(_camera_settings);
 	_camera_settings_dialog->add_child(_camera_settings_inspector);
 	add_child(_camera_settings_dialog);
-#else
-	view_menu_popup->set_item_disabled(VIEW_ITEM_CAMERA_SETTINGS, true);
-	view_menu_popup->set_item_tooltip(VIEW_ITEM_CAMERA_SETTINGS, TTR("Camera settings requires compiling with a minimum Godot version of 4.4, but this was compiled for Godot " + itos(GODOT_VERSION_MAJOR) + "." + itos(GODOT_VERSION_MINOR) + "."));
-#endif
 
 	EditorInterface::get_singleton()->get_selection()->connect(StringName("selection_changed"), callable_mp(this, &EditorMainScreen4D::_on_selection_changed));
 
