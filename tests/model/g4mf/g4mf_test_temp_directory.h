@@ -20,7 +20,11 @@ public:
 		if (_error != OK) {
 			return;
 		}
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 5
+		const String name = p_prefix + "-" + Time::get_singleton()->get_datetime_string_from_system().replace("-", "").replace("T", "").replace(":", "") + itos(Time::get_singleton()->get_ticks_usec());
+#else
 		const String name = p_prefix + "-" + Time::get_singleton()->get_datetime_string_from_system().remove_chars("-T:") + itos(Time::get_singleton()->get_ticks_usec());
+#endif
 		uint64_t discriminator = 0;
 		do {
 			const String candidate = base_dir.path_join(name + "-" + itos(discriminator++));
