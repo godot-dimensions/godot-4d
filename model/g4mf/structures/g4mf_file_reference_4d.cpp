@@ -371,9 +371,7 @@ Dictionary G4MFFileReference4D::write_file_reference_entries_to_dictionary() con
 	if (!_file_uri.is_empty()) {
 		dict["uri"] = _file_uri;
 	}
-#if GODOT_MODULE && (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4))
 	dict.sort();
-#endif
 	return dict;
 }
 

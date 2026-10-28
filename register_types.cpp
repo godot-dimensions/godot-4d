@@ -352,16 +352,13 @@ void initialize_4d_module(ModuleInitializationLevel p_level) {
 		rendering_server->register_rendering_engine(combined_engine);
 #endif // RD_ENABLED
 		add_godot_singleton("RenderingServer4D", rendering_server);
-		// Material initialization.
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
-		// In Godot 4.4+, preload the cross-section shaders. In Godot 4.3, lazy-load them when needed.
+		// Material initialization. Preload the cross-section shaders.
 		WireMaterial4D::init_shaders();
 		TetraMaterial4D::init_shaders();
 		GradientSkyMaterial4D::init_shader();
 		PhysicalSkyMaterial4D::init_shader();
 		PlainSkyMaterial4D::init_shader();
 		VolumetricCloudMaterial4D::init_shaders();
-#endif
 		// Initialize fallback materials in the opposite order from when they will later be destroyed.
 		WireMesh4D::init_fallback_material();
 		TetraMesh4D::init_fallback_material();

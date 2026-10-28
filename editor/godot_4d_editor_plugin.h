@@ -25,13 +25,8 @@
 #elif GODOT_MODULE
 #include "editor/plugins/editor_plugin.h"
 
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
-#define GDEXTMOD_GET_PLUGIN_ICON get_icon
-#define GDEXTMOD_GET_PLUGIN_NAME get_name
-#else
 #define GDEXTMOD_GET_PLUGIN_ICON get_plugin_icon
 #define GDEXTMOD_GET_PLUGIN_NAME get_plugin_name
-#endif
 #define GDEXTMOD_HANDLES handles
 #define GDEXTMOD_HAS_MAIN_SCREEN has_main_screen
 #define GDEXTMOD_MAKE_VISIBLE make_visible

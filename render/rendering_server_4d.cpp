@@ -11,17 +11,13 @@
 
 #if GDEXTENSION
 #include <godot_cpp/classes/engine.hpp>
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3)
-#include <godot_cpp/classes/time.hpp>
-#else
-#include <chrono>
-#endif
 #ifdef TOOLS_ENABLED
 #include <godot_cpp/classes/editor_interface.hpp>
 #endif // TOOLS_ENABLED
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/classes/window.hpp>
 #elif GODOT_MODULE
 #include "core/config/engine.h"
@@ -41,18 +37,10 @@
 
 RenderingServer4D::RenderingServer4D() {
 	singleton = this;
-#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3))
 	Time *time_singleton = Time::get_singleton();
 	ERR_FAIL_NULL(time_singleton);
 	_render_time_base = time_singleton->get_unix_time_from_system();
 	_last_render_time_base_ticks_usec = time_singleton->get_ticks_usec();
-#else
-	// The Time singleton causes crashes in GDExtension builds in Godot 4.3 and earlier, so fall back to std::chrono.
-	// This is fixed in Godot 4.4 and later in this PR: https://github.com/godotengine/godot/pull/93972
-	const std::chrono::steady_clock::duration since_epoch = std::chrono::steady_clock::now().time_since_epoch();
-	_render_time_base = double(std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count());
-	_last_render_time_base_ticks_usec = uint64_t(std::chrono::duration_cast<std::chrono::microseconds>(since_epoch).count());
-#endif
 }
 
 RenderingServer4D::~RenderingServer4D() {
@@ -85,15 +73,9 @@ RenderingServer *RenderingServer4D::get_godot_rendering_server() {
 }
 
 double RenderingServer4D::get_render_time() const {
-#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3))
 	Time *time_singleton = Time::get_singleton();
 	ERR_FAIL_NULL_V(time_singleton, _render_time_base);
 	const uint64_t current_ticks_usec = time_singleton->get_ticks_usec();
-#else
-	// The Time singleton causes crashes in GDExtension builds in Godot 4.3 and earlier, so fall back to std::chrono.
-	const std::chrono::steady_clock::duration since_epoch = std::chrono::steady_clock::now().time_since_epoch();
-	const uint64_t current_ticks_usec = uint64_t(std::chrono::duration_cast<std::chrono::microseconds>(since_epoch).count());
-#endif
 	if (current_ticks_usec < _last_render_time_base_ticks_usec) {
 		return _render_time_base;
 	}
@@ -103,15 +85,9 @@ double RenderingServer4D::get_render_time() const {
 void RenderingServer4D::set_render_time(double p_render_time) {
 	ERR_FAIL_COND_MSG(!Math::is_finite(p_render_time), "RenderingServer4D render_time must be finite.");
 	_render_time_base = p_render_time;
-#if GODOT_MODULE || (GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR > 3))
 	Time *time_singleton = Time::get_singleton();
 	ERR_FAIL_NULL(time_singleton);
 	_last_render_time_base_ticks_usec = time_singleton->get_ticks_usec();
-#else
-	// The Time singleton causes crashes in GDExtension builds in Godot 4.3 and earlier, so fall back to std::chrono.
-	const std::chrono::steady_clock::duration since_epoch = std::chrono::steady_clock::now().time_since_epoch();
-	_last_render_time_base_ticks_usec = uint64_t(std::chrono::duration_cast<std::chrono::microseconds>(since_epoch).count());
-#endif
 }
 
 PackedInt64Array RenderingServer4D::_get_visible_light_object_ids() const {
@@ -407,15 +383,9 @@ Ref<RenderingEngine4D> RenderingServer4D::get_rendering_engine_from_name(const S
 }
 
 String RenderingServer4D::_get_current_godot_rendering_method() const {
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
 	RenderingServer *rendering_server = RenderingServer::get_singleton();
 	ERR_FAIL_NULL_V(rendering_server, String());
 	return rendering_server->get_current_rendering_method();
-#else
-	ProjectSettings *project_settings = ProjectSettings::get_singleton();
-	ERR_FAIL_NULL_V(project_settings, String());
-	return project_settings->get_setting("rendering/renderer/rendering_method");
-#endif
 }
 
 Ref<RenderingEngine4D> RenderingServer4D::_select_rendering_engine(const String &p_friendly_name, const String &p_godot_rendering_method) const {

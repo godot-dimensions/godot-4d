@@ -38,11 +38,7 @@ void EditorImportPluginHoxPoly4D::get_import_options(const String &p_path, List<
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "include_interior"), false));
 }
 
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 4
-Error EditorImportPluginHoxPoly4D::import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
-#else
 Error EditorImportPluginHoxPoly4D::import(ResourceUID::ID p_source_id, const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata)
-#endif
 #endif
 {
 	Ref<HoxDocument4D> hox_doc = HoxDocument4D::import_read_from_file(p_source_file);
