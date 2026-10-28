@@ -44,12 +44,23 @@ struct _NO_DISCARD_ Rotor4D {
 
 	// Rotation functions.
 	Basis4D to_basis() const;
-	real_t get_rotation_angle() const;
-	Bivector4D get_rotation_bivector_magnitude() const;
-	Bivector4D get_rotation_bivector_normal() const;
+	Bivector4D log() const;
+	real_t get_major_angle() const {
+		return log().get_major_angle();
+	}
+	real_t get_minor_angle() const {
+		return log().get_minor_angle();
+	}
+	void get_angles(real_t &r_major_angle, real_t &r_minor_angle) const {
+		log().get_angles(r_major_angle, r_minor_angle);
+	}
+	void get_angles_planes(real_t &r_major_angle, Bivector4D &r_major_plane, real_t &r_minor_angle, Bivector4D &r_minor_plane) const {
+		log().get_angles_planes(r_major_angle, r_major_plane, r_minor_angle, r_minor_plane);
+	}
 	Basis4D rotate_basis(const Basis4D &p_basis) const;
 	Rotor4D rotate_rotor(const Rotor4D &p_rotor) const;
 	Vector4 rotate_vector(const Vector4 &p_vec) const;
+	Bivector4D rotate_bivector(const Bivector4D &p_bivector) const;
 	Vector4 sandwich(const Vector4 &p_vec, const Rotor4D &p_right) const;
 	Rotor4D slerp(Rotor4D p_to, const real_t p_weight) const;
 	Rotor4D slerp_fraction(const real_t p_weight = 0.5f) const;
@@ -64,8 +75,11 @@ struct _NO_DISCARD_ Rotor4D {
 
 	// Static functions for doing math on non-Rotor4D types and returning a Rotor4D.
 	static Rotor4D vector_product(const Vector4 &p_a, const Vector4 &p_b);
+	// Returns a rotor Q and upper-triangular matrix R such that QR = the original matrix.
+	static Rotor4D from_basis_with_residual(Basis4D &r_basis);
+	// As above but discards the residual.
 	static Rotor4D from_basis(const Basis4D &p_basis);
-	static Rotor4D from_bivector_magnitude(const Bivector4D &p_bivector);
+	static Rotor4D exp(const Bivector4D &p_bivector);
 	static Rotor4D from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle);
 	static Rotor4D from_xy(const real_t p_angle);
 	static Rotor4D from_xz(const real_t p_angle);
@@ -75,6 +89,7 @@ struct _NO_DISCARD_ Rotor4D {
 	static Rotor4D from_yw(const real_t p_angle);
 	static Rotor4D from_wy(const real_t p_angle);
 	static Rotor4D from_zw(const real_t p_angle);
+	static Rotor4D from_axes_angle(const int p_axis_1, const int p_axis_2, const real_t p_angle);
 	static Rotor4D identity();
 
 	// Component with-style setters.

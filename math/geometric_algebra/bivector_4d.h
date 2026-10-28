@@ -32,6 +32,8 @@ struct _NO_DISCARD_ Bivector4D {
 	Bivector4D reverse() const;
 	real_t scalar_product(const Bivector4D &p_b) const;
 	real_t wedge_product(const Bivector4D &p_b) const;
+	Bivector4D self_dual_part() const;
+	Bivector4D anti_self_dual_part() const;
 
 	// Length functions.
 	real_t length() const;

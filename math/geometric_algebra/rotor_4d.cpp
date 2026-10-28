@@ -152,24 +152,43 @@ Basis4D Rotor4D::to_basis() const {
 			2 * (-xw * xz - yw * yz - zw * s - xyzw * xy), // W.Z
 			-xw * xw - yw * yw - zw * zw + s * s - xyzw * xyzw + xy * xy + xz * xz + yz * yz // W.W
 	);
-	return basis.orthonormalized();
+	return basis;
 }
 
-real_t Rotor4D::get_rotation_angle() const {
-	return 2.0f * Math::atan2(parts.bivector.length(), s);
-}
-
-Bivector4D Rotor4D::get_rotation_bivector_magnitude() const {
-	return parts.bivector * get_rotation_angle();
-}
-
-Bivector4D Rotor4D::get_rotation_bivector_normal() const {
-	return parts.bivector.normalized();
+// Technically there is a rotor to rotor logarithm, but only the bivector part is
+// likely to be of any use (and for a normalized input, only the bivector part is
+// non-zero.)
+Bivector4D Rotor4D::log() const {
+	Rotor4D positive = s < 0.0 ? -*this : *this;
+	real_t left_cos = (positive.s + positive.xyzw) / 2.0;
+	real_t right_cos = (positive.s - positive.xyzw) / 2.0;
+	Bivector4D left_bivector = positive.parts.bivector.self_dual_part();
+	Bivector4D right_bivector = positive.parts.bivector.anti_self_dual_part();
+	// The isoclinig bivectors of length sqrt(2) are essentially the unit isoclinic bivectors, hence the sqrt(1/2) factors.
+	real_t left_sin = left_bivector.length() * M_SQRT1_2;
+	real_t right_sin = right_bivector.length() * M_SQRT1_2;
+	real_t left_angle = Math::atan2(left_sin, left_cos);
+	real_t right_angle = Math::atan2(right_sin, right_cos);
+	Bivector4D left_part = left_bivector.normalized() * left_angle * M_SQRT2;
+	if (Math::is_equal_approx(left_cos, 1.0)) {
+		left_part = left_bivector;
+	} else if (Math::is_equal_approx(left_sin, 0.0)) { // nearly a 180° rotation
+		// The logarithm is discontinuous here. Any left-isoclinic bivector of the right size equally correct.
+		left_part = Bivector4D(1,0,0,0,0,-1) * left_angle;
+	}
+	Bivector4D right_part = right_bivector.normalized() * right_angle * M_SQRT2;
+	if (Math::is_equal_approx(right_cos, 1.0)) {
+		right_part = right_bivector;
+	} else if (Math::is_equal_approx(right_sin, 0.0)) { // nearly a 180° rotation
+		// The logarithm is discontinuous here. Any right-isoclinic bivector of the right size equally correct.
+		right_part = Bivector4D(1,0,0,0,0,1) * right_angle;
+	}
+	return left_part + right_part;
 }
 
 Basis4D Rotor4D::rotate_basis(const Basis4D &p_basis) const {
 #ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(!is_normalized(), p_basis, "The Rotor4D must be normalized in order to rotate a vector, but was " + operator String() + ".");
+	ERR_FAIL_COND_V_MSG(!is_normalized(), p_basis, "The Rotor4D must be normalized in order to rotate a basis, but was " + operator String() + ".");
 #endif
 	const Rotor4D rev = reverse();
 	return Basis4D(
@@ -179,9 +198,11 @@ Basis4D Rotor4D::rotate_basis(const Basis4D &p_basis) const {
 			rev.sandwich(p_basis.w, *this));
 }
 
-// Same as operator* but as a function.
 Rotor4D Rotor4D::rotate_rotor(const Rotor4D &p_rotor) const {
-	return *this * p_rotor;
+#ifdef MATH_CHECKS
+	ERR_FAIL_COND_V_MSG(!is_normalized(), p_rotor, "The Rotor4D must be normalized in order to rotate another rotor, but was " + operator String() + ".");
+#endif
+	return reverse() * p_rotor * *this;
 }
 
 Vector4 Rotor4D::rotate_vector(const Vector4 &p_vec) const {
@@ -193,6 +214,7 @@ Vector4 Rotor4D::rotate_vector(const Vector4 &p_vec) const {
 	// Instead, r^-1 * v * r is what correctly rotates the vector in the expected direction.
 	// I've double-checked the constructors, products, and multiplication operator and all they seem correct.
 	// This seems really weird, since Quaternions use q * v * q^-1 to do this. - aaronfranke
+	// It's an arbitrary sign convention. The difference is insignificant. - 4Denthusiast
 	return rev.sandwich(p_vec, *this);
 }
 
@@ -220,41 +242,13 @@ Vector4 Rotor4D::sandwich(const Vector4 &p_vec, const Rotor4D &p_right) const {
 }
 
 Rotor4D Rotor4D::slerp(Rotor4D p_to, const real_t p_weight) const {
-#ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D::identity(), "The start Rotor4D " + operator String() + " must be normalized.");
-	ERR_FAIL_COND_V_MSG(!p_to.is_normalized(), Rotor4D::identity(), "The end Rotor4D " + p_to.operator String() + " must be normalized.");
-#endif
-	double_t alignment = dot(p_to);
-	if (alignment < 0.0f) {
-		// Due to double cover, rotors may be rotated more than 180 degrees apart from each other.
-		// Those cases correspond to a state space rotation of more than 90 degrees (dot product < 0).
-		// In that case, the shortest path to that physical rotation is towards the negative of p_to.
-		p_to = -p_to;
-		alignment = -alignment;
-	}
-	if (alignment > 0.999f) {
-		// For very close rotors, slerp can have numerical instability, so linearly interpolate instead.
-		return (*this * (1.0f - p_weight) + p_to * p_weight).normalized();
-	}
-	// Spherically interpolate the rotors.
-	double_t angle_between_rotors = Math::acos(alignment);
-	double_t sin_angle = Math::sin(angle_between_rotors);
-	double_t from_weight = Math::sin((1.0f - p_weight) * angle_between_rotors) / sin_angle;
-	double_t to_weight = Math::sin(p_weight * angle_between_rotors) / sin_angle;
-	return (*this * from_weight + p_to * to_weight).normalized();
+	// I'm not aware of any more direct algorithm in the 4D rotor representation, so using the
+	// logarithm will have to do. It's correct, just less efficient than in 3D. - 4Denthusiast
+	return *this * exp((inverse() * p_to).log() * p_weight);
 }
 
 Rotor4D Rotor4D::slerp_fraction(const real_t p_weight) const {
-#ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(!is_normalized(), Rotor4D::identity(), "The Rotor4D " + operator String() + " must be normalized.");
-#endif
-	double_t angle = Math::acos(parts.scalar);
-	double_t sin_angle = Math::sin(angle);
-	double_t fractional_angle = p_weight * angle;
-	double_t new_scalar = Math::cos(fractional_angle);
-	double_t new_sin_angle = Math::sin(fractional_angle);
-	Bivector4D new_bivector = parts.bivector * (new_sin_angle / sin_angle);
-	return Rotor4D(new_scalar, new_bivector).normalized();
+	return exp(log() * p_weight);
 }
 
 // Length functions.
@@ -264,7 +258,10 @@ real_t Rotor4D::length() const {
 }
 
 real_t Rotor4D::length_squared() const {
-	return parts.scalar * parts.scalar + parts.bivector.length_squared() + parts.pseudoscalar * parts.pseudoscalar;
+	const SplitComplex4D magnitude = split_magnitude_squared();
+	// In theory the length^4 is always non-negative, but in case numerical errors cause it to become negative,
+	// it's best to return 0 rather than an error.
+	return Math::sqrt(MAX(0, magnitude.s * magnitude.s - magnitude.xyzw * magnitude.xyzw));
 }
 
 // The multiplication of the reverse of the rotor with the rotor itself, which only has scalar and pseudoscalar components.
@@ -284,11 +281,13 @@ Rotor4D Rotor4D::normalized() const {
 }
 
 bool Rotor4D::is_normalized() const {
-	return Math::is_equal_approx(length_squared(), (real_t)1.0);
+	const SplitComplex4D magnitude = split_magnitude_squared();
+	return Math::is_equal_approx(magnitude.s, (real_t)1.0) && Math::is_equal_approx(magnitude.xyzw, (real_t)0.0);
 }
 
 bool Rotor4D::is_simple_rotation() const {
-	return Math::is_zero_approx(xyzw) && is_normalized();
+	// A simple rotation is equally self-dual and anti-self-dual.
+	return Math::is_zero_approx(dot(*this - dual()));
 }
 
 // Static functions for doing math on non-Rotor4D types and returning a Rotor4D.
@@ -310,33 +309,27 @@ Rotor4D Rotor4D::vector_product(const Vector4 &p_a, const Vector4 &p_b) {
 	return result;
 }
 
+Rotor4D Rotor4D::from_basis_with_residual(Basis4D &r_basis) {
+	// TODO: Givens rotation algorithm
+}
+
 Rotor4D Rotor4D::from_basis(const Basis4D &p_basis) {
-	const Basis4D ortho = p_basis.orthonormalized();
-	ERR_FAIL_COND_V_MSG(!Math::is_equal_approx(ortho.determinant(), 1), Rotor4D::identity(), "The basis must be orthonormal in order to create a rotation, but was " + p_basis.operator String() + " (determinant " + rtos(p_basis.determinant()) + ").");
-	// TODO: This Euler-based algorithm sucks. It should be replaced with a better one when one is discovered.
-	const Euler4D euler = Euler4D::from_basis(ortho);
-	return from_zx(euler.zx) * from_zw(euler.zw) * from_xw(euler.xw) * from_yz(euler.yz) * from_xy(euler.xy) * from_wy(euler.wy);
+	Basis4D basis = Basis4D(p_basis);
+	return from_basis_with_residual(basis);
 }
 
-Rotor4D Rotor4D::from_bivector_magnitude(const Bivector4D &p_bivector) {
-	const real_t length_angle = p_bivector.length();
-	if (Math::is_zero_approx(length_angle)) {
-		return identity();
-	}
-	return from_bivector_normal_angle(p_bivector / length_angle, length_angle);
-}
-
-Rotor4D Rotor4D::from_bivector_normal_angle(const Bivector4D &p_bivector_normal, const real_t p_angle) {
-#ifdef MATH_CHECKS
-	ERR_FAIL_COND_V_MSG(!p_bivector_normal.is_normalized(), Rotor4D::identity(), "The bivector must be normalized in order to create a rotation, but was " + p_bivector_normal.operator String() + " (length " + rtos(p_bivector_normal.length()) + ").");
-#endif
-	if (Math::is_zero_approx(p_angle)) {
-		return identity();
-	}
-	const real_t half_angle = p_angle * 0.5;
-	const real_t cos_half_angle = Math::cos(half_angle);
-	const real_t sin_half_angle = Math::sin(half_angle);
-	return Rotor4D(cos_half_angle, p_bivector_normal * sin_half_angle);
+Rotor4D Rotor4D::exp(const Bivector4D &p_bivector) {
+	Bivector4D left_bivector = p_bivector.self_dual_part();
+	real_t left_length = left_bivector.length();
+	real_t left_sinc = Math::is_zero_approx(left_length) ? 0.5 : Math::sin(left_length / 2) / left_length;
+	real_t left_cos = Math::cos(left_length / 2);
+	Rotor4D left_rotor = Rotor4D((1 + left_cos)/2, left_bivector * left_sinc * M_SQRT1_2, -(1 - left_cos)/2);
+	Bivector4D right_bivector = p_bivector.anti_self_dual_part();
+	real_t right_length = right_bivector.length();
+	real_t right_sinc = Math::is_zero_approx(right_length) ? 0.5 : Math::sin(right_length / 2) / right_length;
+	real_t right_cos = Math::cos(right_length / 2);
+	Rotor4D right_rotor = Rotor4D((1 + right_cos)/2, right_bivector * right_sinc * M_SQRT1_2, (1 - right_cos)/2);
+	return left_rotor * right_rotor;
 }
 
 Rotor4D Rotor4D::from_xy(const real_t p_angle) {
@@ -401,6 +394,39 @@ Rotor4D Rotor4D::from_zw(const real_t p_angle) {
 	result.s = Math::cos(half_angle);
 	result.zw = Math::sin(half_angle);
 	return result;
+}
+
+Rotor4D Rotor4D::from_axes_angle(const int p_axis_1, const int p_axis_2, const real_t p_angle) {
+	switch (p_axis_1) {
+		case 0:
+			switch (p_axis_2) {
+				case 1: return from_xy(p_angle);
+				case 2: return from_xz(p_angle);
+				case 3: return from_xw(p_angle);
+			}
+			break;
+		case 1:
+			switch (p_axis_2) {
+				case 0: return from_xy(-p_angle);
+				case 2: return from_yz(p_angle);
+				case 3: return from_yw(p_angle);
+			}
+			break;
+		case 2:
+			switch (p_axis_2) {
+				case 0: return from_xz(-p_angle);
+				case 1: return from_yz(-p_angle);
+				case 3: return from_zw(p_angle);
+			}
+			break;
+		case 3:
+			switch (p_axis_2) {
+				case 0: return from_xw(-p_angle);
+				case 1: return from_yw(-p_angle);
+				case 2: return from_zw(-p_angle);
+			}
+	}
+	ERR_FAIL_V_MSG(identity(), "Attempted to generate a rotor with invalid axes: " + p_axis_1 + ", " + p_axis_2);
 }
 
 Rotor4D Rotor4D::identity() {
